@@ -585,7 +585,7 @@ static bool core_info_list_update_missing_firmware_internal(
 
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, path_size);
-      info->firmware[i].missing = !path_is_valid(path);
+      info->firmware[i].missing = !filestream_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
          *set_missing_bios = true;
@@ -637,7 +637,7 @@ static void core_info_list_get_missing_firmware(
    {
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
-      info->firmware[i].missing = !path_is_valid(path);
+      info->firmware[i].missing = !filestream_exists(path);
       *num_firmware += info->firmware[i].missing;
    }
 

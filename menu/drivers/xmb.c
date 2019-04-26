@@ -989,7 +989,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (path_is_valid(path))
+         if (filestream_exists(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1014,7 +1014,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
-      if (path_is_valid(right_thumbnail_path))
+      if (filestream_exists(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
                menu_display_handle_thumbnail_upload, NULL);
       else
@@ -1023,7 +1023,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (path_is_valid(left_thumbnail_path))
+      if (filestream_exists(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
@@ -1117,7 +1117,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path)
-         && path_is_valid(xmb->savestate_thumbnail_file_path))
+         && filestream_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
