@@ -6515,12 +6515,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
             }
-
-            return count;
          }
 
          ret                = 0;
 
+         info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_OVERRIDES:
