@@ -108,43 +108,44 @@ static int parse_dir_entry(const char *name, char *file_path,
       const char *file_ext)
 {
    union string_list_elem_attr attr;
-   bool is_compressed_file = false;
-   bool supported_by_core  = false;
 
    attr.i                  = RARCH_FILETYPE_UNSET;
-
-   if (!is_dir)
-   {
-      is_compressed_file = path_is_compressed_file(file_path);
-      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-         supported_by_core = true;
-   }
-
-   if (!include_dirs && is_dir)
-      return 1;
 
    if (string_is_equal(name, ".") || string_is_equal(name, ".."))
       return 1;
 
-   if (!is_dir && ext_list &&
-           ((!is_compressed_file && !supported_by_core) ||
-            (!supported_by_core && !include_compressed)))
-      return 1;
-
    if (is_dir)
+   {
+      if (!include_dirs)
+         return 1;
       attr.i = RARCH_DIRECTORY;
-   if (is_compressed_file)
-      attr.i = RARCH_COMPRESSED_ARCHIVE;
-   /* The order of these ifs is important.
-    * If the file format is explicitly supported by the libretro-core, we
-    * need to immediately load it and not designate it as a compressed file.
-    *
-    * Example: .zip could be supported as a image by the core and as a
-    * compressed_file. In that case, we have to interpret it as a image.
-    *
-    * */
-   if (supported_by_core)
-      attr.i = RARCH_PLAIN_FILE;
+   }
+   else
+   {
+      bool is_compressed_file;
+      bool supported_by_core  = false;
+      if ((is_compressed_file = path_is_compressed_file(file_path)))
+         attr.i = RARCH_COMPRESSED_ARCHIVE;
+
+      /*
+       * If the file format is explicitly supported by the libretro-core, we
+       * need to immediately load it and not designate it as a compressed file.
+       *
+       * Example: .zip could be supported as a image by the core and as a
+       * compressed_file. In that case, we have to interpret it as a image.
+       *
+       * */
+      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+      {
+         attr.i = RARCH_PLAIN_FILE;
+         supported_by_core = true;
+      }
+
+      if (ext_list &&
+            ((!is_compressed_file && !supported_by_core) ||
+             (!supported_by_core && !include_compressed)))
+         return 1;
+   }
 
    if (!string_list_append(list, file_path, attr))
       return -1;
@@ -212,9 +213,6 @@ static int dir_list_read(const char *dir,
 
       if (ret == -1)
          goto error;
-
-      if (ret == 1)
-         continue;
    }
 
    retro_closedir(entry);
