@@ -108,8 +108,6 @@ bool menu_input_dialog_get_display_kb(void)
 
    SwkbdConfig kbd;
 
-   pcvSetClockRate(PcvModule_Cpu, SWITCH_CPU_SPEEDS_VALUES[SWITCH_DEFAULT_CPU_PROFILE]);
-
    Result rc = swkbdCreate(&kbd, 0);
 
    if (R_SUCCEEDED(rc))

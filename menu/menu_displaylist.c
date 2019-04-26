@@ -4349,7 +4349,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
-         pcvGetClockRate(PcvModule_Cpu, &currentClock);
+         if(hosversionBefore(8, 0, 0)) {
+            pcvGetClockRate(PcvModule_CpuBus, &currentClock);
+         } else {
+            ClkrstSession session = {0};
+            clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
+            clkrstGetClockRate(&session, &currentClock);
+            clkrstCloseSession(&session);
+         }
          snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
 #endif
          menu_entries_append_enum(info->list,
