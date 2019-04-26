@@ -523,7 +523,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Hardcore Mode"
+    "Hardcore Modu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -923,7 +923,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-    "History List"
+    "Geçmiş Listesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -1115,7 +1115,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-    "Hotkey Binds"
+    "Kısayol Tuşları Atamaları"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
@@ -1231,7 +1231,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-    "Maksimum Kullanıcı"
+    "Maksimum Kullanıcı Sayısı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -1382,11 +1382,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-    "Slow motion basılı tut"
+    "Ağır Çekim için basılı tut"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-    "Slow motion aç/kapa"
+    "Ağır Çekim aç/kapa"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -1474,7 +1474,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-    "User %u Binds"
+    "Kullanıcı %u Atamaları"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1482,7 +1482,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-    "Internal storage status"
+    "Dahili Depolama Durumu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -1618,19 +1618,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-    "Logging Verbosity"
+    "Günlük Ayrıntılandırma"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-    "Log To File"
+    "Dosyaya günlüğünü gir"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-    "Redirects system event log messages to file. Requires 'Logging Verbosity' to be enabled."
+    "Sistem olay günlüğü iletilerini dosyaya yönlendirir. Etkinleştirilmesi için 'Günlük Ayrıntılandırma' gerektirir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-    "Timestamped Log Files"
+    "Zaman Damgalı Günlük Dosyaları"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
@@ -1690,7 +1690,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-    "Throttle Menu Framerate"
+    "Throttle Menü Kare Hızı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1710,7 +1710,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-    "Appearance"
+    "Görünüş"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -2062,7 +2062,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-    "Onscreen Overlay"
+    "Ekran Üstü Kaplama"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -2098,7 +2098,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-    "Performance Counters"
+    "Performans Sayaçları"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -2584,7 +2584,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-    "Slow-Motion Ratio"
+    "Ağır Çekim Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
@@ -2704,7 +2704,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-    "CPU Features"
+    "CPU Özellikleri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
@@ -2788,11 +2788,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
-    "Lakka Version"
+    "Lakka Versiyonu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-    "LibretroDB support"
+    "LibretroDB desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -2800,15 +2800,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-    "Netplay (peer-to-peer) support"
+    "Netplay (peer-to-peer) desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-    "Network Command interface support"
+    "Ağ komut arayüzü desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-    "Network Gamepad support"
+    "Ağ Gamepadi desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
@@ -2840,15 +2840,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-    "Power source"
+    "Güç Kaynağı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
-    "Charged"
+    "Şarj Edildi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
-    "Charging"
+    "Şarj Ediliyor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
@@ -2856,15 +2856,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
-    "No source"
+    "Kaynak Yok"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-    "PulseAudio support"
+    "PulseAudio desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-    "Python (script support in shaders) support"
+    "Python (gölgelendiricilerde komut dosyası desteği) desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
@@ -2924,7 +2924,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-    "Video context driver"
+    "Video içerik sürücüsü"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
@@ -3628,7 +3628,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-    "Hardware Shared Context"
+    "Paylaşılan Donanım İçeriği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3944,7 +3944,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-    "Geri sarma, ileri sarma ve slow-motion ayarlarını değiştirme."
+    "Geri sarma, ileri sarma ve ağır çekim ayarlarını değiştirme."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
@@ -4280,7 +4280,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-    "Did not find a valid content patch."
+    "Geçerli bir içerik düzeltme eki bulamadınız."
     )
 MSG_HASH(
     MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -4664,15 +4664,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NETPLAY_FAILED,
-    "Failed to initialize netplay."
+    "Netplay başlatılamadı."
     )
 MSG_HASH(
     MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-    "No content, starting dummy core."
+    "İçerik yok, Kukla Core başlatıyor."
     )
 MSG_HASH(
     MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-    "No save state has been overwritten yet."
+    "Henüz konum kaydetmenin üzerine yazılmadı."
     )
 MSG_HASH(
     MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -4836,7 +4836,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SLOW_MOTION,
-    "Slow motion."
+    "Ağır Çekim."
     )
 MSG_HASH(
     MSG_FAST_FORWARD,
@@ -4844,7 +4844,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SLOW_MOTION_REWIND,
-    "Slow motion rewind."
+    "Ağır Çekim Geri Sarma."
     )
 MSG_HASH(
     MSG_SRAM_WILL_NOT_BE_SAVED,
@@ -4948,15 +4948,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-    "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
+    "Milisaniye cinsinden istenen ses gecikmesi. Ses sürücüsü verilen gecikmeyi sağlayamıyorsa onur duyulmayabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-    "Mute/unmute audio."
+    "Sesi kapat/aç."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-    "Helps smooth out imperfections in timing when synchronizing audio and video. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+    "Ses ve videoyu senkronize ederken zamanlamadaki kusurların düzeltilmesine yardımcı olur. Devre dışı bırakılmışsa, uygun senkronizasyonun elde edilmesinin neredeyse imkansız olduğunu unutmayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
@@ -4968,7 +4968,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-    "Maximum amount of users supported by RetroArch."
+    "RetroArch tarafından desteklenen maksimum kullanıcı sayısı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4980,7 +4980,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-    "Audio volume (in dB). 0 dB is normal volume, and no gain is applied."
+    "Ses seviyesi (dB cinsinden). 0 dB normal hacimdir ve kazanç uygulanmaz."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -4996,7 +4996,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-    "Synchronize audio. Recommended."
+    "Sesi senkronize et. Tavsiye edilen."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -5028,36 +5028,36 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-    "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
+    "Bazı Coreların kapatma özelliği olabilir. Etkinleştirildiğinde, Core'un RetroArch'ı kapatmasını engeller. Bunun yerine, kukla bir Core yükler."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-    "Check if all the required firmware is present before attempting to load content."
+    "İçerik yüklemeyi denemeden önce gerekli tüm üretici yazılımının olup olmadığını kontrol edin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\n"
-    "NOTE: This will be ignored if 'Threaded Video' is enabled."
+    "Ekranınızın dikey yenileme hızı. Uygun bir ses giriş hızı hesaplamak için kullanılır.\n"
+    "NOT: 'Threaded Video' etkinleştirilmişse bu dikkate alınmaz."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-    "Determines if audio is outputted."
+    "Sesin verilip verilmediğini belirler."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-    "The maximum change in audio input rate. Increasing this enables very large changes in timing at the cost of an inaccurate audio pitch (e.g., running PAL cores on NTSC displays)."
+    "Ses giriş hızındaki maksimum değişiklik. Bunun artırılması, yanlış bir ses perdesi pahasına zamanlamada çok büyük değişiklikler yapılmasını sağlar (örneğin, NTSC ekranlarında PAL Core'u çalıştırma)."
     )
 MSG_HASH(
     MSG_FAILED,
-    "failed"
+    "başarısız oldu"
     )
 MSG_HASH(
     MSG_SUCCEEDED,
-    "succeeded"
+    "başarılı"
     )
 MSG_HASH(
     MSG_DEVICE_NOT_CONFIGURED,
-    "not configured"
+    "ayarlanmamış"
     )
 MSG_HASH(
     MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
@@ -5177,15 +5177,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-    "Use the same controls for both the menu and the game. Applies to the keyboard."
+    "Hem menü hem de oyun için aynı kontrolleri kullanın. Klavyeye uygulanır."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-    "Press quit twice"
+    "Çıkış için iki kez basın"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-    "Press the quit hotkey twice to exit RetroArch."
+    "RetroArch'tan çıkmak için çıkış kısayol tuşuna iki kez basın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
@@ -5273,8 +5273,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-    "Apply a CPU-powered video filter.\n"
-    "NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
+    "CPU ile çalışan bir video filtresi uygulayın.\n"
+    "NOT: Yüksek performanslı bir maliyeti olabilir. Bazı video filtreleri yalnızca 32bit veya 16bit renk kullanan Corelar için çalışabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -5318,7 +5318,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-    "Show information specific to the device."
+    "Aygıta özgü bilgileri gösterir."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -5381,19 +5381,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-    "Screenshots output of GPU shaded material if available."
+    "Varsa, GPU gölgelendirici ekran görüntüsünü kullanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-    "Forces a certain rotation of the video. The rotation is added to rotations which the core sets."
+    "Videonun belirli bir dönüşünü zorlar. Dönme, çekirdeğin ayarladığı dönüşlere eklenir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-    "Forces a certain orientation of the screen from the operating system."
+    "İşletim sisteminden ekranın belirli bir yönünü zorlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-    "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
+    "SRGB FBO desteğini zorla devre dışı bırakın. Windows'taki bazı Intel OpenGL sürücüleri, eğer etkinse, sRGB FBO desteğiyle ilgili video sorunları yaşıyor. Bunu etkinleştirmek, onun etrafında çalışabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -5421,7 +5421,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-    "When in slow motion, content will slow down by the factor specified/set."
+    "Ağır çekimde, içerik belirtilen/ayarlanan faktöre göre yavaşlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
@@ -5445,8 +5445,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-    "Bir hata mı yaptın? Geri sar ve tekrar dene.\n"
-    "Bunun oyun oynarken performansın düşmesine neden olduğuna dikkat edin."
+    "Hata mı yaptın? Geri sar ve tekrar dene.\n"
+    "Oyun oynarken performansı etkileyeceğine dikkat edin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
@@ -5458,8 +5458,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-    "The number of times the cheat will be applied.\n"
-    "Use with the other two Iteration options to affect large areas of memory."
+    "Hilenin kaç kez uygulanacağını belirler.\n"
+    "Geniş bellek alanlarını etkilemek için diğer iki Yineleme seçeneğiyle birlikte kullanın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -5531,11 +5531,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-    "Left/Right to change value"
+    "Değeri değiştirmek için Sol/Sağ"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-    "Left/Right to change value"
+    "Değeri değiştirmek için Sol/Sağ"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
@@ -5580,8 +5580,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-    "Performance counters for RetroArch (and cores).\n"
-    "The counter data can help determine system bottlenecks and fine-tune system and application performance"
+    "RetroArch (ve Corelar) için performans sayaçları.\n"
+    "Sayaç verileri, sistemdeki darboğazların belirlenmesine ve sistemin ve uygulama performansının ince ayarının yapılmasına yardımcı olabilir"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -5677,11 +5677,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-    "Audio DSP plugin that processes audio before it's sent to the driver."
+    "Sürücüye gönderilmeden önce sesi işleyen DSP Ses eklentisi."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-    "Audio output sample rate."
+    "Ses çıkışı örnekleme hızı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
@@ -5701,51 +5701,51 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-    "The address of the host to connect to."
+    "Bağlanılacak ana bilgisayarın adresi."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-    "The port of the host IP address. Can be either a TCP or UDP port."
+    "Ana bilgisayar IP adresinin bağlantı noktası. Bir TCP veya UDP bağlantı noktası olabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-    "The password for connecting to the netplay host. Used only in host mode."
+    "Netplay ana bilgisayarına bağlanmak için şifre. Yalnızca ana bilgisayar modunda kullanılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-    "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+    "Netplay oyunlarının kamuya duyurulup duyulmayacağı. Ayarlanmamışsa, istemciler genel lobiyi kullanmak yerine el ile bağlanmalıdır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-    "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+    "Yalnızca izleyici ayrıcalıklarıyla netplay ana bilgisayarına bağlanmak için parola. Yalnızca ana bilgisayar modunda kullanılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-    "Whether to start netplay in spectator mode."
+    "Seyirci modunda netplay başlatılıp başlatılmayacağı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-    "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
+    "Bağımlı modda bağlantılara izin verilip verilmeyeceği. Köle modu istemciler her iki tarafta çok az işlem gücü gerektirir, ancak ağ gecikmesinden önemli ölçüde zarar görecektir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-    "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
+    "Bağımlı modda olmayan bağlantılara izin verilmemesi. Çok zayıf makineleri olan çok hızlı ağlar dışında önerilmez."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-    "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+    "Netplay'i kaydetme durumları gerektirmeyen bir modda çalıştırıp çalıştırmamak. True olarak ayarlanırsa, çok hızlı bir ağ gereklidir, ancak geri sarma işlemi yapılmaz, bu yüzden net bir titreme olmaz."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-    "The frequency in frames with which netplay will verify that the host and client are in sync."
+    "Netplay öğesinin ana bilgisayar ve istemcinin senkronize olduğunu doğrulayacağı karelerdeki sıklık."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-    "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+    "Barındırırken, LAN'lardan kaçan UPnP veya benzeri teknolojiler kullanarak, genel İnternetten bağlantıları dinlemeye çalışır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-    "stdin command interface."
+    "stdin komut arayuzu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
@@ -5817,11 +5817,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-    "Sort save files in folders named after the core used."
+    "Kullanılan Core'un adını taşıyan klasörlerde kaydetme dosyalarını sıralayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-    "Sort save states in folders named after the core used."
+    "Kullanılan Core'un adını taşıyan klasörlerde kaydetme durumlarını sıralayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
@@ -5993,27 +5993,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-    "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc."
+    "Sistem dizinini ayarlar. Corelar bu dizini BIOS'ları, sisteme özel yapılandırmaları vb. Yüklemek için sorgulayabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-    "Sets start directory for the filebrowser."
+    "Filebrowser için başlangıç dizinini ayarlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_DIR,
-    "Usually set by developers who bundle libretro/RetroArch apps to point to assets."
+    "Genellikle, libretro/RetroArch uygulamalarını varlıklara işaret etmek üzere bir araya getiren geliştiriciler tarafından ayarlanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
-    "Directory to store wallpapers dynamically loaded by the menu depending on context."
+    "Bağlama göre menü tarafından dinamik olarak yüklenmiş duvar kağıtlarını saklamak için dizin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-    "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
+    "İlave küçük resimler (kutu resimleri / çeşitli görüntüler vb.) Burada saklanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-    "Sets start directory for menu configuration browser."
+    "Menü yapılandırma tarayıcısı için başlangıç dizinini ayarlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -6134,24 +6134,24 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Set the custom scaling size here.\n"
-    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
+    "Özel ölçeklendirme boyutunu buradan ayarlayın.\n"
+    "NOT: Ölçeklendirme boyutunun etkili olması için 'DPI Geçersiz Kılma'yı etkinleştirmeniz gerekir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
-    "Save all downloaded files to this directory."
+    "İndirilen tüm dosyaları bu dizine kaydedin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-    "Save all remapped controls to this directory."
+    "Tüm yeniden yapılandırılan kontrolleri bu dizine kaydeder."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
-    "Directory where the program searches for content/cores."
+    "Programın içerik/core aradığı dizin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
-    "Application/core information files are stored here."
+    "Uygulama/çekirdek bilgi dosyaları burada saklanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -6159,71 +6159,71 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-    "Save all playlists to this directory."
+    "Tüm oynatma listelerini bu dizine kaydedin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-    "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
+    "Bir dizine ayarlanırsa, geçici olarak çıkartılan içerik (örneğin arşivlerden) bu dizine çıkarılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-    "Saved queries are stored to this directory."
+    "Kayıtlı sorgular bu dizine kaydedilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-    "Databases are stored to this directory."
+    "Veritabanları bu dizine kaydedilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-    "This location is queried by default when menu interfaces try to look for loadable assets, etc."
+    "Menü arayüzleri yüklenebilir varlıklar vb. Aramaya çalıştığında bu konum varsayılan olarak sorgulanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-    "Save all save files to this directory. If not set, will try to save inside the content file's working directory."
+    "Tüm kaydetme dosyalarını bu dizine kaydedin. Ayarlanmamışsa, içerik dosyasının çalışma dizinine kaydetmeye çalışır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-    "Save all save states to this directory. If not set, will try to save inside the content file's working directory."
+    "Tüm konum kaydetmeleri bu dizine kaydedin. Ayarlanmamışsa, içerik dosyasının çalışma dizinine kaydetmeye çalışır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
-    "Directory to dump screenshots to."
+    "Ekran görüntüleri için kullanılacak dizin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-    "Defines a directory where overlays are kept for easy access."
+    "Kolay erişim için kaplamaların tutulduğu bir dizini tanımlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-    "Cheat files are kept here."
+    "Hile dosyaları burada tutulur."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-    "Directory where audio DSP filter files are kept."
+    "Ses DSP filtre dosyalarının tutulduğu dizin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
-    "Directory where CPU-based video filter files are kept."
+    "CPU tabanlı video filtre dosyalarının tutulduğu dizin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-    "Defines a directory where GPU-based video shader files are kept for easy access."
+    "GPU tabanlı video gölgelendirici dosyalarının kolay erişim için tutulduğu bir dizin tanımlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
-    "Recordings will be dumped to this directory."
+    "Video Kayıtlar bu dizine aktarılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
-    "Recording configurations will be kept here."
+    "Kayıt yapılandırmaları burada tutulur."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-    "Select a different font for onscreen notifications."
+    "Ekrandaki bildirimler için farklı bir yazı tipi seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-    "Changes to the shader configuration will take effect immediately. Use this if you changed the amount of shader passes, filtering, FBO scale, etc."
+    "Gölgelendirici yapılandırmasındaki değişiklikler hemen geçerli olur. Gölgelendirici geçişi, filtreleme, FBO ölçeği vb. Miktarını değiştirdiyseniz bunu kullanın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
@@ -6363,11 +6363,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-    "Mixer Mute"
+    "Mixer'i Sustur"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-    "Mute/unmute mixer audio."
+    "Mikser sesini kapatın/açın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -6379,7 +6379,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-    "Views"
+    "Görünümler"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
@@ -6778,7 +6778,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-    "RunAhead has been disabled because this core does not support save states."
+    "RunAhead devre dışı bırakıldı, çünkü bu Core konum kayıtlarını desteklemiyor."
     )
 MSG_HASH(
     MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
@@ -6806,15 +6806,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-    "Window Opacity"
+    "Pencere Opaklığı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-    "Resampler Quality"
+    "Resampler Kalitesi"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-    "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency."
+    "Performans/düşük gecikme süresi için düşük gecikme süresi için bu değeri düşürün, düşük performans/düşük gecikme pahasına daha iyi ses kalitesi istiyorsanız, artırın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
@@ -6862,11 +6862,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-    "Lock Menu Aspect Ratio"
+    "Menü En Boy Oranını Kilitle"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-    "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
+    "Menünün her zaman doğru en boy oranıyla görüntülenmesini sağlar. Devre dışı bırakılırsa, hızlı menü geçerli yüklü içerikle eşleşecek şekilde genişletilir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
@@ -6878,11 +6878,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-    "Menu Aspect Ratio"
+    "Menü En Boy Oranı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-    "Select menu aspect ratio. Widescreen ratios increase the horizontal resolution of the menu interface. (May require a restart if 'Lock Menu Aspect Ratio' is disabled)"
+    "Menü en boy oranını seçin. Geniş ekran oranları, menü arayüzünün yatay çözünürlüğünü arttırır. ('Menü En Boy Oranını Kilitle' devre dışı bırakılmışsa yeniden başlatmayı gerektirebilir)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -7182,7 +7182,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
-    "Hidden Playlists"
+    "Gizli Oynatma Listeleri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_HIDE,
@@ -7190,7 +7190,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
-    "Highlight color:"
+    "Vurgu rengi:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
@@ -7198,15 +7198,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
-    "Select Color"
+    "Renk seç"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
-    "Select Theme"
+    "Tema Seç"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
-    "Custom Theme"
+    "Özel Tema"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
@@ -7234,11 +7234,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_ZOOM,
-    "Zoom"
+    "Yakınlaştır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_VIEW,
-    "View"
+    "Gör"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
@@ -7322,11 +7322,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-    "Mevcut oturum için başarıları duraklatın (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve slow-motion etkinleştirir)."
+    "Mevcut oturum için başarıları duraklatın (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve ağır çekimi etkinleştirir)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-    "Mevcut oturum için başarıları sürdürün (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve slow-motion'ı devre dışı bırakır ve mevcut oyunu sıfırlar)."
+    "Mevcut oturum için başarıları sürdürün (Bu işlem konum kaydetmeleri, hileleri, geri sarma, duraklatma ve ağır çekimi devre dışı bırakır ve mevcut oyunu sıfırlar)."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
@@ -8432,11 +8432,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-    "CoreAudio support"
+    "CoreAudio Desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-    "CoreAudio V3 support"
+    "CoreAudio V3 Desteği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -8532,7 +8532,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-    "Vibrate on key press"
+    "Tışa Basınca titret"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,

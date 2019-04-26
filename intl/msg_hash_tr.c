@@ -603,13 +603,13 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
             snprintf(s, len,
-                     "Hide the current overlay from appearing \n"
-                             "inside the menu.");
+                     "Geçerli kaplamayı menü içinde \n"
+                             "görünmesini engelleyin.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
             snprintf(s, len,
-                      "Show keyboard/controller button presses on \n"
-                            "the onscreen overlay.");
+                      "Ekran kaplaması üzerindeki klavye/denetleyici \n"
+                            "düğmesine basıldığında gösterir.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
             snprintf(s, len,
@@ -632,8 +632,8 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
             snprintf(s, len,
-               "Input bind hold time (in seconds). \n"
-               "Amount of seconds to hold an input to bind it.");
+               "Giriş tuşunun basılı tutma süresi (saniye cinsinden). \n"
+               "Basılı tutma için geçerli olan saniye miktarı.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
@@ -645,10 +645,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
             snprintf(s, len,
-                     "Set to true if hardware-rendered cores \n"
-                             "should get their private context. \n"
-                             "Avoids having to assume hardware state changes \n"
-                             "inbetween frames."
+                     "Donanım tarafından oluşturulan Core'un \n"
+                             "kendi özel bağlamlarını alması gerekiyorsa 'true' \n"
+                             "olarak ayarlayın. Donanım durumlarının çerçeveler \n"
+                             "arasında değişiklik yapması gerektiğini unutmayın."
             );
             break;
         case MENU_ENUM_LABEL_CORE_LIST:
@@ -682,23 +682,22 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             /* Work around C89 limitations */
             char u[501];
             const char *t =
-                    "RetroArch relies on an unique form of\n"
-                            "audio/video synchronization where it needs to be\n"
-                            "calibrated against the refresh rate of your\n"
-                            "display for best performance results.\n"
+                    "RetroArch, en iyi performans sonuçları için\n"
+                            "ekranınızın yenileme hızına göre kalibre edilmesi gereken\n"
+                            "benzersiz bir ses/video senkronizasyonu şekline dayanır.\n"
+                            "Herhangi bir ses çatlaması veya video yırtılması yaşarsanız,\n"                   
                             " \n"
-                            "If you experience any audio crackling or video\n"
-                            "tearing, usually it means that you need to\n"
-                            "calibrate the settings. Some choices below:\n"
+                            "genellikle ayarları yapmanız anlamına gelir.\n"
+                            "Aşağıdaki seçenekler gibi:\n"
                             " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                     "a) Go to '%s' -> '%s', and enable\n"
-                             "'Threaded Video'. Refresh rate will not matter\n"
-                             "in this mode, framerate will be higher,\n"
-                             "but video might be less smooth.\n"
-                             "b) Go to '%s' -> '%s', and look at\n"
-                             "'%s'. Let it run for\n"
-                             "2048 frames, then press 'OK'.",
+                     "a) '%s' -> '%s' gidin, ve 'Threaded Video'\n"
+                             "etkinleştirin. Yenileme hızı bu modda\n"
+                             "önemli olmayacaktır, kare hızı daha yüksek\n"
+                             "olacaktır ancak video daha az düzgün olabilir.\n"
+                             "b) '%s' -> '%s' gidin, ve '%s' bakın\n"
+                             "2048 karede çalışmasına izin verin,\n"
+                             "ardından 'Tamam'a basın.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
@@ -747,9 +746,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      snprintf(s, len,
                            "udev sürücüsü. \n"
                            " \n"
-                           "It uses the recent evdev joypad API \n"
-                           "for joystick support. It supports \n"
-                           "hotplugging and force feedback. \n"
+                           "Joystick desteği için en son evdev \n"
+                           "joypad API'sini kullanır. Hotplugging \n"
+                           "özelliğini destekler ve geribildirimi zorlar. \n"
                            " \n"
                            "The driver reads evdev events for keyboard \n"
                            "support. It also supports keyboard callback, \n"
@@ -764,18 +763,18 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      snprintf(s, len,
                            "linuxraw sürücüsü. \n"
                            " \n"
-                           "This driver requires an active TTY. Keyboard \n"
-                           "events are read directly from the TTY which \n"
-                           "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
+                           "Bu sürücü aktif bir TTY gerektiriyor. \n"
+                           "Klavye olayları doğrudan TTY'den okunur; \n"
+                           "bu da onu basitleştirir, ancak udev kadar esnek değildir. \n" "Mice, vb, desteklenmiyor. \n"
                            " \n"
-                           "This driver uses the older joystick API \n"
+                           "Bu sürücü eski joystick API'sini kullanır \n"
                            "(/dev/input/js*).");
                else
                      snprintf(s, len,
-                           "Input driver.\n"
+                           "Giriş sürücüsü.\n"
                            " \n"
-                           "Depending on video driver, it might \n"
-                           "force a different input driver.");
+                           "Video sürücüsüne bağlı olarak, \n"
+                           "farklı bir giriş sürücüsünü zorlayabilir. ");
             }
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -783,32 +782,30 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "İçeriği Yükle. \n"
                              "İçeriğe göz at. \n"
                              " \n"
-                             "To load content, you need a \n"
-                             "'Core' to use, and a content file. \n"
+                             "İçeriği yüklemek için, 'Core' ve \n"
+                             "içerik dosyasına ihtiyacınız vardır.  \n"
                              " \n"
-                             "To control where the menu starts \n"
-                             "to browse for content, set  \n"
-                             "'File Browser Directory'. \n"
-                             "If not set, it will start in root. \n"
+                             "Menünün, içeriğe göz atmaya başlayacağı yeri \n"
+                             "kontrol etmek için 'Dosya Tarayıcı Dizini'ni  \n"
+                             "ayarlayın. Ayarlanmazsa, \n"
+                             "kök dizininden başlayacaktır. \n"
                              " \n"
-                             "The browser will filter out \n"
-                             "extensions for the last core set \n"
-                             "in 'Load Core', and use that core \n"
-                             "when content is loaded."
+                             "Tarayıcı, 'Core Yükle'den ayarlanan son Core \n"
+                             "için uzantıları filtreleyecek ve içerik \n"
+                             "yüklendiğinde bu çekirdeği kullanacaktır."
             );
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             snprintf(s, len,
                      "Geçmişten içerik yükleniyor. \n"
                              " \n"
-                             "As content is loaded, content and libretro \n"
-                             "core combinations are saved to history. \n"
+                             "İçerik yüklendikçe, içerik ve libretro \n"
+                             "Core kombinasyonları geçmişe kaydedilir. \n"
                              " \n"
-                             "The history is saved to a file in the same \n"
-                             "directory as the RetroArch config file. If \n"
-                             "no config file was loaded in startup, history \n"
-                             "will not be saved or loaded, and will not exist \n"
-                             "in the main menu."
+                             "Geçmiş, RetroArch yapılandırma dosyasıyla aynı \n"
+                             "dizindeki bir dosyaya kaydedilir. Başlangıçta hiçbir \n"
+                             "yapılandırma dosyası yüklenmemişse, geçmiş kaydedilmeyecek \n"
+                             "veya yüklenmeyecek ve ana menüde bulunmayacaktır. "
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
@@ -890,8 +887,8 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             snprintf(s, len,
-                     "Audio DSP plugin.\n"
-                             "Sesi sürücüye gönderilmeden \n"
+                     "Audio DSP ektesi.\n"
+                             "Sesi sürücüye göndermeden \n"
                              "önce işler."
             );
             break;
@@ -906,7 +903,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                else if (string_is_equal(lbl, msg_hash_to_str(
                            MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
                   strlcpy(s,
-                        "Convoluted Cosine implementation.", len);
+                        "Kıvrımlı kosinüs uygulaması.", len);
                else if (string_is_empty(s))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
             }
@@ -932,21 +929,19 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
             snprintf(s, len,
-                     "Scale for this pass. \n"
+                     "Bu geçişteki ölçek. \n"
                              " \n"
-                             "The scale factor accumulates, i.e. 2x \n"
-                             "for first pass and 2x for second pass \n"
-                             "will give you a 4x total scale. \n"
+                             "Ölçek faktörü birikir, yani ilk geçiş \n"
+                             "için 2x ve ikinci geçiş için 2x \n"
+                             "size toplam 4x ölçek verir. \n"
                              " \n"
-                             "If there is a scale factor for last \n"
-                             "pass, the result is stretched to \n"
-                             "screen with the filter specified in \n"
-                             "'Default Filter'. \n"
+                             "Son geçiş için bir ölçek faktörü varsa, \n"
+                             "sonuç 'Varsayılan Filtre'de belirtilen \n"
+                             "filtre ile ekrana uzatılır. \n"
                              " \n"
-                             "If 'Don't Care' is set, either 1x \n"
-                             "scale or stretch to fullscreen will \n"
-                             "be used depending if it's not the last \n"
-                             "pass or not."
+                             "'Umurumda Değil' olarak ayarlanmışsa, 1x ölçeği \n"
+                             "veya tam ekrana uzat ya da son geçiş \n"
+                             "yapılmadığına bağlı olarak tam ekrana geçilir. \n"
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
@@ -980,14 +975,14 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
             snprintf(s, len,
-                     "Path to shader. \n"
+                     "Gölgelendiricilere giden veri yolu. \n"
                              " \n"
-                             "All shaders must be of the same \n"
-                             "type (i.e. CG, GLSL or HLSL). \n"
+                             "Tüm gölgelendiriciler aynı tipte \n"
+                             "olmalıdır (yani CG, GLSL veya HLSL). \n"
                              " \n"
-                             "Set Shader Directory to set where \n"
-                             "the browser starts to look for \n"
-                             "shaders."
+                             "Tarayıcının gölgelendiricileri aramaya \n"
+                             "başlayacağı yeri ayarlamak için \n"
+                             "Gölgelendirici Dizini'ni ayarlayın. "
             );
             break;
         case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
@@ -997,7 +992,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             snprintf(s, len,
-                     "Saves config to disk on exit.\n"
+                     "Çıkışta Konfigürasyon dosyasını diske kaydeder.\n"
                              "Useful for menu as settings can be\n"
                              "modified. Overwrites the config.\n"
                              " \n"
@@ -1253,7 +1248,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,
-                     "Fastforward ratio.\n"
+                     "İleri Sarma Oranı.\n"
                              " \n"
                              "The maximum rate at which content will\n"
                              "be run when using fast forward.\n"
@@ -1277,12 +1272,12 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             snprintf(s, len,
-                     "Which monitor to prefer.\n"
+                     "Tercih edilecek monitor.\n"
                              " \n"
-                             "0 (default) means no particular monitor \n"
-                             "is preferred, 1 and up (1 being first \n"
-                             "monitor), suggests RetroArch to use that \n"
-                             "particular monitor.");
+                             "0 (varsayılan), belirli bir monitörün \n"
+                             "tercih edilmediği anlamına gelir; 1 ve \n"
+                             "üstü (1, ilk monitördür), RetroArch'ın \n"
+                             "belirli monitörü kullanmasını önerir.");
             break;
         case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
             snprintf(s, len,
@@ -1327,16 +1322,15 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             snprintf(s, len,
-                     "Maximum audio timing skew.\n"
+                     "Maksimum ses çarpıklığı zamanlaması.\n"
                              " \n"
-                             "Defines the maximum change in input rate.\n"
-                             "You may want to increase this to enable\n"
-                             "very large changes in timing, for example\n"
-                             "running PAL cores on NTSC displays, at the\n"
-                             "cost of inaccurate audio pitch.\n"
+                             "Giriş hızındaki maksimum değişikliği tanımlar.\n"
+                             "Yanlış zamanlamada, örneğin NTSC ekranlarda PAL Core'larını\n"
+                             "çalıştırmak gibi, zamanlamada çok büyük \n"
+                             "değişiklikler yapmak için bunu artırmak isteyebilirsiniz.\n"
                              " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (max timing skew))");
+                             " Giriş hızı şöyle tanımlanır: \n"
+                             " Giriş hızı * (1.0 +/- (maksimum zamanlama çarpıklığı))");
             break;
         case MENU_ENUM_LABEL_OVERLAY_NEXT:
             snprintf(s, len,
