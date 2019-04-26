@@ -195,15 +195,18 @@ int32_t path_get_size(const char *path)
  **/
 bool path_mkdir(const char *dir)
 {
-   /* Use heap. Real chance of stack overflow if we recurse too hard. */
    bool         sret  = false;
    bool norecurse     = false;
-   char     *basedir  = (dir && *dir) ? strdup(dir) : NULL;
+   char     *basedir  = NULL;
 
-   if (!basedir)
+   if (!(dir && *dir))
       return false;
 
+   /* Use heap. Real chance of stack 
+    * overflow if we recurse too hard. */
+   basedir            = strdup(dir);
    path_parent_dir(basedir);
+
    if (!*basedir || !strcmp(basedir, dir))
    {
       free(basedir);
@@ -251,19 +254,20 @@ const char *path_get_archive_delim(const char *path)
    const char *last  = find_last_slash(path);
    const char *delim = NULL;
 
-   if (last)
-   {
-      delim = strcasestr(last, ".zip#");
+   if (!last)
+      return NULL;
 
-      if (!delim)
-         delim = strcasestr(last, ".apk#");
-   }
+   /* Test if it's .zip */
+   delim = strcasestr(last, ".zip#");
+
+   if (!delim) /* If it's not a .zip, test if it's .apk */
+      delim = strcasestr(last, ".apk#");
 
    if (delim)
       return delim + 4;
 
-   if (last)
-      delim = strcasestr(last, ".7z#");
+   /* If it's not a .zip or .apk file, test if it's .7z */
+   delim = strcasestr(last, ".7z#");
 
    if (delim)
       return delim + 3;
@@ -414,11 +418,18 @@ char *find_last_slash(const char *str)
  **/
 void fill_pathname_slash(char *path, size_t size)
 {
-   size_t        path_len = strlen(path);
+   size_t path_len;
    const char *last_slash = find_last_slash(path);
 
+   if (!last_slash)
+   {
+      strlcat(path, path_default_slash(), size);
+      return;
+   }
+
+   path_len               = strlen(path);
    /* Try to preserve slash type. */
-   if (last_slash && (last_slash != (path + path_len - 1)))
+   if (last_slash != (path + path_len - 1))
    {
       char join_str[2];
 
@@ -427,8 +438,6 @@ void fill_pathname_slash(char *path, size_t size)
       strlcpy(join_str, last_slash, sizeof(join_str));
       strlcat(path, join_str, size);
    }
-   else if (!last_slash)
-      strlcat(path, path_default_slash(), size);
 }
 
 /**
