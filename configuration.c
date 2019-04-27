@@ -3215,6 +3215,8 @@ bool config_load_override(void)
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          path_size);
 
+   free(config_directory);
+
    /* per-core overrides */
    /* Create a new config file from core_path */
    new_conf = config_file_read(core_path);
@@ -3335,7 +3337,6 @@ bool config_load_override(void)
    path_clear(RARCH_PATH_CONFIG_APPEND);
 
    free(buf);
-   free(config_directory);
    free(core_path);
    free(content_path);
    free(game_path);
@@ -3343,7 +3344,6 @@ bool config_load_override(void)
 
 error:
    free(buf);
-   free(config_directory);
    free(core_path);
    free(content_path);
    free(game_path);

@@ -584,7 +584,7 @@ static bool core_info_list_update_missing_firmware_internal(
 
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, path_size);
-      info->firmware[i].missing = !filestream_exists(path);
+      info->firmware[i].missing = !path_is_valid(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
          *set_missing_bios = true;
@@ -595,55 +595,6 @@ static bool core_info_list_update_missing_firmware_internal(
    free(path);
    return true;
 }
-
-#if 0
-static int core_info_firmware_cmp(const void *a_, const void *b_)
-{
-   const core_info_firmware_t *a = (const core_info_firmware_t*)a_;
-   const core_info_firmware_t *b = (const core_info_firmware_t*)b_;
-   int                     order = b->missing - a->missing;
-
-   if (order)
-      return order;
-   return strcasecmp(a->path, b->path);
-}
-
-/* Non-reentrant, does not allocate. Returns pointer to internal state. */
-
-static void core_info_list_get_missing_firmware(
-      core_info_list_t *core_info_list,
-      const char *core, const char *systemdir,
-      const core_info_firmware_t **firmware, size_t *num_firmware)
-{
-   size_t i;
-   char path[PATH_MAX_LENGTH];
-   core_info_t          *info = NULL;
-
-   if (!core_info_list || !core)
-      return;
-
-   path[0]       = '\0';
-   *firmware     = NULL;
-   *num_firmware = 0;
-   info          = core_info_find_internal(core_info_list, core);
-
-   if (!info)
-      return;
-
-   *firmware = info->firmware;
-
-   for (i = 1; i < info->firmware_count; i++)
-   {
-      fill_pathname_join(path, systemdir,
-            info->firmware[i].path, sizeof(path));
-      info->firmware[i].missing = !filestream_exists(path);
-      *num_firmware += info->firmware[i].missing;
-   }
-
-   qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
-         core_info_firmware_cmp);
-}
-#endif
 
 void core_info_free_current_core(void)
 {

@@ -152,7 +152,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    strlcpy(tmp_path, tmp_str, path_size);
    path_resolve_realpath(tmp_path, path_size);
 
-   if (!filestream_exists(tmp_path))
+   if (!path_is_valid(tmp_path))
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
@@ -368,7 +368,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
             path_size);
       path_resolve_realpath(tmp_path, path_size);
 
-      if (filestream_exists(tmp_path))
+      if (path_is_valid(tmp_path))
          strlcpy(shader->lut[shader->luts].path,
             tmp_path, sizeof(shader->lut[shader->luts].path));
       free(tmp_path);
