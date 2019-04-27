@@ -629,7 +629,7 @@ static bool content_file_load(
 
 #ifdef __WINRT__
          /* TODO: When support for the 'actual' VFS is added, there will need to be some more logic here */
-         if (!system->supports_vfs && !uwp_is_path_accessible_using_standard_io(path))
+         if (!system->supports_vfs && !is_path_accessible_using_standard_io(path))
          {
             /* Fallback to a file copy into an accessible directory */
             char* buf;
@@ -648,7 +648,7 @@ static bool content_file_load(
 
             if (!string_is_empty(content_ctx->directory_cache))
                strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
-            if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !uwp_is_path_accessible_using_standard_io(new_basedir))
+            if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !is_path_accessible_using_standard_io(new_basedir))
             {
                RARCH_WARN("Tried copying to cache directory, but "
                   "cache directory was not set or found. "

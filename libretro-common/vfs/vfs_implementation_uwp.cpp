@@ -720,17 +720,6 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 	return 0;
 }
 
-bool uwp_is_path_accessible_using_standard_io(char *path)
-{
-	char *relative_path_abbrev = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));
-
-	bool result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
-
-	free(relative_path_abbrev);
-	return result;
-}
-
 bool uwp_drive_exists(const char *path)
 {
 	if (!path || !*path)

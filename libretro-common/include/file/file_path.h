@@ -498,6 +498,8 @@ bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
 
+bool is_path_accessible_using_standard_io(char *path);
+
 RETRO_END_DECLS
 
 #endif
