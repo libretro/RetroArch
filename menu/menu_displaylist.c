@@ -2102,7 +2102,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             file_path_str(FILE_PATH_RDB_EXTENSION),
             PATH_MAX_LENGTH * sizeof(char));
 
-      if (filestream_exists(db_path))
+      if (path_is_valid(db_path))
          menu_entries_append_enum(
                info->list,
                entry->label,
