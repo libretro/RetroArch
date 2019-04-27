@@ -18,7 +18,6 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
-#include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 
@@ -291,7 +290,7 @@ bool task_push_decompress(
 
    /* ZIP or APK only */
    if (
-         !filestream_exists(source_file) ||
+         !path_is_valid(source_file) ||
          (
              !string_is_equal_noncase(ext, "zip")
           && !string_is_equal_noncase(ext, "apk")
