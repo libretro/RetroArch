@@ -490,6 +490,9 @@ enum retro_mod
                                             * 270 degrees counter-clockwise respectively.
                                             */
 #define RETRO_ENVIRONMENT_GET_OVERSCAN  2  /* bool * --
+                                            * NOTE: As of 2019 this callback is considered deprecated in favor of
+                                            * using core options to manage overscan in a more nuanced, core-specific way.
+                                            *
                                             * Boolean value whether or not the implementation should use overscan,
                                             * or crop away overscan.
                                             */
