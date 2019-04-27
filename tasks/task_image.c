@@ -135,9 +135,8 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    for (i = 0; i < image->processing_pos_increment; i++)
    {
-      retval = task_image_process(image,
-               &width, &height);
-      if (retval != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image,
+               &width, &height) != IMAGE_PROCESS_NEXT))
          break;
    }
 
