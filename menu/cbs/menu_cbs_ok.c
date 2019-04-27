@@ -4277,22 +4277,23 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME - Disable file picker for now as long as VFS has problems */
-#if 0
    int ret;
+#ifdef __WINRT__
    char *new_path = uwp_trigger_picker();
    if (!new_path)
       return 0; /* User aborted */
+#else
+   char *new_path = NULL;
+   retro_assert(false);
+#endif
+
    ret = generic_action_ok_displaylist_push(path, new_path,
-         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-         type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_LIST);
+      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+      type, idx,
+      entry_idx, ACTION_OK_DL_CONTENT_LIST);
 
    free(new_path);
    return ret;
-#else
-   return 0;
-#endif
 }
 
 static int action_ok_shader_pass(const char *path,
