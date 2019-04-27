@@ -418,16 +418,15 @@ bool playlist_push_runtime(playlist_t *playlist,
    for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry tmp;
-      bool equal_path;
-
-      equal_path = 
-         (!path && !playlist->entries[i].path) ||
-         (path  && playlist->entries[i].path &&
+      const char *entry_path = playlist->entries[i].path;
+      bool equal_path        = 
+         (!path && !entry_path) ||
+         (path  && entry_path &&
 #ifdef _WIN32
           /*prevent duplicates on case-insensitive operating systems*/
-          string_is_equal_noncase(path,playlist->entries[i].path)
+          string_is_equal_noncase(path, entry_path)
 #else
-          string_is_equal(path,playlist->entries[i].path)
+          string_is_equal(path, entry_path)
 #endif
           );
 
@@ -534,15 +533,14 @@ bool playlist_push(playlist_t *playlist,
    for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry tmp;
-      bool equal_path;
-
-      equal_path = (!path && !playlist->entries[i].path) ||
-         (path && playlist->entries[i].path &&
+      const char *entry_path = playlist->entries[i].path;
+      bool equal_path        = (!path && !entry_path) ||
+         (path && entry_path &&
 #ifdef _WIN32
           /*prevent duplicates on case-insensitive operating systems*/
-          string_is_equal_noncase(path, playlist->entries[i].path)
+          string_is_equal_noncase(path, entry_path)
 #else
-          string_is_equal(path, playlist->entries[i].path)
+          string_is_equal(path, entry_path)
 #endif
           );
 
