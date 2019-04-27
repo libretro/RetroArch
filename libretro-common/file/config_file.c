@@ -341,7 +341,7 @@ static bool parse_line(config_file_t *conf,
       comment++;
       if (strstr(comment, "include ") == comment)
       {
-         char *line = comment + strlen("include ");
+         char *line = comment + STRLEN_CONST("include ");
          char *path = extract_value(line, false);
 
          if (!path)
@@ -1026,7 +1026,7 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
    {
       char cad[256];
       sprintf(cad,"#include %s\n", includes->path);
-      orbisWrite(fd,cad,strlen(cad));
+      orbisWrite(fd, cad, strlen(cad));
       includes = includes->next;
    }
 
@@ -1039,7 +1039,7 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
       {
          char newlist[256];
          sprintf(newlist,"%s = %s\n", list->key, list->value);
-         orbisWrite(fd,newlist,strlen(newlist));
+         orbisWrite(fd, newlist, strlen(newlist));
       }
       list = list->next;
    }

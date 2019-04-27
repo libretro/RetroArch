@@ -319,7 +319,7 @@ static bool command_read_ram(const char *arg)
    else
    {
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      command_reply(reply, reply_at + strlen(" -1\n") - reply);
+      command_reply(reply, reply_at + STRLEN_CONST(" -1\n") - reply);
    }
    free(reply);
    return true;

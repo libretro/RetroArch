@@ -746,14 +746,17 @@ void playlist_write_runtime_file(playlist_t *playlist)
    JSON_Writer_WriteStartObject(context.writer);
    JSON_Writer_WriteNewLine(context.writer);
    JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "version", strlen("version"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "version",
+         STRLEN_CONST("version"), JSON_UTF8);
    JSON_Writer_WriteColon(context.writer);
    JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, "1.0", strlen("1.0"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "1.0",
+         STRLEN_CONST("1.0"), JSON_UTF8);
    JSON_Writer_WriteComma(context.writer);
    JSON_Writer_WriteNewLine(context.writer);
    JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "items", strlen("items"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "items",
+         STRLEN_CONST("items"), JSON_UTF8);
    JSON_Writer_WriteColon(context.writer);
    JSON_Writer_WriteSpace(context.writer, 1);
    JSON_Writer_WriteStartArray(context.writer);
@@ -766,18 +769,28 @@ void playlist_write_runtime_file(playlist_t *playlist)
 
       JSON_Writer_WriteNewLine(context.writer);
       JSON_Writer_WriteSpace(context.writer, 6);
-      JSON_Writer_WriteString(context.writer, "path", strlen("path"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "path",
+            STRLEN_CONST("path"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, playlist->entries[i].path ? playlist->entries[i].path : "", playlist->entries[i].path ? strlen(playlist->entries[i].path) : 0, JSON_UTF8);
+      JSON_Writer_WriteString(context.writer,
+            playlist->entries[i].path 
+            ? playlist->entries[i].path 
+            : "",
+            playlist->entries[i].path 
+            ? strlen(playlist->entries[i].path) 
+            : 0,
+            JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
 
       JSON_Writer_WriteNewLine(context.writer);
       JSON_Writer_WriteSpace(context.writer, 6);
-      JSON_Writer_WriteString(context.writer, "core_path", strlen("core_path"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "core_path",
+            STRLEN_CONST("core_path"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, playlist->entries[i].core_path, strlen(playlist->entries[i].core_path), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, playlist->entries[i].core_path,
+            strlen(playlist->entries[i].core_path), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -787,7 +800,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_hours);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_hours", strlen("runtime_hours"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "runtime_hours",
+               STRLEN_CONST("runtime_hours"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -799,7 +813,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_minutes);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_minutes", strlen("runtime_minutes"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "runtime_minutes",
+               STRLEN_CONST("runtime_minutes"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -811,7 +826,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].runtime_seconds);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "runtime_seconds", strlen("runtime_seconds"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "runtime_seconds",
+               STRLEN_CONST("runtime_seconds"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -823,7 +839,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_year);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_year", strlen("last_played_year"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_year",
+               STRLEN_CONST("last_played_year"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -835,7 +852,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_month);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_month", strlen("last_played_month"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_month",
+               STRLEN_CONST("last_played_month"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -847,10 +865,12 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_day);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_day", strlen("last_played_day"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_day",
+               STRLEN_CONST("last_played_day"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteNumber(context.writer, tmp,
+               strlen(tmp), JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
          JSON_Writer_WriteNewLine(context.writer);
 
@@ -859,7 +879,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_hour);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_hour", strlen("last_played_hour"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_hour",
+               STRLEN_CONST("last_played_hour"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -871,7 +892,8 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_minute);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_minute", strlen("last_played_minute"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_minute",
+               STRLEN_CONST("last_played_minute"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
@@ -883,10 +905,12 @@ void playlist_write_runtime_file(playlist_t *playlist)
          snprintf(tmp, sizeof(tmp), "%u", playlist->entries[i].last_played_second);
 
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "last_played_second", strlen("last_played_second"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "last_played_second",
+               STRLEN_CONST("last_played_second"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteNumber(context.writer, tmp, strlen(tmp), JSON_UTF8);
+         JSON_Writer_WriteNumber(context.writer, tmp,
+               strlen(tmp), JSON_UTF8);
          JSON_Writer_WriteNewLine(context.writer);
       }
 
@@ -962,14 +986,17 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteStartObject(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
       JSON_Writer_WriteSpace(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "version", strlen("version"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "version",
+            STRLEN_CONST("version"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, "1.0", strlen("1.0"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "1.0",
+            STRLEN_CONST("1.0"), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
       JSON_Writer_WriteSpace(context.writer, 2);
-      JSON_Writer_WriteString(context.writer, "items", strlen("items"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "items",
+            STRLEN_CONST("items"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteStartArray(context.writer);
@@ -982,60 +1009,97 @@ void playlist_write_file(playlist_t *playlist)
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "path", strlen("path"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "path",
+               STRLEN_CONST("path"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].path ? playlist->entries[i].path : "", playlist->entries[i].path ? strlen(playlist->entries[i].path) : 0, JSON_UTF8);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].path 
+               ? playlist->entries[i].path 
+               : "",
+               playlist->entries[i].path 
+               ? strlen(playlist->entries[i].path) 
+               : 0,
+               JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "label", strlen("label"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "label",
+               STRLEN_CONST("label"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].label ? playlist->entries[i].label : "", playlist->entries[i].label ? strlen(playlist->entries[i].label) : 0, JSON_UTF8);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].label 
+               ? playlist->entries[i].label 
+               : "",
+               playlist->entries[i].label 
+               ? strlen(playlist->entries[i].label) 
+               : 0,
+               JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "core_path", strlen("core_path"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "core_path",
+               STRLEN_CONST("core_path"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].core_path, strlen(playlist->entries[i].core_path), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].core_path,
+               strlen(playlist->entries[i].core_path), JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "core_name", strlen("core_name"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "core_name",
+               STRLEN_CONST("core_name"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].core_name, strlen(playlist->entries[i].core_name), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].core_name,
+               strlen(playlist->entries[i].core_name), JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "crc32", strlen("crc32"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "crc32",
+               STRLEN_CONST("crc32"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "", playlist->entries[i].crc32 ? strlen(playlist->entries[i].crc32) : 0, JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
+               playlist->entries[i].crc32 
+               ? strlen(playlist->entries[i].crc32) 
+               : 0,
+               JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
          JSON_Writer_WriteSpace(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "db_name", strlen("db_name"), JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, "db_name",
+               STRLEN_CONST("db_name"), JSON_UTF8);
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
-         JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "", playlist->entries[i].db_name ? strlen(playlist->entries[i].db_name) : 0, JSON_UTF8);
+         JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "",
+               playlist->entries[i].db_name 
+               ? strlen(playlist->entries[i].db_name) 
+               : 0,
+               JSON_UTF8);
 
          if (!string_is_empty(playlist->entries[i].subsystem_ident))
          {
             JSON_Writer_WriteComma(context.writer);
             JSON_Writer_WriteNewLine(context.writer);
             JSON_Writer_WriteSpace(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_ident", strlen("subsystem_ident"), JSON_UTF8);
+            JSON_Writer_WriteString(context.writer, "subsystem_ident",
+                  STRLEN_CONST("subsystem_ident"), JSON_UTF8);
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
-            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "", playlist->entries[i].subsystem_ident ? strlen(playlist->entries[i].subsystem_ident) : 0, JSON_UTF8);
+            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "",
+                  playlist->entries[i].subsystem_ident 
+                  ? strlen(playlist->entries[i].subsystem_ident) 
+                  : 0,
+                  JSON_UTF8);
          }
 
          if (!string_is_empty(playlist->entries[i].subsystem_name))
@@ -1043,20 +1107,29 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteComma(context.writer);
             JSON_Writer_WriteNewLine(context.writer);
             JSON_Writer_WriteSpace(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_name", strlen("subsystem_name"), JSON_UTF8);
+            JSON_Writer_WriteString(context.writer, "subsystem_name",
+                  STRLEN_CONST("subsystem_name"), JSON_UTF8);
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
-            JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_name ? playlist->entries[i].subsystem_name : "", playlist->entries[i].subsystem_name ? strlen(playlist->entries[i].subsystem_name) : 0, JSON_UTF8);
+            JSON_Writer_WriteString(context.writer,
+                  playlist->entries[i].subsystem_name 
+                  ? playlist->entries[i].subsystem_name 
+                  : "",
+                  playlist->entries[i].subsystem_name 
+                  ? strlen(playlist->entries[i].subsystem_name) 
+                  : 0, JSON_UTF8);
          }
 
-         if (playlist->entries[i].subsystem_roms && playlist->entries[i].subsystem_roms->size > 0)
+         if (  playlist->entries[i].subsystem_roms && 
+               playlist->entries[i].subsystem_roms->size > 0)
          {
             unsigned j;
 
             JSON_Writer_WriteComma(context.writer);
             JSON_Writer_WriteNewLine(context.writer);
             JSON_Writer_WriteSpace(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_roms", strlen("subsystem_roms"), JSON_UTF8);
+            JSON_Writer_WriteString(context.writer, "subsystem_roms",
+                  STRLEN_CONST("subsystem_roms"), JSON_UTF8);
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
             JSON_Writer_WriteStartArray(context.writer);
@@ -1066,7 +1139,14 @@ void playlist_write_file(playlist_t *playlist)
             {
                const struct string_list *roms = playlist->entries[i].subsystem_roms;
                JSON_Writer_WriteSpace(context.writer, 8);
-               JSON_Writer_WriteString(context.writer, !string_is_empty(roms->elems[j].data) ? roms->elems[j].data : "", !string_is_empty(roms->elems[j].data) ? strlen(roms->elems[j].data) : 0, JSON_UTF8);
+               JSON_Writer_WriteString(context.writer,
+                     !string_is_empty(roms->elems[j].data) 
+                     ? roms->elems[j].data 
+                     : "",
+                     !string_is_empty(roms->elems[j].data) 
+                     ? strlen(roms->elems[j].data) 
+                     : 0,
+                     JSON_UTF8);
 
                if (j < playlist->entries[i].subsystem_roms->size - 1)
                {

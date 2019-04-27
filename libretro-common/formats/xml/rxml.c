@@ -308,7 +308,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          }
 
          node->data = strdup_range(cdata_start +
-               strlen("<![CDATA["), cdata_end);
+               STRLEN_CONST("<![CDATA["), cdata_end);
       }
       else if (closing_start && closing_start == child_start) /* Simple Data */
          node->data = strdup_range(closing + 1, closing_start);
@@ -404,7 +404,7 @@ static char *purge_xml_comments(const char *str)
       memcpy(copy_dest, copy_src, copy_len);
 
       copy_dest += copy_len;
-      copy_src   = comment_end + strlen("-->");
+      copy_src   = comment_end + STRLEN_CONST("-->");
    }
 
    /* Avoid strcpy() as OpenBSD is anal and hates you

@@ -1006,13 +1006,9 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
    if (msg->task_finished)
    {
       if (msg->task_error)
-      {
          snprintf(task_percentage, sizeof(task_percentage), "Task failed");
-      }
       else
-      {
          snprintf(task_percentage, sizeof(task_percentage), " ");
-      }
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
    {

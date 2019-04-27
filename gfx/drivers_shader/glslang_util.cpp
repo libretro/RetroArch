@@ -305,7 +305,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line_c + strlen("#pragma name ");
+         str = line_c + STRLEN_CONST("#pragma name ");
 
          while (*str == ' ')
             str++;
@@ -363,7 +363,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line_c + strlen("#pragma format ");
+         str = line_c + STRLEN_CONST("#pragma format ");
 
          while (*str == ' ')
             str++;

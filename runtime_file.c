@@ -261,7 +261,8 @@ end:
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
  * Returns NULL if content_path and/or core_path are invalid */
-runtime_log_t *runtime_log_init(const char *content_path, const char *core_path, bool log_per_core)
+runtime_log_t *runtime_log_init(const char *content_path,
+      const char *core_path, bool log_per_core)
 {
    unsigned i;
    char content_name[PATH_MAX_LENGTH];
@@ -272,7 +273,7 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    settings_t *settings           = config_get_ptr();
    core_info_list_t *core_info    = NULL;
    runtime_log_t *runtime_log     = NULL;
-   const char *core_path_basename = path_basename(core_path);
+   const char *core_path_basename = NULL;
    
    content_name[0]                = '\0';
    core_name[0]                   = '\0';
@@ -284,16 +285,22 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    if (!settings)
       return NULL;
    
-   if (string_is_empty(settings->paths.directory_runtime_log) && string_is_empty(settings->paths.directory_playlist))
+   if (  string_is_empty(settings->paths.directory_runtime_log) && 
+         string_is_empty(settings->paths.directory_playlist))
    {
-      RARCH_ERR("Runtime log directory is undefined - cannot save runtime log files.\n");
+      RARCH_ERR("Runtime log directory is undefined - cannot save"
+            " runtime log files.\n");
       return NULL;
    }
+
+   core_path_basename = path_basename(core_path);
    
-   if (string_is_empty(content_path) || string_is_empty(core_path_basename))
+   if (  string_is_empty(content_path) || 
+         string_is_empty(core_path_basename))
       return NULL;
    
-   if (string_is_equal(core_path, "builtin") || string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
+   if (  string_is_equal(core_path, "builtin") || 
+         string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
       return NULL;
    
    /* Get core name
@@ -308,13 +315,15 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    
    for (i = 0; i < core_info->count; i++)
    {
-      if (!string_is_equal(path_basename(core_info->list[i].path), core_path_basename))
+      const char *entry_core_name = core_info->list[i].core_name;
+      if (!string_is_equal(
+               path_basename(core_info->list[i].path), core_path_basename))
          continue;
 
-      if (string_is_empty(core_info->list[i].core_name))
+      if (string_is_empty(entry_core_name))
          return NULL;
 
-      strlcpy(core_name, core_info->list[i].core_name, sizeof(core_name));
+      strlcpy(core_name, entry_core_name, sizeof(core_name));
       break;
    }
    
@@ -333,7 +342,8 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
             sizeof(tmp_buf));
    }
    else
-      strlcpy(tmp_buf, settings->paths.directory_runtime_log, sizeof(tmp_buf));
+      strlcpy(tmp_buf,
+            settings->paths.directory_runtime_log, sizeof(tmp_buf));
    
    if (string_is_empty(tmp_buf))
       return NULL;
@@ -355,7 +365,8 @@ runtime_log_t *runtime_log_init(const char *content_path, const char *core_path,
    {
       if (!path_mkdir(log_file_dir))
       {
-         RARCH_ERR("[runtime] failed to create directory for runtime log: %s.\n", log_file_dir);
+         RARCH_ERR("[runtime] failed to create directory for"
+               " runtime log: %s.\n", log_file_dir);
          return NULL;
       }
    }
@@ -565,7 +576,8 @@ void runtime_log_reset(runtime_log_t *runtime_log)
 /* Getters */
 
 /* Gets runtime in hours, minutes, seconds */
-void runtime_log_get_runtime_hms(runtime_log_t *runtime_log, unsigned *hours, unsigned *minutes, unsigned *seconds)
+void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
+      unsigned *hours, unsigned *minutes, unsigned *seconds)
 {
    if (!runtime_log)
       return;
@@ -576,14 +588,13 @@ void runtime_log_get_runtime_hms(runtime_log_t *runtime_log, unsigned *hours, un
 }
 
 /* Gets runtime in microseconds */
-void runtime_log_get_runtime_usec(runtime_log_t *runtime_log, retro_time_t *usec)
+void runtime_log_get_runtime_usec(
+      runtime_log_t *runtime_log, retro_time_t *usec)
 {
-   if (!runtime_log)
-      return;
-   
-   runtime_log_convert_hms2usec(
-         runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds,
-         usec);
+   if (runtime_log)
+      runtime_log_convert_hms2usec( runtime_log->runtime.hours,
+            runtime_log->runtime.minutes, runtime_log->runtime.seconds,
+            usec);
 }
 
 /* Gets last played entry values */
@@ -657,7 +668,8 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
 void runtime_log_save(runtime_log_t *runtime_log)
 {
    int n;
-   char value_string[64]; /* 64 characters should be enough for a very long runtime... :) */
+   char value_string[64]; /* 64 characters should be 
+                             enough for a very long runtime... :) */
    RtlJSONContext context = {0};
    RFILE *file            = NULL;
    
@@ -667,7 +679,8 @@ void runtime_log_save(runtime_log_t *runtime_log)
    RARCH_LOG("Saving runtime log file: %s\n", runtime_log->path);
    
    /* Attempt to open log file */
-   file = filestream_open(runtime_log->path, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   file = filestream_open(runtime_log->path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    
    if (!file)
    {
@@ -696,41 +709,52 @@ void runtime_log_save(runtime_log_t *runtime_log)
    
    /* > Version entry */
    JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "version", strlen("version"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "version",
+         STRLEN_CONST("version"), JSON_UTF8);
    JSON_Writer_WriteColon(context.writer);
    JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, "1.0", strlen("1.0"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "1.0",
+         STRLEN_CONST("1.0"), JSON_UTF8);
    JSON_Writer_WriteComma(context.writer);
    JSON_Writer_WriteNewLine(context.writer);
    
    /* > Runtime entry */
    value_string[0] = '\0';
-   n               = snprintf(value_string, sizeof(value_string), LOG_FILE_RUNTIME_FORMAT_STR,
-         runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds);
+   n               = snprintf(value_string,
+         sizeof(value_string), LOG_FILE_RUNTIME_FORMAT_STR,
+         runtime_log->runtime.hours, runtime_log->runtime.minutes,
+         runtime_log->runtime.seconds);
    if ((n < 0) || (n >= 64))
       n = 0; /* Silence GCC warnings... */
    
    JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "runtime", strlen("runtime"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "runtime",
+         STRLEN_CONST("runtime"), JSON_UTF8);
    JSON_Writer_WriteColon(context.writer);
    JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, value_string, strlen(value_string), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, value_string,
+         strlen(value_string), JSON_UTF8);
    JSON_Writer_WriteComma(context.writer);
    JSON_Writer_WriteNewLine(context.writer);
    
    /* > Last played entry */
    value_string[0] = '\0';
-   n               = snprintf(value_string, sizeof(value_string), LOG_FILE_LAST_PLAYED_FORMAT_STR,
-         runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
-         runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
+   n               = snprintf(value_string, sizeof(value_string),
+         LOG_FILE_LAST_PLAYED_FORMAT_STR,
+         runtime_log->last_played.year, runtime_log->last_played.month,
+         runtime_log->last_played.day,
+         runtime_log->last_played.hour, runtime_log->last_played.minute,
+         runtime_log->last_played.second);
    if ((n < 0) || (n >= 64))
       n = 0; /* Silence GCC warnings... */
    
    JSON_Writer_WriteSpace(context.writer, 2);
-   JSON_Writer_WriteString(context.writer, "last_played", strlen("last_played"), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, "last_played",
+         STRLEN_CONST("last_played"), JSON_UTF8);
    JSON_Writer_WriteColon(context.writer);
    JSON_Writer_WriteSpace(context.writer, 1);
-   JSON_Writer_WriteString(context.writer, value_string, strlen(value_string), JSON_UTF8);
+   JSON_Writer_WriteString(context.writer, value_string,
+         strlen(value_string), JSON_UTF8);
    JSON_Writer_WriteNewLine(context.writer);
    
    /* > Finalise */
@@ -748,7 +772,8 @@ end:
 /* Utility functions */
 
 /* Convert from hours, minutes, seconds to microseconds */
-void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned seconds, retro_time_t *usec)
+void runtime_log_convert_hms2usec(unsigned hours,
+      unsigned minutes, unsigned seconds, retro_time_t *usec)
 {
    *usec = ((retro_time_t)hours   * 60 * 60 * 1000000) +
            ((retro_time_t)minutes * 60      * 1000000) +
@@ -756,7 +781,8 @@ void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned sec
 }
 
 /* Convert from microseconds to hours, minutes, seconds */
-void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *minutes, unsigned *seconds)
+void runtime_log_convert_usec2hms(retro_time_t usec,
+      unsigned *hours, unsigned *minutes, unsigned *seconds)
 {
    *seconds  = (unsigned)(usec / 1000000);
    *minutes  = *seconds / 60;

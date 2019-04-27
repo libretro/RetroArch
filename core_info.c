@@ -55,10 +55,9 @@ static void core_info_list_resolve_all_extensions(
             (strlen(core_info_list->list[i].supported_extensions) + 2);
    }
 
-   all_ext_len += strlen("7z|") + strlen("zip|");
+   all_ext_len += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
 
-   if (all_ext_len)
-      all_ext = (char*)calloc(1, all_ext_len);
+   all_ext      = (char*)calloc(1, all_ext_len);
 
    if (!all_ext)
       return;

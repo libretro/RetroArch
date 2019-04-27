@@ -29,6 +29,7 @@
 #include <gfx/video_frame.h>
 #include <file/config_file.h>
 #include <audio/audio_resampler.h>
+#include <string/stdstring.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
 
@@ -814,12 +815,12 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    {
       if (strstr(entry.key, "video_") == entry.key)
       {
-         const char *key = entry.key + strlen("video_");
+         const char *key = entry.key + STRLEN_CONST("video_");
          av_dict_set(&params->video_opts, key, entry.value, 0);
       }
       else if (strstr(entry.key, "audio_") == entry.key)
       {
-         const char *key = entry.key + strlen("audio_");
+         const char *key = entry.key + STRLEN_CONST("audio_");
          av_dict_set(&params->audio_opts, key, entry.value, 0);
       }
    } while (config_get_entry_list_next(&entry));

@@ -935,9 +935,11 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
-      if (!strncmp(id, "OriginalHistorySize", strlen("OriginalHistorySize")))
+      if (!strncmp(id, "OriginalHistorySize",
+               STRLEN_CONST("OriginalHistorySize")))
       {
-         unsigned index = strtoul(id + strlen("OriginalHistorySize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("OriginalHistorySize"),
+               NULL, 0);
          if(index > pass)
             index = 0;
 
@@ -952,9 +954,10 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
-      if ((pass > 0 ) && !strncmp(id, "PassOutputSize", strlen("PassOutputSize")))
+      if ((pass > 0 ) && !strncmp(id, "PassOutputSize",
+               STRLEN_CONST("PassOutputSize")))
       {
-         unsigned index = strtoul(id + strlen("PassOutputSize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("PassOutputSize"), NULL, 0);
          if(index > pass - 1)
             index = pass - 1;
          GX2Surface *output = &wiiu->pass[index].texture.surface;
@@ -966,9 +969,9 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
       }
 
       /* feedback not supported yet */
-      if (!strncmp(id, "PassFeedbackSize", strlen("PassFeedbackSize")))
+      if (!strncmp(id, "PassFeedbackSize", STRLEN_CONST("PassFeedbackSize")))
       {
-         unsigned index = strtoul(id + strlen("PassFeedbackSize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("PassFeedbackSize"), NULL, 0);
          if(index > wiiu->shader_preset->passes - 1)
             index = wiiu->shader_preset->passes - 1;
          GX2Surface *output = &wiiu->pass[index].texture.surface;
@@ -981,8 +984,9 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
 
       for (int k = 0; k < wiiu->shader_preset->luts; k++)
       {
-         if (!strncmp(id, wiiu->shader_preset->lut[k].id, strlen(wiiu->shader_preset->lut[k].id))
-             && !!strcmp(id + strlen(wiiu->shader_preset->lut[k].id), "Size"))
+         size_t lut_id_size = strlen(wiiu->shader_preset->lut[k].id);
+         if (!strncmp(id, wiiu->shader_preset->lut[k].id, lut_id_size)
+             && !!strcmp(id + lut_id_size, "Size"))
          {
             GX2Surface *surface = &wiiu->luts[k].surface;
             ((GX2_vec4 *)dst)->x = surface->width;
@@ -1189,9 +1193,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                continue;
             }
 
-            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "OriginalHistory", strlen("OriginalHistory")))
+            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "OriginalHistory", STRLEN_CONST("OriginalHistory")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("OriginalHistory"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("OriginalHistory"), NULL, 0);
                if(index > i)
                   index = 0;
 
@@ -1207,9 +1211,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                continue;
             }
 
-            if ((i > 0) && !strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassOutput", strlen("PassOutput")))
+            if ((i > 0) && !strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassOutput", STRLEN_CONST("PassOutput")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("PassOutput"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("PassOutput"), NULL, 0);
                if(index > i - 1)
                   index = i - 1;
                GX2SetPixelTexture(&wiiu->pass[index].texture, wiiu->pass[i].gfd->ps->samplerVars[j].location);
@@ -1221,9 +1225,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
             }
 
             /* feedback not supported yet */
-            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassFeedback", strlen("PassFeedback")))
+            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassFeedback", STRLEN_CONST("PassFeedback")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("PassFeedback"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("PassFeedback"), NULL, 0);
                if(index > wiiu->shader_preset->passes - 1)
                   index = wiiu->shader_preset->passes - 1;
 
