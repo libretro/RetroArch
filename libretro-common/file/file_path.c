@@ -286,8 +286,9 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   if (!string_is_empty(path))
-      return strrchr(path_basename(path), '.') + 1;
+   const char *ext;
+   if (!string_is_empty(path) && ((ext = strrchr(path_basename(path), '.'))))
+      return ext + 1;
    return "";
 }
 
