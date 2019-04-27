@@ -298,7 +298,9 @@ static bool command_read_ram(const char *arg)
 
    /* RCHEEVOS TODO: remove if condition below */
    if (settings->bools.cheevos_rcheevos_enable)
+   {
       data = rcheevos_patch_address(addr, rcheevos_get_console());
+   }
    /* RCHEEVOS TODO: remove whole else block below */
    else
    {
@@ -479,8 +481,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle,
-      char *buf, enum cmd_source_t source)
+static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
 {
    char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
@@ -1109,9 +1110,7 @@ static void command_event_deinit_core(bool reinit)
 #ifdef HAVE_CHEEVOS
    /* RCHEEVOS TODO: remove settings init and test */
    settings_t *settings      = config_get_ptr();
-   settings->bools.cheevos_rcheevos_enable 
-      ? rcheevos_unload() 
-      : cheevos_unload();
+   settings->bools.cheevos_rcheevos_enable ? rcheevos_unload() : cheevos_unload();
 #endif
 
    RARCH_LOG("Unloading game..\n");
@@ -1131,7 +1130,9 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
+   settings_t *settings          = config_get_ptr();
    bool        allow_cheats      = true;
+
 #ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
@@ -1144,89 +1145,92 @@ static void command_event_init_cheats(void)
    cheat_manager_alloc_if_empty() ;
    cheat_manager_load_game_specific_cheats() ;
 
-   {
-      settings_t *settings          = config_get_ptr();
-      if (settings->bools.apply_cheats_after_load)
-         cheat_manager_apply_cheats();
-   }
+   if (settings != NULL && settings->bools.apply_cheats_after_load)
+      cheat_manager_apply_cheats();
 }
 
 static void command_event_load_auto_state(void)
 {
-   char *savestate_name_auto;
+   bool ret;
+   char msg[128]                   = {0};
+   char *savestate_name_auto       = (char*)calloc(PATH_MAX_LENGTH,
+         sizeof(*savestate_name_auto));
+   size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings            = config_get_ptr();
+   global_t   *global              = global_get_ptr();
+
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return;
+      goto error;
 #endif
-   {
-      global_t   *global              = global_get_ptr();
 
-      if (!global)
-         return;
+#ifdef HAVE_CHEEVOS
+   /* RCHEEVOS TODO: remove OR below */
+   if (cheevos_hardcore_active || rcheevos_hardcore_active)
+      goto error;
+#endif
 
-      savestate_name_auto = (char*)calloc(PATH_MAX_LENGTH,
-            sizeof(*savestate_name_auto));
+   if (!settings->bools.savestate_auto_load)
+      goto error;
 
-      fill_pathname_noext(savestate_name_auto,
-            global->name.savestate,
+   if (global)
+      fill_pathname_noext(savestate_name_auto, global->name.savestate,
             file_path_str(FILE_PATH_AUTO_EXTENSION),
-            PATH_MAX_LENGTH * sizeof(char));
+            savestate_name_auto_size);
 
-      if (!filestream_exists(savestate_name_auto))
-      {
-         free(savestate_name_auto);
-         return;
-      }
-   }
+   if (!filestream_exists(savestate_name_auto))
+      goto error;
 
-   {
-      char msg[128] = {0};
-      bool ret      = content_load_state(savestate_name_auto, false, true);
+   ret = content_load_state(savestate_name_auto, false, true);
 
-      RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
-            savestate_name_auto);
+   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
+         savestate_name_auto);
 
-      snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
-            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-            savestate_name_auto, ret ? "succeeded" : "failed");
-      RARCH_LOG("%s\n", msg);
-   }
+   snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+         msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+         savestate_name_auto, ret ? "succeeded" : "failed");
+   RARCH_LOG("%s\n", msg);
 
+   free(savestate_name_auto);
+
+   return;
+
+error:
    free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
-   char *state_base;
-   char *state_dir;
+   char *state_dir                   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+   char *state_base                  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
+   settings_t *settings              = config_get_ptr();
    global_t   *global                = global_get_ptr();
 
-   if (!global)
-      return;
+   if (!settings->bools.savestate_auto_index)
+      goto error;
 
-   /* Find the file in the same directory as global->savestate_name
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
-    */
-   state_dir = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
-   fill_pathname_basedir(state_dir, global->name.savestate,
-         state_size);
+   if (global)
+   {
+      /* Find the file in the same directory as global->savestate_name
+       * with the largest numeral suffix.
+       *
+       * E.g. /foo/path/content.state, will try to find
+       * /foo/path/content.state%d, where %d is the largest number available.
+       */
+      fill_pathname_basedir(state_dir, global->name.savestate,
+            state_size);
+      fill_pathname_base(state_base, global->name.savestate,
+            state_size);
+   }
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
-   free(state_dir);
 
    if (!dir_list)
-      return;
-
-   state_base = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
-   fill_pathname_base(state_base, global->name.savestate,
-         state_size);
+      goto error;
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1250,22 +1254,27 @@ static void command_event_set_savestate_auto_index(void)
    }
 
    dir_list_free(dir_list);
-   free(state_base);
 
-   {
-      settings_t *settings              = config_get_ptr();
-      configuration_set_int(settings, settings->ints.state_slot, max_idx);
-   }
+   configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
+
+   free(state_dir);
+   free(state_base);
+   return;
+
+error:
+   free(state_dir);
+   free(state_base);
 }
 
 static bool event_init_content(void)
 {
    bool contentless = false;
    bool is_inited   = false;
+   settings_t *settings            = config_get_ptr();
 
    content_get_status(&contentless, &is_inited);
 
@@ -1286,39 +1295,23 @@ static bool event_init_content(void)
 
    content_get_status(&contentless, &is_inited);
 
-   {
-      settings_t *settings              = config_get_ptr();
-      if (settings->bools.savestate_auto_index)
-         command_event_set_savestate_auto_index();
-   }
+   command_event_set_savestate_auto_index();
 
    if (event_load_save_files())
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
-   Since the operations are asynchronouse we can't 
-   guarantee users will not use auto_load_state to cheat on
-   achievements so we forbid auto_load_state from happening 
-   if cheevos_enable and cheevos_hardcode_mode_enable
+   Since the operations are asynchronouse we can't guarantee users will not use auto_load_state to cheat on
+   achievements so we forbid auto_load_state from happening if cheevos_enable and cheevos_hardcode_mode_enable
    are true
 */
-   {
-      settings_t *settings            = config_get_ptr();
-      if (settings->bools.savestate_auto_load)
-      {
 #ifdef HAVE_CHEEVOS
-         if (  !settings->bools.cheevos_enable || 
-               !settings->bools.cheevos_hardcore_mode_enable)
-         {
-            if (!(cheevos_hardcore_active || rcheevos_hardcore_active))
-               command_event_load_auto_state();
-         }
+   if (!settings->bools.cheevos_enable || !settings->bools.cheevos_hardcore_mode_enable)
+      command_event_load_auto_state();
 #else
-         command_event_load_auto_state();
+   command_event_load_auto_state();
 #endif
-      }
-   }
 
    command_event(CMD_EVENT_BSV_MOVIE_INIT, NULL);
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
@@ -1329,14 +1322,12 @@ static bool event_init_content(void)
 static bool command_event_init_core(enum rarch_core_type *data)
 {
    retro_ctx_environ_info_t info;
-   settings_t *settings;
+   settings_t *settings            = config_get_ptr();
 
    if (!core_init_symbols(data))
       return false;
 
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_INIT, NULL);
-
-   settings = config_get_ptr();
 
    /* auto overrides: apply overrides */
    if(settings->bools.auto_overrides_enable)
@@ -1378,33 +1369,64 @@ static bool command_event_init_core(enum rarch_core_type *data)
    return true;
 }
 
+static void command_event_disable_overrides(void)
+{
+   if (!rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+      return;
+
+   /* reload the original config */
+   config_unload_override();
+   rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+}
+
+static void command_event_restore_default_shader_preset(void)
+{
+   retroarch_unset_shader_preset();
+}
+
+static void command_event_restore_remaps(void)
+{
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
+       rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+      input_remapping_set_defaults(true);
+}
+
 static bool command_event_save_auto_state(void)
 {
-   char *savestate_name_auto;
    bool ret                    = false;
    bool contentless            = false;
    bool is_inited              = false;
+   char *savestate_name_auto   = (char*)
+      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   size_t
+      savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings        = config_get_ptr();
+   global_t   *global          = global_get_ptr();
+
+   if (!settings || !settings->bools.savestate_auto_save)
+      goto error;
+   if (!global)
+      goto error;
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      goto error;
 
    content_get_status(&contentless, &is_inited);
 
    if (contentless)
-      return false;
+      goto error;
 
-   {
-      global_t   *global          = global_get_ptr();
-      if (!global)
-         return false;
+#ifdef HAVE_CHEEVOS
+   /* RCHEEVOS TODO: remove OR below */
+   if (cheevos_hardcore_active || rcheevos_hardcore_active)
+      goto error;
+#endif
 
-      savestate_name_auto   = (char*)
-         calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
+         file_path_str(FILE_PATH_AUTO_EXTENSION),
+         savestate_name_auto_size);
 
-      fill_pathname_noext(savestate_name_auto, global->name.savestate,
-            file_path_str(FILE_PATH_AUTO_EXTENSION),
-            PATH_MAX_LENGTH * sizeof(char));
-   }
-
-   ret = content_save_state((const char*)
-         savestate_name_auto, true, true);
+   ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
          msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
          savestate_name_auto, ret ?
@@ -1412,6 +1434,10 @@ static bool command_event_save_auto_state(void)
 
    free(savestate_name_auto);
    return true;
+
+error:
+   free(savestate_name_auto);
+   return false;
 }
 
 static bool command_event_save_config(
@@ -1423,25 +1449,26 @@ static bool command_event_save_config(
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
-   if (!string_is_empty(str) || !path_exists)
+   if (path_exists && config_save_file(config_path))
+   {
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            config_path);
+      snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
+      RARCH_LOG("%s\n", log);
+      return true;
+   }
+
+   if (!string_is_empty(str))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
       snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
       RARCH_ERR("%s\n", log);
-      return false;
    }
 
-   if (!config_save_file(config_path))
-      return false;
-
-   snprintf(s, len, "%s \"%s\".",
-         msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-         config_path);
-   snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
-   RARCH_LOG("%s\n", log);
-   return true;
+   return false;
 }
 
 /**
@@ -1470,7 +1497,7 @@ static bool command_event_save_core_config(void)
       config_dir = strdup(settings->paths.directory_menu_config);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
    {
-      config_dir                   = (char*)malloc(config_size);
+      config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       config_dir[0]                = '\0';
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
             config_size);
@@ -1478,20 +1505,15 @@ static bool command_event_save_core_config(void)
 
    if (string_is_empty(config_dir))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[config] %s\n",
-            msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       free (config_dir);
       return false;
    }
 
    core_path                       = path_get(RARCH_PATH_CORE);
-   config_name                     = (char*)malloc(
-         PATH_MAX_LENGTH * sizeof(char));
-   config_path                     = (char*)malloc(config_size);
+   config_name                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_path                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_name[0]                  = '\0';
    config_path[0]                  = '\0';
 
@@ -1544,9 +1566,6 @@ static bool command_event_save_core_config(void)
             config_size);
    }
 
-   free(config_dir);
-   free(config_name);
-
    if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       /* Overrides block config file saving,
@@ -1557,17 +1576,18 @@ static bool command_event_save_core_config(void)
    }
 
    command_event_save_config(config_path, msg, sizeof(msg));
-   free(config_path);
 
    if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (overrides_active)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 
+   free(config_dir);
+   free(config_name);
+   free(config_path);
    return true;
 }
 
@@ -1614,6 +1634,46 @@ static void command_event_save_current_config(enum override_type type)
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+static void command_event_undo_save_state(char *s, size_t len)
+{
+   if (content_undo_save_buf_is_empty())
+   {
+      strlcpy(s,
+         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
+      return;
+   }
+
+   if (!content_undo_save_state())
+      return;
+}
+
+static void command_event_undo_load_state(char *s, size_t len)
+{
+
+   if (content_undo_load_buf_is_empty())
+   {
+      strlcpy(s,
+         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
+         len);
+      return;
+   }
+
+   if (!content_undo_load_state())
+   {
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
+            "RAM");
+      return;
+   }
+
+#ifdef HAVE_NETWORKING
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
+
+   strlcpy(s,
+         msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
 static bool command_event_main_state(unsigned cmd)
@@ -1669,38 +1729,11 @@ static bool command_event_main_state(unsigned cmd)
             push_msg = false;
             break;
          case CMD_EVENT_UNDO_LOAD_STATE:
-            if (content_undo_load_buf_is_empty())
-            {
-               strlcpy(msg,
-                     msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
-                     sizeof(msg));
-            }
-            else if (!content_undo_load_state())
-            {
-               snprintf(msg, sizeof(msg), "%s \"%s\".",
-                     msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
-                     "RAM");
-            }
-            else
-            {
-#ifdef HAVE_NETWORKING
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
-#endif
-               strlcpy(msg,
-                     msg_hash_to_str(MSG_UNDID_LOAD_STATE), sizeof(msg));
-            }
+            command_event_undo_load_state(msg, sizeof(msg));
             ret = true;
             break;
          case CMD_EVENT_UNDO_SAVE_STATE:
-            if (content_undo_save_buf_is_empty())
-            {
-               strlcpy(msg,
-                     msg_hash_to_str(
-                        MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET),
-                     sizeof(msg));
-            }
-            else
-               content_undo_save_state();
+            command_event_undo_save_state(msg, sizeof(msg));
             ret = true;
             break;
       }
@@ -1768,15 +1801,12 @@ bool command_event(enum event_command cmd, void *data)
 
                if (width == 0 || height == 0)
                   snprintf(msg, sizeof(msg), "%s: DEFAULT",
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
                else
                   snprintf(msg, sizeof(msg),"%s: %dx%d",
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
                         width, height);
-               runloop_msg_queue_push(msg, 1, 100, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
 #endif
@@ -1788,15 +1818,14 @@ bool command_event(enum event_command cmd, void *data)
             rarch_system_info_t *system_info = NULL;
             struct retro_system_info *system = NULL;
             const char *core_path            = NULL;
+            system_info                      = runloop_get_system_info();
+            system                           = &system_info->info;
             core_path                        = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
                return false;
 #endif
-
-            system_info                      = runloop_get_system_info();
-            system                           = &system_info->info;
 
             if (!libretro_get_system_info(
                   core_path,
@@ -1816,7 +1845,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
       {
-         bool success            = false;
+         bool success   = false;
          subsystem_current_count = 0;
          content_clear_subsystem();
          success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
@@ -1841,9 +1870,13 @@ bool command_event(enum event_command cmd, void *data)
          if (cheevos_hardcore_active || rcheevos_hardcore_active)
             return false;
 #endif
-         /* fall-through intentional */
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         /* fall-through intentional */
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_SAVE_STATE:
          if (!command_event_main_state(cmd))
             return false;
@@ -1867,9 +1900,9 @@ bool command_event(enum event_command cmd, void *data)
          /* RCHEEVOS TODO: remove starting block bracket, settings init and tests */
          {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings       = config_get_ptr();
+            settings_t *settings      = config_get_ptr();
             rcheevos_state_loaded_flag = cheevos_state_loaded_flag = false;
-            rcheevos_hardcore_paused   = cheevos_hardcore_paused = false;
+            rcheevos_hardcore_paused = cheevos_hardcore_paused = false;
 #endif
             RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -2082,16 +2115,7 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
-         {
-            settings_t *settings        = config_get_ptr();
-            if (settings->bools.savestate_auto_save)
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-#ifdef HAVE_CHEEVOS
-                  /* RCHEEVOS TODO: remove OR below */
-                  if (!(cheevos_hardcore_active || rcheevos_hardcore_active))
-#endif
-                     command_event_save_auto_state();
-         }
+         command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off();
@@ -2169,9 +2193,9 @@ TODO: Add a setting for these tweaks */
          {
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
-            if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
-               audio_driver_dsp_filter_init(
-                     settings->paths.path_audio_dsp_plugin);
+            if (string_is_empty(settings->paths.path_audio_dsp_plugin))
+               break;
+            audio_driver_dsp_filter_init(settings->paths.path_audio_dsp_plugin);
          }
          break;
       case CMD_EVENT_GPU_RECORD_DEINIT:
@@ -2293,6 +2317,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_INFO_INIT:
          {
             char ext_name[255];
+            settings_t *settings      = config_get_ptr();
 
             ext_name[0]               = '\0';
 
@@ -2301,15 +2326,12 @@ TODO: Add a setting for these tweaks */
             if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                return false;
 
-            {
-               settings_t *settings      = config_get_ptr();
-               if (!string_is_empty(settings->paths.directory_libretro))
-                  core_info_init_list(settings->paths.path_libretro_info,
-                        settings->paths.directory_libretro,
-                        ext_name,
-                        settings->bools.show_hidden_files
-                        );
-            }
+            if (!string_is_empty(settings->paths.directory_libretro))
+               core_info_init_list(settings->paths.path_libretro_info,
+                     settings->paths.directory_libretro,
+                     ext_name,
+                     settings->bools.show_hidden_files
+                     );
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
@@ -2350,8 +2372,7 @@ TODO: Add a setting for these tweaks */
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_scale_factor(overlay_ptr,
-                  settings->floats.input_overlay_scale);
+            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
 #endif
          }
          break;
@@ -2359,8 +2380,7 @@ TODO: Add a setting for these tweaks */
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_alpha_mod(overlay_ptr,
-                  settings->floats.input_overlay_opacity);
+            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
          break;
@@ -2419,22 +2439,19 @@ TODO: Add a setting for these tweaks */
             {
                struct playlist_entry entry = {0};
 
-               entry.path      = str_list->elems[0].data; /* content_path */
-               entry.label     = str_list->elems[1].data; /* content_label */
+               entry.path = str_list->elems[0].data; /* content_path */
+               entry.label = str_list->elems[1].data; /* content_label */
                entry.core_path = str_list->elems[2].data; /* core_path */
                entry.core_name = str_list->elems[3].data; /* core_name */
-               entry.crc32     = str_list->elems[4].data; /* crc32 */
-               entry.db_name   = str_list->elems[5].data; /* db_name */
+               entry.crc32 = str_list->elems[4].data; /* crc32 */
+               entry.db_name = str_list->elems[5].data; /* db_name */
 
                /* Write playlist entry */
                command_playlist_push_write(
                      g_defaults.content_favorites,
                      &entry
                      );
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_ADDED_TO_FAVORITES),
-                     1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
 
@@ -2672,20 +2689,17 @@ TODO: Add a setting for these tweaks */
 
             RARCH_LOG("[netplay] buf %s\n", buf);
             
-            hostname = string_split(buf, "|");
+			hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d (deferred)\n",
-                  hostname->elems[0].data,
-                  !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data) 
-                  : settings->uints.netplay_port);
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) 
-               : settings->uints.netplay_port))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2721,11 +2735,9 @@ TODO: Add a setting for these tweaks */
          if (!is_inited)
          {
             runloop_msg_queue_push(
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
                   1, 480, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                  MESSAGE_QUEUE_CATEGORY_INFO);
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return false;
          }
 
@@ -2736,19 +2748,21 @@ TODO: Add a setting for these tweaks */
          break;
       }
       case CMD_EVENT_NETPLAY_DISCONNECT:
+      {
+         settings_t *settings = config_get_ptr();
+
          netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
          netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-         {
-            settings_t *settings = config_get_ptr();
-            /* Re-enable rewind if it was enabled
-               TODO: Add a setting for these tweaks */
-            if (settings->bools.rewind_enable)
-               command_event(CMD_EVENT_REWIND_INIT, NULL);
-            if (settings->uints.autosave_interval != 0)
-               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-         }
+         /* Re-enable rewind if it was enabled
+            TODO: Add a setting for these tweaks */
+         if (settings->bools.rewind_enable)
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
+         if (settings->uints.autosave_interval != 0)
+            command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+
          break;
+      }
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
             netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
@@ -2869,7 +2883,10 @@ TODO: Add a setting for these tweaks */
                   (const struct retro_disk_control_callback*)
                   &info->disk_control_cb;
 
-               if (!control || !control->get_eject_state())
+               if (!control)
+                  return false;
+
+               if (!control->get_eject_state())
                   return false;
 
                command_event_check_disk_next(control);
@@ -2891,7 +2908,10 @@ TODO: Add a setting for these tweaks */
                   (const struct retro_disk_control_callback*)
                   &info->disk_control_cb;
 
-               if (!control || !control->get_eject_state())
+               if (!control)
+                  return false;
+
+               if (!control->get_eject_state())
                   return false;
 
                command_event_check_disk_prev(control);
@@ -2900,8 +2920,7 @@ TODO: Add a setting for these tweaks */
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                      1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
       case CMD_EVENT_RUMBLE_STOP:
@@ -3004,21 +3023,13 @@ TODO: Add a setting for these tweaks */
          rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
          break;
       case CMD_EVENT_DISABLE_OVERRIDES:
-         if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
-         {
-            /* reload the original config */
-            config_unload_override();
-            rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-         }
+         command_event_disable_overrides();
          break;
       case CMD_EVENT_RESTORE_REMAPS:
-         if (  rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL)        ||
-               rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
-               rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-            input_remapping_set_defaults(true);
+         command_event_restore_remaps();
          break;
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
-         retroarch_unset_shader_preset();
+         command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
