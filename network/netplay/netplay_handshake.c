@@ -760,7 +760,6 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    ssize_t recvd;
    char msg[512];
    bool correct         = false;
-   size_t password_size;
    settings_t *settings = config_get_ptr();
 
    msg[0] = '\0';
@@ -787,14 +786,13 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    /* Calculate the correct password hash(es) and compare */
    correct = false;
    snprintf(password, sizeof(password), "%08X", connection->salt);
-   password_size = strlen(password);
 
    if (settings->paths.netplay_password[0])
    {
       strlcpy(password + 8,
             settings->paths.netplay_password, sizeof(password)-8);
 
-      sha256_hash(hash, (uint8_t *) password, password_size);
+      sha256_hash(hash, (uint8_t *) password, strlen(password));
 
       if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
       {
@@ -807,7 +805,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
       strlcpy(password + 8,
             settings->paths.netplay_spectate_password, sizeof(password)-8);
 
-      sha256_hash(hash, (uint8_t *) password, password_size);
+      sha256_hash(hash, (uint8_t *) password, strlen(password));
 
       if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
          correct = true;
