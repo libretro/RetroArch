@@ -1140,7 +1140,6 @@ THREAD
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
-#include "../libretro-common/rthreads/rsemaphore.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
