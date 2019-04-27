@@ -2169,10 +2169,9 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    unsigned int device          = 0;
    unsigned int frames_per_ms   = 0;
    unsigned int orig_rate       = rate;
-   unsigned int max_rate, min_rate;
+   unsigned int max_rate, min_rate, buffer_size;
    float initial_latency;
 
-   snd_pcm_uframes_t         buffer_size;
    struct pcm_config         config;
 
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));
