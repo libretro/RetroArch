@@ -2653,15 +2653,22 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_OPTIONS_GET:
          {
+            settings_t *settings = config_get_ptr();
+            unsigned log_level   = settings->uints.libretro_log_level;
+
             struct retro_variable *var = (struct retro_variable*)data;
 
             if (!runloop_core_options || !var)
                return false;
 
-            RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
             core_option_manager_get(runloop_core_options, var);
-            RARCH_LOG("\t%s\n", var->value ? var->value :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+            if (log_level == RETRO_LOG_DEBUG)
+            {
+               RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
+               RARCH_LOG("\t%s\n", var->value ? var->value :
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            }
          }
          break;
       case RARCH_CTL_CORE_OPTIONS_INIT:

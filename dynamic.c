@@ -197,11 +197,19 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          unsigned i, j, size;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
+         settings_t *settings    = config_get_ptr();
+         unsigned log_level      = settings->uints.libretro_log_level;
+
          subsystem_current_count = 0;
-         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Subsystem ID: %d\n", i);
             RARCH_LOG("Special game type: %s\n", info[i].desc);
             RARCH_LOG("  Ident: %s\n", info[i].ident);
@@ -218,8 +226,9 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          RARCH_LOG("Subsystems: %d\n", i);
          size = i;
 
-         if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
-            RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+         if (log_level == RETRO_LOG_DEBUG)
+            if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
+               RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
 
          if (system)
          {
@@ -237,8 +246,9 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                subsystem_data[i].id = info[i].id;
                subsystem_data[i].num_roms = info[i].num_roms;
 
-               if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
-                  RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
+               if (log_level == RETRO_LOG_DEBUG)
+                  if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
+                     RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
 
                for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
                {
@@ -258,26 +268,10 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                subsystem_data[i].roms = subsystem_data_roms[i];
             }
 
-            subsystem_current_count = size <= SUBSYSTEM_MAX_SUBSYSTEMS ? size : SUBSYSTEM_MAX_SUBSYSTEMS;
-#if 0
-            RARCH_LOG("Subsystems: %d\n", subsystem_current_count);
-
-            for (i = 0; i < subsystem_current_count; i++)
-            {
-               RARCH_LOG("Subsystem ID: %d\n", i);
-               RARCH_LOG("Special game type: %s\n", subsystem_data[i].desc);
-               RARCH_LOG("  Ident: %s\n", subsystem_data[i].ident);
-               RARCH_LOG("  ID: %u\n", subsystem_data[i].id);
-               RARCH_LOG("  Content:\n");
-
-               for (j = 0; j < subsystem_data[i].num_roms; j++)
-               {
-                  RARCH_LOG("    %s (%s)\n",
-                        subsystem_data[i].roms[j].desc, subsystem_data[i].roms[j].required ?
-                        "required" : "optional");
-               }
-            }
-#endif
+            subsystem_current_count = 
+               size <= SUBSYSTEM_MAX_SUBSYSTEMS 
+               ? size 
+               : SUBSYSTEM_MAX_SUBSYSTEMS;
          }
          break;
       }
@@ -1720,14 +1714,21 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i, j;
+         unsigned i;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
+         settings_t *settings = config_get_ptr();
+         unsigned log_level   = settings->uints.libretro_log_level;
 
-         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
+            unsigned j;
+            if (!log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Special game type: %s\n", info[i].desc);
             RARCH_LOG("  Ident: %s\n", info[i].ident);
             RARCH_LOG("  ID: %u\n", info[i].id);
