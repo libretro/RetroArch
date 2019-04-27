@@ -162,55 +162,47 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   int ret                      = 0;
-   struct string_list *ext_list = NULL;
-   size_t path_len              = strlen(path);
-
-   (void)cdata;
-   (void)cmode;
-   (void)csize;
-   (void)size;
-   (void)checksum;
-
    attr.i = 0;
 
-   if (!path_len)
-      return 0;
-
    if (valid_exts)
-      ext_list = string_split(valid_exts, "|");
-
-   if (ext_list)
    {
-      const char *file_ext         = NULL;
+      size_t path_len              = strlen(path);
       /* Checks if this entry is a directory or a file. */
-      char last_char = path[path_len-1];
+      char last_char               = path[path_len - 1];
+      struct string_list *ext_list = NULL;
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
-         goto error;
-
-      file_ext = path_get_extension(path);
-
-      if (!file_ext)
-         goto error;
-
-      if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
       {
-         /* keep iterating */
-         ret = -1;
-         goto error;
+         string_list_free(ext_list);
+         return 0;
       }
+      
+      ext_list                = string_split(valid_exts, "|");
 
-      attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
-      string_list_free(ext_list);
+      if (ext_list)
+      {
+         const char *file_ext = path_get_extension(path);
+
+         if (!file_ext)
+         {
+            string_list_free(ext_list);
+            return 0;
+         }
+
+         if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
+         {
+            /* keep iterating */
+            string_list_free(ext_list);
+            return -1;
+         }
+
+         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+         string_list_free(ext_list);
+      }
    }
 
    return string_list_append(userdata->list, path, attr);
-
-error:
-   string_list_free(ext_list);
-   return ret;
 }
 
 static int file_archive_extract_cb(const char *name, const char *valid_exts,
@@ -414,9 +406,7 @@ int file_archive_parse_file_iterate(
                   valid_exts, userdata, file_cb);
 
             if (ret != 1)
-            {
                state->type = ARCHIVE_TRANSFER_DEINIT;
-            }
             if (ret == -1)
                state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
 
