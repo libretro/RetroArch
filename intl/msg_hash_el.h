@@ -1412,75 +1412,79 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-    "Chinese (Simplified)"
+    "Κινέζικα (Απλοποιημένα)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-    "Chinese (Traditional)"
+    "Κινέζικα (Παραδοσιακά)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-    "Dutch"
+    "Ολλανδός"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
-    "English"
+    "Αγγλικά"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-    "Esperanto"
+    "Εσπεράντο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-    "French"
+    "Γαλλική γλώσσα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-    "German"
+    "Γερμανός"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-    "Italian"
+    "Ιταλικά"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-    "Japanese"
+    "Ιαπωνικά"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-    "Korean"
+    "Κορεατικά"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_POLISH,
-    "Polish"
+    "Πολωνία"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-    "Portuguese (Brazil)"
+    "Πορτογαλικά (Βραζιλία)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-    "Portuguese (Portugal)"
+    "Πορτογαλικά (Πορτογαλία)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-    "Russian"
+    "Ρωσική"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-    "Spanish"
+    "Ισπανικά"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-    "Vietnamese"
+    "Βιετναμέζος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-    "Arabic"
+    "Αραβικός"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_GREEK,
     "Ελληνικά"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+    "Τούρκικος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
