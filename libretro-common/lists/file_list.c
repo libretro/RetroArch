@@ -72,14 +72,6 @@ static void file_list_add(file_list_t *list, unsigned idx,
    list->size++;
 }
 
-static bool file_list_expand_if_needed(file_list_t *list)
-{
-   if (list->size >= list->capacity)
-      return file_list_reserve(list, list->capacity * 2 + 1);
-
-   return true;
-}
-
 bool file_list_prepend(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
@@ -100,8 +92,10 @@ bool file_list_insert(file_list_t *list,
 {
    int i;
 
-   if (!file_list_expand_if_needed(list))
-      return false;
+   /* Expand file list if needed */
+   if (list->size >= list->capacity)
+      if (!file_list_reserve(list, list->capacity * 2 + 1))
+         return false;
 
    for (i = (unsigned)list->size; i > (int)idx; i--)
    {
@@ -127,8 +121,10 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   if (!file_list_expand_if_needed(list))
-      return false;
+   /* Expand file list if needed */
+   if (list->size >= list->capacity)
+      if (!file_list_reserve(list, list->capacity * 2 + 1))
+         return false;
 
    file_list_add(list, (unsigned)list->size, path, label, type,
          directory_ptr, entry_idx);
