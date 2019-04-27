@@ -286,11 +286,9 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   const char *ext = !string_is_empty(path)
-      ? strrchr(path_basename(path), '.') : NULL;
-   if (!ext)
-      return "";
-   return ext + 1;
+   if (!string_is_empty(path))
+      return strrchr(path_basename(path), '.') + 1;
+   return "";
 }
 
 /**
@@ -402,7 +400,7 @@ char *find_last_slash(const char *str)
    const char *backslash = strrchr(str, '\\');
 
    if (backslash && ((slash && backslash > slash) || !slash))
-      slash = backslash;
+      return (char*)backslash;
 #endif
 
    return (char*)slash;
@@ -539,22 +537,21 @@ void fill_pathname_basedir_noext(char *out_dir,
 bool fill_pathname_parent_dir_name(char *out_dir,
       const char *in_dir, size_t size)
 {
-   char *temp = strdup(in_dir);
-   char *last = find_last_slash(temp);
+   bool success = false;
+   char *temp   = strdup(in_dir);
+   char *last   = find_last_slash(temp);
 
-   *last      = '\0';
+   *last        = '\0';
 
-   in_dir     = find_last_slash(temp);
+   in_dir       = find_last_slash(temp);
 
-   if (in_dir && in_dir + 1)
-   {
+   success      = in_dir && in_dir + 1;
+
+   if (success)
       strlcpy(out_dir, in_dir + 1, size);
-      free(temp);
-      return true;
-   }
 
    free(temp);
-   return false;
+   return success;
 }
 
 /**
@@ -688,16 +685,17 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   /* We cut either at the first compression-related hash
-    * or the last slash; whichever comes last */
-   const char *last  = find_last_slash(path);
+   /* We cut at the first compression-related hash */
    const char *delim = path_get_archive_delim(path);
-
    if (delim)
       return delim + 1;
 
-   if (last)
-      return last + 1;
+   {
+      /* We cut at the last slash */
+      const char *last  = find_last_slash(path);
+      if (last)
+         return last + 1;
+   }
 
    return path;
 }
