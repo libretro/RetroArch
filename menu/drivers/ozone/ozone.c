@@ -1971,7 +1971,6 @@ static void ozone_list_deep_copy(const file_list_t *src, file_list_t *dst,
 
    menu_animation_kill_by_tag(&tag);
 
-   /* use true here because file_list_copy() doesn't free actiondata */
    ozone_free_list_nodes(dst, true);
 
    file_list_clear(dst);
