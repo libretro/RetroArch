@@ -27,7 +27,6 @@ extern char uwp_dir_data[PATH_MAX_LENGTH];
 extern char uwp_device_family[128];
 
 void uwp_open_broadfilesystemaccess_settings(void);
-bool uwp_is_path_accessible_using_standard_io(const char *path);
 bool uwp_drive_exists(const char *path);
 char* uwp_trigger_picker(void);
 

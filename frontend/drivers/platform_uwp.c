@@ -264,11 +264,6 @@ enum frontend_architecture frontend_uwp_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-/* Disable the UWP VFS parts for ow */
-#ifndef DISABLE_UWP_VFS
-#define DISABLE_UWP_VFS
-#endif
-
 static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
@@ -280,10 +275,8 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    char *home_dir               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    bool have_any_drives         = false;
 
-   fill_pathname_home_dir(home_dir,
-         PATH_MAX_LENGTH * sizeof(char));
+   fill_pathname_home_dir(home_dir, PATH_MAX_LENGTH * sizeof(char));
 
-#ifndef DISABLE_UWP_VFS
    for (drive[0] = 'A'; drive[0] <= 'Z'; drive[0]++)
    {
       if (uwp_drive_exists(drive))
@@ -296,7 +289,6 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
          have_any_drives = true;
       }
    }
-#endif
 
    menu_entries_append_enum(list,
       home_dir,
@@ -304,7 +296,6 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
       enum_idx,
       FILE_TYPE_DIRECTORY, 0, 0);
 
-#ifndef DISABLE_UWP_VFS
    if (!have_any_drives)
    {
       menu_entries_append_enum(list,
@@ -322,7 +313,6 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
             MENU_SETTING_ACTION, 0, 0);
       }
    }
-#endif
 
    free(home_dir);
 #endif
