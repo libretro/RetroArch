@@ -784,14 +784,13 @@ void core_info_get_name(const char *path, char *s, size_t len,
       }
 
       conf                            = config_file_read(info_path);
+      free(info_path);
 
       if (!conf)
-      {
-         free(info_path);
          continue;
-      }
 
-      if (config_get_string(conf, get_display_name ? "display_name" : "corename",
+      if (config_get_string(conf, get_display_name 
+               ? "display_name" : "corename",
             &new_core_name))
       {
          strlcpy(s, new_core_name, len);
@@ -799,12 +798,10 @@ void core_info_get_name(const char *path, char *s, size_t len,
       }
 
       config_file_free(conf);
-      free(info_path);
       break;
    }
 
-   if (contents)
-      dir_list_free(contents);
+   dir_list_free(contents);
    contents = NULL;
 }
 
@@ -933,15 +930,11 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   bool               ret   = true;
    char       *tmp          = NULL;
    config_file_t *conf      = config_file_read(path);
 
    if (!conf)
-   {
-      ret = false;
-      goto error;
-   }
+      return false;
 
    if (config_get_string(conf, "display_name", &tmp))
    {
@@ -949,8 +942,6 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
       free(tmp);
    }
 
-error:
    config_file_free(conf);
-
-   return ret;
+   return true;
 }
