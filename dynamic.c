@@ -202,8 +202,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 
          subsystem_current_count = 0;
 
-         if (log_level == RETRO_LOG_DEBUG)
-            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
@@ -223,7 +222,8 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
             }
          }
 
-         RARCH_LOG("Subsystems: %d\n", i);
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Subsystems: %d\n", i);
          size = i;
 
          if (log_level == RETRO_LOG_DEBUG)
@@ -1461,19 +1461,25 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
 
             {
-               unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-               for (p = 0; p < max_users; p++)
+               settings_t *settings    = config_get_ptr();
+               unsigned log_level      = settings->uints.libretro_log_level;
+               
+               if (log_level == RETRO_LOG_DEBUG)
                {
-                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+                  for (p = 0; p < max_users; p++)
                   {
-                     const char *description = system->input_desc_btn[p][retro_id];
+                     for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                     {
+                        const char *description = system->input_desc_btn[p][retro_id];
 
-                     if (!description)
-                        continue;
+                        if (!description)
+                           continue;
 
-                     RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                           p + 1, libretro_btn_desc[retro_id], description);
+                        RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                              p + 1, libretro_btn_desc[retro_id], description);
+                     }
                   }
                }
             }
@@ -1768,11 +1774,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned i, j;
          const struct retro_controller_info *info =
             (const struct retro_controller_info*)data;
+         settings_t *settings    = config_get_ptr();
+         unsigned log_level      = settings->uints.libretro_log_level;
 
          RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
 
          for (i = 0; info[i].types; i++)
          {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Controller port: %u\n", i + 1);
             for (j = 0; j < info[i].num_types; j++)
                RARCH_LOG("   %s (ID: %u)\n", info[i].types[j].desc,
