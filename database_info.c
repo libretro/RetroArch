@@ -170,6 +170,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
    for (i = 0; i < item.val.map.len; i++)
    {
+      size_t str_len;
       struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
       const char *val_string         = NULL;
@@ -179,116 +180,117 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
       val_string                     = val->val.string.buff;
       str                            = key->val.string.buff;
+      str_len                        = strlen(str);
 
-      if (string_is_equal(str, "publisher"))
+      if (string_is_equal_memcmp_fast(str, "publisher", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->publisher = strdup(val_string);
       }
-      else if (string_is_equal(str, "developer"))
+      else if (string_is_equal_memcmp_fast(str, "developer", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->developer = string_split(val_string, "|");
       }
-      else if (string_is_equal(str, "serial"))
+      else if (string_is_equal_memcmp_fast(str, "serial", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->serial = strdup(val_string);
       }
-      else if (string_is_equal(str, "rom_name"))
+      else if (string_is_equal_memcmp_fast(str, "rom_name", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->rom_name = strdup(val_string);
       }
-      else if (string_is_equal(str, "name"))
+      else if (string_is_equal_memcmp_fast(str, "name", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->name = strdup(val_string);
       }
-      else if (string_is_equal(str, "description"))
+      else if (string_is_equal_memcmp_fast(str, "description", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->description = strdup(val_string);
       }
-      else if (string_is_equal(str, "genre"))
+      else if (string_is_equal_memcmp_fast(str, "genre", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->genre = strdup(val_string);
       }
-      else if (string_is_equal(str, "origin"))
+      else if (string_is_equal_memcmp_fast(str, "origin", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->origin = strdup(val_string);
       }
-      else if (string_is_equal(str, "franchise"))
+      else if (string_is_equal_memcmp_fast(str, "franchise", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->franchise = strdup(val_string);
       }
-      else if (string_is_equal(str, "bbfc_rating"))
+      else if (string_is_equal_memcmp_fast(str, "bbfc_rating", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->bbfc_rating = strdup(val_string);
       }
-      else if (string_is_equal(str, "esrb_rating"))
+      else if (string_is_equal_memcmp_fast(str, "esrb_rating", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->esrb_rating = strdup(val_string);
       }
-      else if (string_is_equal(str, "elspa_rating"))
+      else if (string_is_equal_memcmp_fast(str, "elspa_rating", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->elspa_rating = strdup(val_string);
       }
-      else if (string_is_equal(str, "cero_rating"))
+      else if (string_is_equal_memcmp_fast(str, "cero_rating", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->cero_rating          = strdup(val_string);
       }
-      else if (string_is_equal(str, "pegi_rating"))
+      else if (string_is_equal_memcmp_fast(str, "pegi_rating", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->pegi_rating          = strdup(val_string);
       }
-      else if (string_is_equal(str, "enhancement_hw"))
+      else if (string_is_equal_memcmp_fast(str, "enhancement_hw", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->enhancement_hw       = strdup(val_string);
       }
-      else if (string_is_equal(str, "edge_review"))
+      else if (string_is_equal_memcmp_fast(str, "edge_review", str_len))
       {
          if (!string_is_empty(val_string))
             db_info->edge_magazine_review = strdup(val_string);
       }
-      else if (string_is_equal(str, "edge_rating"))
+      else if (string_is_equal_memcmp_fast(str, "edge_rating", str_len))
          db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "edge_issue"))
+      else if (string_is_equal_memcmp_fast(str, "edge_issue", str_len))
          db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "famitsu_rating"))
+      else if (string_is_equal_memcmp_fast(str, "famitsu_rating", str_len))
          db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "tgdb_rating"))
+      else if (string_is_equal_memcmp_fast(str, "tgdb_rating", str_len))
          db_info->tgdb_rating             = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "users"))
+      else if (string_is_equal_memcmp_fast(str, "users", str_len))
          db_info->max_users               = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releasemonth"))
+      else if (string_is_equal_memcmp_fast(str, "releasemonth", str_len))
          db_info->releasemonth            = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releaseyear"))
+      else if (string_is_equal_memcmp_fast(str, "releaseyear", str_len))
          db_info->releaseyear             = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "rumble"))
+      else if (string_is_equal_memcmp_fast(str, "rumble", str_len))
          db_info->rumble_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "coop"))
+      else if (string_is_equal_memcmp_fast(str, "coop", str_len))
          db_info->coop_supported          = (int)val->val.uint_;
-      else if (string_is_equal(str, "analog"))
+      else if (string_is_equal_memcmp_fast(str, "analog", str_len))
          db_info->analog_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "size"))
+      else if (string_is_equal_memcmp_fast(str, "size", str_len))
          db_info->size                    = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "crc"))
+      else if (string_is_equal_memcmp_fast(str, "crc", str_len))
          db_info->crc32 = swap_if_little32(
                *(uint32_t*)val->val.binary.buff);
-      else if (string_is_equal(str, "sha1"))
+      else if (string_is_equal_memcmp_fast(str, "sha1", str_len))
          db_info->sha1 = bin_to_hex_alloc(
                (uint8_t*)val->val.binary.buff, val->val.binary.len);
-      else if (string_is_equal(str, "md5"))
+      else if (string_is_equal_memcmp_fast(str, "md5", str_len))
          db_info->md5 = bin_to_hex_alloc(
                (uint8_t*)val->val.binary.buff, val->val.binary.len);
       else

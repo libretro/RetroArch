@@ -2428,14 +2428,17 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if      (string_is_equal(dir, "up"))
-      hat_dir = HAT_UP_MASK;
-   else if (string_is_equal(dir, "down"))
-      hat_dir = HAT_DOWN_MASK;
-   else if (string_is_equal(dir, "left"))
-      hat_dir = HAT_LEFT_MASK;
-   else if (string_is_equal(dir, "right"))
-      hat_dir = HAT_RIGHT_MASK;
+   {
+      size_t dir_size = strlen(dir);
+      if      (string_is_equal_memcmp_fast(dir, "up", dir_size))
+         hat_dir = HAT_UP_MASK;
+      else if (string_is_equal_memcmp_fast(dir, "down", dir_size))
+         hat_dir = HAT_DOWN_MASK;
+      else if (string_is_equal_memcmp_fast(dir, "left", dir_size))
+         hat_dir = HAT_LEFT_MASK;
+      else if (string_is_equal_memcmp_fast(dir, "right", dir_size))
+         hat_dir = HAT_RIGHT_MASK;
+   }
 
    if (hat_dir)
       bind->joykey = HAT_MAP(hat, hat_dir);

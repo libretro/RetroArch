@@ -161,46 +161,48 @@ static int task_database_iterate_start(database_info_handle_t *db,
 
 static int intfstream_get_serial(intfstream_t *fd, char *serial)
 {
-  const char *system_name = NULL;
+   const char *system_name = NULL;
+   size_t system_name_len  = 0;
 
-  /* Check if the system was not auto-detected. */
-  if (detect_system(fd, &system_name) < 0)
-  {
-    /* Attempt to read an ASCII serial, like Wii. */
-    if (detect_serial_ascii_game(fd, serial))
-    {
-      /* ASCII serial (Wii) was detected. */
+   /* Check if the system was not auto-detected. */
+   if (detect_system(fd, &system_name) < 0)
+   {
+      /* Attempt to read an ASCII serial, like Wii. */
+      if (detect_serial_ascii_game(fd, serial))
+      {
+         /* ASCII serial (Wii) was detected. */
+         RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+         return 0;
+      }
+
+      /* Any other non-system specific detection methods? */
+      return 0;
+   }
+
+   system_name_len = strlen(system_name);
+
+   if (string_is_equal_memcmp_fast(system_name, "psp", system_name_len))
+   {
+      if (detect_psp_game(fd, serial) == 0)
+         return 0;
       RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+   else if (string_is_equal_memcmp_fast(system_name, "ps1", system_name_len))
+   {
+      if (detect_ps1_game(fd, serial) == 0)
+         return 0;
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+   else if (string_is_equal_memcmp_fast(system_name, "gc", system_name_len))
+   {
+      if (detect_gc_game(fd, serial) == 0)
+         return 0;
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+   else
       return 0;
-    }
 
-    /* Any other non-system specific detection methods? */
-    return 0;
-  }
-
-  if (string_is_equal(system_name, "psp"))
-  {
-    if (detect_psp_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "ps1"))
-  {
-    if (detect_ps1_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "gc"))
-  {
-    if (detect_gc_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else {
-    return 0;
-  }
-
-  return 1;
+   return 1;
 }
 
 static bool intfstream_file_get_serial(const char *name,
@@ -567,43 +569,44 @@ end:
 
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
+   size_t ext_len = strlen(ext);
    if (
-         string_is_equal(ext, "7z")  ||
-         string_is_equal(ext, "7Z")  ||
-         string_is_equal(ext, "zip") ||
-         string_is_equal(ext, "ZIP") ||
-         string_is_equal(ext, "apk") ||
-         string_is_equal(ext, "APK")
+         string_is_equal_memcmp_fast(ext, "7z", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "7Z", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "zip", ext_len) ||
+         string_is_equal_memcmp_fast(ext, "ZIP", ext_len) ||
+         string_is_equal_memcmp_fast(ext, "apk", ext_len) ||
+         string_is_equal_memcmp_fast(ext, "APK", ext_len)
       )
       return FILE_TYPE_COMPRESSED;
    if (
-         string_is_equal(ext, "cue")  ||
-         string_is_equal(ext, "CUE")
+         string_is_equal_memcmp_fast(ext, "cue", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "CUE", ext_len)
       )
       return FILE_TYPE_CUE;
    if (
-         string_is_equal(ext, "gdi")  ||
-         string_is_equal(ext, "GDI")
+         string_is_equal_memcmp_fast(ext, "gdi", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "GDI", ext_len)
       )
       return FILE_TYPE_GDI;
    if (
-         string_is_equal(ext, "iso")  ||
-         string_is_equal(ext, "ISO")
+         string_is_equal_memcmp_fast(ext, "iso", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "ISO", ext_len)
       )
       return FILE_TYPE_ISO;
    if (
-         string_is_equal(ext, "chd")  ||
-         string_is_equal(ext, "CHD")
+         string_is_equal_memcmp_fast(ext, "chd", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "CHD", ext_len)
       )
       return FILE_TYPE_CHD;
    if (
-         string_is_equal(ext, "wbfs")  ||
-         string_is_equal(ext, "WBFS")
+         string_is_equal_memcmp_fast(ext, "wbfs", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "WBFS", ext_len)
       )
       return FILE_TYPE_WBFS;
    if (
-         string_is_equal(ext, "lutro")  ||
-         string_is_equal(ext, "LUTRO")
+         string_is_equal_memcmp_fast(ext, "lutro", ext_len)  ||
+         string_is_equal_memcmp_fast(ext, "LUTRO", ext_len)
       )
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;

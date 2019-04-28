@@ -31,6 +31,7 @@
 
 #include <retro_common_api.h>
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 
 RETRO_BEGIN_DECLS
@@ -61,6 +62,18 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
+#define string_is_equal_memcmp(a, b) (memcmp(a, b, MIN(strlen(a), (STRLEN_CONST(b)+1))) == 0)
+/* Faster version of string_is_equal_memcmp -
+ * this version is intended to be used when you're
+ * going to be making repeated calls to this macro
+ * while a stays the same, thereby sparing you the 
+ * overhead of the macro implicitly calling strlen
+ * per invocation
+ *
+ * Parameter explanation:
+ * c = size of a
+ */
+#define string_is_equal_memcmp_fast(a, b, c) (memcmp(a, b, MIN(c, (STRLEN_CONST(b)+1))) == 0)
 
 static INLINE void string_add_between_pairs(char *s, const char *str,
       size_t size)

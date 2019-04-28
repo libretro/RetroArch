@@ -1088,11 +1088,12 @@ static int create_string_list_rdb_entry_int(
 
 static enum msg_file_type extension_to_file_hash_type(const char *ext)
 {
-   if (string_is_equal(ext, "sha1"))
+   size_t ext_len = strlen(ext);
+   if (string_is_equal_memcmp_fast(ext, "sha1", ext_len))
       return FILE_TYPE_SHA1;
-   else if (string_is_equal(ext, "crc"))
+   else if (string_is_equal_memcmp_fast(ext, "crc", ext_len))
       return FILE_TYPE_CRC;
-   else if (string_is_equal(ext, "md5"))
+   else if (string_is_equal_memcmp_fast(ext, "md5", ext_len))
       return FILE_TYPE_MD5;
    return FILE_TYPE_NONE;
 }
@@ -1190,21 +1191,25 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             {
                if (tmp_str_list->size > 1)
                {
-                  const char *elem0 = tmp_str_list->elems[0].data;
-                  const char *elem1 = tmp_str_list->elems[1].data;
+                  const char *elem0  = tmp_str_list->elems[0].data;
+                  const char *elem1  = tmp_str_list->elems[1].data;
+                  size_t crc_str_len = strlen(crc_str);
 
                   switch (extension_to_file_hash_type(elem1))
                   {
                      case FILE_TYPE_CRC:
-                        if (string_is_equal(crc_str, elem0))
+                        if (string_is_equal_memcmp_fast(crc_str, elem0,
+                                 crc_str_len))
                            match_found = true;
                         break;
                      case FILE_TYPE_SHA1:
-                        if (string_is_equal(db_info_entry->sha1, elem0))
+                        if (string_is_equal_memcmp_fast(db_info_entry->sha1,
+                                 elem0, crc_str_len))
                            match_found = true;
                         break;
                      case FILE_TYPE_MD5:
-                        if (string_is_equal(db_info_entry->md5, elem0))
+                        if (string_is_equal_memcmp_fast(db_info_entry->md5,
+                                 elem0, crc_str_len))
                            match_found = true;
                         break;
                      default:
@@ -2387,7 +2392,8 @@ static unsigned menu_displaylist_parse_cores(
       return items_found;
    }
 
-   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+   if (string_is_equal(info->label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
       info->download_core = true;
 
    dir_list_sort(str_list, true);
@@ -2465,7 +2471,8 @@ static unsigned menu_displaylist_parse_cores(
       else
       {
          file_type = FILE_TYPE_CORE;
-         if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
+         if (string_is_equal(info->label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
             enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
          else
             enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;

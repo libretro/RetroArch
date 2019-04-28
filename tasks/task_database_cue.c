@@ -249,44 +249,40 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
 
       if (intfstream_read(fd, game_id, 5) > 0)
       {
-         game_id[5] = '\0';
+         size_t game_id_size = strlen(game_id);
+         game_id[5]          = '\0';
 
          if (
-               (string_is_equal(game_id, "ULES-"))
-               || (string_is_equal(game_id, "ULUS-"))
-               || (string_is_equal(game_id, "ULJS-"))
+               (   string_is_equal_memcmp_fast(game_id, "ULES-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "ULUS-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "ULJS-", game_id_size))
 
-               || (string_is_equal(game_id, "ULEM-"))
-               || (string_is_equal(game_id, "ULUM-"))
-               || (string_is_equal(game_id, "ULJM-"))
+               || (string_is_equal_memcmp_fast(game_id, "ULEM-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "ULUM-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "ULJM-", game_id_size))
 
-               || (string_is_equal(game_id, "UCES-"))
-               || (string_is_equal(game_id, "UCUS-"))
-               || (string_is_equal(game_id, "UCJS-"))
-               || (string_is_equal(game_id, "UCAS-"))
+               || (string_is_equal_memcmp_fast(game_id, "UCES-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "UCUS-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "UCJS-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "UCAS-", game_id_size))
 
-               || (string_is_equal(game_id, "NPEH-"))
-               || (string_is_equal(game_id, "NPUH-"))
-               || (string_is_equal(game_id, "NPJH-"))
+               || (string_is_equal_memcmp_fast(game_id, "NPEH-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPUH-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPJH-", game_id_size))
 
-               || (string_is_equal(game_id, "NPEG-"))
-               || (string_is_equal(game_id, "NPUG-"))
-               || (string_is_equal(game_id, "NPJG-"))
-               || (string_is_equal(game_id, "NPHG-"))
+               || (string_is_equal_memcmp_fast(game_id, "NPEG-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPUG-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPJG-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPHG-", game_id_size))
 
-               || (string_is_equal(game_id, "NPEZ-"))
-               || (string_is_equal(game_id, "NPUZ-"))
-               || (string_is_equal(game_id, "NPJZ-"))
+               || (string_is_equal_memcmp_fast(game_id, "NPEZ-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPUZ-", game_id_size))
+               || (string_is_equal_memcmp_fast(game_id, "NPJZ-", game_id_size))
                )
                {
                   intfstream_seek(fd, pos, SEEK_SET);
                   if (intfstream_read(fd, game_id, 10) > 0)
                   {
-#if 0
-                     game_id[4] = '-';
-                     game_id[8] = game_id[9];
-                     game_id[9] = game_id[10];
-#endif
                      game_id[10] = '\0';
                      rv = true;
                   }
@@ -333,10 +329,10 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
          game_id[15] = '\0';
          numberOfAscii = 0;
 
-         /* When scanning WBFS files, "WBFS" is discovered as the first serial. Ignore it. */
-         if (string_is_equal(game_id, "WBFS")) {
+         /* When scanning WBFS files, "WBFS" is 
+          * discovered as the first serial. Ignore it. */
+         if (string_is_equal_memcmp(game_id, "WBFS"))
             continue;
-         }
 
          /* Loop through until we run out of ASCII characters. */
          for (i = 0; i < 15; i++)
@@ -399,7 +395,7 @@ int detect_system(intfstream_t *fd, const char **system_name)
    {
       magic[8] = '\0';
       if (!string_is_empty(magic) &&
-            string_is_equal(magic, "PSP GAME"))
+            string_is_equal_memcmp(magic, "PSP GAME"))
       {
          *system_name = "psp\0";
          rv = 0;

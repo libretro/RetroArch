@@ -1299,9 +1299,7 @@ static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
    else if (pCtx->object_depth == 2)
    {
       if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
-      {
          pCtx->in_subsystem_roms = false;
-      }
    }
 
    return JSON_Parser_Continue;
@@ -1455,50 +1453,48 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
             return JSON_Parser_Abort;
          }
 
-         if (length)
+         if (length && !string_is_empty(pValue))
          {
-            if (!string_is_empty(pValue))
-            {
-               if (!string_is_empty(pCtx->current_items_string))
-                  free(pCtx->current_items_string);
-               pCtx->current_items_string = strdup(pValue);
-            }
+            size_t pvalue_len = strlen(pValue);
+            if (!string_is_empty(pCtx->current_items_string))
+               free(pCtx->current_items_string);
+            pCtx->current_items_string = strdup(pValue);
 
-            if (string_is_equal(pValue, "path"))
+            if (string_is_equal_memcmp_fast(pValue, "path", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->path;
-            else if (string_is_equal(pValue, "label"))
+            else if (string_is_equal_memcmp_fast(pValue, "label", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->label;
-            else if (string_is_equal(pValue, "core_path"))
+            else if (string_is_equal_memcmp_fast(pValue, "core_path", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->core_path;
-            else if (string_is_equal(pValue, "core_name"))
+            else if (string_is_equal_memcmp_fast(pValue, "core_name", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->core_name;
-            else if (string_is_equal(pValue, "crc32"))
+            else if (string_is_equal_memcmp_fast(pValue, "crc32", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->crc32;
-            else if (string_is_equal(pValue, "db_name"))
+            else if (string_is_equal_memcmp_fast(pValue, "db_name", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->db_name;
-            else if (string_is_equal(pValue, "subsystem_ident"))
+            else if (string_is_equal_memcmp_fast(pValue, "subsystem_ident", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
-            else if (string_is_equal(pValue, "subsystem_name"))
+            else if (string_is_equal_memcmp_fast(pValue, "subsystem_name", pvalue_len))
                pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
-            else if (string_is_equal(pValue, "subsystem_roms"))
+            else if (string_is_equal_memcmp_fast(pValue, "subsystem_roms", pvalue_len))
                pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
-            else if (string_is_equal(pValue, "runtime_hours"))
+            else if (string_is_equal_memcmp_fast(pValue, "runtime_hours", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
-            else if (string_is_equal(pValue, "runtime_minutes"))
+            else if (string_is_equal_memcmp_fast(pValue, "runtime_minutes", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
-            else if (string_is_equal(pValue, "runtime_seconds"))
+            else if (string_is_equal_memcmp_fast(pValue, "runtime_seconds", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
-            else if (string_is_equal(pValue, "last_played_year"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_year", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
-            else if (string_is_equal(pValue, "last_played_month"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_month", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
-            else if (string_is_equal(pValue, "last_played_day"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_day", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
-            else if (string_is_equal(pValue, "last_played_hour"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_hour", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
-            else if (string_is_equal(pValue, "last_played_minute"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_minute", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
-            else if (string_is_equal(pValue, "last_played_second"))
+            else if (string_is_equal_memcmp_fast(pValue, "last_played_second", pvalue_len))
                pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
             else
             {
