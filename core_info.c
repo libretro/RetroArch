@@ -185,20 +185,18 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
-static bool core_info_list_iterate(
-      char *s, size_t len,
-      const char *path_basedir,
-      struct string_list *contents, size_t i)
+static config_file_t *core_info_list_iterate(
+      const char *current_path,
+      const char *path_basedir)
 {
    size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
    char *info_path_base       = NULL;
+   char *info_path            = NULL;
    char             *substr   = NULL;
-   const char *current_path   = contents ? contents->elems[i].data : NULL;
-
-   (void)substr;
+   config_file_t *conf        = NULL;
 
    if (!current_path)
-      return false;
+      return NULL;
 
    info_path_base             = (char*)malloc(info_path_base_size);
 
@@ -218,12 +216,17 @@ static bool core_info_list_iterate(
          file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
          info_path_base_size);
 
-   fill_pathname_join(s,
+   info_path = (char*)malloc(info_path_base_size);
+   fill_pathname_join(info_path,
          path_basedir,
-         info_path_base, len);
-
+         info_path_base, info_path_base_size);
    free(info_path_base);
-   return true;
+
+   if (path_is_valid(info_path))
+      conf = config_file_read(info_path);
+   free(info_path);
+
+   return conf;
 }
 
 static core_info_list_t *core_info_list_new(const char *path,
@@ -252,7 +255,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    if (!ok)
    {
       string_list_free(contents);
-      contents = NULL;
+      return NULL;
    }
 #endif
 
@@ -261,36 +264,31 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
    if (!core_info_list)
-      goto error;
+   {
+      string_list_free(contents);
+      return NULL;
+   }
 
    core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
    if (!core_info)
-      goto error;
+   {
+      core_info_list_free(core_info_list);
+      string_list_free(contents);
+      return NULL;
+   }
 
    core_info_list->list  = core_info;
    core_info_list->count = contents->size;
 
    for (i = 0; i < contents->size; i++)
    {
-      size_t info_path_size = PATH_MAX_LENGTH * sizeof(char);
-      char *info_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      const char *path      = contents->elems[i].data;
+      config_file_t *conf   = core_info_list_iterate(path,
+            path_basedir);
 
-      info_path[0]          = '\0';
-
-      if (
-            core_info_list_iterate(info_path, info_path_size,
-               path_basedir, contents, i)
-            && path_is_valid(info_path))
+      if (conf)
       {
          char *tmp           = NULL;
-         bool tmp_bool       = false;
-         unsigned count      = 0;
-         config_file_t *conf = config_file_read(info_path);
-
-         free(info_path);
-
-         if (!conf)
-            continue;
 
          if (config_get_string(conf, "display_name", &tmp)
                && !string_is_empty(tmp))
@@ -338,9 +336,11 @@ static core_info_list_t *core_info_list_new(const char *path,
             tmp = NULL;
          }
 
-         config_get_uint(conf, "firmware_count", &count);
-
-         core_info[i].firmware_count = count;
+         {
+            unsigned count      = 0;
+            config_get_uint(conf, "firmware_count", &count);
+            core_info[i].firmware_count = count;
+         }
 
          if (config_get_string(conf, "supported_extensions", &tmp)
                && !string_is_empty(tmp))
@@ -422,21 +422,22 @@ static core_info_list_t *core_info_list_new(const char *path,
             free(tmp);
          tmp    = NULL;
 
-         if (config_get_bool(conf, "supports_no_game",
-               &tmp_bool))
-            core_info[i].supports_no_game = tmp_bool;
+         {
+            bool tmp_bool       = false;
+            if (config_get_bool(conf, "supports_no_game",
+                     &tmp_bool))
+               core_info[i].supports_no_game = tmp_bool;
 
-         if (config_get_bool(conf, "database_match_archive_member",
-               &tmp_bool))
-            core_info[i].database_match_archive_member = tmp_bool;
+            if (config_get_bool(conf, "database_match_archive_member",
+                     &tmp_bool))
+               core_info[i].database_match_archive_member = tmp_bool;
+         }
 
          core_info[i].config_data = conf;
       }
-      else
-         free(info_path);
 
-      if (!string_is_empty(contents->elems[i].data))
-         core_info[i].path = strdup(contents->elems[i].data);
+      if (!string_is_empty(path))
+         core_info[i].path = strdup(path);
 
       if (!core_info[i].display_name)
          core_info[i].display_name =
@@ -451,12 +452,6 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    string_list_free(contents);
    return core_info_list;
-
-error:
-   if (contents)
-      string_list_free(contents);
-   core_info_list_free(core_info_list);
-   return NULL;
 }
 
 /* Shallow-copies internal state.
@@ -772,19 +767,8 @@ void core_info_get_name(const char *path, char *s, size_t len,
       if (!string_is_equal(path_basename(current_path), core_path_basename))
          continue;
 
-      info_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      info_path[0]                    = '\0';
-
-      if (!core_info_list_iterate(info_path,
-               path_size, path_basedir, contents, i)
-            && path_is_valid(info_path))
-      {
-         free(info_path);
-         continue;
-      }
-
-      conf                            = config_file_read(info_path);
-      free(info_path);
+      conf = core_info_list_iterate(contents->elems[i].data,
+               path_basedir);
 
       if (!conf)
          continue;
