@@ -1198,7 +1198,7 @@ void fill_pathname_home_dir(char *s, size_t len)
 }
 #endif
 
-bool is_path_accessible_using_standard_io(char *path)
+bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
    bool result;
