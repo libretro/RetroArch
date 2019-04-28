@@ -3423,7 +3423,7 @@ bool config_load_remap(void)
    strlcpy(remap_directory,
          settings->paths.directory_input_remapping,
          path_size);
-   RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
+   RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join_special_ext(core_path,
@@ -3450,7 +3450,7 @@ bool config_load_remap(void)
    /* If a game remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: game-specific remap found at %s.\n", game_path);
+      RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
@@ -3462,7 +3462,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no game-specific remap found at %s.\n", game_path);
+      RARCH_LOG("[Remaps]: no game-specific remap found at %s.\n", game_path);
       input_remapping_set_defaults(false);
    }
 
@@ -3472,7 +3472,7 @@ bool config_load_remap(void)
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: content-dir-specific remap found at %s.\n", content_path);
+      RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
@@ -3484,7 +3484,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no content-dir-specific remap found at %s.\n", content_path);
+      RARCH_LOG("[Remaps]: no content-dir-specific remap found at %s.\n", content_path);
       input_remapping_set_defaults(false);
    }
 
@@ -3494,7 +3494,7 @@ bool config_load_remap(void)
    /* If a core remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
          runloop_msg_queue_push(
@@ -3506,7 +3506,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("[Remaps]: no core-specific remap found at %s.\n", core_path);
       input_remapping_set_defaults(false);
    }
 
