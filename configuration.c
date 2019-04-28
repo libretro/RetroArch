@@ -3165,7 +3165,6 @@ bool config_load_override(void)
    char *game_path                        = NULL;
    char *content_path                     = NULL;
    char *config_directory                 = NULL;
-   config_file_t *new_conf                = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ?
@@ -3219,14 +3218,11 @@ bool config_load_override(void)
 
    /* per-core overrides */
    /* Create a new config file from core_path */
-   new_conf = config_file_read(core_path);
-
-   if (new_conf)
+   if (config_file_exists(core_path))
    {
       RARCH_LOG("[Overrides] core-specific overrides found at %s.\n",
             core_path);
 
-      config_file_free(new_conf);
       path_set(RARCH_PATH_CONFIG_APPEND, core_path);
 
       should_append = true;
@@ -3237,15 +3233,11 @@ bool config_load_override(void)
 
    /* per-content-dir overrides */
    /* Create a new config file from content_path */
-   new_conf = config_file_read(content_path);
-
-   if (new_conf)
+   if (config_file_exists(content_path))
    {
       char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       temp_path[0]    = '\0';
-
-      config_file_free(new_conf);
 
       RARCH_LOG("[Overrides] content-dir-specific overrides found at %s.\n",
             game_path);
@@ -3272,15 +3264,11 @@ bool config_load_override(void)
 
    /* per-game overrides */
    /* Create a new config file from game_path */
-   new_conf = config_file_read(game_path);
-
-   if (new_conf)
+   if (config_file_exists(game_path))
    {
       char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       temp_path[0]    = '\0';
-
-      config_file_free(new_conf);
 
       RARCH_LOG("[Overrides] game-specific overrides found at %s.\n",
             game_path);
@@ -3394,21 +3382,17 @@ bool config_unload_override(void)
 bool config_load_remap(void)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
+   config_file_t *new_conf                = NULL;
    char *remap_directory                  = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   config_file_t *new_conf                = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
-
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3417,6 +3401,10 @@ bool config_load_remap(void)
     * Try remap directory setting, no fallbacks defined */
    if (string_is_empty(settings->paths.directory_input_remapping))
       return false;
+
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
    /* path to the directory containing retroarch.cfg (prefix)    */
    remap_directory                        = (char*)
@@ -3544,7 +3532,6 @@ static bool config_load_shader_preset_internal(
       const char *special_name)
 {
    unsigned idx;
-   config_file_t *new_conf = NULL;
    size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
    bool   ret              = false;
    char *shader_path       = (char*)malloc(path_size);
@@ -3563,8 +3550,7 @@ static bool config_load_shader_preset_internal(
             file_path_str((enum file_path_enum)(idx)),
             path_size);
 
-      /* Create a new config file */
-      if (!(new_conf = config_file_read(shader_path)))
+      if (!config_file_exists(shader_path))
          continue;
 
       /* Shader preset exists, load it. */
@@ -3575,7 +3561,6 @@ static bool config_load_shader_preset_internal(
       break;
    }
 
-   config_file_free(new_conf);
    free(shader_path);
 
    return ret;
