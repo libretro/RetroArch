@@ -340,7 +340,7 @@ struct libretro_vfs_implementation_file
 	char* orig_path;
 	size_t buffer_size;
 	int buffer_left;
-
+	size_t buffer_fill;
 };
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
@@ -401,6 +401,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 			stream->buffer = (char*)malloc(buf_size);
 			stream->bufferp = CreateNativeBuffer(stream->buffer, buf_size, 0);
 			stream->buffer_left = 0;
+			stream->buffer_fill = 0;
 			stream->buffer_size = buf_size;
 			return stream;
 		});
@@ -484,7 +485,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 		// Small read, use manually buffered IO
 		if (stream->buffer_left < len) {
 			// Exhaust the buffer
-			memcpy(s, &stream->buffer[stream->buffer_size - stream->buffer_left], stream->buffer_left);
+			memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
 			len -= stream->buffer_left;
 			bytes_read += stream->buffer_left;
 			stream->buffer_left = 0;
@@ -496,9 +497,11 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 					return (int64_t)stream->bufferp->Length;
 				});
 			}, -1);
+			stream->buffer_fill = stream->buffer_left;
 
 			if (stream->buffer_left == -1) {
 				stream->buffer_left = 0;
+				stream->buffer_fill = 0;
 				return -1;
 			}
 
@@ -517,13 +520,13 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 		}
 
 		// Internal buffer already contains requested amount
-		memcpy(s, &stream->buffer[stream->buffer_size - stream->buffer_left], len);
+		memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], len);
 		stream->buffer_left -= len;
 		return len;
 	}
 
 	// Big read exceeding buffer size, exhaust small buffer and read rest in one go
-	memcpy(s, &stream->buffer[stream->buffer_size - stream->buffer_left], stream->buffer_left);
+	memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
 	len -= stream->buffer_left;
 	bytes_read += stream->buffer_left;
 	stream->buffer_left = 0;
@@ -540,7 +543,6 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 	if (ret == -1) {
 		return -1;
 	}
-
 	return bytes_read + ret;
 }
 
