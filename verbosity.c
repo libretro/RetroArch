@@ -184,8 +184,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #elif defined(_XBOX1)
    {
       /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-      char msg_new[1024];
-      char buffer[1024];
+      char msg_new[256];
+      char buffer[256];
 
       msg_new[0] = buffer[0] = '\0';
       snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
@@ -221,7 +221,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
    {
 #if defined(HAVE_QT) || defined(__WINRT__)
-      char buffer[1024];
+      char buffer[256];
 #endif
       FILE *fp = (FILE*)retro_main_log_file();
 
