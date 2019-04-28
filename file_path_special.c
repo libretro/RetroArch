@@ -468,7 +468,6 @@ void fill_short_pathname_representation_wrapper(char* out_rep,
        * We check whether something is actually
        * after the hash to avoid going over the buffer.
        */
-      retro_assert(strlen(last_slash) > 1);
       strlcpy(out_rep, last_slash + 1, size);
       free(path_short);
       return;

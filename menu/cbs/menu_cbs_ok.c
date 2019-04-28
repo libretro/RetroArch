@@ -1045,7 +1045,6 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
          size_t len = strlen(default_info_dir);
          /* In case of a compressed archive, we have to join with a hash */
          /* We are going to write at the position of dir: */
-         retro_assert(len < strlen(def_info->s));
          def_info->s[len] = '#';
       }
 #endif
