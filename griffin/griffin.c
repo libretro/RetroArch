@@ -139,7 +139,6 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
-#include "../managers/core_manager.c"
 #include "../managers/core_option_manager.c"
 
 /*============================================================

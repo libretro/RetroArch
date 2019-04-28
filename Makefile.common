@@ -224,7 +224,6 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
-       managers/core_manager.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
