@@ -467,7 +467,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
-    "Cache"
+    "Önbellek"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
@@ -1047,11 +1047,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-    "Autoconfig"
+    "Otomatik Konfigürasyon"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-    "Input Button Axis Threshold"
+    "Giriş Düğmesi Eksen Eşiği"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -1063,7 +1063,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-    "Menu Swap OK & Cancel Buttons"
+    "Menü TAMAM & İptal tuşlarını değiştirin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -1075,7 +1075,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-    "Bind Timeout"
+    "Basılı Tutmanın Zaman Aşımını"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
@@ -1750,7 +1750,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-    "Navigation Wrap-Around"
+    "Gezinme Kaydırma"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NEAREST,
@@ -1862,7 +1862,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
-    "Oyla"
+    "Vote"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -2042,7 +2042,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY,
-    "Overlay"
+    "Kaplama"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
@@ -2460,7 +2460,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-    "Savefile"
+    "Kayıt Dosyası"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -2600,11 +2600,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-    "ÖndenGit ikinci örneği kullansın"
+    "RunAhead ikinci örneği kullansın"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-    "ÖndenGit Uyarıları Gizlesin"
+    "RunAhead Uyarıları Gizlesin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
@@ -2856,7 +2856,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
-    "Discharging"
+    "Boşaltılıyor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
@@ -2972,7 +2972,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
-    "Top Thumbnail"
+    "Top Küçük Resim"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
@@ -2980,11 +2980,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
-    "Bottom Thumbnail"
+    "Bottom Küçük Resim"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-    "Second Thumbnail"
+    "İkinci Küçük Resim"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -3164,31 +3164,31 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
-    "Ticker Text Animation"
+    "Kayan Yazı Animasyonu"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
-    "Select horizontal scrolling method used to display long menu text strings."
+    "Uzun menü metin dizelerini görüntülemek için kullanılan yatay kaydırma yöntemini seçin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
-    "Bounce Left/Right"
+    "Sol/Sağ Sıçrama"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
-    "Scroll Left"
+    "Sola Kaydır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
-    "Ticker Text Speed"
+    "Kayan Metin Hızı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-    "Animation speed when scrolling long menu text strings."
+    "Uzun menü metni dizelerinde gezinirken animasyon hızı."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-    "Menu Color Theme"
+    "Menü Renk Teması"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -3204,7 +3204,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-    "Custom"
+    "Özel"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
@@ -3352,7 +3352,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-    "Desktop menu (restart)"
+    "Masaüstü Menüsü (yeniden başlatılır)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -3452,7 +3452,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-    "Allow rotation"
+    "Çevirmeye İzin Ver"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -3504,7 +3504,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-    "Notification Size"
+    "Bildirim boyutu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
@@ -3536,11 +3536,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-    "Hard GPU Eşitlemesi"
+    "Hard GPU Sync"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-    "Hard GPU Kare Eşitlemesi"
+    "Hard GPU Sync"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -3636,7 +3636,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-    "Bilinear Filtering"
+    "Bilinear Filtreleme"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
@@ -4020,11 +4020,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-    "Displays the current frame count onscreen."
+    "Ekrandaki geçerli kare sayısını görüntüler."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MEMORY_SHOW,
-    "Includes the current memory usage/total onscreen with FPS/Frames."
+    "Geçerli bellek kullanımı/toplamı ekrandaki FPS/Kare sayısını içerir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
@@ -4104,7 +4104,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-    "'Hard GPU Sync'i kullanırken CPU'nun GPU'dan kaç kare çalışabileceğini belirler.."
+    "'Hard GPU Sync'i kullanırken CPU'nun GPU'dan kaç kare önce gideceğini belirler..."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -4976,7 +4976,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-    "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+    "Giriş yoklama işleminin RetroArch içinde yapılmasının etkisi. 'Erken' veya 'Geç' olarak ayarlamak, yapılandırmanıza bağlı olarak daha az gecikmeyle sonuçlanabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -5008,7 +5008,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-    "Amount of seconds to wait until proceeding to the next bind."
+    "Bir sonraki basılı tutma işlemine kadar bekleyecek saniye miktarı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
@@ -5016,19 +5016,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-    "Describes the period when turbo-enabled buttons are toggled. Numbers are described in frames."
+    "Turbo etkin düğmelerin değiştirildiği süreyi açıklar. Sayılar çerçevelerde açıklanmıştır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-    "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+    "Turbo etkin bir düğmenin ne kadar sürmesi gerektiğini açıklar. Sayılar çerçevelerde açıklanmıştır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-    "Synchronizes the output video of the graphics card to the refresh rate of the screen. Recommended."
+    "Grafik kartının çıkış videosunu ekranın yenileme hızıyla senkronize eder. Tavsiye edilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-    "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the screen."
+    "Coreların ekranı ayarlamasına izin ver. Devre dışı bırakıldığında, döndürme istekleri yoksayılır. Ekranı elle döndüren ayarlarda kullanışlıdır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -5273,7 +5273,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-    "Adds a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance."
+    "Sert piksel kenarlarından kenarı çıkarmak için görüntüye hafif bir bulanıklık ekler. Bu seçeneğin performans üzerinde çok az etkisi var."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
@@ -5345,7 +5345,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-    "Remember window size and position, enabling this has precedence over Windowed Scale"
+    "Pencere boyutunu ve konumunu hatırlayın, Pencereli Ölçekten öncelikli olmasını sağlar"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -5357,15 +5357,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-    "Specify custom X axis position for onscreen text."
+    "Ekrandaki metin için özel X ekseni konumunu belirtin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-    "Specify custom Y axis position for onscreen text."
+    "Ekrandaki metin için özel Y ekseni konumunu belirtin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-    "Specify the font size in points."
+    "Yazı tipi boyutunu nokta cinsinden belirtin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -5381,7 +5381,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-    "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
+    "Videoyu yalnızca tamsayı adımlarla ölçekler. Temel boyut, sistem tarafından bildirilen geometri ve en boy oranına bağlıdır. 'En boy oranını zorla' ayarlanmamışsa, X/Y tamsayı bağımsız olarak ölçeklendirilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -5409,7 +5409,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-    "Records output of GPU shaded material if available."
+    "Varsa, GPU gölgelendiricileri çıkışını kaydeder."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
@@ -5421,7 +5421,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-    "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
+    "Hızlı ileri sarma kullanılırken içeriğin çalıştırılacağı maksimum hız (ör. 60 fps içerik için 5.0x = 300 fps kapak). 0.0x olarak ayarlanmışsa, hızlı sarma oranı sınırsızdır (FPS sınırı yok)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -5445,7 +5445,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-    "ÖndenGit'i kullanırken ortaya çıkan uyarı mesajını gizler ve Core konum kaydediciyi desteklemez."
+    "RunAhead'i kullanırken ortaya çıkan uyarı mesajını gizler ve Core konum kaydediciyi desteklemez."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -5609,15 +5609,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-    "If enabled attempts to autoconfigure controllers, Plug-and-Play style."
+    "Etkinleştirildiğinde denetleyicileri(gamepadler) otomatik yapılandırmaya geçer, Tak ve Kullan stili."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-    "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+    "TAMAM/İptal için düğmeleri değiştirin. Devre dışı bırakılınca, Japonca düğme yönüne geçer, etkinleştirilirse Batı düğme yönüne geçer."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-    "If disabled, the content will keep running in the background when RetroArch's menu is toggled."
+    "Devre dışı bırakılırsa, RetroArch menüsü değiştirildiğinde, içerik arka planda çalışmaya devam eder."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -5669,7 +5669,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-    "Select an image to set as menu wallpaper."
+    "Menü duvar kağıdı olarak ayarlamak için bir resim seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
@@ -5677,7 +5677,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-    "Override the default audio device the audio driver uses. This is driver dependent."
+    "Ses sürücüsünün kullandığı varsayılan ses cihazının üzerine yazın. Bu işlem sürücüye bağlıdır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -5689,11 +5689,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-    "Opacity of all UI elements of the overlay."
+    "Kaplamanın Kullanıcı Arayüzündeki elementlerin opaklığı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-    "Scale of all UI elements of the overlay."
+    "Kaplamanın Kullanıcı Arayüzündeki elementlerin boyutu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
@@ -5701,7 +5701,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-    "Select an overlay from the file browser."
+    "Dosya tarayıcısından bir kaplama seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -5753,19 +5753,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-    "Allows the menu to be controlled with the mouse."
+    "Menünün fare ile kontrol edilmesini sağlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-    "Allows the menu to be controlled with screen touches."
+    "Menünün ekran dokunuşlarıyla kontrol edilmesini sağlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS,
-    "Type of thumbnail to display."
+    "Görüntülenecek küçük resim türü."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-    "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
+    "Oynatma listelerinin sağ üst köşesinde görüntülenecek küçük resim türü. Bu küçük resim, RetroPad Y düğmesine basılarak tam ekrana getirilebilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -5777,7 +5777,7 @@ MSG_HASH(
     )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Replace the content metadata panel by another thumbnail."
+   "İçerik meta veri panelini başka bir küçük resim ile değiştirin."
    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -5785,15 +5785,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
-    "Shows current date and/or time inside the menu."
+    "Menü içindeki geçerli tarihi ve/veya saati gösterir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-    "Shows current battery level inside the menu."
+    "Menü içindeki geçerli pil seviyesini gösterir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-    "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+    "Liste sınırına yatay veya dikey olarak ulaşılırsa, baştan sona ve / veya sona doğru kaydırın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
@@ -5805,7 +5805,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-    "Disconnects an active Netplay connection."
+    "Aktif bir Netplay bağlantısını keser."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
@@ -5985,11 +5985,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-    "Show advanced settings for power users (hidden by default)."
+    "Uzman kullanıcılar için gelişmiş ayarları göster (varsayılan olarak gizli)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-    "Perform tasks on a separate thread."
+    "Ayrı bir iş parçacığında görevleri gerçekleştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
@@ -6021,11 +6021,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-    "The number of frames of input latency for netplay to use to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag."
+    "Ağ gecikmesini gizlemek için netplay için kullanılacak giriş gecikmesi karelerinin sayısı. Jitteri azaltır ve gözle görülür giriş gecikmesi pahasına netçeyi daha az CPU-yoğunlaştırır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-    "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag."
+    "Ağ gecikmesini gizlemek için kullanılabilecek giriş gecikmesi çerçevelerinin aralığı. Jitteri azaltır ve tahmin edilemeyen girdi gecikmesi pahasına netçeyi daha az CPU yoğun yapar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
@@ -6070,11 +6070,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-    "Modify the opacity of the background wallpaper."
+    "Arka plan duvar kağıdının opaklığını değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-    "Select a different background color gradient theme."
+    "Farklı bir arka plan rengi gradyan teması seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -6086,47 +6086,47 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-    "Show the favorites tab inside the main menu."
+    "Ana menünün içindeki favoriler sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-    "Show the image tab inside the main menu."
+    "Ana menünün içindeki resimler sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-    "Show the music tab inside the main menu."
+    "Ana menünün içindeki müzik sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-    "Show the video tab inside the main menu."
+    "Ana menünün içindeki video sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-    "Show the netplay tab inside the main menu."
+    "Ana menünün içindeki netplay sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-    "Show the settings tab inside the main menu."
+    "Ana menünün içindeki ayarlar sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-    "Show the recent history tab inside the main menu."
+    "Ana menünün içindeki geçmiş sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-    "Show the import content tab inside the main menu."
+    "Ana menünün içindeki içerik yükle sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-    "Show playlist tabs inside the main menu."
+    "Ana menünün içindeki oynatma listesi sekmesini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-    "Show startup screen in menu. This is automatically set to false after the program starts for the first time."
+    "Menüde başlangıç ekranını göster. Bu program ilk kez başladıktan sonra otomatik olarak false değerine ayarlanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-    "Modify the opacity of the header graphic."
+    "Başlık grafiğinin opaklığını değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -6411,11 +6411,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-    "Framebuffer Opacity"
+    "Kare Arabelleği Opaklığı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-    "Modify the opacity of the framebuffer."
+    "Kare Arabelleğinin opaklığını değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
@@ -6483,7 +6483,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-    "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
+    "Ayarlar sekmesini gizlerken bir şifre sağlar, Ana Menü sekmesine gidip, Ayarlar Sekmesini Etkinleştir'i seçip şifreyi girerek, menüden daha sonra geri yüklemeyi mümkün kılar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
@@ -6523,7 +6523,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-    "Show/hide the 'Information' option."
+    "'Bilgi' seçeneğini göster/gizle."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
@@ -6531,7 +6531,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-    "Show/hide the 'Configuration File' option."
+    "'Yapılandırma Dosyası' seçeneğini göster/gizle."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -6539,7 +6539,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-    "Show/hide the 'Help' option."
+    "'Yardım' seçeneğini göster/gizle."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -6702,19 +6702,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-    "Notification Background Red Color"
+    "Bildirim Arkaplan Kırmızı Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-    "Notification Background Green Color"
+    "Bildirim Arkaplan Yeşil Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-    "Notification Background Blue Color"
+    "Bildirim Arkaplan Mavi Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-    "Notification Background Opacity"
+    "Bildirim Arkaplan Opaklığı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
@@ -6754,19 +6754,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-    "Notification Red Color"
+    "Bildirim Kırmızı Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-    "Notification Green Color"
+    "Bildirim Yeşil Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-    "Notification Blue Color"
+    "Bildirim Mavi Renk Oranı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-    "Display Frame Count"
+    "Ekran Kare Sayısı"
     )
 MSG_HASH(
     MSG_CONFIG_OVERRIDE_LOADED,
@@ -6786,7 +6786,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-    "Konum kaydedilemedi. ÖndenGit devre dışı bırakıldı."
+    "Konum kaydedilemedi. RunAhead devre dışı bırakıldı."
     )
 MSG_HASH(
     MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
@@ -8159,8 +8159,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync is enabled until performance falls below the target refresh rate.\n"
-    "This can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    "V-Sync, performans hedef yenileme hızının altına düşene kadar etkindir.\n"
+    "Performans gerçek zamanın altına düştüğünde kırılmaları en aza indirebilir ve enerji açısından daha verimli olabilir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -8168,7 +8168,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "Output native, low-resolution signals for use with CRT displays."
+    "CRT ekranlarında kullanmak için yerel, düşük çözünürlüklü sinyaller verir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -8488,7 +8488,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-    "Playlist sublabel runtime"
+    "Oynatma listesi alt etiketi çalışma zamanı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
@@ -8536,7 +8536,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-    "Tışa Basınca titret"
+    "Tuşa Basınca titret"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
