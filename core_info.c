@@ -221,6 +221,7 @@ static config_file_t *core_info_list_iterate(
          path_basedir,
          info_path_base, info_path_base_size);
    free(info_path_base);
+   info_path_base = NULL;
 
    if (path_is_valid(info_path))
       conf = config_file_read(info_path);
