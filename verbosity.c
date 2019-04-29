@@ -68,10 +68,12 @@ static void* log_file_buf        = NULL;
 static bool main_verbosity       = false;
 static bool log_file_initialized = false;
 
+#ifdef HAVE_LIBNX
+static Mutex logging_mtx;
 #ifdef NXLINK
-static Mutex nxlink_mtx;
 bool nxlink_connected = false;
-#endif
+#endif /* NXLINK */
+#endif /* HAVE_LIBNX */
 
 void verbosity_enable(void)
 {
@@ -116,9 +118,8 @@ void retro_main_log_file_init(const char *path, bool append)
    if (log_file_initialized)
       return;
 
-#ifdef NXLINK
-   if (path == NULL && nxlink_connected)
-       mutexInit(&nxlink_mtx);
+#ifdef HAVE_LIBNX
+   mutexInit(&logging_mtx);
 #endif
 
    log_file_fp          = stderr;
@@ -243,9 +244,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       OutputDebugStringA(buffer);
 #endif
 #else
-#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
-          if (nxlink_connected)
-             mutexLock(&nxlink_mtx);
+#if defined(HAVE_LIBNX)
+      mutexLock(&logging_mtx);
 #endif
       if (fp)
       {
@@ -254,9 +254,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          vfprintf(fp, fmt, ap);
          fflush(fp);
       }
-#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
-      if (nxlink_connected)
-         mutexUnlock(&nxlink_mtx);
+#if defined(HAVE_LIBNX)
+      mutexUnlock(&logging_mtx);
 #endif
 
 #endif
