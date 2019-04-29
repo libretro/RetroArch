@@ -6959,13 +6959,37 @@ MSG_HASH(
     "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SNOW,
-    "Snow"
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+    "Background Animation"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_RGUI_SNOW,
-    "Enable snow, forces menu to update every frame"
+    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+    "Enable background particle animation effect. Has a significant performance impact."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+    "OFF"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+    "Snow (Light)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+    "Snow (Heavy)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+    "Rain"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+    "Vortex"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+    "Star Field"
+)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Extended ASCII Support"

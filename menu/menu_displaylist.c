@@ -4306,7 +4306,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,                        PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,                       PARSE_ONLY_PATH},
                {MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,                            PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_MENU_RGUI_SNOW,                               PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT,                    PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,                          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,                           PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,                             PARSE_ONLY_UINT},
