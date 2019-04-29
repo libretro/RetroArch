@@ -173,7 +173,6 @@ typedef struct settings
       bool menu_rgui_border_filler_enable;
       bool menu_rgui_full_width_layout;
       bool menu_rgui_shadows;
-      bool menu_rgui_snow;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_extended_ascii;
@@ -455,6 +454,7 @@ typedef struct settings
       unsigned menu_rgui_internal_upscale_level;
       unsigned menu_rgui_aspect_ratio;
       unsigned menu_rgui_aspect_ratio_lock;
+      unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
 
       unsigned playlist_show_inline_core_name;
