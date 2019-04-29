@@ -850,12 +850,6 @@ static bool gl1_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gl1_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void gl1_gfx_free(void *data)
 {
    gl1_t *gl1 = (gl1_t*)data;
@@ -1538,7 +1532,7 @@ video_driver_t video_gl1 = {
    gl1_gfx_alive,
    gl1_gfx_focus,
    gl1_gfx_suppress_screensaver,
-   gl1_gfx_has_windowed,
+   NULL, /* has_windowed */
    gl1_gfx_set_shader,
    gl1_gfx_free,
    "gl1",
