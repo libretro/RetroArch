@@ -243,9 +243,8 @@ const char *glslang_format_to_string(enum glslang_format fmt)
 
 static glslang_format glslang_find_format(const char *fmt)
 {
-   size_t fmt_len = strlen(fmt);
 #undef FMT
-#define FMT(x) if (string_is_equal_memcmp_fast(fmt, #x, fmt_len)) return SLANG_FORMAT_ ## x
+#define FMT(x) if (string_is_equal(fmt, #x)) return SLANG_FORMAT_ ## x
    FMT(R8_UNORM);
    FMT(R8_UINT);
    FMT(R8_SINT);

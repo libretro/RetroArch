@@ -824,16 +824,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      size_t      entry_len  = strlen(entry->value);
-      const char *entry_val  = entry->value;
-
-      if (string_is_equal_memcmp_fast(entry_val, "true", entry_len))
+      if (string_is_equal(entry->value, "true"))
          *in = true;
-      else if (string_is_equal_memcmp_fast(entry_val, "1", entry_len))
+      else if (string_is_equal(entry->value, "1"))
          *in = true;
-      else if (string_is_equal_memcmp_fast(entry_val, "false", entry_len))
+      else if (string_is_equal(entry->value, "false"))
          *in = false;
-      else if (string_is_equal_memcmp_fast(entry_val, "0", entry_len))
+      else if (string_is_equal(entry->value, "0"))
          *in = false;
       else
          return false;

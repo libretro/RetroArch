@@ -82,14 +82,13 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
  **/
 static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 {
-   size_t wrap_mode_len = strlen(wrap_mode);
-   if (string_is_equal_memcmp_fast(wrap_mode, "clamp_to_border", wrap_mode_len))
+   if (string_is_equal(wrap_mode,      "clamp_to_border"))
       return RARCH_WRAP_BORDER;
-   else if (string_is_equal_memcmp_fast(wrap_mode, "clamp_to_edge", wrap_mode_len))
+   else if (string_is_equal(wrap_mode, "clamp_to_edge"))
       return RARCH_WRAP_EDGE;
-   else if (string_is_equal_memcmp_fast(wrap_mode, "repeat", wrap_mode_len))
+   else if (string_is_equal(wrap_mode, "repeat"))
       return RARCH_WRAP_REPEAT;
-   else if (string_is_equal_memcmp_fast(wrap_mode, "mirrored_repeat", wrap_mode_len))
+   else if (string_is_equal(wrap_mode, "mirrored_repeat"))
       return RARCH_WRAP_MIRRORED_REPEAT;
 
    RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border"
@@ -230,15 +229,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    if (*scale_type_x)
    {
-      size_t scale_type_x_len = strlen(scale_type_x);
-      if (string_is_equal_memcmp_fast(
-               scale_type_x, "source", scale_type_x_len))
+      if (string_is_equal(scale_type_x, "source"))
          scale->type_x = RARCH_SCALE_INPUT;
-      else if (string_is_equal_memcmp_fast(
-               scale_type_x, "viewport", scale_type_x_len))
+      else if (string_is_equal(scale_type_x, "viewport"))
          scale->type_x = RARCH_SCALE_VIEWPORT;
-      else if (string_is_equal_memcmp_fast(
-               scale_type_x, "absolute", scale_type_x_len))
+      else if (string_is_equal(scale_type_x, "absolute"))
          scale->type_x = RARCH_SCALE_ABSOLUTE;
       else
       {
@@ -249,12 +244,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    if (*scale_type_y)
    {
-      size_t scale_type_y_len = strlen(scale_type_y);
-      if (string_is_equal_memcmp_fast(scale_type_y, "source", scale_type_y_len))
+      if (string_is_equal(scale_type_y, "source"))
          scale->type_y = RARCH_SCALE_INPUT;
-      else if (string_is_equal_memcmp_fast(scale_type_y, "viewport", scale_type_y_len))
+      else if (string_is_equal(scale_type_y, "viewport"))
          scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (string_is_equal_memcmp_fast(scale_type_y, "absolute", scale_type_y_len))
+      else if (string_is_equal(scale_type_y, "absolute"))
          scale->type_y = RARCH_SCALE_ABSOLUTE;
       else
       {
@@ -618,7 +612,6 @@ static bool video_shader_parse_imports(config_file_t *conf,
       char mask_buf[64];
       char equal_buf[64];
       char semantic[64];
-      size_t semantic_len     = 0;
       unsigned addr           = 0;
       unsigned mask           = 0;
       unsigned equal          = 0;
@@ -643,19 +636,17 @@ static bool video_shader_parse_imports(config_file_t *conf,
       snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
       snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
 
-      semantic_len = strlen(semantic);
-
-      if (string_is_equal_memcmp_fast(semantic, "capture", semantic_len))
+      if (string_is_equal(semantic, "capture"))
          var->type = RARCH_STATE_CAPTURE;
-      else if (string_is_equal_memcmp_fast(semantic, "transition", semantic_len))
+      else if (string_is_equal(semantic, "transition"))
          var->type = RARCH_STATE_TRANSITION;
-      else if (string_is_equal_memcmp_fast(semantic, "transition_count", semantic_len))
+      else if (string_is_equal(semantic, "transition_count"))
          var->type = RARCH_STATE_TRANSITION_COUNT;
-      else if (string_is_equal_memcmp_fast(semantic, "capture_previous", semantic_len))
+      else if (string_is_equal(semantic, "capture_previous"))
          var->type = RARCH_STATE_CAPTURE_PREV;
-      else if (string_is_equal_memcmp_fast(semantic, "transition_previous", semantic_len))
+      else if (string_is_equal(semantic, "transition_previous"))
          var->type = RARCH_STATE_TRANSITION_PREV;
-      else if (string_is_equal_memcmp_fast(semantic, "python", semantic_len))
+      else if (string_is_equal(semantic, "python"))
          var->type = RARCH_STATE_PYTHON;
       else
       {

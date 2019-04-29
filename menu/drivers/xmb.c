@@ -962,11 +962,10 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    if (!string_is_empty(entry.label))
    {
-      size_t entry_label_len = strlen(entry.label);
       if (     (settings->bools.savestate_thumbnail_enable)
-            && (  (string_is_equal_memcmp_fast(entry.label, "state_slot", entry_label_len))
-               || (string_is_equal_memcmp_fast(entry.label, "loadstate" , entry_label_len))
-               || (string_is_equal_memcmp_fast(entry.label, "savestate" , entry_label_len))))
+            && ((string_is_equal(entry.label, "state_slot"))
+               || (string_is_equal(entry.label, "loadstate"))
+               || (string_is_equal(entry.label, "savestate"))))
       {
          size_t path_size         = 8204 * sizeof(char);
          char             *path   = (char*)malloc(path_size);
@@ -2107,8 +2106,8 @@ static void xmb_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   unsigned xmb_system_tab;
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+   unsigned xmb_system_tab;
 
    if (!xmb)
       return;
@@ -2738,7 +2737,7 @@ static int xmb_draw_item(
    else if (string_is_equal(entry->value,
             msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
          (string_is_equal(entry->value,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2749,22 +2748,23 @@ static int xmb_draw_item(
    {
       if (!string_is_empty(entry->value))
       {
-         size_t entry_val_len = strlen(entry->value);
          if (
-               string_is_equal_memcmp_fast(entry->value, "...",      entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(PRESET)", entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(SHADER)", entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(COMP)",   entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(CORE)",   entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(MOVIE)",  entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(MUSIC)",  entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(DIR)",    entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(RDB)",    entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(CURSOR)", entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(CFILE)",  entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(FILE)",   entry_val_len)  ||
-               string_is_equal_memcmp_fast(entry->value, "(IMAGE)",  entry_val_len)
-            ) { }
+               string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(PRESET)")  ||
+               string_is_equal(entry->value, "(SHADER)")  ||
+               string_is_equal(entry->value, "(COMP)")  ||
+               string_is_equal(entry->value, "(CORE)")  ||
+               string_is_equal(entry->value, "(MOVIE)") ||
+               string_is_equal(entry->value, "(MUSIC)") ||
+               string_is_equal(entry->value, "(DIR)")   ||
+               string_is_equal(entry->value, "(RDB)")   ||
+               string_is_equal(entry->value, "(CURSOR)")||
+               string_is_equal(entry->value, "(CFILE)") ||
+               string_is_equal(entry->value, "(FILE)")  ||
+               string_is_equal(entry->value, "(IMAGE)")
+            )
+         {
+         }
          else
             do_draw_text = true;
       }

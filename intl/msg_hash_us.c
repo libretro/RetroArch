@@ -823,7 +823,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Current Video driver.");
 
-            if (string_is_equal_memcmp(settings->arrays.video_driver, "gl"))
+            if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
                 snprintf(s, len,
                          "OpenGL Video driver. \n"

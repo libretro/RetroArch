@@ -31,25 +31,24 @@
 
 static enum action_iterate_type action_iterate_type(const char *label)
 {
-   size_t label_len = strlen(label);
-   if (string_is_equal_memcmp_fast(label, "info_screen", label_len))
+   if (string_is_equal(label, "info_screen"))
       return ITERATE_TYPE_INFO;
    if (
-         string_is_equal_memcmp_fast(label, "help", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_controls", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_what_is_a_core", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_loading_content", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_scanning_content", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_change_virtual_gamepad", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_audio_video_troubleshooting", label_len) ||
-         string_is_equal_memcmp_fast(label, "help_send_debug_info", label_len) ||
-         string_is_equal_memcmp_fast(label, "cheevos_description", label_len)
+         string_is_equal(label, "help") ||
+         string_is_equal(label, "help_controls") ||
+         string_is_equal(label, "help_what_is_a_core") ||
+         string_is_equal(label, "help_loading_content") ||
+         string_is_equal(label, "help_scanning_content") ||
+         string_is_equal(label, "help_change_virtual_gamepad") ||
+         string_is_equal(label, "help_audio_video_troubleshooting") ||
+         string_is_equal(label, "help_send_debug_info") ||
+         string_is_equal(label, "cheevos_description")
          )
       return ITERATE_TYPE_HELP;
    if (
-         string_is_equal_memcmp_fast(label, "custom_bind", label_len) ||
-         string_is_equal_memcmp_fast(label, "custom_bind_all", label_len) ||
-         string_is_equal_memcmp_fast(label, "custom_bind_defaults", label_len)
+         string_is_equal(label, "custom_bind") ||
+         string_is_equal(label, "custom_bind_all") ||
+         string_is_equal(label, "custom_bind_defaults")
       )
          return ITERATE_TYPE_BIND;
 

@@ -316,72 +316,71 @@ static char launch_arguments[4096];
 static const void *find_driver_nonempty(const char *label, int i,
       char *s, size_t len)
 {
-   const void *drv  = NULL;
-   size_t label_len = strlen(label);
+   const void *drv = NULL;
 
-   if (string_is_equal_memcmp_fast(label, "camera_driver", label_len))
+   if (string_is_equal(label, "camera_driver"))
    {
       drv = camera_driver_find_handle(i);
       if (drv)
          strlcpy(s, camera_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "location_driver", label_len))
+   else if (string_is_equal(label, "location_driver"))
    {
       drv = location_driver_find_handle(i);
       if (drv)
          strlcpy(s, location_driver_find_ident(i), len);
    }
 #ifdef HAVE_MENU
-   else if (string_is_equal_memcmp_fast(label, "menu_driver", label_len))
+   else if (string_is_equal(label, "menu_driver"))
    {
       drv = menu_driver_find_handle(i);
       if (drv)
          strlcpy(s, menu_driver_find_ident(i), len);
    }
 #endif
-   else if (string_is_equal_memcmp_fast(label, "input_driver", label_len))
+   else if (string_is_equal(label, "input_driver"))
    {
       drv = input_driver_find_handle(i);
       if (drv)
          strlcpy(s, input_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "input_joypad_driver", label_len))
+   else if (string_is_equal(label, "input_joypad_driver"))
    {
       drv = joypad_driver_find_handle(i);
       if (drv)
          strlcpy(s, joypad_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "video_driver", label_len))
+   else if (string_is_equal(label, "video_driver"))
    {
       drv = video_driver_find_handle(i);
       if (drv)
          strlcpy(s, video_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "audio_driver", label_len))
+   else if (string_is_equal(label, "audio_driver"))
    {
       drv = audio_driver_find_handle(i);
       if (drv)
          strlcpy(s, audio_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "record_driver", label_len))
+   else if (string_is_equal(label, "record_driver"))
    {
       drv = record_driver_find_handle(i);
       if (drv)
          strlcpy(s, record_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "midi_driver", label_len))
+   else if (string_is_equal(label, "midi_driver"))
    {
       drv = midi_driver_find_handle(i);
       if (drv)
          strlcpy(s, midi_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "audio_resampler_driver", label_len))
+   else if (string_is_equal(label, "audio_resampler_driver"))
    {
       drv = audio_resampler_driver_find_handle(i);
       if (drv)
          strlcpy(s, audio_resampler_driver_find_ident(i), len);
    }
-   else if (string_is_equal_memcmp_fast(label, "wifi_driver", label_len))
+   else if (string_is_equal(label, "wifi_driver"))
    {
       drv = wifi_driver_find_handle(i);
       if (drv)
@@ -3736,7 +3735,7 @@ static enum runloop_state runloop_check_state(
       char *menu_driver       = settings->arrays.menu_driver;
       bool pressed            = BIT256_GET(
             current_input, RARCH_MENU_TOGGLE) &&
-         !string_is_equal_memcmp(menu_driver, "null");
+         !string_is_equal(menu_driver, "null");
 
       if (menu_event_kb_is_set(RETROK_F1) == 1)
       {

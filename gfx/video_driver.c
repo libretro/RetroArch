@@ -3326,29 +3326,27 @@ enum gfx_ctx_api video_context_driver_get_api(void)
    if (ctx_api == GFX_CTX_NONE)
    {
       const char *video_driver = video_driver_get_ident();
-      size_t video_driver_len  = strlen(video_driver);
-
-      if (string_is_equal_memcmp_fast(video_driver, "d3d9", video_driver_len))
+      if (string_is_equal(video_driver, "d3d9"))
          return GFX_CTX_DIRECT3D9_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "d3d10", video_driver_len))
+      else if (string_is_equal(video_driver, "d3d10"))
          return GFX_CTX_DIRECT3D10_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "d3d11", video_driver_len))
+      else if (string_is_equal(video_driver, "d3d11"))
          return GFX_CTX_DIRECT3D11_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "d3d12", video_driver_len))
+      else if (string_is_equal(video_driver, "d3d12"))
          return GFX_CTX_DIRECT3D12_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "gx2", video_driver_len))
+      else if (string_is_equal(video_driver, "gx2"))
          return GFX_CTX_GX2_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "gx", video_driver_len))
+      else if (string_is_equal(video_driver, "gx"))
          return GFX_CTX_GX_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "gl", video_driver_len))
+      else if (string_is_equal(video_driver, "gl"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "gl1", video_driver_len))
+      else if (string_is_equal(video_driver, "gl1"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "glcore", video_driver_len))
+      else if (string_is_equal(video_driver, "glcore"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "vulkan", video_driver_len))
+      else if (string_is_equal(video_driver, "vulkan"))
          return GFX_CTX_VULKAN_API;
-      else if (string_is_equal_memcmp_fast(video_driver, "metal", video_driver_len))
+      else if (string_is_equal(video_driver, "metal"))
          return GFX_CTX_METAL_API;
 
       return GFX_CTX_NONE;

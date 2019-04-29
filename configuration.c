@@ -2537,31 +2537,29 @@ error:
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
 static bool check_menu_driver_compatibility(void)
 {
-   settings_t *settings    = config_get_ptr();
-   char *video_driver      = settings->arrays.video_driver;
-   char *menu_driver       = settings->arrays.menu_driver;
-   size_t menu_driver_len  = strlen(menu_driver);
-   size_t video_driver_len = strlen(video_driver);
+   settings_t *settings = config_get_ptr();
+   char *video_driver   = settings->arrays.video_driver;
+   char *menu_driver    = settings->arrays.menu_driver;
 
-   if (  string_is_equal_memcmp_fast(menu_driver, "rgui",  menu_driver_len) ||
-         string_is_equal_memcmp_fast(menu_driver, "null",  menu_driver_len) ||
-         string_is_equal_memcmp_fast(video_driver, "null", video_driver_len))
+   if (string_is_equal  (menu_driver, "rgui") ||
+         string_is_equal(menu_driver, "null") ||
+         string_is_equal(video_driver, "null"))
       return true;
 
    /* TODO/FIXME - maintenance hazard */
-   if (  string_is_equal_memcmp_fast(video_driver, "d3d9", video_driver_len) ||
-         string_is_equal_memcmp_fast(video_driver, "d3d10", video_driver_len)  ||
-         string_is_equal_memcmp_fast(video_driver, "d3d11", video_driver_len)  ||
-         string_is_equal_memcmp_fast(video_driver, "d3d12", video_driver_len)  ||
-         string_is_equal_memcmp_fast(video_driver, "gdi", video_driver_len)    ||
-         string_is_equal_memcmp_fast(video_driver, "gl", video_driver_len)     ||
-         string_is_equal_memcmp_fast(video_driver, "gl1", video_driver_len)    ||
-         string_is_equal_memcmp_fast(video_driver, "gx2", video_driver_len)    ||
-         string_is_equal_memcmp_fast(video_driver, "vulkan", video_driver_len) ||
-         string_is_equal_memcmp_fast(video_driver, "glcore", video_driver_len) ||
-         string_is_equal_memcmp_fast(video_driver, "metal", video_driver_len)  ||
-         string_is_equal_memcmp_fast(video_driver, "ctr", video_driver_len)    ||
-         string_is_equal_memcmp_fast(video_driver, "vita2d", video_driver_len))
+   if (string_is_equal(video_driver, "d3d9")   ||
+         string_is_equal(video_driver, "d3d10")  ||
+         string_is_equal(video_driver, "d3d11")  ||
+         string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "gdi")    ||
+         string_is_equal(video_driver, "gl")     ||
+         string_is_equal(video_driver, "gl1")    ||
+         string_is_equal(video_driver, "gx2")    ||
+         string_is_equal(video_driver, "vulkan") ||
+         string_is_equal(video_driver, "glcore") ||
+         string_is_equal(video_driver, "metal")  ||
+         string_is_equal(video_driver, "ctr")    ||
+         string_is_equal(video_driver, "vita2d"))
       return true;
 
    return false;
@@ -2571,24 +2569,22 @@ static bool check_menu_driver_compatibility(void)
 static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
-   char *video_driver      = settings->arrays.video_driver;
-   size_t video_driver_len = strlen(video_driver);
 
-   if (string_is_equal_memcmp_fast(video_driver, "vulkan", video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "metal",  video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "glcore", video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "d3d11",  video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "d3d12",  video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "gx2",    video_driver_len))
+   if (string_is_equal(settings->arrays.video_driver, "vulkan") ||
+       string_is_equal(settings->arrays.video_driver, "metal") ||
+       string_is_equal(settings->arrays.video_driver, "glcore") ||
+       string_is_equal(settings->arrays.video_driver, "d3d11") ||
+       string_is_equal(settings->arrays.video_driver, "d3d12") ||
+       string_is_equal(settings->arrays.video_driver, "gx2"))
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
          return false;
       return true;
    }
 
-   if (string_is_equal_memcmp_fast(video_driver, "gl",   video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "d3d8", video_driver_len) ||
-       string_is_equal_memcmp_fast(video_driver, "d3d9", video_driver_len)
+   if (string_is_equal(settings->arrays.video_driver, "gl")   ||
+       string_is_equal(settings->arrays.video_driver, "d3d8") ||
+       string_is_equal(settings->arrays.video_driver, "d3d9")
       )
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
