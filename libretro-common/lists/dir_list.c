@@ -112,16 +112,13 @@ static int dir_list_read(const char *dir,
 
    while (retro_readdir(entry))
    {
-      size_t name_len;
       union string_list_elem_attr attr;
       char file_path[PATH_MAX_LENGTH];
-      const char *name = retro_dirent_get_name(entry);
+      const char *name                = retro_dirent_get_name(entry);
 
       if (!include_hidden && *name == '.')
          continue;
-      name_len         = strlen(name);
-      if (  string_is_equal_memcmp_fast(name, ".",  name_len) || 
-            string_is_equal_memcmp_fast(name, "..", name_len))
+      if (!strcmp(name, ".") || !strcmp(name, ".."))
          continue;
 
       file_path[0] = '\0';
