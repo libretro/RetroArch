@@ -979,12 +979,10 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
       void* buf  = NULL;
 #ifdef ORBIS
       int fd     = orbisOpen(path,O_RDWR|O_CREAT,0644);
-      RARCH_LOG("[Config]config_file_write orbisOpen path=%s fd=%d\n", path, fd);
       if (fd < 0)
          return false;
       config_file_dump_orbis(conf,fd);
       orbisClose(fd);
-      RARCH_LOG("[Config]config_file_write orbisClose path=%s fd=%d\n", path, fd);
 #else
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
