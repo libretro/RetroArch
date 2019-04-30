@@ -1355,7 +1355,7 @@ bool task_push_dbscan(
       bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
-   retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
+   retro_task_t *t      = task_init();
    db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
