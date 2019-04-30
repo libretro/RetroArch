@@ -52,7 +52,6 @@
 #include "../../../core_info.h"
 #include "../../../core.h"
 #include "../../../verbosity.h"
-#include "../../../tasks/task_powerstate.h"
 #include "../../../tasks/tasks_internal.h"
 #include "../../../dynamic.h"
 
@@ -1003,34 +1002,24 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Battery */
    if (video_info->battery_level_enable)
    {
+      menu_display_ctx_powerstate_t powerstate;
       char msg[12];
-      static retro_time_t last_time  = 0;
-      bool charging                  = false;
-      retro_time_t current_time      = cpu_features_get_time_usec();
-      int percent                    = 0;
-      enum frontend_powerstate state = get_last_powerstate(&percent);
 
-      if (state == FRONTEND_POWERSTATE_CHARGING)
-         charging = true;
+      msg[0] = '\0';
 
-      if (current_time - last_time >= INTERVAL_BATTERY_LEVEL_CHECK)
-      {
-         last_time = current_time;
-         task_push_get_powerstate();
-      }
+      powerstate.s   = msg;
+      powerstate.len = sizeof(msg);
 
-      *msg = '\0';
+      menu_display_powerstate(&powerstate);
 
-      if (percent > 0)
+      if (powerstate.battery_enabled)
       {
          timedate_offset = 95;
-
-         snprintf(msg, sizeof(msg), "%d%%", percent);
 
          ozone_draw_text(video_info, ozone, msg, video_info->width - 85, ozone->dimensions.header_height / 2 + FONT_SIZE_TIME * 3/8, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.time, ozone->theme->text_rgba, false);
 
          menu_display_blend_begin(video_info);
-         ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[charging ? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL], video_info->width - 60 - 56, ozone->dimensions.header_height / 2 - 42, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
+         ozone_draw_icon(video_info, 92, 92, ozone->icons_textures[powerstate.charging ? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL], video_info->width - 60 - 56, ozone->dimensions.header_height / 2 - 42, video_info->width, video_info->height, 0, 1, ozone->theme->entries_icon);
          menu_display_blend_end(video_info);
       }
    }
