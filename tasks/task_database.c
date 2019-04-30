@@ -131,7 +131,8 @@ static const char *database_info_get_current_element_name(
    return handle->list->elems[handle->list_ptr].data;
 }
 
-static int task_database_iterate_start(database_info_handle_t *db,
+static int task_database_iterate_start(retro_task_t *task,
+      database_info_handle_t *db,
       const char *name)
 {
    char msg[256];
@@ -1278,7 +1279,7 @@ static void task_database_handler(retro_task_t *task)
          task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
-         task_database_iterate_start(dbinfo, name);
+         task_database_iterate_start(task, dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
          if (task_database_iterate(db, dbstate, dbinfo) == 0)
