@@ -45,6 +45,14 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    return (a && b) ? !strcmp(a, b) : false;
 }
 
+static INLINE char *string_concat(char *dst, char *src)
+{
+   while (*dst)
+      dst++;
+   while ((*(dst)++ = *(src)++));
+   return --dst;
+}
+
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
 #define string_is_not_equal(a, b)         !string_is_equal((a), (b))

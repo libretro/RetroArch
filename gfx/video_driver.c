@@ -2249,10 +2249,8 @@ void video_driver_set_title_buf(void)
          " ",
          info.library_name,
          sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf,
-         " ", sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf,
-         info.library_version,
+   string_concat(video_driver_title_buf, " ");
+   strlcat(video_driver_title_buf, info.library_version,
          sizeof(video_driver_title_buf));
 }
 
@@ -2422,8 +2420,7 @@ void video_driver_frame(const void *data, unsigned width,
          snprintf(video_info.fps_text, sizeof(video_info.fps_text),
                "FPS: %6.1f", last_fps);
          if (video_info.framecount_show)
-            strlcat(video_info.fps_text,
-                  " || ", sizeof(video_info.fps_text));
+            string_concat(video_info.fps_text, " || ");
       }
 
       if (video_info.framecount_show)
@@ -2433,8 +2430,7 @@ void video_driver_frame(const void *data, unsigned width,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)video_driver_frame_count);
-         strlcat(video_info.fps_text,
-               frames_text, sizeof(video_info.fps_text));
+         string_concat(video_info.fps_text, frames_text);
       }
 
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
@@ -2445,10 +2441,9 @@ void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(video_info.fps_text))
          {
-            strlcat(video_driver_window_title,
-                  "|| ", sizeof(video_driver_window_title));
-            strlcat(video_driver_window_title,
-                  video_info.fps_text, sizeof(video_driver_window_title));
+            string_concat(video_driver_window_title, "|| ");
+            string_concat(video_driver_window_title,
+                  video_info.fps_text);
          }
 
          curr_time                        = new_time;
