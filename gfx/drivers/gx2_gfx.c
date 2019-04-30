@@ -1429,9 +1429,7 @@ static bool wiiu_gfx_set_shader(void *data,
    if (!path)
       return true;
 
-   config_file_t *conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = config_file_new(path)))
       return false;
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
