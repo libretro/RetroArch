@@ -126,7 +126,7 @@ bool input_autoconfigure_get_swap_override(void)
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-void input_autoconfigure_joypad_reindex_devices()
+void input_autoconfigure_joypad_reindex_devices(void)
 {
    unsigned i, j, k;
 
@@ -204,11 +204,11 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    else
    {
       if (string_is_empty(params->name))
-         RARCH_LOG("[autoconf]: failed match because params->name was empty\n");
+         RARCH_LOG("[Autoconf]: failed match because params->name was empty\n");
       else if (string_is_empty(ident))
-         RARCH_LOG("[autoconf]: failed match because ident was empty\n");
+         RARCH_LOG("[Autoconf]: failed match because ident was empty\n");
       else
-         RARCH_LOG("[autoconf]: failed match because ident '%s' != param->name '%s'\n",
+         RARCH_LOG("[Autoconf]: failed match because ident '%s' != param->name '%s'\n",
                ident, params->name);
    }
 #endif
@@ -348,7 +348,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (!list)
    {
-      RARCH_LOG("[autoconf]: No profiles found.\n");
+      RARCH_LOG("[Autoconf]: No profiles found.\n");
       return false;
    }
 
@@ -381,7 +381,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
-         RARCH_LOG("[autoconf]: selected configuration: %s\n", conf_path);
+         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
          input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
@@ -484,7 +484,8 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
    if (hDeviceInfo == INVALID_HANDLE_VALUE)
    {
-      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n", GetLastError());
+      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n",
+            GetLastError());
       goto done;
    }
 
@@ -799,7 +800,7 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
       {
          const blissbox_pad_type_t *pad;
          char name[255] = {0};
-         int index = params->pid - BLISSBOX_PID;
+         int index      = params->pid - BLISSBOX_PID;
 
          RARCH_LOG("[Autoconf]: Bliss-Box detected. Getting pad type...\n");
 
