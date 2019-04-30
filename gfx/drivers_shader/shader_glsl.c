@@ -977,7 +977,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
          snprintf(define, sizeof(define), "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);
-         strlcat(glsl->alias_define, define, sizeof(glsl->alias_define));
+         string_concat(glsl->alias_define, define);
       }
    }
 

@@ -1125,7 +1125,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    strlcat(path_base,
          file_path_str(FILE_PATH_LPL_EXTENSION),
-         sizeof(path_base));
+         sizeof(path_base)
+         );
 
    fill_pathname_join(path_playlist,
          settings->paths.directory_playlist, path_base,
@@ -2100,7 +2101,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             PATH_MAX_LENGTH * sizeof(char));
       strlcat(db_path,
             file_path_str(FILE_PATH_RDB_EXTENSION),
-            PATH_MAX_LENGTH * sizeof(char));
+            PATH_MAX_LENGTH * sizeof(char)
+            );
 
       if (path_is_valid(db_path))
          menu_entries_append_enum(

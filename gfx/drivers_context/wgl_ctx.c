@@ -497,7 +497,7 @@ static void gfx_ctx_wgl_update_title(void *data, void *data2)
       snprintf(
             mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
             mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+      string_concat(video_info->fps_text, mem);
 #endif
    }
 

@@ -21,6 +21,7 @@
 #include <encodings/utf.h>
 #include <retro_math.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #include <features/features_cpu.h>
 
 #define DG_DYNARR_IMPLEMENTATION
@@ -679,7 +680,7 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    if (!ticker->selected)
    {
       utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      strlcat(ticker->s, "...", PATH_MAX_LENGTH);
+      string_concat(ticker->s, "...");
       return false;
    }
 

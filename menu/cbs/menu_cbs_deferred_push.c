@@ -570,7 +570,7 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
          libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
+         string_concat(newstring2, "|");
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
       }
@@ -579,8 +579,7 @@ static int general_push(menu_displaylist_info_t *info,
       if (settings->bools.multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|",
-               PATH_MAX_LENGTH * sizeof(char));
+         string_concat(newstring2, "|");
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
       }
