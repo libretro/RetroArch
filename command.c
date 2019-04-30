@@ -2785,6 +2785,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_GAME_WATCH:
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
+      case CMD_EVENT_NETPLAY_ENABLE_HOST:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
