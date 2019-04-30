@@ -86,6 +86,8 @@
 #define PI 3.14159265359f
 #endif
 
+#define BATTERY_WARN_THRESHOLD 20
+
 typedef struct
 {
    unsigned start_x;
@@ -589,7 +591,13 @@ enum rgui_symbol_type
    RGUI_SYMBOL_SHIFT_UP,
    RGUI_SYMBOL_SHIFT_DOWN,
    RGUI_SYMBOL_NEXT,
-   RGUI_SYMBOL_TEXT_CURSOR
+   RGUI_SYMBOL_TEXT_CURSOR,
+   RGUI_SYMBOL_CHARGING,
+   RGUI_SYMBOL_BATTERY_100,
+   RGUI_SYMBOL_BATTERY_80,
+   RGUI_SYMBOL_BATTERY_60,
+   RGUI_SYMBOL_BATTERY_40,
+   RGUI_SYMBOL_BATTERY_20
 };
 
 /* All custom symbols must have dimensions
@@ -665,6 +673,78 @@ static const uint8_t rgui_symbol_data_text_cursor[FONT_WIDTH * FONT_HEIGHT] = {
       1, 1, 1, 1, 1, /* Baseline */
       1, 1, 1, 1, 1,
       1, 1, 1, 1, 1};
+
+static const uint8_t rgui_symbol_data_charging[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      0, 1, 1, 1, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 1, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_100[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_80[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_60[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_40[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_20[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
 
 /* ==============================
  * Custom Symbols (glyphs) END
@@ -1118,7 +1198,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                if (rgui->particle_effect == RGUI_PARTICLE_EFFECT_SNOW_ALT)
                {
                   /* Gives the following distribution:
-                   * 1x1: 32
+                   * 1x1: 96
                    * 2x2: 128
                    * 3x3: 32 */
                   if (!(i & 0x2))
@@ -2276,6 +2356,18 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
          return rgui_symbol_data_next;
       case RGUI_SYMBOL_TEXT_CURSOR:
          return rgui_symbol_data_text_cursor;
+      case RGUI_SYMBOL_CHARGING:
+         return rgui_symbol_data_charging;
+      case RGUI_SYMBOL_BATTERY_100:
+         return rgui_symbol_data_battery_100;
+      case RGUI_SYMBOL_BATTERY_80:
+         return rgui_symbol_data_battery_80;
+      case RGUI_SYMBOL_BATTERY_60:
+         return rgui_symbol_data_battery_60;
+      case RGUI_SYMBOL_BATTERY_40:
+         return rgui_symbol_data_battery_40;
+      case RGUI_SYMBOL_BATTERY_20:
+         return rgui_symbol_data_battery_20;
       default:
          break;
    }
@@ -2948,14 +3040,19 @@ static void rgui_render(void *data, bool is_idle)
       /* Render usual text */
       size_t selection = menu_navigation_get_selection();
       char title_buf[255];
-      unsigned timedate_x = (RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE)) -
-            (5 * FONT_WIDTH_STRIDE);
+      size_t title_max_len;
+      size_t title_len;
+      unsigned title_x;
+      unsigned title_y = RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE;
+      unsigned term_end_x = RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE);
+      unsigned timedate_x = term_end_x - (5 * FONT_WIDTH_STRIDE);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
       bool show_mini_thumbnails = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
       bool show_thumbnail = false;
       bool show_left_thumbnail = false;
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point = 0;
+      size_t powerstate_len = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -2981,11 +3078,76 @@ static void rgui_render(void *data, bool is_idle)
          term_mid_point = (unsigned)((RGUI_TERM_HEIGHT(fb_height) * 0.5f) + 0.5f) - 1;
       }
 
+      /* Show battery indicator, if required */
+      if (settings->bools.menu_battery_level_enable)
+      {
+         menu_display_ctx_powerstate_t powerstate;
+         char percent_str[12];
+
+         percent_str[0] = '\0';
+
+         powerstate.s   = percent_str;
+         powerstate.len = sizeof(percent_str);
+
+         menu_display_powerstate(&powerstate);
+
+         if (powerstate.battery_enabled)
+         {
+            powerstate_len = strlen(percent_str);
+
+            if (powerstate_len > 0)
+            {
+               unsigned powerstate_x;
+               enum rgui_symbol_type powerstate_symbol;
+               uint16_t powerstate_color = (powerstate.percent > BATTERY_WARN_THRESHOLD || powerstate.charging) ?
+                     rgui->colors.title_color : rgui->colors.hover_color;
+
+               if (powerstate.charging)
+                  powerstate_symbol = RGUI_SYMBOL_CHARGING;
+               else
+               {
+                  if (powerstate.percent > 80)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_100;
+                  else if (powerstate.percent > 60)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_80;
+                  else if (powerstate.percent > 40)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_60;
+                  else if (powerstate.percent > 20)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_40;
+                  else
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_20;
+               }
+
+               /* Note: percent symbol is particularly hideous when
+                * drawn using RGUI's bitmap font, so strip it off the
+                * end of the output string... */
+               powerstate_len--;
+               percent_str[powerstate_len] = '\0';
+
+               powerstate_len += 2;
+               powerstate_x = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
+
+               /* Draw symbol */
+               blit_symbol(powerstate_x, title_y, powerstate_symbol,
+                           powerstate_color, rgui->colors.shadow_color);
+
+               /* Print text */
+               blit_line(powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
+                         percent_str, powerstate_color, rgui->colors.shadow_color);
+
+               /* Final length of battery indicator is 'powerstate_len' + a
+                * spacer of 3 characters */
+               powerstate_len += 3;
+            }
+         }
+      }
+
       /* Print title */
+      title_max_len = RGUI_TERM_WIDTH(fb_width) - 5 - (powerstate_len > 5 ? powerstate_len : 5);
       title_buf[0] = '\0';
 
       ticker.s        = title_buf;
-      ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+      ticker.len      = title_max_len;
       ticker.str      = rgui->menu_title;
       ticker.selected = true;
 
@@ -2993,10 +3155,18 @@ static void rgui_render(void *data, bool is_idle)
 
       string_to_upper(title_buf);
 
-      blit_line(
-            (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-                  - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
-            RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE,
+      title_len = utf8len(title_buf);
+      title_x = RGUI_TERM_START_X(fb_width) +
+                (RGUI_TERM_WIDTH(fb_width) - title_len) * FONT_WIDTH_STRIDE / 2;
+
+      /* Title is always centred, unless it is long enough
+       * to infringe upon the battery indicator, in which case
+       * we shift it to the left */
+      if (powerstate_len > 5)
+         if (title_len > title_max_len - (powerstate_len - 5))
+            title_x -= (powerstate_len - 5) * FONT_WIDTH_STRIDE / 2;
+
+      blit_line(title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */

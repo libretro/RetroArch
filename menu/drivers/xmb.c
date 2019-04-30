@@ -61,7 +61,6 @@
 #include "../../playlist.h"
 #include "../../retroarch.h"
 
-#include "../../tasks/task_powerstate.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"
@@ -74,8 +73,6 @@
 #ifndef XMB_DELAY
 #define XMB_DELAY 166
 #endif
-
-#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 #if 0
 #define XMB_DEBUG
@@ -3614,25 +3611,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (video_info->battery_level_enable)
    {
+      menu_display_ctx_powerstate_t powerstate;
       char msg[12];
-      static retro_time_t last_time  = 0;
-      bool charging                  = false;
-      retro_time_t current_time      = cpu_features_get_time_usec();
-      int percent                    = 0;
-      enum frontend_powerstate state = get_last_powerstate(&percent);
 
-      if (state == FRONTEND_POWERSTATE_CHARGING)
-         charging = true;
+      msg[0] = '\0';
 
-      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
-      {
-         last_time = current_time;
-         task_push_get_powerstate();
-      }
+      powerstate.s   = msg;
+      powerstate.len = sizeof(msg);
 
-      *msg = '\0';
+      menu_display_powerstate(&powerstate);
 
-      if (percent > 0)
+      if (powerstate.battery_enabled)
       {
          size_t x_pos      = xmb->icon_size / 6;
          size_t x_pos_icon = xmb->margins_title_left;
@@ -3641,7 +3630,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
-                  xmb->textures.list[charging
+                  xmb->textures.list[powerstate.charging
                   ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
                   width - (xmb->icon_size / 2) - x_pos_icon,
                   xmb->icon_size,
@@ -3652,8 +3641,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
-
-         snprintf(msg, sizeof(msg), "%d%%", percent);
 
          percent_width = (unsigned)
             font_driver_get_message_width(
