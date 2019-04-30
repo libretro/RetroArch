@@ -158,7 +158,6 @@ typedef struct menu_widget_msg
    uint8_t task_count; /* how many tasks have used this notification? */
 
    int8_t task_progress;
-   bool task_alternative_look;
    bool task_finished;
    bool task_error;
    bool task_cancelled;
@@ -381,25 +380,24 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          if (task)
          {
-            msg_widget->msg                     = strdup(title);
-            msg_widget->msg_len                 = strlen(title);
+            msg_widget->msg                  = strdup(title);
+            msg_widget->msg_len              = strlen(title);
 
-            msg_widget->task_error              = task->error;
-            msg_widget->task_cancelled          = task->cancelled;
-            msg_widget->task_finished           = task->finished;
-            msg_widget->task_alternative_look   = task->alternative_look;
-            msg_widget->task_progress           = task->progress;
-            msg_widget->task_ident              = task->ident;
-            msg_widget->task_title_ptr          = task->title;
-            msg_widget->task_count              = 1;
+            msg_widget->task_error           = task->error;
+            msg_widget->task_cancelled       = task->cancelled;
+            msg_widget->task_finished        = task->finished;
+            msg_widget->task_progress        = task->progress;
+            msg_widget->task_ident           = task->ident;
+            msg_widget->task_title_ptr       = task->title;
+            msg_widget->task_count           = 1;
 
-            msg_widget->unfolded                = true;
+            msg_widget->unfolded             = true;
 
-            msg_widget->width                   = font_driver_get_message_width(font_regular, title, msg_widget->msg_len, msg_queue_text_scale_factor) + simple_widget_padding/2;
+            msg_widget->width                = font_driver_get_message_width(font_regular, title, msg_widget->msg_len, msg_queue_text_scale_factor) + simple_widget_padding/2;
 
-            task->frontend_userdata             = msg_widget;
+            task->frontend_userdata          = msg_widget;
 
-            msg_widget->hourglass_rotation      = 0;
+            msg_widget->hourglass_rotation   = 0;
          }
          else
          {
@@ -450,6 +448,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          if (task->title != msg_widget->task_title_ptr)
          {
+            menu_animation_ctx_entry_t entry;
             unsigned len         = strlen(task->title);
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
 
@@ -461,23 +460,15 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
             msg_widget->task_title_ptr             = task->title;
             msg_widget->msg_transition_animation   = 0;
 
-            if (!task->alternative_look)
-            {
-               menu_animation_ctx_entry_t entry;
-               entry.easing_enum = EASING_OUT_QUAD;
-               entry.tag = (uintptr_t) NULL;
-               entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
-               entry.target_value = msg_queue_height/2.0f;
-               entry.subject = &msg_widget->msg_transition_animation;
-               entry.cb = msg_widget_msg_transition_animation_done;
-               entry.userdata = msg_widget;
+            entry.easing_enum = EASING_OUT_QUAD;
+            entry.tag = (uintptr_t) NULL;
+            entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
+            entry.target_value = msg_queue_height/2.0f;
+            entry.subject = &msg_widget->msg_transition_animation;
+            entry.cb = msg_widget_msg_transition_animation_done;
+            entry.userdata = msg_widget;
 
-               menu_animation_push(&entry);
-            }
-            else
-            {
-               msg_widget_msg_transition_animation_done(msg_widget);
-            }
+            menu_animation_push(&entry);
 
             msg_widget->task_count++;
 

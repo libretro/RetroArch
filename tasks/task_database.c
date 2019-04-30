@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <math.h>
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -132,23 +131,13 @@ static const char *database_info_get_current_element_name(
    return handle->list->elems[handle->list_ptr].data;
 }
 
-static int task_database_iterate_start(retro_task_t *task,
-      database_info_handle_t *db,
+static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
    char msg[511];
 
    msg[0] = msg[510] = '\0';
-#ifdef RARCH_INTERNAL
-   snprintf(msg, sizeof(msg),
-         "%s %s\n",
-         msg_hash_to_str(MSG_SCANNING),
-         path_basename(name));
-   task_free_title(task);
-   task_set_title(task, strdup(msg));
-   if (db->list->size != 0)
-      task_set_progress(task, roundf((float)db->list_ptr / (float)db->list->size * 100.0f));
-#else
+
    snprintf(msg, sizeof(msg),
          STRING_REP_USIZE "/" STRING_REP_USIZE ": %s %s...\n",
          (size_t)db->list_ptr,
@@ -157,8 +146,13 @@ static int task_database_iterate_start(retro_task_t *task,
          name);
 
    if (!string_is_empty(msg))
+   {
+#ifdef RARCH_INTERNAL
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
+   }
 
    db->status = DATABASE_STATUS_ITERATE;
 
@@ -1210,6 +1204,8 @@ static void task_database_handler(retro_task_t *task)
             db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
       }
 
+      task_free_title(task);
+
       if (db->handle)
          db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
    }
@@ -1279,7 +1275,7 @@ static void task_database_handler(retro_task_t *task)
          task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
-         task_database_iterate_start(task, dbinfo, name);
+         task_database_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
          if (task_database_iterate(db, dbstate, dbinfo) == 0)
@@ -1296,14 +1292,14 @@ static void task_database_handler(retro_task_t *task)
          }
          else
          {
-#ifdef RARCH_INTERNAL
-            task_set_progress(task, 100);
-#else
             const char *msg = NULL;
             if (db->is_directory)
                msg = msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED);
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
+#ifdef RARCH_INTERNAL
+            runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
             ui_companion_driver_notify_refresh();
@@ -1355,7 +1351,7 @@ bool task_push_dbscan(
       bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
-   retro_task_t *t      = task_init();
+   retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
    db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
@@ -1365,8 +1361,6 @@ bool task_push_dbscan(
    t->state                  = db;
    t->callback               = cb;
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
-
-   t->alternative_look       = true;
 
    db->show_hidden_files     = db_dir_show_hidden_files;
    db->is_directory          = directory;

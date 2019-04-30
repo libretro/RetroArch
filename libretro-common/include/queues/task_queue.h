@@ -114,14 +114,9 @@ struct retro_task
    /* task identifier */
    uint32_t ident;
 
-   /* frontend userdata
+   /* frontend userdata 
     * (e.g. associate a sticky notification to a task) */
    void *frontend_userdata;
-
-   /* if set to true, frontend will
-      use an alternative look for the
-      task progress display */
-   bool alternative_look;
 
    /* don't touch this. */
    retro_task_t *next;
