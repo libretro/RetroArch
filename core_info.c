@@ -71,13 +71,13 @@ static void core_info_list_resolve_all_extensions(
 
       strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      strlcat(core_info_list->all_ext, "|", all_ext_len);
+      string_concat(core_info_list->all_ext, "|");
    }
 #ifdef HAVE_7ZIP
-   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
+   string_concat(core_info_list->all_ext, "7z|");
 #endif
 #ifdef HAVE_ZLIB
-   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
+   string_concat(core_info_list->all_ext, "zip|");
 #endif
 }
 
