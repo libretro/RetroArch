@@ -612,11 +612,6 @@ config_file_t *config_file_new(const char *path)
    return config_file_new_internal(path, 0, NULL);
 }
 
-config_file_t *config_file_read(const char *path)
-{
-   return config_file_new_internal(path, 0, NULL);
-}
-
 static struct config_entry_list *config_get_entry(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
@@ -1106,7 +1101,7 @@ bool config_get_entry_list_next(struct config_file_entry *entry)
 
 bool config_file_exists(const char *path)
 {
-   config_file_t *config = config_file_read(path);
+   config_file_t *config = config_file_new(path);
    if (!config)
       return false;
 

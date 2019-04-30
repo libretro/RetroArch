@@ -3445,7 +3445,7 @@ bool config_load_remap(void)
          path_size);
 
    /* Create a new config file from game_path */
-   new_conf = config_file_read(game_path);
+   new_conf = config_file_new(game_path);
 
    /* If a game remap file exists, load it. */
    if (new_conf)
@@ -3467,7 +3467,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from content_path */
-   new_conf = config_file_read(content_path);
+   new_conf = config_file_new(content_path);
 
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
@@ -3489,7 +3489,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from core_path */
-   new_conf = config_file_read(core_path);
+   new_conf = config_file_new(core_path);
 
    /* If a core remap file exists, load it. */
    if (new_conf)
@@ -3746,7 +3746,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    free(buf);
    free(path_new);
 
-   conf = config_file_read(autoconf_file);
+   conf = config_file_new(autoconf_file);
 
    if (!conf)
    {
@@ -3810,7 +3810,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
-   config_file_t                              *conf  = config_file_read(path);
+   config_file_t                              *conf  = config_file_new(path);
    settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);

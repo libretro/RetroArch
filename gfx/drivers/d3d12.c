@@ -334,8 +334,9 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   d3d12_texture_t* source;
-   d3d12_video_t*   d3d12 = (d3d12_video_t*)data;
+   d3d12_texture_t* source = NULL;
+   config_file_t* conf     = NULL;
+   d3d12_video_t*   d3d12  = (d3d12_video_t*)data;
 
    if (!d3d12)
       return false;
@@ -353,7 +354,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   config_file_t* conf = config_file_read(path);
+   conf = config_file_new(path);
 
    if (!conf)
       return false;

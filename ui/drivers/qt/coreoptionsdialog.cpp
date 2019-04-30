@@ -132,7 +132,7 @@ void CoreOptionsDialog::onSaveGameSpecificOptions()
       return;
    }
 
-   conf = config_file_read(game_path);
+   conf = config_file_new(game_path);
 
    if (!conf)
    {

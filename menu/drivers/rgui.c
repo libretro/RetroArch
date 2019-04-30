@@ -1889,7 +1889,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Open config file */
-   conf = config_file_read(theme_path);
+   conf = config_file_new(theme_path);
    if (!conf)
       goto end;
 

@@ -749,7 +749,7 @@ bool task_push_overlay_load_default(
    if (task_queue_find(&find_data))
       goto error;
 
-   conf = config_file_read(overlay_path);
+   conf = config_file_new(overlay_path);
 
    if (!conf)
       goto error;

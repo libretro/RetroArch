@@ -207,7 +207,7 @@ static int deferred_push_cursor_manager_list_deferred(
    char *rdb                      = NULL;
    settings_t *settings           = config_get_ptr();
    const char *path               = info->path;
-   config_file_t *conf            = path ? config_file_read(path) : NULL;
+   config_file_t *conf            = path ? config_file_new(path) : NULL;
 
    if (!conf || !settings)
       goto end;

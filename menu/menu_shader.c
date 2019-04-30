@@ -109,14 +109,14 @@ bool menu_shader_manager_init(void)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.cgp", sizeof(preset_path));
-            found = config_file_read(preset_path);
+            found = config_file_new(preset_path);
          }
 
          if (!found)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.slangp", sizeof(preset_path));
-            found = config_file_read(preset_path);
+            found = config_file_new(preset_path);
          }
 
          new_path = strdup(preset_path);
@@ -125,7 +125,7 @@ bool menu_shader_manager_init(void)
 
    if (!string_is_empty(new_path) && found)
    {
-      config_file_t *conf = config_file_read(new_path);
+      config_file_t *conf = config_file_new(new_path);
       video_shader_read_conf_cgp(conf, menu_driver_shader);
       video_shader_resolve_relative(menu_driver_shader, new_path);
       video_shader_resolve_parameters(conf, menu_driver_shader);
@@ -174,7 +174,7 @@ bool menu_shader_manager_set_preset(void *data,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   conf = config_file_read(preset_path);
+   conf = config_file_new(preset_path);
 
    if (!conf)
       return false;

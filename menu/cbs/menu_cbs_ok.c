@@ -1486,7 +1486,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
-            config_file_t *conf = config_file_read(action_path);
+            config_file_t *conf = config_file_new(action_path);
             flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
@@ -3777,7 +3777,7 @@ static int action_ok_option_create(const char *path,
       return 0;
    }
 
-   conf = config_file_read(game_path);
+   conf = config_file_new(game_path);
 
    if (!conf)
    {

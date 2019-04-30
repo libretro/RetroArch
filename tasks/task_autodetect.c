@@ -352,14 +352,11 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       return false;
    }
 
-   if (list)
-   {
-      RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
-   }
+   RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
 
    for (i = 0; i < list->size; i++)
    {
-      conf = config_file_read(list->elems[i].data);
+      conf = config_file_new(list->elems[i].data);
 
       if (conf)
          ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
@@ -374,7 +371,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0)
    {
-      conf = config_file_read(list->elems[index].data);
+      conf = config_file_new(list->elems[index].data);
 
       if (conf)
       {

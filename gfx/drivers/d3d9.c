@@ -364,7 +364,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    unsigned i;
    bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
-   config_file_t            *conf = config_file_read(shader_path);
+   config_file_t            *conf = config_file_new(shader_path);
 
    if (!conf)
    {

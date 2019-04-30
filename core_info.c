@@ -225,7 +225,7 @@ static config_file_t *core_info_list_iterate(
    info_path_base = NULL;
 
    if (path_is_valid(info_path))
-      conf = config_file_read(info_path);
+      conf = config_file_new(info_path);
    free(info_path);
 
    return conf;
@@ -915,7 +915,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
    char       *tmp          = NULL;
-   config_file_t *conf      = config_file_read(path);
+   config_file_t *conf      = config_file_new(path);
 
    if (!conf)
       return false;

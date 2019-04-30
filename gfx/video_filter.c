@@ -404,7 +404,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!filt)
       return NULL;
 
-   filt->conf = config_file_read(filter_config);
+   filt->conf = config_file_new(filter_config);
    if (!filt->conf)
    {
       RARCH_ERR("[SoftFilter]: Did not find config: %s\n", filter_config);

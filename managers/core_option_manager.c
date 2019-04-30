@@ -178,7 +178,7 @@ core_option_manager_t *core_option_manager_new(const char *conf_path,
       return NULL;
 
    if (!string_is_empty(conf_path))
-      opt->conf = config_file_read(conf_path);
+      opt->conf = config_file_new(conf_path);
    if (!opt->conf)
       opt->conf = config_file_new(NULL);
 
