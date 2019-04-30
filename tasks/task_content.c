@@ -1921,13 +1921,13 @@ void content_clear_subsystem(void)
 }
 
 /* Checks if launched from the commandline */
-bool content_launched_from_cli()
+bool content_launched_from_cli(void)
 {
    return _launched_from_cli;
 }
 
 /* Get the current subsystem */
-int content_get_subsystem()
+int content_get_subsystem(void)
 {
    return pending_subsystem_id;
 }
