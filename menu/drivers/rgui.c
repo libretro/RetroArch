@@ -594,8 +594,10 @@ enum rgui_symbol_type
    RGUI_SYMBOL_TEXT_CURSOR,
    RGUI_SYMBOL_CHARGING,
    RGUI_SYMBOL_BATTERY_100,
-   RGUI_SYMBOL_BATTERY_66,
-   RGUI_SYMBOL_BATTERY_33
+   RGUI_SYMBOL_BATTERY_80,
+   RGUI_SYMBOL_BATTERY_60,
+   RGUI_SYMBOL_BATTERY_40,
+   RGUI_SYMBOL_BATTERY_20
 };
 
 /* All custom symbols must have dimensions
@@ -696,7 +698,7 @@ static const uint8_t rgui_symbol_data_battery_100[FONT_WIDTH * FONT_HEIGHT] = {
       0, 0, 0, 0, 0,
       0, 0, 0, 0, 0};
 
-static const uint8_t rgui_symbol_data_battery_66[FONT_WIDTH * FONT_HEIGHT] = {
+static const uint8_t rgui_symbol_data_battery_80[FONT_WIDTH * FONT_HEIGHT] = {
       0, 0, 0, 0, 0,
       0, 0, 1, 1, 0,
       0, 1, 1, 1, 1,
@@ -708,14 +710,38 @@ static const uint8_t rgui_symbol_data_battery_66[FONT_WIDTH * FONT_HEIGHT] = {
       0, 0, 0, 0, 0,
       0, 0, 0, 0, 0};
 
-static const uint8_t rgui_symbol_data_battery_33[FONT_WIDTH * FONT_HEIGHT] = {
+static const uint8_t rgui_symbol_data_battery_60[FONT_WIDTH * FONT_HEIGHT] = {
       0, 0, 0, 0, 0,
       0, 0, 1, 1, 0,
       0, 1, 1, 1, 1,
       0, 1, 0, 0, 1,
-      0, 1, 1, 1, 1,
       0, 1, 0, 0, 1,
       0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_40[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_20[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
       0, 1, 1, 1, 1, /* Baseline */
       0, 0, 0, 0, 0,
       0, 0, 0, 0, 0};
@@ -2334,10 +2360,14 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
          return rgui_symbol_data_charging;
       case RGUI_SYMBOL_BATTERY_100:
          return rgui_symbol_data_battery_100;
-      case RGUI_SYMBOL_BATTERY_66:
-         return rgui_symbol_data_battery_66;
-      case RGUI_SYMBOL_BATTERY_33:
-         return rgui_symbol_data_battery_33;
+      case RGUI_SYMBOL_BATTERY_80:
+         return rgui_symbol_data_battery_80;
+      case RGUI_SYMBOL_BATTERY_60:
+         return rgui_symbol_data_battery_60;
+      case RGUI_SYMBOL_BATTERY_40:
+         return rgui_symbol_data_battery_40;
+      case RGUI_SYMBOL_BATTERY_20:
+         return rgui_symbol_data_battery_20;
       default:
          break;
    }
@@ -3076,12 +3106,16 @@ static void rgui_render(void *data, bool is_idle)
                   powerstate_symbol = RGUI_SYMBOL_CHARGING;
                else
                {
-                  if (powerstate.percent > 66)
+                  if (powerstate.percent > 80)
                      powerstate_symbol = RGUI_SYMBOL_BATTERY_100;
-                  else if (powerstate.percent > 33)
-                     powerstate_symbol = RGUI_SYMBOL_BATTERY_66;
+                  else if (powerstate.percent > 60)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_80;
+                  else if (powerstate.percent > 40)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_60;
+                  else if (powerstate.percent > 20)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_40;
                   else
-                     powerstate_symbol = RGUI_SYMBOL_BATTERY_33;
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_20;
                }
 
                /* Note: percent symbol is particularly hideous when
