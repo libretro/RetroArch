@@ -448,7 +448,6 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          if (task->title != msg_widget->task_title_ptr)
          {
-            menu_animation_ctx_entry_t entry;
             unsigned len         = strlen(task->title);
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
 
@@ -460,15 +459,24 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
             msg_widget->task_title_ptr             = task->title;
             msg_widget->msg_transition_animation   = 0;
 
-            entry.easing_enum = EASING_OUT_QUAD;
-            entry.tag = (uintptr_t) NULL;
-            entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
-            entry.target_value = msg_queue_height/2.0f;
-            entry.subject = &msg_widget->msg_transition_animation;
-            entry.cb = msg_widget_msg_transition_animation_done;
-            entry.userdata = msg_widget;
+            if (!task->alternative_look)
+            {
+               menu_animation_ctx_entry_t entry;
 
-            menu_animation_push(&entry);
+               entry.easing_enum = EASING_OUT_QUAD;
+               entry.tag = (uintptr_t) NULL;
+               entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
+               entry.target_value = msg_queue_height/2.0f;
+               entry.subject = &msg_widget->msg_transition_animation;
+               entry.cb = msg_widget_msg_transition_animation_done;
+               entry.userdata = msg_widget;
+
+               menu_animation_push(&entry);
+            }
+            else
+            {
+               msg_widget_msg_transition_animation_done(msg_widget);
+            }
 
             msg_widget->task_count++;
 
