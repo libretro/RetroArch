@@ -1732,7 +1732,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          for (i = 0; info[i].ident; i++)
          {
             unsigned j;
-            if (!log_level != RETRO_LOG_DEBUG)
+            if (log_level != RETRO_LOG_DEBUG)
                continue;
 
             RARCH_LOG("Special game type: %s\n", info[i].desc);

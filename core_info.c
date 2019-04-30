@@ -192,7 +192,6 @@ static config_file_t *core_info_list_iterate(
    size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
    char *info_path_base       = NULL;
    char *info_path            = NULL;
-   char             *substr   = NULL;
    config_file_t *conf        = NULL;
 
    if (!current_path)
@@ -207,9 +206,11 @@ static config_file_t *core_info_list_iterate(
          info_path_base_size);
 
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(PS2) && !defined(HW_WUP))
-   substr = strrchr(info_path_base, '_');
-   if (substr)
-      *substr = '\0';
+   {
+      char *substr = strrchr(info_path_base, '_');
+      if (substr)
+         *substr = '\0';
+   }
 #endif
 
    strlcat(info_path_base,
@@ -759,8 +760,6 @@ void core_info_get_name(const char *path, char *s, size_t len,
 
    for (i = 0; i < contents->size; i++)
    {
-      size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
-      char *info_path                 = NULL;
       config_file_t *conf             = NULL;
       char *new_core_name             = NULL;
       const char *current_path        = contents->elems[i].data;
