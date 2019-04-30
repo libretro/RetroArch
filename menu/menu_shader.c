@@ -58,10 +58,11 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
-   bool found                  = false;
    bool is_preset              = false;
+   config_file_t *conf         = NULL;
    char *new_path              = NULL;
    const char *path_shader     = retroarch_get_shader_preset();
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
 
    menu_shader_manager_free();
 
@@ -71,17 +72,16 @@ bool menu_shader_manager_init(void)
    if (!menu_driver_shader || !path_shader)
       return false;
 
+   type = video_shader_get_type_from_ext(path_get_extension(path_shader),
+         &is_preset);
+
    if (is_preset)
    {
-      found     = config_file_exists(path_shader);
+      conf     = config_file_new(path_shader);
       new_path = strdup(path_shader);
    }
    else
    {
-      enum rarch_shader_type type = video_shader_get_type_from_ext(
-            path_get_extension(path_shader),
-            &is_preset);
-
       if (video_shader_is_supported(type))
       {
          strlcpy(menu_driver_shader->pass[0].source.path, path_shader,
@@ -91,8 +91,7 @@ bool menu_shader_manager_init(void)
       else
       {
          char preset_path[PATH_MAX_LENGTH];
-         settings_t *settings              = config_get_ptr();
-         bool found                        = false;
+         settings_t *settings        = config_get_ptr();
          const char *shader_dir            =
             *settings->paths.directory_video_shader ?
             settings->paths.directory_video_shader :
@@ -102,38 +101,39 @@ bool menu_shader_manager_init(void)
 
          fill_pathname_join(preset_path, shader_dir,
                "menu.glslp", sizeof(preset_path));
+         conf = config_file_new(preset_path);
 
-         found = config_file_exists(preset_path);
-
-         if (!found)
+         if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.cgp", sizeof(preset_path));
-            found = config_file_new(preset_path);
+            conf = config_file_new(preset_path);
          }
 
-         if (!found)
+         if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.slangp", sizeof(preset_path));
-            found = config_file_new(preset_path);
+            conf = config_file_new(preset_path);
          }
 
          new_path = strdup(preset_path);
       }
    }
 
-   if (!string_is_empty(new_path) && found)
+   if (
+         !string_is_empty(new_path) && conf &&
+         video_shader_read_conf_cgp(conf, menu_driver_shader)
+      )
    {
-      config_file_t *conf = config_file_new(new_path);
-      video_shader_read_conf_cgp(conf, menu_driver_shader);
       video_shader_resolve_relative(menu_driver_shader, new_path);
       video_shader_resolve_parameters(conf, menu_driver_shader);
-      config_file_free(conf);
    }
 
    if (new_path)
       free(new_path);
+   if (conf)
+      config_file_free(conf);
 
    return true;
 }
