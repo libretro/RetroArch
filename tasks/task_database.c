@@ -134,21 +134,24 @@ static const char *database_info_get_current_element_name(
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
-   char msg[511];
+   char msg[256];
+   const char *basename_path = !string_is_empty(name) ? 
+      path_basename(name) : "";
 
-   msg[0] = msg[510] = '\0';
+   msg[0] = '\0';
 
    snprintf(msg, sizeof(msg),
          STRING_REP_USIZE "/" STRING_REP_USIZE ": %s %s...\n",
          (size_t)db->list_ptr,
          (size_t)db->list->size,
          msg_hash_to_str(MSG_SCANNING),
-         name);
+         basename_path);
 
    if (!string_is_empty(msg))
    {
 #ifdef RARCH_INTERNAL
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
