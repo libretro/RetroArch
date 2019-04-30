@@ -14494,7 +14494,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          1,
          true,
          true);
-   settings_data_list_current_add_flags(list, list_info,
+   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info,
          SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
