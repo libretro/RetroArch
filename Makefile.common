@@ -193,7 +193,6 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       setting_list.o \
        list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
