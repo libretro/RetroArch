@@ -1135,21 +1135,23 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
-   menu_file_list_cbs_t *cbs      = NULL;
-   menu_list_t *menu_list         = menu_entries_list;
-   if (!menu_list)
+   file_list_t *list              = NULL;
+   if (!menu_entries_list)
       return;
 
-   file_list_get_last(menu_list_get(menu_list, 0),
+   list = menu_list_get(menu_entries_list, 0);
+
+   file_list_get_last(list,
          path, label, file_type, entry_idx);
 
-   cbs                            = menu_entries_list 
-      ? (menu_file_list_cbs_t*)file_list_get_last_actiondata(
-            menu_list_get(menu_entries_list, 0))
-      : NULL;
+   if (enum_idx)
+   {
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
+         file_list_get_last_actiondata(list);
 
-   if (cbs && enum_idx)
-      *enum_idx = cbs->enum_idx;
+      if (cbs)
+         *enum_idx = cbs->enum_idx;
+   }
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
