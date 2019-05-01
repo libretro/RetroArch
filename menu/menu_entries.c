@@ -142,6 +142,13 @@ char *menu_entry_get_path(menu_entry_t *entry)
    return strdup(entry->path);
 }
 
+/*
+ * Return Value
+ *
+ * The function returns a heap-allocated string if
+ * successful. It's the callee's responsibility to
+ * free this.
+ */
 char *menu_entry_get_rich_label(menu_entry_t *entry)
 {
    if (!entry)
@@ -153,6 +160,13 @@ char *menu_entry_get_rich_label(menu_entry_t *entry)
    return NULL;
 }
 
+/*
+ * Return Value
+ *
+ * The function returns a heap-allocated string if
+ * successful. It's the callee's responsibility to
+ * free this.
+ */
 char *menu_entry_get_sublabel(menu_entry_t *entry)
 {
    if (!entry || string_is_empty(entry->sublabel))
@@ -456,7 +470,8 @@ int menu_entry_select(uint32_t i)
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
 }
 
-int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
+int menu_entry_action(menu_entry_t *entry,
+      unsigned i, enum menu_action action)
 {
    int ret                    = 0;
    file_list_t *selection_buf =
@@ -526,7 +541,8 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
    }
 
-   cbs = selection_buf ? (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+   cbs = selection_buf ? (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
    {
@@ -641,19 +657,9 @@ error:
 
 #define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
-static file_list_t *menu_list_get_selection(menu_list_t *list, unsigned idx)
-{
-   if (!list)
-      return NULL;
-   return list->selection_buf[idx];
-}
+#define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
 
-static size_t menu_list_get_stack_size(menu_list_t *list, size_t idx)
-{
-   if (!list)
-      return 0;
-   return file_list_get_size(list->menu_stack[idx]);
-}
+#define menu_list_get_stack_size(list, idx) ((list) ? file_list_get_size((list)->menu_stack[(idx)]) : 0)
 
 static int menu_list_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
