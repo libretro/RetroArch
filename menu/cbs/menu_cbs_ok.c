@@ -37,10 +37,10 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_entries.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../widgets/menu_dialog.h"
-#include "../widgets/menu_entry.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_input_bind_dialog.h"

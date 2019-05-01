@@ -33,8 +33,6 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 
-#include "widgets/menu_entry.h"
-
 #include "../audio/audio_driver.h"
 #include "../file_path_special.h"
 #include "../gfx/font_driver.h"

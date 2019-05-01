@@ -35,7 +35,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../widgets/menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"

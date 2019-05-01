@@ -35,7 +35,6 @@
 #include "../file_path_special.h"
 
 #include "menu_driver.h"
-#include "widgets/menu_entry.h"
 
 #include "menu_thumbnail_path.h"
 
