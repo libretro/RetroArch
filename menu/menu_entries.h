@@ -145,8 +145,6 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-int menu_entries_get_core_name(char *s, size_t len);
-
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx);
@@ -170,8 +168,6 @@ size_t menu_entries_get_size(void);
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
-
-rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
 void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
       enum msg_hash_enums enum_idx,

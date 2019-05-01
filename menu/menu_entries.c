@@ -45,6 +45,17 @@ struct menu_list
    file_list_t **selection_buf;
 };
 
+#define menu_entries_need_refresh() ((!menu_entries_nonblocking_refresh) && menu_entries_need_refresh)
+
+static rarch_setting_t *menu_entries_get_setting(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+   return (cbs) ? cbs->setting : NULL;
+}
+
+
 /* This file provides an abstraction of the currently displayed
  * menu.
  *
@@ -544,7 +555,7 @@ int menu_entry_action(menu_entry_t *entry,
    cbs = selection_buf ? (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
-   if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
+   if (menu_entries_need_refresh())
    {
       if (cbs && cbs->action_refresh)
       {
@@ -659,7 +670,7 @@ error:
 
 #define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
 
-#define menu_list_get_stack_size(list, idx) ((list) ? file_list_get_size((list)->menu_stack[(idx)]) : 0)
+#define menu_list_get_stack_size(list, idx) file_list_get_size((list)->menu_stack[(idx)])
 
 static int menu_list_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
@@ -673,8 +684,6 @@ static bool menu_list_pop_stack(menu_list_t *list,
    menu_ctx_list_t list_info;
    bool refresh           = false;
    file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
-   if (!list)
-      return false;
 
    if (menu_list_get_stack_size(list, idx) <= 1)
       return false;
@@ -725,7 +734,7 @@ static void menu_list_flush_stack(menu_list_t *list,
    {
       size_t new_selection_ptr = menu_navigation_get_selection();
 
-      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
+      if (!list || !menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
          break;
 
       menu_navigation_set_selection(new_selection_ptr);
@@ -763,25 +772,6 @@ static bool menu_entries_clear(file_list_t *list)
 }
 
 /**
- * menu_entries_elem_is_dir:
- * @list                     : File list handle.
- * @offset                   : Offset index of element.
- *
- * Is the current entry at offset @offset a directory?
- *
- * Returns: true (1) if entry is a directory, otherwise false (0).
- **/
-static bool menu_entries_elem_is_dir(file_list_t *list,
-      unsigned offset)
-{
-   unsigned type     = 0;
-
-   menu_entries_get_at_offset(list, offset, NULL, NULL, &type, NULL, NULL);
-
-   return type == FILE_TYPE_DIRECTORY;
-}
-
-/**
  * menu_entries_elem_get_first_char:
  * @list                     : File list handle.
  * @offset                   : Offset index of element.
@@ -800,7 +790,7 @@ static int menu_entries_elem_get_first_char(
    menu_entries_get_at_offset(list, offset,
          NULL, NULL, NULL, NULL, &path);
 
-   if (path != NULL)
+   if (path)
       ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
@@ -815,22 +805,30 @@ static int menu_entries_elem_get_first_char(
 static void menu_entries_build_scroll_indices(file_list_t *list)
 {
    int current;
-   bool current_is_dir;
+   bool current_is_dir      = false;
+   unsigned type            = 0;
    size_t i, scroll_value   = 0;
-
-   if (!list || !list->size)
-      return;
 
    menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
    menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 
    current        = menu_entries_elem_get_first_char(list, 0);
-   current_is_dir = menu_entries_elem_is_dir(list, 0);
+
+   menu_entries_get_at_offset(list, 0, NULL, NULL, &type, NULL, NULL);
+
+   if (type == FILE_TYPE_DIRECTORY)
+      current_is_dir = true;
 
    for (i = 1; i < list->size; i++)
    {
       int first   = menu_entries_elem_get_first_char(list, (unsigned)i);
-      bool is_dir = menu_entries_elem_is_dir(list, (unsigned)i);
+      bool is_dir = false;
+      
+      menu_entries_get_at_offset(list, (unsigned)i,
+            NULL, NULL, &type, NULL, NULL);
+
+      if (type == FILE_TYPE_DIRECTORY)
+         is_dir = true;
 
       if ((current_is_dir && !is_dir) || (first > current))
          menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
@@ -850,15 +848,15 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
  *
  * Ensure it doesn't overflow.
  **/
-static bool menu_entries_refresh(void *data)
+static bool menu_entries_refresh(file_list_t *list)
 {
    size_t list_size;
-   file_list_t *list = (file_list_t*)data;
    size_t selection  = menu_navigation_get_selection();
 
-   menu_entries_build_scroll_indices(list);
+   if (list->size)
+      menu_entries_build_scroll_indices(list);
 
-   list_size = menu_entries_get_size();
+   list_size         = menu_entries_get_size();
 
    if ((selection >= list_size) && list_size)
    {
@@ -875,6 +873,14 @@ static bool menu_entries_refresh(void *data)
    return true;
 }
 
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
+{
+   if (menu_entries_list)
+      return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
+            menu_list_get(menu_entries_list, 0));
+   return NULL;
+}
+
 /* Sets title to what the name of the current menu should be. */
 int menu_entries_get_title(char *s, size_t len)
 {
@@ -882,7 +888,10 @@ int menu_entries_get_title(char *s, size_t len)
    const char *path              = NULL;
    const char *label             = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
+   menu_file_list_cbs_t *cbs     = menu_entries_list 
+      ? (menu_file_list_cbs_t*)file_list_get_last_actiondata(
+            menu_list_get(menu_entries_list, 0))
+      : NULL;
 
    if (!cbs)
       return -1;
@@ -891,24 +900,6 @@ int menu_entries_get_title(char *s, size_t len)
 
    if (cbs && cbs->action_get_title)
       return cbs->action_get_title(path, label, menu_type, s, len);
-   return 0;
-}
-
-int menu_entries_get_core_name(char *s, size_t len)
-{
-   struct retro_system_info    *system = runloop_get_libretro_system_info();
-   const char *core_name               = NULL;
-
-   if (system)
-      core_name    = system->library_name;
-
-   if (string_is_empty(core_name) && system)
-      core_name = system->library_name;
-   if (string_is_empty(core_name))
-      core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-
-   snprintf(s, len, "%s", core_name);
-
    return 0;
 }
 
@@ -1141,15 +1132,6 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
-{
-   menu_list_t *menu_list         = menu_entries_list;
-   if (!menu_list)
-      return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
-         menu_list_get(menu_list, 0));
-}
-
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
@@ -1160,7 +1142,12 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 
    file_list_get_last(menu_list_get(menu_list, 0),
          path, label, file_type, entry_idx);
-   cbs = menu_entries_get_last_stack_actiondata();
+
+   cbs                            = menu_entries_list 
+      ? (menu_file_list_cbs_t*)file_list_get_last_actiondata(
+            menu_list_get(menu_entries_list, 0))
+      : NULL;
+
    if (cbs && enum_idx)
       *enum_idx = cbs->enum_idx;
 }
@@ -1193,17 +1180,6 @@ size_t menu_entries_get_size(void)
    if (!menu_list)
       return 0;
    return file_list_get_size(menu_list_get_selection(menu_list, 0));
-}
-
-rarch_setting_t *menu_entries_get_setting(uint32_t i)
-{
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
-
-   if (!cbs)
-      return NULL;
-   return cbs->setting;
 }
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
@@ -1299,7 +1275,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
       case MENU_ENTRIES_CTL_REFRESH:
          if (!data)
             return false;
-         return menu_entries_refresh(data);
+         return menu_entries_refresh((file_list_t*)data);
       case MENU_ENTRIES_CTL_CLEAR:
          return menu_entries_clear((file_list_t*)data);
       case MENU_ENTRIES_CTL_INIT:
@@ -1308,7 +1284,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          /* Returns true if a Back button should be shown
           * (i.e. we are at least
           * one level deep in the menu hierarchy). */
-         return (menu_entries_get_stack_size(0) > 1);
+         if (!menu_entries_list)
+            return false;
+         return (menu_list_get_stack_size(menu_entries_list, 0) > 1);
       case MENU_ENTRIES_CTL_NONE:
       default:
          break;
