@@ -73,6 +73,7 @@
 #define PARTICLES_COUNT            100
 
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#define DATETIME_CHECK_INTERVAL    1000000
 
 typedef struct menu_ctx_load_image
 {
@@ -229,6 +230,11 @@ static size_t menu_driver_selection_ptr         = 0;
 /* Timers */
 static retro_time_t menu_driver_current_time_us         = 0;
 static retro_time_t menu_driver_powerstate_last_time_us = 0;
+static retro_time_t menu_driver_datetime_last_time_us   = 0;
+
+/* Storage container for current menu datetime
+ * representation string */
+static char menu_datetime_cache[255]                    = {0};
 
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -364,66 +370,79 @@ static bool menu_display_check_compatibility(
  * */
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 {
-   time_t time_;
-
    if (!datetime)
       return;
 
-   time(&time_);
-
-   setlocale(LC_TIME, "");
-
-   switch (datetime->time_mode)
+   /* Trigger an update, if required */
+   if (menu_driver_current_time_us - menu_driver_datetime_last_time_us >=
+         DATETIME_CHECK_INTERVAL)
    {
-      case 0: /* Date and time */
-         strftime(datetime->s, datetime->len,
-               "%Y-%m-%d %H:%M:%S", localtime(&time_));
-         break;
-      case 1: /* YY-MM-DD HH:MM */
-         strftime(datetime->s, datetime->len,
-               "%Y-%m-%d %H:%M", localtime(&time_));
-         break;
-      case 2: /* MM-DD-YYYY HH:MM  */
-         strftime(datetime->s, datetime->len,
-               "%m-%d-%Y %H:%M", localtime(&time_));
-         break;
-      case 3: /* Time */
-         strftime(datetime->s, datetime->len,
-               "%H:%M:%S", localtime(&time_));
-         break;
-      case 4: /* Time (hours-minutes) */
-         strftime(datetime->s, datetime->len,
-               "%H:%M", localtime(&time_));
-         break;
-      case 5: /* Date and time, without year and seconds */
-         strftime(datetime->s, datetime->len,
-               "%d/%m %H:%M", localtime(&time_));
-         break;
-      case 6:
-         strftime(datetime->s, datetime->len,
-               "%m/%d %H:%M", localtime(&time_));
-         break;
-      case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
+      time_t time_;
+
+      menu_driver_datetime_last_time_us = menu_driver_current_time_us;
+
+      /* Get current time */
+      time(&time_);
+
+      setlocale(LC_TIME, "");
+
+      /* Format string representation */
+      switch (datetime->time_mode)
+      {
+         case 0: /* Date and time */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %H:%M:%S", localtime(&time_));
+            break;
+         case 1: /* YY-MM-DD HH:MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %H:%M", localtime(&time_));
+            break;
+         case 2: /* MM-DD-YYYY HH:MM  */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %H:%M", localtime(&time_));
+            break;
+         case 3: /* Time */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%H:%M:%S", localtime(&time_));
+            break;
+         case 4: /* Time (hours-minutes) */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%H:%M", localtime(&time_));
+            break;
+         case 5: /* Date and time, without year and seconds */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %H:%M", localtime(&time_));
+            break;
+         case 6:
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %H:%M", localtime(&time_));
+            break;
+         case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
-         strftime(datetime->s, datetime->len,
-            "%I : %M : %S %p", localtime(&time_));
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+               "%I : %M : %S %p", localtime(&time_));
 #else
-         {
-            char *local;
-
-            strftime(datetime->s, datetime->len,
-
-               "%I:%M:%S %p", localtime(&time_));
-            local = local_to_utf8_string_alloc(datetime->s);
-
-            if (local)
             {
-               strlcpy(datetime->s, local, datetime->len);
-               free(local);
+               char *local;
+
+               strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+
+                  "%I:%M:%S %p", localtime(&time_));
+               local = local_to_utf8_string_alloc(menu_datetime_cache);
+
+               if (local)
+               {
+                  strlcpy(menu_datetime_cache, local, sizeof(menu_datetime_cache));
+                  free(local);
+               }
             }
-         }
 #endif
+      }
    }
+
+   /* Copy cached datetime string to input
+    * menu_display_ctx_datetime_t struct */
+   strlcpy(datetime->s, menu_datetime_cache, datetime->len);
 }
 
 /* Display current (battery) power state */

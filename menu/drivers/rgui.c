@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include <time.h>
 
 #include <string/stdstring.h>
 #include <lists/file_list.h>
@@ -3366,30 +3365,22 @@ static void rgui_render(void *data, bool is_idle)
       /* Print clock (if required) */
       if (settings->bools.menu_timedate_enable)
       {
-         time_t current_time;
-         struct tm * time_info;
+         menu_display_ctx_datetime_t datetime;
          char timedate[16];
 
          timedate[0] = '\0';
 
-         /* menu_display_timedate() is incredibly slow
-          * -> do this the old fashioned way... */
+         datetime.s = timedate;
+         datetime.len = sizeof(timedate);
+         datetime.time_mode = 4;
 
-         /* Get current time */
-         time(&current_time);
-         time_info = localtime(&current_time);
+         menu_display_timedate(&datetime);
 
-         if (time_info)
-         {
-            snprintf(timedate, sizeof(timedate), "%02u:%02u",
-                  (unsigned)time_info->tm_hour, (unsigned)time_info->tm_min);
-
-            blit_line(
-                  timedate_x,
-                  (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, timedate,
-                  rgui->colors.hover_color, rgui->colors.shadow_color);
-         }
+         blit_line(
+               timedate_x,
+               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
+               RGUI_TERM_START_Y(fb_height) + 2, timedate,
+               rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
 
