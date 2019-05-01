@@ -955,8 +955,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Bu seçenek kullanılacak gölgelendirici geçiş \n"
                              "sayısını belirtir. Bunu 0'a ayarlarsanız ve Gölgelendirici Değişiklikleri Uygula'yı \n"
                              "kullanırsanız, 'boş' bir gölgelendirici kullanırsınız. \n"
-                             " \n"
-                             "Varsayılan Filtre seçeneği, germe filtresini etkiler.\n");
+            );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
             snprintf(s, len,
@@ -1218,8 +1217,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "uyumluluk için NTSC varsayılanları kabul edilir. \n"
                              " \n"
                              "Geniş görüntü değişikliklerinden kaçınmak için bu değer 60Hz'ye yakın olmalıdır. \n"
-                             "Monitörünüz 60Hz'de veya ona yakın bir yerde  \n"
-                             "çalışmıyorsa, VSync'yi devre dışı bırakın ");
+                             "Monitörünüz 60Hz'de çalışmıyorsa, VSync'yi devre dışı bırakın \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
             snprintf(s, len,
