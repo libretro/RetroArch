@@ -496,7 +496,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-         "Fichier de cheat"
+         "Fichiers de cheat"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
@@ -592,7 +592,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-         "Base de données"
+         "Bases de données"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
@@ -776,7 +776,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-         "Dossier"
+         "Dossiers"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
@@ -812,7 +812,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-         "Remplacer de la valeur des pixels/pouce"
+         "Remplacer la valeur des pixels/pouce"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
@@ -1236,7 +1236,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-         "Combinaison de touches pour afficher/masquer le menu Menu"
+         "Combinaison de touches pour afficher/masquer le menu"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
@@ -1475,7 +1475,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-         "Entrées de l'utilisateur %u"
+         "Touches de l'utilisateur %u"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -3129,11 +3129,11 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-         "Afficher la date / heure"
+         "Afficher la date/l'heure"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-         "Style de la date / heure"
+         "Style de la date/l'heure"
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
@@ -3939,7 +3939,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-         "Rivaliser pour gagner des succès sur mesure dans des jeux rétro.\n"
+         "Rivalisez pour gagner des succès sur mesure dans des jeux rétro.\n"
          "Pour plus d'informations, visitez http://retroachievements.org"
          )
 MSG_HASH(
@@ -4147,7 +4147,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-         "Définir le nombre d'images que le processeur peut exécuter avant le processeur graphique lors de l'utilisation de la 'Synchronisation matérielle du processeur graphique'."
+         "Définit le nombre d'images que le processeur peut exécuter avant le processeur graphique lors de l'utilisation de la 'Synchronisation matérielle du processeur graphique'."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -4155,7 +4155,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-         "Sélectionne l'écran à utiliser."
+         "Sélectionner l'écran à utiliser."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
@@ -5732,7 +5732,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-         "Remplacer le périphérique audio par défaut utilisé par le pilote audio. Cette option dépend du pilote."
+         "Remplacer le périphérique audio utilisé par défaut par le pilote audio. Cette option dépend du pilote."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -6194,15 +6194,15 @@ MSG_HASH(
 MSG_HASH(
          MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
          "Définir la taille de mise à l'échelle personnalisée ici.\n"
-         "REMARQUE : Vous devez activer 'Remplacer de la valeur des pixels/pouce' pour que cette taille d'échelle prenne effet."
+         "REMARQUE : Vous devez activer 'Remplacer la valeur des pixels/pouce' pour que cette taille d'échelle prenne effet."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
-         "Enregistre tous les fichiers téléchargés dans ce dossier."
+         "Tous les fichiers téléchargés seront conservés dans ce dossier."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-         "Les fichiers de remappage des touches seront conservés ici."
+         "Les fichiers de remappage des touches seront conservés dans ce dossier."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
@@ -6254,7 +6254,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-         "Les fichiers de cheats seront conservés dans ce dossier."
+         "Les fichiers de cheat seront conservés dans ce dossier."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
@@ -6270,7 +6270,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
-         "Les enregistrements seront conservés dans ce dossier."
+         "Les enregistrements seront placés dans ce dossier."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
@@ -6873,7 +6873,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-         "Réduire cette valeur pour favoriser les performances/réduire la latence plutôt que la qualité audio, l'augmenter permet d'obtenir une meilleure qualité audio aux dépens d'un gain de performances/d'une latence inférieure."
+         "Réduire cette valeur pour favoriser les performances/réduire la latence plutôt que la qualité audio, l'augmenter permet d'obtenir une meilleure qualité audio aux dépens de la performance/d'une latence inférieure."
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
@@ -8263,7 +8263,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-         "Produire des signaux natifs de faible résolution pour une utilisation avec les écrans à tube cathodique (CRT)."
+         "Produit des signaux natifs de faible résolution pour une utilisation avec les écrans à tube cathodique (CRT)."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -8507,19 +8507,19 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-         "Activer le son de la confirmation"
+         "Son de confirmation"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-         "Activer le son de l'annulation"
+         "Son d'annulation"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-         "Activer le son des notifications"
+         "Son des notifications"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-         "Activer le son de la musique de fond"
+         "Musique de fond"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
