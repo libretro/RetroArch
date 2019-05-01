@@ -146,6 +146,10 @@ enum
    XMB_TEXTURE_CLOCK,
    XMB_TEXTURE_BATTERY_FULL,
    XMB_TEXTURE_BATTERY_CHARGING,
+   XMB_TEXTURE_BATTERY_80,
+   XMB_TEXTURE_BATTERY_60,
+   XMB_TEXTURE_BATTERY_40,
+   XMB_TEXTURE_BATTERY_20,
    XMB_TEXTURE_POINTER,
    XMB_TEXTURE_ADD,
    XMB_TEXTURE_KEY,
@@ -3629,8 +3633,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
-                  xmb->textures.list[powerstate.charging
-                  ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                  xmb->textures.list[
+                     powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
+                     (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
+                     (powerstate.percent > 60)? XMB_TEXTURE_BATTERY_80   :
+                     (powerstate.percent > 40)? XMB_TEXTURE_BATTERY_60   :
+                     (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
+                     XMB_TEXTURE_BATTERY_20
+                  ],
                   width - (xmb->icon_size / 2) - x_pos_icon,
                   xmb->icon_size,
                   width,
@@ -4532,6 +4542,14 @@ static const char *xmb_texture_path(unsigned id)
          return "battery-full.png";
       case XMB_TEXTURE_BATTERY_CHARGING:
          return "battery-charging.png";
+      case XMB_TEXTURE_BATTERY_80:
+         return "battery-80.png";
+      case XMB_TEXTURE_BATTERY_60:
+         return "battery-60.png";
+      case XMB_TEXTURE_BATTERY_40:
+         return "battery-40.png";
+      case XMB_TEXTURE_BATTERY_20:
+         return "battery-20.png";
       case XMB_TEXTURE_POINTER:
          return "pointer.png";
       case XMB_TEXTURE_SAVESTATE:
@@ -4744,6 +4762,16 @@ static void xmb_context_reset_textures(
       if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
          RARCH_WARN("[XMB] Asset missing: %s%s\n", iconpath, xmb_texture_path(i));
+         /* New extra battery icons could be missing */
+         if (i == XMB_TEXTURE_BATTERY_80 || i == XMB_TEXTURE_BATTERY_60 || i == XMB_TEXTURE_BATTERY_40 || i == XMB_TEXTURE_BATTERY_20)
+         {
+            if (  /* If there are no extra battery icons revert to the old behaviour */
+                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_BATTERY_FULL), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
+                  && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
+               )
+               goto error;
+            else continue;
+         }
          /* If the icon is missing return the subsetting (because some themes are incomplete) */
          if (!(i == XMB_TEXTURE_DIALOG_SLICE || i == XMB_TEXTURE_KEY_HOVER || i == XMB_TEXTURE_KEY))
          {
