@@ -129,11 +129,6 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    }
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!state->silence)
-      menu_widgets_screenshot_taken(state->shotname, state->filename);
-#endif
-
    return ret;
 }
 
@@ -158,7 +153,13 @@ static void task_screenshot_handler(retro_task_t *task)
       if (state->userbuf)
          free(state->userbuf);
 
-      free(state);
+#ifdef HAVE_MENU_WIDGETS
+      /* If menu widgets are enabled, state is freed
+         in the callback after the notification
+         is displayed */
+      if (!video_driver_has_widgets())
+#endif
+         free(state);
       return;
    }
 
@@ -193,6 +194,23 @@ static void task_screenshot_handler(retro_task_t *task)
    if (task->title)
       task_free_title(task);
 }
+
+#ifdef HAVE_MENU_WIDGETS
+static void task_screenshot_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+
+   if (!video_driver_has_widgets())
+      return;
+
+   if (state && !state->silence)
+      menu_widgets_screenshot_taken(state->shotname, state->filename);
+
+   free(state);
+}
+#endif
 
 /* Take frame bottom-up. */
 static bool screenshot_dump(
@@ -295,6 +313,9 @@ static bool screenshot_dump(
    task->type        = TASK_TYPE_BLOCKING;
    task->state       = state;
    task->handler     = task_screenshot_handler;
+#ifdef HAVE_MENU_WIDGETS
+   task->callback    = task_screenshot_callback;
+#endif
 
    if (use_thread)
    {
