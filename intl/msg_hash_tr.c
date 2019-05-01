@@ -956,8 +956,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "sayısını belirtir. Bunu 0'a ayarlarsanız ve Gölgelendirici Değişiklikleri Uygula'yı \n"
                              "kullanırsanız, 'boş' bir gölgelendirici kullanırsınız. \n"
                              " \n"
-                             "Varsayılan Filtre seçeneği, \n"
-                             "germe filtresini etkiler.");
+                             "Varsayılan Filtre seçeneği, germe filtresini etkiler.\n");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
             snprintf(s, len,
@@ -1067,7 +1066,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_STATE_SLOT_INCREASE:
         case MENU_ENUM_LABEL_STATE_SLOT_DECREASE:
             snprintf(s, len,
-                     "State slots.\n"
+                     "Konum slotları.\n"
                              " \n"
                              " With slot set to 0, save state name is *.state \n"
                              " (or whatever defined on commandline).\n"
@@ -1220,8 +1219,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Geniş görüntü değişikliklerinden kaçınmak için bu değer 60Hz'ye yakın olmalıdır. \n"
                              "Monitörünüz 60Hz'de veya ona yakın bir yerde  \n"
-                             "çalışmıyorsa, VSync'yi devre dışı bırakın \n"
-                             "ve bunu varsayılan olarak bırakın.");
+                             "çalışmıyorsa, VSync'yi devre dışı bırakın ");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
             snprintf(s, len,
@@ -1308,17 +1306,17 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
             snprintf(s, len,
-                     "Audio rate control.\n"
+                     "Ses hızı kontrolü.\n"
                              " \n"
-                             "Setting this to 0 disables rate control.\n"
+                             "Bunu 0'a ayarlamak hız kontrolünü devre dışı bırakır.\n"
                              "Any other value controls audio rate control \n"
                              "delta.\n"
                              " \n"
                              "Defines how much input rate can be adjusted \n"
                              "dynamically.\n"
                              " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (rate control delta))");
+                             " Giriş hızı şöyle tanımlanır: \n"
+                             " Giriş hızı * (1.0 +/- (rate control delta))");
             break;
         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             snprintf(s, len,
@@ -1394,11 +1392,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
             snprintf(s, len,
-                     "Attempts to hard-synchronize \n"
-                             "CPU and GPU.\n"
+                     "CPU ve GPU'yu sabit senkronize \n"
+                             "etmeye çalışır. \n"
                              " \n"
-                             "Can reduce latency at the cost of \n"
-                             "performance.");
+                             "Performans karşılığında gecikmeyi \n"
+                             "azaltır.");
             break;
         case MENU_ENUM_LABEL_REWIND_GRANULARITY:
             snprintf(s, len,
@@ -1509,7 +1507,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
             snprintf(s, len,
-                     "Savefile Directory. \n"
+                     "Kayıt dosyaları Dizini. \n"
                              " \n"
                              "Save all save files (*.srm) to this \n"
                              "directory. This includes related files like \n"
@@ -1520,7 +1518,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
             snprintf(s, len,
-                     "Savestate Directory. \n"
+                     "Konum kayıtları Dizini. \n"
                              " \n"
                              "Save all save states (*.state) to this \n"
                              "directory.\n"
@@ -1530,7 +1528,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
             snprintf(s, len,
-                     "Assets Directory. \n"
+                     "İçerikler Dizini. \n"
                              " \n"
                              " This location is queried by default when \n"
                              "menu interfaces try to look for loadable \n"
@@ -1538,7 +1536,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
             snprintf(s, len,
-                     "Dynamic Wallpapers Directory. \n"
+                     "Dinamik Duvar Kağıtları Dizini. \n"
                              " \n"
                              " The place to store backgrounds that will \n"
                              "be loaded dynamically by the menu depending \n"
@@ -1546,7 +1544,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
             snprintf(s, len,
-                     "Slowmotion ratio."
+                     "Slowmotion oranı."
                              " \n"
                              "When slowmotion, content will slow\n"
                              "down by factor.");
@@ -1608,7 +1606,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             snprintf(s, len,
-                     "Suspends the screensaver. Is a hint that \n"
+                     "Ekran koruyucuyu önler. Is a hint that \n"
                              "does not necessarily have to be \n"
                              "honored by the video driver.");
             break;
