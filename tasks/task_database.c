@@ -1297,14 +1297,16 @@ static void task_database_handler(retro_task_t *task)
          }
          else
          {
-#ifdef RARCH_INTERNAL
-            task_set_progress(task, 100);
-#else
             const char *msg = NULL;
             if (db->is_directory)
                msg = msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED);
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
+#ifdef RARCH_INTERNAL
+            task_free_title(task);
+            task_set_title(task, strdup(msg));
+            task_set_progress(task, 100);
+#else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
             ui_companion_driver_notify_refresh();
