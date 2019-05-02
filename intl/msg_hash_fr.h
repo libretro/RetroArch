@@ -8594,6 +8594,14 @@ MSG_HASH(
          "Par cœur"
          )
 MSG_HASH(
+         MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+         "Correspondance d'archives probable"
+         )
+MSG_HASH(
+         MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+         "Lors de la recherche d'entrées associées aux fichiers compressés dans les listes de lecture, faire correspondre uniquement le nom du fichier d'archive au lieu de [nom du fichier] + [contenu]. Activez cette option pour éviter les doublons dans l'historique de contenu lors du chargement de fichiers compressés."
+         )
+MSG_HASH(
          MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
          "Cumulé"
          )
