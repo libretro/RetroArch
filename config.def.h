@@ -743,6 +743,8 @@ static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE
 
 static const bool playlist_show_sublabels = false;
 
+static const bool playlist_fuzzy_archive_match = false;
+
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
