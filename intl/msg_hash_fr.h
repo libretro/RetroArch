@@ -28,7 +28,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
          MSG_COMPILER,
-         "Compilateur"
+         "Compilateur "
          )
 MSG_HASH(
          MSG_UNKNOWN_COMPILER,
@@ -2681,91 +2681,91 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-         "Prise en charge de 7zip"
+         "Prise en charge de 7zip "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-         "Prise en charge d'ALSA"
+         "Prise en charge d'ALSA "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-         "Date de compilation"
+         "Date de compilation "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-         "Prise en charge de Cg"
+         "Prise en charge de Cg "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-         "Prise en charge de Cocoa"
+         "Prise en charge de Cocoa "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-         "Prise en charge de l'interface de commande"
+         "Prise en charge de l'interface de commande "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-         "Prise en charge de CoreText"
+         "Prise en charge de CoreText "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-         "Fonctionnalités du processeur"
+         "Fonctionnalités du processeur "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-         "Points/pouce de l'écran"
+         "Points/pouce de l'écran "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-         "Hauteur de l'écran (mm)"
+         "Hauteur de l'écran (mm) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-         "Largeur de l'écran (mm)"
+         "Largeur de l'écran (mm) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-         "Prise en charge de DirectSound"
+         "Prise en charge de DirectSound "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-         "Prise en charge de WASAPI"
+         "Prise en charge de WASAPI "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-         "Prise en charge des bibliothèques dynamiques"
+         "Prise en charge des bibliothèques dynamiques "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-         "Prise en charge du chargement dynamique des bibliothèques"
+         "Prise en charge du chargement dynamique des bibliothèques "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-         "Prise en charge d'EGL"
+         "Prise en charge d'EGL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-         "Prise en charge du rendu vers texture OpenGL/Direct3D (shaders multi-passages)"
+         "Prise en charge du rendu vers texture OpenGL/Direct3D (shaders multi-passages) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-         "Prise en charge de FFmpeg"
+         "Prise en charge de FFmpeg "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-         "Prise en charge de FreeType"
+         "Prise en charge de FreeType "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-         "Prise en charge du rendu des polices STB TrueType"
+         "Prise en charge du rendu des polices STB TrueType "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-         "Identifiant du frontend"
+         "Identifiant du frontend "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-         "Nom du frontend"
+         "Nom du frontend "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
@@ -2773,79 +2773,79 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-         "Version Git"
+         "Version Git "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-         "Prise en charge de GLSL"
+         "Prise en charge de GLSL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-         "Prise en charge de HLSL"
+         "Prise en charge de HLSL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-         "Prise en charge de JACK"
+         "Prise en charge de JACK "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-         "Prise en charge de KMS/EGL"
+         "Prise en charge de KMS/EGL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
-         "Version de Lakka"
+         "Version de Lakka "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-         "Prise en charge de LibretroDB"
+         "Prise en charge de LibretroDB "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-         "Prise en charge de Libusb"
+         "Prise en charge de Libusb "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-         "Prise en charge du jeu en réseau (peer-to-peer)"
+         "Prise en charge du jeu en réseau (peer-to-peer) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-         "Prise en charge de l'interface de commandes réseau"
+         "Prise en charge de l'interface de commandes réseau "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-         "Prise en charge de la manette en réseau"
+         "Prise en charge de la manette en réseau "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-         "Prise en charge d'OpenAL"
+         "Prise en charge d'OpenAL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-         "Prise en charge d'OpenGL ES"
+         "Prise en charge d'OpenGL ES "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-         "Prise en charge d'OpenGL"
+         "Prise en charge d'OpenGL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-         "Prise en charge d'OpenSL"
+         "Prise en charge d'OpenSL "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-         "Prise en charge d'OpenVG"
+         "Prise en charge d'OpenVG "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-         "Prise en charge d'OSS"
+         "Prise en charge d'OSS "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-         "Prise en charge des surimpressions"
+         "Prise en charge des surimpressions "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-         "Alimentation"
+         "Alimentation "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
@@ -2865,15 +2865,15 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-         "Prise en charge de PulseAudio"
+         "Prise en charge de PulseAudio "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-         "Prise en charge de Python (scripts dans les shaders)"
+         "Prise en charge de Python (scripts dans les shaders) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-         "Prise en charge du format BMP (RBMP)"
+         "Prise en charge du format BMP (RBMP) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
@@ -2881,83 +2881,83 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-         "Prise en charge du format JPEG (RJPEG)"
+         "Prise en charge du format JPEG (RJPEG) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-         "Prise en charge de RoarAudio"
+         "Prise en charge de RoarAudio "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-         "Prise en charge du format PNG (RPNG)"
+         "Prise en charge du format PNG (RPNG) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-         "Prise en charge de RSound"
+         "Prise en charge de RSound "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-         "Prise en charge du format TGA (RTGA)"
+         "Prise en charge du format TGA (RTGA) "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-         "Prise en charge de SDL2"
+         "Prise en charge de SDL2 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-         "Prise en charge de SDL image"
+         "Prise en charge de SDL image "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-         "Prise en charge de SDL1.2"
+         "Prise en charge de SDL1.2 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
-         "Prise en charge de Slang"
+         "Prise en charge de Slang "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-         "Prise en charge de plusieurs fils d'exécution"
+         "Prise en charge de plusieurs fils d'exécution "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-         "Prise en charge de Udev"
+         "Prise en charge de Udev "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-         "Prise en charge de Video4Linux2"
+         "Prise en charge de Video4Linux2 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-         "Pilote de contexte vidéo"
+         "Pilote de contexte vidéo "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-         "Prise en charge de Vulkan"
+         "Prise en charge de Vulkan "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-         "Prise en charge de Metal"
+         "Prise en charge de Metal "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-         "Prise en charge de Wayland"
+         "Prise en charge de Wayland "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-         "Prise en charge de X11"
+         "Prise en charge de X11 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-         "Prise en charge de XAudio2"
+         "Prise en charge de XAudio2 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-         "Prise en charge de XVideo"
+         "Prise en charge de XVideo "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-         "Prise en charge de Zlib"
+         "Prise en charge de Zlib "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -7494,7 +7494,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-         "Prise en charge de mpv"
+         "Prise en charge de mpv "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
@@ -8531,11 +8531,11 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-         "Prise en charge de CoreAudio"
+         "Prise en charge de CoreAudio "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-         "Prise en charge de CoreAudio V3"
+         "Prise en charge de CoreAudio V3 "
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
