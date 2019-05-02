@@ -317,6 +317,7 @@ typedef struct settings
 
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
+      bool playlist_fuzzy_archive_match;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
