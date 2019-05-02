@@ -553,6 +553,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_fuzzy_archive_match,       
 default_sublabel_macro(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_extended_ascii,                      MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
+default_sublabel_macro(action_bind_sublabel_auto_mouse_grab,   				   MENU_ENUM_SUBLABEL_AUTO_MOUSE_GRAB)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -1038,6 +1039,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_AUTO_MOUSE_GRAB:
+         	BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_auto_mouse_grab);
+         	break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer);

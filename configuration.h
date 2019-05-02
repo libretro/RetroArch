@@ -328,6 +328,7 @@ typedef struct settings
 
       bool log_to_file;
       bool log_to_file_timestamp;
+      bool auto_mouse_grab;
    } bools;
 
    struct

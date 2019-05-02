@@ -8652,3 +8652,12 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Save system event log files to this directory."
     )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_MOUSE_GRAB,
+   "Automatically capture mouse"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTO_MOUSE_GRAB,
+   "Lock the mouse within the bounds of\n"
+   "the window for better control of some games."
+)

@@ -232,6 +232,11 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
     switch (msg)
     {
+	case MENU_ENUM_LABEL_AUTO_MOUSE_GRAB:
+            snprintf(s, len, "Functionally the same as the grab mouse toggle,\n"
+		   "\nbut it can be saved as a setting to persist\n"
+                   "across content and restarts.");
+            break;
         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             snprintf(s, len, "Login details for your \n"
                     "Retro Achievements account. \n"

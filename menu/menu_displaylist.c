@@ -5939,6 +5939,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          ret = menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW, PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUTO_MOUSE_GRAB, PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND, PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD, PARSE_ONLY_FLOAT, false);

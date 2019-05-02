@@ -685,7 +685,14 @@ int16_t input_state(unsigned port, unsigned device,
          && !input_driver_block_libretro_input)
    {
       settings_t *settings = config_get_ptr();
-
+      if (settings->bools.auto_mouse_grab)
+      {
+         input_driver_grab_mouse();
+      }
+      else
+      {
+         input_driver_ungrab_mouse();
+      }
       if (settings->bools.input_remap_binds_enable)
       {
          switch (device)
@@ -1601,7 +1608,6 @@ const void *joypad_driver_find_handle(int idx)
       return NULL;
    return drv;
 }
-
 /**
  * joypad_driver_find_ident:
  * @idx                : index of driver to get handle to.
