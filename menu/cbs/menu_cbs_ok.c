@@ -3271,6 +3271,7 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
 {
 #ifdef HAVE_CHEEVOS
    cheevos_hardcore_paused = !cheevos_hardcore_paused;
+   rcheevos_hardcore_paused = !rcheevos_hardcore_paused;
 #endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
