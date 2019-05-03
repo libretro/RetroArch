@@ -3255,6 +3255,7 @@ static int action_ok_load_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
 #if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
 #else
@@ -3267,6 +3268,7 @@ static int action_ok_save_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
 #if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
 #else
