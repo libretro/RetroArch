@@ -36,7 +36,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
     if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
     {
        snprintf(s, len,
-             "TODO/FIXME - Fill in message here."
+             "TODO/FIXME - Entrez le message ici."
              );
        return 0;
     }
@@ -49,40 +49,40 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
        {
           case RARCH_FAST_FORWARD_KEY:
              snprintf(s, len,
-                   "Toggles between fast-forwarding and \n"
-                   "normal speed."
+                   "Bascule entre l'avance rapide et \n"
+                   "la vitesse normale."
                    );
              break;
           case RARCH_FAST_FORWARD_HOLD_KEY:
              snprintf(s, len,
-                   "Hold for fast-forward. \n"
+                   "Maintenir pour l'avance rapide. \n"
                    " \n"
-                   "Releasing button disables fast-forward."
+                   "Relâcher la touche désactive l'avance rapide."
                    );
              break;
           case RARCH_SLOWMOTION_KEY:
              snprintf(s, len,
-                   "Toggles slowmotion.");
+                   "Active/désactive le ralenti.");
              break;
           case RARCH_SLOWMOTION_HOLD_KEY:
              snprintf(s, len,
-                   "Hold for slowmotion.");
+                   "Maintenir pour le ralenti.");
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
-                   "Toggle between paused and non-paused state.");
+                   "Activer/désactiver la mise en pause.");
              break;
           case RARCH_FRAMEADVANCE:
              snprintf(s, len,
-                   "Frame advance when content is paused.");
+                   "Avance image par image lorsque le contenu est en pause.");
              break;
           case RARCH_SHADER_NEXT:
              snprintf(s, len,
-                   "Applies next shader in directory.");
+                   "Applique le prochain shader dans le dossier.");
              break;
           case RARCH_SHADER_PREV:
              snprintf(s, len,
-                   "Applies previous shader in directory.");
+                   "Applique le shader précédent dans le dossier.");
              break;
           case RARCH_CHEAT_INDEX_PLUS:
           case RARCH_CHEAT_INDEX_MINUS:
@@ -92,72 +92,72 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_RESET:
              snprintf(s, len,
-                   "Reset the content.");
+                   "Réinitialiser le contenu.");
              break;
           case RARCH_SCREENSHOT:
              snprintf(s, len,
-                   "Take screenshot.");
+                   "Prendre une capture d'écran.");
              break;
           case RARCH_MUTE:
              snprintf(s, len,
-                   "Mute/unmute audio.");
+                   "Désactiver/réactiver le son.");
              break;
           case RARCH_OSK:
              snprintf(s, len,
-                   "Toggles onscreen keyboard.");
+                   "Afficher/masquer le clavier à l'écran.");
              break;
           case RARCH_FPS_TOGGLE:
              snprintf(s, len,
-                   "Toggles frames per second counter.");
+                   "Afficher/masquer le compteur d'images/s.");
              break;
           case RARCH_SEND_DEBUG_INFO:
              snprintf(s, len,
-                   "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis.");
+                   "Envoie des informations de diagnostic sur votre appareil et la configuration de RetroArch à nos serveurs pour analyse.");
              break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
-                   "Toggles netplay hosting on/off.");
+                   "Activer/désactiver l'hébergement du jeu en réseau.");
              break;
           case RARCH_NETPLAY_GAME_WATCH:
              snprintf(s, len,
-                   "Netplay toggle play/spectate mode.");
+                   "Bascule entre le mode jeu/spectateur du jeu en réseau.");
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
-                   "Enable other hotkeys. \n"
+                   "Activer d'autres touches de raccourci. \n"
                    " \n"
-                   "If this hotkey is bound to either\n"
-                   "a keyboard, joybutton or joyaxis, \n"
-                   "all other hotkeys will be enabled only \n"
-                   "if this one is held at the same time. \n"
+                   "Si ce raccourci est assigné à soit au clavier, \n"
+                   "à une touche ou à un axe de manette, toutes\n"
+                   "les autres touches de raccourci ne seront \n"
+                   "activées que si celle-ci est maintenue en même temps. \n"
                    " \n"
-                   "Alternatively, all hotkeys for keyboard \n"
-                   "could be disabled by the user.");
+                   "Alternativement, toutes les touches de raccourci \n"
+                   "du clavier pourrait être désactivé par l'utilisateur.");
              break;
           case RARCH_VOLUME_UP:
              snprintf(s, len,
-                   "Increases audio volume.");
+                   "Augmente le volume audio.");
              break;
           case RARCH_VOLUME_DOWN:
              snprintf(s, len,
-                   "Decreases audio volume.");
+                   "Diminue le volume audio.");
              break;
           case RARCH_OVERLAY_NEXT:
              snprintf(s, len,
-                   "Switches to next overlay. Wraps around.");
+                   "Passe à la surimpression suivante. Retourne au début.");
              break;
           case RARCH_DISK_EJECT_TOGGLE:
              snprintf(s, len,
-                   "Toggles eject for disks. \n"
+                   "Bascule l'éjection pour les disques. \n"
                    " \n"
-                   "Used for multiple-disk content. ");
+                   "Utilisé pour le contenu multi-disque. ");
              break;
           case RARCH_DISK_NEXT:
           case RARCH_DISK_PREV:
              snprintf(s, len,
-                   "Cycles through disk images. Use after ejecting. \n"
+                   "Parcourt les images de disque. Utiliser après l'éjection. \n"
                    " \n"
-                   "Complete by toggling eject again.");
+                   "Terminez en basculant l'éjection.");
              break;
           case RARCH_GRAB_MOUSE_TOGGLE:
              snprintf(s, len,
@@ -2025,11 +2025,11 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
             snprintf(s, len,
-                     "Left/Right to change bit-size\n");
+                     "Gauche/droite pour changer la taille de bits\n");
             break;
         case MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT:
             snprintf(s, len,
-                     "Left/Right to change value\n");
+                     "Gauche/droite pour changer la valeur\n");
             break;
         case MENU_ENUM_LABEL_CHEAT_SEARCH_LT:
             snprintf(s, len,
@@ -2049,11 +2049,11 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS:
             snprintf(s, len,
-                     "Left/Right to change value\n");
+                     "Gauche/droite pour changer la valeur\n");
             break;
         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
             snprintf(s, len,
-                     "Left/Right to change value\n");
+                     "Gauche/droite pour changer la valeur\n");
             break;
         case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
             snprintf(s, len,
@@ -2089,25 +2089,25 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
             snprintf(s, len,
-                     "Big endian    : 258 = 0x0102\n"
-                     "Little endian : 258 = 0x0201");
+                     "Gros-boutienne  : 258 = 0x0102\n"
+                     "Petit-boutienne : 258 = 0x0201");
             break;
         case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
             snprintf(s, len,
-                     "Hold for fast-forward. Releasing button \n"
-                             "disables fast-forward.");
+                     "Maintenir pour l'avance rapide. Relâcher la touche \n"
+                             "désactive l'avance rapide.");
             break;
         case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
             snprintf(s, len,
-                     "Hold for slowmotion.");
+                     "Maintenir pour le ralenti.");
             break;
         case MENU_ENUM_LABEL_FRAME_ADVANCE:
             snprintf(s, len,
-                     "Frame advance when content is paused.");
+                     "Avance image par image lorsque le contenu est en pause.");
             break;
         case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
             snprintf(s, len,
-                     "Toggle between recording and not.");
+                     "Activer/désactiver l'enregistrement.");
             break;
         case MENU_ENUM_LABEL_L_X_PLUS:
         case MENU_ENUM_LABEL_L_X_MINUS:
@@ -2175,39 +2175,39 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
-                     "Enables a background color for the OSD.");
+                     "Active l'utilisation d'une couleur de fond pour le texte d'affichage à l'écran (OSD).");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
-                     "Sets the red value of the OSD background color. Valid values are between 0 and 255.");
+                     "Définit la valeur de rouge de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
-                     "Sets the green value of the OSD background color. Valid values are between 0 and 255.");
+                     "Définit la valeur de vert de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
-                     "Sets the blue value of the OSD background color. Valid values are between 0 and 255.");
+                     "Définit la valeur de bleu de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
-                     "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0.");
+                     "Définit l'opacité de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0.0 et 1.0.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
-                     "Sets the red value of the OSD text color. Valid values are between 0 and 255.");
+                     "Définit la valeur de rouge de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
-                     "Sets the green value of the OSD text color. Valid values are between 0 and 255.");
+                     "Définit la valeur de vert de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
-                     "Sets the blue value of the OSD text color. Valid values are between 0 and 255.");
+                     "Définit la valeur de bleu de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
         case MENU_ENUM_LABEL_MIDI_DRIVER:
             snprintf(s, len,
-                     "MIDI driver to use.");
+                     "Pilote MIDI à utiliser.");
             break;
         case MENU_ENUM_LABEL_MIDI_INPUT:
             snprintf(s, len,
@@ -2227,7 +2227,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_MIDI_VOLUME:
             snprintf(s, len,
-                     "Sets the master volume of the output device.");
+                     "Définit le volume principal du périphérique de sortie.");
             break;
         default:
             if (string_is_empty(s))
@@ -2256,7 +2256,7 @@ static const char *menu_hash_to_str_fr_label_enum(enum msg_hash_enums msg)
 #include "msg_hash_lbl.h"
       default:
 #if 0
-         RARCH_LOG("Unimplemented: [%d]\n", msg);
+         RARCH_LOG("Non implémenté : [%d]\n", msg);
 #endif
          break;
    }
@@ -2277,7 +2277,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg) {
 #include "msg_hash_fr.h"
         default:
 #if 0
-            RARCH_LOG("Unimplemented: [%d]\n", msg);
+            RARCH_LOG("Non implémenté : [%d]\n", msg);
             {
                RARCH_LOG("[%d] : %s\n", msg - 1, msg_hash_to_str(((enum msg_hash_enums)(msg - 1))));
             }
