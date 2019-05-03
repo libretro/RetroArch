@@ -157,7 +157,7 @@ static void task_screenshot_handler(retro_task_t *task)
       /* If menu widgets are enabled, state is freed
          in the callback after the notification
          is displayed */
-      if (!video_driver_has_widgets())
+      if (!menu_widgets_ready())
 #endif
          free(state);
       return;
@@ -202,7 +202,7 @@ static void task_screenshot_callback(retro_task_t *task,
 {
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
 
-   if (!video_driver_has_widgets())
+   if (!menu_widgets_ready())
       return;
 
    if (state && !state->silence)
@@ -320,7 +320,7 @@ static bool screenshot_dump(
    if (use_thread)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (video_driver_has_widgets())
+      if (menu_widgets_ready())
          task_free_title(task);
       else
 #endif

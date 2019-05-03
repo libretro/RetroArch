@@ -1658,7 +1658,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
                   cheevo->id, cheevo->title, cheevo->description);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!video_driver_has_widgets() || !menu_widgets_push_achievement(cheevo->title, cheevo->badge))
+            if (!menu_widgets_push_achievement(cheevo->title, cheevo->badge))
 #endif
             {
                char msg[256];

@@ -1730,6 +1730,9 @@ void menu_widgets_context_reset(bool is_threaded)
 
    unsigned video_info_width;
 
+   if (!menu_widgets_inited)
+      return;
+
    video_driver_get_size(&video_info_width, NULL);
 
    /* Textures paths */
