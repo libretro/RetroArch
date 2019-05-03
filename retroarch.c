@@ -584,6 +584,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
 void drivers_init(int flags)
 {
    bool video_is_threaded = false;
+   settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -635,7 +636,8 @@ void drivers_init(int flags)
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   if (video_driver_has_widgets())
+   if (settings->bools.menu_enable_widgets
+      && video_driver_has_widgets())
    {
       menu_widgets_init(video_is_threaded);
       menu_widgets_context_reset(video_is_threaded);
@@ -3154,7 +3156,7 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
       bool flush)
 {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_task_msg_queue_push(task, msg, prio, duration, flush))
+   if (!menu_widgets_task_msg_queue_push(task, msg, prio, duration, flush))
 #endif
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
@@ -3171,9 +3173,10 @@ void runloop_msg_queue_push(const char *msg,
 
    rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
-   if (video_driver_has_widgets() && menu_widgets_msg_queue_push(msg,
+   if (menu_widgets_msg_queue_push(msg,
             duration / target_hz * 1000, title, icon, category, prio, flush))
       return;
+
 #endif
 
 #ifdef HAVE_THREADS
@@ -4057,7 +4060,7 @@ static enum runloop_state runloop_check_state(
       if (runloop_fastmotion)
       {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         if (!video_driver_has_widgets() || !menu_widgets_set_fast_forward(true))
+         if (!menu_widgets_set_fast_forward(true))
 #endif
             runloop_msg_queue_push(
                   msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -4159,7 +4162,7 @@ static enum runloop_state runloop_check_state(
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!video_driver_has_widgets())
+      if (!menu_widgets_ready())
 #endif
          if (rewinding)
             runloop_msg_queue_push(s, 0, t, true, NULL,
@@ -4205,7 +4208,7 @@ static enum runloop_state runloop_check_state(
                video_driver_cached_frame();
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         if (!video_driver_has_widgets())
+         if (!menu_widgets_ready())
          {
 #endif
             if (state_manager_frame_is_reversed())
