@@ -2497,10 +2497,12 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show || video_info.framecount_show)
+   {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!video_driver_has_widgets() || !menu_widgets_set_fps_text(video_info.fps_text))
+      if (!menu_widgets_set_fps_text(video_info.fps_text))
 #endif
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
