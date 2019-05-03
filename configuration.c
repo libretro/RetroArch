@@ -1613,7 +1613,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
    SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, log_to_file_timestamp, false);
-
+   SETTING_BOOL("auto_mouse_grab", &settings->bools.auto_mouse_grab, true, auto_mouse_grab, false);
    *size = count;
 
    return tmp;

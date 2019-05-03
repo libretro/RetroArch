@@ -9385,6 +9385,22 @@ static bool setting_append_list(
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+	    CONFIG_BOOL(
+                 list, list_info,
+                 &settings->bools.auto_mouse_grab,
+                 MENU_ENUM_LABEL_AUTO_MOUSE_GRAB,
+	         MENU_ENUM_LABEL_VALUE_AUTO_MOUSE_GRAB,
+                 auto_mouse_grab,
+                 MENU_ENUM_LABEL_VALUE_OFF,
+                 MENU_ENUM_LABEL_VALUE_ON,
+                 &group_info,
+                 &subgroup_info,
+                 parent_group,
+                 general_write_handler,
+                 general_read_handler,
+                 SD_FLAG_NONE
+		 );
+
             CONFIG_UINT(
                   list, list_info,
                   input_driver_get_uint(INPUT_ACTION_MAX_USERS),
