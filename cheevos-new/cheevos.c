@@ -283,6 +283,8 @@ static const char* rcheevos_rc_error(int ret)
 
 static int rcheevos_parse(const char* json)
 {
+   char buffer[256];
+   settings_t *settings     = config_get_ptr();
    int res                  = 0;
    int i                    = 0;
    unsigned j               = 0;
@@ -380,11 +382,18 @@ static int rcheevos_parse(const char* json)
       lboard->info = rcheevos_locals.patchdata.lboards + j;
       res = rc_lboard_size(lboard->info->mem);
 
+      CHEEVOS_LOG(RCHEEVOS_TAG "rc_lboard_size() = %d\n", res);
+
       if (res < 0)
       {
-         CHEEVOS_ERR(RCHEEVOS_TAG "Error in leaderboard mem %s: %s",
-            lboard->info->mem, rcheevos_rc_error(res));
-         goto error;
+         snprintf(buffer, sizeof(buffer), "Error in leaderboard %d \"%s\"", lboard->info->id, lboard->info->title);
+
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push(buffer, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         CHEEVOS_ERR(RCHEEVOS_TAG "%s: '%s' mem: %s\n", buffer, rcheevos_rc_error(res), lboard->info->mem);
+         lboard->lboard = NULL;
+         continue;
       }
 
       lboard->lboard = (rc_lboard_t*)calloc(1, res);
