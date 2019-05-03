@@ -722,8 +722,6 @@ static void menu_list_flush_stack(menu_list_t *list,
    unsigned type          = 0;
    size_t entry_idx       = 0;
    file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
-   if (!list)
-      return;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    file_list_get_last(menu_list,
@@ -734,7 +732,7 @@ static void menu_list_flush_stack(menu_list_t *list,
    {
       size_t new_selection_ptr = menu_navigation_get_selection();
 
-      if (!list || !menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
+      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
          break;
 
       menu_navigation_set_selection(new_selection_ptr);
@@ -754,23 +752,6 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-static bool menu_entries_clear(file_list_t *list)
-{
-   unsigned i;
-   if (!list)
-      return false;
-
-   menu_driver_list_clear(list);
-
-   for (i = 0; i < list->size; i++)
-      file_list_free_actiondata(list, i);
-
-   if (list)
-      file_list_clear(list);
-
-   return true;
-}
-
 /**
  * menu_entries_elem_get_first_char:
  * @list                     : File list handle.
@@ -787,8 +768,8 @@ static int menu_entries_elem_get_first_char(
    int ret          = 0;
    const char *path = NULL;
 
-   menu_entries_get_at_offset(list, offset,
-         NULL, NULL, NULL, NULL, &path);
+   file_list_get_at_offset(list, offset, NULL, NULL, NULL, NULL);
+   file_list_get_alt_at_offset(list, offset, &path);
 
    if (path)
       ret = tolower((int)*path);
@@ -796,9 +777,9 @@ static int menu_entries_elem_get_first_char(
    /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */
    if (ret < 'a')
-      ret = 'a' - 1;
+      return ('a' - 1);
    else if (ret > 'z')
-      ret = 'z' + 1;
+      return ('z' + 1);
    return ret;
 }
 
@@ -814,18 +795,20 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
    current        = menu_entries_elem_get_first_char(list, 0);
 
-   menu_entries_get_at_offset(list, 0, NULL, NULL, &type, NULL, NULL);
+   file_list_get_at_offset(list, 0, NULL, NULL, &type, NULL);
+   file_list_get_alt_at_offset(list, 0, NULL);
 
    if (type == FILE_TYPE_DIRECTORY)
       current_is_dir = true;
 
    for (i = 1; i < list->size; i++)
    {
-      int first   = menu_entries_elem_get_first_char(list, (unsigned)i);
-      bool is_dir = false;
+      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
+      bool is_dir  = false;
+      unsigned idx = (unsigned)i;
       
-      menu_entries_get_at_offset(list, (unsigned)i,
-            NULL, NULL, &type, NULL, NULL);
+      file_list_get_at_offset(list, idx, NULL, NULL, &type, NULL);
+      file_list_get_alt_at_offset(list, idx, NULL);
 
       if (type == FILE_TYPE_DIRECTORY)
          is_dir = true;
@@ -1279,7 +1262,21 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             return false;
          return menu_entries_refresh((file_list_t*)data);
       case MENU_ENTRIES_CTL_CLEAR:
-         return menu_entries_clear((file_list_t*)data);
+         {
+            unsigned i;
+            file_list_t *list = (file_list_t*)data;
+
+            if (!list)
+               return false;
+
+            menu_driver_list_clear(list);
+
+            for (i = 0; i < list->size; i++)
+               file_list_free_actiondata(list, i);
+
+            file_list_clear(list);
+         }
+         break;
       case MENU_ENTRIES_CTL_INIT:
          return menu_entries_init();
       case MENU_ENTRIES_CTL_SHOW_BACK:

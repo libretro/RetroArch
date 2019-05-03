@@ -166,6 +166,8 @@ int rc_evaluate_lboard(rc_lboard_t* self, unsigned* value, rc_peek_t peek, void*
   int start_ok, cancel_ok, submit_ok;
   int action = -1;
 
+  if (!self) return RC_LBOARD_INACTIVE;
+
   rc_update_memref_values(self->memrefs, peek, peek_ud);
 
   /* ASSERT: these are always tested once every frame, to ensure delta variables work properly */

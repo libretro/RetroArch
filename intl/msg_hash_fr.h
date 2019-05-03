@@ -8538,6 +8538,10 @@ MSG_HASH(
          "Prise en charge de CoreAudio V3 "
          )
 MSG_HASH(
+         MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+         "Widgets du menu"
+         )
+MSG_HASH(
          MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
          "Enregistrer le journal du temps de jeu (par cœur)"
          )

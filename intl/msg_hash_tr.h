@@ -8546,3 +8546,5 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Sistem olay günlüğü dosyalarını bu dizine kaydedin."
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+      "Menu Widgets")

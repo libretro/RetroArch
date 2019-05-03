@@ -3255,7 +3255,12 @@ static int action_ok_load_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
+#if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_save_state(const char *path,
@@ -3263,7 +3268,12 @@ static int action_ok_save_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
+#if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
@@ -3271,6 +3281,7 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
 {
 #ifdef HAVE_CHEEVOS
    cheevos_hardcore_paused = !cheevos_hardcore_paused;
+   rcheevos_hardcore_paused = !rcheevos_hardcore_paused;
 #endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
