@@ -137,6 +137,7 @@ typedef struct settings
 
       /* Menu */
       bool filter_by_current_core;
+      bool menu_enable_widgets;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_timedate_enable;
@@ -322,9 +323,8 @@ typedef struct settings
       bool quit_press_twice;
       bool vibrate_on_keypress;
       bool enable_device_vibration;
-#ifdef HAVE_OZONE
       bool ozone_collapse_sidebar;
-#endif
+
 
       bool log_to_file;
       bool log_to_file_timestamp;

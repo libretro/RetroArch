@@ -1837,3 +1837,5 @@ MSG_HASH(MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
       "enable_device_vibration")
 MSG_HASH(MENU_ENUM_LABEL_LOG_DIR,
       "log_dir")
+MSG_HASH(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
+      "menu_widgets_enable")

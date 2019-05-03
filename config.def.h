@@ -537,11 +537,17 @@ static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 static const bool audio_enable = true;
 
 /* Enable menu audio sounds. */
-static const bool audio_enable_menu = false;
-static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu        = false;
+static const bool audio_enable_menu_ok     = false;
 static const bool audio_enable_menu_cancel = false;
 static const bool audio_enable_menu_notice = false;
-static const bool audio_enable_menu_bgm = false;
+static const bool audio_enable_menu_bgm    = false;
+
+#ifdef HAVE_MENU_WIDGETS
+static const bool menu_enable_widgets      = true;
+#else
+static const bool menu_enable_widgets      = false;
+#endif
 
 /* Output samplerate. */
 #ifdef GEKKO
