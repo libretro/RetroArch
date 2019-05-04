@@ -3593,6 +3593,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,                                PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,                               PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_CHEEVOS_OLD_ENABLE,                                    PARSE_ONLY_BOOL  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -5140,7 +5141,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {  /* RCHEEVOS TODO: remove brackets, settings and settings test */
             settings_t *settings = config_get_ptr();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_populate_menu(info) : cheevos_populate_menu(info);
+            !settings->bools.cheevos_old_enable ? rcheevos_populate_menu(info) : cheevos_populate_menu(info);
          }
 #endif
          info->need_push    = true;

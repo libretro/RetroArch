@@ -1940,7 +1940,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             bool state = *(const bool*)data;
             RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
             /* RCHEEVOS TODO: remove settings test */
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_set_support_cheevos(state) : cheevos_set_support_cheevos(state);
+            !settings->bools.cheevos_old_enable ? rcheevos_set_support_cheevos(state) : cheevos_set_support_cheevos(state);
          }
 #endif
          break;

@@ -4526,7 +4526,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos()) /* RCHEEVOS TODO: remove settings test */
-      settings->bools.cheevos_rcheevos_enable ? rcheevos_test() : cheevos_test();
+      !settings->bools.cheevos_old_enable ? rcheevos_test() : cheevos_test();
 #endif
    cheat_manager_apply_retro_cheats();
 
