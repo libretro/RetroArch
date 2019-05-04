@@ -593,7 +593,7 @@ static void menu_widgets_msg_queue_move(void)
 
 static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 {
-   int i;
+   size_t i;
    menu_animation_ctx_tag tag = (uintptr_t) msg;
 
    /* Update tasks count */
@@ -799,7 +799,7 @@ static void menu_widgets_hourglass_tick(void *userdata)
 
 void menu_widgets_iterate(void)
 {
-   int i;
+   size_t i;
    settings_t *settings = config_get_ptr();
 
    if (!menu_widgets_inited)
@@ -1291,7 +1291,7 @@ static void menu_widgets_draw_load_content_animation(video_frame_info_t *video_i
 
 void menu_widgets_frame(video_frame_info_t *video_info)
 {
-   int i;
+   size_t i;
    int top_right_x_advance = video_info->width;
 
    settings_t *settings = config_get_ptr();
@@ -1890,7 +1890,7 @@ static void menu_widgets_achievement_free(void *userdata)
 
 void menu_widgets_free(void)
 {
-   int i;
+   size_t i;
 
    if (!menu_widgets_inited)
       return;
