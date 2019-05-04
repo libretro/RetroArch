@@ -334,20 +334,21 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
-      if (task != NULL && task->frontend_userdata)
+      if (task && task->frontend_userdata)
       {
          msg_widget = (menu_widget_msg_t*) task->frontend_userdata;
          msg_widget->task_ptr = task; /* msg_widgets can be passed between tasks */
       }
 
       /* Spawn a new notification */
-      if (msg_widget == NULL)
+      if (!msg_widget)
       {
-         const char *title;
+         const char *title                      = msg;
 
-         msg_widget = (menu_widget_msg_t*) calloc(1, sizeof(*msg_widget));
+         msg_widget                             = (menu_widget_msg_t*)calloc(1, sizeof(*msg_widget));
 
-         title = task != NULL ? task->title : msg;
+		 if (task)
+            title                               = task->title;
 
          msg_widget->duration                   = duration;
          msg_widget->offset_y                   = 0;
@@ -613,9 +614,7 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
       file_list_free_userdata(current_msgs, msg_queue_kill);
 
       for (i = msg_queue_kill; i < current_msgs->size-1; i++)
-      {
          current_msgs->list[i] = current_msgs->list[i+1];
-      }
 
       current_msgs->size--;
    }
@@ -751,10 +750,9 @@ static void menu_widgets_screenshot_end(void *userdata)
 
 static void menu_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widget, unsigned duration)
 {
+   menu_timer_ctx_entry_t timer;
    if (msg_widget->expiration_timer_started)
       return;
-
-   menu_timer_ctx_entry_t timer;
 
    timer.cb       = menu_widgets_msg_queue_expired;
    timer.duration = duration;
@@ -769,14 +767,14 @@ static void menu_widgets_hourglass_tick(void *userdata);
 
 static void menu_widgets_hourglass_end(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t*) userdata;
+   menu_timer_ctx_entry_t timer;
+   menu_widget_msg_t *msg  = (menu_widget_msg_t*) userdata;
 
    msg->hourglass_rotation = 0.0f;
 
-   menu_timer_ctx_entry_t timer;
-   timer.cb       = menu_widgets_hourglass_tick;
-   timer.duration = HOURGLASS_INTERVAL;
-   timer.userdata = msg;
+   timer.cb                = menu_widgets_hourglass_tick;
+   timer.duration          = HOURGLASS_INTERVAL;
+   timer.userdata          = msg;
 
    menu_timer_start(&msg->hourglass_timer, &timer);
 }
