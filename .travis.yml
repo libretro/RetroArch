@@ -69,10 +69,9 @@ before_install:
 script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
-       ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib
-     else
-       ./configure
+       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib"
      fi
+  - ./configure $ARGS
   - |
      if [ -n "$C89_BUILD" ]; then
        make C89_BUILD=1
@@ -84,6 +83,7 @@ script:
 
 env:
   global:
+   - ARGS=""
    - MAKEFLAGS="-j2"
    - secure: "qc91ReC3OlzSh2gFaSH6TYzC2qIQvgA2AZff6J13eaH8xijAhuMzttZ0rMQJ0DWCIhPeUb0kIzVyaGoe4MwPALzpw1C1AznIWiZJ53HN+hWCOcS/af7YVPk6HPySnwqrS+Wv3AIIvIKFV2mxv21F/JbT/N+pArlRrp904Xj+KPo="
 addons:
