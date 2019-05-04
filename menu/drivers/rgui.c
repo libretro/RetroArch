@@ -821,8 +821,11 @@ static frame_buf_t rgui_upscale_buf = {
    NULL
 };
 
-#if defined(PS2)
+/* ==============================
+ * pixel format conversion START
+ * ============================== */
 
+/* PS2 */
 static uint16_t argb32_to_abgr1555(uint32_t col)
 {
    /* Extract colour components */
@@ -856,10 +859,7 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
    return (1 << 15) | (b << 10) | (g << 5) | r;
 }
 
-#define argb32_to_pixel_platform_format(color) argb32_to_abgr1555(color)
-
-#elif defined(GEKKO)
-
+/* GEKKO */
 static uint16_t argb32_to_rgb5a3(uint32_t col)
 {
    /* Extract colour components */
@@ -902,10 +902,7 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
    return (a3 << 12) | (r << 8) | (g << 4) | b;
 }
 
-#define argb32_to_pixel_platform_format(color) argb32_to_rgb5a3(color)
-
-#elif defined(PSP)
-
+/* PSP */
 static uint16_t argb32_to_abgr4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
@@ -915,10 +912,17 @@ static uint16_t argb32_to_abgr4444(uint32_t col)
    return (a << 12) | (b << 8) | (g << 4) | r;
 }
 
-#define argb32_to_pixel_platform_format(color) argb32_to_abgr4444(color)
+/* D3D10/11/12 */
+static uint16_t argb32_to_bgra4444(uint32_t col)
+{
+   unsigned a = ((col >> 24) & 0xff) >> 4;
+   unsigned r = ((col >> 16) & 0xff) >> 4;
+   unsigned g = ((col >> 8)  & 0xff) >> 4;
+   unsigned b = ((col & 0xff)      ) >> 4;
+   return (b << 12) | (g << 8) | (r << 4) | a;
+}
 
-#else
-
+/* All other platforms */
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
@@ -928,9 +932,36 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
-#define argb32_to_pixel_platform_format(color) argb32_to_rgba4444(color)
+static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgba4444;
 
-#endif
+static void rgui_set_pixel_format_function(void)
+{
+	const char *driver_ident = video_driver_get_ident();
+	
+	/* Default fallback... */
+	if (string_is_empty(driver_ident))
+	{
+		argb32_to_pixel_platform_format = argb32_to_rgba4444;
+		return;
+	}
+	
+	if (     string_is_equal(driver_ident, "ps2"))     /* PS2 */
+		argb32_to_pixel_platform_format = argb32_to_abgr1555;
+	else if (string_is_equal(driver_ident, "gx"))      /* GEKKO */
+		argb32_to_pixel_platform_format = argb32_to_rgb5a3;
+	else if (string_is_equal(driver_ident, "psp1"))    /* PSP */
+		argb32_to_pixel_platform_format = argb32_to_abgr4444;
+	else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
+				string_is_equal(driver_ident, "d3d11") ||
+				string_is_equal(driver_ident, "d3d12"))
+		argb32_to_pixel_platform_format = argb32_to_bgra4444;
+	else
+		argb32_to_pixel_platform_format = argb32_to_rgba4444;
+}
+
+/* ==============================
+ * pixel format conversion END
+ * ============================== */
 
 static void rgui_fill_rect(
       uint16_t *data,
@@ -3882,6 +3913,9 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui->menu_title[0] = '\0';
    rgui->menu_sublabel[0] = '\0';
+
+	/* Set pixel format conversion function */
+	rgui_set_pixel_format_function();
 
    /* Cache initial video settings */
    rgui_get_video_config(&rgui->content_video_settings);
