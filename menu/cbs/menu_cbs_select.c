@@ -20,8 +20,8 @@
 #endif
 
 #include "../menu_driver.h"
-#include "../widgets/menu_entry.h"
 #include "../menu_cbs.h"
+#include "../menu_entries.h"
 #include "../menu_setting.h"
 #include "../../tasks/tasks_internal.h"
 

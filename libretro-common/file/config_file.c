@@ -69,7 +69,7 @@ struct config_include_list
 };
 
 static config_file_t *config_file_new_internal(
-      const char *path, unsigned depth, config_file_cb_t *cb, bool no_checks);
+      const char *path, unsigned depth, config_file_cb_t *cb);
 
 static int config_sort_compare_func(struct config_entry_list *a,
       struct config_entry_list *b)
@@ -268,8 +268,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
       parent->tail = NULL;
 }
 
-static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb,
-      bool no_checks)
+static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb)
 {
    char real_path[PATH_MAX_LENGTH];
    config_file_t         *sub_conf  = NULL;
@@ -316,7 +315,7 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb,
 #endif
 
    sub_conf = (config_file_t*)
-      config_file_new_internal(real_path, conf->include_depth + 1, cb, no_checks);
+      config_file_new_internal(real_path, conf->include_depth + 1, cb);
    if (!sub_conf)
       return;
 
@@ -326,8 +325,7 @@ static void add_sub_conf(config_file_t *conf, char *path, config_file_cb_t *cb,
 }
 
 static bool parse_line(config_file_t *conf,
-      struct config_entry_list *list, char *line, config_file_cb_t *cb,
-      bool no_checks)
+      struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
    char *key       = NULL;
    char *key_tmp   = NULL;
@@ -350,7 +348,7 @@ static bool parse_line(config_file_t *conf,
          if (conf->include_depth >= MAX_INCLUDE_DEPTH)
             fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
          else
-            add_sub_conf(conf, path, cb, no_checks);
+            add_sub_conf(conf, path, cb);
          free(path);
       }
    }
@@ -395,7 +393,7 @@ static bool parse_line(config_file_t *conf,
 }
 
 static config_file_t *config_file_new_internal(
-      const char *path, unsigned depth, config_file_cb_t *cb, bool no_checks)
+      const char *path, unsigned depth, config_file_cb_t *cb)
 {
    RFILE              *file = NULL;
    struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
@@ -412,11 +410,6 @@ static config_file_t *config_file_new_internal(
 
    if (!path || !*path)
       return conf;
-#if !defined(ORBIS)
-   if (!no_checks)
-      if (path_is_directory(path))
-         goto error;
-#endif
    conf->path          = strdup(path);
    if (!conf->path)
       goto error;
@@ -458,7 +451,7 @@ static config_file_t *config_file_new_internal(
          continue;
       }
 
-      if (*line && parse_line(conf, list, line, cb, no_checks))
+      if (*line && parse_line(conf, list, line, cb))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -548,7 +541,6 @@ bool config_append_file(config_file_t *conf, const char *path)
 config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;
-   bool no_checks            = false;
    struct string_list *lines = NULL;
    struct config_file *conf  = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
@@ -589,7 +581,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
       if (line && conf)
       {
-         if (*line && parse_line(conf, list, line, NULL, no_checks))
+         if (*line && parse_line(conf, list, line, NULL))
          {
             if (conf->entries)
                conf->tail->next = list;
@@ -612,17 +604,12 @@ config_file_t *config_file_new_from_string(const char *from_string)
 config_file_t *config_file_new_with_callback(
       const char *path, config_file_cb_t *cb)
 {
-   return config_file_new_internal(path, 0, cb, false);
+   return config_file_new_internal(path, 0, cb);
 }
 
 config_file_t *config_file_new(const char *path)
 {
-   return config_file_new_internal(path, 0, NULL, false);
-}
-
-config_file_t *config_file_read(const char *path)
-{
-   return config_file_new_internal(path, 0, NULL, true);
+   return config_file_new_internal(path, 0, NULL);
 }
 
 static struct config_entry_list *config_get_entry(
@@ -987,12 +974,10 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
       void* buf  = NULL;
 #ifdef ORBIS
       int fd     = orbisOpen(path,O_RDWR|O_CREAT,0644);
-      RARCH_LOG("[Config]config_file_write orbisOpen path=%s fd=%d\n", path, fd);
       if (fd < 0)
          return false;
       config_file_dump_orbis(conf,fd);
       orbisClose(fd);
-      RARCH_LOG("[Config]config_file_write orbisClose path=%s fd=%d\n", path, fd);
 #else
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)

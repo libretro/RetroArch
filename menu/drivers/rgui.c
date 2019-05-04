@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include <time.h>
 
 #include <string/stdstring.h>
 #include <lists/file_list.h>
@@ -36,6 +35,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
+
+#if defined(HAVE_MENU_WIDGETS)
+#include "../widgets/menu_widgets.h"
 #endif
 
 #include "../../playlist.h"
@@ -73,12 +76,22 @@
 #define RGUI_TERM_HEIGHT(fb_height)        rgui_term_layout.height
 #endif
 
+#define MAX_FB_WIDTH 426
+
 #define RGUI_ENTRY_VALUE_MAXLEN 19
 
 #define RGUI_TICKER_SPACER " | "
 
 #define NUM_FONT_GLYPHS_REGULAR 128
 #define NUM_FONT_GLYPHS_EXTENDED 256
+
+#define NUM_PARTICLES 256
+
+#ifndef PI
+#define PI 3.14159265359f
+#endif
+
+#define BATTERY_WARN_THRESHOLD 20
 
 typedef struct
 {
@@ -101,6 +114,7 @@ typedef struct
    uint32_t border_dark_color;
    uint32_t border_light_color;
    uint32_t shadow_color;
+   uint32_t particle_color;
 } rgui_theme_t;
 
 static const rgui_theme_t rgui_theme_classic_red = {
@@ -111,7 +125,8 @@ static const rgui_theme_t rgui_theme_classic_red = {
    0xC0404040, /* bg_light_color */
    0xC08C0000, /* border_dark_color */
    0xC0CC0E03, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC09E8686  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_orange = {
@@ -122,7 +137,8 @@ static const rgui_theme_t rgui_theme_classic_orange = {
    0xC0404040, /* bg_light_color */
    0xC0962800, /* border_dark_color */
    0xC0E46C03, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC09E9286  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_yellow = {
@@ -133,7 +149,8 @@ static const rgui_theme_t rgui_theme_classic_yellow = {
    0xC0404040, /* bg_light_color */
    0xC0AC7800, /* border_dark_color */
    0xC0F3C60D, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC0999581  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_green = {
@@ -144,7 +161,8 @@ static const rgui_theme_t rgui_theme_classic_green = {
    0xC0404040, /* bg_light_color */
    0xC0204020, /* border_dark_color */
    0xC0408040, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC0879E87  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_blue = {
@@ -155,7 +173,8 @@ static const rgui_theme_t rgui_theme_classic_blue = {
    0xC0404040, /* bg_light_color */
    0xC0005BA6, /* border_dark_color */
    0xC02E94E2, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC086949E  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_violet = {
@@ -166,7 +185,8 @@ static const rgui_theme_t rgui_theme_classic_violet = {
    0xC0404040, /* bg_light_color */
    0xC04C0A60, /* border_dark_color */
    0xC0842DCE, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC08E8299  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_grey = {
@@ -177,7 +197,8 @@ static const rgui_theme_t rgui_theme_classic_grey = {
    0xC0404040, /* bg_light_color */
    0xC0505050, /* border_dark_color */
    0xC0798A99, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC078828A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_legacy_red = {
@@ -188,7 +209,8 @@ static const rgui_theme_t rgui_theme_legacy_red = {
    0xC0B34B41, /* bg_light_color */
    0xC0BF5E58, /* border_dark_color */
    0xC0F27A6F, /* border_light_color */
-   0xC01F0C0A  /* shadow_color */
+   0xC01F0C0A, /* shadow_color */
+   0xC0F75431  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_dark_purple = {
@@ -199,7 +221,8 @@ static const rgui_theme_t rgui_theme_dark_purple = {
    0xC0663A66, /* bg_light_color */
    0xC0885783, /* border_dark_color */
    0xC0A675A1, /* border_light_color */
-   0xC0140A14  /* shadow_color */
+   0xC0140A14, /* shadow_color */
+   0xC09786A0  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_midnight_blue = {
@@ -210,7 +233,8 @@ static const rgui_theme_t rgui_theme_midnight_blue = {
    0xC03C4D5E, /* bg_light_color */
    0xC046586A, /* border_dark_color */
    0xC06D7F91, /* border_light_color */
-   0xC00A0F14  /* shadow_color */
+   0xC00A0F14, /* shadow_color */
+   0xC084849E  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_golden = {
@@ -219,9 +243,10 @@ static const rgui_theme_t rgui_theme_golden = {
    0xFFFFCC00, /* title_color */
    0xC0B88D0B, /* bg_dark_color */
    0xC0BF962B, /* bg_light_color */
-   0xC0e1ad21, /* border_dark_color */
+   0xC0E1AD21, /* border_dark_color */
    0xC0FCC717, /* border_light_color */
-   0xC0382B03  /* shadow_color */
+   0xC0382B03, /* shadow_color */
+   0xC0F7D15E  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_electric_blue = {
@@ -232,7 +257,8 @@ static const rgui_theme_t rgui_theme_electric_blue = {
    0xC0007FFF, /* bg_light_color */
    0xC034A5D8, /* border_dark_color */
    0xC070C9FF, /* border_light_color */
-   0xC012294D  /* shadow_color */
+   0xC012294D, /* shadow_color */
+   0xC080C7E6  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_apple_green = {
@@ -243,7 +269,8 @@ static const rgui_theme_t rgui_theme_apple_green = {
    0xC0688539, /* bg_light_color */
    0xC0608E3A, /* border_dark_color */
    0xC09AB973, /* border_light_color */
-   0xC01F2E19  /* shadow_color */
+   0xC01F2E19, /* shadow_color */
+   0xC0A3C44E  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_volcanic_red = {
@@ -254,7 +281,8 @@ static const rgui_theme_t rgui_theme_volcanic_red = {
    0xC0BD0F1E, /* bg_light_color */
    0xC0CE2029, /* border_dark_color */
    0xC0FF0000, /* border_light_color */
-   0xC0330D0D  /* shadow_color */
+   0xC0330D0D, /* shadow_color */
+   0xC0E67D45  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_lagoon = {
@@ -265,7 +293,8 @@ static const rgui_theme_t rgui_theme_lagoon = {
    0xC0526778, /* bg_light_color */
    0xC058848F, /* border_dark_color */
    0xC060909C, /* border_light_color */
-   0xC01C2329  /* shadow_color */
+   0xC01C2329, /* shadow_color */
+   0xC09FB1C7  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_brogrammer = {
@@ -276,7 +305,8 @@ static const rgui_theme_t rgui_theme_brogrammer = {
    0xC0242424, /* bg_light_color */
    0xC0E74C3C, /* border_dark_color */
    0xC0E74C3C, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC0606060  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_dracula = {
@@ -287,7 +317,8 @@ static const rgui_theme_t rgui_theme_dracula = {
    0xC02F3240, /* bg_light_color */
    0xC06272A4, /* border_dark_color */
    0xC06272A4, /* border_light_color */
-   0xC00F0F0F  /* shadow_color */
+   0xC00F0F0F, /* shadow_color */
+   0xC06272A4  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_fairyfloss = {
@@ -298,7 +329,8 @@ static const rgui_theme_t rgui_theme_fairyfloss = {
    0xC0675F87, /* bg_light_color */
    0xC08077A8, /* border_dark_color */
    0xC08077A8, /* border_light_color */
-   0xC0262433  /* shadow_color */
+   0xC0262433, /* shadow_color */
+   0xC0C5A3FF  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_flatui = {
@@ -309,7 +341,8 @@ static const rgui_theme_t rgui_theme_flatui = {
    0xE0ECF0F1, /* bg_light_color */
    0xE095A5A6, /* border_dark_color */
    0xE095A5A6, /* border_light_color */
-   0xE0C3DBDE  /* shadow_color */
+   0xE0C3DBDE, /* shadow_color */
+   0xE0B3DFFF  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_gruvbox_dark = {
@@ -320,7 +353,8 @@ static const rgui_theme_t rgui_theme_gruvbox_dark = {
    0xC03D3D3D, /* bg_light_color */
    0xC099897A, /* border_dark_color */
    0xC099897A, /* border_light_color */
-   0xC0000000  /* shadow_color */
+   0xC0000000, /* shadow_color */
+   0xC098971A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_gruvbox_light = {
@@ -331,7 +365,8 @@ static const rgui_theme_t rgui_theme_gruvbox_light = {
    0xE0FBEBC7, /* bg_light_color */
    0xE0928374, /* border_dark_color */
    0xE0928374, /* border_light_color */
-   0xE0D5C4A1  /* shadow_color */
+   0xE0D5C4A1, /* shadow_color */
+   0xE0D5C4A1  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_hacking_the_kernel = {
@@ -342,7 +377,8 @@ static const rgui_theme_t rgui_theme_hacking_the_kernel = {
    0xC0000000, /* bg_light_color */
    0xC0036303, /* border_dark_color */
    0xC0036303, /* border_light_color */
-   0xC0154D2B  /* shadow_color */
+   0xC0154D2B, /* shadow_color */
+   0xC0008C00  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_nord = {
@@ -353,7 +389,8 @@ static const rgui_theme_t rgui_theme_nord = {
    0xC0363C4F, /* bg_light_color */
    0xC04E596E, /* border_dark_color */
    0xC04E596E, /* border_light_color */
-   0xC0040505  /* shadow_color */
+   0xC0040505, /* shadow_color */
+   0xC05E81AC  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_nova = {
@@ -364,7 +401,8 @@ static const rgui_theme_t rgui_theme_nova = {
    0xC0485B66, /* bg_light_color */
    0xC0627985, /* border_dark_color */
    0xC0627985, /* border_light_color */
-   0xC01E272C  /* shadow_color */
+   0xC01E272C, /* shadow_color */
+   0xC0889BA7  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_one_dark = {
@@ -375,7 +413,8 @@ static const rgui_theme_t rgui_theme_one_dark = {
    0xC02D323B, /* bg_light_color */
    0xC0495162, /* border_dark_color */
    0xC0495162, /* border_light_color */
-   0xC007080A  /* shadow_color */
+   0xC007080A, /* shadow_color */
+   0xC05F697A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_palenight = {
@@ -386,7 +425,8 @@ static const rgui_theme_t rgui_theme_palenight = {
    0xC02F3347, /* bg_light_color */
    0xC0697098, /* border_dark_color */
    0xC0697098, /* border_light_color */
-   0xC00D0E14  /* shadow_color */
+   0xC00D0E14, /* shadow_color */
+   0xC0697098  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_solarized_dark = {
@@ -397,7 +437,8 @@ static const rgui_theme_t rgui_theme_solarized_dark = {
    0xC0003542, /* bg_light_color */
    0xC093A1A1, /* border_dark_color */
    0xC093A1A1, /* border_light_color */
-   0xC000141A  /* shadow_color */
+   0xC000141A, /* shadow_color */
+   0xC0586E75  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_solarized_light = {
@@ -408,7 +449,8 @@ static const rgui_theme_t rgui_theme_solarized_light = {
    0xE0FDEDDF, /* bg_light_color */
    0xE093A1A1, /* border_dark_color */
    0xE093A1A1, /* border_light_color */
-   0xE0E0DBC9  /* shadow_color */
+   0xE0E0DBC9, /* shadow_color */
+   0xE0FFC5AD  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_tango_dark = {
@@ -419,7 +461,8 @@ static const rgui_theme_t rgui_theme_tango_dark = {
    0xC0384042, /* bg_light_color */
    0xC06A767A, /* border_dark_color */
    0xC06A767A, /* border_light_color */
-   0xC01A1A1A  /* shadow_color */
+   0xC01A1A1A, /* shadow_color */
+   0xC0C4A000  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_tango_light = {
@@ -430,7 +473,8 @@ static const rgui_theme_t rgui_theme_tango_light = {
    0xE0EEEEEC, /* bg_light_color */
    0xE0C7C7C7, /* border_dark_color */
    0xE0C7C7C7, /* border_light_color */
-   0xE0D3D7CF  /* shadow_color */
+   0xE0D3D7CF, /* shadow_color */
+   0xE0FFCA78  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_zenburn = {
@@ -441,7 +485,8 @@ static const rgui_theme_t rgui_theme_zenburn = {
    0xC04F4F4F, /* bg_light_color */
    0xC0636363, /* border_dark_color */
    0xC0636363, /* border_light_color */
-   0xC01F1F1F  /* shadow_color */
+   0xC01F1F1F, /* shadow_color */
+   0xC0AC7373  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_anti_zenburn = {
@@ -452,7 +497,8 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0C0C0C0, /* bg_light_color */
    0xE0A0A0A0, /* border_dark_color */
    0xE0A0A0A0, /* border_light_color */
-   0xE0B0B0B0  /* shadow_color */
+   0xE0B0B0B0, /* shadow_color */
+   0xE0B090B0  /* particle_color */
 };
 
 typedef struct
@@ -465,6 +511,7 @@ typedef struct
    uint16_t border_dark_color;
    uint16_t border_light_color;
    uint16_t shadow_color;
+   uint16_t particle_color;
 } rgui_colors_t;
 
 typedef struct
@@ -484,7 +531,7 @@ typedef struct
    bool border_thickness;
    bool border_enable;
    bool shadow_enable;
-   bool snow_enable;
+   unsigned particle_effect;
    bool extended_ascii_enable;
    float scroll_y;
    char *msgbox;
@@ -519,7 +566,24 @@ static unsigned mini_thumbnail_max_height = 0;
 
 static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 
-float snowflakes[1024];
+/* A 'particle' is just 4 float variables that can
+ * be used for any purpose - e.g.:
+ * > a = x pos
+ * > b = y pos
+ * > c = x velocity
+ * or:
+ * > a = radius
+ * > b = theta
+ * etc. */
+typedef struct
+{
+   float a;
+   float b;
+   float c;
+   float d;
+} rgui_particle_t;
+
+static rgui_particle_t particles[NUM_PARTICLES] = {{ 0.0f }};
 
 /* ==============================
  * Custom Symbols (glyphs) START
@@ -532,7 +596,13 @@ enum rgui_symbol_type
    RGUI_SYMBOL_SHIFT_UP,
    RGUI_SYMBOL_SHIFT_DOWN,
    RGUI_SYMBOL_NEXT,
-   RGUI_SYMBOL_TEXT_CURSOR
+   RGUI_SYMBOL_TEXT_CURSOR,
+   RGUI_SYMBOL_CHARGING,
+   RGUI_SYMBOL_BATTERY_100,
+   RGUI_SYMBOL_BATTERY_80,
+   RGUI_SYMBOL_BATTERY_60,
+   RGUI_SYMBOL_BATTERY_40,
+   RGUI_SYMBOL_BATTERY_20
 };
 
 /* All custom symbols must have dimensions
@@ -608,6 +678,78 @@ static const uint8_t rgui_symbol_data_text_cursor[FONT_WIDTH * FONT_HEIGHT] = {
       1, 1, 1, 1, 1, /* Baseline */
       1, 1, 1, 1, 1,
       1, 1, 1, 1, 1};
+
+static const uint8_t rgui_symbol_data_charging[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 1, 0, 1, 0,
+      0, 1, 0, 1, 0,
+      1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1,
+      0, 1, 1, 1, 0,
+      0, 0, 1, 0, 0,
+      0, 0, 1, 0, 0, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_100[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_80[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_60[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_40[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+static const uint8_t rgui_symbol_data_battery_20[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 0, 0, 0, 0,
+      0, 0, 1, 1, 0,
+      0, 1, 1, 1, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 0, 0, 1,
+      0, 1, 1, 1, 1, /* Baseline */
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
 
 /* ==============================
  * Custom Symbols (glyphs) END
@@ -790,49 +932,604 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 
 #endif
 
-static uint16_t INLINE rgui_bg_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shift  = (rgui->bg_thickness ? 1 : 0);
-   unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? rgui->colors.bg_dark_color : rgui->colors.bg_light_color;
-}
-
-static uint16_t INLINE rgui_border_filler(rgui_t *rgui, unsigned x, unsigned y)
-{
-   unsigned shift  = (rgui->border_thickness ? 1 : 0);
-   unsigned select = ((x >> shift) + (y >> shift)) & 1;
-   return (select == 0) ? rgui->colors.border_dark_color : rgui->colors.border_light_color;
-}
-
 static void rgui_fill_rect(
-      rgui_t *rgui,
       uint16_t *data,
-      size_t pitch,
+      unsigned fb_width, unsigned fb_height,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      uint16_t (*col)(rgui_t *rgui, unsigned x, unsigned y))
+      uint16_t dark_color, uint16_t light_color,
+      bool thickness)
 {
-   unsigned i, j;
+   unsigned x_index, y_index;
+   unsigned x_start = x <= fb_width  ? x : fb_width;
+   unsigned y_start = y <= fb_height ? y : fb_height;
+   unsigned x_end   = x + width;
+   unsigned y_end   = y + height;
+   size_t x_size;
+   uint16_t scanline_even[MAX_FB_WIDTH]; /* Initial values don't matter here */
+   uint16_t scanline_odd[MAX_FB_WIDTH];
 
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         data[j * (pitch >> 1) + i] = col(rgui, i, j);
+   /* Note: unlike rgui_color_rect() and rgui_draw_particle(),
+    * this function is frequently used to fill large areas.
+    * We therefore gain significant performance benefits
+    * from using memcpy() tricks... */
+
+   x_end  = x_end <= fb_width  ? x_end : fb_width;
+   y_end  = y_end <= fb_height ? y_end : fb_height;
+   x_size = (x_end - x_start) * sizeof(uint16_t);
+
+   /* Sanity check */
+   if (x_size == 0)
+      return;
+
+   /* If dark_color and light_color are the same,
+    * perform a solid fill */
+   if (dark_color == light_color)
+   {
+      uint16_t *src = scanline_even + x_start;
+      uint16_t *dst = data + x_start;
+
+      /* Populate source array */
+      for (x_index = x_start; x_index < x_end; x_index++)
+         *(scanline_even + x_index) = dark_color;
+
+      /* Fill destination array */
+      for (y_index = y_start; y_index < y_end; y_index++)
+         memcpy(dst + (y_index * fb_width), src, x_size);
+   }
+   else if (thickness)
+   {
+      uint16_t *src_a      = NULL;
+      uint16_t *src_b      = NULL;
+      uint16_t *src_c      = NULL;
+      uint16_t *src_d      = NULL;
+      uint16_t *dst        = data + x_start;
+
+      /* Determine in which order the source arrays
+       * should be copied */
+      switch (y_start & 0x3)
+      {
+         case 0x1:
+            src_a = scanline_even + x_start;
+            src_b = scanline_odd  + x_start;
+            src_c = src_b;
+            src_d = src_a;
+            break;
+         case 0x2:
+            src_a = scanline_odd  + x_start;
+            src_b = src_a;
+            src_c = scanline_even + x_start;
+            src_d = src_c;
+            break;
+         case 0x3:
+            src_a = scanline_odd  + x_start;
+            src_b = scanline_even + x_start;
+            src_c = src_b;
+            src_d = src_a;
+            break;
+         case 0x0:
+         default:
+            src_a = scanline_even + x_start;
+            src_b = src_a;
+            src_c = scanline_odd  + x_start;
+            src_d = src_c;
+            break;
+      }
+
+      /* Populate source arrays */
+      for (x_index = x_start; x_index < x_end; x_index++)
+      {
+         bool x_is_even = (((x_index >> 1) & 1) == 0);
+         *(scanline_even + x_index) = x_is_even ? dark_color  : light_color;
+         *(scanline_odd  + x_index) = x_is_even ? light_color : dark_color;
+      }
+
+      /* Fill destination array */
+      for (y_index = y_start    ; y_index < y_end; y_index += 4)
+         memcpy(dst + (y_index * fb_width), src_a, x_size);
+
+      for (y_index = y_start + 1; y_index < y_end; y_index += 4)
+         memcpy(dst + (y_index * fb_width), src_b, x_size);
+
+      for (y_index = y_start + 2; y_index < y_end; y_index += 4)
+         memcpy(dst + (y_index * fb_width), src_c, x_size);
+
+      for (y_index = y_start + 3; y_index < y_end; y_index += 4)
+         memcpy(dst + (y_index * fb_width), src_d, x_size);
+   }
+   else
+   {
+      uint16_t *src_a      = NULL;
+      uint16_t *src_b      = NULL;
+      uint16_t *dst        = data + x_start;
+
+      /* Determine in which order the source arrays
+       * should be copied */
+      if ((y_start & 1) == 0)
+      {
+         src_a = scanline_even + x_start;
+         src_b = scanline_odd  + x_start;
+      }
+      else
+      {
+         src_a = scanline_odd  + x_start;
+         src_b = scanline_even + x_start;
+      }
+
+      /* Populate source arrays */
+      for (x_index = x_start; x_index < x_end; x_index++)
+      {
+         bool x_is_even = ((x_index & 1) == 0);
+         *(scanline_even + x_index) = x_is_even ? dark_color  : light_color;
+         *(scanline_odd  + x_index) = x_is_even ? light_color : dark_color;
+      }
+
+      /* Fill destination array */
+      for (y_index = y_start    ; y_index < y_end; y_index += 2)
+         memcpy(dst + (y_index * fb_width), src_a, x_size);
+
+      for (y_index = y_start + 1; y_index < y_end; y_index += 2)
+         memcpy(dst + (y_index * fb_width), src_b, x_size);
+   }
 }
 
 static void rgui_color_rect(
       uint16_t *data,
-      size_t pitch,
       unsigned fb_width, unsigned fb_height,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t color)
 {
-   unsigned i, j;
+   unsigned x_index, y_index;
+   unsigned x_start = x <= fb_width  ? x : fb_width;
+   unsigned y_start = y <= fb_height ? y : fb_height;
+   unsigned x_end   = x + width;
+   unsigned y_end   = y + height;
 
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         if (i < fb_width && j < fb_height)
-            data[j * (pitch >> 1) + i] = color;
+   x_end = x_end <= fb_width  ? x_end : fb_width;
+   y_end = y_end <= fb_height ? y_end : fb_height;
+
+   for (y_index = y_start; y_index < y_end; y_index++)
+   {
+      uint16_t *data_ptr = data + (y_index * fb_width);
+      for (x_index = x_start; x_index < x_end; x_index++)
+         *(data_ptr + x_index) = color;
+   }
+}
+
+static void rgui_render_border(rgui_t *rgui, uint16_t *data,
+      unsigned fb_width, unsigned fb_height)
+{
+   uint16_t dark_color;
+   uint16_t light_color;
+   bool thickness;
+   
+   /* Sanity check */
+   if (!rgui || !data)
+      return;
+   
+   dark_color   = rgui->colors.border_dark_color;
+   light_color  = rgui->colors.border_light_color;
+   thickness    = rgui->border_thickness;
+   
+   /* Draw border */
+   rgui_fill_rect(data, fb_width, fb_height,
+         5, 5, fb_width - 10, 5,
+         dark_color, light_color, thickness);
+   rgui_fill_rect(data, fb_width, fb_height,
+         5, fb_height - 10, fb_width - 10, 5,
+         dark_color, light_color, thickness);
+   rgui_fill_rect(data, fb_width, fb_height,
+         5, 5, 5, fb_height - 10,
+         dark_color, light_color, thickness);
+   rgui_fill_rect(data, fb_width, fb_height,
+         fb_width - 10, 5, 5, fb_height - 10,
+         dark_color, light_color, thickness);
+   
+   /* Draw drop shadow, if required */
+   if (rgui->shadow_enable)
+   {
+      uint16_t shadow_color = rgui->colors.shadow_color;
+      
+      rgui_color_rect(data, fb_width, fb_height,
+            10, 10, 1, fb_height - 20, shadow_color);
+      rgui_color_rect(data, fb_width, fb_height,
+            10, 10, fb_width - 20, 1, shadow_color);
+      rgui_color_rect(data, fb_width, fb_height,
+            fb_width - 5, 6, 1, fb_height - 10, shadow_color);
+      rgui_color_rect(data, fb_width, fb_height,
+            6, fb_height - 5, fb_width - 10, 1, shadow_color);
+   }
+}
+
+/* Returns true if particle is on screen */
+static bool INLINE rgui_draw_particle(
+      uint16_t *data,
+      unsigned fb_width, unsigned fb_height,
+      int x, int y,
+      unsigned width, unsigned height,
+      uint16_t color)
+{
+   unsigned x_index, y_index;
+   
+   /* This great convoluted mess just saves us
+    * having to perform comparisons on every
+    * iteration of the for loops... */
+   int x_start = x > 0 ? x : 0;
+   int y_start = y > 0 ? y : 0;
+   int x_end = x + width;
+   int y_end = y + height;
+   
+   x_start = x_start <= fb_width  ? x_start : fb_width;
+   y_start = y_start <= fb_height ? y_start : fb_height;
+   
+   x_end = x_end >  0        ? x_end : 0;
+   x_end = x_end <= fb_width ? x_end : fb_width;
+   
+   y_end = y_end >  0         ? y_end : 0;
+   y_end = y_end <= fb_height ? y_end : fb_height;
+   
+   for (y_index = (unsigned)y_start; y_index < (unsigned)y_end; y_index++)
+   {
+      uint16_t *data_ptr = data + (y_index * fb_width);
+      for (x_index = (unsigned)x_start; x_index < (unsigned)x_end; x_index++)
+         *(data_ptr + x_index) = color;
+   }
+   
+   return (x_end > x_start) && (y_end > y_start);
+}
+
+static void rgui_init_particle_effect(rgui_t *rgui)
+{
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   size_t i;
+   
+   /* Sanity check */
+   if (!rgui)
+      return;
+   
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   
+   switch (rgui->particle_effect)
+   {
+      case RGUI_PARTICLE_EFFECT_SNOW:
+      case RGUI_PARTICLE_EFFECT_SNOW_ALT:
+         {
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               particle->a = (float)(rand() % fb_width);
+               particle->b = (float)(rand() % fb_height);
+               particle->c = (float)(rand() % 64 - 16) * 0.1f;
+               particle->d = (float)(rand() % 64 - 48) * 0.1f;
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_RAIN:
+         {
+            uint8_t weights[] = { /* 60 entries */
+               2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+               3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+               4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+               5, 5, 5, 5, 5, 5, 5, 5,
+               6, 6, 6, 6, 6, 6,
+               7, 7, 7, 7,
+               8, 8, 8,
+               9, 9,
+               10};
+            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)MAX_FB_WIDTH) * (float)NUM_PARTICLES);
+            
+            num_drops = num_drops < NUM_PARTICLES ? num_drops : NUM_PARTICLES;
+            
+            for (i = 0; i < num_drops; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* x pos */
+               particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+               /* y pos */
+               particle->b = (float)(rand() % fb_height);
+               /* drop length */
+               particle->c = (float)weights[(unsigned)(rand() % 61)];
+               /* drop speed (larger drops fall faster) */
+               particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_VORTEX:
+         {
+            float max_radius         = (float)sqrt((double)((fb_width * fb_width) + (fb_height * fb_height))) / 2.0f;
+            float one_degree_radians = PI / 360.0f;
+            
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* radius */
+               particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+               /* theta */
+               particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+               /* radial speed */
+               particle->c = (float)((rand() % 100) + 1) * 0.001f;
+               /* rotational speed */
+               particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_STARFIELD:
+         {
+            float min_depth = (float)fb_width / 12.0f;
+            
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* x pos */
+               particle->a = (float)(rand() % fb_width);
+               /* y pos */
+               particle->b = (float)(rand() % fb_height);
+               /* depth */
+               particle->c = (float)fb_width;
+               /* speed */
+               particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+            }
+         }
+         break;
+      default:
+         /* Do nothing... */
+         break;
+   }
+}
+
+static void rgui_render_particle_effect(rgui_t *rgui)
+{
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   size_t i;
+   
+   /* Sanity check */
+   if (!rgui || !rgui_frame_buf.data)
+      return;
+   
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   
+   /* Note: It would be more elegant to have 'update' and 'draw'
+    * as separate functions, since 'update' is the part that
+    * varies with particle effect whereas 'draw' is always
+    * pretty much the same. However, this has the following
+    * disadvantages:
+    * - It means we have to loop through all particles twice,
+    *   and given that we're already using a heap of CPU cycles
+    *   to draw these effects any further performance overheads
+    *   are to be avoided
+    * - It locks us into a particular draw style. e.g. What if
+    *   an effect calls for round particles, instead of square
+    *   ones? This would make a mess of any 'standardised'
+    *   drawing
+    * So we go with the simple option of having the entire
+    * update/draw sequence here. This results in some code
+    * repetition, but it has better performance and allows for
+    * complete flexibility */
+   
+   switch (rgui->particle_effect)
+   {
+      case RGUI_PARTICLE_EFFECT_SNOW:
+      case RGUI_PARTICLE_EFFECT_SNOW_ALT:
+         {
+            unsigned particle_size;
+            bool on_screen;
+            
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* Update particle 'speed' */
+               particle->c = particle->c + (float)(rand() % 16 - 9) * 0.01f;
+               particle->d = particle->d + (float)(rand() % 16 - 7) * 0.01f;
+               
+               particle->c = (particle->c < -0.4f) ? -0.4f : particle->c;
+               particle->c = (particle->c >  0.1f) ?  0.1f : particle->c;
+               
+               particle->d = (particle->d < -0.1f) ? -0.1f : particle->d;
+               particle->d = (particle->d >  0.4f) ?  0.4f : particle->d;
+               
+               /* Update particle location */
+               particle->a = fmod(particle->a + particle->c, fb_width);
+               particle->b = fmod(particle->b + particle->d, fb_height);
+               
+               /* Get particle size */
+               particle_size = 1;
+               if (rgui->particle_effect == RGUI_PARTICLE_EFFECT_SNOW_ALT)
+               {
+                  /* Gives the following distribution:
+                   * 1x1: 96
+                   * 2x2: 128
+                   * 3x3: 32 */
+                  if (!(i & 0x2))
+                     particle_size = 2;
+                  else if ((i & 0x7) == 0x7)
+                     particle_size = 3;
+               }
+               
+               /* Draw particle */
+               on_screen = rgui_draw_particle(rgui_frame_buf.data, fb_width, fb_height,
+                                 (int)particle->a, (int)particle->b,
+                                 particle_size, particle_size, rgui->colors.particle_color);
+               
+               /* Reset particle if it has fallen off screen */
+               if (!on_screen)
+               {
+                  particle->a = (particle->a < 0.0f) ? (particle->a + (float)fb_width)  : particle->a;
+                  particle->b = (particle->b < 0.0f) ? (particle->b + (float)fb_height) : particle->b;
+               }
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_RAIN:
+         {
+            uint8_t weights[] = { /* 60 entries */
+               2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+               3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+               4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+               5, 5, 5, 5, 5, 5, 5, 5,
+               6, 6, 6, 6, 6, 6,
+               7, 7, 7, 7,
+               8, 8, 8,
+               9, 9,
+               10};
+            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)MAX_FB_WIDTH) * (float)NUM_PARTICLES);
+            bool on_screen;
+            
+            num_drops = num_drops < NUM_PARTICLES ? num_drops : NUM_PARTICLES;
+            
+            for (i = 0; i < num_drops; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* Draw particle */
+               on_screen = rgui_draw_particle(rgui_frame_buf.data, fb_width, fb_height,
+                                 (int)particle->a, (int)particle->b,
+                                 2, (unsigned)particle->c, rgui->colors.particle_color);
+               
+               /* Update y pos */
+               particle->b += particle->d;
+               
+               /* Reset particle if it has fallen off the bottom of the screen */
+               if (!on_screen)
+               {
+                  /* x pos */
+                  particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+                  /* y pos */
+                  particle->b = 0.0f;
+                  /* drop length */
+                  particle->c = (float)weights[(unsigned)(rand() % 61)];
+                  /* drop speed (larger drops fall faster) */
+                  particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+               }
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_VORTEX:
+         {
+            float max_radius         = (float)sqrt((double)((fb_width * fb_width) + (fb_height * fb_height))) / 2.0f;
+            float one_degree_radians = PI / 360.0f;
+            int x_centre             = (int)(fb_width >> 1);
+            int y_centre             = (int)(fb_height >> 1);
+            unsigned particle_size;
+            float r_speed, theta_speed;
+            int x, y;
+            
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* Get particle location */
+               x = (int)(particle->a * cos(particle->b)) + x_centre;
+               y = (int)(particle->a * sin(particle->b)) + y_centre;
+               
+               /* Get particle size */
+               particle_size = 1 + (unsigned)(((1.0f - ((max_radius - particle->a) / max_radius)) * 3.5f) + 0.5f);
+               
+               /* Draw particle */
+               rgui_draw_particle(rgui_frame_buf.data, fb_width, fb_height,
+                     x, y, particle_size, particle_size, rgui->colors.particle_color);
+               
+               /* Update particle speed */
+               r_speed     = particle->c;
+               theta_speed = particle->d;
+               if ((particle->a > 0.0f) && (particle->a < (float)fb_height))
+               {
+                  float base_scale_factor = ((float)fb_height - particle->a) / (float)fb_height;
+                  r_speed     *= 1.0f + (base_scale_factor * 8.0f);
+                  theta_speed *= 1.0f + (base_scale_factor * base_scale_factor * 6.0f);
+               }
+               particle->a -= r_speed;
+               particle->b += theta_speed;
+               
+               /* Reset particle if it has reached the centre of the screen */
+               if (particle->a < 0.0f)
+               {
+                  /* radius
+                   * Note: In theory, this should be:
+                   * > particle->a = max_radius;
+                   * ...but it turns out that spawning new particles at random
+                   * locations produces a more visually appealing result... */
+                  particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+                  /* theta */
+                  particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+                  /* radial speed */
+                  particle->c = (float)((rand() % 100) + 1) * 0.001f;
+                  /* rotational speed */
+                  particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+               }
+            }
+         }
+         break;
+      case RGUI_PARTICLE_EFFECT_STARFIELD:
+         {
+            float focal_length = (float)fb_width * 2.0f;
+            int x_centre       = (int)(fb_width >> 1);
+            int y_centre       = (int)(fb_height >> 1);
+            unsigned particle_size;
+            int x, y;
+            bool on_screen;
+            
+            /* Based on an example found here:
+             * https://codepen.io/nodws/pen/pejBNb */
+            for (i = 0; i < NUM_PARTICLES; i++)
+            {
+               rgui_particle_t *particle = &particles[i];
+               
+               /* Get particle location */
+               x = (int)((particle->a - (float)x_centre) * (focal_length / particle->c));
+               x += x_centre;
+               
+               y = (int)((particle->b - (float)y_centre) * (focal_length / particle->c));
+               y += y_centre;
+               
+               /* Get particle size */
+               particle_size = (unsigned)(focal_length / (2.0f * particle->c));
+               
+               /* Draw particle */
+               on_screen = rgui_draw_particle(rgui_frame_buf.data, fb_width, fb_height,
+                                 x, y, particle_size, particle_size, rgui->colors.particle_color);
+               
+               /* Update depth */
+               particle->c -= particle->d;
+               
+               /* Reset particle if it has:
+                * - Dropped off the edge of the screen
+                * - Reached the screen depth
+                * - Grown larger than 16 pixels across
+                *   (this is an arbitrary limit, set to reduce overall
+                *   performance impact - i.e. larger particles are slower
+                *   to draw, and without setting a limit they can fill the screen...) */
+               if (!on_screen || (particle->c <= 0.0f) || particle_size > 16)
+               {
+                  /* x pos */
+                  particle->a = (float)(rand() % fb_width);
+                  /* y pos */
+                  particle->b = (float)(rand() % fb_height);
+                  /* depth */
+                  particle->c = (float)fb_width;
+                  /* speed */
+                  particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+               }
+            }
+         }
+         break;
+      default:
+         /* Do nothing... */
+         break;
+   }
+   
+   /* If border is enabled, it must be drawn *above*
+    * particle effect
+    * (Wastes CPU cycles, but nothing we can do about it...) */
+   if (rgui->border_enable && !rgui->show_wallpaper)
+      rgui_render_border(rgui, rgui_frame_buf.data, fb_width, fb_height);
 }
 
 static void request_wallpaper(const char *path)
@@ -1205,13 +1902,8 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
             shadow_x = fb_x_offset + fs_thumbnail.width;
             shadow_y = fb_y_offset + 2;
 
-            /* Super paranoid safety check...
-             * (This is not required at all, but terrible things
-             * will happen if we ever go out of bounds...) */
-            if (((shadow_x + shadow_width) <= fb_width) &&
-                ((shadow_y + shadow_height) <= fb_height))
-               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                     shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+                  shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
          }
 
          /* Horizontal component */
@@ -1224,13 +1916,8 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
             shadow_x = fb_x_offset + 2;
             shadow_y = fb_y_offset + fs_thumbnail.height;
 
-            /* Super paranoid safety check...
-             * (This is not required at all, but terrible things
-             * will happen if we ever go out of bounds...) */
-            if (((shadow_x + shadow_width) <= fb_width) &&
-                ((shadow_y + shadow_height) <= fb_height))
-               rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                     shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+                  shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
          }
       }
    }
@@ -1297,9 +1984,9 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
       /* Draw drop shadow, if required */
       if (rgui->shadow_enable)
       {
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                fb_x_offset + thumbnail->width, fb_y_offset + 1, 1, thumbnail->height, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                fb_x_offset + 1, fb_y_offset + thumbnail->height, thumbnail->width, 1, rgui->colors.shadow_color);
       }
    }
@@ -1385,7 +2072,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    unsigned normal_color, hover_color, title_color,
       bg_dark_color, bg_light_color,
       border_dark_color, border_light_color,
-      shadow_color;
+      shadow_color, particle_color;
    char wallpaper_file[PATH_MAX_LENGTH];
    config_file_t *conf  = NULL;
    char *wallpaper_key  = NULL;
@@ -1418,7 +2105,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Open config file */
-   conf = config_file_read(theme_path);
+   conf = config_file_new(theme_path);
    if (!conf)
       goto end;
 
@@ -1450,6 +2137,12 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    if(!config_get_hex(conf, "rgui_shadow_color", &shadow_color))
       shadow_color = 0xFF000000;
 
+   /* Make particle colour optional too (fallback to normal
+    * rgb with bg_light alpha) */
+   if(!config_get_hex(conf, "rgui_particle_color", &particle_color))
+      particle_color = (normal_color & 0x00FFFFFF) |
+                       (bg_light_color & 0xFF000000);
+
    config_get_array(conf, wallpaper_key,
          wallpaper_file, sizeof(wallpaper_file));
 
@@ -1467,6 +2160,7 @@ end:
       theme_colors->border_dark_color  = (uint32_t)border_dark_color;
       theme_colors->border_light_color = (uint32_t)border_light_color;
       theme_colors->shadow_color       = (uint32_t)shadow_color;
+      theme_colors->particle_color     = (uint32_t)particle_color;
 
       /* Load wallpaper, if required */
       if (!string_is_empty(wallpaper_file))
@@ -1489,6 +2183,7 @@ end:
       theme_colors->border_dark_color  = rgui_theme_classic_green.border_dark_color;
       theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
       theme_colors->shadow_color       = rgui_theme_classic_green.shadow_color;
+      theme_colors->particle_color     = rgui_theme_classic_green.particle_color;
    }
 
    if (conf)
@@ -1509,8 +2204,7 @@ static void rgui_cache_background(rgui_t *rgui)
    if (rgui->show_wallpaper)
       return;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
    /* Sanity check */
    if ((fb_width  != rgui_background_buf.width)      ||
@@ -1519,52 +2213,14 @@ static void rgui_cache_background(rgui_t *rgui)
        !rgui_background_buf.data)
       return;
 
-   /* Fill last 4 lines of background buffer with standard
-    * chequer pattern */
-   rgui_fill_rect(rgui, rgui_background_buf.data, fb_pitch, 0, fb_height, fb_width, 4, rgui_bg_filler);
+   /* Fill background buffer with standard chequer pattern */
+   rgui_fill_rect(rgui_background_buf.data, fb_width, fb_height,
+         0, 0, fb_width, fb_height,
+         rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
-   /* Copy chequer pattern to rest of background buffer */
-   pitch_in_pixels = fb_pitch >> 1;
-   size            = fb_pitch * 4;
-   src             = rgui_background_buf.data + pitch_in_pixels * fb_height;
-   dst             = rgui_background_buf.data;
-
-   while (dst < src)
-   {
-      memcpy(dst, src, size);
-      dst += pitch_in_pixels * 4;
-   }
-
+   /* Draw border, if required */
    if (rgui->border_enable)
-   {
-      /* Draw border */
-      rgui_fill_rect(rgui, rgui_background_buf.data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_background_buf.data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_background_buf.data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_background_buf.data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10, rgui_border_filler);
-
-      /* Draw drop shadow, if required */
-      if (rgui->shadow_enable)
-      {
-         rgui_color_rect(rgui_background_buf.data, fb_pitch, fb_width, fb_height,
-               10, 10, 1, fb_height - 20, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_background_buf.data, fb_pitch, fb_width, fb_height,
-               10, 10, fb_width - 20, 1, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_background_buf.data, fb_pitch, fb_width, fb_height,
-               fb_width - 5, 6, 1, fb_height - 10, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_background_buf.data, fb_pitch, fb_width, fb_height,
-               6, fb_height - 5, fb_width - 10, 1, rgui->colors.shadow_color);
-      }
-   }
-   if (rgui->snow_enable) {
-      size_t i = 0;
-      for (i = 0; i < 1024; i += 4) {
-         snowflakes[i    ] = rand()%fb_width;
-         snowflakes[i + 1] = rand()%fb_height;
-         snowflakes[i + 2] = (rand()%64 - 16)*.1;
-         snowflakes[i + 3] = (rand()%64 - 48)*.1;
-      }
-   }
+      rgui_render_border(rgui, rgui_background_buf.data, fb_width, fb_height);
 }
 
 static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
@@ -1590,6 +2246,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
       theme_colors.border_dark_color    = current_theme->border_dark_color;
       theme_colors.border_light_color   = current_theme->border_light_color;
       theme_colors.shadow_color         = current_theme->shadow_color;
+      theme_colors.particle_color       = current_theme->particle_color;
    }
    rgui->colors.hover_color             = argb32_to_pixel_platform_format(theme_colors.hover_color);
    rgui->colors.normal_color            = argb32_to_pixel_platform_format(theme_colors.normal_color);
@@ -1599,6 +2256,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.border_dark_color       = argb32_to_pixel_platform_format(theme_colors.border_dark_color);
    rgui->colors.border_light_color      = argb32_to_pixel_platform_format(theme_colors.border_light_color);
    rgui->colors.shadow_color            = argb32_to_pixel_platform_format(theme_colors.shadow_color);
+   rgui->colors.particle_color          = argb32_to_pixel_platform_format(theme_colors.particle_color);
 
    rgui->bg_modified                    = true;
    rgui->force_redraw                   = true;
@@ -1823,6 +2481,18 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
          return rgui_symbol_data_next;
       case RGUI_SYMBOL_TEXT_CURSOR:
          return rgui_symbol_data_text_cursor;
+      case RGUI_SYMBOL_CHARGING:
+         return rgui_symbol_data_charging;
+      case RGUI_SYMBOL_BATTERY_100:
+         return rgui_symbol_data_battery_100;
+      case RGUI_SYMBOL_BATTERY_80:
+         return rgui_symbol_data_battery_80;
+      case RGUI_SYMBOL_BATTERY_60:
+         return rgui_symbol_data_battery_60;
+      case RGUI_SYMBOL_BATTERY_40:
+         return rgui_symbol_data_battery_40;
+      case RGUI_SYMBOL_BATTERY_20:
+         return rgui_symbol_data_battery_20;
       default:
          break;
    }
@@ -2004,42 +2674,46 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
 
    if (rgui_frame_buf.data)
    {
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x + 5, y + 5, width - 10, height - 10, rgui_bg_filler);
+      uint16_t border_dark_color  = rgui->colors.border_dark_color;
+      uint16_t border_light_color = rgui->colors.border_light_color;
+      bool border_thickness       = rgui->border_thickness;
 
-      if (rgui->border_enable)
-      {
-         /* Draw drop shadow, if required */
-         if (rgui->shadow_enable)
-         {
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                  x + 5, y + 5, 1, height - 5, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                  x + 5, y + 5, width - 5, 1, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                  x + width, y + 1, 1, height, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-                  x + 1, y + height, width, 1, rgui->colors.shadow_color);
-         }
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            x + 5, y + 5, width - 10, height - 10,
+            rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
-         /* Draw border */
-         rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x, y, width - 5, 5, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x + width - 5, y, 5, height - 5, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x + 5, y + height - 5, width - 5, 5, rgui_border_filler);
-         rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch, x, y + 5, 5, height - 5, rgui_border_filler);
-      }
-      else if (rgui->shadow_enable)
+      /* Note: We draw borders around message boxes regardless
+       * of the rgui->border_enable setting, because they look
+       * ridiculous without... */
+
+      /* Draw drop shadow, if required */
+      if (rgui->shadow_enable)
       {
-         /* Without a border, this is a bit silly...
-          * All we can do is draw a sort of frame... */
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               x + 4, y + 4, 1, height - 8, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               x + 5, y + 4, width - 10, 1, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               x + width - 5, y + 4, 1, height - 8, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               x + 5, y + height - 5, width - 10, 1, rgui->colors.shadow_color);
+         uint16_t shadow_color = rgui->colors.shadow_color;
+
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               x + 5, y + 5, 1, height - 5, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               x + 5, y + 5, width - 5, 1, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               x + width, y + 1, 1, height, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               x + 1, y + height, width, 1, shadow_color);
       }
+
+      /* Draw border */
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            x, y, width - 5, 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            x + width - 5, y, 5, height - 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            x + 5, y + height - 5, width - 5, 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            x, y + 5, 5, height - 5,
+            border_dark_color, border_light_color, border_thickness);
    }
 
    for (i = 0; i < list->size; i++)
@@ -2069,8 +2743,8 @@ static void rgui_blit_cursor(void)
 
    if (rgui_frame_buf.data)
    {
-      rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
-      rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
    }
 }
 
@@ -2144,41 +2818,53 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
    }
    
    /* Draw background */
-   rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-         osk_x + 5, osk_y + 5, osk_width - 10, osk_height - 10, rgui_bg_filler);
+   rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+         osk_x + 5, osk_y + 5, osk_width - 10, osk_height - 10,
+         rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
    
    /* Draw border */
    if (rgui->border_enable)
    {
+      uint16_t border_dark_color  = rgui->colors.border_dark_color;
+      uint16_t border_light_color = rgui->colors.border_light_color;
+      bool border_thickness       = rgui->border_thickness;
+      
       /* Draw drop shadow, if required */
       if (rgui->shadow_enable)
       {
+         uint16_t shadow_color = rgui->colors.shadow_color;
+         
          /* Frame */
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               osk_x + 5, osk_y + 5, osk_width - 10, 1, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               osk_x + osk_width, osk_y + 1, 1, osk_height, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               osk_x + 1, osk_y + osk_height, osk_width, 1, rgui->colors.shadow_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               osk_x + 5, osk_y + 5, 1, osk_height - 10, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               osk_x + 5, osk_y + 5, osk_width - 10, 1, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               osk_x + osk_width, osk_y + 1, 1, osk_height, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               osk_x + 1, osk_y + osk_height, osk_width, 1, shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               osk_x + 5, osk_y + 5, 1, osk_height - 10, shadow_color);
          /* Divider */
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
-               osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, rgui->colors.shadow_color);
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
+               osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, shadow_color);
       }
       
       /* Frame */
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-            osk_x, osk_y, osk_width - 5, 5, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-            osk_x + osk_width - 5, osk_y, 5, osk_height - 5, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-            osk_x + 5, osk_y + osk_height - 5, osk_width - 5, 5, rgui_border_filler);
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-            osk_x, osk_y + 5, 5, osk_height - 5, rgui_border_filler);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            osk_x, osk_y, osk_width - 5, 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            osk_x + osk_width - 5, osk_y, 5, osk_height - 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            osk_x + 5, osk_y + osk_height - 5, osk_width - 5, 5,
+            border_dark_color, border_light_color, border_thickness);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            osk_x, osk_y + 5, 5, osk_height - 5,
+            border_dark_color, border_light_color, border_thickness);
       /* Divider */
-      rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-            osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5, rgui_border_filler);
+      rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+            osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5,
+            border_dark_color, border_light_color, border_thickness);
    }
    
    /* Draw input label text */
@@ -2295,24 +2981,24 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
          /* Draw drop shadow, if required */
          if (rgui->shadow_enable)
          {
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   osk_ptr_x + 1, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   osk_ptr_x + 1, osk_ptr_y + 1, ptr_width, 1, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   osk_ptr_x + ptr_width, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
-            rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+            rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   osk_ptr_x + 1, osk_ptr_y + ptr_height, ptr_width, 1, rgui->colors.shadow_color);
          }
          
          /* Draw selection rectangle */
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                osk_ptr_x, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                osk_ptr_x, osk_ptr_y, ptr_width, 1, rgui->colors.hover_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                osk_ptr_x + ptr_width - 1, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
-         rgui_color_rect(rgui_frame_buf.data, fb_pitch, fb_width, fb_height,
+         rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                osk_ptr_x, osk_ptr_y + ptr_height - 1, ptr_width, 1, rgui->colors.hover_color);
       }
    }
@@ -2328,6 +3014,7 @@ static void rgui_render(void *data, bool is_idle)
    int bottom;
    size_t entries_end             = 0;
    bool msg_force                 = false;
+   bool fb_size_changed           = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
@@ -2364,10 +3051,17 @@ static void rgui_render(void *data, bool is_idle)
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   /* if the framebuffer changed size, recache the background */
-   if (rgui->bg_modified || rgui->last_width != fb_width || rgui->last_height != fb_height)
+   /* If the framebuffer changed size, or the background config has
+    * changed, recache the background buffer */
+   fb_size_changed = (rgui->last_width != fb_width) || (rgui->last_height != fb_height);
+   if (rgui->bg_modified || fb_size_changed)
    {
       rgui_cache_background(rgui);
+
+      /* Reinitialise particle effect, if required */
+      if (fb_size_changed && (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
+         rgui_init_particle_effect(rgui);
+
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
@@ -2440,23 +3134,10 @@ static void rgui_render(void *data, bool is_idle)
 
    /* Render background */
    rgui_render_background();
-   
-   /* Snow */
-   if (rgui->snow_enable && rgui_frame_buf.data) {
-      for (i = 0; i < 1024; i += 4) {
-         snowflakes[i + 2] = snowflakes[i + 2] + (rand()%16 - 9)*.01;
-         snowflakes[i + 3] = snowflakes[i + 3] + (rand()%16 - 7)*.01;
-         if (snowflakes[i + 2] < -0.4) snowflakes[i + 2] = -0.4;
-         if (snowflakes[i + 2] >  0.1) snowflakes[i + 2] =  0.1;
-         if (snowflakes[i + 3] < -0.1) snowflakes[i + 3] = -0.1;
-         if (snowflakes[i + 3] >  0.4) snowflakes[i + 3] =  0.4;
-         snowflakes[i    ] = fmod(snowflakes[i    ] + snowflakes[i + 2], fb_width);
-         snowflakes[i + 1] = fmod(snowflakes[i + 1] + snowflakes[i + 3], fb_height);
-         if (snowflakes[i    ] < 0) snowflakes[i    ] += fb_width;
-         if (snowflakes[i + 1] < 0) snowflakes[i + 1] += fb_height;
-         rgui_frame_buf.data[ (int) snowflakes[i+1] * (fb_pitch >> 1) + (int) snowflakes[i]] = rgui->colors.normal_color;
-      }
-   }
+
+   /* Render particle effect, if required */
+   if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+      rgui_render_particle_effect(rgui);
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
@@ -2499,8 +3180,9 @@ static void rgui_render(void *data, bool is_idle)
          title_x         = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
 
          /* Draw thumbnail title background */
-         rgui_fill_rect(rgui, rgui_frame_buf.data, fb_pitch,
-                        title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE, rgui_bg_filler);
+         rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
+               title_x - 5, 0, title_width + 10, FONT_HEIGHT_STRIDE,
+               rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
          /* Draw thumbnail title */
          blit_line((int)title_x, 0, thumbnail_title_buf,
@@ -2512,14 +3194,19 @@ static void rgui_render(void *data, bool is_idle)
       /* Render usual text */
       size_t selection = menu_navigation_get_selection();
       char title_buf[255];
-      unsigned timedate_x = (RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE)) -
-            (5 * FONT_WIDTH_STRIDE);
+      size_t title_max_len;
+      size_t title_len;
+      unsigned title_x;
+      unsigned title_y = RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE;
+      unsigned term_end_x = RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE);
+      unsigned timedate_x = term_end_x - (5 * FONT_WIDTH_STRIDE);
       unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
       bool show_mini_thumbnails = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
       bool show_thumbnail = false;
       bool show_left_thumbnail = false;
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point = 0;
+      size_t powerstate_len = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -2545,11 +3232,76 @@ static void rgui_render(void *data, bool is_idle)
          term_mid_point = (unsigned)((RGUI_TERM_HEIGHT(fb_height) * 0.5f) + 0.5f) - 1;
       }
 
+      /* Show battery indicator, if required */
+      if (settings->bools.menu_battery_level_enable)
+      {
+         menu_display_ctx_powerstate_t powerstate;
+         char percent_str[12];
+
+         percent_str[0] = '\0';
+
+         powerstate.s   = percent_str;
+         powerstate.len = sizeof(percent_str);
+
+         menu_display_powerstate(&powerstate);
+
+         if (powerstate.battery_enabled)
+         {
+            powerstate_len = strlen(percent_str);
+
+            if (powerstate_len > 0)
+            {
+               unsigned powerstate_x;
+               enum rgui_symbol_type powerstate_symbol;
+               uint16_t powerstate_color = (powerstate.percent > BATTERY_WARN_THRESHOLD || powerstate.charging) ?
+                     rgui->colors.title_color : rgui->colors.hover_color;
+
+               if (powerstate.charging)
+                  powerstate_symbol = RGUI_SYMBOL_CHARGING;
+               else
+               {
+                  if (powerstate.percent > 80)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_100;
+                  else if (powerstate.percent > 60)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_80;
+                  else if (powerstate.percent > 40)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_60;
+                  else if (powerstate.percent > 20)
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_40;
+                  else
+                     powerstate_symbol = RGUI_SYMBOL_BATTERY_20;
+               }
+
+               /* Note: percent symbol is particularly hideous when
+                * drawn using RGUI's bitmap font, so strip it off the
+                * end of the output string... */
+               powerstate_len--;
+               percent_str[powerstate_len] = '\0';
+
+               powerstate_len += 2;
+               powerstate_x = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
+
+               /* Draw symbol */
+               blit_symbol(powerstate_x, title_y, powerstate_symbol,
+                           powerstate_color, rgui->colors.shadow_color);
+
+               /* Print text */
+               blit_line(powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
+                         percent_str, powerstate_color, rgui->colors.shadow_color);
+
+               /* Final length of battery indicator is 'powerstate_len' + a
+                * spacer of 3 characters */
+               powerstate_len += 3;
+            }
+         }
+      }
+
       /* Print title */
+      title_max_len = RGUI_TERM_WIDTH(fb_width) - 5 - (powerstate_len > 5 ? powerstate_len : 5);
       title_buf[0] = '\0';
 
       ticker.s        = title_buf;
-      ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+      ticker.len      = title_max_len;
       ticker.str      = rgui->menu_title;
       ticker.selected = true;
 
@@ -2557,10 +3309,18 @@ static void rgui_render(void *data, bool is_idle)
 
       string_to_upper(title_buf);
 
-      blit_line(
-            (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-                  - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
-            RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE,
+      title_len = utf8len(title_buf);
+      title_x = RGUI_TERM_START_X(fb_width) +
+                (RGUI_TERM_WIDTH(fb_width) - title_len) * FONT_WIDTH_STRIDE / 2;
+
+      /* Title is always centred, unless it is long enough
+       * to infringe upon the battery indicator, in which case
+       * we shift it to the left */
+      if (powerstate_len > 5)
+         if (title_len > title_max_len - (powerstate_len - 5))
+            title_x -= (powerstate_len - 5) * FONT_WIDTH_STRIDE / 2;
+
+      blit_line(title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
@@ -2572,21 +3332,19 @@ static void rgui_render(void *data, bool is_idle)
       for (i = new_start; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
          char entry_value[255];
-         char message[255];
          char entry_title_buf[255];
          char type_str_buf[255];
          menu_entry_t entry;
          size_t entry_title_max_len            = 0;
-         size_t entry_title_buf_utf8len        = 0;
-         size_t entry_title_buf_len            = 0;
          unsigned entry_value_len              = 0;
          bool entry_selected                   = (i == selection);
+         uint16_t entry_color                  = entry_selected ?
+               rgui->colors.hover_color : rgui->colors.normal_color;
 
          if (i > (selection + 100))
             continue;
 
          entry_value[0]     = '\0';
-         message[0]         = '\0';
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
 
@@ -2667,9 +3425,12 @@ static void rgui_render(void *data, bool is_idle)
 
          menu_animation_ticker(&ticker);
 
-         entry_title_buf_utf8len = utf8len(entry_title_buf);
-         entry_title_buf_len     = strlen(entry_title_buf);
+         /* Print entry title */
+         blit_line(x + (2 * FONT_WIDTH_STRIDE), y,
+               entry_title_buf,
+               entry_color, rgui->colors.shadow_color);
 
+         /* Print entry value, if required */
          if (entry_value_len > 0)
          {
             /* Format entry value string */
@@ -2679,28 +3440,16 @@ static void rgui_render(void *data, bool is_idle)
 
             menu_animation_ticker(&ticker);
 
-            /* Print entry title + value */
-            snprintf(message, sizeof(message), "%c %-*.*s  %-.*s",
-                  entry_selected ? '>' : ' ',
-                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
-                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
-                  entry_title_buf,
-                  entry_value_len,
-                  type_str_buf);
-         }
-         else
-         {
-            /* No value - just print entry title */
-            snprintf(message, sizeof(message), "%c %-*.*s",
-                  entry_selected ? '>' : ' ',
-                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
-                  (int)(entry_title_max_len - entry_title_buf_utf8len + entry_title_buf_len),
-                  entry_title_buf);
+            /* Print entry value */
+            blit_line(term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+                  type_str_buf,
+                  entry_color, rgui->colors.shadow_color);
          }
 
-         blit_line(x, y, message,
-               entry_selected ? rgui->colors.hover_color : rgui->colors.normal_color,
-               rgui->colors.shadow_color);
+         /* Print selection marker, if required */
+         if (entry_selected)
+            blit_line(x, y, ">",
+                  entry_color, rgui->colors.shadow_color);
 
          menu_entry_free(&entry);
       }
@@ -2760,30 +3509,22 @@ static void rgui_render(void *data, bool is_idle)
       /* Print clock (if required) */
       if (settings->bools.menu_timedate_enable)
       {
-         time_t current_time;
-         struct tm * time_info;
+         menu_display_ctx_datetime_t datetime;
          char timedate[16];
 
          timedate[0] = '\0';
 
-         /* menu_display_timedate() is incredibly slow
-          * -> do this the old fashioned way... */
+         datetime.s = timedate;
+         datetime.len = sizeof(timedate);
+         datetime.time_mode = 4;
 
-         /* Get current time */
-         time(&current_time);
-         time_info = localtime(&current_time);
+         menu_display_timedate(&datetime);
 
-         if (time_info)
-         {
-            snprintf(timedate, sizeof(timedate), "%02u:%02u",
-                  (unsigned)time_info->tm_hour, (unsigned)time_info->tm_min);
-
-            blit_line(
-                  timedate_x,
-                  (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, timedate,
-                  rgui->colors.hover_color, rgui->colors.shadow_color);
-         }
+         blit_line(
+               timedate_x,
+               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
+               RGUI_TERM_START_Y(fb_height) + 2, timedate,
+               rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
 
@@ -3052,12 +3793,11 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    rgui_term_layout.start_x = (rgui_frame_buf.width - (rgui_term_layout.width * FONT_WIDTH_STRIDE)) / 2;
    rgui_term_layout.start_y = (rgui_frame_buf.height - (rgui_term_layout.height * FONT_HEIGHT_STRIDE)) / 2;
    
-   /* Allocate background buffer
-    * (4 extra lines to store a copy of the chequered background) */
+   /* Allocate background buffer */
    rgui_background_buf.width = rgui_frame_buf.width;
    rgui_background_buf.height = rgui_frame_buf.height;
    rgui_background_buf.data = (uint16_t*)calloc(
-         rgui_background_buf.width * (rgui_background_buf.height + 4), sizeof(uint16_t));
+         rgui_background_buf.width * rgui_background_buf.height, sizeof(uint16_t));
    
    if (!rgui_background_buf.data)
       return false;
@@ -3130,7 +3870,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * but for extra safety we will only permit menu widget
     * additions when the current gfx driver reports that it
     * has widget support */
-   rgui->widgets_supported = video_driver_has_widgets();
+   rgui->widgets_supported = menu_widgets_ready();
 
    if (rgui->widgets_supported)
    {
@@ -3172,11 +3912,15 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->border_thickness      = settings->bools.menu_rgui_border_filler_thickness_enable;
    rgui->border_enable         = settings->bools.menu_rgui_border_filler_enable;
    rgui->shadow_enable         = settings->bools.menu_rgui_shadows;
-   rgui->snow_enable           = settings->bools.menu_rgui_snow;
+   rgui->particle_effect       = settings->uints.menu_rgui_particle_effect;
    rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
 
    rgui->last_width  = rgui_frame_buf.width;
    rgui->last_height = rgui_frame_buf.height;
+
+   /* Initialise particle effect, if required */
+   if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+      rgui_init_particle_effect(rgui);
 
    /* Set initial 'blit_line/symbol' functions */
    rgui_set_blit_functions(
@@ -3667,8 +4411,6 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
    settings_t *settings           = config_get_ptr();
-   if (rgui->snow_enable)
-      rgui->force_redraw = true;
 
    if (settings->bools.menu_rgui_background_filler_thickness_enable != rgui->bg_thickness)
    {
@@ -3701,11 +4443,18 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui->force_redraw  = true;
    }
 
-   if (settings->bools.menu_rgui_snow != rgui->snow_enable)
+   if (settings->uints.menu_rgui_particle_effect != rgui->particle_effect)
    {
-      rgui->snow_enable = settings->bools.menu_rgui_snow;
-      rgui->bg_modified   = true;
+      rgui->particle_effect = settings->uints.menu_rgui_particle_effect;
+
+      if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+         rgui_init_particle_effect(rgui);
+
+      rgui->force_redraw = true;
    }
+
+   if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+      rgui->force_redraw = true;
 
    if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
    {

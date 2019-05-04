@@ -865,37 +865,12 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
    strlcpy(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
-   /* There is pretty sure a better way, but this will do just fine */
-   if (kernelAbove600())
-   {
-      *major = 6;
-      *minor = 0;
-   }
-   else if(kernelAbove500())
-   {
-      *major = 5;
-      *minor = 0;
-   }else if (kernelAbove400())
-   {
-      *major = 4;
-      *minor = 0;
-   }
-   else if (kernelAbove300())
-   {
-      *major = 3;
-      *minor = 0;
-   }
-   else if (kernelAbove200())
-   {
-      *major = 2;
-      *minor = 0;
-   }
-   else
-   {
-      /* either 1.0 or > 5.x */
-      *major = 1;
-      *minor = 0;
-   }
+   *major = 0;
+   *minor = 0;
+
+   u32 hosVersion = hosversionGet();
+   *major = HOSVER_MAJOR(hosVersion);
+   *minor = HOSVER_MINOR(hosVersion);
 #else
    /* defaults in case we error out */
    *major = 0;
@@ -935,6 +910,17 @@ static void frontend_switch_get_name(char *s, size_t len)
    strlcpy(s, "Nintendo Switch", len);
 }
 
+void frontend_switch_process_args(int *argc, char *argv[])
+{
+#ifdef HAVE_STATIC_DUMMY
+   if (*argc >= 1)
+   {
+      /* Ensure current Path is set, only works for the static dummy, likely a hbloader args Issue (?) */
+      path_set(RARCH_PATH_CORE, argv[0]);
+   }
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_switch =
     {
         frontend_switch_get_environment_settings,
@@ -942,7 +928,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         frontend_switch_deinit,
 #ifdef HAVE_LIBNX
         frontend_switch_exitspawn,
-        NULL, /* process_args */
+        frontend_switch_process_args,
         frontend_switch_exec,
 #ifdef IS_SALAMANDER
         NULL,

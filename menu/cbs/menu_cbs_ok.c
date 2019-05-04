@@ -37,10 +37,10 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_entries.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../widgets/menu_dialog.h"
-#include "../widgets/menu_entry.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_input_bind_dialog.h"
@@ -1045,7 +1045,6 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
          size_t len = strlen(default_info_dir);
          /* In case of a compressed archive, we have to join with a hash */
          /* We are going to write at the position of dir: */
-         retro_assert(len < strlen(def_info->s));
          def_info->s[len] = '#';
       }
 #endif
@@ -1487,7 +1486,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
-            config_file_t *conf = config_file_read(action_path);
+            config_file_t *conf = config_file_new(action_path);
             flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
@@ -3256,7 +3255,12 @@ static int action_ok_load_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
+#if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_save_state(const char *path,
@@ -3264,7 +3268,12 @@ static int action_ok_save_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
+   /* TODO/FIXME: Make this a user-configurable option */
+#if defined(HAVE_THREADS)
    return generic_action_ok_command(CMD_EVENT_RESUME);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
@@ -3272,6 +3281,7 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
 {
 #ifdef HAVE_CHEEVOS
    cheevos_hardcore_paused = !cheevos_hardcore_paused;
+   rcheevos_hardcore_paused = !rcheevos_hardcore_paused;
 #endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
@@ -3778,7 +3788,7 @@ static int action_ok_option_create(const char *path,
       return 0;
    }
 
-   conf = config_file_read(game_path);
+   conf = config_file_new(game_path);
 
    if (!conf)
    {

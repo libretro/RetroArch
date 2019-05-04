@@ -139,7 +139,6 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
-#include "../managers/core_manager.c"
 #include "../managers/core_option_manager.c"
 
 /*============================================================
@@ -942,7 +941,6 @@ FILE
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/file_list.c"
-#include "../setting_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
 #include "../libretro-common/streams/file_stream_transforms.c"
@@ -1219,7 +1217,6 @@ MENU
 
 #include "../menu/menu_networking.c"
 
-#include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_dialog.c"

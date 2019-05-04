@@ -61,7 +61,6 @@ typedef struct ozone_handle ozone_handle_t;
 
 #define CURSOR_SIZE 64
 
-#define INTERVAL_BATTERY_LEVEL_CHECK   (30 * 1000000)
 #define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
 
 #if defined(__APPLE__)

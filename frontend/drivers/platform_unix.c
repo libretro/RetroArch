@@ -938,6 +938,7 @@ static bool frontend_unix_powerstate_check_apm(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
+   size_t str_size     = 0;
    int ac_status       = 0;
    int battery_status  = 0;
    int battery_flag    = 0;
@@ -979,8 +980,9 @@ static bool frontend_unix_powerstate_check_apm(
       goto error;
    if (!next_string(&ptr, &str))    /* remaining battery life percent */
       goto error;
-   if (str[strlen(str) - 1] == '%')
-      str[strlen(str) - 1] = '\0';
+   str_size = strlen(str) - 1;
+   if (str[str_size] == '%')
+      str[str_size] = '\0';
    if (!int_string(str, &battery_percent))
       goto error;
 

@@ -35,7 +35,6 @@
 #include "../file_path_special.h"
 
 #include "menu_driver.h"
-#include "widgets/menu_entry.h"
 
 #include "menu_thumbnail_path.h"
 
@@ -352,7 +351,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       return false;
    
    /* Cache content path
-    * (This is required for imageviewer content) */
+    * (This is required for imageviewer, history and favourites content) */
    strlcpy(path_data->content_path,
             content_path, sizeof(path_data->content_path));
    
@@ -425,6 +424,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    const char *type        = menu_thumbnail_get_type(thumbnail_id);
    const char *system_name = NULL;
    char *thumbnail_path    = NULL;
+   char content_dir[PATH_MAX_LENGTH];
    
    if (!path_data)
       return false;
@@ -457,23 +457,52 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    /* Generate new path */
    
    /* > Check path_data for empty strings */
-   if (string_is_empty(path_data->content_img) ||
+   if (string_is_empty(path_data->content_path) ||
+       string_is_empty(path_data->content_img) ||
          (string_is_empty(path_data->system) &&
           string_is_empty(path_data->content_db_name)))
       return false;
    
    /* > Get current system */
-   system_name = string_is_empty(path_data->content_db_name) ?
-      path_data->system : path_data->content_db_name;
+   if (string_is_empty(path_data->content_db_name))
+   {
+      /* If this is a content history or favorites playlist
+       * then the current 'path_data->system' string is
+       * meaningless. In this case, we fall back to the
+       * content directory name */
+      if (string_is_equal(path_data->system, "history") ||
+          string_is_equal(path_data->system, "favorites"))
+      {
+         char tmp_buf[PATH_MAX_LENGTH] = {0};
+         const char *last_slash = find_last_slash(path_data->content_path);
+         
+         content_dir[0] = '\0';
+         system_name    = content_dir;
+         
+         if (last_slash)
+         {
+            size_t path_length = last_slash + 1 - path_data->content_path;
+            if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
+            {
+               strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
+               strlcpy(content_dir, path_basename(tmp_buf), sizeof(content_dir));
+            }
+         }
+         
+         if (string_is_empty(system_name))
+            return false;
+      }
+      else
+         system_name = path_data->system;
+   }
+   else
+      system_name = path_data->content_db_name;
    
    /* > Special case: thumbnail for imageviewer content
     *   is the image file itself */
    if (string_is_equal(system_name, "images_history") ||
        string_is_equal(path_data->content_core_name, "imageviewer"))
    {
-      if (string_is_empty(path_data->content_path))
-         return false;
-      
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,

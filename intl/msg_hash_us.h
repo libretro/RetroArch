@@ -6959,13 +6959,37 @@ MSG_HASH(
     "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SNOW,
-    "Snow"
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+    "Background Animation"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_RGUI_SNOW,
-    "Enable snow, forces menu to update every frame"
+    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+    "Enable background particle animation effect. Has a significant performance impact."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+    "OFF"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+    "Snow (Light)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+    "Snow (Heavy)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+    "Rain"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+    "Vortex"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+    "Star Field"
+)
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Extended ASCII Support"
@@ -8569,6 +8593,14 @@ MSG_HASH(
     "Per Core"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "Fuzzy archive matching"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
     "Aggregate"
     )
@@ -8620,3 +8652,5 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Save system event log files to this directory."
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+      "Menu Widgets")

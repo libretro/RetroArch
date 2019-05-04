@@ -398,7 +398,7 @@ static bool rgui_full_width_layout = true;
 static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
 static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static bool rgui_shadows = false;
-static bool rgui_snow = false;
+static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 static bool rgui_extended_ascii = false;
 
 #else
@@ -537,11 +537,17 @@ static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 static const bool audio_enable = true;
 
 /* Enable menu audio sounds. */
-static const bool audio_enable_menu = false;
-static const bool audio_enable_menu_ok = false;
+static const bool audio_enable_menu        = false;
+static const bool audio_enable_menu_ok     = false;
 static const bool audio_enable_menu_cancel = false;
 static const bool audio_enable_menu_notice = false;
-static const bool audio_enable_menu_bgm = false;
+static const bool audio_enable_menu_bgm    = false;
+
+#ifdef HAVE_MENU_WIDGETS
+static const bool menu_enable_widgets      = true;
+#else
+static const bool menu_enable_widgets      = false;
+#endif
 
 /* Output samplerate. */
 #ifdef GEKKO
@@ -742,6 +748,8 @@ static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE
 #endif
 
 static const bool playlist_show_sublabels = false;
+
+static const bool playlist_fuzzy_archive_match = false;
 
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;

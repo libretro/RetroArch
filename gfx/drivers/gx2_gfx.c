@@ -1409,9 +1409,10 @@ static bool wiiu_gfx_suppress_screensaver(void *data, bool enable)
 }
 
 static bool wiiu_gfx_set_shader(void *data,
-                                enum rarch_shader_type type, const char *path)
+      enum rarch_shader_type type, const char *path)
 {
-   wiiu_video_t *wiiu = (wiiu_video_t *)data;
+   config_file_t *conf = NULL;
+   wiiu_video_t *wiiu  = (wiiu_video_t *)data;
 
    if (!wiiu)
       return false;
@@ -1428,9 +1429,7 @@ static bool wiiu_gfx_set_shader(void *data,
    if (!path)
       return true;
 
-   config_file_t *conf = config_file_read(path);
-
-   if (!conf)
+   if (!(conf = config_file_new(path)))
       return false;
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));

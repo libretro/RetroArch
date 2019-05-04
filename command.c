@@ -988,7 +988,7 @@ static void command_event_set_volume(float gain)
          new_volume);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
+   if (!menu_widgets_volume_update_and_show())
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -2141,7 +2141,7 @@ TODO: Add a setting for these tweaks */
             }
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!video_driver_has_widgets() || !menu_widgets_volume_update_and_show())
+            if (!menu_widgets_volume_update_and_show())
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -2531,11 +2531,11 @@ TODO: Add a setting for these tweaks */
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (!video_driver_has_widgets() || !menu_widgets_set_paused(is_paused))
+               if (!menu_widgets_set_paused(is_paused))
 #endif
-               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
-                     1, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
+                        1, true,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
                if (!is_idle)
                   video_driver_cached_frame();
@@ -2548,8 +2548,7 @@ TODO: Add a setting for these tweaks */
             else
             {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (video_driver_has_widgets())
-                  menu_widgets_set_paused(is_paused);
+               menu_widgets_set_paused(is_paused);
 #endif
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -2785,6 +2784,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_GAME_WATCH:
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
+      case CMD_EVENT_NETPLAY_ENABLE_HOST:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:

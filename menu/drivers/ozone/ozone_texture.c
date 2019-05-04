@@ -532,6 +532,14 @@ switch (id)
          return "battery-full.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING:
          return "battery-charging.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_80:
+         return "battery-80.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_60:
+         return "battery-60.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_40:
+         return "battery-40.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_20:
+         return "battery-20.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_POINTER:
          return "pointer.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE:

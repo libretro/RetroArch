@@ -33,8 +33,6 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 
-#include "widgets/menu_entry.h"
-
 #include "../audio/audio_driver.h"
 #include "../file_path_special.h"
 #include "../gfx/font_driver.h"
@@ -310,6 +308,15 @@ typedef struct menu_display_ctx_datetime
    size_t len;
    unsigned time_mode;
 } menu_display_ctx_datetime_t;
+
+typedef struct menu_display_ctx_powerstate
+{
+   char *s;
+   size_t len;
+   unsigned percent;
+   bool battery_enabled;
+   bool charging;
+} menu_display_ctx_powerstate_t;
 
 typedef struct menu_ctx_driver
 {
@@ -621,6 +628,7 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
+void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,

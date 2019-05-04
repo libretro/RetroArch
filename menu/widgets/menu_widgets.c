@@ -448,7 +448,6 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          if (task->title != msg_widget->task_title_ptr)
          {
-            menu_animation_ctx_entry_t entry;
             unsigned len         = strlen(task->title);
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
 
@@ -460,15 +459,24 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
             msg_widget->task_title_ptr             = task->title;
             msg_widget->msg_transition_animation   = 0;
 
-            entry.easing_enum = EASING_OUT_QUAD;
-            entry.tag = (uintptr_t) NULL;
-            entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
-            entry.target_value = msg_queue_height/2.0f;
-            entry.subject = &msg_widget->msg_transition_animation;
-            entry.cb = msg_widget_msg_transition_animation_done;
-            entry.userdata = msg_widget;
+            if (!task->alternative_look)
+            {
+               menu_animation_ctx_entry_t entry;
 
-            menu_animation_push(&entry);
+               entry.easing_enum = EASING_OUT_QUAD;
+               entry.tag = (uintptr_t) NULL;
+               entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
+               entry.target_value = msg_queue_height/2.0f;
+               entry.subject = &msg_widget->msg_transition_animation;
+               entry.cb = msg_widget_msg_transition_animation_done;
+               entry.userdata = msg_widget;
+
+               menu_animation_push(&entry);
+            }
+            else
+            {
+               msg_widget_msg_transition_animation_done(msg_widget);
+            }
 
             msg_widget->task_count++;
 
@@ -882,7 +890,6 @@ void menu_widgets_iterate(void)
    /* Load screenshot and start its animation */
    if (screenshot_filename[0] != '\0')
    {
-      menu_animation_ctx_entry_t entry;
       menu_timer_ctx_entry_t timer;
       unsigned width;
 
@@ -904,17 +911,7 @@ void menu_widgets_iterate(void)
 
       screenshot_shotname_length  = (width - screenshot_thumbnail_width - simple_widget_padding*2) / glyph_width;
 
-      screenshot_y = -((float)screenshot_height);
-
-      entry.cb             = NULL;
-      entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-      entry.easing_enum    = EASING_OUT_QUAD;
-      entry.subject        = &screenshot_y;
-      entry.tag            = generic_tag;
-      entry.target_value   = 0.0f;
-      entry.userdata       = NULL;
-
-      menu_animation_push(&entry);
+      screenshot_y = 0.0f;
 
       timer.cb       = menu_widgets_screenshot_end;
       timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
@@ -1733,6 +1730,9 @@ void menu_widgets_context_reset(bool is_threaded)
 
    unsigned video_info_width;
 
+   if (!menu_widgets_inited)
+      return;
+
    video_driver_get_size(&video_info_width, NULL);
 
    /* Textures paths */
@@ -2029,7 +2029,7 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
    if (!menu_widgets_inited)
       return;
 
-   entry.cb             = menu_widgets_screenshot_fadeout;
+   entry.cb             = NULL;
    entry.duration       = SCREENSHOT_DURATION_OUT;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &screenshot_alpha;
@@ -2060,6 +2060,9 @@ static void menu_widgets_play_screenshot_flash(void)
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
 {
+   if (!menu_widgets_inited)
+      return;
+
    menu_widgets_play_screenshot_flash();
    strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));

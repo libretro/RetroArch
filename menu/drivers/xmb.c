@@ -50,7 +50,6 @@
 #include "../../core_info.h"
 #include "../../core.h"
 
-#include "../widgets/menu_entry.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
@@ -61,7 +60,6 @@
 #include "../../playlist.h"
 #include "../../retroarch.h"
 
-#include "../../tasks/task_powerstate.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"
@@ -74,8 +72,6 @@
 #ifndef XMB_DELAY
 #define XMB_DELAY 166
 #endif
-
-#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 #if 0
 #define XMB_DEBUG
@@ -150,6 +146,10 @@ enum
    XMB_TEXTURE_CLOCK,
    XMB_TEXTURE_BATTERY_FULL,
    XMB_TEXTURE_BATTERY_CHARGING,
+   XMB_TEXTURE_BATTERY_80,
+   XMB_TEXTURE_BATTERY_60,
+   XMB_TEXTURE_BATTERY_40,
+   XMB_TEXTURE_BATTERY_20,
    XMB_TEXTURE_POINTER,
    XMB_TEXTURE_ADD,
    XMB_TEXTURE_KEY,
@@ -1969,7 +1969,7 @@ static void xmb_context_reset_horizontal_list(
 
          if (!filestream_exists(content_texturepath))
          {
-            strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
+            string_concat(iconpath, "default");
             fill_pathname_join_delim(content_texturepath, iconpath,
                   file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                   PATH_MAX_LENGTH * sizeof(char));
@@ -3614,25 +3614,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (video_info->battery_level_enable)
    {
+      menu_display_ctx_powerstate_t powerstate;
       char msg[12];
-      static retro_time_t last_time  = 0;
-      bool charging                  = false;
-      retro_time_t current_time      = cpu_features_get_time_usec();
-      int percent                    = 0;
-      enum frontend_powerstate state = get_last_powerstate(&percent);
 
-      if (state == FRONTEND_POWERSTATE_CHARGING)
-         charging = true;
+      msg[0] = '\0';
 
-      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
-      {
-         last_time = current_time;
-         task_push_get_powerstate();
-      }
+      powerstate.s   = msg;
+      powerstate.len = sizeof(msg);
 
-      *msg = '\0';
+      menu_display_powerstate(&powerstate);
 
-      if (percent > 0)
+      if (powerstate.battery_enabled)
       {
          size_t x_pos      = xmb->icon_size / 6;
          size_t x_pos_icon = xmb->margins_title_left;
@@ -3641,8 +3633,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
-                  xmb->textures.list[charging
-                  ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                  xmb->textures.list[
+                     powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
+                     (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
+                     (powerstate.percent > 60)? XMB_TEXTURE_BATTERY_80   :
+                     (powerstate.percent > 40)? XMB_TEXTURE_BATTERY_60   :
+                     (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
+                     XMB_TEXTURE_BATTERY_20
+                  ],
                   width - (xmb->icon_size / 2) - x_pos_icon,
                   xmb->icon_size,
                   width,
@@ -3652,8 +3650,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
-
-         snprintf(msg, sizeof(msg), "%d%%", percent);
 
          percent_width = (unsigned)
             font_driver_get_message_width(
@@ -4546,6 +4542,14 @@ static const char *xmb_texture_path(unsigned id)
          return "battery-full.png";
       case XMB_TEXTURE_BATTERY_CHARGING:
          return "battery-charging.png";
+      case XMB_TEXTURE_BATTERY_80:
+         return "battery-80.png";
+      case XMB_TEXTURE_BATTERY_60:
+         return "battery-60.png";
+      case XMB_TEXTURE_BATTERY_40:
+         return "battery-40.png";
+      case XMB_TEXTURE_BATTERY_20:
+         return "battery-20.png";
       case XMB_TEXTURE_POINTER:
          return "pointer.png";
       case XMB_TEXTURE_SAVESTATE:
@@ -4758,6 +4762,16 @@ static void xmb_context_reset_textures(
       if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
          RARCH_WARN("[XMB] Asset missing: %s%s\n", iconpath, xmb_texture_path(i));
+         /* New extra battery icons could be missing */
+         if (i == XMB_TEXTURE_BATTERY_80 || i == XMB_TEXTURE_BATTERY_60 || i == XMB_TEXTURE_BATTERY_40 || i == XMB_TEXTURE_BATTERY_20)
+         {
+            if (  /* If there are no extra battery icons revert to the old behaviour */
+                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_BATTERY_FULL), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
+                  && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
+               )
+               goto error;
+            else continue;
+         }
          /* If the icon is missing return the subsetting (because some themes are incomplete) */
          if (!(i == XMB_TEXTURE_DIALOG_SLICE || i == XMB_TEXTURE_KEY_HOVER || i == XMB_TEXTURE_KEY))
          {

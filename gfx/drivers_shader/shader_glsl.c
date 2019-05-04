@@ -896,7 +896,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
       if (string_is_equal(path_ext, "glslp"))
       {
-         conf = config_file_read(path);
+         conf = config_file_new(path);
          if (conf)
          {
             ret = video_shader_read_conf_cgp(conf, glsl->shader);
@@ -977,7 +977,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
          snprintf(define, sizeof(define), "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);
-         strlcat(glsl->alias_define, define, sizeof(glsl->alias_define));
+         string_concat(glsl->alias_define, define);
       }
    }
 

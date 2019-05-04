@@ -89,6 +89,8 @@ else ifeq ($(platform), wii)
    libogc_platform    := 1
 endif
 
+HAVE_MENU_WIDGETS := 1
+
 # PS3
 ifeq ($(platform), ps3)
    #TODO

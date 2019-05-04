@@ -137,6 +137,7 @@ typedef struct settings
 
       /* Menu */
       bool filter_by_current_core;
+      bool menu_enable_widgets;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_timedate_enable;
@@ -173,7 +174,6 @@ typedef struct settings
       bool menu_rgui_border_filler_enable;
       bool menu_rgui_full_width_layout;
       bool menu_rgui_shadows;
-      bool menu_rgui_snow;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_extended_ascii;
@@ -318,13 +318,13 @@ typedef struct settings
 
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
+      bool playlist_fuzzy_archive_match;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
       bool enable_device_vibration;
-#ifdef HAVE_OZONE
       bool ozone_collapse_sidebar;
-#endif
+
 
       bool log_to_file;
       bool log_to_file_timestamp;
@@ -455,6 +455,7 @@ typedef struct settings
       unsigned menu_rgui_internal_upscale_level;
       unsigned menu_rgui_aspect_ratio;
       unsigned menu_rgui_aspect_ratio_lock;
+      unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
 
       unsigned playlist_show_inline_core_name;

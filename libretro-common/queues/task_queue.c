@@ -825,17 +825,11 @@ char* task_get_title(retro_task_t *task)
    return title;
 }
 
-static uint32_t task_get_next_ident(void)
-{
-   return task_count++;
-}
-
 retro_task_t *task_init(void)
 {
    retro_task_t *task      = (retro_task_t*)calloc(1, sizeof(*task));
 
-   task->ident             = task_get_next_ident();
-   task->frontend_userdata = NULL;
+   task->ident             = task_count++;
 
    return task;
 }

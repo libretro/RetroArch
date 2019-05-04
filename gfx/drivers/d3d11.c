@@ -364,7 +364,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_read(path);
+   conf = config_file_new(path);
 
    if (!conf)
       return false;

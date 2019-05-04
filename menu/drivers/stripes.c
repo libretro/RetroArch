@@ -49,7 +49,6 @@
 #include "../../core_info.h"
 #include "../../core.h"
 
-#include "../widgets/menu_entry.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"

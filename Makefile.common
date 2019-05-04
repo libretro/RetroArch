@@ -193,7 +193,6 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       setting_list.o \
        list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
@@ -224,7 +223,6 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
-       managers/core_manager.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
@@ -795,7 +793,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
-          menu/widgets/menu_entry.o \
           menu/widgets/menu_osk.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \

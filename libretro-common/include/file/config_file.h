@@ -86,11 +86,6 @@ typedef struct config_file_cb config_file_cb_t ;
  * NULL path will create an empty config file. */
 config_file_t *config_file_new(const char *path);
 
-/* Is the same as config_file_new, with the only difference that
- * it doesn't check if the path provided is a directory. This can
- * be significantly faster on platforms where file I/O is slow */
-config_file_t *config_file_read(const char *path);
-
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file.
  * Includes cb callbacks to run custom code during config file processing.*/

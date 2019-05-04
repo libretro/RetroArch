@@ -207,7 +207,7 @@ static int deferred_push_cursor_manager_list_deferred(
    char *rdb                      = NULL;
    settings_t *settings           = config_get_ptr();
    const char *path               = info->path;
-   config_file_t *conf            = path ? config_file_read(path) : NULL;
+   config_file_t *conf            = path ? config_file_new(path) : NULL;
 
    if (!conf || !settings)
       goto end;
@@ -570,7 +570,7 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
          libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
+         string_concat(newstring2, "|");
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
       }
@@ -579,8 +579,7 @@ static int general_push(menu_displaylist_info_t *info,
       if (settings->bools.multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|",
-               PATH_MAX_LENGTH * sizeof(char));
+         string_concat(newstring2, "|");
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
       }

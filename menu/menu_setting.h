@@ -145,30 +145,7 @@ void menu_settings_list_current_add_range(
       bool enforce_minrange_enable,
       bool enforce_maxrange_enable);
 
-void settings_data_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void settings_data_list_current_add_free_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void menu_settings_list_current_add_enum_idx(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum msg_hash_enums enum_idx);
-
-void menu_settings_list_current_add_enum_value_idx(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum msg_hash_enums enum_idx);
-
 void menu_setting_free(rarch_setting_t *setting);
-
-bool settings_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info);
 
 bool menu_setting_ctl(
       enum menu_setting_ctl_state state, void *data);

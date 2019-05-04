@@ -1416,6 +1416,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, audio_enable, false);
+   SETTING_BOOL("menu_enable_widgets",             &settings->bools.menu_enable_widgets, true, menu_enable_widgets, false);
    SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, audio_enable_menu, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, audio_enable_menu_ok, false);
    SETTING_BOOL("audio_enable_menu_cancel",      &settings->bools.audio_enable_menu_cancel, true, audio_enable_menu_cancel, false);
@@ -1519,7 +1520,6 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
    SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, rgui_shadows, false);
-   SETTING_BOOL("menu_rgui_snow",                          &settings->bools.menu_rgui_snow, true, rgui_snow, false);
    SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, rgui_full_width_layout, false);
    SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, rgui_inline_thumbnails, false);
    SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, rgui_swap_thumbnails, false);
@@ -1602,6 +1602,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, content_runtime_log_aggregate, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, playlist_show_sublabels, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, playlist_sort_alphabetical, false);
+   SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, playlist_fuzzy_archive_match, false);
 
    SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, quit_press_twice, false);
    SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress, true, vibrate_on_keypress, false);
@@ -1716,6 +1717,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("rgui_internal_upscale_level",  &settings->uints.menu_rgui_internal_upscale_level, true, rgui_internal_upscale_level, false);
    SETTING_UINT("rgui_aspect_ratio",            &settings->uints.menu_rgui_aspect_ratio, true, rgui_aspect, false);
    SETTING_UINT("rgui_aspect_ratio_lock",       &settings->uints.menu_rgui_aspect_ratio_lock, true, rgui_aspect_lock, false);
+   SETTING_UINT("rgui_particle_effect",         &settings->uints.menu_rgui_particle_effect, true, rgui_particle_effect, false);
 #endif
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
@@ -3165,7 +3167,6 @@ bool config_load_override(void)
    char *game_path                        = NULL;
    char *content_path                     = NULL;
    char *config_directory                 = NULL;
-   config_file_t *new_conf                = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ?
@@ -3219,14 +3220,11 @@ bool config_load_override(void)
 
    /* per-core overrides */
    /* Create a new config file from core_path */
-   new_conf = config_file_read(core_path);
-
-   if (new_conf)
+   if (config_file_exists(core_path))
    {
       RARCH_LOG("[Overrides] core-specific overrides found at %s.\n",
             core_path);
 
-      config_file_free(new_conf);
       path_set(RARCH_PATH_CONFIG_APPEND, core_path);
 
       should_append = true;
@@ -3237,15 +3235,11 @@ bool config_load_override(void)
 
    /* per-content-dir overrides */
    /* Create a new config file from content_path */
-   new_conf = config_file_read(content_path);
-
-   if (new_conf)
+   if (config_file_exists(content_path))
    {
       char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       temp_path[0]    = '\0';
-
-      config_file_free(new_conf);
 
       RARCH_LOG("[Overrides] content-dir-specific overrides found at %s.\n",
             game_path);
@@ -3272,15 +3266,11 @@ bool config_load_override(void)
 
    /* per-game overrides */
    /* Create a new config file from game_path */
-   new_conf = config_file_read(game_path);
-
-   if (new_conf)
+   if (config_file_exists(game_path))
    {
       char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       temp_path[0]    = '\0';
-
-      config_file_free(new_conf);
 
       RARCH_LOG("[Overrides] game-specific overrides found at %s.\n",
             game_path);
@@ -3394,21 +3384,17 @@ bool config_unload_override(void)
 bool config_load_remap(void)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
+   config_file_t *new_conf                = NULL;
    char *remap_directory                  = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   config_file_t *new_conf                = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
    char content_dir_name[PATH_MAX_LENGTH];
-
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3417,6 +3403,10 @@ bool config_load_remap(void)
     * Try remap directory setting, no fallbacks defined */
    if (string_is_empty(settings->paths.directory_input_remapping))
       return false;
+
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
    /* path to the directory containing retroarch.cfg (prefix)    */
    remap_directory                        = (char*)
@@ -3435,7 +3425,7 @@ bool config_load_remap(void)
    strlcpy(remap_directory,
          settings->paths.directory_input_remapping,
          path_size);
-   RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
+   RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join_special_ext(core_path,
@@ -3457,12 +3447,12 @@ bool config_load_remap(void)
          path_size);
 
    /* Create a new config file from game_path */
-   new_conf = config_file_read(game_path);
+   new_conf = config_file_new(game_path);
 
    /* If a game remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: game-specific remap found at %s.\n", game_path);
+      RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
@@ -3474,17 +3464,17 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no game-specific remap found at %s.\n", game_path);
+      RARCH_LOG("[Remaps]: no game-specific remap found at %s.\n", game_path);
       input_remapping_set_defaults(false);
    }
 
    /* Create a new config file from content_path */
-   new_conf = config_file_read(content_path);
+   new_conf = config_file_new(content_path);
 
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: content-dir-specific remap found at %s.\n", content_path);
+      RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
          runloop_msg_queue_push(msg_hash_to_str(
@@ -3496,17 +3486,17 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no content-dir-specific remap found at %s.\n", content_path);
+      RARCH_LOG("[Remaps]: no content-dir-specific remap found at %s.\n", content_path);
       input_remapping_set_defaults(false);
    }
 
    /* Create a new config file from core_path */
-   new_conf = config_file_read(core_path);
+   new_conf = config_file_new(core_path);
 
    /* If a core remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Remaps: core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
          runloop_msg_queue_push(
@@ -3518,7 +3508,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("Remaps: no core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("[Remaps]: no core-specific remap found at %s.\n", core_path);
       input_remapping_set_defaults(false);
    }
 
@@ -3544,7 +3534,6 @@ static bool config_load_shader_preset_internal(
       const char *special_name)
 {
    unsigned idx;
-   config_file_t *new_conf = NULL;
    size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
    bool   ret              = false;
    char *shader_path       = (char*)malloc(path_size);
@@ -3563,8 +3552,7 @@ static bool config_load_shader_preset_internal(
             file_path_str((enum file_path_enum)(idx)),
             path_size);
 
-      /* Create a new config file */
-      if (!(new_conf = config_file_read(shader_path)))
+      if (!config_file_exists(shader_path))
          continue;
 
       /* Shader preset exists, load it. */
@@ -3575,7 +3563,6 @@ static bool config_load_shader_preset_internal(
       break;
    }
 
-   config_file_free(new_conf);
    free(shader_path);
 
    return ret;
@@ -3761,7 +3748,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    free(buf);
    free(path_new);
 
-   conf = config_file_read(autoconf_file);
+   conf = config_file_new(autoconf_file);
 
    if (!conf)
    {
@@ -3825,7 +3812,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
-   config_file_t                              *conf  = config_file_read(path);
+   config_file_t                              *conf  = config_file_new(path);
    settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);

@@ -1444,103 +1444,6 @@ void video_driver_monitor_adjust_system_rates(void)
    RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
-void video_driver_menu_settings(void **list_data, void *list_info_data,
-      void *group_data, void *subgroup_data, const char *parent_group)
-{
-#ifdef HAVE_MENU
-   rarch_setting_t **list                    = (rarch_setting_t**)list_data;
-   rarch_setting_info_t *list_info           = (rarch_setting_info_t*)list_info_data;
-   rarch_setting_group_info_t *group_info    = (rarch_setting_group_info_t*)group_data;
-   rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
-   global_t                        *global   = global_get_ptr();
-
-   (void)list;
-   (void)list_info;
-   (void)group_info;
-   (void)subgroup_info;
-   (void)global;
-
-#if defined(__CELLOS_LV2__)
-   CONFIG_BOOL(
-         list, list_info,
-         &global->console.screen.pal60_enable,
-         MENU_ENUM_LABEL_PAL60_ENABLE,
-         MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-         false,
-         MENU_ENUM_LABEL_VALUE_OFF,
-         MENU_ENUM_LABEL_VALUE_ON,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler,
-         SD_FLAG_NONE);
-#endif
-#if defined(GEKKO) || defined(_XBOX360)
-   CONFIG_UINT(
-         list, list_info,
-         &global->console.screen.gamma_correction,
-         MENU_ENUM_LABEL_VIDEO_GAMMA,
-         MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-         0,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_cmd(
-         list,
-         list_info,
-         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-   menu_settings_list_current_add_range(
-         list,
-         list_info,
-         0,
-         MAX_GAMMA_SETTING,
-         1,
-         true,
-         true);
-   settings_data_list_current_add_flags(list, list_info,
-         SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
-#endif
-#if defined(_XBOX1) || defined(HW_RVL)
-   CONFIG_BOOL(
-         list, list_info,
-         &global->console.softfilter_enable,
-         MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
-         MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-         false,
-         MENU_ENUM_LABEL_VALUE_OFF,
-         MENU_ENUM_LABEL_VALUE_ON,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler,
-         SD_FLAG_NONE);
-   menu_settings_list_current_add_cmd(
-         list,
-         list_info,
-         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-#endif
-#ifdef _XBOX1
-   CONFIG_UINT(
-         list, list_info,
-         &global->console.screen.flicker_filter_index,
-         MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
-         MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-         0,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info,
-         0, 5, 1, true, true);
-#endif
-#endif
-}
-
 static void video_driver_lock_new(void)
 {
    video_driver_lock_free();
@@ -2249,10 +2152,8 @@ void video_driver_set_title_buf(void)
          " ",
          info.library_name,
          sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf,
-         " ", sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf,
-         info.library_version,
+   string_concat(video_driver_title_buf, " ");
+   strlcat(video_driver_title_buf, info.library_version,
          sizeof(video_driver_title_buf));
 }
 
@@ -2422,8 +2323,7 @@ void video_driver_frame(const void *data, unsigned width,
          snprintf(video_info.fps_text, sizeof(video_info.fps_text),
                "FPS: %6.1f", last_fps);
          if (video_info.framecount_show)
-            strlcat(video_info.fps_text,
-                  " || ", sizeof(video_info.fps_text));
+            string_concat(video_info.fps_text, " || ");
       }
 
       if (video_info.framecount_show)
@@ -2433,8 +2333,7 @@ void video_driver_frame(const void *data, unsigned width,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)video_driver_frame_count);
-         strlcat(video_info.fps_text,
-               frames_text, sizeof(video_info.fps_text));
+         string_concat(video_info.fps_text, frames_text);
       }
 
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
@@ -2445,10 +2344,9 @@ void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(video_info.fps_text))
          {
-            strlcat(video_driver_window_title,
-                  "|| ", sizeof(video_driver_window_title));
-            strlcat(video_driver_window_title,
-                  video_info.fps_text, sizeof(video_driver_window_title));
+            string_concat(video_driver_window_title, "|| ");
+            string_concat(video_driver_window_title,
+                  video_info.fps_text);
          }
 
          curr_time                        = new_time;
@@ -2599,10 +2497,12 @@ void video_driver_frame(const void *data, unsigned width,
 
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show || video_info.framecount_show)
+   {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!video_driver_has_widgets() || !menu_widgets_set_fps_text(video_info.fps_text))
+      if (!menu_widgets_set_fps_text(video_info.fps_text))
 #endif
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
