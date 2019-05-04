@@ -210,7 +210,7 @@ enum menu_widgets_icon
    MENU_WIDGETS_ICON_LAST
 };
 
-static char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
+static const char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
    "menu_volume_med.png",
    "menu_volume_max.png",
    "menu_volume_min.png",
@@ -1609,7 +1609,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    /* FPS Counter */
    if (video_info->fps_show || video_info->framecount_show)
    {
-      char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
+      const char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
 
       int text_width  = font_driver_get_message_width(font_regular, text, strlen(text), 1.0f);
       int total_width = text_width + simple_widget_padding * 2;
