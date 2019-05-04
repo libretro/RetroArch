@@ -1160,14 +1160,14 @@ static bool INLINE rgui_draw_particle(
    int x_end = x + width;
    int y_end = y + height;
    
-   x_start = x_start <= fb_width  ? x_start : fb_width;
-   y_start = y_start <= fb_height ? y_start : fb_height;
+   x_start = x_start <= (int)fb_width  ? x_start : fb_width;
+   y_start = y_start <= (int)fb_height ? y_start : fb_height;
    
    x_end = x_end >  0        ? x_end : 0;
-   x_end = x_end <= fb_width ? x_end : fb_width;
+   x_end = x_end <= (int)fb_width ? x_end : fb_width;
    
    y_end = y_end >  0         ? y_end : 0;
-   y_end = y_end <= fb_height ? y_end : fb_height;
+   y_end = y_end <= (int)fb_height ? y_end : fb_height;
    
    for (y_index = (unsigned)y_start; y_index < (unsigned)y_end; y_index++)
    {
@@ -2193,7 +2193,6 @@ end:
 
 static void rgui_cache_background(rgui_t *rgui)
 {
-   size_t pitch_in_pixels, size;
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    uint16_t             *src  = NULL;
