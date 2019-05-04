@@ -382,16 +382,15 @@ static int rcheevos_parse(const char* json)
       lboard->info = rcheevos_locals.patchdata.lboards + j;
       res = rc_lboard_size(lboard->info->mem);
 
-      CHEEVOS_LOG(RCHEEVOS_TAG "rc_lboard_size() = %d\n", res);
-
       if (res < 0)
       {
-         snprintf(buffer, sizeof(buffer), "Error in leaderboard %d \"%s\"", lboard->info->id, lboard->info->title);
+         snprintf(buffer, sizeof(buffer), "Error in leaderboard %d \"%s\": %s",
+            lboard->info->id, lboard->info->title, rcheevos_rc_error(res));
 
          if (settings->bools.cheevos_verbose_enable)
-            runloop_msg_queue_push(buffer, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-         CHEEVOS_ERR(RCHEEVOS_TAG "%s: '%s' mem: %s\n", buffer, rcheevos_rc_error(res), lboard->info->mem);
+         CHEEVOS_ERR(RCHEEVOS_TAG "%s mem: %s\n", buffer, lboard->info->mem);
          lboard->lboard = NULL;
          continue;
       }
@@ -675,6 +674,7 @@ static void rcheevos_test_leaderboards(void)
 
    for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
    {
+      if (!lboard->lboard) continue;
       switch (rc_evaluate_lboard(lboard->lboard, &lboard->last_value, rcheevos_peek, NULL, NULL))
       {
          default:
