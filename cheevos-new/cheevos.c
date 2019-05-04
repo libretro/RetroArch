@@ -1407,11 +1407,6 @@ found:
          const rcheevos_cheevo_t* end    = cheevo + rcheevos_locals.patchdata.core_count;
          int number_of_unlocked = rcheevos_locals.patchdata.core_count;
 
-         /* RCHEEVOS TODO: remove this msg */
-         snprintf(msg, sizeof(msg), "cheevos: using the new implementation.");
-         msg[sizeof(msg) - 1] = 0;
-         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
          if (coro->settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
             mode = RCHEEVOS_ACTIVE_HARDCORE;
 
