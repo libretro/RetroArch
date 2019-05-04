@@ -3169,14 +3169,9 @@ void runloop_msg_queue_push(const char *msg,
 {
    runloop_ctx_msg_info_t msg_info;
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   float target_hz = 0.0;
-
-   rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
-
    if (menu_widgets_msg_queue_push(msg,
-            duration / target_hz * 1000, title, icon, category, prio, flush))
+            duration / 60 * 1000, title, icon, category, prio, flush))
       return;
-
 #endif
 
 #ifdef HAVE_THREADS
