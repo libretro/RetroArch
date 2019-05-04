@@ -2139,7 +2139,7 @@ static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_i
 
    if (ozone->categories_selection_ptr > ozone->system_tab_end)
    {
-      ozone_node_t *node = file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
+      ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
       *icon          = node->icon;
       *playlist_name = node->console_name;

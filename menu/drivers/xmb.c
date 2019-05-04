@@ -5638,7 +5638,7 @@ static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_ite
 
    if (xmb->categories_selection_ptr > xmb->system_tab_end)
    {
-      xmb_node_t *node = file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
+      xmb_node_t *node = (xmb_node_t*) file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
 
       *icon          = node->icon;
       *playlist_name = xmb->title_name;

@@ -259,8 +259,11 @@ bool command_set_shader(const char *arg)
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg ? path_basename(arg) : "null");
+#ifdef HAVE_MENU_WIDGETS
+   if (!menu_widgets_set_message(msg))
+#endif
+      runloop_msg_queue_push(msg, 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);

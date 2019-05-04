@@ -85,6 +85,10 @@ static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
 };
 
+/* Generic message */
+#define GENERIC_MESSAGE_SIZE 256
+static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
+
 /* Achievement notification */
 static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
@@ -210,7 +214,7 @@ enum menu_widgets_icon
    MENU_WIDGETS_ICON_LAST
 };
 
-static char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
+static const char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
    "menu_volume_med.png",
    "menu_volume_max.png",
    "menu_volume_min.png",
@@ -268,10 +272,16 @@ static menu_timer_t screenshot_timer;
 
 static unsigned screenshot_shotname_length;
 
+/* Generic message */
+static unsigned generic_message_height;
+static menu_timer_t generic_message_timer;
+static float generic_message_alpha = 0.0f;
+
 /* Metrics */
 static unsigned simple_widget_padding;
 static unsigned simple_widget_height;
 static unsigned glyph_width;
+static unsigned line_height;
 
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
@@ -1310,6 +1320,26 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    font_raster_regular.carr.coords.vertices = 0;
    font_raster_bold.carr.coords.vertices    = 0;
 
+   /* Generic message */
+   if (generic_message_alpha > 0.0f)
+   {
+      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(generic_message_alpha*255.0f));
+      menu_display_set_alpha(menu_widgets_backdrop_orig, generic_message_alpha);
+
+      menu_display_draw_quad(video_info,
+         0, video_info->height-generic_message_height,
+         video_info->width, generic_message_height,
+         video_info->width, video_info->height,
+         menu_widgets_backdrop_orig);
+
+      menu_display_draw_text(font_regular, generic_message,
+         video_info->width/2,
+         video_info->height - generic_message_height/2 + line_height/4,
+         video_info->width, video_info->height,
+         text_color, TEXT_ALIGN_CENTER,
+         1, false, 0, false);
+   }
+
    /* Screenshot */
    if (screenshot_loaded)
    {
@@ -1609,7 +1639,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    /* FPS Counter */
    if (video_info->fps_show || video_info->framecount_show)
    {
-      char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
+      const char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
 
       int text_width  = font_driver_get_message_width(font_regular, text, strlen(text), 1.0f);
       int total_width = text_width + simple_widget_padding * 2;
@@ -1804,6 +1834,7 @@ void menu_widgets_context_reset(bool is_threaded)
    simple_widget_padding   = settings->floats.video_font_size * 2/3;
    simple_widget_height    = settings->floats.video_font_size + simple_widget_padding;
    glyph_width             = font_driver_get_message_width(font_regular, "a", 1, 1);
+   line_height             = font_driver_get_line_height(font_regular, 1);
 
    msg_queue_height                 = settings->floats.video_font_size * 2.5f;
 
@@ -1845,6 +1876,8 @@ void menu_widgets_context_reset(bool is_threaded)
    msg_queue_regular_text_base_y    = settings->floats.video_font_size * msg_queue_text_scale_factor + msg_queue_height/2;
 
    msg_queue_task_hourglass_x       = msg_queue_rect_start_x - msg_queue_icon_size_x;
+
+   generic_message_height           = settings->floats.video_font_size * 2;
 }
 
 void menu_widgets_context_destroy(void)
@@ -2312,6 +2345,48 @@ bool menu_widgets_push_achievement(const char *title, const char *badge)
    menu_widgets_get_badge_texture(&cheevo_badge, badge);
 
    menu_widgets_start_achievement_notification();
+
+   return true;
+}
+
+static void menu_widgets_generic_message_fadeout(void *userdata)
+{
+   menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
+   menu_animation_ctx_entry_t entry;
+
+   /* Start fade out animation */
+   entry.cb             = NULL;
+   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &generic_message_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 0.0f;
+   entry.userdata       = NULL;
+
+   menu_animation_push(&entry);
+}
+
+bool menu_widgets_set_message(char *msg)
+{
+   menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
+   menu_timer_ctx_entry_t timer;
+
+   if (!menu_widgets_inited)
+      return false;
+
+   snprintf(generic_message, GENERIC_MESSAGE_SIZE, "%s", msg);
+
+   generic_message_alpha = DEFAULT_BACKDROP;
+
+   /* Kill and restart the timer / animation */
+   menu_timer_kill(&generic_message_timer);
+   menu_animation_kill_by_tag(&tag);
+
+   timer.cb       = menu_widgets_generic_message_fadeout;
+   timer.duration = GENERIC_MESSAGE_DURATION;
+   timer.userdata = NULL;
+
+   menu_timer_start(&generic_message_timer, &timer);
 
    return true;
 }
