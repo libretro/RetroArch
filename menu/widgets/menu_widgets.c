@@ -207,7 +207,7 @@ enum menu_widgets_icon
 
    MENU_WIDGETS_ICON_ACHIEVEMENT,
 
-   MENU_WIDGETS_ICON_LAST,
+   MENU_WIDGETS_ICON_LAST
 };
 
 static char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
