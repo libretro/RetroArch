@@ -105,7 +105,7 @@ void cheat_manager_apply_cheats(void)
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
    /* RCHEEVOS TODO: remove settings test */
-   settings->bools.cheevos_rcheevos_enable ? rcheevos_apply_cheats(&data_bool) : cheevos_apply_cheats(&data_bool);
+   !settings->bools.cheevos_old_enable ? rcheevos_apply_cheats(&data_bool) : cheevos_apply_cheats(&data_bool);
 #endif
 }
 

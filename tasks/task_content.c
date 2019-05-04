@@ -740,10 +740,10 @@ static bool content_file_load(
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
 
-      settings->bools.cheevos_rcheevos_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
+      !settings->bools.cheevos_old_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
-         settings->bools.cheevos_rcheevos_enable ? rcheevos_load(info) : cheevos_load(info);
+         !settings->bools.cheevos_old_enable ? rcheevos_load(info) : cheevos_load(info);
    }
 #endif
 

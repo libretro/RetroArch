@@ -179,7 +179,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
             desc_info.idx = menu_dialog_current_id;
             desc_info.s   = s;
             desc_info.len = len;
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info) : cheevos_get_description(&desc_info);
+            !settings->bools.cheevos_old_enable ? rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info) : cheevos_get_description(&desc_info);
 
          }
          break;

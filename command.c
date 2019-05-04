@@ -297,7 +297,7 @@ static bool command_read_ram(const char *arg)
    reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
    /* RCHEEVOS TODO: remove if condition below */
-   if (settings->bools.cheevos_rcheevos_enable)
+   if (!settings->bools.cheevos_old_enable)
    {
       data = rcheevos_patch_address(addr, rcheevos_get_console());
    }
@@ -335,7 +335,7 @@ static bool command_write_ram(const char *arg)
    /* RCHEEVOS TODO: remove settings init and test */
    settings_t *settings = config_get_ptr();
 
-   if (settings->bools.cheevos_rcheevos_enable)
+   if (!settings->bools.cheevos_old_enable)
    {
       addr = strtoul(arg, (char**)&arg, 16);
       data = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
@@ -1110,7 +1110,7 @@ static void command_event_deinit_core(bool reinit)
 #ifdef HAVE_CHEEVOS
    /* RCHEEVOS TODO: remove settings init and test */
    settings_t *settings      = config_get_ptr();
-   settings->bools.cheevos_rcheevos_enable ? rcheevos_unload() : cheevos_unload();
+   !settings->bools.cheevos_old_enable ? rcheevos_unload() : cheevos_unload();
 #endif
 
    RARCH_LOG("Unloading game..\n");
@@ -1908,11 +1908,11 @@ bool command_event(enum event_command cmd, void *data)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
+            !settings->bools.cheevos_old_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
 #endif
             core_reset();
 #ifdef HAVE_CHEEVOS
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_reset_game() : cheevos_reset_game();
+            !settings->bools.cheevos_old_enable ? rcheevos_reset_game() : cheevos_reset_game();
 #endif
 #if HAVE_NETWORKING
             netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
@@ -2009,7 +2009,7 @@ bool command_event(enum event_command cmd, void *data)
          /* RCHEEVOS TODO: remove starting block bracket, settings init and test */
          {
             settings_t *settings      = config_get_ptr();
-            settings->bools.cheevos_rcheevos_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
+            !settings->bools.cheevos_old_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
          }
 #endif
          break;
