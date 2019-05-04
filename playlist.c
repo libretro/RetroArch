@@ -682,7 +682,8 @@ bool playlist_push(playlist_t *playlist,
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
-   path_resolve_realpath(real_core_path, sizeof(real_core_path));
+   if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
+      path_resolve_realpath(real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
    {
