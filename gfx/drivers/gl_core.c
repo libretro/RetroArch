@@ -1526,6 +1526,7 @@ static void gl_core_update_cpu_texture(gl_core_t *gl,
    }
 }
 
+#if defined(HAVE_MENU)
 static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_info)
 {
    const float vbo_data[] = {
@@ -1566,6 +1567,7 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
 
    glDisable(GL_BLEND);
 }
+#endif
 
 static bool gl_core_frame(void *data, const void *frame,
                           unsigned frame_width, unsigned frame_height,
