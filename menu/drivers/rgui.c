@@ -913,13 +913,13 @@ static uint16_t argb32_to_abgr4444(uint32_t col)
 }
 
 /* D3D10/11/12 */
-static uint16_t argb32_to_argb4444(uint32_t col)
+static uint16_t argb32_to_bgra4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
    unsigned g = ((col >> 8)  & 0xff) >> 4;
    unsigned b = ((col & 0xff)      ) >> 4;
-   return (a << 12) | (r << 8) | (g << 4) | b;
+   return (b << 12) | (g << 8) | (r << 4) | a;
 }
 
 /* All other platforms */
@@ -954,7 +954,7 @@ static void rgui_set_pixel_format_function(void)
 	else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
 				string_is_equal(driver_ident, "d3d11") ||
 				string_is_equal(driver_ident, "d3d12"))
-		argb32_to_pixel_platform_format = argb32_to_argb4444;
+		argb32_to_pixel_platform_format = argb32_to_bgra4444;
 	else
 		argb32_to_pixel_platform_format = argb32_to_rgba4444;
 }
