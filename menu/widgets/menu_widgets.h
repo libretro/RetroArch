@@ -35,6 +35,7 @@
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
 #define HOURGLASS_DURATION                1000
+#define GENERIC_MESSAGE_DURATION          3000
 
 void menu_widgets_init(bool video_is_threaded);
 void menu_widgets_free(void);
@@ -71,6 +72,9 @@ void menu_widgets_context_reset(bool is_threaded);
 void menu_widgets_context_destroy(void);
 
 bool menu_widgets_push_achievement(const char *title, const char *badge);
+
+/* Warning: not thread safe! */
+bool menu_widgets_set_message(char *message);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set
