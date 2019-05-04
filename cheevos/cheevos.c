@@ -2887,6 +2887,10 @@ found:
          const cheevo_t* end          = cheevo + cheevos_locals.core.count;
          int number_of_unlocked       = cheevos_locals.core.count;
 
+         snprintf(msg, sizeof(msg), "cheevos: using the old implementation.");
+         msg[sizeof(msg) - 1] = 0;
+         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
          if (coro->settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
             mode = CHEEVOS_ACTIVE_HARDCORE;
 
