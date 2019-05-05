@@ -10,7 +10,6 @@ HAVE_DEBUG=no              # Enable a debug build
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_MENU=yes              # Enable menu drivers
 HAVE_MENU_WIDGETS=yes      # Enable menu widgets
-CXX_MENU_WIDGETS=no
 HAVE_RGUI=auto             # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
