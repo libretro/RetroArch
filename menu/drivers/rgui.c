@@ -1263,7 +1263,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
                /* y pos */
                particle->b = (float)(rand() % fb_height);
                /* drop length */
-               particle->c = (float)weights[(unsigned)(rand() % 61)];
+               particle->c = (float)weights[(unsigned)(rand() % 60)];
                /* drop speed (larger drops fall faster) */
                particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
             }
@@ -1435,7 +1435,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                   /* y pos */
                   particle->b = 0.0f;
                   /* drop length */
-                  particle->c = (float)weights[(unsigned)(rand() % 61)];
+                  particle->c = (float)weights[(unsigned)(rand() % 60)];
                   /* drop speed (larger drops fall faster) */
                   particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
                }
