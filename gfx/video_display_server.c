@@ -145,3 +145,15 @@ enum rotation video_display_server_get_screen_orientation(void)
       return current_display_server->get_screen_orientation();
    return ORIENTATION_NORMAL;
 }
+
+bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
+{
+   if (!current_display_server && current_display_server->get_flags)
+      return false;
+   if (!flags)
+      return false;
+
+   flags->flags = current_display_server->get_flags(
+         current_display_server_data);
+   return true;
+}

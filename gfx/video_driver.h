@@ -613,11 +613,6 @@ typedef struct gfx_ctx_driver
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
 
-typedef struct gfx_ctx_flags
-{
-   uint32_t flags;
-} gfx_ctx_flags_t;
-
 typedef struct gfx_ctx_size
 {
    bool *quit;

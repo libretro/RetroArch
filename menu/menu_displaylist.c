@@ -5631,10 +5631,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       {
+         gfx_ctx_flags_t flags;
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
-               PARSE_ACTION, false);
+
+         if (video_display_server_get_flags(&flags))
+         {
+            if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
+               menu_displaylist_parse_settings_enum(info->list,
+                     MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+                     PARSE_ACTION, false);
+         }
+
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);

@@ -552,6 +552,17 @@ static enum rotation x11_display_server_get_screen_orientation(void)
 }
 #endif
 
+static uint32_t x11_display_server_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+#ifdef HAVE_XRANDR
+   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+#endif
+
+   return flags;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -572,5 +583,6 @@ const video_display_server_t dispserv_x11 = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
+   x11_display_server_get_flags,
    "x11"
 };

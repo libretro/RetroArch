@@ -25,6 +25,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum display_server_flags
+{
+   DISPSERV_CTX_FLAGS_NONE = 0,
+   DISPSERV_CTX_CRT_SWITCHRES
+};
+
 typedef struct video_display_config
 {
    unsigned width;
@@ -49,12 +55,15 @@ typedef struct video_display_server
    const char *(*get_output_options)(void *data);
    void (*set_screen_orientation)(enum rotation rotation);
    enum rotation (*get_screen_orientation)(void);
+   uint32_t (*get_flags)(void *data);
    const char *ident;
 } video_display_server_t;
 
 void* video_display_server_init(void);
 
 void video_display_server_destroy(void);
+
+bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_display_server_set_window_opacity(unsigned opacity);
 
