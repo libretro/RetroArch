@@ -1215,8 +1215,17 @@ static void ctr_set_osd_msg(void *data,
       font_driver_render_msg(video_info, font, msg, params);
 }
 
+static uint32_t ctr_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t ctr_poke_interface = {
-   NULL, /* get_flags */
+   ctr_get_flags,
    ctr_load_texture,
    ctr_unload_texture,
    NULL,

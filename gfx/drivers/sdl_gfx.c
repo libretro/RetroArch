@@ -516,8 +516,17 @@ static void sdl_grab_mouse_toggle(void *data)
    SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }
 
+static uint32_t sdl_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t sdl_poke_interface = {
-   NULL, /* get_flags */
+   sdl_get_flags,
    NULL,
    NULL,
    NULL,

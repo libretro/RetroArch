@@ -629,8 +629,15 @@ static void gdi_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
+static uint32_t gdi_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   return flags;
+}
+
 static const video_poke_interface_t gdi_poke_interface = {
-   NULL, /* get_flags */
+   gdi_get_flags,
    gdi_load_texture,
    gdi_unload_texture,
    gdi_set_video_mode,

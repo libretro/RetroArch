@@ -1263,8 +1263,17 @@ static void gx_get_video_output_next(void *data)
    global->console.screen.resolutions.current.id++;
 }
 
+static uint32_t gx_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
-   NULL, /* get_flags */
+   gx_get_flags,
    NULL,
    NULL,
    gx_set_video_mode,

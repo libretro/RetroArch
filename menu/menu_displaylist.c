@@ -1801,11 +1801,14 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_take_screenshot)
       {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+         gfx_ctx_flags_t flags;
+
+         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+                  MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+                  MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
       if (settings->bools.quick_menu_show_save_load_state

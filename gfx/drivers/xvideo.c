@@ -934,8 +934,15 @@ static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+static uint32_t xv_get_flags(void *data)
+{
+   uint32_t flags = 0;
+
+   return flags;
+}
+
 static video_poke_interface_t xv_video_poke_interface = {
-   NULL, /* get_flags */
+   xv_get_flags,
    NULL,
    NULL,
    NULL,

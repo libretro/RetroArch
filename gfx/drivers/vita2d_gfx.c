@@ -788,8 +788,17 @@ static bool vita_get_current_sw_framebuffer(void *data,
    return true;
 }
 
+static uint32_t vita_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t vita_poke_interface = {
-   NULL, /* get_flags */
+   vita_get_flags,
    vita_load_texture,
    vita_unload_texture,
    NULL,

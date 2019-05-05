@@ -830,8 +830,17 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
       *vp = psp->vp;
 }
 
+static uint32_t psp_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t psp_poke_interface = {
-   NULL,          /* get_flags  */
+   psp_get_flags,
    NULL,
    NULL,
    NULL,
