@@ -1841,3 +1841,5 @@ MSG_HASH(MENU_ENUM_LABEL_LOG_DIR,
       "log_dir")
 MSG_HASH(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
       "menu_widgets_enable")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
+      "video_shader_enable")

@@ -28,3 +28,4 @@
 #define ID_M_STATE_INDEX_AUTO                   40024
 #define ID_M_TAKE_SCREENSHOT                    40025
 #define ID_M_MUTE_TOGGLE                        40026
+#define ID_M_TOGGLE_DESKTOP                     40027

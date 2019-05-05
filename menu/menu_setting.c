@@ -62,6 +62,7 @@
 #include "menu_driver.h"
 #include "menu_animation.h"
 #include "menu_input.h"
+#include "menu_shader.h"
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_input_bind_dialog.h"
 
@@ -5574,6 +5575,28 @@ void general_write_handler(rarch_setting_t *setting)
 
    switch (setting->enum_idx)
    {
+      case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
+         {
+            if (*setting->value.target.boolean)
+            {
+               bool refresh                = false;
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+            }
+            else if (!*setting->value.target.boolean)
+            {
+               bool refresh                = false;
+               settings_t *settings        = config_get_ptr();
+               struct video_shader *shader = menu_shader_get();
+
+               shader->passes = 0;
+
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+               settings->bools.video_shader_enable = false;
+            }
+         }
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)
@@ -7275,6 +7298,21 @@ static bool setting_append_list(
                      general_read_handler,
                      bool_entries[i].flags);
             }
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_shader_enable,
+                  MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+                  shader_enable,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
