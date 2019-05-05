@@ -184,7 +184,8 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
 
    /* Get entry 'real' core path */
    strlcpy(entry_real_core_path, entry_core_path, sizeof(entry_real_core_path));
-   path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path));
+   if (!string_is_equal(entry_real_core_path, file_path_str(FILE_PATH_DETECT)))
+      path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path));
 
    if (string_is_empty(entry_real_core_path))
       return false;
@@ -567,7 +568,8 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
-   path_resolve_realpath(real_core_path, sizeof(real_core_path));
+   if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
+      path_resolve_realpath(real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
    {
