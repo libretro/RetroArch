@@ -148,7 +148,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-      "Enable horizontal animation for the menu. This will have a performance hit."
+      "Włącz animację poziomą menu. Zwiększy wydajność."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -896,7 +896,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Zapisz stan")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-      "Zrob zrzut ekranu")
+      "Zrób zrzut ekranu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
       "Następny moduł cieniujący")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -930,7 +930,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "Normalny")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-      "Preferuj dotyk")
+      "Preferuj sterowanie dotykiem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
       "Odwzorowanie wejścia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3799,4 +3799,4 @@ MSG_HASH(
     "Obsługa CoreAudio V3"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-      "Menu Widgets")
+      "Menu widgetów")
