@@ -1576,8 +1576,12 @@ static int menu_displaylist_parse_settings_internal_enum(
    if (!show_advanced_settings)
    {
       uint64_t flags = setting->flags;
-      if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
+      if (flags & SD_FLAG_ADVANCED)
          goto end;
+#ifdef HAVE_LAKKA
+      if (flags & SD_FLAG_LAKKA_ADVANCED)
+         goto end;
+#endif
    }
 
    for (;;)
