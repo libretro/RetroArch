@@ -237,6 +237,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_QUIT:
          do_wm_close = true;
          break;
+      case ID_M_TOGGLE_DESKTOP:
+         cmd = CMD_EVENT_UI_COMPANION_TOGGLE;
+         break;
       default:
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {

@@ -65,6 +65,7 @@ IDR_MENU MENU
             MENUITEM "9x", ID_M_WINDOW_SCALE_9X
             MENUITEM "10x", ID_M_WINDOW_SCALE_10X
         }
+        MENUITEM "Toggle Desktop Menu", ID_M_TOGGLE_DESKTOP
         MENUITEM "排他的なフルスクリーン切り替え", ID_M_FULL_SCREEN
         // Shader dialog is disabled for now, until video_threaded issues are fixed.
         //MENUITEM "シェーダーのパラメータ", ID_M_SHADER_PARAMETERS

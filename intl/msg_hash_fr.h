@@ -8657,3 +8657,5 @@ MSG_HASH(
          MENU_ENUM_SUBLABEL_LOG_DIR,
          "Les fichiers de journalisation des événements système seront conservés dans ce dossier."
          )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+      "Video Shaders")
