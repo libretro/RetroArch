@@ -163,17 +163,17 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Capture/relâche la souris. \n"
                    " \n"
-                   "When mouse is grabbed, RetroArch hides the \n"
-                   "mouse, and keeps the mouse pointer inside \n"
-                   "the window to allow relative mouse input to \n"
-                   "work better.");
+                   "Lorsque la souris est capturée, RetroArch la masque \n"
+                   "et conserve le pointeur de la souris à l'intérieur \n"
+                   "de la fenêtre pour permettre au contrôle \n"
+                   "relatif à la souris de mieux fonctionner.");
              break;
           case RARCH_GAME_FOCUS_TOGGLE:
              snprintf(s, len,
                    "Jeu au premier-plan/en arrière-plan.\n"
                    " \n"
-                   "When a game has focus, RetroArch will both disable \n"
-                   "hotkeys and keep/warp the mouse pointer inside the window.");
+                   "Quand un jeu est au premier plan, RetroArch désactive les raccourcis \n"
+                   "et garde/ramène le pointeur de la souris dans la fenêtre.");
              break;
           case RARCH_MENU_TOGGLE:
              snprintf(s, len, "Affiche/masque le menu.");
@@ -190,11 +190,11 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Touche pour quitter RetroArch proprement. \n"
                    " \n"
-                   "Killing it in any hard way (SIGKILL, etc.) will \n"
-                   "terminate RetroArch without saving RAM, etc."
+                   "Le fermer de manière dure (SIGKILL, etc.) quittera \n"
+                   "RetroArch sans sauvegarder la RAM, etc."
 #ifdef __unix__
-                   "\Non Unix-likes, SIGINT/SIGTERM allows a clean \n"
-                   "deinitialization."
+                   "\nSur les Unix-likes, SIGINT/SIGTERM permet une \n"
+                   "désinitialisation propre."
 #endif
                    "");
              break;
@@ -1554,51 +1554,51 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Dossier des assets. \n"
                              " \n"
-                             " This location is queried by default when \n"
-                             "menu interfaces try to look for loadable \n"
-                             "assets, etc.");
+                             "Cet emplacement est requis par défaut lorsque \n"
+                             "les interfaces de menu tentent de rechercher \n"
+                             "des assets chargeables, etc.");
             break;
         case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
             snprintf(s, len,
                      "Dossier des arrière-plans dynamiques. \n"
                              " \n"
-                             " The place to store backgrounds that will \n"
-                             "be loaded dynamically by the menu depending \n"
-                             "on context.");
+                             "Dossier de stockage des fonds d'écran \n"
+                             "chargés dynamiquement par le menu \n"
+                             "en fonction du contexte.");
             break;
         case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
             snprintf(s, len,
                      "Taux de ralentissement maximal."
                              " \n"
-                             "When slowmotion, content will slow\n"
-                             "down by factor.");
+                             "En mode ralenti, le contenu sera ralenti\n"
+                             "par ce facteur.");
             break;
         case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
             snprintf(s, len,
                      "Definit le seuil de l'axe des touches.\n"
                              " \n"
-                             "How far an axis must be tilted to result\n"
-                             "in a button press.\n"
-                             " Possible values are [0.0, 1.0].");
+                             "À quelle distance un axe doit être incliné\n"
+                             "pour entraîner une pression de touche.\n"
+                             "Les valeurs possibles sont [0.0, 1.0].");
             break;
         case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
             snprintf(s, len,
                      "Délai d'activation du turbo.\n"
                              " \n"
-                             "Describes the period of which turbo-enabled\n"
-                             "buttons toggle.\n"
+                             "Décrit la durée après laquelle une touche\n"
+                             "est en mode turbo.\n"
                              " \n"
-                             "Numbers are described in frames."
+                             "Les nombres sont décrits en images."
             );
             break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
                      "Cycle de répétition des touches.\n"
                              " \n"
-                             "Describes how long the period of a turbo-enabled\n"
-                             "should be.\n"
+                             "Décrit la durée après laquelle une touche\n"
+                             "en mode turbo se répète.\n"
                              " \n"
-                             "Numbers are described in frames."
+                             "Les nombres sont décrits en images."
             );
             break;
         case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
@@ -1630,28 +1630,28 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             snprintf(s, len,
-                     "Suspend l'économiseur d'écran. Is a hint that \n"
-                             "does not necessarily have to be \n"
-                             "honored by the video driver.");
+                     "Suspend l'économiseur d'écran. C'est un indice \n"
+                             "qui ne sera pas nécessairement \n"
+                             "honoré par le pilote vidéo.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_MODE:
             snprintf(s, len,
                      "Mode client de jeu en réseau pour l'utilisateur actuel. \n"
-                             "Will be 'Server' mode if disabled.");
+                             "Sera en mode 'Serveur' si cette option est désactivée.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
             snprintf(s, len,
                      "Nombre d'images de délai à utiliser pour le jeu en réseau. \n"
                              " \n"
-                             "Increasing this value will increase \n"
-                             "performance, but introduce more latency.");
+                             "Augmenter cette valeur augmentera les performances, \n"
+                             "mais introduira plus de latence.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
             snprintf(s, len,
                      "Annoncer ou non le jeu en réseau publiquement. \n"
                              " \n"
-                             "If set to false, clients must manually connect \n"
-                             "rather than using the public lobby.");
+                             "Si cette option est désactivée, les clients devront \n"
+                             "se connecter manuellement plutôt que d'utiliser le salon public.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
             snprintf(s, len,
@@ -2004,7 +2004,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
             snprintf(s, len,
-                     "Nombre de fois que le cheat sera appliqué.\nUse with the other two Iteration options to affect large areas of memory.");
+                     "Nombre de fois que le cheat sera appliqué.\nUtiliser avec les deux autres options d'itération pour affecter de grandes zones de mémoire.");
             break;
         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
             snprintf(s, len,
@@ -2211,18 +2211,18 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_MIDI_INPUT:
             snprintf(s, len,
                      "Définit le périphérique d'entrée (spécifique au pilote).\n"
-                     "When set to \"Off\", MIDI input will be disabled.\n"
-                     "Device name can also be typed in.");
+                     "Lorsque cette option est \"Off\", la sortie MIDI sera désactivée.\n"
+                     "Le nom du périphérique peut aussi être entré manuellement.");
             break;
         case MENU_ENUM_LABEL_MIDI_OUTPUT:
             snprintf(s, len,
                      "Définit le périphérique de sortie (spécifique au pilote).\n"
-                     "When set to \"Off\", MIDI output will be disabled.\n"
-                     "Device name can also be typed in.\n"
+                     "Lorsque cette option est \"Off\", la sortie MIDI sera désactivée.\n"
+                     "Le nom du périphérique peut aussi être entré manuellement.\n"
                      " \n"
-                     "When MIDI output is enabled and core and game/app support MIDI output,\n"
-                     "some or all sounds (depends on game/app) will be generated by MIDI device.\n"
-                     "In case of \"null\" MIDI driver this means that those sounds won't be audible.");
+                     "Lorsque la sortie MIDI est activée et que le cœur et le jeu / l'application prennent en charge la sortie MIDI,\n"
+                     "tout ou partie des sons (dépend du jeu/de l'application) sera généré par le périphérique MIDI.\n"
+                     "Dans le cas du pilote MIDI \"null\" cela signifie que ces sons ne seront pas audibles.");
             break;
         case MENU_ENUM_LABEL_MIDI_VOLUME:
             snprintf(s, len,
