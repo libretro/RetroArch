@@ -747,7 +747,9 @@ static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISP
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
 #endif
 
-static const bool playlist_show_sublabels = false;
+static const bool scan_without_core_match      = true;
+
+static const bool playlist_show_sublabels      = false;
 
 static const bool playlist_fuzzy_archive_match = false;
 
