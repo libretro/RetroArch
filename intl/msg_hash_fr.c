@@ -1248,117 +1248,117 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Définir la fréquence de rafraîchissement détectée\n"
                              " \n"
-                            "Sets the refresh rate to the actual value\n"
-                            "polled from the display driver.");
+                            "Définit la fréquence de rafraîchissement à\n"
+                            "celle détectée par le pilote d'affichage.");
             break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
                      "Force une certaine rotation \n"
                              "de l'écran.\n"
                              " \n"
-                             "The rotation is added to rotations which\n"
-                             "the libretro core sets (see Video Allow\n"
-                             "Rotate).");
+                             "La rotation est ajoutée aux rotations\n"
+                             "définies par le cœur libretro (voir\n"
+                             "Autoriser la rotation).");
             break;
         case MENU_ENUM_LABEL_VIDEO_SCALE:
             snprintf(s, len,
                      "Résolution en plein écran.\n"
                              " \n"
-                             "Resolution of 0 uses the \n"
-                             "resolution of the environment.\n");
+                             "Une résolution de 0 utilise \n"
+                             "la résolution du bureau.\n");
             break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,
                      "Vitesse de l'avance rapide.\n"
                              " \n"
-                             "The maximum rate at which content will\n"
-                             "be run when using fast forward.\n"
+                             "Fréquence maximum à laquelle le contenu sera exécuté\n"
+                             "lors de l'utilisation de l'avance rapide.\n"
                              " \n"
-                             " (E.g. 5.0 for 60 fps content => 300 fps \n"
-                             "cap).\n"
+                             "(Par exemple, 5,0 pour un contenu de 60 images/s => \n"
+                             "un plafond à 300 images/s).\n"
                              " \n"
-                             "RetroArch will go to sleep to ensure that \n"
-                             "the maximum rate will not be exceeded.\n"
-                             "Do not rely on this cap to be perfectly \n"
-                             "accurate.");
+                             "RetroArch se ralentira pour veiller à \n"
+                             "ce que le taux maximal ne soit pas\n"
+                             "dépassé. Ne comptez pas sur ce plafonnage \n"
+                             "pour être parfaitement précis.");
             break;
         case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
             snprintf(s, len,
                      "Synchronise avec la fréquence exacte du contenu.\n"
                              " \n"
-                             "This option is the equivalent of forcing x1 speed\n"
-                             "while still allowing fast forward.\n"
-                             "No deviation from the core requested refresh rate,\n"
-                             "no sound Dynamic Rate Control).");
+                             "Cette option équivaut à forcer la vitesse x1\n"
+                             "tout en permettant l'avance rapide.\n"
+                             "Aucun écart par rapport à la fréquence de rafraîchissement\n"
+                             "demandée par le cœur, aucun contrôle dynamique du débit audio.");
             break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             snprintf(s, len,
                      "Quel moniteur préférer.\n"
                              " \n"
-                             "0 (default) means no particular monitor \n"
-                             "is preferred, 1 and up (1 being first \n"
-                             "monitor), suggests RetroArch to use that \n"
-                             "particular monitor.");
+                             "0 (par défaut) signifie qu'aucun moniteur particulier \n"
+                             "n'est préféré, et plus (1 étant le premier moniteur), \n"
+                             "suggère à RetroArch d'utiliser ce moniteur \n"
+                             "en particulier.");
             break;
         case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
             snprintf(s, len,
                      "Force le recadrage du surbalayage \n"
                              "des images.\n"
                              " \n"
-                             "Exact behavior of this option is \n"
-                             "core-implementation specific.");
+                             "Le comportement exact de cette option \n"
+                             "est spécifique à l'implémentation du cœur.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
             snprintf(s, len,
                      "Mets la vidéo à l'échelle uniquement \n"
                              "à l'entier le plus proche.\n"
                              " \n"
-                             "The base size depends on system-reported \n"
-                             "geometry and aspect ratio.\n"
+                             "La taille de base dépend de la géométrie \n"
+                             "et du rapport d'aspect détectés par le système.\n"
                              " \n"
-                             "If Force Aspect is not set, X/Y will be \n"
-                             "integer scaled independently.");
+                             "Si 'Forcer le rapport d'aspect' est désactivé, X/Y \n"
+                             "seront mis à l'échelle à l'entier indépendamment.");
             break;
         case MENU_ENUM_LABEL_AUDIO_VOLUME:
             snprintf(s, len,
                      "Volume audio, exprimé en dB.\n"
                              " \n"
-                             " 0 dB is normal volume. No gain will be applied.\n"
-                             "Gain can be controlled in runtime with Input\n"
-                             "Volume Up / Input Volume Down.");
+                             "0 dB est le volume normal. Aucun gain ne sera appliqué.\n"
+                             "Le gain peut être contrôlé en cours d’exécution avec\n"
+                             "les touches Volume + / Volume -.");
             break;
         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
             snprintf(s, len,
-                     "Contrôle du débit audio.\n"
+                     "Contrôle dynamique du débit audio.\n"
                              " \n"
-                             "Setting this to 0 disables rate control.\n"
-                             "Any other value controls audio rate control \n"
-                             "delta.\n"
+                             "Mettre cette option à 0 désactive le contrôle du débit.\n"
+                             "Toute autre valeur contrôle dynamiquement le débit \n"
+                             "audio.\n"
                              " \n"
-                             "Defines how much input rate can be adjusted \n"
-                             "dynamically.\n"
+                             "Définit de combien le débit d'entrée peut \n"
+                             "être ajusté dynamiquement.\n"
                              " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (rate control delta))");
+                             " Le débit audio est défini ainsi : \n"
+                             " débit audio * (1.0 +/- (Contrôle dynamique du débit audio))");
             break;
         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             snprintf(s, len,
-                     "Limite de synchronisation audio maximale.\n"
+                     "Variation maximale du débit audio.\n"
                              " \n"
-                             "Defines the maximum change in input rate.\n"
-                             "You may want to increase this to enable\n"
-                             "very large changes in timing, for example\n"
-                             "running PAL cores on NTSC displays, at the\n"
-                             "cost of inaccurate audio pitch.\n"
+                             "Définit le changement maximal du débit audio.\n"
+                             "Augmenter cette valeur permet des changements\n"
+                             "très importants dans le timing en échange\n"
+                             "d'un pitch audio inexact (par exemple, lors\n"
+                             "de l'exécution de cœurs PAL sur des écrans NTSC).\n"
                              " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (max timing skew))");
+                             " Le débit audio est défini ainsi : \n"
+                             " débit audio * (1.0 +/- (Variation maximale du débit audio))");
             break;
         case MENU_ENUM_LABEL_OVERLAY_NEXT:
             snprintf(s, len,
                      "Applique la prochaine surimpression.\n"
                              " \n"
-                             "Wraps around.");
+                             "Revient à la première si la fin est atteinte.");
             break;
         case MENU_ENUM_LABEL_LOG_VERBOSITY:
             snprintf(s, len,
@@ -1387,10 +1387,10 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Dossier système. \n"
                              " \n"
-                             "Sets the 'system' directory.\n"
-                             "Cores can query for this\n"
-                             "directory to load BIOSes, \n"
-                             "system-specific configs, etc.");
+                             "Définit le dossier 'système'.\n"
+                             "Les cœurs peuvent rechercher dans\n"
+                             "ce dossier les BIOS, configurations \n"
+                             "spécifiques au système, etc.");
             break;
         case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
         case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
@@ -1398,17 +1398,17 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Enregistre automatiquement une sauvegarde instantanée \n"
                              "à la fin de l'éxécution' de RetroArch.\n"
                              " \n"
-                             "RetroArch will automatically load any savestate\n"
-                             "with this path on startup if 'Auto Load State\n"
-                             "is enabled.");
+                             "RetroArch chargera automatiquement les sauvegardes instantanées\n"
+                             "au démarrage à partir de cet emplacement si 'Chargement auto\n"
+                             "des sauvegardes instantanées' est activé.");
             break;
         case MENU_ENUM_LABEL_VIDEO_THREADED:
             snprintf(s, len,
                      "Utilise le pilote vidéo sur plusieurs fils d'exécution.\n"
                              " \n"
-                             "Using this might improve performance at the \n"
-                             "possible cost of latency and more video \n"
-                             "stuttering.");
+                             "Cette option peut améliorer la performance au détriment \n"
+                             "d'une latence et de saccades visuelles possiblement \n"
+                             "accrues.");
             break;
         case MENU_ENUM_LABEL_VIDEO_VSYNC:
             snprintf(s, len,
@@ -1419,33 +1419,33 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Tente de synchroniser matériellement \n"
                              "le processeur et le processeur graphique.\n"
                              " \n"
-                             "Can reduce latency at the cost of \n"
-                             "performance.");
+                             "Peut réduire la latence au détriment \n"
+                             "de la performance.");
             break;
         case MENU_ENUM_LABEL_REWIND_GRANULARITY:
             snprintf(s, len,
                      "Précision du rembobinage.\n"
                              " \n"
-                             " When rewinding defined number of \n"
-                             "frames, you can rewind several frames \n"
-                             "at a time, increasing the rewinding \n"
-                             "speed.");
+                             "Lors du rembobinage d’un nombre défini  \n"
+                             "d’images, vous pouvez rembobiner plusieurs \n"
+                             "images à la fois, ce qui augmente sa \n"
+                             "vitesse.");
             break;
         case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE:
             snprintf(s, len,
                      "Mémoire tampon de rembobinage (Mo).\n"
                              " \n"
-                             " The amount of memory in Mo to reserve \n"
-                             "for rewinding.  Increasing this value \n"
-                             "increases the rewind history length.\n");
+                             "Quantité de mémoire en Mo à réserver pour \n"
+                             "le rembobinage. L'augmentation de cette valeur \n"
+                             "augmente la longueur de l'historique de rembobinage.\n");
             break;
         case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
             snprintf(s, len,
                      "Précision d'ajustement du tampon de rembobinage (Mo).\n"
                              " \n"
-                             " Each time you increase or decrease \n"
-                             "the rewind buffer size value via this \n"
-                             "UI it will change by this amount.\n");
+                             "Chaque fois que vous augmentez ou diminuez la valeur \n"
+                             "de la taille de la mémoire tampon de rembobinage \n"
+                             "via cette interface, cette valeur changera de ce montant.\n");
             break;
         case MENU_ENUM_LABEL_SCREENSHOT:
             snprintf(s, len,
@@ -1456,10 +1456,10 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Définit le délai en millisecondes après V-Sync\n"
                              "avant l'exécution du cœur.\n"
                              "\n"
-                             "Can reduce latency at the cost of\n"
-                             "higher risk of stuttering.\n"
+                             "Peut réduire la latence au prix\n"
+                             "d'un risque accru de saccades.\n"
                              " \n"
-                             "Maximum is 15.");
+                             "La valeur maximum est 15.");
             break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             snprintf(s, len,
@@ -1467,10 +1467,10 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "du processeur graphique avec l'option 'Synchronisation \n"
                              "matérielle du processeur graphique'.\n"
                              " \n"
-                             "Maximum is 3.\n"
+                             "La valeur maximum est 3.\n"
                              " \n"
-                             " 0: Syncs to GPU immediately.\n"
-                             " 1: Syncs to previous frame.\n"
+                             " 0: Se synchronise immédiatement sur le processeur graphique.\n"
+                             " 1: Se synchronise avec l'image précédente.\n"
                              " 2: Etc ...");
             break;
         case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
@@ -1478,22 +1478,22 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Insère une image noire \n"
                              "entre chaque image.\n"
                              " \n"
-                             "Useful for 120 Hz monitors who want to \n"
-                             "play 60 Hz material with eliminated \n"
-                             "ghosting.\n"
+                             "Utile pour les utilisateurs de moniteurs \n"
+                             "à 120 Hz qui souhaitent jouer à des jeux \n"
+                             "en 60 Hz sans rémanence.\n"
                              " \n"
-                             "Video refresh rate should still be \n"
-                             "configured as if it is a 60 Hz monitor \n"
-                             "(divide refresh rate by 2).");
+                             "La fréquence de rafraîchissement vidéo doit toujours \n"
+                             "être configurée comme s'il s'agissait d'un moniteur \n"
+                             "60 Hz (divisez le taux de rafraîchissement par 2).");
             break;
         case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
             snprintf(s, len,
                      "Afficher l'écran de configuration initiale.\n"
-                             "Is automatically set to false when seen\n"
-                             "for the first time.\n"
+                             "Cette option est automatiquement désactivée\n"
+                             "lorsqu'il est vu pour la première fois.\n"
                              " \n"
-                             "This is only updated in config if\n"
-                             "'Save Configuration on Exit' is enabled.\n");
+                             "Ceci n’est mis à jour dans la configuration que si\n"
+                             "'Sauvegarder la configuration en quittant' est activé.\n");
             break;
         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
             snprintf(s, len, "Active/désactive le mode plein écran.");
@@ -1519,36 +1519,36 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Dossier des captures d'écran. \n"
                              " \n"
-                             "Directory to dump screenshots to."
+                             "Dossier de sauvegarde des captures d'écran."
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
             snprintf(s, len,
                      "Intervalle d'échange V-Sync.\n"
                              " \n"
-                             "Uses a custom swap interval for VSync. Set this \n"
-                             "to effectively halve monitor refresh rate.");
+                             "Utilise un intervalle d'échange personnalisé pour V-Sync. Utilisez cette option \n"
+                             "pour réduire de moitié la fréquence de rafraîchissement du moniteur.");
             break;
         case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
             snprintf(s, len,
                      "Dossier des sauvegardes. \n"
                              " \n"
-                             "Save all save files (*.srm) to this \n"
-                             "directory. This includes related files like \n"
+                             "Enregistre toutes les sauvegardes (*.srm) dans \n"
+                             "ce dossier. Cela inclut les fichiers liés comme \n"
                              ".bsv, .rt, .psrm, etc...\n"
                              " \n"
-                             "This will be overridden by explicit command line\n"
-                             "options.");
+                             "Cette option sera remplacée par des options\n"
+                             "en ligne de commande explicites.");
             break;
         case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
             snprintf(s, len,
                      "Dossier des sauvegardes instantanées. \n"
                              " \n"
-                             "Save all save states (*.state) to this \n"
-                             "directory.\n"
+                             "Enregistre toutes les sauvegardes instantanées \n"
+                             " (*.state) dans ce dossier.\n"
                              " \n"
-                             "This will be overridden by explicit command line\n"
-                             "options.");
+                             "Cette option sera remplacée par des options\n"
+                             "en ligne de commande explicites.");
             break;
         case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
             snprintf(s, len,
@@ -1657,33 +1657,33 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Démarrer le jeu en réseau en mode spectateur ou non. \n"
                              " \n"
-                             "If set to true, netplay will be in spectator mode \n"
-                             "on start. It's always possible to change mode \n"
-                             "later.");
+                             "Si cette option est activée, le jeu en réseau \n"
+                             "sera en mode spectateur au démarrage. Il est \n"
+                             "toujours possible de changer de mode plus tard.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
             snprintf(s, len,
                      "Autoriser les connexions en mode passif ou non. \n"
                              " \n"
-                             "Slave-mode clients require very little processing \n"
-                             "power on either side, but will suffer \n"
-                             "significantly from network latency.");
+                             "Les clients en mode passif nécessite très peu de puissance \n"
+                             "de traitement de chaque côté, mais souffrira considérablement \n"
+                             "de la latence du réseau.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
             snprintf(s, len,
                      "Autoriser les connexions en mode actif ou non. \n"
                              " \n"
-                             "Not recommended except for very fast networks \n"
-                             "with very weak machines. \n");
+                             "Non recommandé sauf pour les réseaux très rapides \n"
+                             "avec des machines très faibles. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Faire tourner le jeu en réseau dans un mode\n"
                              "ne nécessitant pas de sauvegardes instantanées. \n"
                              " \n"
-                             "If set to true, a very fast network is required,\n"
-                             "but no rewinding is performed, so there will be\n"
-                             "no netplay jitter.\n");
+                             "Si cette option est activée, un réseau très rapide est requis,\n"
+                             "mais aucun rembobinage n'est effectué. Il n'y aura donc\n"
+                             "pas de variations de la latence sur le jeu en réseau.\n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
@@ -1691,27 +1691,27 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "en réseau vérifiera que l'hôte et le client \n"
                              "sont synchronisés. \n"
                              " \n"
-                             "With most cores, this value will have no \n"
-                             "visible effect and can be ignored. With \n"
-                             "nondeterminstic cores, this value determines \n"
-                             "how often the netplay peers will be brought \n"
-                             "into sync. With buggy cores, setting this \n"
-                             "to any non-zero value will cause severe \n"
-                             "performance issues. Set to zero to perform \n"
-                             "no checks. This value is only used on the \n"
-                             "netplay host. \n");
+                             "Avec la plupart des cœurs, cette valeur n'aura \n"
+                             "aucun effet visible et peut être ignorée. Avec \n"
+                             "les cœurs non déterministes, cette valeur détermine \n"
+                             "la fréquence de synchronisation des pairs de jeu \n"
+                             "en réseau. Avec les cœurs buggés, définir cette valeur \n"
+                             "sur une valeur autre que zéro entraînera de graves \n"
+                             "problèmes de performances. Réglez à zéro pour \n"
+                             "ne pas effectuer de contrôles. Cette valeur n'est \n"
+                             "utilisée que par l'hôte de jeu en réseau. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,
                      "Nombre d'images de latence des entrées que le jeu \n"
                      "en réseau doit utiliser pour masquer la latence du réseau. \n"
                      " \n"
-                     "When in netplay, this option delays local \n"
-                     "input, so that the frame being run is \n"
-                     "closer to the frames being received from \n"
-                     "the network. This reduces jitter and makes \n"
-                     "netplay less CPU-intensive, but at the \n"
-                     "price of noticeable input lag. \n");
+                     "Lors du jeu en réseau, cette option retarde les entrées \n"
+                     "locales, de sorte que l'image en cours d'exécution \n"
+                     "soit plus proche des images reçues par le réseau. \n"
+                     "Cela réduit les variations de la latence et rend \n"
+                     "le jeu en réseau moins gourmand en ressources processeur, \n"
+                     "mais au prix d'un retard des entrées notable. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
             snprintf(s, len,
@@ -1719,12 +1719,12 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "être utilisée pour masquer la latence \n"
                      "du réseau. \n"
                      "\n"
-                     "If set, netplay will adjust the number of \n"
-                     "frames of input latency dynamically to \n"
-                     "balance CPU time, input latency and \n"
-                     "network latency. This reduces jitter and \n"
-                     "makes netplay less CPU-intensive, but at \n"
-                     "the price of unpredictable input lag. \n");
+                     "Si cette option est activée, le jeu en réseau ajustera \n"
+                     "le nombre d'images de latence d'entrée de manière dynamique \n"
+                     "pour équilibrer le temps processeur, la latence d'entrée \n"
+                     "et la latence du réseau. Cela réduit les variations de la latence \n"
+                     "et rend le jeu en réseau moins gourmand en ressources processeur, \n"
+                     "mais au prix d'un retard des entrées imprévisible. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
             snprintf(s, len,
@@ -1741,26 +1741,26 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
             snprintf(s, len,
                      "Choisissez un serveur de relais spécifique à utiliser \n"
-                             "pour le jeu en réseau. A server that is \n"
-                             "located closer to you may have less latency. \n");
+                             "pour le jeu en réseau. Un serveur qui est situé \n"
+                             "plus près de vous peut avoir moins de latence. \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
-                     "Nombre d'images max en mémoire tampon. This \n"
-                             "can tell the video driver to use a specific \n"
-                             "video buffering mode. \n"
+                     "Nombre d'images max en mémoire tampon. Cette option \n"
+                             "peut indiquer au pilote vidéo d'utiliser un mode de \n"
+                             "mise en mémoire tampon vidéo spécifique. \n"
                              " \n"
-                             "Single buffering - 1\n"
-                             "Double buffering - 2\n"
-                             "Triple buffering - 3\n"
+                             "Mise en mémoire tampon unique - 1\n"
+                             "Double mise en mémoire tampon - 2\n"
+                             "Triple mise en mémoire tampon - 3\n"
                              " \n"
-                             "Setting the right buffering mode can have \n"
-                             "a big impact on latency.");
+                             "La définition du bon mode de mise en mémoire tampon \n"
+                             "peut avoir un impact important sur la latence.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             snprintf(s, len,
                      "Lisse l'image avec le filtrage bilinéaire. \n"
-                             "Should be disabled if using shaders.");
+                             "Devrait être désactivé si vous utilisez des shaders.");
             break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,
@@ -1823,8 +1823,8 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Dossier des surimpressions. \n"
                              " \n"
-                             "Defines a directory where overlays are \n"
-                             "kept for easy access.");
+                             "Définit un dossier dans lequel les surimpressions \n"
+                             "seront conservées pour un accès facile.");
             break;
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
@@ -1845,7 +1845,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
             snprintf(s, len,
                      "Nom d'utilisateur de la personne utilisant RetroArch. \n"
-                             "This will be used for playing online games.");
+                             "Il sera utilisé pour jouer à des jeux en ligne.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
@@ -1888,23 +1888,23 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Combinaison de touches de la manette pour afficher/masquer le menu. \n"
                              " \n"
-                             "0 - None \n"
-                             "1 - Press L + R + Y + D-Pad Down \n"
-                             "simultaneously. \n"
-                             "2 - Press L3 + R3 simultaneously. \n"
-                             "3 - Press Start + Select simultaneously.");
+                             "0 - Aucune \n"
+                             "1 - Appuyer sur L + R + Y + Croix bas \n"
+                             "en même temps. \n"
+                             "2 - Appuyer sur L3 + R3 simultanément. \n"
+                             "3 - Appuyer sur Start + Select simultanément.");
             break;
         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
             snprintf(s, len, "Autorise n'importe quel utilisateur à contrôler le menu. \n"
                     " \n"
-                    "When disabled, only user 1 can control the menu.");
+                    "Si désactivé, seul l'utilisateur 1 peut contrôler le menu.");
             break;
         case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
             snprintf(s, len,
                      "Active la détection automatique des touches.\n"
                              " \n"
-                             "Will attempt to auto-configure \n"
-                             "joypads, Plug-and-Play style.");
+                             "Cette option va tenter de configurer automatiquement \n"
+                             "les manettes, style Plug-and-Play.");
             break;
         case MENU_ENUM_LABEL_CAMERA_ALLOW:
             snprintf(s, len,
@@ -1920,13 +1920,13 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Active le mode turbo.\n"
                              " \n"
-                             "Holding the turbo while pressing another \n"
-                             "button will let the button enter a turbo \n"
-                             "mode where the button state is modulated \n"
-                             "with a periodic signal. \n"
+                             "Maintenir le turbo tout en appuyant sur une \n"
+                             "autre touche permet à la touche d'entrer dans \n"
+                             "un mode turbo où l'état du bouton est modulé \n"
+                             "avec un signal périodique. \n"
                              " \n"
-                             "The modulation stops when the button \n"
-                             "itself (not turbo button) is released.");
+                             "La modulation s'arrête lorsque la touche \n"
+                             "elle-même (pas la touche turbo) est relâchée.");
             break;
         case MENU_ENUM_LABEL_OSK_ENABLE:
             snprintf(s, len,
@@ -1940,17 +1940,17 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Maintenir la touche pour rembobiner.\n"
                              " \n"
-                             "Rewind must be enabled.");
+                             "Le rembobinage doit être activé.");
             break;
         case MENU_ENUM_LABEL_EXIT_EMULATOR:
             snprintf(s, len,
                      "Touche pour quitter RetroArch proprement."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-                            "\nKilling it in any hard way (SIGKILL, \n"
-                            "etc) will terminate without saving\n"
-                            "RAM, etc. On Unix-likes,\n"
-                            "SIGINT/SIGTERM allows\n"
-                            "a clean deinitialization."
+                            "\nLe fermer de manière dure \n"
+                            "(SIGKILL, etc.) quittera RetroArch\n"
+                            "sanssauvegarder la RAM, etc. Sur\n"
+                            "les Unix-likes, SIGINT/SIGTERM permet\n"
+                            "une désinitialisation propre."
 #endif
             );
             break;
@@ -2119,11 +2119,11 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Axe pour le stick analogique (DualShock-esque).\n"
                              " \n"
-                             "Bound as usual, however, if a real analog \n"
-                             "axis is bound, it can be read as a true analog.\n"
+                             "Assigné normalement, cependant, si un axe analogique réel \n"
+                             "est lié il peut être lu comme un véritable axe analogique.\n"
                              " \n"
-                             "Positive X axis is right. \n"
-                             "Positive Y axis is down.");
+                             "L'axe X positif est vers la droite. \n"
+                             "L'axe Y positif est vers le bas.");
             break;
         case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
             snprintf(s, len,
