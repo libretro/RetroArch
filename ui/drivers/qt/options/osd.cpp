@@ -33,6 +33,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_FPS_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_FRAMECOUNT_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
