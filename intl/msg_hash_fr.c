@@ -193,7 +193,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Killing it in any hard way (SIGKILL, etc.) will \n"
                    "terminate RetroArch without saving RAM, etc."
 #ifdef __unix__
-                   "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
+                   "\Non Unix-likes, SIGINT/SIGTERM allows a clean \n"
                    "deinitialization."
 #endif
                    "");
@@ -530,7 +530,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
             snprintf(s, len,
-                     "fréquence de rafraîchissement de votre écran. \n"
+                     "Fréquence de rafraîchissement de votre écran. \n"
                              "Utilisée pour calculer un débit audio approprié.");
             break;
         case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
@@ -1042,8 +1042,8 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Filtre matériel pour ce passage. \n"
                              " \n"
-                             "If 'Don't Care' is set, 'Default \n"
-                             "Filter' will be used."
+                             "Si 'Peu importe' est sélectionné, \n"
+                             "'Filtrage par défaut' sera utilisé."
             );
             break;
         case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
@@ -1051,18 +1051,18 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Sauvegarde automatiquement la mémoire SRAM \n"
                              "non volatile à intervalles réguliers.\n"
                              " \n"
-                             "This is disabled by default unless set \n"
-                             "otherwise. The interval is measured in \n"
-                             "seconds. \n"
+                             "Ceci est désactivé par défaut. \n"
+                             "L'intervalle est mesuré en secondes \n"
                              " \n"
-                             "A value of 0 disables autosave.");
+                             "Une valeur de 0 désactive \n"
+                             "la sauvegarde automatique.");
             break;
         case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_TYPE:
             snprintf(s, len,
                      "Type de périphérique d'entrée. \n"
                              " \n"
-                             "Picks which device type to use. This is \n"
-                             "relevant for the libretro core itself."
+                             "Choisit le type d'appareil à utiliser. Cette option \n"
+                             "est utilisée pour le cœur libretro lui-même."
             );
             break;
         case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
@@ -1070,12 +1070,12 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Définit le niveau de journalisation pour les cœurs libretro \n"
                              "(GET_LOG_INTERFACE). \n"
                              " \n"
-                             " If a log level issued by a libretro \n"
-                             " core is below libretro_log level, it \n"
-                             " is ignored.\n"
+                             " Si un niveau de journal émis par un cœur libretro \n"
+                             " est inférieur au niveau libretro_log, \n"
+                             " il sera ignoré.\n"
                              " \n"
-                             " DEBUG logs are always ignored unless \n"
-                             " verbose mode is activated (--verbose).\n"
+                             " Les journaux DEBUG seront toujours ignorés \n"
+                             " sauf si le mode verbeux est activé (--verbose).\n"
                              " \n"
                              " DEBUG = 0\n"
                              " INFO  = 1\n"
@@ -1088,36 +1088,35 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Emplacements de sauvegardes instantanées.\n"
                              " \n"
-                             " With slot set to 0, save state name is *.state \n"
-                             " (or whatever defined on commandline).\n"
-                             "When slot is != 0, path will be (path)(d), \n"
-                             "where (d) is slot number.");
+                             "Si l'emplacement est défini sur 0, le nom de la sauvegarde \n"
+                             "est *.state (ou celui défini en ligne de commande).\n"
+                             "Lorsque l'emplacement est !=0, le chemin sera \n"
+                             "(chemin)(d), où (d) est le numéro d'emplacement.");
             break;
         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
             snprintf(s, len,
                      "Applique les changements de shaders. \n"
                              " \n"
-                             "After changing shader settings, use this to \n"
-                             "apply changes. \n"
+                             "Après avoir modifié les paramètres du shader, utilisez \n"
+                             "cette option pour appliquer les modifications. \n"
                              " \n"
-                             "Changing shader settings is a somewhat \n"
-                             "expensive operation so it has to be \n"
-                             "done explicitly. \n"
+                             "La modification des paramètres de shader est une opération \n"
+                             "un peu coûteuse et doit donc être effectuée explicitement. \n"
                              " \n"
-                             "When you apply shaders, the menu shader \n"
-                             "settings are saved to a temporary file (either \n"
-                             "menu.cgp or menu.glslp) and loaded. The file \n"
-                             "persists after RetroArch exits. The file is \n"
-                             "saved to Shader Directory."
+                             "Lorsque vous appliquez des shaders, les paramètres \n"
+                             "de shader de menu sont enregistrés dans un fichier \n"
+                             "temporaire (menu.cgp ou menu.glslp) et chargés. \n"
+                             "Le fichier persiste après la sortie de RetroArch. \n"
+                             "Le fichier est enregistré dans le dossier des shaders."
             );
             break;
         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
             snprintf(s, len,
                      "Verifie les changements dans les fichiers de shaders. \n"
                      " \n"
-                     "After saving changes to a shader on disk, \n"
-                     "it will automatically be recompiled \n"
-                     "and applied to the running content."
+                     "Après avoir enregistré les modifications dans un shader \n"
+                     "sur le disque, il sera automatiquement recompilé \n"
+                     "et appliqué au contenu en cours."
             );
             break;
         case MENU_ENUM_LABEL_MENU_TOGGLE:
@@ -1128,17 +1127,17 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Capture/relâche la souris.\n"
                              " \n"
-                             "When mouse is grabbed, RetroArch hides the \n"
-                             "mouse, and keeps the mouse pointer inside \n"
-                             "the window to allow relative mouse input to \n"
-                             "work better.");
+                             "Lorsque la souris est capturée, RetroArch la masque \n"
+                             "et conserve le pointeur de la souris à l'intérieur \n"
+                             "de la fenêtre pour permettre le contrôle relatif \n"
+                             "à la souris de mieux fonctionner.");
             break;
         case MENU_ENUM_LABEL_GAME_FOCUS_TOGGLE:
             snprintf(s, len,
                      "Jeu au premier plan/en arrière-plan.\n"
                              " \n"
-                             "When a game has focus, RetroArch will both disable \n"
-                             "hotkeys and keep/warp the mouse pointer inside the window.");
+                             "Quand un jeu est en premier plan, RetroArch désactive les raccourcis clavier \n"
+                             "et garde/remet le pointeur de la souris dans la fenêtre.");
             break;
         case MENU_ENUM_LABEL_DISK_NEXT:
             snprintf(s, len,
@@ -1162,7 +1161,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Remplace le périphérique audio utilisé par défaut \n"
                              "par le pilote audio.\n"
-                             "Cette option dépend du pilote. Par exemple\n"
+                             "Cette option dépend du pilote. \n"
 #ifdef HAVE_ALSA
             " \n"
             "ALSA requiert un périphérique PCM."
@@ -1193,22 +1192,22 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Active d'autres touches de raccourcis.\n"
                              " \n"
-                             " If this hotkey is bound to either keyboard, \n"
-                             "joybutton or joyaxis, all other hotkeys will \n"
-                             "be disabled unless this hotkey is also held \n"
-                             "at the same time. \n"
+                             "Si cette touche de raccourci est liée à un clavier, \n"
+                             "à une touche ou à un axe de manette, toutes les autres \n"
+                             "touches de raccourci sont désactivées, à moins que \n"
+                             "ce raccourci ne soit également maintenu enfoncé. \n"
                              " \n"
-                             "This is useful for RETRO_KEYBOARD centric \n"
-                             "implementations which query a large area of \n"
-                             "the keyboard, where it is not desirable that \n"
-                             "hotkeys get in the way.");
+                             "Cette option est utile pour les implémentations \n"
+                             "centrées RETRO_KEYBOARD qui utilisent une grande \n"
+                             "zone du clavier, où il n’est pas souhaitable que \n"
+                             "les raccourcis clavier puissent gêner.");
             break;
         case MENU_ENUM_LABEL_REWIND_ENABLE:
             snprintf(s, len,
                      "Active le rembobinage.\n"
                              " \n"
-                             "This will take a performance hit, \n"
-                             "so it is disabled by default.");
+                             "Cette option aura un coût en performances, \n"
+                             "elle est donc désactivée par défaut.");
             break;
         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
             snprintf(s, len,
@@ -1222,28 +1221,28 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Dossier des cœurs. \n"
                              " \n"
-                             "A directory for where to search for \n"
-                             "libretro core implementations.");
+                             "Dossier de recherche des implémentations \n"
+                             "de cœurs libretro.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
             snprintf(s, len,
                      "Fréquence de rafraîchissement automatique.\n"
                              " \n"
-                             "The accurate refresh rate of our monitor (Hz).\n"
-                             "This is used to calculate audio input rate with \n"
-                             "the formula: \n"
+                             "Fréquence de rafraîchissement précise du moniteur (Hz).\n"
+                             "Ceci est utilisé pour calculer la fréquence audio avec \n"
+                             "la formule : \n"
                              " \n"
-                             "audio_input_rate = game input rate * display \n"
-                             "refresh rate / game refresh rate\n"
+                             "Fréquence audio = fréquence du jeu * fréquence de rafraîchissement \n"
+                             "de l'écran / fréquence de rafraîchissement du jeu\n"
                              " \n"
-                             "If the implementation does not report any \n"
-                             "values, NTSC defaults will be assumed for \n"
-                             "compatibility.\n"
+                             "Si l'implémentation ne rapporte aucune valeur, \n"
+                             "les valeurs par défaut de NTSC seront utilisées \n"
+                             "pour la compatibilité.\n"
                              " \n"
-                             "This value should stay close to 60Hz to avoid \n"
-                             "large pitch changes. If your monitor does \n"
-                             "not run at 60Hz, or something close to it, \n"
-                             "disable VSync, and leave this at its default.");
+                             "Cette valeur devrait rester proche de 60Hz pour éviter \n"
+                             "des changements de pitch importants. Si votre moniteur \n"
+                             "ne fonctionne pas à 60Hz, ou une valeur approchante, \n"
+                             "désactivez V-Sync et laissez ce paramètre par défaut.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
             snprintf(s, len,

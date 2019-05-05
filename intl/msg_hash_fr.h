@@ -6439,7 +6439,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-         "Afficher Mise à jour en ligne"
+         "Afficher 'Mise à jour en ligne'"
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
