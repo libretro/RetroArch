@@ -22,6 +22,7 @@
 
 #include <lists/string_list.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 RETRO_BEGIN_DECLS
 
@@ -70,7 +71,7 @@ typedef struct
 {
    core_info_t *list;
    size_t count;
-   char *all_ext;
+   char all_ext[PATH_MAX_LENGTH];
 } core_info_list_t;
 
 typedef struct core_info_ctx_firmware
