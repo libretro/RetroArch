@@ -630,8 +630,15 @@ static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 }
 
+static uint32_t dispmanx_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   return flags;
+}
+
 static const video_poke_interface_t dispmanx_poke_interface = {
-   NULL, /* get_flags */
+   dispmanx_get_flags,
    NULL,
    NULL,
    NULL, /* set_video_mode */
