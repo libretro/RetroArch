@@ -127,6 +127,7 @@ enum
    MUI_TEXTURE_LOAD_CONTENT,
    MUI_TEXTURE_DISK,
    MUI_TEXTURE_EJECT,
+   MUI_TEXTURE_CHECKMARK,
    MUI_TEXTURE_LAST
 };
 
@@ -265,6 +266,8 @@ static const char *materialui_texture_path(unsigned id)
          return "disk.png";
       case MUI_TEXTURE_EJECT:
          return "eject.png";
+      case MUI_TEXTURE_CHECKMARK:
+         return "menu_check.png";
       case MUI_TEXTURE_UNDO_LOAD_STATE:
          return "undo_load_state.png";
       case MUI_TEXTURE_UNDO_SAVE_STATE:
@@ -739,6 +742,7 @@ static void materialui_render_label_value(
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
    char value_str[255];
+   unsigned entry_type             = 0;
    char *sublabel_str              = NULL;
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
@@ -760,6 +764,7 @@ static void materialui_render_label_value(
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
+   entry_type = menu_entry_get_type_new(&entry);
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len    = (int)((usable_width/2) / mui->glyph_width);
@@ -804,6 +809,15 @@ static void materialui_render_label_value(
       else
          do_draw_text = true;
    }
+   else if
+      (
+       (entry.checked) && 
+       ((entry_type >= MENU_SETTING_DROPDOWN_ITEM) && (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
+      )
+      {
+         texture_switch = mui->textures.list[MUI_TEXTURE_CHECKMARK];
+         node->texture_switch2_set   = false;
+      }
    /* set do_draw_text */
    else
    {
