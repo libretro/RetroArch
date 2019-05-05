@@ -5666,13 +5666,18 @@ static int xmb_list_push(void *data, void *userdata,
             }
 
 #if !defined(IOS)
+            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+               menu_displaylist_setting(&entry);
+            }
+
             if (settings->bools.menu_show_quit_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
                menu_displaylist_setting(&entry);
             }
 #endif
-
             if (settings->bools.menu_show_reboot)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;

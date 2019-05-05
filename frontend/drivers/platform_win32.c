@@ -20,6 +20,8 @@
 
 #include <retro_miscellaneous.h>
 #include <windows.h>
+#include <process.h>
+#include <errno.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -43,7 +45,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
-
+#include "../../paths.h"
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
@@ -635,14 +637,61 @@ enum retro_language frontend_win32_get_user_language(void)
    return lang;
 }
 
+enum frontend_fork win32_fork_mode;
+
+void frontend_win32_respawn(char *s, size_t len)
+{
+   if (win32_fork_mode != FRONTEND_FORK_RESTART)
+      return;
+   STARTUPINFO si;
+   PROCESS_INFORMATION pi;
+
+   ZeroMemory( &si, sizeof(si) );
+   si.cb = sizeof(si);
+   ZeroMemory( &pi, sizeof(pi) );
+
+   char executable_path[PATH_MAX_LENGTH] = {0};
+   fill_pathname_application_path(executable_path,
+         sizeof(executable_path));
+   path_set(RARCH_PATH_CORE, executable_path);
+   RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
+      executable_path, get_retroarch_launch_arguments());
+
+   if(!CreateProcess( executable_path, get_retroarch_launch_arguments(),
+      NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+   {
+      RARCH_LOG("Failed to restart RetroArch\n");
+   }
+   return;
+}
+
+bool frontend_win32_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         break;
+      case FRONTEND_FORK_RESTART:
+         command_event(CMD_EVENT_QUIT, NULL);
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
+   }
+   win32_fork_mode = fork_mode;
+   return true;
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
-   NULL,                           /* exitspawn */
+   frontend_win32_respawn,         /* exitspawn */
    NULL,                           /* process_args */
    NULL,                           /* exec */
-   NULL,                           /* set_fork */
+   frontend_win32_set_fork,         /* set_fork */
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_win32_get_os,

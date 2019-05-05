@@ -6879,6 +6879,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_HELP_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
+
+            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+               if (menu_displaylist_parse_settings_enum(info->list,
+                     MENU_ENUM_LABEL_RESTART_RETROARCH,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+
             if (settings->bools.menu_show_quit_retroarch)
                if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_QUIT_RETROARCH,
