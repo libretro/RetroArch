@@ -4999,7 +4999,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+    "Viewport size calculation failed! Will continue using raw data. This will probably not work right..."
     )
 MSG_HASH(
     MSG_VIRTUAL_DISK_TRAY,

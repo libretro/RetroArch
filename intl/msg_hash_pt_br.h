@@ -1541,6 +1541,10 @@ MSG_HASH(
     "Grego"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+    "Turco"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
     "Analógico Esquerdo"
     )
