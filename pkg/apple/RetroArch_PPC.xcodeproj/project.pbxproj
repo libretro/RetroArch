@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A868DD51AC85A8500B0EDDB /* MainMenu_PPC.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7A868DD11AC85A8500B0EDDB /* MainMenu_PPC.xib */; };
+		7A868DD51AC85A8500B0EDDB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7A868DD11AC85A8500B0EDDB /* MainMenu.xib */; };
 		7A868DD61AC85A8500B0EDDB /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7A868DD31AC85A8500B0EDDB /* Settings.xib */; };
 		7ACC4C501AC864B800D67175 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 7ACC4C4F1AC864B800D67175 /* griffin_objc.m */; };
 		7AEFCD871921295E00FB5B6A /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD861921295E00FB5B6A /* griffin.c */; };
@@ -23,7 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		7A868DD21AC85A8500B0EDDB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu_PPC.xib; sourceTree = SOURCE_ROOT; };
+		7A868DD21AC85A8500B0EDDB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/PPC/MainMenu.xib; sourceTree = SOURCE_ROOT; };
 		7A868DD41AC85A8500B0EDDB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/Settings.xib; sourceTree = SOURCE_ROOT; };
 		7ACC4C4F1AC864B800D67175 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
 		7AEFCD861921295E00FB5B6A /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -119,7 +119,7 @@
 		967894E7178A2E9B00D6CA69 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				7A868DD11AC85A8500B0EDDB /* MainMenu_PPC.xib */,
+				7A868DD11AC85A8500B0EDDB /* MainMenu.xib */,
 				7A868DD31AC85A8500B0EDDB /* Settings.xib */,
 				967894E8178A2EB400D6CA69 /* OSX/modules_ppc */,
 				C15874EE178F2094001171D4 /* re3troarch.icns */,
@@ -179,7 +179,7 @@
 				967894931788ECDB00D6CA69 /* OSX/en.lproj/InfoPlist.strings in Resources */,
 				967894E9178A2EB400D6CA69 /* OSX/modules_ppc in Resources */,
 				C15874EF178F2094001171D4 /* re3troarch.icns in Resources */,
-				7A868DD51AC85A8500B0EDDB /* MainMenu_PPC.xib in Resources */,
+				7A868DD51AC85A8500B0EDDB /* MainMenu.xib in Resources */,
 				7A868DD61AC85A8500B0EDDB /* Settings.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -199,12 +199,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		7A868DD11AC85A8500B0EDDB /* MainMenu_PPC.xib */ = {
+		7A868DD11AC85A8500B0EDDB /* MainMenu.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				7A868DD21AC85A8500B0EDDB /* en */,
 			);
-			name = MainMenu_PPC.xib;
+			name = MainMenu.xib;
 			sourceTree = "<group>";
 		};
 		7A868DD31AC85A8500B0EDDB /* Settings.xib */ = {
