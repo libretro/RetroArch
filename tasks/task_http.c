@@ -126,7 +126,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
-      task_set_progress(task, (tot == 0) ? -1 : (signed)(pos * 100 / tot));
+      task_set_progress(task, (tot == 0) ? -1 : (signed)pos / (tot / 100));
       return -1;
    }
 
