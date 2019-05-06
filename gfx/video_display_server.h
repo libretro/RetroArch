@@ -85,6 +85,8 @@ void video_display_server_set_screen_orientation(enum rotation rotation);
 
 bool video_display_server_can_set_screen_orientation(void);
 
+bool video_display_server_has_resolution_list(void);
+
 enum rotation video_display_server_get_screen_orientation(void);
 
 extern const video_display_server_t dispserv_win32;

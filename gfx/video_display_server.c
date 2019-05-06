@@ -108,9 +108,15 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
    return false;
 }
 
+bool video_display_server_has_resolution_list(void)
+{
+   return (current_display_server 
+         && current_display_server->get_resolution_list);
+}
+
 void *video_display_server_get_resolution_list(unsigned *size)
 {
-   if (current_display_server && current_display_server->get_resolution_list)
+   if (video_display_server_has_resolution_list())
       return current_display_server->get_resolution_list(current_display_server_data, size);
    return NULL;
 }

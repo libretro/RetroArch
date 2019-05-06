@@ -5664,7 +5664,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          if (true)
 #else
-         if (!string_is_equal(video_display_server_get_ident(), "null"))
+         if (video_display_server_has_resolution_list())
 #endif
          {
             menu_displaylist_parse_settings_enum(info->list,
