@@ -23,6 +23,10 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
+#ifndef NSEventMaskAny
+#define NSEventMaskAny NSAnyEventMask
+#endif
+
 static void* ui_application_cocoa_initialize(void)
 {
    return NULL;

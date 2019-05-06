@@ -105,6 +105,67 @@ static void app_terminate(void)
 @implementation RApplication
 #endif
 
+#ifndef NSEventModifierFlagCapsLock
+#define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
+#endif
+
+#ifndef NSEventModifierFlagShift
+#define NSEventModifierFlagShift NSShiftKeyMask
+#endif
+
+#ifndef NSEventModifierFlagControl
+#define NSEventModifierFlagControl NSControlKeyMask
+#endif
+
+#ifndef NSEventModifierFlagOption
+#define NSEventModifierFlagOption NSAlternateKeyMask
+#endif
+
+#ifndef NSEventModifierFlagCommand
+#define NSEventModifierFlagCommand NSCommandKeyMask
+#endif
+
+#ifndef NSEventModifierFlagNumericPad
+#define NSEventModifierFlagNumericPad NSNumericPadKeyMask
+#endif
+
+#ifndef NSEventTypeKeyDown
+#define NSEventTypeKeyDown NSKeyDown
+#endif
+
+#ifndef NSEventTypeKeyUp
+#define NSEventTypeKeyUp NSKeyUp
+#endif
+
+#ifndef NSEventTypeLeftMouseDragged
+#define NSEventTypeLeftMouseDragged NSLeftMouseDragged
+#endif
+
+#ifndef NSEventTypeRightMouseDragged
+#define NSEventTypeRightMouseDragged NSRightMouseDragged
+#endif
+
+#ifndef NSEventTypeOtherMouseDragged
+#define NSEventTypeOtherMouseDragged NSOtherMouseDragged
+#endif
+
+#ifndef NSEventTypeMouseMoved
+#define NSEventTypeMouseMoved  NSMouseMoved
+#endif
+
+#ifndef NSEventTypeLeftMouseUp
+#define NSEventTypeLeftMouseUp NSLeftMouseUp
+#endif
+
+#ifndef NSEventTypeRightMouseUp
+#define NSEventTypeRightMouseUp NSRightMouseUp
+#endif
+
+#ifndef NSEventTypeOtherMouseUp
+#define NSEventTypeOtherMouseUp NSOtherMouseUp
+#endif
+
+
 - (void)sendEvent:(NSEvent *)event {
    [super sendEvent:event];
 
@@ -113,17 +174,12 @@ static void app_terminate(void)
 
    switch ((int32_t)event_type)
    {
-#if defined(HAVE_COCOA_METAL)
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
-#elif defined(HAVE_COCOA)
-      case NSKeyDown:
-      case NSKeyUp:
-#endif
          {
-            NSString* ch = event.characters;
+            NSString* ch       = event.characters;
             uint32_t character = 0;
-            uint32_t mod = 0;
+            uint32_t mod       = 0;
 
             if (ch && ch.length != 0)
             {
@@ -168,23 +224,19 @@ static void app_terminate(void)
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
          }
          break;
-#if defined(HAVE_COCOA_METAL)
         case NSEventTypeMouseMoved:
         case NSEventTypeLeftMouseDragged:
         case NSEventTypeRightMouseDragged:
-        case NSEventTypeOtherMouseDragged:
-#elif defined(HAVE_COCOA)
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
-#endif
+	    case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
+			 
+			pos.x              = 0;
+			pos.y              = 0;
 
             /* Relative */
             apple->mouse_rel_x = (int16_t)event.deltaX;
@@ -213,29 +265,6 @@ static void app_terminate(void)
         case NSScrollWheel:
 #endif
          /* TODO/FIXME - properly implement. */
-         break;
-#if defined(HAVE_COCOA_METAL)
-        case NSEventTypeLeftMouseDown:
-        case NSEventTypeRightMouseDown:
-        case NSEventTypeOtherMouseDown:
-#elif defined(HAVE_COCOA)
-        case NSLeftMouseDown:
-        case NSRightMouseDown:
-        case NSOtherMouseDown:
-#endif
-         {
-#if defined(HAVE_COCOA_METAL)
-            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-            apple = (cocoa_input_data_t*)input_driver_get_data();
-            if (!apple || pos.y < 0)
-               return;
-            apple->mouse_buttons |= 1 << event.buttonNumber;
-
-            apple->touch_count = 1;
-         }
          break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
@@ -499,11 +528,11 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && filenames[0])
+	if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-      NSString *__core                 = filenames[0];
-      const char *core_name            = system ? system->library_name : NULL;
+	  NSString *__core                 = [filenames objectAtIndex:0];
+      const char *core_name            = system->library_name;
 
       if (core_name)
       {
