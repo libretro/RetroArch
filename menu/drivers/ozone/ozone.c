@@ -1151,7 +1151,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
             || string_is_equal(core_label, "musicplayer")
             || string_is_equal(core_label, "movieplayer");
 
-      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false);
+      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false, 0);
       ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
 
       /* Fill play time if applicable */

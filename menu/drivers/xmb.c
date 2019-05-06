@@ -2811,7 +2811,7 @@ static int xmb_draw_item(
 
          label_offset      = - xmb->margins_label_top;
 
-         word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true);
+         word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true, 0);
 
          xmb_draw_text(video_info, xmb, entry_sublabel,
                node->x + xmb->margins_screen_left +

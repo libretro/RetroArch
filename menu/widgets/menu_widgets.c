@@ -431,7 +431,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
                   width += 10 * msg_queue_glyph_width;
                }
 
-               word_wrap(msg, msg, title_length/2 + 10, false);
+               word_wrap(msg, msg, title_length/2 + 10, false, 2);
 
                msg_widget->text_height *= 2.5f;
             }

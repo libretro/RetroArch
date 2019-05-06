@@ -629,7 +629,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
 
             word_wrap(sublabel_str, sublabel_str,
                   (int)((usable_width - icon_margin) / mui->glyph_width2),
-                  false);
+                  false, 0);
             lines = materialui_count_lines(sublabel_str);
          }
          free(sublabel_str);
@@ -873,7 +873,7 @@ static void materialui_render_label_value(
       {
          word_wrap(sublabel_str, sublabel_str,
                (int)((usable_width - icon_margin) / mui->glyph_width2),
-               false);
+               false, 0);
 
          menu_display_draw_text(mui->font2, sublabel_str,
                mui->margin + icon_margin,

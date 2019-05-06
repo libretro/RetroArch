@@ -2464,7 +2464,7 @@ static int stripes_draw_item(
 
       label_offset      = - stripes->margins_label_top;
 
-      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true);
+      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
 
       stripes_draw_text(video_info, stripes, entry_sublabel,
             node->x + stripes->margins_screen_left +
