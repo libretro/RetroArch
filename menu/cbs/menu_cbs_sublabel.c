@@ -543,6 +543,7 @@ default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_downscaler,     
 default_sublabel_macro(action_bind_sublabel_menu_rgui_thumbnail_delay,                     MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY)
 default_sublabel_macro(action_bind_sublabel_content_runtime_log,                           MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG)
 default_sublabel_macro(action_bind_sublabel_content_runtime_log_aggregate,                 MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE)
+default_sublabel_macro(action_bind_sublabel_scan_without_core_match,                 MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH)
 default_sublabel_macro(action_bind_sublabel_playlist_sublabel_runtime_type,                MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_aspect_ratio,                        MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO)
@@ -2474,6 +2475,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log);
+            break;
+         case MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_without_core_match);
             break;
          case MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_runtime_log_aggregate);

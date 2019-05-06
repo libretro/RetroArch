@@ -1843,3 +1843,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,
       "menu_widgets_enable")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
       "video_shader_enable")
+MSG_HASH(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
+      "scan_without_core_match")

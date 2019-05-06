@@ -1576,8 +1576,12 @@ static int menu_displaylist_parse_settings_internal_enum(
    if (!show_advanced_settings)
    {
       uint64_t flags = setting->flags;
-      if ((flags & SD_FLAG_ADVANCED) || (flags & SD_FLAG_LAKKA_ADVANCED))
+      if (flags & SD_FLAG_ADVANCED)
          goto end;
+#ifdef HAVE_LAKKA
+      if (flags & SD_FLAG_LAKKA_ADVANCED)
+         goto end;
+#endif
    }
 
    for (;;)
@@ -5475,6 +5479,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,  PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,         PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

@@ -8612,7 +8612,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-         "Lors de la recherche d'entrées associées à des fichiers compressés dans les listes de lecture, faire correspondre uniquement le nom du fichier d'archive au lieu de [nom du fichier]+[contenu]. Activez cette option pour éviter la création de doublons dans l'historique de contenu lors du chargement de fichiers compressés."
+         "Lors de la recherche de fichiers compressés dans les listes de lecture, faire correspondre le nom de l'archive uniquement et non [nom]+[contenu]. Activez cette option pour éviter les doublons dans l'historique lors du chargement d'archives."
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
@@ -8668,5 +8668,13 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-         "Video Shaders"
+         "Shaders vidéo"
+         )
+MSG_HASH(
+         MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+         "Analyser du contenu sans cœur correspondant"
+         )
+MSG_HASH(
+         MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+         "Si cette option est désactivée, le contenu n'est ajouté aux listes de lecture que s'il est pris en charge par un cœur installé. Cette option ajoutera toujours le contenu aux listes de lecture, et un cœur compatible pourra être installé plus tard."
          )

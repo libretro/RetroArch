@@ -328,6 +328,8 @@ typedef struct settings
 
       bool log_to_file;
       bool log_to_file_timestamp;
+
+      bool scan_without_core_match;
    } bools;
 
    struct

@@ -36,6 +36,7 @@
 #include "../msg_hash.h"
 #include "../playlist.h"
 #ifdef RARCH_INTERNAL
+#include "../configuration.h"
 #include "../retroarch.h"
 #endif
 #include "../verbosity.h"
@@ -61,6 +62,7 @@ typedef struct db_handle
 {
    bool is_directory;
    bool scan_started;
+   bool scan_without_core_match;
    bool show_hidden_files;
    unsigned status;
    char *playlist_directory;
@@ -940,13 +942,19 @@ static int task_database_iterate_crc_lookup(
 
       query[0] = '\0';
 
-      /* don't scan files that can't be in this database */
-      if (!(path_contains_compressed_file(name) &&
-         core_info_database_match_archive_member(
-         db_state->list->elems[db_state->list_index].data)) &&
-          !core_info_database_supports_content_path(
-         db_state->list->elems[db_state->list_index].data, name))
-         return database_info_list_iterate_next(db_state);
+      if (!_db->scan_without_core_match)
+      {
+         /* don't scan files that can't be in this database.
+          *
+          * Could be because of:
+          * A matching core missing */
+         if (!(path_contains_compressed_file(name) &&
+                  core_info_database_match_archive_member(
+                     db_state->list->elems[db_state->list_index].data)) &&
+               !core_info_database_supports_content_path(
+                  db_state->list->elems[db_state->list_index].data, name))
+            return database_info_list_iterate_next(db_state);
+      }
 
       snprintf(query, sizeof(query),
             "{crc:or(b\"%08X\",b\"%08X\")}",
@@ -1359,6 +1367,9 @@ bool task_push_dbscan(
       retro_task_callback_t cb)
 {
    retro_task_t *t      = task_init();
+#ifdef RARCH_INTERNAL
+   settings_t *settings = config_get_ptr();
+#endif
    db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
@@ -1370,6 +1381,9 @@ bool task_push_dbscan(
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
    t->alternative_look       = true;
 
+#ifdef RARCH_INTERNAL
+   db->scan_without_core_match = settings->bools.scan_without_core_match;
+#endif
    db->show_hidden_files     = db_dir_show_hidden_files;
    db->is_directory          = directory;
    db->playlist_directory    = NULL;
