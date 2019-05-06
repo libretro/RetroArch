@@ -507,18 +507,18 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
             snprintf(s, len,
-                     "Influence la façon dont la détection \n"
-                             "des touches pressées est effectuée dans RetroArch. \n"
-                             " \n"
-                             "Précoce - La détection des entrées est effectuée \n"
-                             "avant le traitement de l'image. \n"
-                             "Normale - La détection des entrées est effectuée \n"
-                             "lorsque son traîtement est demandé. \n"
-                             "Tardive - La détection des entrées est effectuée \n"
+                     "Influence la façon dont la détection\n"
+                             "des touches pressées est effectuée dans RetroArch.\n"
+                             "\n"
+                             "Précoce - La détection est effectuée\n"
+                             "avant le traitement de l'image.\n"
+                             "Normale - La détection est effectuée\n"
+                             "lorsque son traîtement est demandé.\n"
+                             "Tardive - La détection est effectuée\n"
                              "à la première requête d'entrées par image.\n"
-                             " \n"
-                             "La régler sur 'Précoce' ou 'Tardive' peut entraîner \n"
-                             "une réduction de la latence, \n"
+                             "\n"
+                             "La régler sur 'Précoce' ou 'Tardive' peut\n"
+                             "entraîner une réduction de la latence,\n"
                              "en fonction de votre configuration.\n\n"
                              "Sera ignorée lors du jeu en réseau."
             );
@@ -755,18 +755,18 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
 
                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
                      snprintf(s, len,
-                           "Pilote d'entrées udev. \n"
-                           " \n"
-                           "Utilise la récente API de manettes evdev pour leur \n"
-                           "prise en charge. Il prend en charge le branchement \n"
-                           "à chaud et le retour de force. \n"
-                           " \n"
-                           "Le pilote lit les événements evdev pour la prise en charge \n"
-                           "du clavier. Il prend également en charge le rappel au clavier, \n"
-                           "les souris et les pavés tactiles. \n"
-                           " \n"
-                           "Par défaut, dans la plupart des distributions, les nœuds /dev/input \n"
-                           "sont uniquement root (mode 600). Vous pouvez configurer une règle udev \n"
+                           "Pilote d'entrées udev.\n"
+                           "\n"
+                           "Utilise la récente API de manettes evdev pour leur\n"
+                           "prise en charge. Il prend en charge le branchement\n"
+                           "à chaud et le retour de force.\n"
+                           "\n"
+                           "Il lit les événements evdev pour la prise en charge\n"
+                           "du clavier. Il prend également en charge le rappel au clavier,\n"
+                           "les souris et les pavés tactiles.\n"
+                           "\n"
+                           "Par défaut, dans la plupart des distributions, les nœuds /dev/input\n"
+                           "sont uniquement root (mode 600). Vous pouvez configurer une règle udev\n"
                            "qui les rend accessibles aux utilisateurs non root."
                            );
                else if (string_is_equal(lbl,
@@ -1096,19 +1096,19 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
             snprintf(s, len,
-                     "Applique les changements de shaders. \n"
-                             " \n"
-                             "Après avoir modifié les paramètres du shader, utilisez \n"
-                             "cette option pour appliquer les modifications. \n"
-                             " \n"
-                             "La modification des paramètres de shader est une opération \n"
-                             "un peu coûteuse et doit donc être effectuée explicitement. \n"
-                             " \n"
-                             "Lorsque vous appliquez des shaders, les paramètres \n"
-                             "de shader de menu sont enregistrés dans un fichier \n"
-                             "temporaire (menu.cgp ou menu.glslp) et chargés. \n"
-                             "Le fichier persiste après la sortie de RetroArch. \n"
-                             "Le fichier est enregistré dans le dossier des shaders."
+                     "Applique les changements de shaders.\n"
+                             "\n"
+                             "Après avoir modifié les paramètres du shader, utilisez\n"
+                             "cette option pour appliquer les modifications.\n"
+                             "\n"
+                             "La modification des paramètres de shader est une opération\n"
+                             "un peu coûteuse et doit donc être effectuée explicitement.\n"
+                             "\n"
+                             "Lorsque vous appliquez des shaders, les paramètres\n"
+                             "de shader de menu sont enregistrés temporairement\n"
+                             "(menu.cgp ou menu.glslp) et chargés.\n"
+                             "Le fichier persiste après la sortie de RetroArch,\n"
+                             "et est enregistré dans le dossier des shaders."
             );
             break;
         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
@@ -1227,23 +1227,20 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
             snprintf(s, len,
-                     "Fréquence de rafraîchissement automatique.\n"
+                     "Fréquence de rafraîchissement auto.\n"
                              " \n"
                              "Fréquence de rafraîchissement précise du moniteur (Hz).\n"
-                             "Ceci est utilisé pour calculer la fréquence audio avec \n"
-                             "la formule : \n"
+                             "Utilisée pour calculer le débit audio avec la formule :\n"
                              " \n"
-                             "Fréquence audio = fréquence du jeu * fréquence de rafraîchissement \n"
-                             "de l'écran / fréquence de rafraîchissement du jeu\n"
+                             "Débit audio = fréquence du jeu * fréquence de\n"
+                             "l'écran / fréquence du jeu\n"
                              " \n"
-                             "Si l'implémentation ne rapporte aucune valeur, \n"
-                             "les valeurs par défaut de NTSC seront utilisées \n"
-                             "pour la compatibilité.\n"
+                             "Si aucune valeur n'est rapportée, les valeurs NTSC\n"
+                             "seront utilisées pour la compatibilité.\n"
                              " \n"
-                             "Cette valeur devrait rester proche de 60Hz pour éviter \n"
-                             "des changements de pitch importants. Si votre moniteur \n"
-                             "ne fonctionne pas à 60Hz, ou une valeur approchante, \n"
-                             "désactivez V-Sync et laissez ce paramètre par défaut.");
+                             "Cette valeur devrait rester proche de 60Hz pour éviter\n"
+                             "des changements de pitch importants. Sinon, désactivez\n"
+                             "V-Sync et laissez ce paramètre par défaut.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
             snprintf(s, len,
@@ -1688,19 +1685,19 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,
-                     "Fréquence en images avec laquelle le jeu \n"
-                             "en réseau vérifiera que l'hôte et le client \n"
-                             "sont synchronisés. \n"
-                             " \n"
-                             "Avec la plupart des cœurs, cette valeur n'aura \n"
-                             "aucun effet visible et peut être ignorée. Avec \n"
-                             "les cœurs non déterministes, cette valeur détermine \n"
-                             "la fréquence de synchronisation des pairs de jeu \n"
-                             "en réseau. Avec les cœurs buggés, définir cette valeur \n"
-                             "sur une valeur autre que zéro entraînera de graves \n"
-                             "problèmes de performances. Réglez à zéro pour \n"
-                             "ne pas effectuer de contrôles. Cette valeur n'est \n"
-                             "utilisée que par l'hôte de jeu en réseau. \n");
+                     "Fréquence en images avec laquelle le jeu\n"
+                             "en réseau vérifiera que l'hôte et le client\n"
+                             "sont synchronisés.\n"
+                             "\n"
+                             "Avec la plupart des cœurs, cela n'aura\n"
+                             "aucun effet visible et peut être ignoré. Avec\n"
+                             "les cœurs non déterministes, cette valeur détermine\n"
+                             "la fréquence de synchronisation des pairs.\n"
+                             "Avec les cœurs buggés, ne pas définir\n"
+                             "cette valeur sur zéro affectera grandement\n"
+                             "les performances. Réglez à zéro pour ne pas\n"
+                             "effectuer de contrôles. Cette valeur n'est\n"
+                             "utilisée que par l'hôte.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,
