@@ -205,6 +205,10 @@ bool path_mkdir(const char *dir)
    /* Use heap. Real chance of stack 
     * overflow if we recurse too hard. */
    basedir            = strdup(dir);
+
+   if (!basedir)
+	   return false;
+
    path_parent_dir(basedir);
 
    if (!*basedir || !strcmp(basedir, dir))
