@@ -12,6 +12,7 @@
 - BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
 - CHEEVOS: Fix crash when reading memory that is out of range.
 - CHEEVOS: New Cheevos implementation enabled by default.
+- CHEEVOS: Pop-up badges when an achievement is triggered.
 - CRT: Dynamic super resolution support.
 - DISCORD: Fix potential crash when username is empty and discord is disabled.
 - DISCORD: Ask to join support for Linux.
