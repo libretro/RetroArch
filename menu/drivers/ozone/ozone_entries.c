@@ -253,7 +253,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
          if (ozone->show_thumbnail_bar)
             sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
 
-         word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
+         word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false, 0);
 
          lines = ozone_count_lines(sublabel_str);
 
@@ -528,7 +528,7 @@ border_iterate:
             if (ozone->depth == 1)
                sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
 
-            word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false);
+            word_wrap(sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false, 0);
       }
 
       /* Icon */

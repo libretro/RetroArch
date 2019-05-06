@@ -2068,9 +2068,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       res = vkCreateInstance(&info, NULL, &vk->context.instance);
    }
 
-   if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
+   if (res != VK_SUCCESS)
    {
-      RARCH_ERR("Failed to create Vulkan instance.\n");
+      RARCH_ERR("Failed to create Vulkan instance (%d).\n", res);
       return false;
    }
 

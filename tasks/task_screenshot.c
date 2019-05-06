@@ -320,12 +320,14 @@ static bool screenshot_dump(
    if (use_thread)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (menu_widgets_ready())
+      if (menu_widgets_ready() && !savestate)
          task_free_title(task);
       else
 #endif
+      {
          if (!savestate)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      }
 
       if (task_queue_push(task))
          return true;

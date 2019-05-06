@@ -133,8 +133,9 @@ char *string_trim_whitespace_right(char *const s);
 /* Remove leading and trailing whitespaces */
 char *string_trim_whitespace(char *const s);
 
+/* max_lines == 0 means no limit */
 char *word_wrap(char *buffer, const char *string,
-      int line_width, bool unicode);
+      int line_width, bool unicode, unsigned max_lines);
 
 RETRO_END_DECLS
 

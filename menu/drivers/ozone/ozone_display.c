@@ -300,7 +300,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_info->width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true);
+   word_wrap(message, text, (video_info->width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true, 0);
 
    list = string_split(message, "\n");
 
