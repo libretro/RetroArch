@@ -148,7 +148,7 @@ enum rotation video_display_server_get_screen_orientation(void)
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
 {
-   if (!current_display_server && current_display_server->get_flags)
+   if (!current_display_server || !current_display_server->get_flags)
       return false;
    if (!flags)
       return false;
