@@ -832,7 +832,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    path_local = utf8_to_local_string_alloc(path);
    file_info  = GetFileAttributes(path_local);
 
-   _stat(path_local, &buf);
+   if (!string_is_empty(path_local))
+      _stat(path_local, &buf);
 
    if (path_local)
      free(path_local);
