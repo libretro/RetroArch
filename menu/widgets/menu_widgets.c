@@ -2314,9 +2314,8 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
 {
    char badge_file[16];
    char fullpath[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
 
-   if (!badge || !settings || !settings->bools.cheevos_badges_enable)
+   if (!badge)
    {
       *tex = 0;
       return;
