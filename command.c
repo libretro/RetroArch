@@ -253,27 +253,33 @@ bool command_set_shader(const char *arg)
 {
    char msg[256];
    bool is_preset                  = false;
+   settings_t *settings            = NULL;
    enum rarch_shader_type     type = video_shader_get_type_from_ext(
          path_get_extension(arg), &is_preset);
 
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg ? path_basename(arg) : "null");
+   snprintf(msg, sizeof(msg),
+         "Shader: \"%s\"", arg ? path_basename(arg) : "null");
 #ifdef HAVE_MENU_WIDGETS
    if (!menu_widgets_set_message(msg))
 #endif
-      runloop_msg_queue_push(msg, 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
 
    retroarch_set_shader_preset(arg);
 #ifdef HAVE_MENU
-   return menu_shader_manager_set_preset(menu_shader_get(), type, arg);
-#else
-   return true;
+   if (!menu_shader_manager_set_preset(menu_shader_get(), type, arg))
+      return false;
 #endif
+   settings            = config_get_ptr();
+   if (settings && !settings->bools.video_shader_enable)
+      settings->bools.video_shader_enable = true;
+   return true;
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
@@ -301,15 +307,13 @@ static bool command_read_ram(const char *arg)
 
    /* RCHEEVOS TODO: remove if condition below */
    if (!settings->bools.cheevos_old_enable)
-   {
       data = rcheevos_patch_address(addr, rcheevos_get_console());
-   }
    /* RCHEEVOS TODO: remove whole else block below */
    else
    {
       var.value = addr;
       cheevos_var_patch_addr(&var, cheevos_get_console());
-      data = cheevos_var_get_memory(&var);
+      data      = cheevos_var_get_memory(&var);
    }
 
    if (data)
