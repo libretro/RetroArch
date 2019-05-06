@@ -1,4 +1,6 @@
-# 1.7.7 (future)
+# 1.7.8 (future)
+
+# 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
 - 3DS: Fix screen tearing when running 50Hz content.
 - ANDROID: We now target API level 26 (minimum is still API level 9).
@@ -9,10 +11,12 @@
 - AUDIO: Avoid deadlocks in certain audio drivers when toggling menu sounds on.
 - BLISS-BOX: Support PSX Jogcon (requires firmware 3.0).
 - CHEEVOS: Fix crash when reading memory that is out of range.
+- CHEEVOS: New Cheevos implementation enabled by default.
 - CRT: Dynamic super resolution support.
 - DISCORD: Fix potential crash when username is empty and discord is disabled.
 - DISCORD: Ask to join support for Linux.
 - INPUT/ANDROID: Add "Input Block Timeout" option.
+- COMMON: For platforms without HAVE_THREADS, don't automatically resume content when saving/loading states
 - COMMON: Make playlist sorting optional and consistent.
 - COMMON: Fix sorting of playlists with blank labels.
 - COMMON: Fix content scanner creating false positive playlist entries that also have wrong label and crc32.
@@ -27,8 +31,8 @@
 - COMMON: Add menu option to write log info to a file.
 - COMMON: Add subsystem support for playlists. Subsystem info is automatically saved to the history playlist for easy relaunching.
 - GL: Add new "gl1" OpenGL 1.1 compliant video driver for legacy GPUs and software renderers
-- GL: Draw OSD on top of overlay.
 - GL: Add a new "glcore" driver with slang support (requires GL 3.2+ or GLES3).
+- GL: Draw OSD on top of overlay.
 - GONG: Add savestate support.
 - GONG: Add video refresh rate core options.
 - GONG: Two player support via core option.
@@ -49,6 +53,11 @@
 - LOCALIZATION: Update Spanish translation.
 - LOCALIZATION: Add new Turkish translation.
 - MIDI: Fix startup crash in midi driver.
+- MENU: Bugfix - you can no longer get stuck in Online Updater -> Update Core screen when toggling between ingame and menu.
+- MENU: Selectively hide 'Take Screenshot' for video drivers that don't support taking screenshots.
+- MENU: Framerate independent menu rendering. MaterialUI/Ozone/XMB/RGUI can now run at higher framerates.
+- MENU: Thumbnails work in history list.
+- MENU: Menu widgets.
 - MENU: Add memory statistics support to more context drivers.
 - MENU: Enable ozone driver for UWP builds.
 - MENU: Add optional "looping" menu text ticker with configurable speed.
@@ -62,10 +71,13 @@
 - MENU: Populate crc32 and db_name fields when adding history/favourites playlist entries.
 - MENU: Fix TTF files not showing in OSD/menu font selection screen.
 - MENU: Fix audio/video filters not showing in file browser.
-- MENU/GLUI: Add subsystem support.
+- MENU/MaterialUI: Add subsystem support.
+- MENU/MaterialUI: Add currently selected entry in dropdown menus.
 - MENU/OZONE: Add mouse support on entries (no sidebar yet).
 - MENU/OZONE: Allow collapsing the sidebar.
 - MENU/OZONE: Add thumbnail support.
+- MENU/OZONE: Battery notifications.
+- MENU/OZONE: Add wifi icon for network entries.
 - MENU/QT/WIMP: Add git version and build date to Help->About window.
 - MENU/QT/WIMP: Fix content loading via the file browser.
 - MENU/QT/WIMP: Add new settings window to control all RetroArch settings.
@@ -88,20 +100,26 @@
 - MENU/RGUI: Add optional extended ASCII support.
 - MENU/RGUI: Add optional delay when loading thumbnails.
 - MENU/RGUI: Add on-screen keyboard.
+- MENU/RGUI: Battery notifications.
 - MENU/XMB: Prevent crashes when resizing to a tiny window.
+- MENU/XMB: XMB honors the 'show menu sublabels' setting now - was previously RGUI only
 - NETPLAY: Fix stall-out causing total disconnection with >2 players.
 - NETPLAY: Different (more intuitive?) default netplay share policy.
 - NETPLAY: Add hotkey option to toggle hosting on/off.
 - NETWORKING: Encode URLs to allow for spaces in directory names.
 - OSX: Prevent crash on exit.
-- OSX: Metal is now the default video driver.
+- OSX: Metal is now the default video driver for the RetroArch Metal build.
 - OSX: Enable CoreAudio v3 driver for Metal.
+- OSX/MACOS/IOS: Now uses the STB Unicode font driver.
 - PS2: CDFS support.
 - PS2: Implemented analog support for ps2 controllers.
 - PS2: Fix audio freeze after restarting core.
 - PS2: Fix issues with load state and the font driver.
 - PS2: File I/O now works for USB and network host.
 - PS2: Support cores with extra padding in their frame buffers.
+- SCANNER: New option 'Scan without core match'. When this is enabled,
+supported extensions by all installed cores are not checked, and instead
+it will add all content it finds to a playlist. This way, you can install the core you need later on after scanning. Not enabled by default.
 - SHADERS: Don't alphabetize shader presets.
 - SWITCH: Add rumble support.
 - SWITCH: Add USB keyboard support.
@@ -112,6 +130,9 @@
 - WINDOWS: Fall back to gl1 driver if accelerated GPU driver is unavailable.
 - WINDOWS: Allow winraw and xinput to work without dinput (needed for WinRT).
 - WINDOWS: Add MSVC2017 ARM desktop support.
+- UWP: Fix rewind by opting for slower codepath.
+- UWP: Fix relative path name issues when loading shaders.
+- UWP: Optimizations for VFS system.
 
 # 1.7.6
 - ANDROID: Fix Xperia Play input binding.
