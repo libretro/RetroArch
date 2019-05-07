@@ -282,6 +282,13 @@ else ifeq ($(LIBRETRO), stella2014)
 	APP_ICON             = pkg/ctr/assets/stella.png
 	APP_BANNER           = pkg/ctr/assets/stella_banner.png
 
+else ifeq ($(LIBRETRO), stella)
+	APP_TITLE            = Stella Libretro
+	APP_PRODUCT_CODE     = RARCH-STELLA
+	APP_UNIQUE_ID        = 0xBAC3D
+	APP_ICON             = pkg/ctr/assets/stella.png
+	APP_BANNER           = pkg/ctr/assets/stella_banner.png
+
 else ifeq ($(LIBRETRO), pokemini)
 	APP_TITLE            = PokeMini
 	APP_AUTHOR           = justburn
