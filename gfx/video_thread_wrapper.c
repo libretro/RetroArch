@@ -1285,7 +1285,7 @@ static bool video_thread_wrapper_menu_widgets_enabled(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (thr && thr->driver)
+   if (thr && thr->driver && thr->driver->menu_widgets_enabled)
       return thr->driver->menu_widgets_enabled(thr->driver_data);
 
    return false;
