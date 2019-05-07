@@ -38,6 +38,7 @@
 #include "verbosity.h"
 
 #include "runtime_file.h"
+#include "menu/menu_defines.h"
 
 #define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
 #define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"
@@ -790,4 +791,60 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
    
    *seconds -= *minutes * 60;
    *minutes -= *hours * 60;
+}
+
+
+/* Playlist manipulation */
+
+/* Updates specified playlist entry runtime values with
+ * contents of associated log file */
+void runtime_update_playlist(playlist_t *playlist, size_t idx)
+{
+   settings_t *settings               = config_get_ptr();
+   runtime_log_t *runtime_log         = NULL;
+   const struct playlist_entry *entry = NULL;
+   struct playlist_entry update_entry = {0};
+   
+   /* Sanity check */
+   if (!playlist || !settings)
+      return;
+   
+   if (idx >= playlist_get_size(playlist))
+      return;
+   
+   /* Set fallback playlist 'runtime_status'
+    * (saves 'if' checks later...) */
+   update_entry.runtime_status = PLAYLIST_RUNTIME_MISSING;
+   
+   /* Read current playlist entry */
+   playlist_get_index(playlist, idx, &entry);
+   
+   /* Attempt to open log file */
+   runtime_log = runtime_log_init(entry->path, entry->core_path,
+         (settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE));
+   
+   if (runtime_log)
+   {
+      /* Check whether a non-zero runtime has been recorded */
+      if (runtime_log_has_runtime(runtime_log))
+      {
+         /* Read current runtime */
+         runtime_log_get_runtime_hms(runtime_log,
+               &update_entry.runtime_hours, &update_entry.runtime_minutes, &update_entry.runtime_seconds);
+
+         /* Read last played timestamp */
+         runtime_log_get_last_played(runtime_log,
+               &update_entry.last_played_year, &update_entry.last_played_month, &update_entry.last_played_day,
+               &update_entry.last_played_hour, &update_entry.last_played_minute, &update_entry.last_played_second);
+
+         /* Playlist entry now contains valid runtime data */
+         update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
+      }
+
+      /* Clean up */
+      free(runtime_log);
+   }
+   
+   /* Update playlist */
+   playlist_update_runtime(playlist, idx, &update_entry, false);
 }

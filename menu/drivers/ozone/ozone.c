@@ -42,6 +42,7 @@
 #include "../../menu_animation.h"
 #include "../../menu_input.h"
 #include "../../playlist.h"
+#include "../../runtime_file.h"
 
 #include "../../widgets/menu_input_dialog.h"
 #include "../../widgets/menu_osk.h"
@@ -1125,18 +1126,14 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
    size_t selection           = menu_navigation_get_selection();
    playlist_t *playlist       = playlist_get_cached();
-   const struct playlist_entry *entry  = NULL;
-   const char *core_name      = NULL;
    settings_t *settings       = config_get_ptr();
-
-   menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
 
    if (ozone->is_playlist && playlist)
    {
-      const char    *core_label      = NULL;
-      playlist_get_index(playlist, selection, &entry);
+      const char *core_name   = NULL;
+      const char *core_label  = NULL;
 
-      core_name = entry->core_name;
+      menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))
@@ -1157,38 +1154,32 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Fill play time if applicable */
       if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
       {
-         unsigned runtime_hours        = 0;
-         unsigned runtime_minutes      = 0;
-         unsigned runtime_seconds      = 0;
+         const struct playlist_entry *entry = NULL;
 
-         unsigned last_played_year     = 0;
-         unsigned last_played_month    = 0;
-         unsigned last_played_day      = 0;
-         unsigned last_played_hour     = 0;
-         unsigned last_played_minute   = 0;
-         unsigned last_played_second   = 0;
+         playlist_get_index(playlist, selection, &entry);
 
-         playlist_get_runtime_index(playlist, selection, NULL, NULL,
-            &runtime_hours, &runtime_minutes, &runtime_seconds,
-            &last_played_year, &last_played_month, &last_played_day,
-            &last_played_hour, &last_played_minute, &last_played_second);
+         if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+            runtime_update_playlist(playlist, selection);
 
-         snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %02u:%02u:%02u",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME), runtime_hours, runtime_minutes, runtime_seconds);
-
-         if (last_played_year == 0 && last_played_month == 0 && last_played_day == 0
-            && last_played_hour == 0 && last_played_minute == 0 && last_played_second == 0)
+         if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
          {
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
+            snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %02u:%02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+                  entry->runtime_hours, entry->runtime_minutes, entry->runtime_seconds);
+
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %04u/%02u/%02u -\n%02u:%02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  entry->last_played_year, entry->last_played_month, entry->last_played_day,
+                  entry->last_played_hour, entry->last_played_minute, entry->last_played_second);
          }
          else
          {
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %04u/%02u/%02u -\n%02u:%02u:%02u",
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-                        last_played_year, last_played_month, last_played_day,
-                        last_played_hour, last_played_minute, last_played_second);
+            snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s 00:00:00",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME));
+
+            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
          }
       }
       else

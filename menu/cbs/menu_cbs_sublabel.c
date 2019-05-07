@@ -49,6 +49,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "../../playlist.h"
+#include "../../runtime_file.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -852,16 +853,6 @@ static int action_bind_sublabel_playlist_entry(
    settings_t *settings = config_get_ptr();
    playlist_t *playlist = NULL;
    const struct playlist_entry *entry = NULL;
-   const char *core_name = NULL;
-   unsigned runtime_hours = 0;
-   unsigned runtime_minutes = 0;
-   unsigned runtime_seconds = 0;
-   unsigned last_played_year = 0;
-   unsigned last_played_month = 0;
-   unsigned last_played_day = 0;
-   unsigned last_played_hour = 0;
-   unsigned last_played_minute = 0;
-   unsigned last_played_second = 0;
    
    if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
       return 0;
@@ -877,17 +868,15 @@ static int action_bind_sublabel_playlist_entry(
    
    /* Read playlist entry */
    playlist_get_index(playlist, i, &entry);
-
-   core_name = entry->core_name;
    
    /* Only add sublabel if a core is currently assigned */
-   if (string_is_empty(core_name) || string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+   if (string_is_empty(entry->core_name) || string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
       return 0;
    
    /* Add core name */
    snprintf(s, len, "%s %s",
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-      core_name);
+      entry->core_name);
    
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
@@ -907,16 +896,12 @@ static int action_bind_sublabel_playlist_entry(
        !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
    
-   /* Any available runtime values are now copied to the content
-    * history playlist when it is parsed by menu_displaylist, so
-    * we can extract them directly via index */
-   playlist_get_runtime_index(playlist, i, NULL, NULL,
-         &runtime_hours, &runtime_minutes, &runtime_seconds,
-         &last_played_year, &last_played_month, &last_played_day,
-         &last_played_hour, &last_played_minute, &last_played_second);
+   /* Check whether runtime info should be loaded from log file */
+   if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+      runtime_update_playlist(playlist, i);
    
-   /* Check whether a non-zero runtime has been recorded */
-   if ((runtime_hours > 0) || (runtime_minutes > 0) || (runtime_seconds > 0))
+   /* Check whether runtime info is valid */
+   if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
       int n = 0;
       char tmp[64];
@@ -925,7 +910,7 @@ static int action_bind_sublabel_playlist_entry(
       tmp[0] = '\0';
       n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-         runtime_hours, runtime_minutes, runtime_seconds);
+         entry->runtime_hours, entry->runtime_minutes, entry->runtime_seconds);
       
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
@@ -937,8 +922,8 @@ static int action_bind_sublabel_playlist_entry(
       tmp[0] = '\0';
       n = snprintf(tmp, sizeof(tmp), "\n%s %04u/%02u/%02u - %02u:%02u:%02u",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-         last_played_year, last_played_month, last_played_day,
-         last_played_hour, last_played_minute, last_played_second);
+         entry->last_played_year, entry->last_played_month, entry->last_played_day,
+         entry->last_played_hour, entry->last_played_minute, entry->last_played_second);
       
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
