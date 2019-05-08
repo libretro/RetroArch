@@ -2,7 +2,7 @@
 #
 # Get list of repo contributors from GitHub using v4 GraphQL API
 #
-# Copyright (C) 2018 - Brad Parker
+# Copyright (C) 2016-2019 - Brad Parker
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
