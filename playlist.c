@@ -577,10 +577,10 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      struct playlist_entry *entry = &playlist->entries[playlist->cap - 1];
+      struct playlist_entry *last_entry = &playlist->entries[playlist->cap - 1];
 
-      if (entry)
-         playlist_free_entry(entry);
+      if (last_entry)
+         playlist_free_entry(last_entry);
       playlist->size--;
    }
 
