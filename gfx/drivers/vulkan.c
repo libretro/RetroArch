@@ -1928,10 +1928,6 @@ static bool vulkan_frame(void *data, const void *frame,
                   (const struct font_params*)&video_info->osd_stat_params);
          }
       }
-
-#ifdef HAVE_MENU_WIDGETS
-      menu_widgets_frame(video_info);
-#endif
 #endif
 
       if (!string_is_empty(msg))
@@ -1940,6 +1936,10 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
       if (vk->overlay.enable)
          vulkan_render_overlay(vk, video_info);
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+      menu_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */
