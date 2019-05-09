@@ -2247,7 +2247,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          libretro_free_system_info(&runloop_system.info);
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-         config_init();
+         rarch_config_init();
 
          driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
          rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);

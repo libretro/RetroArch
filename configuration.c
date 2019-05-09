@@ -640,13 +640,9 @@ void config_free(void)
    configuration_settings = NULL;
 }
 
-bool config_init(void)
+void rarch_config_init(void)
 {
    configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
-
-   if (!configuration_settings)
-      return false;
-   return true;
 }
 
 /**

@@ -785,7 +785,7 @@ bool config_save_overrides(int override_type);
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
 
-bool config_init(void);
+void rarch_config_init(void);
 
 bool config_overlay_enable_default(void);
 
