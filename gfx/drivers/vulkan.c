@@ -1930,13 +1930,13 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif
 
-      if (!string_is_empty(msg))
-         font_driver_render_msg(video_info, NULL, msg, NULL);
-
 #ifdef HAVE_OVERLAY
       if (vk->overlay.enable)
          vulkan_render_overlay(vk, video_info);
 #endif
+
+      if (!string_is_empty(msg))
+         font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_MENU_WIDGETS
       menu_widgets_frame(video_info);
