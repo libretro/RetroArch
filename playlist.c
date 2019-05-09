@@ -236,40 +236,6 @@ void playlist_get_index(playlist_t *playlist,
    *entry = &playlist->entries[idx];
 }
 
-void playlist_get_runtime_index(playlist_t *playlist,
-      size_t idx,
-      const char **path, const char **core_path,
-      unsigned *runtime_hours, unsigned *runtime_minutes, unsigned *runtime_seconds,
-      unsigned *last_played_year, unsigned *last_played_month, unsigned *last_played_day,
-      unsigned *last_played_hour, unsigned *last_played_minute, unsigned *last_played_second)
-{
-   if (!playlist)
-      return;
-
-   if (path)
-      *path      = playlist->entries[idx].path;
-   if (core_path)
-      *core_path = playlist->entries[idx].core_path;
-   if (runtime_hours)
-      *runtime_hours = playlist->entries[idx].runtime_hours;
-   if (runtime_minutes)
-      *runtime_minutes = playlist->entries[idx].runtime_minutes;
-   if (runtime_seconds)
-      *runtime_seconds = playlist->entries[idx].runtime_seconds;
-   if (last_played_year)
-      *last_played_year = playlist->entries[idx].last_played_year;
-   if (last_played_month)
-      *last_played_month = playlist->entries[idx].last_played_month;
-   if (last_played_day)
-      *last_played_day = playlist->entries[idx].last_played_day;
-   if (last_played_hour)
-      *last_played_hour = playlist->entries[idx].last_played_hour;
-   if (last_played_minute)
-      *last_played_minute = playlist->entries[idx].last_played_minute;
-   if (last_played_second)
-      *last_played_second = playlist->entries[idx].last_played_second;
-}
-
 /**
  * playlist_delete_index:
  * @playlist            : Playlist handle.
@@ -380,6 +346,7 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->subsystem_ident = NULL;
    entry->subsystem_name = NULL;
    entry->subsystem_roms = NULL;
+   entry->runtime_status = PLAYLIST_RUNTIME_UNKNOWN;
    entry->runtime_hours = 0;
    entry->runtime_minutes = 0;
    entry->runtime_seconds = 0;
@@ -452,10 +419,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
 }
 
 void playlist_update_runtime(playlist_t *playlist, size_t idx,
-      const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
-      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
-      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second,
+      const struct playlist_entry *update_entry,
       bool register_update)
 {
    struct playlist_entry *entry = NULL;
@@ -465,83 +429,87 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    entry            = &playlist->entries[idx];
 
-   if (path && (path != entry->path))
+   if (update_entry->path && (update_entry->path != entry->path))
    {
       if (entry->path != NULL)
          free(entry->path);
-      entry->path        = strdup(path);
+      entry->path        = NULL;
+      entry->path        = strdup(update_entry->path);
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (core_path && (core_path != entry->core_path))
+   if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
       if (entry->core_path != NULL)
          free(entry->core_path);
       entry->core_path   = NULL;
-      entry->core_path   = strdup(core_path);
+      entry->core_path   = strdup(update_entry->core_path);
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (runtime_hours != entry->runtime_hours)
+   if (update_entry->runtime_status != entry->runtime_status)
    {
-      entry->runtime_hours = runtime_hours;
+      entry->runtime_status = update_entry->runtime_status;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (runtime_minutes != entry->runtime_minutes)
+   if (update_entry->runtime_hours != entry->runtime_hours)
    {
-      entry->runtime_minutes = runtime_minutes;
+      entry->runtime_hours = update_entry->runtime_hours;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (runtime_seconds != entry->runtime_seconds)
+   if (update_entry->runtime_minutes != entry->runtime_minutes)
    {
-      entry->runtime_seconds = runtime_seconds;
+      entry->runtime_minutes = update_entry->runtime_minutes;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_year != entry->last_played_year)
+   if (update_entry->runtime_seconds != entry->runtime_seconds)
    {
-      entry->last_played_year = last_played_year;
+      entry->runtime_seconds = update_entry->runtime_seconds;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_month != entry->last_played_month)
+   if (update_entry->last_played_year != entry->last_played_year)
    {
-      entry->last_played_month = last_played_month;
+      entry->last_played_year = update_entry->last_played_year;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_day != entry->last_played_day)
+   if (update_entry->last_played_month != entry->last_played_month)
    {
-      entry->last_played_day = last_played_day;
+      entry->last_played_month = update_entry->last_played_month;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_hour != entry->last_played_hour)
+   if (update_entry->last_played_day != entry->last_played_day)
    {
-      entry->last_played_hour = last_played_hour;
+      entry->last_played_day = update_entry->last_played_day;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_minute != entry->last_played_minute)
+   if (update_entry->last_played_hour != entry->last_played_hour)
    {
-      entry->last_played_minute = last_played_minute;
+      entry->last_played_hour = update_entry->last_played_hour;
       playlist->modified = playlist->modified || register_update;
    }
 
-   if (last_played_second != entry->last_played_second)
+   if (update_entry->last_played_minute != entry->last_played_minute)
    {
-      entry->last_played_second = last_played_second;
+      entry->last_played_minute = update_entry->last_played_minute;
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (update_entry->last_played_second != entry->last_played_second)
+   {
+      entry->last_played_second = update_entry->last_played_second;
       playlist->modified = playlist->modified || register_update;
    }
 }
 
 bool playlist_push_runtime(playlist_t *playlist,
-      const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
-      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
-      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second)
+      const struct playlist_entry *entry)
 {
    size_t i;
    char real_path[PATH_MAX_LENGTH];
@@ -550,24 +518,24 @@ bool playlist_push_runtime(playlist_t *playlist,
    real_path[0] = '\0';
    real_core_path[0] = '\0';
 
-   if (!playlist)
+   if (!playlist || !entry)
       return false;
 
-   if (string_is_empty(core_path))
+   if (string_is_empty(entry->core_path))
    {
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
       return false;
    }
 
    /* Get 'real' path */
-   if (!string_is_empty(path))
+   if (!string_is_empty(entry->path))
    {
-      strlcpy(real_path, path, sizeof(real_path));
+      strlcpy(real_path, entry->path, sizeof(real_path));
       path_resolve_realpath(real_path, sizeof(real_path));
    }
 
    /* Get 'real' core path */
-   strlcpy(real_core_path, core_path, sizeof(real_core_path));
+   strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
       path_resolve_realpath(real_core_path, sizeof(real_core_path));
 
@@ -609,10 +577,10 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      struct playlist_entry *entry = &playlist->entries[playlist->cap - 1];
+      struct playlist_entry *last_entry = &playlist->entries[playlist->cap - 1];
 
-      if (entry)
-         playlist_free_entry(entry);
+      if (last_entry)
+         playlist_free_entry(last_entry);
       playlist->size--;
    }
 
@@ -629,15 +597,16 @@ bool playlist_push_runtime(playlist_t *playlist,
       if (!string_is_empty(real_core_path))
          playlist->entries[0].core_path = strdup(real_core_path);
 
-      playlist->entries[0].runtime_hours = runtime_hours;
-      playlist->entries[0].runtime_minutes = runtime_minutes;
-      playlist->entries[0].runtime_seconds = runtime_seconds;
-      playlist->entries[0].last_played_year = last_played_year;
-      playlist->entries[0].last_played_month = last_played_month;
-      playlist->entries[0].last_played_day = last_played_day;
-      playlist->entries[0].last_played_hour = last_played_hour;
-      playlist->entries[0].last_played_minute = last_played_minute;
-      playlist->entries[0].last_played_second = last_played_second;
+      playlist->entries[0].runtime_status = entry->runtime_status;
+      playlist->entries[0].runtime_hours = entry->runtime_hours;
+      playlist->entries[0].runtime_minutes = entry->runtime_minutes;
+      playlist->entries[0].runtime_seconds = entry->runtime_seconds;
+      playlist->entries[0].last_played_year = entry->last_played_year;
+      playlist->entries[0].last_played_month = entry->last_played_month;
+      playlist->entries[0].last_played_day = entry->last_played_day;
+      playlist->entries[0].last_played_hour = entry->last_played_hour;
+      playlist->entries[0].last_played_minute = entry->last_played_minute;
+      playlist->entries[0].last_played_second = entry->last_played_second;
    }
 
    playlist->size++;
@@ -842,6 +811,7 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].subsystem_ident    = NULL;
       playlist->entries[0].subsystem_name     = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
+      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
       playlist->entries[0].runtime_hours      = 0;
       playlist->entries[0].runtime_minutes    = 0;
       playlist->entries[0].runtime_seconds    = 0;
