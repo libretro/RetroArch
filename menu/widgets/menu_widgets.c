@@ -609,9 +609,17 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
    size_t i;
    menu_animation_ctx_tag tag = (uintptr_t) msg;
 
-   /* Update tasks count */
    if (msg->task_ptr)
+   {
+      /* remove the reference the task has of ourself
+         only if the task is not finished already
+         (finished tasks are freed before the widget) */
+      if (!msg->task_finished && !msg->task_error && !msg->task_cancelled)
+         msg->task_ptr->frontend_userdata = NULL;
+
+      /* update tasks count */
       msg_queue_tasks_count--;
+   }
 
    /* Kill all animations */
    menu_timer_kill(&msg->hourglass_timer);
@@ -1719,8 +1727,6 @@ void menu_widgets_init(bool video_is_threaded)
    if (menu_widgets_inited)
       return;
 
-   menu_widgets_inited = true;
-
    if (!menu_display_init_first_driver(video_is_threaded))
       goto err;
 
@@ -1738,7 +1744,10 @@ void menu_widgets_init(bool video_is_threaded)
    if (!current_msgs)
       goto err;
 
-   file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX);
+   if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
+      goto err;
+
+   menu_widgets_inited = true;
 
    return;
 err:
@@ -1951,6 +1960,7 @@ void menu_widgets_free(void)
       }
 
       fifo_free(msg_queue);
+      msg_queue = NULL;
    }
 
    /* Purge everything from the list */
@@ -1964,7 +1974,10 @@ void menu_widgets_free(void)
          menu_widgets_msg_queue_free(msg, false);
       }
       file_list_free(current_msgs);
+      current_msgs = NULL;
    }
+
+   msg_queue_tasks_count = 0;
 
    /* Achievement notification */
    menu_widgets_achievement_free(NULL);
@@ -1974,9 +1987,6 @@ void menu_widgets_free(void)
    video_coord_array_free(&font_raster_bold.carr);
 
    font_driver_bind_block(NULL, NULL);
-
-   /* Clear frontend userdata for all tasks */
-   task_queue_frontend_userdata_clear();
 
    /* Reset state of all other widgets */
    /* Generic message*/
