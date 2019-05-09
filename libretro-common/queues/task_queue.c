@@ -833,3 +833,24 @@ retro_task_t *task_init(void)
 
    return task;
 }
+
+void task_queue_frontend_userdata_clear()
+{
+   retro_task_t *task  = NULL;
+   retro_task_t *queue = NULL;
+   retro_task_t *next  = NULL;
+
+   while ((task = task_queue_get(&tasks_running)) != NULL)
+   {
+      task->next = queue;
+      queue = task;
+   }
+
+   for (task = queue; task; task = next)
+   {
+      next = task->next;
+      task->frontend_userdata = NULL;
+
+      retro_task_regular_push_running(task);
+   }
+}

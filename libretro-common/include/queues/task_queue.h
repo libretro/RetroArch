@@ -250,6 +250,10 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
 /* Allocates and inits a new retro_task_t */
 retro_task_t *task_init(void);
 
+/* Clears the frontend userdata for all
+   running tasks */
+void task_queue_frontend_userdata_clear();
+
 RETRO_END_DECLS
 
 #endif

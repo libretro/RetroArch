@@ -463,7 +463,10 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
 
             if (msg_widget->msg_new)
+            {
                free(msg_widget->msg_new);
+               msg_widget->msg_new = NULL;
+            }
 
             msg_widget->msg_new                    = strdup(task->title);
             msg_widget->msg_len                    = len;
@@ -1553,7 +1556,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          menu_widgets_draw_icon(video_info,
             icon_size, icon_size,
             volume_icon,
-            0, 0, 
+            0, 0,
             video_info->width, video_info->height,
             0, 1, menu_widgets_pure_white
          );
@@ -1602,7 +1605,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
             (int)(volume_percent * 100.0f));
 
          menu_display_draw_text(font_regular,
-            msg, 
+            msg,
             volume_width - simple_widget_padding, settings->floats.video_font_size * 2,
             video_info->width, video_info->height,
             text_color_db,
@@ -1966,14 +1969,25 @@ void menu_widgets_free(void)
    /* Achievement notification */
    menu_widgets_achievement_free(NULL);
 
-   /* Screenshot texture */
-   video_driver_texture_unload(&screenshot_texture);
-
    /* Font */
    video_coord_array_free(&font_raster_regular.carr);
    video_coord_array_free(&font_raster_bold.carr);
 
    font_driver_bind_block(NULL, NULL);
+
+   /* Clear frontend userdata for all tasks */
+   task_queue_frontend_userdata_clear();
+
+   /* Reset state of all other widgets */
+   /* Generic message*/
+   generic_message[0] = '\0';
+
+   /* Volume */
+   volume_alpha = 0.0f;
+
+   /* Screenshot */
+   screenshot_alpha = 0.0f;
+   menu_widgets_screenshot_dispose(NULL);
 }
 
 static void menu_widgets_volume_timer_end(void *userdata)
