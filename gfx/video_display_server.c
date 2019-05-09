@@ -65,6 +65,7 @@ void* video_display_server_init(void)
 		   current_display_server->ident);
 
    initial_screen_orientation = video_display_server_get_screen_orientation();
+   current_screen_orientation = initial_screen_orientation;
 
    return current_display_server_data;
 }
