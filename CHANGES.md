@@ -1,5 +1,5 @@
 # 1.7.8 (future)
-- NETBSD: Add audioio as default audio driver.
+- NETBSD: Audioio is now the default audio driver.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
