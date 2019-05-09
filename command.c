@@ -50,6 +50,10 @@
 #include "discord/discord.h"
 #endif
 
+#ifdef HAVE_TRANSLATE
+#include "translation/translation_service.h"
+#endif
+
 #include "midi/midi_driver.h"
 
 #ifdef HAVE_MENU
@@ -2525,6 +2529,8 @@ TODO: Add a setting for these tweaks */
             bool is_idle              = false;
             bool is_slowmotion        = false;
             bool is_perfcnt_enable    = false;
+            settings_t *settings      = config_get_ptr();
+
 #ifdef HAVE_DISCORD
             discord_userdata_t userdata;
 #endif
@@ -2547,6 +2553,22 @@ TODO: Add a setting for these tweaks */
                if (!is_idle)
                   video_driver_cached_frame();
 
+               /* If OCR enabled, translate the screen while paused */
+               if (settings->bools.translation_service_enable)
+               {
+#ifdef HAVE_TRANSLATE
+                  if (g_translation_service_status == false)
+                  {
+                     RARCH_LOG("OCR START\n");
+                     run_translation_service();
+                     g_translation_service_status = true;
+                  }
+#else
+                  RARCH_LOG("OCR Translation not enabled in build.  Include HAVE_TRANSLATE define.\n");
+#endif
+               }
+
+
 #ifdef HAVE_DISCORD
                userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
@@ -2556,6 +2578,9 @@ TODO: Add a setting for these tweaks */
             {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
                menu_widgets_set_paused(is_paused);
+#endif
+#ifdef HAVE_TRANSLATE
+               g_translation_service_status = false;
 #endif
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_AUDIO_START, NULL);

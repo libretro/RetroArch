@@ -61,6 +61,10 @@ void conv_bgr24_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
 
+void conv_bgr24_rgb565(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
 void conv_argb8888_0rgb1555(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);

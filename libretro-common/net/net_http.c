@@ -32,6 +32,7 @@
 #endif
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <string.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
@@ -245,8 +246,16 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   bool                     error = false;
-   char                  **domain = NULL;
+   bool error                     = false;
+   char **domain                  = NULL;
+   char *uri                      = NULL;
+   char s[2]                      = "/";
+   char *url_dup                  = NULL;
+   char *domain_port              = NULL;
+   char *domain_port2             = NULL;
+   char *url_port                 = NULL;
+   char new_domain[2048];
+
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(*conn));
 
@@ -277,6 +286,47 @@ struct http_connection_t *net_http_connection_new(const char *url,
    else
       error = true;
 
+   /* Get the port here from the url if it's specified.
+      does not work on username password urls: user:pass@domain.com
+
+      This code is not supposed to be needed, since the port 
+      should be gotten elsewhere when the url is being scanned
+      for ":", but for whatever reason, it's not working correctly.
+   */
+     
+   uri = strchr(conn->scan, (char) '/');
+   
+   if (strchr(conn->scan, (char) ':') != NULL)
+   {
+      url_dup = strdup(conn->scan);
+      domain_port = strtok(url_dup, ":");
+      domain_port2 = strtok(NULL, ":");
+      url_port = domain_port2;
+      if (strchr(domain_port2, (char) '/') != NULL)
+      {
+         url_port = strtok(domain_port2, "/");
+      }
+
+      if (url_port != NULL)
+      {
+         conn->port = atoi(url_port);
+      }
+
+      strlcpy(new_domain, domain_port, sizeof(new_domain));
+
+      if (uri != NULL)
+      {
+         if (strchr(uri, (char) '/') == NULL) 
+            strlcat(new_domain, uri, sizeof(new_domain));
+         else
+         { 
+            strlcat(new_domain, "/", sizeof(new_domain));
+            strlcat(new_domain, strchr(uri, (char) '/')+sizeof(char), sizeof(new_domain));
+         }
+         strlcpy(conn->scan,new_domain, sizeof(new_domain));
+      }
+   }
+   /* end of port-fetching from url  */
    if (error)
       goto error;
 
@@ -321,13 +371,15 @@ bool net_http_connection_done(struct http_connection_t *conn)
 
    if (*conn->scan == '\0')
       return false;
-
    *conn->scan  = '\0';
 
-   if (conn->sock_state.ssl)
-      conn->port   = 443;
-   else
-      conn->port   = 80;
+   if (conn->port == 0)
+   {
+      if (conn->sock_state.ssl)
+         conn->port   = 443;
+      else
+         conn->port   = 80;
+   }
 
    if (*conn->scan == ':')
    {

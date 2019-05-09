@@ -173,6 +173,7 @@ else
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
    HAVE_DISCORD='no'
+   HAVE_TRANSLATE='no'
    HAVE_SSL='no'
 fi
 
