@@ -77,7 +77,7 @@ static void core_info_list_resolve_all_extensions(
    strlcat(core_info_list->all_ext, "7z|", all_ext_len);
 #endif
 #ifdef HAVE_ZLIB
-   strlcat(core_info_list->all_ext, "zip|", ext_len);
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
 #endif
 }
 
