@@ -351,6 +351,14 @@ fi
 if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES3" = 'no' ]; then
    die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
    HAVE_OPENGL_CORE='no'
+elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
+   die : 'Notice: OpenGLES2 is enabled. Disabling the OpenGL core driver.'
+   HAVE_OPENGL_CORE='no'
+fi
+
+if [ "$HAVE_OPENGLES" != 'no' ] || [ "$HAVE_OPENGLES3" != 'no' ]; then
+   die : 'Notice: OpenGLES is enabled. Disabling the OpenGL1 driver.'
+   HAVE_OPENGL1='no'
 fi
 
 if [ "$HAVE_ZLIB" = 'no' ]; then
