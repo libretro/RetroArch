@@ -320,7 +320,7 @@ void dxgi_update_title(video_frame_info_t* video_info)
       snprintf(
             mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
             mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps-text));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
 #endif
    }
 
