@@ -13,11 +13,27 @@ else ifeq ($(LIBRETRO), 81)
 	APP_ICON             = pkg/ctr/assets/81.png
 	APP_BANNER           = pkg/ctr/assets/81_banner.png
 
+else ifeq ($(LIBRETRO), cap32)
+	APP_TITLE            = Caprice32
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = CAP32-DOSBOX
+	APP_UNIQUE_ID        = 0xBAC3E
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), dosbox)
 	APP_TITLE            = DosBox
 	APP_AUTHOR           = various
 	APP_PRODUCT_CODE     = RARCH-DOSBOX
 	APP_UNIQUE_ID        = 0xBAC1B
+	APP_ICON             = pkg/ctr/assets/dosbox.png
+	APP_BANNER           = pkg/ctr/assets/dosbox_banner.png
+
+else ifeq ($(LIBRETRO), dosbox_svn)
+	APP_TITLE            = DosBox SVN
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-DOSBOXSVN
+	APP_UNIQUE_ID        = 0xBAC3F
 	APP_ICON             = pkg/ctr/assets/dosbox.png
 	APP_BANNER           = pkg/ctr/assets/dosbox_banner.png
 
@@ -192,6 +208,11 @@ else ifeq ($(LIBRETRO), nekop2)
 	APP_ICON             = pkg/ctr/assets/nekop2.png
 	APP_BANNER           = pkg/ctr/assets/nekop2_banner.png
 
+else ifeq ($(LIBRETRO), mu)
+	APP_TITLE            = Mu Palm Emulator
+	APP_PRODUCT_CODE     = RARCH-MU
+	APP_UNIQUE_ID        = 0xBAC2F
+
 else ifeq ($(LIBRETRO), nestopia)
 	APP_TITLE            = Nestopia Libretro
 	APP_PRODUCT_CODE     = RARCH-NESTOPIA
@@ -230,6 +251,14 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_ICON             = pkg/ctr/assets/picodrive.png
 	APP_BANNER           = pkg/ctr/assets/picodrive_banner.png
 	APP_USE_SVCHAX       = 1
+
+else ifeq ($(LIBRETRO), pokemini)
+	APP_TITLE            = PokeMini
+	APP_AUTHOR           = justburn
+	APP_PRODUCT_CODE     = RARCH-POKEMINI
+	APP_UNIQUE_ID        = 0xBAC20
+	APP_ICON             = pkg/ctr/assets/pokemini.png
+	APP_BANNER           = pkg/ctr/assets/pokemini_banner.png
 
 else ifeq ($(LIBRETRO), prosystem)
 	APP_TITLE            = ProSystem Libretro
@@ -289,22 +318,9 @@ else ifeq ($(LIBRETRO), stella)
 	APP_ICON             = pkg/ctr/assets/stella.png
 	APP_BANNER           = pkg/ctr/assets/stella_banner.png
 
-else ifeq ($(LIBRETRO), pokemini)
-	APP_TITLE            = PokeMini
-	APP_AUTHOR           = justburn
-	APP_PRODUCT_CODE     = RARCH-POKEMINI
-	APP_UNIQUE_ID        = 0xBAC20
-	APP_ICON             = pkg/ctr/assets/pokemini.png
-	APP_BANNER           = pkg/ctr/assets/pokemini_banner.png
-
 else ifeq ($(LIBRETRO), theodore)
 	APP_TITLE            = Theodore
 	APP_PRODUCT_CODE     = RARCH-THEODORE
 	APP_UNIQUE_ID        = 0xBAC2E
-
-else ifeq ($(LIBRETRO), mu)
-	APP_TITLE            = Mu Palm Emulator
-	APP_PRODUCT_CODE     = RARCH-MU
-	APP_UNIQUE_ID        = 0xBAC2F
 
 endif
