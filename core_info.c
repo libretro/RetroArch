@@ -45,8 +45,24 @@ static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
    size_t i              = 0;
+   size_t all_ext_len    = 0;
+   char *all_ext         = NULL;
 
-   core_info_list->all_ext[0] = '\0';
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      if (core_info_list->list[i].supported_extensions)
+         all_ext_len +=
+            (strlen(core_info_list->list[i].supported_extensions) + 2);
+   }
+
+   all_ext_len += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
+
+   all_ext      = (char*)calloc(1, all_ext_len);
+
+   if (!all_ext)
+      return;
+
+   core_info_list->all_ext = all_ext;
 
    for (i = 0; i < core_info_list->count; i++)
    {
@@ -54,8 +70,7 @@ static void core_info_list_resolve_all_extensions(
          continue;
 
       strlcat(core_info_list->all_ext,
-            core_info_list->list[i].supported_extensions,
-            sizeof(core_info_list->all_ext));
+            core_info_list->list[i].supported_extensions, all_ext_len);
       string_concat(core_info_list->all_ext, "|");
    }
 #ifdef HAVE_7ZIP
@@ -165,6 +180,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->firmware);
    }
 
+   free(core_info_list->all_ext);
    free(core_info_list->list);
    free(core_info_list);
 }
