@@ -1969,7 +1969,7 @@ static void xmb_context_reset_horizontal_list(
 
          if (!filestream_exists(content_texturepath))
          {
-            string_concat(iconpath, "default");
+            strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, iconpath,
                   file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                   PATH_MAX_LENGTH * sizeof(char));

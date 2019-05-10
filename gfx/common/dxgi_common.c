@@ -311,16 +311,16 @@ void dxgi_update_title(video_frame_info_t* video_info)
    if (settings->bools.video_memory_show)
    {
 #ifndef __WINRT__
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
       char         mem[128];
+      uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
+      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
 
       mem[0] = '\0';
 
       snprintf(
             mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
             mem_bytes_total / (1024.0f * 1024.0f));
-      string_concat(video_info->fps_text, mem);
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps-text));
 #endif
    }
 

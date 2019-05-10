@@ -1025,7 +1025,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
          for (i = 1; i < shader->num_parameters; i++)
          {
             /* O(n^2), but number of parameters is very limited. */
-            string_concat(parameters, ";");
+            strlcat(parameters, ";", param_size);
             strlcat(parameters, shader->parameters[i].id, param_size);
          }
 
@@ -1052,7 +1052,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
          for (i = 1; i < shader->luts; i++)
          {
             /* O(n^2), but number of textures is very limited. */
-            string_concat(textures, ";");
+            strlcat(textures, ";", tex_size);
             strlcat(textures, shader->lut[i].id, tex_size);
          }
 
@@ -1106,7 +1106,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
          for (i = 1; i < shader->variables; i++)
          {
-            string_concat(variables, ";");
+            strlcat(variables, ";", var_tmp);
             strlcat(variables, shader->variable[i].id, var_tmp);
          }
 

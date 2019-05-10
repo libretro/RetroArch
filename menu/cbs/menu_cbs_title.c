@@ -335,8 +335,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
 
       if (!string_is_empty(elem1))
       {
-         string_concat(s, " - ");
-         string_concat(s, elem1);
+         strlcat(s, " - ", len);
+         strlcat(s, elem1, len);
       }
    }
 

@@ -439,7 +439,7 @@ void fill_pathname_slash(char *path, size_t size)
       join_str[0] = '\0';
 
       strlcpy(join_str, last_slash, sizeof(join_str));
-      string_concat(path, join_str);
+      strlcat(path, join_str, size);
    }
 }
 

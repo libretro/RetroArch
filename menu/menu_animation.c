@@ -680,7 +680,7 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    if (!ticker->selected)
    {
       utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      string_concat(ticker->s, "...");
+      strlcat(ticker->s, "...", PATH_MAX_LENGTH);
       return false;
    }
 
