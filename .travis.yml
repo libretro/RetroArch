@@ -29,6 +29,10 @@ matrix:
       env: CXX_BUILD=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
     - compiler: clang
       env: CC=clang-6.0 CXX=clang++-6.0
     - compiler: clang
@@ -76,6 +80,14 @@ script:
   - |
      if [ -n "$DISABLE_MENU" ]; then
        ARGS="$ARGS --disable-menu"
+     fi
+  - |
+     if [ -n "$ENABLE_GLES" ]; then
+       ARGS="$ARGS --enable-opengles"
+     fi
+  - |
+     if [ -n "$ENABLE_GLES3" ]; then
+       ARGS="$ARGS --enable-opengles3"
      fi
   - ./configure $ARGS
   - |
