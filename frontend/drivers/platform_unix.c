@@ -1089,7 +1089,11 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
    {
       const char *node = retro_dirent_get_name(entry);
 
+#ifdef HAVE_LAKKA_SWITCH
+      if (node && strstr(node, "max170xx_battery"))
+#else
       if (node && strstr(node, "BAT"))
+#endif
          check_proc_acpi_sysfs_battery(node,
                &have_battery, &charging, seconds, percent);
    }
