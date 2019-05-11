@@ -215,7 +215,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CONNECTING_TO_NETPLAY_HOST,
-    "Conectando ao hospedeiro de jogo em rede"
+    "Conectando ao anfitrião de jogo em rede"
     )
 MSG_HASH(
     MSG_CONNECTING_TO_PORT,
@@ -455,7 +455,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-    "Não sobregravar a SRAM ao carregar Estado de Jogo"
+    "Não Sobregravar a SRAM ao Carregar Estado de Jogo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
@@ -568,6 +568,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
     "Captura de Conquistas Automática"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
+    "Usar a Implementação Antiga (Somente Depuração)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -1278,8 +1282,16 @@ MSG_HASH(
     "Avanço de Quadro"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "Enviar informações de depuração"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "Alternar FPS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+    "Alternar hspedagem de jogo em rede"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -1561,6 +1573,10 @@ MSG_HASH(
     "Grego"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+    "Turco"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
     "Analógico Esquerdo"
     )
@@ -1622,11 +1638,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-    "Arquivos de registro com de data e hora"
+    "Arquivos de Registro Com de Data e Hora"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-    "Ao efetuar o registro no arquivo, redireciona a saída de cada sessão do RetroArch para um novo arquivo com registro de data e hora. Se desativado, o registro será sobregravado sempre que o RetroArch for reiniciado."
+    "Redireciona a saída de cada sessão do RetroArch para um novo arquivo com registro de data e hora. Desativar irá sobregravar o registro sempre que o RetroArch for reiniciado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -1658,7 +1674,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
-    "Shield"
+    "Nvidia Shield"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
@@ -1770,7 +1786,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-    "Desconectar do hospedeiro de jogo em rede"
+    "Desconectar do anfitrião de Jogo em Rede"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -1778,15 +1794,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-    "Conectar ao hospedeiro de jogo em rede"
+    "Conectar ao Anfitrião de Jogo em Rede"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-    "Iniciar hospedeiro de jogo em rede"
+    "Iniciar Anfitrião de Jogo em Rede"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-    "Parar hospedeiro de jogo em rede"
+    "Parar Anfitrião de Jogo em Rede"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -1926,7 +1942,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_CORE,
-    "Nenhum Núcleo"
+    "Sem Núcleo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
@@ -1958,7 +1974,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-    "Nenhum hospedeiro de jogo em rede encontrado."
+    "Nenhum anfitrião de jogo em rede encontrado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
@@ -3448,7 +3464,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-    "Permitir rotação"
+    "Permitir Rotação"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -3510,7 +3526,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-    "Vídeo"
+    "Driver de Vídeo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -3606,11 +3622,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-    "Rotação"
+    "Rotação de Vídeo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-    "Orientação da tela"
+    "Orientação da Tela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -3957,6 +3973,11 @@ MSG_HASH(
     "Obtém automaticamente uma captura de tela quando uma conquista é acionada."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
+    "Usa a antiga implementação de processamento de conquistas\n"
+    "(se não tiver certeza, mantenha-o)."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
     "Altera os drivers utilizados pelo sistema."
     )
@@ -4086,7 +4107,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-    "Procura e conecta aos hospedeiros de jogo em rede na rede local."
+    "Procura e conecta aos anfitriões de jogo em rede na rede local."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
@@ -4186,7 +4207,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_APPLYING_SHADER,
-    "Aplicando Shader"
+    "Aplicando shader"
     )
 MSG_HASH(
     MSG_AUDIO_MUTED,
@@ -4210,7 +4231,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_AUTO_SAVE_STATE_TO,
-    "Salvar Automaticamente Estado de Jogo em"
+    "Salvar automaticamente Estado de Jogo em"
     )
 MSG_HASH(
     MSG_BLOCKING_SRAM_OVERWRITE,
@@ -4462,15 +4483,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-    "Falha em receber o apelido do hospedeiro."
+    "Falha em receber o apelido do anfitrião."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-    "Falha em receber o tamanho do apelido do hospedeiro."
+    "Falha em receber o tamanho do apelido do anfitrião."
     )
 MSG_HASH(
     MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-    "Falha em receber os dados SRAM do hospedeiro."
+    "Falha em receber os dados SRAM do anfitrião."
     )
 MSG_HASH(
     MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
@@ -4502,7 +4523,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-    "Falha em enviar o apelido para o hospedeiro."
+    "Falha em enviar o apelido para o anfitrião."
     )
 MSG_HASH(
     MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
@@ -4909,6 +4930,22 @@ MSG_HASH(
     "Captura de tela salva"
     )
 MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Conquista desbloqueada"
+   )
+MSG_HASH(
+    MSG_CHANGE_THUMBNAIL_TYPE,
+    "Alterar o tipo de miniatura"
+    )
+MSG_HASH(
+    MSG_NO_THUMBNAIL_AVAILABLE,
+    "Nenhuma miniatura disponível"
+    )
+MSG_HASH(
+    MSG_PRESS_AGAIN_TO_QUIT,
+    "Pressione novamente para sair..."
+    )
+MSG_HASH(
     MSG_TO,
     "em"
     )
@@ -5175,7 +5212,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NETPLAY_LAN_SCANNING,
-    "Analisando por hospedeiros de jogo em rede..."
+    "Analisando por anfitriões de jogo em rede..."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
@@ -5203,7 +5240,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-    "Pressione sair duas vezes"
+    "Pressione Sair Duas Vezes"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
@@ -5359,7 +5396,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-    "Define a largura personalizada para a janela de exibição. Deixado em 0 a janela irá dimensionar o mais largo possível."
+    "Define a largura personalizada para a janela de exibição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
@@ -5371,11 +5408,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-    "Define a largura personalizada para o modo de tela cheia em não-janela. Deixar em 0 irá usar a resolução da área de trabalho."
+    "Define a largura personalizada para o modo de tela cheia em não-janela. Deixar desativado irá usar a resolução da área de trabalho."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-    "Define a altura personalizada para o modo de tela cheia em não-janela. Deixar em 0 irá usar a resolução da área de trabalho."
+    "Define a altura personalizada para o modo de tela cheia em não-janela. Deixar desativado irá usar a resolução da área de trabalho."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -5731,15 +5768,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-    "Endereço do hospedeiro a se conectar."
+    "Endereço do anfitrião a se conectar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-    "Porta do endereço de IP do hospedeiro. Pode ser uma porta TCP ou uma porta UDP."
+    "Porta do endereço de IP do anfitrião. Pode ser uma porta TCP ou uma porta UDP."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-    "Senha para conectar ao hospedeiro de jogo em rede. Utilizado apenas no modo hospedeiro."
+    "Senha para conectar ao anfitrião de jogo em rede. Utilizado apenas no modo anfitrião."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
@@ -5747,7 +5784,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-    "Senha para conectar ao hospedeiro de jogo em rede apenas com privilégios de espectador. Utilizado apenas no modo hospedeiro."
+    "Senha para conectar ao anfitrião de jogo em rede apenas com privilégios de espectador. Utilizado apenas no modo anfitrião."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
@@ -5767,7 +5804,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-    "Frequência em quadros no qual o jogo em rede verificará se o hospedeiro e o cliente estão sincronizados."
+    "Frequência em quadros no qual o jogo em rede verificará se o anfitrião e o cliente estão sincronizados."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
@@ -5823,7 +5860,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-    "Habilita o jogo em rede no modo hospedeiro (servidor)."
+    "Habilita o jogo em rede no modo anfitrião (servidor)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
@@ -6087,7 +6124,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-    "Habilite as sombras para todos os ícones. Isto terá um pequeno impacto no desempenho."
+    "Habilite as sombras para todos os ícones.\n"
+    "Isto terá um pequeno impacto no desempenho."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
@@ -6344,11 +6382,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-    "Utilizar Servidor MITM"
+    "Use Servidor de Retransmissão"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-    "Encaminha conexões de jogo em rede através de um servidor 'homem no meio' (MITM). Útil se o hospedeiro estiver atrás de um firewall ou tiver problemas de NAT/UPnP."
+    "Encaminha conexões de jogo em rede através de um servidor 'homem no meio' (MITM). Útil se o anfitrião estiver atrás de um firewall ou tiver problemas de NAT/UPnP."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -6428,11 +6466,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-    "Remover núcleo"
+    "Excluir núcleo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_DELETE,
-    "Remover este núcleo do disco."
+    "Remove este núcleo do disco."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -6484,15 +6522,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-    "Habilitar aba de configurações"
+    "Habilitar Aba de Configurações"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-    "Definir senha para habilitar aba de configurações"
+    "Definir Senha para Habilitar Aba de Configurações"
     )
 MSG_HASH(
     MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-    "Digite a senha"
+    "Digite a Senha"
     )
 MSG_HASH(
     MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -7760,7 +7798,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_PORT_16,
-    "All"
+    "Todas"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
@@ -7972,7 +8010,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
-    "Mostrar Arquivos e Pastas Ocultas:"
+    "Mostrar arquivos e pastas ocultas:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
@@ -8008,7 +8046,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
-    "Coletando lista de arquivos ..."
+    "Coletando lista de arquivos..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
@@ -8152,7 +8190,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-    "Não há passada de shader"
+    "Não há passada de shader."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
@@ -8229,7 +8267,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-    "SwitchRes CRT"
+    "Trocar para Resolução CRT"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
@@ -8509,7 +8547,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-    "Salvar registro de tempo de execução do conteúdo"
+    "Salvar Registro de Tempo de Execução do Conteúdo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
@@ -8517,7 +8555,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-    "Salvar registro de tempo de execução (agregado)"
+    "Salvar Registro de Tempo de Execução (agregar)"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -8573,7 +8611,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
-    "Agregado"
+    "Agregar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
@@ -8609,11 +8647,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-    "Vibrar ao pressionar a tecla"
+    "Vibrar ao Pressionar a Tecla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-    "Ativar vibração do dispositivo (para núcleos suportados)"
+    "Ativar Vibração do Dispositivo (para núcleos suportados)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_DIR,
