@@ -326,6 +326,8 @@ typedef struct settings
       bool ozone_collapse_sidebar;
 
 
+      bool translation_service_enable;
+
       bool log_to_file;
       bool log_to_file_timestamp;
 
@@ -545,6 +547,7 @@ typedef struct settings
       char twitch_stream_key[PATH_MAX_LENGTH];
 
       char discord_app_id[PATH_MAX_LENGTH];
+      char translation_service_url[2048];
    } arrays;
 
    struct

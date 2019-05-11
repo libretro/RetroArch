@@ -717,6 +717,28 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
    }
 }
 
+void conv_bgr24_rgb565(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   int h, w;
+   const uint8_t *input = (const uint8_t*)input_;
+   uint16_t *output     = (uint16_t*)output_;
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride)
+   {
+      const uint8_t *inp = input;
+      for (w = 0; w < width; w++)
+      {
+         uint16_t b = *inp++;
+         uint16_t g = *inp++;
+         uint16_t r = *inp++;
+    
+         output[w] = ((r & 0x00F8) << 8) | ((g&0x00FC) << 3) | ((b&0x00F8) >> 3);
+      }  
+   }
+}
+
 void conv_argb8888_0rgb1555(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)

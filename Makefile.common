@@ -180,6 +180,7 @@ OBJ += frontend/frontend.o \
        tasks/task_audio_mixer.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
        $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.o \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
@@ -1799,6 +1800,11 @@ ifeq ($(HAVE_NETWORKING), 1)
          OBJ  += deps/discord-rpc/src/discord_register_osx.o \
                  deps/discord-rpc/src/connection_unix.o
       endif
+   endif
+
+   ifeq ($(HAVE_TRANSLATE), 1)
+      DEFINES += -DHAVE_TRANSLATE
+      OBJ += translation/translation_service.o
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)

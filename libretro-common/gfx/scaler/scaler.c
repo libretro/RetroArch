@@ -138,6 +138,8 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
                   case SCALER_FMT_ARGB8888:
                      ctx->direct_pixconv = conv_bgr24_argb8888;
                      break;
+                  case SCALER_FMT_RGB565:
+                     ctx->direct_pixconv = conv_bgr24_rgb565;
                   default:
                      break;
                }

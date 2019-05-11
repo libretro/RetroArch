@@ -125,6 +125,7 @@ HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_LUA=no                # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration
 C89_DISCORD=no
+HAVE_TRANSLATE=no          # OCR and Translation Server Integration
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines
 C89_SHADERPIPELINE=no
 HAVE_VULKAN=auto           # Vulkan support
