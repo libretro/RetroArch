@@ -72,6 +72,10 @@
 #include "verbosity.h"
 #include "tasks/tasks_internal.h"
 
+#ifdef HAVE_MENU_WIDGETS
+#include "menu/widgets/menu_widgets.h"
+#endif
+
 #ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
 #include "runahead/run_ahead.h"
@@ -1258,7 +1262,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
-         runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#ifdef HAVE_MENU_WIDGETS
+         if (!menu_widgets_set_libretro_message(msg->msg, msg->frames / 60 * 1000))
+#endif
+            runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
       }
 

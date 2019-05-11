@@ -76,6 +76,9 @@ bool menu_widgets_push_achievement(const char *title, const char *badge);
 /* Warning: not thread safe! */
 bool menu_widgets_set_message(char *message);
 
+/* Warning: not thread safe! */
+bool menu_widgets_set_libretro_message(const char *message, unsigned duration);
+
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */

@@ -85,10 +85,6 @@ static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
 };
 
-/* Generic message */
-#define GENERIC_MESSAGE_SIZE 256
-static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
-
 /* Achievement notification */
 static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
@@ -273,12 +269,20 @@ static menu_timer_t screenshot_timer;
 static unsigned screenshot_shotname_length;
 
 /* Generic message */
-static unsigned generic_message_height;
 static menu_timer_t generic_message_timer;
 static float generic_message_alpha = 0.0f;
+#define GENERIC_MESSAGE_SIZE 256
+static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
+
+/* Libretro message */
+static menu_timer_t libretro_message_timer;
+static float libretro_message_alpha = 0.0f;
+static unsigned libretro_message_width = 0;
+#define LIBRETRO_MESSAGE_SIZE 512
+static char libretro_message[LIBRETRO_MESSAGE_SIZE] = {'\0'};
 
 /* Metrics */
-static unsigned simple_widget_padding;
+static unsigned simple_widget_padding = 0;
 static unsigned simple_widget_height;
 static unsigned glyph_width;
 static unsigned line_height;
@@ -302,6 +306,8 @@ static unsigned msg_queue_regular_text_start;
 static unsigned msg_queue_regular_text_base_y;
 static unsigned msg_queue_task_rect_start_x;
 static unsigned msg_queue_task_hourglass_x;
+
+static unsigned generic_message_height; /* used for both generic and libretro messages */
 
 bool menu_widgets_set_paused(bool is_paused)
 {
@@ -1331,6 +1337,26 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    font_raster_regular.carr.coords.vertices = 0;
    font_raster_bold.carr.coords.vertices    = 0;
 
+   /* Libretro message */
+   if (libretro_message_alpha > 0.0f)
+   {
+      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(libretro_message_alpha*255.0f));
+      menu_display_set_alpha(menu_widgets_backdrop_orig, libretro_message_alpha);
+
+      menu_display_draw_quad(video_info,
+         0, video_info->height - generic_message_height,
+         libretro_message_width, generic_message_height,
+         video_info->width, video_info->height,
+         menu_widgets_backdrop_orig);
+
+      menu_display_draw_text(font_regular, libretro_message,
+         simple_widget_padding,
+         video_info->height - generic_message_height/2 + line_height/4,
+         video_info->width, video_info->height,
+         text_color, TEXT_ALIGN_LEFT,
+         1, false, 0, false);
+   }
+
    /* Generic message */
    if (generic_message_alpha > 0.0f)
    {
@@ -1338,7 +1364,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
       menu_display_set_alpha(menu_widgets_backdrop_orig, generic_message_alpha);
 
       menu_display_draw_quad(video_info,
-         0, video_info->height-generic_message_height,
+         0, video_info->height - generic_message_height,
          video_info->width, generic_message_height,
          video_info->width, video_info->height,
          menu_widgets_backdrop_orig);
@@ -1990,7 +2016,10 @@ void menu_widgets_free(void)
 
    /* Reset state of all other widgets */
    /* Generic message*/
-   generic_message[0] = '\0';
+   generic_message_alpha = 0.0f;
+
+   /* Libretro message */
+   libretro_message_alpha = 0.0f;
 
    /* Volume */
    volume_alpha = 0.0f;
@@ -2410,6 +2439,51 @@ bool menu_widgets_set_message(char *msg)
    timer.userdata = NULL;
 
    menu_timer_start(&generic_message_timer, &timer);
+
+   return true;
+}
+
+static void menu_widgets_libretro_message_fadeout(void *userdata)
+{
+   menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
+   menu_animation_ctx_entry_t entry;
+
+   /* Start fade out animation */
+   entry.cb             = NULL;
+   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.subject        = &libretro_message_alpha;
+   entry.tag            = tag;
+   entry.target_value   = 0.0f;
+   entry.userdata       = NULL;
+
+   menu_animation_push(&entry);
+}
+
+bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
+{
+   menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
+   menu_timer_ctx_entry_t timer;
+
+   if (!menu_widgets_inited)
+      return false;
+
+   snprintf(libretro_message, LIBRETRO_MESSAGE_SIZE, "%s", msg);
+
+   libretro_message_alpha = DEFAULT_BACKDROP;
+
+   /* Kill and restart the timer / animation */
+   menu_timer_kill(&libretro_message_timer);
+   menu_animation_kill_by_tag(&tag);
+
+   timer.cb       = menu_widgets_libretro_message_fadeout;
+   timer.duration = duration;
+   timer.userdata = NULL;
+
+   menu_timer_start(&libretro_message_timer, &timer);
+
+   /* Compute text width */
+   libretro_message_width = font_driver_get_message_width(font_regular, msg, strlen(msg), 1) + simple_widget_padding * 2;
 
    return true;
 }
