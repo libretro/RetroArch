@@ -47,13 +47,13 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
        {
           case RARCH_FAST_FORWARD_KEY:
              snprintf(s, len,
-                         "Alternar entre Avanço Rápido e \n"
+                   "Alternar entre Avanço Rápido e \n"
                    "velocidade normal."
                    );
              break;
           case RARCH_FAST_FORWARD_HOLD_KEY:
              snprintf(s, len,
-                         "Manter pressionado para Avanço Rápido. \n"
+                   "Manter pressionado para Avanço Rápido. \n"
                    " \n"
                    "Soltar o botão desativa o Avanço Rápido."
                    );
@@ -64,41 +64,41 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_SLOWMOTION_HOLD_KEY:
              snprintf(s, len,
-                         "Manter pressionado para Câmera Lenta.");
+                   "Manter pressionado para Câmera Lenta.");
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
-                         "Alternar estado pausado e não-pausado.");
+                   "Alternar estado pausado e não-pausado.");
              break;
           case RARCH_FRAMEADVANCE:
              snprintf(s, len,
-                         "Avanço de quadro do conteúdo pausado.");
+                   "Avanço de quadro do conteúdo pausado.");
              break;
           case RARCH_SHADER_NEXT:
              snprintf(s, len,
-                         "Aplicar o próximo Shader do diretório.");
+                   "Aplicar o próximo Shader do diretório.");
              break;
           case RARCH_SHADER_PREV:
              snprintf(s, len,
-                         "Aplicar o Shader anterior do diretório.");
+                   "Aplicar o Shader anterior do diretório.");
              break;
           case RARCH_CHEAT_INDEX_PLUS:
           case RARCH_CHEAT_INDEX_MINUS:
           case RARCH_CHEAT_TOGGLE:
              snprintf(s, len,
-                         "Trapaças.");
+                   "Trapaças.");
              break;
           case RARCH_RESET:
              snprintf(s, len,
-                         "Reiniciar o conteúdo.");
+                   "Reiniciar o conteúdo.");
              break;
           case RARCH_SCREENSHOT:
              snprintf(s, len,
-                         "Capturar tela.");
+                   "Capturar tela.");
              break;
           case RARCH_MUTE:
              snprintf(s, len,
-                         "Áudio mudo/não-mudo.");
+                   "Áudio mudo/não-mudo.");
              break;
           case RARCH_OSK:
              snprintf(s, len,
@@ -118,11 +118,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_NETPLAY_GAME_WATCH:
              snprintf(s, len,
-                         "Alternar modo jogador/espectador do Jogo em Rede.");
+                   "Alternar modo jogador/espectador do Jogo em Rede.");
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
-                         "Habilitar outras teclas de atalho. \n"
+                   "Habilitar outras teclas de atalho. \n"
                    " \n"
                    "Se essa tecla de atalho estiver vinculada \n"
                    "ao teclado ou botão / eixo de joypad, todas \n"
@@ -135,33 +135,33 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_VOLUME_UP:
              snprintf(s, len,
-                         "Aumentar o volume do áudio.");
+                   "Aumentar o volume do áudio.");
              break;
           case RARCH_VOLUME_DOWN:
              snprintf(s, len,
-                         "Diminuir o volume do áudio.");
+                   "Diminuir o volume do áudio.");
              break;
           case RARCH_OVERLAY_NEXT:
              snprintf(s, len,
-                         "Mudar para a próxima Transparência.");
+                   "Mudar para a próxima Transparência.");
              break;
           case RARCH_DISK_EJECT_TOGGLE:
              snprintf(s, len,
-                         "Alternar ejeção de disco. \n"
+                   "Alternar ejeção de disco. \n"
                    " \n"
                    "Usado para conteúdo em vários discos. ");
              break;
           case RARCH_DISK_NEXT:
           case RARCH_DISK_PREV:
              snprintf(s, len,
-                         "Alternar pelas imagens de disco. Utilizado. \n"
+                   "Alternar pelas imagens de disco. Utilizado. \n"
                    "após a ejeção. \n"
                    " \n"
                    "Concluído após alternar novamente a ejeção.");
              break;
           case RARCH_GRAB_MOUSE_TOGGLE:
              snprintf(s, len,
-                         "Alternar captura de Mouse. \n"
+                   "Alternar captura de Mouse. \n"
                    " \n"
                    "Quando o Mouse é capturado, o RetroArch oculta \n"
                    "o cursor do Mouse, e mantém o Mouse dentro \n"
@@ -170,7 +170,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_GAME_FOCUS_TOGGLE:
              snprintf(s, len,
-                         "Alternar o foco do jogo.\n"
+                   "Alternar o foco do jogo.\n"
                    " \n"
                    "Quando um jogo tem foco, o RetroArch irá \n"
                    "desabilitar as teclas de atalho e manter \n"
@@ -181,11 +181,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_LOAD_STATE_KEY:
              snprintf(s, len,
-                         "Carregar Estado de Jogo.");
+                   "Carregar Estado de Jogo.");
              break;
           case RARCH_FULLSCREEN_TOGGLE_KEY:
              snprintf(s, len,
-                         "Alternar tela cheia.");
+                   "Alternar tela cheia.");
              break;
           case RARCH_QUIT_KEY:
              snprintf(s, len,
@@ -217,14 +217,14 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_REWIND:
              snprintf(s, len,
-                         "Manter o botão pressionado para \n"
-                             "Rebobinar. \n"
+                   "Manter o botão pressionado para \n"
+                   "Rebobinar. \n"
                    " \n"
-                             "Rebobinar precisa estar habilitado.");
+                   "Rebobinar precisa estar habilitado.");
              break;
           case RARCH_BSV_RECORD_TOGGLE:
              snprintf(s, len,
-                         "Alternar entre gravando ou não.");
+                   "Alternar entre gravando ou não.");
              break;
           default:
              if (string_is_empty(s))
@@ -706,26 +706,26 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             /* Work around C89 limitations */
             char u[501];
             const char *t =
-                  "O RetroArch utiliza uma forma única de \n"
-                  "sincronização de áudio/video aonde ele \n"
-                   "precisa ser calibrado pela taxa de \n"
-                   "atualização da sua tela para um melhor \n"
-                   "resultado no desempenho. \n"
-                   " \n"
-                   "Se você experimentar qualquer estalido \n"
-                   "no áudio ou rasgo de vídeo, normalmente \n"
-                   "isto significa que você precisa calibrar \n"
-                   "as configurações. Algumas escolhas abaixo: \n"
+                    "O RetroArch utiliza uma forma única de \n"
+                            "sincronização de áudio/video aonde ele \n"
+                            "precisa ser calibrado pela taxa de \n"
+                            "atualização da sua tela para um melhor \n"
+                            "resultado no desempenho. \n"
+                            " \n"
+                            "Se você experimentar qualquer estalido \n"
+                            "no áudio ou rasgo de vídeo, normalmente \n"
+                            "isto significa que você precisa calibrar \n"
+                            "as configurações. Algumas escolhas abaixo: \n"
                             " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
-                     "'Video Paralelizado'. A taxa de atualização \n"
-                     "não irá importar neste modo, a taxa de \n"
-                     "quadros será maior, mas o vídeo será \n"
-                     "menos fluído. \n"
-                     "b) Vá para '%s' -> '%s', e observe \n"
-                     "'%s'. Deixe executar até \n"
-                     "2048 quadros, então pressione 'OK'.",
+                             "'Video Paralelizado'. A taxa de atualização \n"
+                             "não irá importar neste modo, a taxa de \n"
+                             "quadros será maior, mas o vídeo será \n"
+                             "menos fluído. \n"
+                             "b) Vá para '%s' -> '%s', e observe \n"
+                             "'%s'. Deixe executar até \n"
+                             "2048 quadros, então pressione 'OK'.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
@@ -775,40 +775,41 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 
                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
                      snprintf(s, len,
-                        "Driver de entrada udev. \n"
-                        " \n"
-                        "Utiliza a recente API evdev joypad \n"
-                        "para suporte a Joystick. Suporta \n"
-                        "hotplugging e force feedback. \n"
-                        " \n"
-                        "O driver lê eventos evdev para suporte \n"
-                        "a teclado. Também suporta keyboard callback, \n"
-                        "Mouses e Touchpads. \n"
-                        " \n"
-                        "Por padrão na maioria das distros, \n"
-                        "nodes /dev/input são somente root (mode 600). \n"
-                        "Você pode criar uma regra udev para torná-los \n"
-                        "acessíveis para não root."
-                        );
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
-                  snprintf(s, len,
-                        "Driver de entrada linuxraw. \n"
-                        " \n"
-                        "Este driver requer um TTY ativo. Eventos de \n"
-                        "teclado são lidos diretamente do TTY o que \n"
-                        "o torna simples, mas não tão flexível, \n"
-                        "quanto udev. \n"
-                        "Mouses, etc, não são suportados de nenhum \n"
-                        "modo. \n"
-                        " \n"
-                        "Este driver utiliza a antiga API de Joystick \n"
-                        "(/dev/input/js*).");
+                           "Driver de entrada udev. \n"
+                           " \n"
+                           "Utiliza a recente API evdev joypad \n"
+                           "para suporte a Joystick. Suporta \n"
+                           "hotplugging e force feedback. \n"
+                           " \n"
+                           "O driver lê eventos evdev para suporte \n"
+                           "a teclado. Também suporta keyboard callback, \n"
+                           "Mouses e Touchpads. \n"
+                           " \n"
+                           "Por padrão na maioria das distros, \n"
+                           "nodes /dev/input são somente root (mode 600). \n"
+                           "Você pode criar uma regra udev para torná-los \n"
+                           "acessíveis para não root."
+                           );
+               else if (string_is_equal(lbl,
+                        msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
+                     snprintf(s, len,
+                           "Driver de entrada linuxraw. \n"
+                           " \n"
+                           "Este driver requer um TTY ativo. Eventos de \n"
+                           "teclado são lidos diretamente do TTY o que \n"
+                           "o torna simples, mas não tão flexível, \n"
+                           "quanto udev. \n"
+                           "Mouses, etc, não são suportados de nenhum \n"
+                           "modo. \n"
+                           " \n"
+                           "Este driver utiliza a antiga API de Joystick \n"
+                           "(/dev/input/js*).");
                else
-                  snprintf(s, len,
-                        "Driver de entrada.\n"
-                        " \n"
-                        "Dependendo do driver de vídeo, pode \n"
-                        "forçar um driver de entrada diferente.");
+                     snprintf(s, len,
+                           "Driver de entrada.\n"
+                           " \n"
+                           "Dependendo do driver de vídeo, pode \n"
+                           "forçar um driver de entrada diferente.");
             }
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -941,11 +942,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                if (string_is_equal(lbl, msg_hash_to_str(
                            MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
                   strlcpy(s,
-                        "Windowed SINC implementation.", len);
+                        "Implementação SINC em janelas.", len);
                else if (string_is_equal(lbl, msg_hash_to_str(
                            MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
                   strlcpy(s,
-                        "Implementação Convoluted Cosine.", len);
+                        "Implementação de cossenos complicados.", len);
                else if (string_is_empty(s))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
             }
@@ -1206,11 +1207,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 #ifdef HAVE_OSS
             " \n"
-            "OSS quer um caminho (e.g. /dev/dsp)."
+            "OSS quer um caminho (ex: /dev/dsp)."
 #endif
 #ifdef HAVE_JACK
             " \n"
-            "JACK quer nomes de porta (e.g. system:playback1 \n"
+            "JACK quer nomes de porta (ex: system:playback1 \n"
             ",system:playback_2)."
 #endif
 #ifdef HAVE_RSOUND
@@ -1832,7 +1833,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
             snprintf(s, len,
                      "Habilitar o Jogo em Rede no \n"
-                     "modo hospedeiro (servidor).");
+                     "modo anfitrião (servidor).");
             break;
         case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
             snprintf(s, len,
@@ -1844,7 +1845,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
             snprintf(s, len,
-                     "Buscar por e conectar aos hospedeiros \n"
+                     "Buscar por e conectar aos anfitriões \n"
                      "de Jogo em Rede na rede local.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
@@ -1903,7 +1904,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
-                     "A porta do endereço de IP do hospedeiro. \n"
+                     "A porta do endereço de IP do anfitrião. \n"
                              "Pode ser ou uma porta TCP ou uma porta UDP.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -1913,19 +1914,19 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
             snprintf(s, len,
-                     "O endereço do hospedeiro a se conectar.");
+                     "O endereço do anfitrião a se conectar.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
             snprintf(s, len,
-                     "A senha para conectar ao hospedeiro de Jogo em Rede \n"
-                             "Utilizado apenas em modo hospedeiro.");
+                     "A senha para conectar ao anfitrião de Jogo em Rede \n"
+                             "Utilizado apenas em modo anfitrião.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
             snprintf(s, len,
-                     "A senha para conectar ao hospedeiro \n"
+                     "A senha para conectar ao anfitrião \n"
                              "de Jogo em Rede apenas com privilégios de \n"
                              "espectador. Utilizado apenas em modo \n"
-                             "hospedeiro.");
+                             "anfitrião.");
             break;
         case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
             snprintf(s, len,
