@@ -274,6 +274,13 @@ else ifeq ($(LIBRETRO), prosystem)
 	APP_ICON             = pkg/ctr/assets/prosystem.png
 	APP_BANNER           = pkg/ctr/assets/prosystem_banner.png
 
+else ifeq ($(LIBRETRO), quasi88)
+	APP_TITLE            = Quasi88 Libretro
+	APP_PRODUCT_CODE     = RARCH-QUASI88
+	APP_UNIQUE_ID        = 0xBAC41
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), quicknes)
 	APP_TITLE            = QuickNES Libretro
 	APP_AUTHOR           = blargg, kode54
