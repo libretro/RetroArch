@@ -1,5 +1,8 @@
 # 1.7.8 (future)
+- MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
+- MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan.
 - NETBSD: Audioio is now the default audio driver.
+- OSD: OSD is now drawn above the overlay with Vulkan.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
