@@ -235,6 +235,13 @@ else ifeq ($(LIBRETRO), nxengine)
 	APP_ICON             = pkg/ctr/assets/nxengine.png
 	APP_BANNER           = pkg/ctr/assets/nxengine_banner.png
 
+else ifeq ($(LIBRETRO), o2em)
+	APP_TITLE            = O2EM Libretro
+	APP_PRODUCT_CODE     = RARCH-O2EM
+	APP_UNIQUE_ID        = 0xBAC8C
+	APP_ICON             = pkg/ctr/assets/o2em.png
+	APP_BANNER           = pkg/ctr/assets/o2em_banner.png
+
 else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_TITLE            = PCSX ReARMed
 	APP_AUTHOR           = PCSX Team, notaz, Exophase
