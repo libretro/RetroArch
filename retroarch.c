@@ -5477,6 +5477,10 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"ar", RETRO_LANGUAGE_ARABIC},
       {"el", RETRO_LANGUAGE_GREEK},
    };
+   
+   if (string_is_empty(iso639)) {
+      return lang;
+   }
 
    for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
    {
