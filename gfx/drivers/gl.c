@@ -2746,15 +2746,15 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
       }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
       gl2_render_overlay(gl, video_info);
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
