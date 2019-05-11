@@ -145,7 +145,9 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if (!config_get_path(conf, shader_name, tmp_str, path_size))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
-      goto error;
+      if (tmp_str)
+         free(tmp_str);
+      return false;
    }
 
    tmp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -157,6 +159,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
 
+   free(tmp_str);
    free(tmp_path);
 
    /* Smooth */
@@ -210,10 +213,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
    if (!*scale_type && !*scale_type_x && !*scale_type_y)
-   {
-      free(tmp_str);
       return true;
-   }
 
    if (*scale_type)
    {
@@ -238,7 +238,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         goto error;
+         return false;
       }
    }
 
@@ -253,7 +253,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         goto error;
+         return false;
       }
    }
 
@@ -307,12 +307,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       }
    }
 
-   free(tmp_str);
    return true;
-
-error:
-   free(tmp_str);
-   return false;
 }
 
 /**
