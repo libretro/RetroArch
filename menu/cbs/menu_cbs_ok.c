@@ -2731,7 +2731,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    char command[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_LAKKA_SWITCH
-   snprintf(command, sizeof(command), "cpu-profile set %s", profile_name);
+   snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
 
    system(command);
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
@@ -2752,7 +2752,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
 
    runloop_msg_queue_push(command, 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-	return menu_cbs_exit();
+   return menu_cbs_exit();
 }
 #endif
 
@@ -2765,7 +2765,7 @@ static int action_ok_set_switch_gpu_profile(const char *path,
 
    char command[PATH_MAX_LENGTH] = {0};
 
-   snprintf(command, sizeof(command), "gpu-profile set %s", profile_name);
+   snprintf(command, sizeof(command), "gpu-profile set '%s'", profile_name);
 
    system(command);
 
@@ -2773,7 +2773,7 @@ static int action_ok_set_switch_gpu_profile(const char *path,
 
    runloop_msg_queue_push(command, 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-	return menu_cbs_exit();
+   return menu_cbs_exit();
 }
 
 static int action_ok_set_switch_backlight(const char *path,
