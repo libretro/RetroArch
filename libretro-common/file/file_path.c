@@ -592,10 +592,11 @@ void fill_pathname_parent_dir(char *out_dir,
 void fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t cur_time = time(NULL);
+   time_t       cur_time = time(NULL);
+   const struct tm* tm_  = localtime(&cur_time);
 
    strftime(out_filename, size,
-         "RetroArch-%m%d-%H%M%S", localtime(&cur_time));
+         "RetroArch-%m%d-%H%M%S", tm_);
    strlcat(out_filename, ext, size);
 }
 
@@ -616,11 +617,11 @@ void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
    char format[256];
-   time_t cur_time = time(NULL);
+   time_t cur_time      = time(NULL);
+   const struct tm* tm_ = localtime(&cur_time);
 
-   format[0]       = '\0';
-
-   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
+   format[0]            = '\0';
+   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
 
    fill_pathname_join_concat_noext(out_filename,
          in_str, format, ext,
