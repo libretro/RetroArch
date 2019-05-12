@@ -400,15 +400,17 @@ void fill_pathname_noext(char *out_path, const char *in_path,
 
 char *find_last_slash(const char *str)
 {
-   const char *slash     = strrchr(str, '/');
 #ifdef _WIN32
+   const char *slash     = strrchr(str, '/');
    const char *backslash = strrchr(str, '\\');
 
    if (backslash && ((slash && backslash > slash) || !slash))
       return (char*)backslash;
-#endif
 
    return (char*)slash;
+#else
+   return (char*)strrchr(str, '/');
+#endif
 }
 
 /**
