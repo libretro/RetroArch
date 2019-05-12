@@ -1,5 +1,6 @@
 #ifndef VIDEO_LAYOUT_VIEW_H
 #define VIDEO_LAYOUT_VIEW_H
+
 #include "internal.h"
 #include "element.h"
 

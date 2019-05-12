@@ -1,12 +1,14 @@
-#include "internal.h"
-#include "view.h"
-#include "scope.h"
-#include <formats/rxml.h>
-#include <verbosity.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <formats/rxml.h>
+
+#include "../../verbosity.h"
+
+#include "internal.h"
+#include "view.h"
+#include "scope.h"
 
 int video_layout_io_find(const char *name);
 

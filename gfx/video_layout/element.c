@@ -1,5 +1,6 @@
-#include "element.h"
 #include <stdlib.h>
+
+#include "element.h"
 
 void element_init(element_t *elem, const char *name, int components_count)
 {

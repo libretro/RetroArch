@@ -1,6 +1,6 @@
-#include "component.h"
 #include <stdlib.h>
 #include <string.h>
+#include "component.h"
 
 void component_init(component_t *comp, comp_type_t type)
 {

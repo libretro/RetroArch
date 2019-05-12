@@ -1,6 +1,7 @@
-#include "view.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "view.h"
 
 void layer_init(layer_t *layer, const char *name)
 {

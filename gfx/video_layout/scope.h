@@ -1,5 +1,6 @@
 #ifndef VIDEO_LAYOUT_SCOPE_H
 #define VIDEO_LAYOUT_SCOPE_H
+
 #include "view.h"
 #include "element.h"
 

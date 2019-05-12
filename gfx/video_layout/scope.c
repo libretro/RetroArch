@@ -1,8 +1,9 @@
-#include "scope.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+
+#include "scope.h"
 
 union number
 {

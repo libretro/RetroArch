@@ -1,8 +1,8 @@
-#include "internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <compat/posix_string.h>
+#include "internal.h"
 
 char *init_string(const char *src)
 {

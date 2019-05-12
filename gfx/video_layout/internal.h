@@ -1,9 +1,10 @@
 #ifndef VIDEO_LAYOUT_INTERNAL_H
 #define VIDEO_LAYOUT_INTERNAL_H
-#include "types.h"
-#include <retro_miscellaneous.h>
-#include <boolean.h>
 #include <stddef.h>
+#include <boolean.h>
+#include <retro_miscellaneous.h>
+
+#include "types.h"
 
 char  *init_string (const char *src);
 void   set_string  (char **string, const char *src);
