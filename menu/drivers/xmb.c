@@ -1351,29 +1351,36 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      if (dir == 1 || (dir == -1 && i != current))
-         node->alpha = 0;
-
-      if (dir == 1 || dir == -1)
+      if (dir == 1)
+      {
+         node->alpha       = 0;
          node->label_alpha = 0;
+      }
+      else if (dir == -1)
+      {
+         if (i != current)
+            node->alpha    = 0;
+         node->label_alpha = 0;
+      }
 
-      node->x = xmb->icon_size * dir * 2;
-      node->y = xmb_item_y(xmb, i, current);
-      node->zoom = xmb->categories_passive_zoom;
+      node->x        = xmb->icon_size * dir * 2;
+      node->y        = xmb_item_y(xmb, i, current);
+      node->zoom     = xmb->categories_passive_zoom;
 
-      real_y = node->y + xmb->margins_screen_top;
+      real_y         = node->y + xmb->margins_screen_top;
 
       if (i == current)
-         node->zoom = xmb->categories_active_zoom;
-
-      ia    = xmb->items_passive_alpha;
-      if (i == current)
-         ia = xmb->items_active_alpha;
+      {
+         node->zoom  = xmb->categories_active_zoom;
+         ia          = xmb->items_active_alpha;
+      }
+      else
+         ia          = xmb->items_passive_alpha;
 
       if (real_y < -threshold || real_y > height+threshold)
       {
          node->alpha = node->label_alpha = ia;
-         node->x = 0;
+         node->x     = 0;
       }
       else
       {
@@ -1610,9 +1617,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 static void xmb_set_title(xmb_handle_t *xmb)
 {
    if (xmb->categories_selection_ptr <= xmb->system_tab_end)
-   {
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
-   }
    else
    {
       const char *path = NULL;
