@@ -54,6 +54,7 @@ HAVE_7ZIP                := 1
 HAVE_NETWORKING          := 1
 HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
+HAVE_VIDEO_LAYOUT        := 1
 HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_SHADERPIPELINE      := 1

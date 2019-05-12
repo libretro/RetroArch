@@ -46,7 +46,7 @@ struct rxml_attrib_node
    struct rxml_attrib_node *next;
 };
 
-struct rxml_node
+typedef struct rxml_node
 {
    char *name;
    char *data;
@@ -54,9 +54,10 @@ struct rxml_node
 
    struct rxml_node *children;
    struct rxml_node *next;
-};
+} rxml_node_t;
 
 rxml_document_t *rxml_load_document(const char *path);
+rxml_document_t *rxml_load_document_string(const char *str);
 void rxml_free_document(rxml_document_t *doc);
 
 struct rxml_node *rxml_root_node(rxml_document_t *doc);

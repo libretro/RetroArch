@@ -453,6 +453,9 @@ video_driver_t video_metal = {
 #ifdef HAVE_OVERLAY
    metal_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
    metal_get_poke_interface,
    NULL, /* metal_wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)

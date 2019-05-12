@@ -1290,5 +1290,8 @@ video_driver_t video_ctr =
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
    ctr_get_poke_interface
 };

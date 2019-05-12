@@ -204,6 +204,13 @@ struct gl
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
 
+#ifdef HAVE_VIDEO_LAYOUT
+   bool   video_layout_resize;
+   GLuint video_layout_fbo;
+   GLuint video_layout_fbo_texture;
+   GLuint video_layout_white_texture;
+#endif
+
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned fbo_feedback_pass;

@@ -80,7 +80,7 @@ OBJDIR           := obj-w32
 OS               := Win32
 OBJ              :=
 LIBS             := -lm
-DEFINES          := -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_OVERLAY
+DEFINES          := -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_OVERLAY -DHAVE_VIDEO_LAYOUT
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common

@@ -452,5 +452,8 @@ video_driver_t video_vga = {
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
   vga_gfx_get_poke_interface,
 };

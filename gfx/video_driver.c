@@ -52,6 +52,10 @@
 #endif
 #endif
 
+#ifdef HAVE_VIDEO_LAYOUT
+#include "video_layout.h"
+#endif
+
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
 #include "video_display_server.h"
@@ -842,6 +846,10 @@ static void video_driver_free_internal(void)
    bool is_threaded     = video_driver_is_threaded_internal();
 #endif
 
+#ifdef HAVE_VIDEO_LAYOUT
+   video_layout_deinit();
+#endif
+
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_is_video_cache_context())
@@ -1099,6 +1107,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
    command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 
+#ifdef HAVE_VIDEO_LAYOUT
+   if(settings->bools.video_layout_enable)
+   {
+      video_layout_init(video_driver_data, video_driver_layout_render_interface());
+      video_layout_load(settings->paths.path_video_layout);
+      video_layout_view_select(settings->uints.video_layout_selected_view);
+   }
+#endif
+
    if (!core_is_game_loaded())
       video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
@@ -1198,6 +1215,16 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
       return false;
    current_video->overlay_interface(video_driver_data, iface);
    return true;
+}
+#endif
+
+#ifdef HAVE_VIDEO_LAYOUT
+const video_layout_render_interface_t *video_driver_layout_render_interface(void)
+{
+   if (!current_video)
+      return NULL;
+
+   return current_video->video_layout_render_interface(video_driver_data);
 }
 #endif
 

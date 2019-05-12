@@ -984,5 +984,8 @@ video_driver_t video_vita2d = {
 #ifdef HAVE_OVERLAY
    vita2d_get_overlay_interface,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
    vita2d_gfx_get_poke_interface,
 };

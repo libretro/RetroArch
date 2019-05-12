@@ -791,5 +791,8 @@ video_driver_t video_sdl2 = {
 #ifdef HAVE_OVERLAY
     NULL,
 #endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
+#endif
     sdl2_gfx_poke_interface
 };
