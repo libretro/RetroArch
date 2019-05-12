@@ -1472,44 +1472,52 @@ static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
-   char *path             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *timebuf          = (char*)malloc(256 * sizeof(char));
-   char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *timebuf;
+   char *path;
+   bool  ret              = false;
 
-   timebuf[0] = application_data[0] = path[0] = '\0';
+   char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   application_data[0]    = '\0';
 
    if (!fill_pathname_application_data(application_data,
             PATH_MAX_LENGTH * sizeof(char)))
-      goto error;
+   {
+      free(application_data);
+      return false;
+   }
 
+   time(&time_);
+
+   timebuf    = (char*)malloc(256 * sizeof(char));
+   timebuf[0] = '\0';
+
+   strftime(timebuf,
+         256 * sizeof(char),
+         "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+
+   path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   path[0] = '\0';
    snprintf(path,
          PATH_MAX_LENGTH * sizeof(char),
          "%s/RetroArch-recovery-%u",
          application_data, type);
 
-   time(&time_);
-
-   strftime(timebuf,
-         256 * sizeof(char),
-         "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf,
          PATH_MAX_LENGTH * sizeof(char)
          );
 
-   if (!filestream_write_file(path, data, size))
-      goto error;
-
    free(application_data);
    free(timebuf);
+
+   if (!filestream_write_file(path, data, size))
+   {
+      free(path);
+      return false;
+   }
+
    RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
    free(path);
    return true;
-
-error:
-   free(application_data);
-   free(timebuf);
-   free(path);
-   return false;
 }
 
 /**
