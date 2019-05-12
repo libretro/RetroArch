@@ -1237,6 +1237,8 @@ static void xmb_selection_pointer_changed(
       }
       else
       {
+
+         /* Move up/down animation */
          menu_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = XMB_DELAY;
@@ -1684,6 +1686,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
          iz = xmb->categories_active_zoom;
       }
 
+      /* Horizontal icon animation */
+
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
@@ -2070,6 +2074,8 @@ static void xmb_list_open(xmb_handle_t *xmb)
          dir, xmb->selection_ptr_old);
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
+
+   /* Menu opening animation */
 
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon_size * -(xmb->depth*2-2);
