@@ -323,24 +323,28 @@ bool task_push_decompress(
    s              = (decompress_state_t*)calloc(1, sizeof(*s));
 
    if (!s)
-      goto error;
+      return false;
 
-   s->source_file = strdup(source_file);
-   s->target_dir  = strdup(target_dir);
-
-   s->valid_ext   = valid_ext ? strdup(valid_ext) : NULL;
-   s->archive.type   = ARCHIVE_TRANSFER_INIT;
-   s->userdata = (struct archive_extract_userdata*)calloc(1, sizeof(*s->userdata));
-
-   t              = (retro_task_t*)calloc(1, sizeof(*t));
+   t                   = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
-      goto error;
+   {
+      free(s);
+      return false;
+   }
 
-   t->frontend_userdata = frontend_userdata;
+   s->source_file      = strdup(source_file);
+   s->target_dir       = strdup(target_dir);
 
-   t->state       = s;
-   t->handler     = task_decompress_handler;
+   s->valid_ext        = valid_ext ? strdup(valid_ext) : NULL;
+   s->archive.type     = ARCHIVE_TRANSFER_INIT;
+   s->userdata         = (struct archive_extract_userdata*)
+      calloc(1, sizeof(*s->userdata));
+
+   t->frontend_userdata= frontend_userdata;
+
+   t->state            = s;
+   t->handler          = task_decompress_handler;
 
    if (!string_is_empty(subdir))
    {
@@ -353,25 +357,16 @@ bool task_push_decompress(
       t->handler       = task_decompress_handler_target_file;
    }
 
-   t->callback    = cb;
-   t->user_data   = user_data;
+   t->callback         = cb;
+   t->user_data        = user_data;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'",
          msg_hash_to_str(MSG_EXTRACTING),
          path_basename(source_file));
 
-   t->title       = strdup(tmp);
+   t->title            = strdup(tmp);
 
    task_queue_push(t);
 
    return true;
-
-error:
-   if (s)
-   {
-      if (s->userdata)
-         free(s->userdata);
-      free(s);
-   }
-   return false;
 }
