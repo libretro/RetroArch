@@ -2579,7 +2579,8 @@ static void gl2_video_layout_fbo_init(gl_t *gl, unsigned width, unsigned height)
    gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
       GL_TEXTURE_2D, gl->video_layout_fbo_texture, 0);
 
-   if (gl2_check_fb_status(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != 
+         RARCH_GL_FRAMEBUFFER_COMPLETE)
       RARCH_LOG("Unable to create FBO for video_layout\n");
 
    gl2_bind_fb(0);
