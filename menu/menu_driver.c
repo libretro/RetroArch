@@ -378,6 +378,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          DATETIME_CHECK_INTERVAL)
    {
       time_t time_;
+      const struct tm *tm_;
 
       menu_driver_datetime_last_time_us = menu_driver_current_time_us;
 
@@ -386,53 +387,56 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 
       setlocale(LC_TIME, "");
 
+      tm_ = localtime(&time_);
+
       /* Format string representation */
       switch (datetime->time_mode)
       {
          case 0: /* Date and time */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %H:%M:%S", localtime(&time_));
+                  "%Y-%m-%d %H:%M:%S", tm_);
             break;
          case 1: /* YY-MM-DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %H:%M", localtime(&time_));
+                  "%Y-%m-%d %H:%M", tm_);
             break;
          case 2: /* MM-DD-YYYY HH:MM  */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y %H:%M", localtime(&time_));
+                  "%m-%d-%Y %H:%M", tm_);
             break;
          case 3: /* Time */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%H:%M:%S", localtime(&time_));
+                  "%H:%M:%S", tm_);
             break;
          case 4: /* Time (hours-minutes) */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%H:%M", localtime(&time_));
+                  "%H:%M", tm_);
             break;
          case 5: /* Date and time, without year and seconds */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%d/%m %H:%M", localtime(&time_));
+                  "%d/%m %H:%M", tm_);
             break;
          case 6:
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m/%d %H:%M", localtime(&time_));
+                  "%m/%d %H:%M", tm_);
             break;
          case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-               "%I : %M : %S %p", localtime(&time_));
+               "%I : %M : %S %p", tm_);
 #else
             {
                char *local;
 
                strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
 
-                  "%I:%M:%S %p", localtime(&time_));
+                  "%I:%M:%S %p", tm_);
                local = local_to_utf8_string_alloc(menu_datetime_cache);
 
                if (local)
                {
-                  strlcpy(menu_datetime_cache, local, sizeof(menu_datetime_cache));
+                  strlcpy(menu_datetime_cache,
+                        local, sizeof(menu_datetime_cache));
                   free(local);
                }
             }

@@ -5342,8 +5342,11 @@ finish:
 
 void rarch_log_file_init(void)
 {
-   FILE             *fp = NULL;
-   settings_t *settings = config_get_ptr();
+   FILE             *fp       = NULL;
+   settings_t *settings       = config_get_ptr();
+   bool log_to_file           = settings->bools.log_to_file;
+   bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
+   bool logging_to_file       = is_logging_to_file();
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5351,25 +5354,24 @@ void rarch_log_file_init(void)
    if (string_is_empty(timestamped_log_file_name))
    {
       char format[256];
-      time_t cur_time = time(NULL);
+      time_t cur_time      = time(NULL);
+      const struct tm *tm_ = localtime(&cur_time);
       
       format[0] = '\0';
-      
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", localtime(&cur_time));
-      
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
       fill_pathname_noext(timestamped_log_file_name, format,
             file_path_str(FILE_PATH_EVENT_LOG_EXTENSION),
             sizeof(timestamped_log_file_name));
    }
    
    /* If nothing has changed, do nothing */
-   if ((!settings->bools.log_to_file && !is_logging_to_file()) ||
-       (settings->bools.log_to_file && is_logging_to_file()))
+   if ((!log_to_file && !logging_to_file) ||
+       (log_to_file && logging_to_file))
       return;
    
    /* If we are currently logging to file and wish to stop,
     * de-initialise existing logger... */
-   if (!settings->bools.log_to_file && is_logging_to_file())
+   if (!log_to_file && logging_to_file)
    {
       retro_main_log_file_deinit();
       /* ...and revert to console */
@@ -5382,11 +5384,9 @@ void rarch_log_file_init(void)
    
    /* > Check whether we are already logging to console */
    fp = (FILE*)retro_main_log_file();
+   /* De-initialise existing logger */
    if (fp)
-   {
-      /* De-initialise existing logger */
       retro_main_log_file_deinit();
-   }
    
    /* > Attempt to initialise log file */
    if (!string_is_empty(settings->paths.log_dir))
@@ -5406,7 +5406,7 @@ void rarch_log_file_init(void)
       
       /* Format log file name */
       fill_pathname_join(buf, settings->paths.log_dir,
-            settings->bools.log_to_file_timestamp 
+            log_to_file_timestamp 
             ? timestamped_log_file_name 
             : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
             sizeof(buf));
@@ -5415,7 +5415,7 @@ void rarch_log_file_init(void)
          /* When RetroArch is launched, log file is overwritten.
           * On subsequent calls within the same session, it is appended to. */
          retro_main_log_file_init(buf, log_file_created);
-         if (is_logging_to_file())
+         if (logging_to_file)
             log_file_created = true;
          return;
       }
@@ -5478,11 +5478,10 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"el", RETRO_LANGUAGE_GREEK},
    };
    
-   if (string_is_empty(iso639)) {
+   if (string_is_empty(iso639))
       return lang;
-   }
 
-   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(pairs); i++)
    {
       if (strcasestr(iso639, pairs[i].iso639))
       {
