@@ -2081,13 +2081,13 @@ void content_deinit(void)
 }
 
 /* Set environment variables before a subsystem load */
-void content_set_subsystem_info()
+void content_set_subsystem_info(void)
 {
-   if (pending_subsystem_init)
-   {
-      path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-      path_set_special(pending_subsystem_roms, pending_subsystem_rom_num);
-   }
+   if (!pending_subsystem_init)
+      return;
+
+   path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
+   path_set_special(pending_subsystem_roms, pending_subsystem_rom_num);
 }
 
 /* Initializes and loads a content file for the currently
