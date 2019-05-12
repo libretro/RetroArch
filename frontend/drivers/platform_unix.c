@@ -1101,10 +1101,14 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
    retro_closedir(entry);
 
    entry = retro_opendir(proc_acpi_sysfs_ac_adapter_path);
-   if (!entry)
-      goto error;
 
-   check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+   if (entry)
+   {
+      check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+      retro_closedir(entry);
+   }
+   else
+      have_ac = false;
 
    if (!have_battery)
    {
@@ -1116,8 +1120,6 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
       *state = FRONTEND_POWERSTATE_CHARGED;
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-
-   retro_closedir(entry);
 
    return true;
 
