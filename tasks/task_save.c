@@ -565,7 +565,7 @@ static void task_save_handler_finished(retro_task_t *task,
    free(state);
 }
 
-void* get_serialized_data(const char *path, size_t serial_size)
+static void *get_serialized_data(const char *path, size_t serial_size)
 {
    retro_ctx_serialize_info_t serial_info;
    bool ret    = false;
@@ -1269,10 +1269,10 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    }
    else
    {
-      if (data == NULL)
+      if (!data)
          data = get_serialized_data(path, info.size);
 
-      if (data == NULL)
+      if (!data)
       {
          RARCH_ERR("%s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
