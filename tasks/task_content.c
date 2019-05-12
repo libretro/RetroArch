@@ -166,16 +166,14 @@ static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
-   bool ret = false;
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
-      ret = file_archive_compressed_read(path, buf, NULL, length);
+   {
+      if (file_archive_compressed_read(path, buf, NULL, length))
+         return 1;
+   }
 #endif
-   if (!ret)
-      ret = filestream_read_file(path, buf, length);
-   if (*length < 0)
-      return false;
-   return ret;
+   return filestream_read_file(path, buf, length);
 }
 
 /**
@@ -342,12 +340,15 @@ static bool load_content_into_memory(
    if (!content_file_read(path, (void**) &ret_buf, length))
       return false;
 
+   if (*length < 0)
+      return false;
+
    if (i == 0)
    {
-      content_rom_crc = 0;
+      enum rarch_content_type type = path_is_media_type(path);
 
       /* If we have a media type, ignore CRC32 calculation. */
-      if (path_is_media_type(path) == RARCH_CONTENT_NONE)
+      if (type == RARCH_CONTENT_NONE)
       {
          /* First content file is significant, attempt to do patching,
           * CRC checking, etc. */
@@ -368,6 +369,8 @@ static bool load_content_into_memory(
 
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
       }
+      else
+         content_rom_crc = 0;
    }
 
    *buf = ret_buf;
@@ -393,6 +396,7 @@ static bool load_content_from_compressed_archive(
    char *new_path                    = (char*)malloc(new_path_size);
    bool ret                          = false;
 
+   new_path[0]                       = '\0';
    new_basedir[0]                    = '\0';
    attributes.i                      = 0;
 
@@ -411,12 +415,11 @@ static bool load_content_from_compressed_archive(
       fill_pathname_basedir(new_basedir, path, new_basedir_size);
    }
 
-   new_basedir[0] = '\0';
    new_path[0]    = '\0';
+   new_basedir[0] = '\0';
 
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), new_path_size);
-   free(new_basedir);
 
    ret = file_archive_compressed_read(path,
          NULL, new_path, &new_path_len);
@@ -432,8 +435,7 @@ static bool load_content_from_compressed_archive(
             path);
       *error_string = strdup(str);
       free(str);
-      free(new_path);
-      return false;
+      goto error;
    }
 
    string_list_append(additional_path_allocs, new_path, attributes);
@@ -442,13 +444,16 @@ static bool load_content_from_compressed_archive(
 
    if (!string_list_append(content_ctx->temporary_content,
             new_path, attributes))
-   {
-      free(new_path);
-      return false;
-   }
+      goto error;
 
+   free(new_basedir);
    free(new_path);
    return true;
+
+error:
+   free(new_basedir);
+   free(new_path);
+   return false;
 }
 
 /* Try to extract all content we're going to load if appropriate. */
@@ -513,8 +518,7 @@ static bool content_file_init_extract(
                   temp_content);
             free(temp_content);
             free(str);
-            free(new_path);
-            return false;
+            goto error;
          }
 
          string_list_set(content, i, new_path);
@@ -523,16 +527,17 @@ static bool content_file_init_extract(
 
          if (!string_list_append(content_ctx->temporary_content,
                   new_path, *attr))
-         {
-            free(new_path);
-            return false;
-         }
+            goto error;
 
          free(new_path);
       }
    }
 
    return true;
+
+error:
+   free(new_path);
+   return false;
 }
 #endif
 
@@ -556,11 +561,14 @@ static bool content_file_load(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
+   size_t msg_size             = 1024 * sizeof(char);
+   char *msg                   = (char*)malloc(msg_size);
    bool used_vfs_fallback_copy = false;
 #ifdef __WINRT__
    rarch_system_info_t *system = runloop_get_system_info();
 #endif
 
+   msg[0]          = '\0';
 
    for (i = 0; i < content->size; i++)
    {
@@ -571,9 +579,12 @@ static bool content_file_load(
 
       if (require_content && string_is_empty(path))
       {
-         *error_string = strdup(
-               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
-         return false;
+         strlcpy(msg,
+               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT),
+               msg_size
+               );
+         *error_string = strdup(msg);
+         goto error;
       }
 
       info[i].path = NULL;
@@ -591,17 +602,13 @@ static bool content_file_load(
                   content_ctx,
                   i, path, (void**)&info[i].data, &len))
          {
-            size_t msg_size = 1024 * sizeof(char);
-            char *msg       = (char*)malloc(msg_size);
-            msg[0]          = '\0';
             snprintf(msg,
                   msg_size,
                   "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
             *error_string = strdup(msg);
-            free(msg);
-            return false;
+            goto error;
          }
 
          info[i].size = len;
@@ -617,7 +624,7 @@ static bool content_file_load(
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
                   error_string))
-            return false;
+            goto error;
 #endif
 
 #ifdef __WINRT__
@@ -657,24 +664,16 @@ static bool content_file_load(
              * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
-               msg[0]          = '\0';
                snprintf(msg,
-                     msg_size,
-                     "%s \"%s\". (during copy read)\n",
-                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                     path);
+                  msg_size,
+                  "%s \"%s\". (during copy read)\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
                *error_string = strdup(msg);
-               free(msg);
-               return false;
+               goto error;
             }
             if (!filestream_write_file(new_path, buf, len))
             {
-               size_t msg_size = 1024 * sizeof(char);
-               char *msg       = (char*)malloc(msg_size);
-               msg[0]          = '\0';
-
                free(buf);
                snprintf(msg,
                   msg_size,
@@ -682,8 +681,7 @@ static bool content_file_load(
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
                *error_string = strdup(msg);
-               free(msg);
-               return false;
+               goto error;
             }
             free(buf);
 
@@ -722,11 +720,16 @@ static bool content_file_load(
       /* This is probably going to fail on multifile ROMs etc.
        * so give a visible explanation of what is likely wrong */
       if (used_vfs_fallback_copy)
-         *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
+         snprintf(msg,
+            msg_size,
+            "%s.", msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
       else
-         *error_string = strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+         snprintf(msg,
+            msg_size,
+            "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 
-      return false;
+      *error_string = strdup(msg);
+      goto error;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -744,7 +747,12 @@ static bool content_file_load(
    }
 #endif
 
+   free(msg);
    return true;
+
+error:
+   free(msg);
+   return false;
 }
 
 static const struct
@@ -754,40 +762,35 @@ retro_subsystem_info *content_file_init_subsystem(
       char **error_string,
       bool *ret)
 {
+   size_t path_size                           = 1024 * sizeof(char);
+   char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             subsystem_data, subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
+   msg[0] = '\0';
+
    if (!special)
    {
-      size_t path_size    = 1024 * sizeof(char);
-      char *msg           = (char*)malloc(path_size);
-      msg[0]              = '\0';
-
       snprintf(msg, path_size,
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
       *error_string = strdup(msg);
-      *ret          = false;
-      free(msg);
-      return NULL;
+      goto error;
    }
 
    if (special->num_roms && !subsystem)
    {
-      *error_string = strdup(
-            msg_hash_to_str(
-               MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
-      *ret          = false;
-      return NULL;
+      strlcpy(msg,
+            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
+            path_size
+            );
+      *error_string = strdup(msg);
+      goto error;
    }
    else if (special->num_roms && (special->num_roms != subsystem->size))
    {
-      size_t path_size    = 1024 * sizeof(char);
-      char *msg           = (char*)malloc(path_size);
-      msg[0]              = '\0';
-
       snprintf(msg,
             path_size,
             "Libretro core requires %u content files for "
@@ -795,16 +798,10 @@ retro_subsystem_info *content_file_init_subsystem(
             special->num_roms, special->desc,
             (unsigned)subsystem->size);
       *error_string = strdup(msg);
-      *ret          = false;
-      free(msg);
-      return NULL;
+      goto error;
    }
    else if (!special->num_roms && subsystem && subsystem->size)
    {
-      size_t path_size    = 1024 * sizeof(char);
-      char *msg           = (char*)malloc(path_size);
-      msg[0]              = '\0';
-
       snprintf(msg,
             path_size,
             "Libretro core takes no content for subsystem \"%s\", "
@@ -812,13 +809,17 @@ retro_subsystem_info *content_file_init_subsystem(
             special->desc,
             (unsigned)subsystem->size);
       *error_string = strdup(msg);
-      *ret          = false;
-      free(msg);
-      return NULL;
+      goto error;
    }
 
    *ret = true;
+   free(msg);
    return special;
+
+error:
+   *ret = false;
+   free(msg);
+   return NULL;
 }
 
 static void content_file_init_set_attribs(
@@ -916,9 +917,7 @@ static bool content_file_init(
    }
    else if (!special)
    {
-      *error_string = strdup(
-            msg_hash_to_str(
-               MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+      *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
       ret = false;
    }
 
@@ -1161,14 +1160,13 @@ static bool firmware_update_status(
    bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *s                    = NULL;
+   char *s                    = (char*)malloc(s_size);
 
    core_info_get_current_core(&core_info);
 
    if (!core_info)
-      return false;
+      goto error;
 
-   s                          = (char*)malloc(s_size);
    firmware_info.path         = core_info->path;
 
    if (!string_is_empty(content_ctx->directory_system))
@@ -1205,6 +1203,7 @@ static bool firmware_update_status(
       return true;
    }
 
+error:
    free(s);
    return false;
 }
@@ -2082,7 +2081,7 @@ void content_deinit(void)
 }
 
 /* Set environment variables before a subsystem load */
-void content_set_subsystem_info(void)
+void content_set_subsystem_info()
 {
    if (pending_subsystem_init)
    {
