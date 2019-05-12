@@ -2699,23 +2699,23 @@ static int xmb_draw_item(
    ticker.spacer = NULL;
 
    if (!node)
-      goto iterate;
+      return 0;
 
    tmp[0] = '\0';
 
    icon_y = xmb->margins_screen_top + node->y + half_size;
 
    if (icon_y < half_size)
-      goto iterate;
+      return 0;
 
    if (icon_y > height + xmb->icon_size)
-      goto end;
+      return -1;
 
    icon_x = node->x + xmb->margins_screen_left +
       xmb->icon_spacing_horizontal - half_size;
 
    if (icon_x < -half_size || icon_x > width)
-      goto iterate;
+      return 0;
 
    entry_type = menu_entry_get_type_new(entry);
 
@@ -2800,7 +2800,7 @@ static int xmb_draw_item(
    }
 
    if (!string_is_empty(entry->path))
-      ticker_str      = menu_entry_get_rich_label(entry);
+      ticker_str   = menu_entry_get_rich_label(entry);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2931,15 +2931,9 @@ static int xmb_draw_item(
             &color[0],
             xmb->shadow_offset);
 
-iterate:
    if (!string_is_empty(ticker_str))
       free(ticker_str);
    return 0;
-
-end:
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
-   return -1;
 }
 
 static void xmb_draw_items(
@@ -4309,17 +4303,23 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    }
 
    if (!menu)
-      goto error;
+      return NULL;
 
    if (!menu_display_init_first_driver(video_is_threaded))
-      goto error;
+   {
+      free(menu);
+      return NULL;
+   }
 
    video_driver_get_size(&width, &height);
 
    xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
    if (!xmb)
-      goto error;
+   {
+      free(menu);
+      return NULL;
+   }
 
    *userdata = xmb;
 
@@ -4389,21 +4389,17 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    return menu;
 
 error:
-   if (menu)
-      free(menu);
+   free(menu);
 
-   if (xmb)
+   if (xmb->selection_buf_old)
+      free(xmb->selection_buf_old);
+   xmb->selection_buf_old = NULL;
+   if (xmb->horizontal_list)
    {
-      if (xmb->selection_buf_old)
-         free(xmb->selection_buf_old);
-      xmb->selection_buf_old = NULL;
-      if (xmb->horizontal_list)
-      {
-         xmb_free_list_nodes(xmb->horizontal_list, false);
-         file_list_free(xmb->horizontal_list);
-      }
-      xmb->horizontal_list = NULL;
+      xmb_free_list_nodes(xmb->horizontal_list, false);
+      file_list_free(xmb->horizontal_list);
    }
+   xmb->horizontal_list = NULL;
    return NULL;
 }
 
