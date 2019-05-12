@@ -153,13 +153,13 @@ else
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	picasso $^ -o $*.shbin
+	bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	picasso $^ -o $*.shbin
+	bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -180,7 +180,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	$(DEVKITARM)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
@@ -188,7 +188,7 @@ ifeq ($(APP_BIG_TEXT_SECTION), 1)
 else
 	rm -f $(TARGET).xml
 endif
-	$(DEVKITARM)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
+	3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
