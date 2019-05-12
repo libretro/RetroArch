@@ -2093,17 +2093,10 @@ static void xmb_list_open(xmb_handle_t *xmb)
    switch (xmb->depth)
    {
       case 1:
-         menu_animation_push(&entry);
-
-         entry.target_value = 0;
-         entry.subject      = &xmb->textures_arrow_alpha;
-
-         menu_animation_push(&entry);
-         break;
       case 2:
          menu_animation_push(&entry);
 
-         entry.target_value = 1;
+         entry.target_value = xmb->depth - 1;
          entry.subject      = &xmb->textures_arrow_alpha;
 
          menu_animation_push(&entry);
@@ -4141,17 +4134,13 @@ static void xmb_layout(xmb_handle_t *xmb)
          break;
          /* PS3 */
       case 1:
-         {
-            xmb->use_ps3_layout        = true;
-            xmb_layout_ps3(xmb, width);
-         }
+         xmb->use_ps3_layout        = true;
+         xmb_layout_ps3(xmb, width);
          break;
          /* PSP */
       case 2:
-         {
-            xmb->use_ps3_layout        = false;
-            xmb_layout_psp(xmb, width);
-         }
+         xmb->use_ps3_layout        = false;
+         xmb_layout_psp(xmb, width);
          break;
    }
 
@@ -5184,7 +5173,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                if (xmb->categories_selection_ptr == list_size)
                {
                   xmb->categories_selection_ptr = 0;
-                  xmb->categories_active_idx = 1;
+                  xmb->categories_active_idx    = 1;
                }
                else
                   xmb->categories_selection_ptr++;
