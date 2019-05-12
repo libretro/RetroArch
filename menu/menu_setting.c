@@ -14422,16 +14422,22 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
          list_info->size, sizeof(*list));
 
    if (!list)
-      goto error;
+      return NULL;
 
    for (i = 0; i < ARRAY_SIZE(list_types); i++)
    {
       if (!setting_append_list(list_types[i], &list, list_info, root))
-         goto error;
+      {
+         free(list);
+         return NULL;
+      }
    }
 
-   if (!(settings_list_append(&list, list_info)))
-      goto error;
+   if (!settings_list_append(&list, list_info))
+   {
+      free(list);
+      return NULL;
+   }
    menu_setting_terminate_last(list, list_info->index);
    list_info->index++;
 
@@ -14439,16 +14445,14 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    resized_list = (rarch_setting_t*)realloc(list,
          list_info->index * sizeof(rarch_setting_t));
    if (!resized_list)
-      goto error;
+   {
+      free(list);
+      return NULL;
+   }
 
    list = resized_list;
 
    return list;
-
-error:
-   if (list)
-      free(list);
-   return NULL;
 }
 
 /**

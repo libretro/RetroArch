@@ -141,7 +141,6 @@ bool menu_thumbnail_is_enabled(enum menu_thumbnail_id thumbnail_id)
          return settings->uints.menu_thumbnails != 0;
       case MENU_THUMBNAIL_LEFT:
          return settings->uints.menu_left_thumbnails != 0;
-         break;
       default:
          break;
    }
