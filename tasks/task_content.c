@@ -561,14 +561,10 @@ static bool content_file_load(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
-   size_t msg_size             = 1024 * sizeof(char);
-   char *msg                   = (char*)malloc(msg_size);
    bool used_vfs_fallback_copy = false;
 #ifdef __WINRT__
    rarch_system_info_t *system = runloop_get_system_info();
 #endif
-
-   msg[0]          = '\0';
 
    for (i = 0; i < content->size; i++)
    {
@@ -579,12 +575,8 @@ static bool content_file_load(
 
       if (require_content && string_is_empty(path))
       {
-         strlcpy(msg,
-               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT),
-               msg_size
-               );
-         *error_string = strdup(msg);
-         goto error;
+         *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+         return false;
       }
 
       info[i].path = NULL;
@@ -602,13 +594,18 @@ static bool content_file_load(
                   content_ctx,
                   i, path, (void**)&info[i].data, &len))
          {
+            size_t msg_size = 1024 * sizeof(char);
+            char *msg       = (char*)malloc(msg_size);
+            msg[0]          = '\0';
+
             snprintf(msg,
                   msg_size,
                   "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
             *error_string = strdup(msg);
-            goto error;
+            free(msg);
+            return false;
          }
 
          info[i].size = len;
@@ -624,7 +621,7 @@ static bool content_file_load(
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
                   error_string))
-            goto error;
+            return false;
 #endif
 
 #ifdef __WINRT__
@@ -640,9 +637,9 @@ static bool content_file_load(
             char *new_basedir       = (char*)malloc(new_basedir_size);
             char *new_path          = (char*)malloc(new_path_size);
 
-            new_path[0] = '\0';
-            new_basedir[0] = '\0';
-            attributes.i = 0;
+            new_path[0]             = '\0';
+            new_basedir[0]          = '\0';
+            attributes.i            = 0;
 
             RARCH_LOG("Core does not support VFS - copying to cache directory\n");
 
@@ -664,16 +661,25 @@ static bool content_file_load(
              * but copying large files is not a good idea anyway */
             if (!filestream_read_file(path, &buf, &len))
             {
+               size_t msg_size = 1024 * sizeof(char);
+               char *msg       = (char*)malloc(msg_size);
+               msg[0]          = '\0';
+
                snprintf(msg,
-                  msg_size,
-                  "%s \"%s\". (during copy read)\n",
-                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                  path);
+                     msg_size,
+                     "%s \"%s\". (during copy read)\n",
+                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                     path);
                *error_string = strdup(msg);
-               goto error;
+               free(msg);
+               return false;
             }
             if (!filestream_write_file(new_path, buf, len))
             {
+               size_t msg_size = 1024 * sizeof(char);
+               char *msg       = (char*)malloc(msg_size);
+               msg[0]          = '\0';
+
                free(buf);
                snprintf(msg,
                   msg_size,
@@ -681,7 +687,8 @@ static bool content_file_load(
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
                *error_string = strdup(msg);
-               goto error;
+               free(msg);
+               return false;
             }
             free(buf);
 
@@ -720,16 +727,13 @@ static bool content_file_load(
       /* This is probably going to fail on multifile ROMs etc.
        * so give a visible explanation of what is likely wrong */
       if (used_vfs_fallback_copy)
-         snprintf(msg,
-            msg_size,
-            "%s.", msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
+         *error_string = strdup(msg_hash_to_str(
+                  MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS));
       else
-         snprintf(msg,
-            msg_size,
-            "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+         *error_string = strdup(msg_hash_to_str(
+                  MSG_FAILED_TO_LOAD_CONTENT));
 
-      *error_string = strdup(msg);
-      goto error;
+      return false;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -747,12 +751,7 @@ static bool content_file_load(
    }
 #endif
 
-   free(msg);
    return true;
-
-error:
-   free(msg);
-   return false;
 }
 
 static const struct
