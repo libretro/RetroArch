@@ -64,7 +64,9 @@ static int SWITCH_BRIGHTNESS[] = {
 
 static char *SWITCH_CPU_PROFILES[] = {
 #ifndef HAVE_LIBNX
-    // for switch-lakka - same as LIBNX but only by coincidence
+    "Max Overdrive +3",
+    "Max Overdrive +2",
+    "Max Overdrive +1",
     "Maximum Performance",
     "High Performance",
     "Boost Performance",
@@ -88,7 +90,9 @@ static char *SWITCH_CPU_PROFILES[] = {
 
 static char *SWITCH_CPU_SPEEDS[] = {
 #ifndef HAVE_LIBNX
-    // for switch-lakka - same as LIBNX but only by coincidence
+    " **UNSTABLE**  2091 MHz",
+    " **UNSTABLE**  1989 MHz",
+    " **UNSTABLE**  1887 MHz",
     "1785 MHz",
     "1581 MHz",
     "1224 MHz",
