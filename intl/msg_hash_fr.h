@@ -8678,3 +8678,9 @@ MSG_HASH(
          MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
          "Si cette option est désactivée, le contenu n'est ajouté aux listes de lecture que s'il est pris en charge par un cœur installé. Cette option ajoutera toujours le contenu aux listes de lecture, et un cœur compatible pourra être installé plus tard."
          )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+      "Animation Horizontal Icon Highlight")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+      "Animation Move Up/Down")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+      "Animation Main Menu Opens/Closes")

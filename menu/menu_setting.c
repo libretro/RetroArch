@@ -3307,6 +3307,69 @@ static void setting_get_string_representation_uint_rgui_particle_effect(
    }
 }
 
+static void setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, "Easing Out Quad", len);
+         break;
+      case 1:
+         strlcpy(s, "Easing Out Expo", len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_menu_xmb_animation_opening_main_menu(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, "Easing Out Quad", len);
+         break;
+      case 1:
+         strlcpy(s, "Easing Out Circ", len);
+         break;
+      case 2:
+         strlcpy(s, "Easing Out Expo", len);
+         break;
+      case 3:
+         strlcpy(s, "Easing Out Bounce", len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_menu_xmb_animation_horizontal_highlight(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, "Easing Out Quad", len);
+         break;
+      case 1:
+         strlcpy(s, "Easing In Sine", len);
+         break;
+      case 2:
+         strlcpy(s, "Easing Out Bounce", len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_menu_ticker_type(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -11125,6 +11188,57 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right  = NULL;
             (*list)[list_info->index - 1].action_start  = NULL;
 #endif
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_animation_horizontal_highlight,
+                  MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+                  menu_ticker_type,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_xmb_animation_horizontal_highlight;
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_animation_move_up_down,
+                  MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+                  menu_ticker_type,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_xmb_animation_move_up_down;
+            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_animation_opening_main_menu,
+                  MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+                  menu_ticker_type,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_xmb_animation_opening_main_menu;
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
          CONFIG_UINT(

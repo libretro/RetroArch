@@ -1755,6 +1755,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #endif
 #ifdef HAVE_XMB
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
+   SETTING_UINT("menu_xmb_animation_opening_main_menu",   &settings->uints.menu_xmb_animation_opening_main_menu, true, 0 /* TODO/FIXME - implement */, false);
+   SETTING_UINT("menu_xmb_animation_horizontal_highlight",   &settings->uints.menu_xmb_animation_horizontal_highlight, true, 0 /* TODO/FIXME - implement */, false);
+   SETTING_UINT("menu_xmb_animation_move_up_down",   &settings->uints.menu_xmb_animation_move_up_down, true, 0 /* TODO/FIXME - implement */, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
    SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
    SETTING_UINT("xmb_layout",                   &settings->uints.menu_xmb_layout, true, xmb_menu_layout, false);

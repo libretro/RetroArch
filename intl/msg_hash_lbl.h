@@ -1869,3 +1869,9 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
       "video_shader_enable")
 MSG_HASH(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
       "scan_without_core_match")
+MSG_HASH(MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+      "xmb_menu_animation_horizontal_highlight")
+MSG_HASH(MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+      "xmb_menu_animation_move_up_down")
+MSG_HASH(MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+      "xmb_menu_animation_opening_main_menu")

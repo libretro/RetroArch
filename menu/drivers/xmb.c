@@ -1237,16 +1237,27 @@ static void xmb_selection_pointer_changed(
       }
       else
       {
+         settings_t *settings = config_get_ptr();
 
          /* Move up/down animation */
          menu_animation_ctx_entry_t anim_entry;
 
-         anim_entry.duration     = XMB_DELAY;
          anim_entry.target_value = ia;
          anim_entry.subject      = &node->alpha;
-         anim_entry.easing_enum  = EASING_OUT_QUAD;
          anim_entry.tag          = tag;
          anim_entry.cb           = NULL;
+
+         switch (settings->uints.menu_xmb_animation_move_up_down)
+         {
+            case 0:
+               anim_entry.duration     = XMB_DELAY;
+               anim_entry.easing_enum  = EASING_OUT_QUAD;
+               break;
+            case 1:
+               anim_entry.duration     = XMB_DELAY * 4;
+               anim_entry.easing_enum  = EASING_OUT_EXPO;
+               break;
+         }
 
          menu_animation_push(&anim_entry);
 
@@ -1678,6 +1689,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
    for (j = 0; j <= list_size; j++)
    {
       menu_animation_ctx_entry_t entry;
+      settings_t *settings        = config_get_ptr();
       float ia                    = xmb->categories_passive_alpha;
       float iz                    = xmb->categories_passive_zoom;
       xmb_node_t *node            = xmb_get_node(xmb, j);
@@ -1693,13 +1705,27 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 
       /* Horizontal icon animation */
 
-      entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_OUT_QUAD;
       /* TODO/FIXME - integer conversion resulted in change of sign */
       entry.tag          = -1;
       entry.cb           = NULL;
+
+      switch (settings->uints.menu_xmb_animation_horizontal_highlight)
+      {
+         case 0:
+            entry.duration     = XMB_DELAY;
+            entry.easing_enum  = EASING_OUT_QUAD;
+            break;
+         case 1:
+            entry.duration     = XMB_DELAY + (XMB_DELAY / 2);
+            entry.easing_enum  = EASING_IN_SINE;
+            break;
+         case 2:
+            entry.duration     = XMB_DELAY * 4;
+            entry.easing_enum  = EASING_OUT_BOUNCE;
+            break;
+      }
 
       menu_animation_push(&entry);
 
@@ -2060,6 +2086,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    menu_animation_ctx_entry_t entry;
 
+   settings_t *settings       = config_get_ptr();
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
@@ -2080,15 +2107,33 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
 
-   /* Menu opening animation */
+   /* Main Menu opening animation */
 
-   entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon_size * -(xmb->depth*2-2);
    entry.subject      = &xmb->x;
-   entry.easing_enum  = EASING_OUT_QUAD;
    /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
+
+   switch (settings->uints.menu_xmb_animation_opening_main_menu)
+   {
+      case 0:
+         entry.easing_enum  = EASING_OUT_QUAD;
+         entry.duration     = XMB_DELAY;
+         break;
+      case 1:
+         entry.easing_enum  = EASING_OUT_CIRC;
+         entry.duration     = XMB_DELAY * 2;
+         break;
+      case 2:
+         entry.easing_enum  = EASING_OUT_EXPO;
+         entry.duration     = XMB_DELAY * 3;
+         break;
+      case 3:
+         entry.easing_enum  = EASING_OUT_BOUNCE;
+         entry.duration     = XMB_DELAY * 4;
+         break;
+   }
 
    switch (xmb->depth)
    {

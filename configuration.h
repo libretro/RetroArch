@@ -454,6 +454,9 @@ typedef struct settings
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_dpi_override_value;
       unsigned menu_rgui_color_theme;
+      unsigned menu_xmb_animation_opening_main_menu;
+      unsigned menu_xmb_animation_horizontal_highlight;
+      unsigned menu_xmb_animation_move_up_down;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
