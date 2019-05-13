@@ -343,23 +343,21 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
       fi
 
       check_pkgconf OSMESA osmesa
-   else
-      die : 'Notice: Ignoring Cg. Desktop OpenGL is not enabled.'
-      HAVE_CG='no'
    fi
+else
+   HAVE_OPENGL='no'
 fi
 
+check_enabled OPENGL CG Cg 'OpenGL is' false
+check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
+check_enabled OPENGL OPENGL1 OpenGL1 'OpenGL is' false
+
 if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES3" = 'no' ]; then
-   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
+   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling OpenGL core.'
    HAVE_OPENGL_CORE='no'
 elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    die : 'Notice: OpenGLES2 is enabled. Disabling the OpenGL core driver.'
    HAVE_OPENGL_CORE='no'
-fi
-
-if [ "$HAVE_OPENGLES" != 'no' ] || [ "$HAVE_OPENGLES3" != 'no' ]; then
-   die : 'Notice: OpenGLES is enabled. Disabling the OpenGL1 driver.'
-   HAVE_OPENGL1='no'
 fi
 
 if [ "$HAVE_ZLIB" = 'no' ]; then
