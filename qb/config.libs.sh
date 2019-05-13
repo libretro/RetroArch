@@ -402,15 +402,11 @@ fi
 if [ "$HAVE_KMS" != "no" ]; then
    check_val '' GBM -lgbm '' gbm 9.0 '' false
    check_val '' DRM -ldrm libdrm libdrm '' '' false
-
-   if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
-      HAVE_KMS=yes
-   elif [ "$HAVE_KMS" = "yes" ]; then
-      die 1 'Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms.'
-   else
-      HAVE_KMS=no
-   fi
 fi
+
+check_enabled DRM KMS KMS 'DRM is' true
+check_enabled GBM KMS KMS 'GBM is' true
+check_enabled EGL KMS KMS 'EGL is' true
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
