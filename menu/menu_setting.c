@@ -5495,10 +5495,10 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
  **/
 void menu_setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type,
-      const char *menu_label, const char *label, unsigned idx)
+      const char *menu_label, unsigned idx)
 {
    rarch_setting_t *setting = NULL;
-   if (!list || !label)
+   if (!list)
       return;
 
    setting = menu_setting_find(list->list[idx].label);

@@ -136,7 +136,6 @@ typedef struct menu_file_list_cbs
    void (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
-         const char *entry_label,
          const char *path,
          char *path_buf, size_t path_buf_size);
 } menu_file_list_cbs_t;

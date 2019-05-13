@@ -119,7 +119,7 @@ void menu_setting_get_string_representation(rarch_setting_t *setting, char *s, s
  **/
 void menu_setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type,
-      const char *menu_label, const char *label, unsigned idx);
+      const char *menu_label, unsigned idx);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);

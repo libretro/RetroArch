@@ -378,7 +378,12 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    file_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
          &entry->entry_idx);
 
-   cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, i);
+   cbs                        = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(list, i);
+   entry->idx                 = (unsigned)i;
+
+   if (!string_is_empty(entry_label))
+      entry->label = strdup(entry_label);
 
    if (cbs)
    {
@@ -400,7 +405,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                (unsigned)i, label,
                tmp,
                sizeof(tmp),
-               entry_label, path,
+               path,
                newpath,
                sizeof(newpath)
                );
@@ -440,8 +445,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       }
    }
 
-   entry->idx         = (unsigned)i;
-
    if (!string_is_empty(path) && !use_representation)
       strlcpy(newpath,  path, sizeof(newpath));
    else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
@@ -453,8 +456,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (!string_is_empty(newpath))
       entry->path = strdup(newpath);
 
-   if (!string_is_empty(entry_label))
-      entry->label = strdup(entry_label);
 }
 
 bool menu_entry_is_currently_selected(unsigned id)
