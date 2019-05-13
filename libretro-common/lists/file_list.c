@@ -278,8 +278,8 @@ static int file_list_alt_cmp(const void *a_, const void *b_)
 {
    const struct item_file *a = (const struct item_file*)a_;
    const struct item_file *b = (const struct item_file*)b_;
-   const char *cmp_a = a->alt ? a->alt : a->path;
-   const char *cmp_b = b->alt ? b->alt : b->path;
+   const char *cmp_a         = a->alt ? a->alt : a->path;
+   const char *cmp_b         = b->alt ? b->alt : b->path;
    return strcasecmp(cmp_a, cmp_b);
 }
 

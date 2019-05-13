@@ -51,7 +51,7 @@ static rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    return (cbs) ? cbs->setting : NULL;
 }
 
@@ -378,8 +378,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    file_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
          &entry->entry_idx);
 
-   cbs                        = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(list, i);
+   cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
 
    if (!string_is_empty(entry_label))
@@ -489,7 +488,7 @@ int menu_entry_action(menu_entry_t *entry,
    file_list_t *selection_buf =
       menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 
    switch (action)
    {
@@ -554,7 +553,7 @@ int menu_entry_action(menu_entry_t *entry,
    }
 
    cbs = selection_buf ? (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+      selection_buf->list[i].actiondata : NULL;
 
    if (menu_entries_need_refresh())
    {
@@ -671,7 +670,7 @@ error:
 
 #define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
 
-#define menu_list_get_stack_size(list, idx) file_list_get_size((list)->menu_stack[(idx)])
+#define menu_list_get_stack_size(list, idx) ((list)->menu_stack[(idx)]->size)
 
 static int menu_list_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
@@ -797,7 +796,6 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    current        = menu_entries_elem_get_first_char(list, 0);
 
    file_list_get_at_offset(list, 0, NULL, NULL, &type, NULL);
-   file_list_get_alt_at_offset(list, 0, NULL);
 
    if (type == FILE_TYPE_DIRECTORY)
       current_is_dir = true;
@@ -809,7 +807,6 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       unsigned idx = (unsigned)i;
       
       file_list_get_at_offset(list, idx, NULL, NULL, &type, NULL);
-      file_list_get_alt_at_offset(list, idx, NULL);
 
       if (type == FILE_TYPE_DIRECTORY)
          is_dir = true;
@@ -860,8 +857,10 @@ static bool menu_entries_refresh(file_list_t *list)
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
    if (menu_entries_list)
-      return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
-            menu_list_get(menu_entries_list, 0));
+   {
+      const file_list_t *list = menu_list_get(menu_entries_list, 0);
+      return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   }
    return NULL;
 }
 
@@ -872,9 +871,10 @@ int menu_entries_get_title(char *s, size_t len)
    const char *path              = NULL;
    const char *label             = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   menu_file_list_cbs_t *cbs     = menu_entries_list 
-      ? (menu_file_list_cbs_t*)file_list_get_last_actiondata(
-            menu_list_get(menu_entries_list, 0))
+   const file_list_t *list       = menu_entries_list ? 
+      menu_list_get(menu_entries_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = list 
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
 
    if (!cbs)
@@ -965,7 +965,7 @@ error:
 void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       bool checked)
 {
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, entry_idx);
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[entry_idx].actiondata;
 
    if (cbs)
       cbs->checked = checked;
@@ -1131,7 +1131,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    if (enum_idx)
    {
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
-         file_list_get_last_actiondata(list);
+         list->list[list->size - 1].actiondata;
 
       if (cbs)
          *enum_idx = cbs->enum_idx;
@@ -1162,10 +1162,12 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
+   const file_list_t *list        = NULL;
    menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return 0;
-   return file_list_get_size(menu_list_get_selection(menu_list, 0));
+   list                           = menu_list_get_selection(menu_list, 0);
+   return list->size;
 }
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
