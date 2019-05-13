@@ -677,10 +677,11 @@ static void menu_action_setting_disp_set_label_entry_url(
       const char *path,
       char *s2, size_t len2)
 {
-   const char *representation_label = NULL;
+   const char *representation_label = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
    *s = '\0';
    *w = 8;
-   file_list_get_alt_at_offset(list, i, &representation_label);
 
    if (!string_is_empty(representation_label))
       strlcpy(s2, representation_label, len2);

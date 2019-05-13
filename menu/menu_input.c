@@ -877,7 +877,8 @@ void menu_input_post_iterate(int *ret, unsigned action)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
+      (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata 
+      : NULL;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);

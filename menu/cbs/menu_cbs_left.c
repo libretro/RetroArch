@@ -242,9 +242,9 @@ static int action_left_mainmenu(unsigned type, const char *label,
             file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
             size_t selection           = menu_navigation_get_selection();
-            menu_file_list_cbs_t *cbs  = selection_buf ?
-               (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf,
-                     selection) : NULL;
+            menu_file_list_cbs_t *cbs  = selection_buf ? 
+               (menu_file_list_cbs_t*)
+               selection_buf->list[selection].actiondata : NULL;
 
             list_info.type             = MENU_LIST_HORIZONTAL;
             list_info.action           = MENU_ACTION_LEFT;
