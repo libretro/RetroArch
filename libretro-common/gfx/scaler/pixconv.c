@@ -480,7 +480,7 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
 #if defined(__SSE2__)
 /* :( TODO: Make this saner. */
 static INLINE void store_bgr24_sse2(void *output, __m128i a,
-      __m128i b, __m128i c, __m128i *d)
+      __m128i b, __m128i c, __m128i d)
 {
    const __m128i mask_0 = _mm_set_epi32(0, 0, 0, 0x00ffffff);
    const __m128i mask_1 = _mm_set_epi32(0, 0, 0x00ffffff, 0);
@@ -503,10 +503,10 @@ static INLINE void store_bgr24_sse2(void *output, __m128i a,
 
    __m128i c0 = _mm_srli_si128(_mm_and_si128(c, mask_2), 10);
    __m128i c1 = _mm_srli_si128(_mm_and_si128(c, mask_3), 11);
-   __m128i c2 = _mm_slli_si128(_mm_and_si128(*d, mask_0),  4);
-   __m128i c3 = _mm_slli_si128(_mm_and_si128(*d, mask_1),  3);
-   __m128i c4 = _mm_slli_si128(_mm_and_si128(*d, mask_2),  2);
-   __m128i c5 = _mm_slli_si128(_mm_and_si128(*d, mask_3),  1);
+   __m128i c2 = _mm_slli_si128(_mm_and_si128(d, mask_0),  4);
+   __m128i c3 = _mm_slli_si128(_mm_and_si128(d, mask_1),  3);
+   __m128i c4 = _mm_slli_si128(_mm_and_si128(d, mask_2),  2);
+   __m128i c5 = _mm_slli_si128(_mm_and_si128(d, mask_3),  1);
 
    __m128i *out = (__m128i*)output;
 
@@ -589,7 +589,7 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
                _mm_slli_si128(res_hi_ra1, 2));
 
          /* Non-POT pixel sizes for the loss */
-         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, &res_hi1);
+         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
 #endif
 
@@ -674,7 +674,7 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
          res_hi1    = _mm_or_si128(res_hi_bg1,
                _mm_slli_si128(res_hi_ra1, 2));
 
-         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, &res_hi1);
+         store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
 #endif
 
@@ -785,11 +785,7 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
          __m128i l1 = _mm_loadu_si128((const __m128i*)(input + w +  4));
          __m128i l2 = _mm_loadu_si128((const __m128i*)(input + w +  8));
          __m128i l3 = _mm_loadu_si128((const __m128i*)(input + w + 12));
-         l0 = _mm_shuffle_epi32(l0, _MM_SHUFFLE(3, 0, 1, 2));
-         l1 = _mm_shuffle_epi32(l1, _MM_SHUFFLE(3, 0, 1, 2));
-         l2 = _mm_shuffle_epi32(l2, _MM_SHUFFLE(3, 0, 1, 2));
-         l3 = _mm_shuffle_epi32(l3, _MM_SHUFFLE(3, 0, 1, 2));
-         store_bgr24_sse2(out, l0, l1, l2, &l3);
+         store_bgr24_sse2(out, l0, l1, l2, l3);
       }
 #endif
 
@@ -802,6 +798,21 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
       }
    }
 }
+
+#if defined(__SSE2__)
+static INLINE __m128i conv_shuffle_rb_epi32(__m128i c)
+{
+   /* SSSE3 plz */
+   const __m128i b_mask = _mm_set1_epi32(0x000000ff);
+   const __m128i g_mask = _mm_set1_epi32(0x0000ff00);
+   const __m128i r_mask = _mm_set1_epi32(0x00ff0000);
+   __m128i sl = _mm_and_si128(_mm_slli_epi32(c, 16), r_mask);
+   __m128i sr = _mm_and_si128(_mm_srli_epi32(c, 16), b_mask);
+   __m128i g  = _mm_and_si128(c, g_mask);
+   __m128i rb = _mm_or_si128(sl, sr);
+   return _mm_or_si128(g, rb);
+}
+#endif
 
 void conv_abgr8888_bgr24(void *output_, const void *input_,
       int width, int height,
@@ -823,12 +834,15 @@ void conv_abgr8888_bgr24(void *output_, const void *input_,
 #if defined(__SSE2__)
       for (; w < max_width; w += 16, out += 48)
       {
+		 __m128i a = _mm_loadu_si128((const __m128i*)(input + w +  0));
+		 __m128i b = _mm_loadu_si128((const __m128i*)(input + w +  4));
+		 __m128i c = _mm_loadu_si128((const __m128i*)(input + w +  8));
 		 __m128i d = _mm_loadu_si128((const __m128i*)(input + w + 12));
-         store_bgr24_sse2(out,
-               _mm_loadu_si128((const __m128i*)(input + w +  0)),
-               _mm_loadu_si128((const __m128i*)(input + w +  4)),
-               _mm_loadu_si128((const __m128i*)(input + w +  8)), &d
-               );
+         a = conv_shuffle_rb_epi32(a);
+         b = conv_shuffle_rb_epi32(b);
+         c = conv_shuffle_rb_epi32(c);
+         d = conv_shuffle_rb_epi32(d);
+         store_bgr24_sse2(out, a, b, c, d);
       }
 #endif
 
@@ -841,7 +855,6 @@ void conv_abgr8888_bgr24(void *output_, const void *input_,
       }
    }
 }
-
 
 void conv_argb8888_abgr8888(void *output_, const void *input_,
       int width, int height,
