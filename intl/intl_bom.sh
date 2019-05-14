@@ -26,12 +26,15 @@ while [ $# -gt 0 ]; do
    esac
 done
 
+trap 'err=$?; rm -f tmp-*.c tmp-*.h; trap - EXIT; exit $err' EXIT INT
+
 for file in *.c *.h; do
   hex="$(hexdump -n 3 -C "$file" | head -1 | tr -s '[:blank:]')"
   bom="${hex% *}"
   if [ "${bom#* }" != 'ef bb bf' ]; then
     if [ -n "$fix" ]; then
-      sed -i '1s/^/\xef\xbb\xbf/' "$file"
+      printf '\xEF\xBB\xBF' | cat - "$file" > "tmp-$file"
+      mv "tmp-$file" "$file"
     else
       error="$error $file"
     fi

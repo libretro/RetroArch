@@ -181,3 +181,7 @@ gfx/common/wayland/xdg-decoration-unstable-v1.h
 gfx/common/wayland/xdg-decoration-unstable-v1.c
 gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
+
+# intl_bom.sh temp files
+intl/tmp-*.c
+intl/tmp-*.h
