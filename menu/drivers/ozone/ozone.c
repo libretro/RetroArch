@@ -162,9 +162,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->pending_message           = NULL;
    ozone->show_cursor               = false;
 
-   ozone->cursor_mode  = false;
-   ozone->cursor_x_old = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   ozone->cursor_y_old = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   ozone->first_frame                     = true;
+   ozone->cursor_mode                     = false;
 
    ozone->sidebar_collapsed               = false;
    ozone->animations.sidebar_text_alpha   = 1.0f;
@@ -1408,6 +1407,13 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    if (!ozone)
       return;
+
+   if (ozone->first_frame)
+   {
+      ozone->cursor_x_old = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      ozone->cursor_y_old = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      ozone->first_frame  = false;
+   }
 
    /* OSK Fade detection */
    if (draw_osk != draw_osk_old)

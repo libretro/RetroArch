@@ -242,6 +242,7 @@ struct ozone_handle
    bool selection_core_is_viewer;
 
    bool is_db_manager_list;
+   bool first_frame;
 };
 
 /* If you change this struct, also
