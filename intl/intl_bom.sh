@@ -29,14 +29,16 @@ done
 trap 'err=$?; rm -f tmp-*.c tmp-*.h; trap - EXIT; exit $err' EXIT INT
 
 for file in *.c *.h; do
-  hex="$(hexdump -n 3 -C "$file" | head -1 | tr -s '[:blank:]')"
-  bom="${hex% *}"
-  if [ "${bom#* }" != 'ef bb bf' ]; then
-    if [ -n "$fix" ]; then
-      printf '\xEF\xBB\xBF' | cat - "$file" > "tmp-$file"
-      mv "tmp-$file" "$file"
-    else
-      error="$error $file"
+  if ! grep -q DISABLE_BOM_TEST "$file"; then
+    hex="$(hexdump -n 3 -C "$file" | head -1 | tr -s '[:blank:]')"
+    bom="${hex% *}"
+    if [ "${bom#* }" != 'ef bb bf' ]; then
+      if [ -n "$fix" ]; then
+        printf '\xEF\xBB\xBF' | cat - "$file" > "tmp-$file"
+        mv "tmp-$file" "$file"
+      else
+        error="$error $file"
+      fi
     fi
   fi
 done
