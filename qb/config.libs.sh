@@ -343,23 +343,21 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
       fi
 
       check_pkgconf OSMESA osmesa
-   else
-      die : 'Notice: Ignoring Cg. Desktop OpenGL is not enabled.'
-      HAVE_CG='no'
    fi
+else
+   HAVE_OPENGL='no'
 fi
 
+check_enabled OPENGL CG Cg 'OpenGL is' false
+check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
+check_enabled OPENGL OPENGL1 OpenGL1 'OpenGL is' false
+
 if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES3" = 'no' ]; then
-   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling HAVE_OPENGL_CORE.'
+   die : 'Notice: OpenGL and OpenGLES3 are disabled. Disabling OpenGL core.'
    HAVE_OPENGL_CORE='no'
 elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    die : 'Notice: OpenGLES2 is enabled. Disabling the OpenGL core driver.'
    HAVE_OPENGL_CORE='no'
-fi
-
-if [ "$HAVE_OPENGLES" != 'no' ] || [ "$HAVE_OPENGLES3" != 'no' ]; then
-   die : 'Notice: OpenGLES is enabled. Disabling the OpenGL1 driver.'
-   HAVE_OPENGL1='no'
 fi
 
 if [ "$HAVE_ZLIB" = 'no' ]; then
@@ -404,15 +402,11 @@ fi
 if [ "$HAVE_KMS" != "no" ]; then
    check_val '' GBM -lgbm '' gbm 9.0 '' false
    check_val '' DRM -ldrm libdrm libdrm '' '' false
-
-   if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
-      HAVE_KMS=yes
-   elif [ "$HAVE_KMS" = "yes" ]; then
-      die 1 'Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms.'
-   else
-      HAVE_KMS=no
-   fi
 fi
+
+check_enabled DRM KMS KMS 'DRM is' true
+check_enabled GBM KMS KMS 'GBM is' true
+check_enabled EGL KMS KMS 'EGL is' true
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
