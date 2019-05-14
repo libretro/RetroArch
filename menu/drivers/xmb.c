@@ -1722,7 +1722,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
             entry.easing_enum  = EASING_IN_SINE;
             break;
          case 2:
-            entry.duration     = XMB_DELAY * 4;
+            entry.duration     = XMB_DELAY * 2;
             entry.easing_enum  = EASING_OUT_BOUNCE;
             break;
       }
