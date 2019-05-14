@@ -56,6 +56,7 @@ matrix:
           branch: master
 
 before_install:
+  - intl/intl_bom.sh
   - |
      if [ "$CC" = gcc-8 ]; then
        # Install a more recent gcc than the default
