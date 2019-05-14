@@ -128,10 +128,8 @@ add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
 add_define MAKEFILE DOC_DIR "${DOC_DIR:-${SHARE_DIR}/doc/retroarch}"
 add_define MAKEFILE MAN_DIR "${MAN_DIR:-${SHARE_DIR}/man}"
 
-if [ "$OS" = 'DOS' ]; then
-   HAVE_SHADERPIPELINE=no
-   HAVE_LANGEXTRA=no
-fi
+check_platform DOS SHADERPIPELINE 'Shader-based pipelines are' false
+check_platform DOS LANGEXTRA 'Extra languages are' false
 
 check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
@@ -203,10 +201,8 @@ if [ "$HAVE_OSS" != 'no' ]; then
    check_lib '' OSS_LIB -lossaudio
 fi
 
-if [ "$OS" = 'Linux' ]; then
-   HAVE_TINYALSA=yes
-   HAVE_RPILED=yes
-fi
+check_platform Linux TINYALSA 'Tinyalsa is' true
+check_platform Linux RPILED 'The RPI led driver is' true
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
@@ -234,6 +230,7 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
+check_platform Haiku DISCORD 'Discord is' false
 check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
@@ -303,8 +300,14 @@ check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
+   check_lib '' D3D8 -ld3d8
    check_lib '' D3D9 -ld3d9
    check_lib '' DSOUND -ldsound
+
+   if [ "$HAVE_D3DX" != 'no' ]; then
+      check_lib '' D3DX8 -ld3dx8
+      check_lib '' D3DX9 -ld3dx9
+   fi
 
    if [ "$HAVE_DINPUT" != 'no' ]; then
       HAVE_XINPUT=yes
@@ -313,12 +316,14 @@ if [ "$OS" = 'Win32' ]; then
    HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
    HAVE_WINMM=yes
-else
-   HAVE_D3D9=no
-   HAVE_D3D10=no
-   HAVE_D3D11=no
-   HAVE_D3D12=no
 fi
+
+check_platform Win32 D3D8 'Direct3D 8 is' true
+check_platform Win32 D3D9 'Direct3D 9 is' true
+check_platform Win32 D3D10 'Direct3D 10 is' true
+check_platform Win32 D3D11 'Direct3D 11 is' true
+check_platform Win32 D3D12 'Direct3D 12 is' true
+check_platform Win32 D3DX 'Direct3DX is' true
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
