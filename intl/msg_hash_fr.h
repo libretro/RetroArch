@@ -1,4 +1,4 @@
-#ifdef HAVE_LAKKA_SWITCH
+﻿#ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
          "Overclocker le processeur graphique"
