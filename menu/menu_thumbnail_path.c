@@ -87,6 +87,34 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data)
 
 /* Utility Functions */
 
+/* Fetches the thumbnail subdirectory (Named_Snaps,
+ * Named_Titles, Named_Boxarts) corresponding to the
+ * specified 'type index' (1, 2, 3).
+ * Returns true if 'type index' is valid */
+bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory)
+{
+   if (!sub_directory)
+      return false;
+   
+   switch (type_idx)
+   {
+      case 1:
+         *sub_directory = "Named_Snaps";
+         return true;
+      case 2:
+         *sub_directory = "Named_Titles";
+         return true;
+      case 3:
+         *sub_directory = "Named_Boxarts";
+         return true;
+      case 0:
+      default:
+         break;
+   }
+   
+   return false;
+}
+
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
@@ -569,6 +597,42 @@ bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_th
    return true;
 }
 
+/* Fetches current 'system' (default database name).
+ * Returns true if 'system' is valid. */
+bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system)
+{
+   if (!path_data)
+      return false;
+   
+   if (!system)
+      return false;
+   
+   if (string_is_empty(path_data->system))
+      return false;
+   
+   *system = path_data->system;
+   
+   return true;
+}
+
+/* Fetches current content path.
+ * Returns true if content path is valid. */
+bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, const char **content_path)
+{
+   if (!path_data)
+      return false;
+   
+   if (!content_path)
+      return false;
+   
+   if (string_is_empty(path_data->content_path))
+      return false;
+   
+   *content_path = path_data->content_path;
+   
+   return true;
+}
+
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
 bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char **label)
@@ -601,6 +665,43 @@ bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const c
       return false;
    
    *core_name = path_data->content_core_name;
+   
+   return true;
+}
+
+/* Fetches current database name.
+ * Returns true if database name is valid. */
+bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const char **db_name)
+{
+   if (!path_data)
+      return false;
+   
+   if (!db_name)
+      return false;
+   
+   if (string_is_empty(path_data->content_db_name))
+      return false;
+   
+   *db_name = path_data->content_db_name;
+   
+   return true;
+}
+
+/* Fetches current thumbnail image name
+ * (name is the same for all thumbnail types).
+ * Returns true if image name is valid. */
+bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name)
+{
+   if (!path_data)
+      return false;
+   
+   if (!img_name)
+      return false;
+   
+   if (string_is_empty(path_data->content_img))
+      return false;
+   
+   *img_name = path_data->content_img;
    
    return true;
 }

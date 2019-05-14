@@ -110,6 +110,7 @@ default_title_macro(action_get_sideload_core_list,              MENU_ENUM_LABEL_
 default_title_macro(action_get_online_updater_list,             MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER)
 default_title_macro(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
 default_title_macro(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
+default_title_macro(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
 default_title_macro(action_get_core_updater_list,               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 default_title_macro(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 default_title_macro(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
@@ -773,6 +774,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_online_pl_thumbnails_updater_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
             break;
@@ -1117,6 +1121,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
+            break;
+         case MENU_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_online_pl_thumbnails_updater_list);
             break;
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);

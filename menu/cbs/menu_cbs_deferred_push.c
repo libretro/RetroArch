@@ -188,6 +188,7 @@ generic_deferred_push(deferred_push_rgui_theme_preset,              DISPLAYLIST_
 
 #ifdef HAVE_NETWORKING
 generic_deferred_push(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
+generic_deferred_push(deferred_push_pl_thumbnails_updater_list,     DISPLAYLIST_PL_THUMBNAILS_UPDATER)
 generic_deferred_push(deferred_push_core_updater_list,              DISPLAYLIST_CORES_UPDATER)
 generic_deferred_push(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
 generic_deferred_push(deferred_push_core_content_dirs_list,         DISPLAYLIST_CORE_CONTENT_DIRS)
@@ -978,6 +979,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
    }
    else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_pl_thumbnails_updater_list);
+   }
+   else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
@@ -1091,6 +1097,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
+#endif
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_pl_thumbnails_updater_list);
 #endif
                break;
             case MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST:

@@ -1682,7 +1682,8 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
           tasks/task_wifi.o \
-          tasks/task_netplay_find_content.o
+          tasks/task_netplay_find_content.o \
+          tasks/task_pl_thumbnail_download.o
 
    ifeq ($(HAVE_SSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o

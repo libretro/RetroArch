@@ -2562,6 +2562,56 @@ static void menu_displaylist_parse_playlist_associations(
    string_list_free(str_list);
 }
 
+static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
+      menu_displaylist_info_t *info)
+{
+   settings_t      *settings    = config_get_ptr();
+   unsigned count               = 0;
+   struct string_list *str_list = NULL;
+   
+   if (!settings)
+      return count;
+   
+   str_list = dir_list_new_special(
+         settings->paths.directory_playlist,
+         DIR_LIST_COLLECTIONS, NULL);
+
+   if (str_list && str_list->size)
+   {
+      unsigned i;
+
+      dir_list_sort(str_list, true);
+
+      for (i = 0; i < str_list->size; i++)
+      {
+         char path_base[PATH_MAX_LENGTH];
+         const char *path                 =
+            path_basename(str_list->elems[i].data);
+
+         path_base[0] = '\0';
+
+         if (string_is_empty(path))
+            continue;
+
+         strlcpy(path_base, path, sizeof(path_base));
+         path_remove_extension(path_base);
+
+         menu_entries_append_enum(info->list,
+               path_base,
+               path,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY,
+               FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT,
+               0, 0);
+         count++;
+      }
+   }
+
+   /* Not necessary to check for NULL here */
+   string_list_free(str_list);
+
+   return count;
+}
+
 static bool menu_displaylist_push_internal(
       const char *label,
       menu_displaylist_ctx_entry_t *entry,
@@ -4931,6 +4981,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_clear   = true;
 #endif
          break;
+      case DISPLAYLIST_PL_THUMBNAILS_UPDATER:
+#ifdef HAVE_NETWORKING
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_parse_pl_thumbnail_download_list(info);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+#endif
+         break;
       case DISPLAYLIST_LAKKA:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
@@ -6209,6 +6276,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
+                     MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
                      msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
                      MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
@@ -6232,6 +6305,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
                      msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
                      MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+
+            if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
+                     MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 

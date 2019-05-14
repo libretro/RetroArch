@@ -771,6 +771,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
+      case ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST;
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
          fill_pathname_join_delim(tmp, path, label, ';',
                sizeof(tmp));
@@ -3412,7 +3421,7 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
-               file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+               file_path_str(FILE_PATH_CORE_THUMBNAILPACKS_URL),
                file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
@@ -3567,6 +3576,8 @@ void cb_generic_download(retro_task_t *task,
          dir_path = buf;
          break;
       }
+      case MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL:
+         break;
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -3576,8 +3587,18 @@ void cb_generic_download(retro_task_t *task,
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+   {
+      /* In this particular case we have the whole path
+       * already built from the task */
+      strlcpy(output_path, transf->path, sizeof(output_path));
+   }
 
-   /* Make sure the directory exists */
+   /* Make sure the directory exists
+    * This function is horrible. It mutates the original path
+    * so after operating we'll have to set the path to the intended
+    * location again...
+    */
    path_basedir_wrapper(output_path);
 
    if (!path_mkdir(output_path))
@@ -3589,14 +3610,20 @@ void cb_generic_download(retro_task_t *task,
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
+   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
+   {
+      /* In this particular case we have the whole path
+       * already built from the task */
+      strlcpy(output_path, transf->path, sizeof(output_path));
+   }
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(output_path))
    {
       if (task_check_decompress(output_path))
       {
-        err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
-        goto finish;
+         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
+         goto finish;
       }
    }
 #endif
@@ -3622,8 +3649,8 @@ void cb_generic_download(retro_task_t *task,
                msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
                frontend_userdata))
       {
-        err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
-        goto finish;
+         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
+         goto finish;
       }
    }
 #else
@@ -3731,7 +3758,7 @@ static int action_ok_download_generic(const char *path,
          path = file_path_str(FILE_PATH_SHADERS_CG_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
+         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILPACKS_URL), sizeof(s));
          break;
       default:
          strlcpy(s, settings->paths.network_buildbot_url, sizeof(s));
@@ -4294,6 +4321,7 @@ default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUN
 default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
+default_action_ok_func(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
 
 static int action_ok_open_uwp_permission_settings(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5337,6 +5365,33 @@ static int action_ok_core_delete(const char *path,
    return 0;
 }
 
+static int action_ok_pl_content_thumbnails(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   settings_t *settings = config_get_ptr();
+   char playlist_path[PATH_MAX_LENGTH];
+
+   playlist_path[0] = '\0';
+
+   if (!settings)
+      return -1;
+
+   if (string_is_empty(settings->paths.directory_playlist))
+      return -1;
+
+   fill_pathname_join(
+         playlist_path,
+         settings->paths.directory_playlist, label,
+         sizeof(playlist_path));
+
+   task_push_pl_thumbnail_download(path, playlist_path);
+   return 0;
+#else
+   return -1;
+#endif
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -5634,6 +5689,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_list);
+            break;
+         case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
+            BIND_ACTION_OK(cbs, action_ok_pl_thumbnails_updater_list);
             break;
          case MENU_ENUM_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
@@ -6323,6 +6381,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
+            break;
+         case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
+            BIND_ACTION_OK(cbs, action_ok_pl_content_thumbnails);
             break;
          case FILE_TYPE_DOWNLOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
