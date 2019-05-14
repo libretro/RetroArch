@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for Libretro.
+﻿/*  RetroArch - A frontend for Libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Translation currently maintained by Lothar Serra Mari [rootfather]
