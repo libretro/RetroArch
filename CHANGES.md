@@ -2,8 +2,12 @@
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
 - MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan.
+- MENU/OZONE: Add it for PS3
+- MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it.
+- MENU/XMB: Add menu animation settings.
 - NETBSD: Audioio is now the default audio driver.
 - OSD: OSD is now drawn above the overlay with Vulkan.
+- PS3: Add Ozone menu driver.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
