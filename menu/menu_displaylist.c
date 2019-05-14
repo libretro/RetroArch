@@ -1755,12 +1755,7 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_save_load_state
-#ifdef HAVE_CHEEVOS
-          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
-          && !(rcheevos_hardcore_active || cheevos_hardcore_active)
-#endif
-         )
+      if (settings->bools.quick_menu_show_save_load_state)
       {
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
@@ -1770,27 +1765,33 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
                MENU_ENUM_LABEL_SAVE_STATE,
                MENU_SETTING_ACTION_SAVESTATE, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-               MENU_ENUM_LABEL_LOAD_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+#ifdef HAVE_CHEEVOS
+          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
+         if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+#endif
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+                  MENU_ENUM_LABEL_LOAD_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         }
       }
 
       if (settings->bools.quick_menu_show_save_load_state &&
-          settings->bools.quick_menu_show_undo_save_load_state
+          settings->bools.quick_menu_show_undo_save_load_state)
+      {
 #ifdef HAVE_CHEEVOS
           /* RCHEEVOS TODO: remove 'rcheevos_*' below */
-          && !(rcheevos_hardcore_active || cheevos_hardcore_active)
+         if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
 #endif
-         )
-      {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-               MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                  MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         }
 
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),

@@ -1933,11 +1933,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
-#ifdef HAVE_CHEEVOS
-            /* RCHEEVOS TODO: remove OR below */
-            if (cheevos_hardcore_active || rcheevos_hardcore_active)
-               return false;
-#endif
 
             if (settings->bools.savestate_auto_index)
             {
