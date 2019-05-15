@@ -1799,8 +1799,30 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
    rgui_t *rgui         = (rgui_t*)userdata;
    settings_t *settings = config_get_ptr();
 
-   if (!rgui || !data || !settings)
+   if (!rgui || !settings)
+   {
       return false;
+   }
+
+   if (!data)
+   {
+      /* This means we have a 'broken' image. There is no
+       * data, but we still have to decrement any thumbnail
+       * queues (otherwise further thumbnail processing will
+       * be blocked) */
+      if (type == MENU_IMAGE_THUMBNAIL)
+      {
+         if (rgui->thumbnail_queue_size > 0)
+            rgui->thumbnail_queue_size--;
+      }
+      else if (type == MENU_IMAGE_LEFT_THUMBNAIL)
+      {
+         if (rgui->left_thumbnail_queue_size > 0)
+            rgui->left_thumbnail_queue_size--;
+      }
+
+      return false;
+   }
 
    switch (type)
    {
