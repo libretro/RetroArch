@@ -56,6 +56,10 @@ bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
+#ifdef HAVE_MENU
+bool task_push_pl_thumbnail_download(const char *system, const char *playlist_path);
+#endif
+
 #endif
 
 bool task_push_image_load(const char *fullpath,

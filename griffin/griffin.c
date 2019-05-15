@@ -1201,6 +1201,9 @@ DATA RUNLOOP
 #include "../tasks/task_database.c"
 #include "../tasks/task_database_cue.c"
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
+#include "../tasks/task_pl_thumbnail_download.c"
+#endif
 
 /*============================================================
 SCREENSHOTS

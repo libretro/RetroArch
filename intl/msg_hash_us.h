@@ -3135,6 +3135,18 @@ MSG_HASH(
     "Thumbnails Updater"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+    "Download complete thumbnail package for selected system."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Playlist Thumbnails Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Download individual thumbnails for each entry of selected playlist."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
     "Boxarts"
     )
