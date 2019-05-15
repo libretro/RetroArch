@@ -2281,11 +2281,14 @@ static unsigned menu_displaylist_parse_cores(
       menu_displaylist_info_t *info)
 {
    size_t i, list_size;
+   const char *dir              = NULL;
+   core_info_list_t *list       = NULL;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
-   bool ok;
+   bool ok                      = false;
+
 
    if (string_is_empty(path))
    {
@@ -2295,6 +2298,10 @@ static unsigned menu_displaylist_parse_cores(
       items_found++;
       return items_found;
    }
+
+   core_info_get_list(&list);
+
+   menu_entries_get_last_stack(&dir, NULL, NULL, NULL, NULL);
 
    str_list = string_list_new();
    ok = dir_list_append(str_list, path, info->exts,
@@ -2365,8 +2372,8 @@ static unsigned menu_displaylist_parse_cores(
    {
       bool is_dir;
       char label[64];
-      const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+      const char *path              = NULL;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       label[0] = '\0';
@@ -2425,11 +2432,12 @@ static unsigned menu_displaylist_parse_cores(
       }
       else
       {
-         file_type = FILE_TYPE_CORE;
+         file_type          = FILE_TYPE_CORE;
          if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
             enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
          else
             enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
+
       }
 
       items_found++;
@@ -2437,6 +2445,24 @@ static unsigned menu_displaylist_parse_cores(
       menu_entries_append_enum(info->list, path, label,
             enum_idx,
             file_type, 0, 0);
+      if (file_type == FILE_TYPE_CORE)
+      {
+         size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
+         char *core_path    = (char*)malloc(path_size);
+         char *display_name = (char*)malloc(path_size);
+
+         core_path[0]       =
+            display_name[0]    = '\0';
+
+         fill_pathname_join(core_path, dir, path, path_size);
+
+         if (core_info_list_get_display_name(list,
+                  core_path, display_name, path_size))
+            file_list_set_alt_at_offset(info->list, i, display_name);
+
+         free(core_path);
+         free(display_name);
+      }
    }
 
    string_list_free(str_list);
@@ -2444,46 +2470,7 @@ static unsigned menu_displaylist_parse_cores(
    if (items_found == 0)
       return 0;
 
-   {
-      enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-      core_info_list_t *list         = NULL;
-      const char *dir                = NULL;
-
-      core_info_get_list(&list);
-
-      menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
-
-      list_size = file_list_get_size(info->list);
-
-      for (i = 0; i < list_size; i++)
-      {
-         unsigned type                      = 0;
-         const char *path                   = NULL;
-
-         menu_entries_get_at_offset(info->list,
-               i, &path, NULL, &type, NULL,
-               NULL);
-
-         if (type == FILE_TYPE_CORE)
-         {
-            size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
-            char *core_path    = (char*)malloc(path_size);
-            char *display_name = (char*)malloc(path_size);
-            core_path[0]       =
-            display_name[0]    = '\0';
-
-            fill_pathname_join(core_path, dir, path, path_size);
-
-            if (core_info_list_get_display_name(list,
-                     core_path, display_name, path_size))
-               file_list_set_alt_at_offset(info->list, i, display_name);
-
-            free(core_path);
-            free(display_name);
-         }
-      }
-      info->need_sort = true;
-   }
+   info->need_sort = true;
 
    return items_found;
 }
