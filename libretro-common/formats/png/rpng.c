@@ -111,7 +111,7 @@ struct rpng_process
    unsigned pass_height;
    unsigned pass_pos;
    uint32_t *data;
-   uint64_t *palette;
+   uint32_t *palette;
    void *stream;
    const struct trans_stream_backend *stream_backend;
 };
@@ -127,7 +127,7 @@ struct rpng
    struct idat_buffer idat_buf;
    struct png_ihdr ihdr;
    uint8_t *buff_data;
-   uint64_t palette[256];
+   uint32_t palette[256];
 };
 
 static INLINE uint32_t dword_be(const uint8_t *buf)
@@ -326,7 +326,7 @@ static void png_reverse_filter_copy_line_gray_alpha(uint32_t *data,
 
 static void png_reverse_filter_copy_line_plt(uint32_t *data,
       const uint8_t *decoded, unsigned width,
-      unsigned depth, const uint64_t *palette)
+      unsigned depth, const uint32_t *palette)
 {
    switch (depth)
    {
@@ -833,7 +833,7 @@ false_end:
 }
 
 static bool png_read_plte(uint8_t *buf,
-      uint64_t *buffer, unsigned entries)
+      uint32_t *buffer, unsigned entries)
 {
    unsigned i;
 
@@ -848,12 +848,14 @@ static bool png_read_plte(uint8_t *buf,
    return true;
 }
 
-static bool png_read_trns(uint8_t *buf, uint64_t *palette, unsigned entries)
+static bool png_read_trns(uint8_t *buf, uint32_t *palette, unsigned entries)
 {
    unsigned i;
 
    for (i = 0; i < entries; i++, buf++, palette++)
+   {
       *palette = (*palette & 0x00ffffff) | *buf << 24;
+   }
 
    return true;
 }
