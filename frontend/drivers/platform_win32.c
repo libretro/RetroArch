@@ -596,29 +596,30 @@ enum retro_language frontend_win32_get_user_language(void)
    /* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
    const struct lang_pair pairs[] =
    {
-      {0x9, RETRO_LANGUAGE_ENGLISH},
-      {0x11, RETRO_LANGUAGE_JAPANESE},
-      {0xc, RETRO_LANGUAGE_FRENCH},
-      {0xa, RETRO_LANGUAGE_SPANISH},
-      {0x7, RETRO_LANGUAGE_GERMAN},
-      {0x10, RETRO_LANGUAGE_ITALIAN},
-      {0x13, RETRO_LANGUAGE_DUTCH},
-      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
-      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x19, RETRO_LANGUAGE_RUSSIAN},
-      {0x12, RETRO_LANGUAGE_KOREAN},
-      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      /* array order MUST be kept, always largest ID first */
+      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
       {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
       {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
-      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
+      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
+      {0x19, RETRO_LANGUAGE_RUSSIAN},
+      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x15, RETRO_LANGUAGE_POLISH},
+      {0x13, RETRO_LANGUAGE_DUTCH},
+      {0x12, RETRO_LANGUAGE_KOREAN},
+      {0x11, RETRO_LANGUAGE_JAPANESE},
+      {0x10, RETRO_LANGUAGE_ITALIAN},
+      {0xc, RETRO_LANGUAGE_FRENCH},
+      {0xa, RETRO_LANGUAGE_SPANISH},
+      {0x9, RETRO_LANGUAGE_ENGLISH},
+      {0x8, RETRO_LANGUAGE_GREEK},
+      {0x7, RETRO_LANGUAGE_GERMAN},
       {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
+      {0x1, RETRO_LANGUAGE_ARABIC},
       /* MS does not support Esperanto */
       /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
-      {0x15, RETRO_LANGUAGE_POLISH},
-      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
-      {0x1, RETRO_LANGUAGE_ARABIC},
-      {0x8, RETRO_LANGUAGE_GREEK},
    };
 
    for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
