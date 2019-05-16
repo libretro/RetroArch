@@ -470,6 +470,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    }
    
    thumbnail_path[0] = '\0';
+   content_dir[0]    = '\0';
    
    /* Sundry error checking */
    if (!settings)
@@ -500,24 +501,10 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
       if (string_is_equal(path_data->system, "history") ||
           string_is_equal(path_data->system, "favorites"))
       {
-         char tmp_buf[PATH_MAX_LENGTH] = {0};
-         const char *last_slash = find_last_slash(path_data->content_path);
-         
-         content_dir[0] = '\0';
-         system_name    = content_dir;
-         
-         if (last_slash)
-         {
-            size_t path_length = last_slash + 1 - path_data->content_path;
-            if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            {
-               strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
-               strlcpy(content_dir, path_basename(tmp_buf), sizeof(content_dir));
-            }
-         }
-         
-         if (string_is_empty(system_name))
+         if (!menu_thumbnail_get_content_dir(path_data, content_dir, sizeof(content_dir)))
             return false;
+         
+         system_name = content_dir;
       }
       else
          system_name = path_data->system;
@@ -702,6 +689,39 @@ bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const ch
       return false;
    
    *img_name = path_data->content_img;
+   
+   return true;
+}
+
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
+{
+   const char *last_slash        = NULL;
+   char tmp_buf[PATH_MAX_LENGTH] = {0};
+   size_t path_length;
+   
+   if (!path_data)
+      return false;
+   
+   if (string_is_empty(path_data->content_path))
+      return false;
+   
+   last_slash = find_last_slash(path_data->content_path);
+   
+   if (!last_slash)
+      return false;
+   
+   path_length = last_slash + 1 - path_data->content_path;
+   
+   if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
+      return false;
+   
+   strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
+   strlcpy(content_dir, path_basename(tmp_buf), len);
+   
+   if (string_is_empty(content_dir))
+      return false;
    
    return true;
 }

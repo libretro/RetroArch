@@ -147,6 +147,10 @@ bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const cha
  * Returns true if image name is valid. */
 bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name);
 
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
+
 RETRO_END_DECLS
 
 #endif

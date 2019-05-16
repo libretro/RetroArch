@@ -2361,6 +2361,7 @@ static void materialui_list_insert(void *userdata,
             node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
+         case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
             node->texture_switch2_index = MUI_TEXTURE_IMAGE;
             node->texture_switch2_set   = true;
             break;
@@ -2678,6 +2679,7 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS))        ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS))
                   )
@@ -2780,6 +2782,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    materialui_load_image,
    "glui",
    materialui_environ,
+   NULL,
    NULL,
    NULL,
    NULL,

@@ -5392,6 +5392,29 @@ static int action_ok_pl_content_thumbnails(const char *path,
 #endif
 }
 
+#ifdef HAVE_NETWORKING
+static int action_ok_pl_entry_content_thumbnails(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu  = NULL;
+   playlist_t *playlist = playlist_get_cached();
+   char system[PATH_MAX_LENGTH];
+
+   system[0] = '\0';
+
+   if (!playlist)
+      return -1;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   menu_driver_get_thumbnail_system(system, sizeof(system));
+
+   task_push_pl_entry_thumbnail_download(system, playlist, menu->rpl_entry_selection_ptr);
+   return 0;
+}
+#endif
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -5692,6 +5715,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_pl_thumbnails_updater_list);
+            break;
+         case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
+            BIND_ACTION_OK(cbs, action_ok_pl_entry_content_thumbnails);
             break;
          case MENU_ENUM_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);

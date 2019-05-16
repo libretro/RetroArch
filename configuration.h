@@ -214,6 +214,7 @@ typedef struct settings
       bool quick_menu_show_information;
       bool quick_menu_show_recording;
       bool quick_menu_show_streaming;
+      bool quick_menu_show_download_thumbnails;
       bool kiosk_mode_enable;
 
       bool crt_switch_custom_refresh_enable;

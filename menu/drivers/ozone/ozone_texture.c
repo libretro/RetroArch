@@ -121,6 +121,8 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
