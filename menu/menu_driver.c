@@ -2230,6 +2230,12 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
       menu_driver_ctx->set_thumbnail_system(menu_userdata, s, len);
 }
 
+void menu_driver_get_thumbnail_system(char *s, size_t len)
+{
+   if (menu_driver_ctx && menu_driver_ctx->get_thumbnail_system)
+      menu_driver_ctx->get_thumbnail_system(menu_userdata, s, len);
+}
+
 void menu_driver_set_thumbnail_content(char *s, size_t len)
 {
    if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_content)

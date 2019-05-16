@@ -1276,6 +1276,17 @@ static void ozone_set_thumbnail_system(void *data, char*s, size_t len)
    menu_thumbnail_set_system(ozone->thumbnail_path_data, s);
 }
 
+static void ozone_get_thumbnail_system(void *data, char*s, size_t len)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
+   const char *system    = NULL;
+   if (!ozone)
+      return;
+
+   if (menu_thumbnail_get_system(ozone->thumbnail_path_data, &system))
+      strlcpy(s, system, len);
+}
+
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 {
    menu_entry_t entry;
@@ -2298,6 +2309,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_update_thumbnail_path,
    ozone_update_thumbnail_image,
    ozone_set_thumbnail_system,
+   ozone_get_thumbnail_system,
    ozone_set_thumbnail_content,
    menu_display_osk_ptr_at_pos,
    NULL,                         /* update_savestate_thumbnail_path */

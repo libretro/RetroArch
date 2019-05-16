@@ -1040,6 +1040,17 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
    menu_thumbnail_set_system(xmb->thumbnail_path_data, s);
 }
 
+static void xmb_get_thumbnail_system(void *data, char*s, size_t len)
+{
+   xmb_handle_t *xmb  = (xmb_handle_t*)data;
+   const char *system = NULL;
+   if (!xmb)
+      return;
+
+   if (menu_thumbnail_get_system(xmb->thumbnail_path_data, &system))
+      strlcpy(s, system, len);
+}
+
 static void xmb_unload_thumbnail_textures(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
@@ -2304,6 +2315,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
@@ -5735,6 +5748,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
    xmb_set_thumbnail_system,
+   xmb_get_thumbnail_system,
    xmb_set_thumbnail_content,
    menu_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,

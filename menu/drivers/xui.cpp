@@ -742,6 +742,7 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* update_thumbnail_path */
    NULL,          /* update_thumbnail_image */
    NULL,          /* set_thumbnail_system */
+   NULL,          /* get_thumbnail_system */
    NULL,          /* set_thumbnail_content */
    NULL,          /* osk_ptr_at_pos */
    NULL,          /* update_savestate_thumbnail_path */

@@ -12813,6 +12813,23 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#ifdef HAVE_NETWORKING
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_download_thumbnails,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+               quick_menu_show_download_thumbnails,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
          if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
          {
             CONFIG_BOOL(

@@ -2463,6 +2463,14 @@ MSG_HASH(
     "Add to Favorites"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Download Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Download screenshot/box art/title screen thumbnail images for current content. Updates any existing thumbnails."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
     "Reset Core Association"
     )
@@ -6818,6 +6826,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
     "Show/hide the 'Information' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Show Download Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Show/hide the 'Download Thumbnails' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,

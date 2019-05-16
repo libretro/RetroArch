@@ -4148,6 +4148,16 @@ static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
    menu_thumbnail_set_system(rgui->thumbnail_path_data, s);
 }
 
+static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
+{
+   rgui_t *rgui       = (rgui_t*)userdata;
+   const char *system = NULL;
+   if (!rgui)
+      return;
+   if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+      strlcpy(s, system, len);
+}
+
 static void rgui_load_current_thumbnails(rgui_t *rgui)
 {
    const char *thumbnail_path      = NULL;
@@ -4685,6 +4695,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
    rgui_set_thumbnail_system,
+   rgui_get_thumbnail_system,
    NULL,                               /* set_thumbnail_content */
    NULL,                               /* osk_ptr_at_pos */
    NULL,                               /* update_savestate_thumbnail_path */

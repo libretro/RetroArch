@@ -310,6 +310,8 @@ static bool quick_menu_show_save_core_overrides         = true;
 static bool quick_menu_show_save_game_overrides         = true;
 static bool quick_menu_show_save_content_dir_overrides  = true;
 
+static bool quick_menu_show_download_thumbnails         = true;
+
 static bool kiosk_mode_enable            = false;
 
 static bool menu_horizontal_animation    = true;

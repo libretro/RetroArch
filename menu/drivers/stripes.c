@@ -1101,6 +1101,16 @@ static void stripes_set_thumbnail_system(void *data, char*s, size_t len)
    stripes->thumbnail_system = strdup(s);
 }
 
+static void stripes_get_thumbnail_system(void *data, char*s, size_t len)
+{
+   stripes_handle_t *stripes = (stripes_handle_t*)data;
+   if (!stripes)
+      return;
+
+   if (!string_is_empty(stripes->thumbnail_system))
+      strlcpy(s, stripes->thumbnail_system, len);
+}
+
 static void stripes_reset_thumbnail_content(void *data)
 {
    stripes_handle_t *stripes = (stripes_handle_t*)data;
@@ -4442,6 +4452,7 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_thumbnail_path,
    stripes_update_thumbnail_image,
    stripes_set_thumbnail_system,
+   stripes_get_thumbnail_system,
    stripes_set_thumbnail_content,
    stripes_osk_ptr_at_pos,
    stripes_update_savestate_thumbnail_path,

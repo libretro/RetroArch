@@ -841,10 +841,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
     *   is nonsensical in these cases (and we *do* need
     *   to call set_thumbnail_system() in these cases,
     *   since all three playlist types have thumbnail
-    *   support) */
+    *   support)
+    * EDIT: For correct operation of the quick menu
+    * 'download thumbnails' option, we must also extend
+    * this to music_history and video_history */
    if (string_is_equal(path_playlist, "history") ||
        string_is_equal(path_playlist, "favorites") ||
-       string_is_equal(path_playlist, "images_history"))
+       string_is_equal(path_playlist, "images_history") ||
+       string_is_equal(path_playlist, "music_history") ||
+       string_is_equal(path_playlist, "video_history"))
    {
       char system_name[15];
       system_name[0] = '\0';
@@ -2074,6 +2079,47 @@ static int menu_displaylist_parse_horizontal_content_actions(
       free(db_path);
    }
 
+#ifdef HAVE_NETWORKING
+   if (settings->bools.quick_menu_show_download_thumbnails && !settings->bools.kiosk_mode_enable)
+   {
+      bool download_enabled = true;
+
+      /* If content is currently running, have to make sure
+       * we have a valid playlist to work with */
+      if (content_loaded)
+      {
+         const char *core_path = path_get(RARCH_PATH_CORE);
+
+         download_enabled = false;
+         if (!string_is_empty(fullpath) && !string_is_empty(core_path))
+            download_enabled = playlist_index_is_valid(
+                  playlist, idx, fullpath, core_path);
+      }
+
+      if (download_enabled)
+      {
+         char system[PATH_MAX_LENGTH];
+
+         system[0] = '\0';
+
+         /* Only show 'download thumbnails' on supported playlists */
+         download_enabled = false;
+         menu_driver_get_thumbnail_system(system, sizeof(system));
+
+         if (!string_is_empty(system))
+            download_enabled = !string_is_equal(system, "images_history") &&
+                               !string_is_equal(system, "music_history") &&
+                               !string_is_equal(system, "video_history");
+      }
+
+      if (download_enabled)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS),
+               msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS),
+               MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+   }
+#endif
+
    return 0;
 }
 
@@ -2549,6 +2595,7 @@ static void menu_displaylist_parse_playlist_associations(
    string_list_free(str_list);
 }
 
+#ifdef HAVE_NETWORKING
 static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
       menu_displaylist_info_t *info)
 {
@@ -2598,6 +2645,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 
    return count;
 }
+#endif
 
 static bool menu_displaylist_push_internal(
       const char *label,
@@ -4141,6 +4189,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,            PARSE_ONLY_BOOL},
+#ifdef HAVE_NETWORKING
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,    PARSE_ONLY_BOOL},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
