@@ -853,9 +853,7 @@ static bool png_read_trns(uint8_t *buf, uint32_t *palette, unsigned entries)
    unsigned i;
 
    for (i = 0; i < entries; i++, buf++, palette++)
-   {
-      *palette = (*palette & 0x00ffffff) | *buf << 24;
-   }
+      *palette = (*palette & 0x00ffffff) | (unsigned)*buf << 24;
 
    return true;
 }
