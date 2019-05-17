@@ -871,11 +871,12 @@ static void vulkan_init_static_resources(vk_t *vk)
    uint32_t blank[4 * 4];
    VkCommandPoolCreateInfo pool_info = {
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    if (!vk->context)
       return;
