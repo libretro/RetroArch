@@ -2573,13 +2573,21 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             bool *pending_push = (bool*)data;
 
+            /* Always set current selection to first entry */
             menu_navigation_set_selection(0);
-            menu_driver_navigation_set(true);
 
-            if (pending_push)
+            /* menu_driver_navigation_set() will be called
+             * at the next 'push'.
+             * If a push is *not* pending, have to do it here
+             * instead */
+            if (!(*pending_push))
+            {
+               menu_driver_navigation_set(true);
+
                if (menu_driver_ctx->navigation_clear)
                   menu_driver_ctx->navigation_clear(
                         menu_userdata, *pending_push);
+            }
          }
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:
