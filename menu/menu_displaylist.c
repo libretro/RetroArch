@@ -4437,6 +4437,36 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
    return count;
 }
 
+/* Returns true if selection pointer should be reset
+ * to zero when viewing specified history playlist */
+#ifndef IS_SALAMANDER
+static bool history_needs_navigation_clear(menu_handle_t *menu, playlist_t *playlist)
+{
+   if (!menu)
+      return false;
+
+   /* If content is running, compare last selected path
+    * with current content path */
+   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      return string_is_equal(menu->deferred_path, path_get(RARCH_PATH_CONTENT));
+
+   /* If content is not running, have to examine the
+    * playlist... */
+   if (!playlist)
+      return false;
+
+   if (menu->rpl_entry_selection_ptr < playlist_size(playlist))
+   {
+      const struct playlist_entry *entry = NULL;
+
+      playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
+      return !string_is_equal(menu->deferred_path, entry->path);
+   }
+
+   return false;
+}
+#endif
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info)
 {
@@ -5131,9 +5161,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_INFO_MESSAGE, 0, 0);
          }
 
-         ret                   = 0;
-         info->need_refresh    = true;
-         info->need_push       = true;
+         ret                         = 0;
+         info->need_refresh          = true;
+         info->need_push             = true;
+#ifndef IS_SALAMANDER
+         info->need_navigation_clear =
+               history_needs_navigation_clear(menu, g_defaults.content_history);
+#endif
+
          break;
       case DISPLAYLIST_FAVORITES:
          {
@@ -5193,8 +5228,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          if (ret == 0)
          {
-            info->need_refresh = true;
-            info->need_push    = true;
+            info->need_refresh          = true;
+            info->need_push             = true;
+#ifndef IS_SALAMANDER
+            info->need_navigation_clear =
+                  history_needs_navigation_clear(menu, g_defaults.music_history);
+#endif
          }
          break;
       case DISPLAYLIST_VIDEO_HISTORY:
@@ -5230,8 +5269,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          if (ret == 0)
          {
-            info->need_refresh = true;
-            info->need_push    = true;
+            info->need_refresh          = true;
+            info->need_push             = true;
+#if !defined(IS_SALAMANDER) && (defined(HAVE_FFMPEG) || defined(HAVE_MPV))
+            info->need_navigation_clear =
+                  history_needs_navigation_clear(menu, g_defaults.video_history);
+#endif
          }
          break;
       case DISPLAYLIST_SYSTEM_INFO:
@@ -7199,9 +7242,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             ret = 0;
          }
 
-         ret                   = 0;
-         info->need_refresh    = true;
-         info->need_push       = true;
+         ret                         = 0;
+         info->need_refresh          = true;
+         info->need_push             = true;
+#if !defined(IS_SALAMANDER) && defined(HAVE_IMAGEVIEWER)
+         info->need_navigation_clear =
+               history_needs_navigation_clear(menu, g_defaults.image_history);
+#endif
+
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
       case DISPLAYLIST_CONFIG_FILES:
