@@ -189,6 +189,7 @@ enum
    RA_OPT_FEATURES,
    RA_OPT_VERSION,
    RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
    RA_OPT_MAX_FRAMES,
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
@@ -246,6 +247,7 @@ static bool has_set_netplay_check_frames                        = false;
 static bool has_set_ups_pref                                    = false;
 static bool has_set_bps_pref                                    = false;
 static bool has_set_ips_pref                                    = false;
+static bool has_set_log_to_file                                 = false;
 
 static bool rarch_is_sram_load_disabled                         = false;
 static bool rarch_is_sram_save_disabled                         = false;
@@ -295,6 +297,9 @@ static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
 
 static bool log_file_created                                    = false;
 static char timestamped_log_file_name[64]                       = {0};
+
+static bool log_file_override_active                            = false;
+static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 
 extern bool input_driver_flushing_input;
 
@@ -1092,6 +1097,7 @@ static void retroarch_print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
+   puts("      --log-file FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into "
          "program.");
@@ -1284,6 +1290,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "max-frames-ss-path", 1, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT_PATH },
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
       { "version",            0, NULL, RA_OPT_VERSION },
+      { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { NULL, 0, NULL, 0 }
    };
 
@@ -1737,6 +1744,23 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             case RA_OPT_VERSION:
                retroarch_print_version();
                exit(0);
+
+            case RA_OPT_LOG_FILE:
+               {
+                  settings_t *settings  = config_get_ptr();
+
+                  /* Enable 'log to file' */
+                  configuration_set_bool(settings,
+                        settings->bools.log_to_file, true);
+
+                  retroarch_override_setting_set(
+                        RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
+
+                  /* Cache log file path override */
+                  log_file_override_active = true;
+                  strlcpy(log_file_override_path, optarg, sizeof(log_file_override_path));
+               }
+               break;
 
             case 'c':
             case 'h':
@@ -2874,7 +2898,8 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
          return has_set_bps_pref;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
          return has_set_ips_pref;
-
+      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
+         return has_set_log_to_file;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -2936,6 +2961,9 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
          has_set_ips_pref = true;
          break;
+      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
+         has_set_log_to_file = true;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -2994,6 +3022,9 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
          has_set_ips_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
+         has_set_log_to_file = false;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -5347,6 +5378,11 @@ void rarch_log_file_init(void)
    bool log_to_file           = settings->bools.log_to_file;
    bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
+   char log_directory[PATH_MAX_LENGTH];
+   char log_file_path[PATH_MAX_LENGTH];
+   
+   log_directory[0] = '\0';
+   log_file_path[0] = '\0';
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5388,37 +5424,63 @@ void rarch_log_file_init(void)
    if (fp)
       retro_main_log_file_deinit();
    
-   /* > Attempt to initialise log file */
-   if (!string_is_empty(settings->paths.log_dir))
+   /* > Get directory/file paths */
+   if (log_file_override_active)
    {
-      char buf[PATH_MAX_LENGTH];
-      /* Create log directory, if required */
-      if (!path_is_directory(settings->paths.log_dir))
+      const char *last_slash        = NULL;
+      char tmp_buf[PATH_MAX_LENGTH] = {0};
+      size_t path_length;
+      
+      /* Get log directory */
+      last_slash = find_last_slash(log_file_override_path);
+      if (last_slash)
       {
-         if (!path_mkdir(settings->paths.log_dir))
-         {
-            /* Re-enable console logging and output error message */
-            retro_main_log_file_init(NULL, false);
-            RARCH_ERR("Failed to create system event log directory: %s\n", settings->paths.log_dir);
-            return;
-         }
+         path_length = last_slash + 1 - log_file_override_path;
+         if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
+            strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
+         strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
       
-      /* Format log file name */
-      fill_pathname_join(buf, settings->paths.log_dir,
+      /* Get log file path */
+      strlcpy(log_file_path, log_file_override_path, sizeof(log_file_path));
+   }
+   else if (!string_is_empty(settings->paths.log_dir))
+   {
+      /* Get log directory */
+      strlcpy(log_directory, settings->paths.log_dir, sizeof(log_directory));
+      
+      /* Get log file path */
+      fill_pathname_join(log_file_path, settings->paths.log_dir,
             log_to_file_timestamp 
             ? timestamped_log_file_name 
             : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
-            sizeof(buf));
-      if (!string_is_empty(buf))
+            sizeof(log_file_path));
+   }
+   
+   /* > Attempt to initialise log file */
+   if (!string_is_empty(log_file_path))
+   {
+      /* Create log directory, if required */
+      if (!string_is_empty(log_directory))
       {
-         /* When RetroArch is launched, log file is overwritten.
-          * On subsequent calls within the same session, it is appended to. */
-         retro_main_log_file_init(buf, log_file_created);
-         if (logging_to_file)
-            log_file_created = true;
-         return;
+         if (!path_is_directory(log_directory))
+         {
+            if (!path_mkdir(log_directory))
+            {
+               /* Re-enable console logging and output error message */
+               retro_main_log_file_init(NULL, false);
+               RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
+               return;
+            }
+         }
       }
+      
+      /* When RetroArch is launched, log file is overwritten.
+       * On subsequent calls within the same session, it is appended to. */
+      retro_main_log_file_init(log_file_path, log_file_created);
+      if (is_logging_to_file())
+         log_file_created = true;
+      return;
    }
    
    /* If we reach this point, then something went wrong...

@@ -5794,6 +5794,7 @@ void general_write_handler(rarch_setting_t *setting)
             else if (!settings->bools.log_to_file && is_logging_to_file())
                rarch_log_file_deinit();
          }
+         retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
          break;
       case MENU_ENUM_LABEL_LOG_DIR:
       case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
