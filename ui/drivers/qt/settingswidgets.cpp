@@ -136,12 +136,6 @@ void FormLayout::addFileSelector(rarch_setting_t *setting)
       addRow(formLabel(setting), new FileSelector(setting));
 }
 
-void FormLayout::addFontSelector(rarch_setting_t *setting)
-{
-    if (setting && setting->short_description)
-       addRow(formLabel(setting), new FontSelector(setting));
-}
-
 void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
@@ -218,11 +212,6 @@ void SettingsGroup::addDirectorySelector(rarch_setting_t *setting)
 void SettingsGroup::addFileSelector(rarch_setting_t *setting)
 {
    m_layout->addFileSelector(setting);
-}
-
-void SettingsGroup::addFontSelector(rarch_setting_t *setting)
-{
-   m_layout->addFontSelector(setting);
 }
 
 void SettingsGroup::addStringLineEdit(rarch_setting_t *setting)
@@ -879,19 +868,29 @@ PathButton::PathButton(const char *setting, QWidget *parent) :
 {
 }
 
+QString PathButton::currentPath()
+{
+   QString current(m_setting->value.target.string);
+   if (current.isEmpty())
+      current = m_setting->default_value.string;
+   return current;
+}
+
 void DirectoryButton::onClicked(bool)
 {
    QString dir = QFileDialog::getExistingDirectory(
       this,
       "Choose " + QString(m_setting->short_description) + " Directory",
-      QString(m_setting->default_value.string));
+      currentPath());
 
    if (!dir.isNull())
    {
-       strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(dir).toUtf8().data(), m_setting->size);
+      strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(dir).toUtf8().data(), m_setting->size);
 
-       handleChange(m_setting);
+      handleChange(m_setting);
    }
+
+   emit changed();
 }
 
 void FileButton::onClicked(bool)
@@ -899,7 +898,7 @@ void FileButton::onClicked(bool)
    QString file = QFileDialog::getOpenFileName(
       this,
       "Choose File",
-      QString(m_setting->default_value.string),
+      currentPath(),
       QString(m_setting->short_description) + " (*." + QString(m_setting->values) + ")");
 
    if (!file.isNull())
@@ -908,29 +907,19 @@ void FileButton::onClicked(bool)
 
       handleChange(m_setting);
    }
-}
 
-void FontButton::onClicked(bool)
-{
-   QString file = QFileDialog::getOpenFileName(
-      this,
-      "Choose Font",
-      QString(m_setting->default_value.string),
-      "TrueType font (*.ttf)");
-
-   if (!file.isNull())
-   {
-      strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(file).toUtf8().data(), m_setting->size);
-
-      handleChange(m_setting);
-   }
+   emit changed();
 }
 
 DirectorySelector::DirectorySelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
+   ,m_lineEdit(new StringLineEdit(setting))
+   ,m_button(new DirectoryButton(setting))
 {
-   addWidget(new StringLineEdit(setting));
-   addWidget(new DirectoryButton(setting));
+   addWidget(m_lineEdit);
+   addWidget(m_button);
+
+   connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
 FileSelector::FileSelector(const char *setting, QWidget *parent) :
@@ -940,16 +929,14 @@ FileSelector::FileSelector(const char *setting, QWidget *parent) :
 
 FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
-{
-   addWidget(new StringLineEdit(setting));
-   addWidget(new FileButton(setting));
-}
+   ,m_lineEdit(new StringLineEdit(setting))
+   ,m_button(new FileButton(setting))
 
-FontSelector::FontSelector(rarch_setting_t *setting, QWidget *parent) :
-   QHBoxLayout(parent)
 {
-   addWidget(new StringLineEdit(setting));
-   addWidget(new FontButton(setting));
+   addWidget(m_lineEdit);
+   addWidget(m_button);
+
+   connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
 FloatSlider::FloatSlider(const char *setting, QWidget *parent) :

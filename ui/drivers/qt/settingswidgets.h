@@ -28,8 +28,6 @@ extern "C" {
 }
 #endif
 
-static const QString FONT_FILTER = QStringLiteral("TrueType font (*.ttf)");
-
 class FormLayout : public QFormLayout
 {
 public:
@@ -44,7 +42,6 @@ public:
    void addFileSelector(rarch_setting_t *setting);
    void addDirectorySelector(rarch_setting_t *setting);
    void addFloatSliderAndSpinBox(rarch_setting_t *setting);
-   void addFontSelector(rarch_setting_t *setting);
    void addUIntRadioButtons(rarch_setting_t *setting);
    void addStringComboBox(rarch_setting_t *setting);
    void addStringLineEdit(rarch_setting_t *setting);
@@ -95,9 +92,6 @@ public:
             break;
          case ST_UI_TYPE_FILE_SELECTOR:
             this->addFileSelector(setting);
-            break;
-         case ST_UI_TYPE_FONT_SELECTOR:
-            this->addFontSelector(setting);
             break;
          case ST_UI_TYPE_STRING_COMBOBOX:
             this->addStringComboBox(setting);
@@ -185,9 +179,6 @@ public:
          case ST_UI_TYPE_FILE_SELECTOR:
             this->addFileSelector(setting);
             break;
-         case ST_UI_TYPE_FONT_SELECTOR:
-            this->addFontSelector(setting);
-            break;
          case ST_UI_TYPE_STRING_COMBOBOX:
             this->addStringComboBox(setting);
             break;
@@ -219,7 +210,6 @@ private:
    void addFileSelector(rarch_setting_t *setting);
    void addDirectorySelector(rarch_setting_t *setting);
    void addFloatSliderAndSpinBox(rarch_setting_t *setting);
-   void addFontSelector(rarch_setting_t *setting);
    void addUIntRadioButtons(rarch_setting_t *setting);
    void addStringComboBox(rarch_setting_t *setting);
    void addStringLineEdit(rarch_setting_t *setting);
@@ -422,6 +412,8 @@ class PathButton : public QPushButton
 public:
    PathButton(rarch_setting_t *setting, QWidget *parent = 0);
    PathButton(const char *setting, QWidget *parent = 0);
+signals:
+   void changed();
 protected slots:
    virtual void onClicked(bool checked = false) { Q_UNUSED( checked); }
 protected:
@@ -429,6 +421,7 @@ protected:
    rarch_setting_t *m_setting;
    char *m_value;
    const char *m_dir;
+   QString currentPath();
 };
 
 class DirectoryButton : public PathButton
@@ -451,21 +444,14 @@ private:
    void onClicked(bool checked = false);
 };
 
-class FontButton : public PathButton
-{
-   Q_OBJECT
-public:
-   FontButton(rarch_setting_t *setting, QWidget *parent = 0) :
-      PathButton(setting, parent) {}
-private:
-   void onClicked(bool checked = false);
-};
-
 class DirectorySelector : public QHBoxLayout
 {
    Q_OBJECT
 public:
    DirectorySelector(rarch_setting_t *setting, QWidget *parent = 0);
+private:
+   StringLineEdit *m_lineEdit;
+   DirectoryButton *m_button;
 };
 
 class FileSelector : public QHBoxLayout
@@ -474,13 +460,9 @@ class FileSelector : public QHBoxLayout
 public:
    FileSelector(rarch_setting_t *setting, QWidget *parent = 0);
    FileSelector(const char *setting, QWidget *parent = 0);
-};
-
-class FontSelector : public QHBoxLayout
-{
-   Q_OBJECT
-public:
-   FontSelector(rarch_setting_t *setting, QWidget *parent = 0);
+private:
+   StringLineEdit *m_lineEdit;
+   FileButton *m_button;
 };
 
 class FloatSlider : public QSlider

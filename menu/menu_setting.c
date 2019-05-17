@@ -10329,6 +10329,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         menu_settings_list_current_add_values(list, list_info, "ttf");
 
          CONFIG_FLOAT(
                list, list_info,
@@ -11248,6 +11249,7 @@ static bool setting_append_list(
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+            menu_settings_list_current_add_values(list, list_info, "ttf");
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
 
             CONFIG_UINT(
