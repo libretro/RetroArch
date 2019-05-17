@@ -323,11 +323,7 @@ static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
-#ifdef HAVE_LAKKA_SWITCH
-static bool menu_show_shutdown           = false;
-#else
 static bool menu_show_shutdown           = true;
-#endif
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
