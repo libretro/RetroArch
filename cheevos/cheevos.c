@@ -2264,6 +2264,7 @@ bool cheevos_unload(void)
 
    cheevos_loaded     = false;
    cheevos_hardcore_paused = false;
+   cheevos_state_loaded_flag = false;
 
    return true;
 }
