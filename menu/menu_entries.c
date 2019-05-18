@@ -433,14 +433,26 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          char tmp[512];
          tmp[0] = '\0';
 
-         cbs->action_sublabel(list,
-               entry->type, (unsigned)i,
-               label, path,
-               tmp,
-               sizeof(tmp));
+         if (!string_is_empty(cbs->action_sublabel_cache))
+            entry->sublabel = strdup(cbs->action_sublabel_cache);
+         else
+         {
+            if (cbs->action_sublabel(list,
+                     entry->type, (unsigned)i,
+                     label, path,
+                     tmp,
+                     sizeof(tmp)))
+            {
+               /* if this function callback returns true,
+                * we know that the value won't change - so we
+                * can cache it instead. */
+               strlcpy(cbs->action_sublabel_cache,
+                     tmp, sizeof(cbs->action_sublabel_cache));
+            }
 
-         if (!string_is_empty(tmp))
-            entry->sublabel = strdup(tmp);
+            if (!string_is_empty(tmp))
+               entry->sublabel = strdup(tmp);
+         }
       }
    }
 

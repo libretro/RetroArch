@@ -55,7 +55,7 @@
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
-   return 0; \
+   return 1; \
 }
 
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
@@ -708,7 +708,7 @@ static int action_bind_sublabel_audio_mixer_stream(
    audio_mixer_stream_t *stream = audio_driver_mixer_get_stream(offset);
 
    if (!stream)
-      return 0;
+      return -1;
 
    switch (stream->state)
    {
@@ -796,7 +796,7 @@ static int action_bind_sublabel_netplay_room(
    unsigned offset        = i - 3;
 
    if (i < 1 || offset > (unsigned)netplay_room_count)
-      return 0;
+      return -1;
 
    ra_version = netplay_room_list[offset].retroarch_version;
    corename   = netplay_room_list[offset].corename;
