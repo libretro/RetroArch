@@ -8734,7 +8734,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
       "Shaders de Vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-      "Verificar sem correspondência principal")
+      "Verificar sem correspondência do núcleo")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
       "Quando desativado, o conteúdo só é adicionado às listas de reprodução se você tiver um núcleo instalado que suporte sua extensão. Ao ativar isso, ele será adicionado à lista de reprodução independentemente. Desta forma, você pode instalar o núcleo que você precisa mais tarde, após a digitalização.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
