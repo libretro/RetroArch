@@ -8,7 +8,6 @@
 - NETBSD: Audioio is now the default audio driver.
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
-- PS3: Add Ozone menu driver.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
