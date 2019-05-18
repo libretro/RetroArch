@@ -6,6 +6,7 @@
 - MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it.
 - MENU/XMB: Add menu animation settings.
 - NETBSD: Audioio is now the default audio driver.
+- NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
 - PS3: Add Ozone menu driver.
 
