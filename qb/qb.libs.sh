@@ -230,7 +230,7 @@ check_header()
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER"
 	eval "set -- $INCLUDE_DIRS"
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	"$CC" "$CFLAGS" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n " ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
@@ -265,7 +265,7 @@ EOF
 	macro="$2"
 	printf %s "Checking presence of predefined macro $macro$ECHOBUF"
 	eval "set -- $CFLAGS $INCLUDE_DIRS"
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	"$CC" "$CFLAGS" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n " ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
