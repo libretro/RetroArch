@@ -183,7 +183,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-    "Habilita a animação horizontal para o menu. Isso terá um impacto no desempenho."
+    "Ativa a animação horizontal para o menu. Isso terá um impacto no desempenho."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -2028,6 +2028,16 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Opções de controles de Notificações na Tela ou Molduras"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Esquema de Vídeo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Ajustar o Esquema de Vídeo"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Notificações na Tela"
@@ -2056,6 +2066,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Transparência"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+    "Esquema de Vídeo"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Opacidade da Transparência"
@@ -2445,6 +2461,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
     "Adicionar aos Favoritos"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Baixar Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Faça o download de imagens em miniatura da captura de tela, arte da caixa ou tela de título para o conteúdo atual. Atualiza quaisquer miniaturas existentes."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -3748,6 +3772,32 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Altura em Tela Cheia"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
+    "Ativar o Esquema de Vídeo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
+    "Os esquemas de vídeo são usados para molduras e outros trabalhos artísticos."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
+    "Caminho do Esquema de Vídeo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+    "Selecione um esquema de vídeo no navegador de arquivos."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
+    "Visualização selecionada"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+    "Selecione uma visualização dentro do esquema carregado."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Driver de Wi-Fi"
@@ -6442,7 +6492,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-    "Exibir/ocultar a opção 'Atualizador On-line'."
+    "Exibir ou ocultar a opção 'Atualizador On-line'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
@@ -6458,7 +6508,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-    "Exibir/ocultar a opção de atualizar núcleos (e arquivos de informação de núcleo)."
+    "Exibir ou ocultar a opção de atualizar núcleos (e arquivos de informação de núcleo)."
     )
 MSG_HASH(
     MSG_PREPARING_FOR_CONTENT_SCAN,
@@ -6566,11 +6616,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-    "Exibir 'Carregar Núcleo'"
+    "Exibir Carregar Núcleo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-    "Exibir/ocultar a opção 'Carregar Núcleo'."
+    "Exibir ou ocultar a opção 'Carregar Núcleo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -6578,7 +6628,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-    "Exibir/ocultar a opção 'Carregar Conteúdo'."
+    "Exibir ou ocultar a opção 'Carregar Conteúdo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -6586,7 +6636,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-    "Exibir/ocultar a opção 'Informação'."
+    "Exibir ou ocultar a opção 'Informação'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
@@ -6594,7 +6644,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-    "Exibir/ocultar a opção 'Arquivo de Configuração'."
+    "Exibir ou ocultar a opção 'Arquivo de Configuração'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -6602,7 +6652,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-    "Exibir/ocultar a opção 'Ajuda'."
+    "Exibir ou ocultar a opção 'Ajuda'."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -6611,7 +6661,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Exibir/ocultar a opção 'Reiniciar o RetroArch'."
+    "Exibir ou ocultar a opção 'Reiniciar o RetroArch'."
     )
 #else
 MSG_HASH(
@@ -6620,7 +6670,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Exibir/ocultar a opção 'Sair do RetroArch'."
+    "Exibir ou ocultar a opção 'Sair do RetroArch'."
     )
 #endif
 MSG_HASH(
@@ -6629,7 +6679,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-    "Exibir/ocultar a opção 'Reiniciar'."
+    "Exibir ou ocultar a opção 'Reiniciar'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
@@ -6637,7 +6687,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-    "Exibir/ocultar a opção 'Desligar'."
+    "Exibir ou ocultar a opção 'Desligar'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
@@ -6649,11 +6699,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-    "Exibir 'Captura de Tela'"
+    "Exibir Captura de Tela"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-    "Exibir/ocultar a opção 'Captura de Tela'."
+    "Exibir ou ocultar a opção 'Captura de Tela'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -6661,7 +6711,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-    "Exibir/ocultar as opções para salvar/carregar estados."
+    "Exibir ou ocultar as opções para salvar/carregar estados."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -6669,7 +6719,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-    "Exibir/ocultar as opções para abolir o salvar/carregar estado."
+    "Exibir ou ocultar as opções para abolir o salvar/carregar estado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -6677,7 +6727,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-    "Exibir/ocultar a opção 'Adicionar aos Favoritos'."
+    "Exibir ou ocultar a opção 'Adicionar aos Favoritos'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
@@ -6685,7 +6735,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-    "Exibir/ocultar a opção 'Iniciar Gravação'."
+    "Exibir ou ocultar a opção 'Iniciar Gravação'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
@@ -6693,7 +6743,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-    "Exibir/ocultar a opção 'Iniciar Transmissão'."
+    "Exibir ou ocultar a opção 'Iniciar Transmissão'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -6701,7 +6751,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-    "Exibir/ocultar a opção 'Redefinir Associação do Núcleo'."
+    "Exibir ou ocultar a opção 'Redefinir Associação do Núcleo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6709,7 +6759,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-    "Exibir/ocultar a opção 'Opções'."
+    "Exibir ou ocultar a opção 'Opções'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -6717,7 +6767,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-    "Exibir/ocultar a opção 'Controles'."
+    "Exibir ou ocultar a opção 'Controles'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -6725,15 +6775,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-    "Exibir/ocultar a opção 'Trapaças'."
+    "Exibir ou ocultar a opção 'Trapaças'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-    "Exibir 'Shaders'"
+    "Exibir Shaders"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-    "Exibir/ocultar a opção 'Shaders'."
+    "Exibir ou ocultar a opção 'Shaders'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -6741,7 +6791,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-    "Exibir/ocultar a opção 'Salvar Redefinição de Núcleo'."
+    "Exibir ou ocultar a opção 'Salvar Redefinição de Núcleo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6749,7 +6799,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-    "Exibir/ocultar a opção 'Salvar Redefinição de Jogo'."
+    "Exibir ou ocultar a opção 'Salvar Redefinição de Jogo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -6757,7 +6807,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-    "Exibir/ocultar a opção 'Informação'."
+    "Exibir ou ocultar a opção 'Informação'."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Exibir Baixar miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Exibir ou ocultar a opção 'Baixar miniaturas'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -7029,11 +7087,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-    "Exibir/ocultar as opções de Rebobinamento."
+    "Exibir ou ocultar as opções de Rebobinamento."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-    "Exibir/ocultar as opções de Latência."
+    "Exibir ou ocultar as opções de Latência."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
@@ -7041,12 +7099,22 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-    "Exibir/ocultar as opções de Sobreposição."
+    "Exibir ou ocultar as opções de Sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Exibir Configurações de Sobreposição"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
+    "Mostrar configurações de esquema de vídeo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+    "Mostrar ou ocultar opções de esquema de vídeo."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Ativar Áudio de Menu"
@@ -8670,8 +8738,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
       "Quando desativado, o conteúdo só é adicionado às listas de reprodução se você tiver um núcleo instalado que suporte sua extensão. Ao ativar isso, ele será adicionado à lista de reprodução independentemente. Desta forma, você pode instalar o núcleo que você precisa mais tarde, após a digitalização.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-      "Animation Horizontal Icon Highlight")
+      "Realçar Ícone de Animação Horizontal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-      "Animation Move Up/Down")
+      "Animação Move Para Cima/Baixo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-      "Animation Main Menu Opens/Closes")
+      "Animação do Menu Principal Abre/Fecha")
