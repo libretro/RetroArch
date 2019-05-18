@@ -101,29 +101,10 @@ enum xfvk_key
    XFVK_LALT           = 64,
    XFVK_LCTL           = 37,
    XFVK_SPCE           = 65,
-   XFVK_RCTL           = 105,
-   XFVK_RALT           = 108,
 
-   XFVK_PRSC           = 107,
-   /* SYRQ                = 107, */
    XFVK_SCLK           = 78,
-   XFVK_PAUS           = 127,
-   /* BRK                 = 419, */
-
-   XFVK_INS            = 118,
-   XFVK_HOME           = 110,
-   XFVK_PGUP           = 112,
-   XFVK_DELE           = 119,
-   XFVK_END            = 115,
-   XFVK_PGDN           = 117,
-
-   XFVK_UP             = 111,
-   XFVK_LEFT           = 113,
-   XFVK_DOWN           = 116,
-   XFVK_RGHT           = 114,
 
    XFVK_NMLK           = 77,
-   XFVK_KPDV           = 106,
    XFVK_KPMU           = 63,
    XFVK_KPSU           = 82,
 
@@ -139,10 +120,28 @@ enum xfvk_key
    XFVK_KP1            = 87,
    XFVK_KP2            = 88,
    XFVK_KP3            = 89,
-   XFVK_KPEN           = 104,
 
    XFVK_KP0            = 90,
    XFVK_KPDL           = 91,
+
+#ifdef HAVE_UDEV
+   XFVK_RCTL           = 105,
+   XFVK_RALT           = 108,
+
+   XFVK_UP             = 111,
+   XFVK_LEFT           = 113,
+   XFVK_DOWN           = 116,
+   XFVK_RGHT           = 114,
+
+   XFVK_INS            = 118,
+   XFVK_HOME           = 110,
+   XFVK_PGUP           = 112,
+   XFVK_DELE           = 119,
+   XFVK_END            = 115,
+   XFVK_PGDN           = 117,
+
+   XFVK_KPDV           = 106,
+   XFVK_KPEN           = 104,
    XFVK_KPEQ           = 125,
 
    /* Microsoft keyboard extra keys */
@@ -150,9 +149,6 @@ enum xfvk_key
    XFVK_RWIN           = 134,
    XFVK_COMP           = 135,
    XFVK_MENU           = XFVK_COMP,
-
-   /* Extended keys */
-   XFVK_CALC           = 148,
 
    XFVK_FK13           = 191,
    XFVK_FK14           = 192,
@@ -166,6 +162,59 @@ enum xfvk_key
    XFVK_FK22           = 200,
    XFVK_FK23           = 201,
    XFVK_FK24           = 202,
+
+   XFVK_PRSC           = 107,
+   XFVK_PAUS           = 127,
+
+   /* Extended keys */
+   XFVK_CALC           = 148,
+#else
+   /* derived from /usr/share/X11/xkb/keycodes/xfree86 */
+
+   XFVK_RCTL           = 109,
+   XFVK_RALT           = 113,
+
+   XFVK_UP             = 98,
+   XFVK_LEFT           = 100,
+   XFVK_DOWN           = 104,
+   XFVK_RGHT           = 102,
+
+   XFVK_INS            = 106,
+   XFVK_HOME           = 97,
+   XFVK_PGUP           = 99,
+   XFVK_DELE           = 107,
+   XFVK_END            = 103,
+   XFVK_PGDN           = 105,
+
+   XFVK_KPDV           = 112,
+   XFVK_KPEN           = 108,
+   XFVK_KPEQ           = 126,
+
+   /* Microsoft keyboard extra keys */
+   XFVK_LWIN           = 115,
+   XFVK_RWIN           = 116,
+   XFVK_COMP           = 0,
+   XFVK_MENU           = 117,
+
+   XFVK_FK13           = 118,
+   XFVK_FK14           = 119,
+   XFVK_FK15           = 120,
+   XFVK_FK16           = 121,
+   XFVK_FK17           = 122,
+   XFVK_FK18           = 0,
+   XFVK_FK19           = 0,
+   XFVK_FK20           = 0,
+   XFVK_FK21           = 0,
+   XFVK_FK22           = 0,
+   XFVK_FK23           = 0,
+   XFVK_FK24           = 0,
+
+   XFVK_PRSC           = 111,
+   XFVK_PAUS           = 110,
+
+   /* Extended keys */
+   XFVK_CALC           = 0,
+#endif /* ENABLE_EVDEV */
 
    XFVK_LAST,
    XFVK_DUMMY          = 255
