@@ -1,5 +1,6 @@
 # 1.7.8 (future)
 - LOCALIZATION: Update Portuguese Brazilian Translation.
+- LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
 - MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan.
 - MENU/OZONE: Add it for PS3
