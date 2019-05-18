@@ -303,14 +303,10 @@ struct http_connection_t *net_http_connection_new(const char *url,
       domain_port2 = strtok(NULL, ":");
       url_port = domain_port2;
       if (strchr(domain_port2, (char) '/') != NULL)
-      {
          url_port = strtok(domain_port2, "/");
-      }
 
       if (url_port != NULL)
-      {
          conn->port = atoi(url_port);
-      }
 
       strlcpy(new_domain, domain_port, sizeof(new_domain));
 

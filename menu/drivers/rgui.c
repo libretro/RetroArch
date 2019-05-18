@@ -1291,8 +1291,6 @@ static void rgui_init_particle_effect(rgui_t *rgui)
          break;
       case RGUI_PARTICLE_EFFECT_STARFIELD:
          {
-            float min_depth = (float)fb_width / 12.0f;
-            
             for (i = 0; i < NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
@@ -2248,8 +2246,6 @@ static void rgui_cache_background(rgui_t *rgui)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   uint16_t             *src  = NULL;
-   uint16_t             *dst  = NULL;
 
    /* Only regenerate the background if we are *not*
     * currently showing a wallpaper image */

@@ -1474,8 +1474,6 @@ static bool dump_to_file_desperate(const void *data,
    time_t time_;
    char *timebuf;
    char *path;
-   bool  ret              = false;
-
    char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    application_data[0]    = '\0';
 
