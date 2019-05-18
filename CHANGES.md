@@ -8,6 +8,7 @@
 - NETBSD: Audioio is now the default audio driver.
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
+- X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.
