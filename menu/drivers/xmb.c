@@ -3370,11 +3370,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-   if (settings->bools.menu_core_enable &&
-         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (settings->bools.menu_core_enable)
+   {
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(video_info, xmb, title_msg, xmb->margins_title_left,
             height - xmb->margins_title_bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
+   }
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;

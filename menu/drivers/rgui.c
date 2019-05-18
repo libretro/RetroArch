@@ -3541,21 +3541,20 @@ static void rgui_render(void *data, bool is_idle)
          char core_title_buf[64];
          core_title[0] = core_title_buf[0] = '\0';
 
-         if (menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
-         {
-            ticker.s        = core_title_buf;
-            ticker.len      = core_name_len;
-            ticker.str      = core_title;
-            ticker.selected = true;
+         menu_entries_get_core_title(core_title, sizeof(core_title));
 
-            menu_animation_ticker(&ticker);
+         ticker.s        = core_title_buf;
+         ticker.len      = core_name_len;
+         ticker.str      = core_title;
+         ticker.selected = true;
 
-            blit_line(
-                  RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-                  (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-                  RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
-                  rgui->colors.hover_color, rgui->colors.shadow_color);
-         }
+         menu_animation_ticker(&ticker);
+
+         blit_line(
+               RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
+               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
+               RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
+               rgui->colors.hover_color, rgui->colors.shadow_color);
       }
 
       /* Print clock (if required) */

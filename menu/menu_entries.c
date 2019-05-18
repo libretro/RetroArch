@@ -915,36 +915,31 @@ int menu_entries_get_title(char *s, size_t len)
 int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = runloop_get_libretro_system_info();
-   const char *core_name               = system ? system->library_name    : NULL;
-   const char *core_version            = system ? system->library_version : NULL;
+   const char *core_name               = system ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   const char *core_version            = system ? system->library_version : "";
 #if _MSC_VER == 1200
-   const char *extra_version = " msvc6";
+   const char *extra_version           = " msvc6";
 #elif _MSC_VER == 1300
-   const char *extra_version = " msvc2002";
+   const char *extra_version           = " msvc2002";
 #elif _MSC_VER == 1310
-   const char *extra_version = " msvc2003";
+   const char *extra_version           = " msvc2003";
 #elif _MSC_VER == 1400
-   const char *extra_version = " msvc2005";
+   const char *extra_version           = " msvc2005";
 #elif _MSC_VER == 1500
-   const char *extra_version = " msvc2008";
+   const char *extra_version           = " msvc2008";
 #elif _MSC_VER == 1600
-   const char *extra_version = " msvc2010";
+   const char *extra_version           = " msvc2010";
 #elif _MSC_VER == 1700
-   const char *extra_version = " msvc2012";
+   const char *extra_version           = " msvc2012";
 #elif _MSC_VER == 1800
-   const char *extra_version = " msvc2013";
+   const char *extra_version           = " msvc2013";
 #elif _MSC_VER == 1900
-   const char *extra_version = " msvc2015";
+   const char *extra_version           = " msvc2015";
 #elif _MSC_VER >= 1910 && _MSC_VER < 2000
-   const char *extra_version = " msvc2017";
+   const char *extra_version           = " msvc2017";
 #else
-   const char *extra_version = "";
+   const char *extra_version           = "";
 #endif
-
-   if (string_is_empty(core_name))
-      core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   if (!core_version)
-      core_version = "";
 
    snprintf(s, len, "%s%s - %s %s", PACKAGE_VERSION, extra_version,
          core_name, core_version);
