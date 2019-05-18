@@ -4941,7 +4941,7 @@ static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
       free(list_info);
 }
 
-void menu_settings_list_current_add_range(
+static void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       float min, float max, float step,
@@ -4971,7 +4971,7 @@ static void menu_settings_list_current_add_values(
    (*list)[idx].values = values;
 }
 
-void menu_settings_list_current_add_cmd(
+static void menu_settings_list_current_add_cmd(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       enum event_command values)

@@ -131,18 +131,6 @@ void general_write_handler(rarch_setting_t *setting);
 
 void general_read_handler(rarch_setting_t *setting);
 
-void menu_settings_list_current_add_cmd(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum event_command values);
-
-void menu_settings_list_current_add_range(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      float min, float max, float step,
-      bool enforce_minrange_enable,
-      bool enforce_maxrange_enable);
-
 void menu_setting_free(rarch_setting_t *setting);
 
 bool menu_setting_ctl(
