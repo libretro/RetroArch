@@ -2537,7 +2537,10 @@ enum retro_language frontend_unix_get_user_language(void)
       }
    }
 #else
-   lang = rarch_get_language_from_iso(getenv("LANG"));
+   char *envvar = getenv("LANG");
+
+   if (envvar != NULL)
+      lang = rarch_get_language_from_iso(envvar);
 #endif
 #endif
    return lang;
