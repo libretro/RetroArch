@@ -1221,7 +1221,7 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 #ifdef HAVE_VIDEO_LAYOUT
 const video_layout_render_interface_t *video_driver_layout_render_interface(void)
 {
-   if (!current_video)
+   if (!current_video || !current_video->video_layout_render_interface)
       return NULL;
 
    return current_video->video_layout_render_interface(video_driver_data);
