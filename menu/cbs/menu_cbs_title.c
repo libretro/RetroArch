@@ -43,7 +43,7 @@ static int action_get_title_action_generic(const char *path, const char *label,
    {
       sanitize_to_string(s, label, len);
    }
-   return 0;
+   return 1;
 }
 
 #define default_title_macro(func_name, lbl) \
@@ -54,7 +54,7 @@ static int action_get_title_action_generic(const char *path, const char *label,
    { \
       sanitize_to_string(s, str, len); \
    } \
-   return 0; \
+   return 1; \
 }
 
 #define default_fill_title_macro(func_name, lbl) \
@@ -63,14 +63,14 @@ static int action_get_title_action_generic(const char *path, const char *label,
    const char *title = msg_hash_to_str(lbl); \
    if (!string_is_empty(path) && !string_is_empty(title)) \
       fill_pathname_join_delim(s, title, path, ' ', len); \
-   return 0; \
+   return 1; \
 }
 
 #define default_title_copy_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
-   return 0; \
+   return 1; \
 }
 
 static int action_get_title_dropdown_item(const char *path, const char *label, unsigned menu_type, char *s, size_t len)

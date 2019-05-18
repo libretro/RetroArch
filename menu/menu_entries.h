@@ -81,6 +81,7 @@ typedef struct menu_ctx_list
 typedef struct menu_file_list_cbs
 {
    char action_sublabel_cache[512];
+   char action_title_cache   [512];
 
    enum msg_hash_enums enum_idx;
    const char *action_iterate_ident;

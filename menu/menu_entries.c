@@ -895,7 +895,18 @@ int menu_entries_get_title(char *s, size_t len)
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    if (cbs && cbs->action_get_title)
-      return cbs->action_get_title(path, label, menu_type, s, len);
+   {
+      int ret;
+      if (!string_is_empty(cbs->action_title_cache))
+      {
+         strlcpy(s, cbs->action_title_cache, len);
+         return 0;
+      }
+      ret = cbs->action_get_title(path, label, menu_type, s, len);
+      if (ret == 1)
+         strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+      return ret;
+   }
    return 0;
 }
 
