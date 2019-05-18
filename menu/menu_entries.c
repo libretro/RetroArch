@@ -915,8 +915,8 @@ int menu_entries_get_title(char *s, size_t len)
 int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = runloop_get_libretro_system_info();
-   const char *core_name               = system ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   const char *core_version            = system ? system->library_version : "";
+   const char *core_name               = (system && !string_is_empty(system->library_name)) ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   const char *core_version            = (system && system->library_version) ? system->library_version : "";
 #if _MSC_VER == 1200
    const char *extra_version           = " msvc6";
 #elif _MSC_VER == 1300
