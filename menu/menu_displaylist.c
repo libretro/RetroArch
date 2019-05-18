@@ -2351,7 +2351,7 @@ static unsigned menu_displaylist_parse_cores(
 
    str_list = string_list_new();
    ok = dir_list_append(str_list, path, info->exts,
-         true, settings->bools.show_hidden_files, true, false);
+         true, settings->bools.show_hidden_files, false, false);
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
@@ -2430,14 +2430,12 @@ static unsigned menu_displaylist_parse_cores(
             file_type = FILE_TYPE_DIRECTORY;
             break;
          case RARCH_COMPRESSED_ARCHIVE:
-            file_type = FILE_TYPE_CARCHIVE;
-            break;
          case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = FILE_TYPE_IN_CARCHIVE;
-            break;
+            /* Compressed cores are unsupported */
+            continue;
          case RARCH_PLAIN_FILE:
          default:
-            file_type = (enum msg_file_type)info->type_default;
+            file_type = FILE_TYPE_CORE;
             break;
       }
 
@@ -2467,9 +2465,6 @@ static unsigned menu_displaylist_parse_cores(
             continue;
       }
 #endif
-      /* Compressed cores are unsupported */
-      if (file_type == FILE_TYPE_CARCHIVE)
-         continue;
 
       if (is_dir)
       {
