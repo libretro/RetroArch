@@ -4962,23 +4962,11 @@ static void menu_settings_list_current_add_range(
    (*list)[list_info->index - 1].flags |= SD_FLAG_HAS_RANGE;
 }
 
-static void menu_settings_list_current_add_values(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *values)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].values = values;
-}
+#define menu_settings_list_current_idx(list_info) (list_info->index - 1)
 
-static void menu_settings_list_current_add_cmd(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum event_command values)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].cmd_trigger.idx = values;
-}
+#define menu_settings_list_current_add_values(list, list_info, str) ((*(list))[menu_settings_list_current_idx((list_info))].values = (str))
+
+#define menu_settings_list_current_add_cmd(list, list_info, str) (*(list))[menu_settings_list_current_idx(list_info)].cmd_trigger.idx = (str)
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
