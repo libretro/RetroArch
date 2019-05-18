@@ -229,7 +229,7 @@ check_header()
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER"
-	eval "set -- $INCLUDE_DIRS"
+	eval "set -- $CFLAGS $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n " ... $answer"
