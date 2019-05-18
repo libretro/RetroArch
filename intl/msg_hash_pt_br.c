@@ -645,6 +645,21 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Opacidade da Transparência.");
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+        case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
+            snprintf(s, len,
+                     "Ativar ou desativar o esquema de vídeo atual.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH:
+            snprintf(s, len,
+                     "Caminho para o esquema de vídeo.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW:
+            snprintf(s, len,
+                     "Os esquemas podem conter várias visualizações. \n"
+                     "Selecione uma visualização.");
+            break;
+#endif
         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             snprintf(s, len,
                      "Tempo limite para vínculo de entrada \n"
@@ -1880,6 +1895,15 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Define um diretório onde as transparências \n"
                              "são mantidas para fácil acesso.");
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+        case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
+            snprintf(s, len,
+                     "Diretório do esquema de vídeo. \n"
+                             " \n"
+                             "Define um diretório onde os esquemas de vídeo \n"
+                             "são mantidos para facilitar o acesso.");
+            break;
+#endif
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
                      "Número máximo de usuários \n"
