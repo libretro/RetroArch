@@ -387,12 +387,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (cbs)
    {
       const char *label             = NULL;
-      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
       entry->enum_idx               = cbs->enum_idx;
       entry->checked                = cbs->checked;
 
-      menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
+      menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
 
       if (cbs->action_get_value && use_representation)
       {
@@ -882,7 +881,6 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    const file_list_t *list       = menu_entries_list ? 
       menu_list_get(menu_entries_list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list 
@@ -892,7 +890,7 @@ int menu_entries_get_title(char *s, size_t len)
    if (!cbs)
       return -1;
 
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
 
    if (cbs && cbs->action_get_title)
    {

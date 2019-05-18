@@ -2891,9 +2891,8 @@ static void wifi_scan_callback(retro_task_t *task,
    const char *path              = NULL;
    const char *label             = NULL;
    unsigned menu_type            = 0;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
 
    /* Don't push the results if we left the wifi menu */
    if (!string_is_equal(label,

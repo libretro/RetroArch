@@ -296,7 +296,6 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_label         = NULL;
    const char          *info_path          = NULL;
    menu_handle_t            *menu          = NULL;
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
@@ -314,7 +313,7 @@ int generic_action_ok_displaylist_push(const char *path,
 
    tmp[0] = parent_dir[0] = '\0';
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
    switch (action_type)
    {
@@ -1122,7 +1121,6 @@ static void content_add_to_playlist(const char *path)
 
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
-      enum msg_hash_enums enum_idx,
       size_t idx, size_t entry_idx,
       const char *path, const char *label,
       unsigned type, bool is_carchive)
@@ -1143,7 +1141,7 @@ static int file_load_with_detect_core_wrapper(
       new_core_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       new_core_path[0]    = menu_path_new[0] = '\0';
 
-      menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+      menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
       if (!string_is_empty(menu_path))
          strlcpy(menu_path_new, menu_path, PATH_MAX_LENGTH * sizeof(char));
@@ -1239,7 +1237,7 @@ static int action_ok_file_load_with_detect_core_carchive(
    type = 0;
    label = NULL;
 
-   return file_load_with_detect_core_wrapper(MSG_UNKNOWN,
+   return file_load_with_detect_core_wrapper(
          MSG_UNKNOWN, idx, entry_idx,
          path, label, type, true);
 }
@@ -1252,7 +1250,6 @@ static int action_ok_file_load_with_detect_core(const char *path,
    label = NULL;
 
    return file_load_with_detect_core_wrapper(
-         MSG_UNKNOWN,
          MSG_UNKNOWN, idx, entry_idx,
          path, label, type, false);
 }
@@ -1265,7 +1262,7 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
 
    return file_load_with_detect_core_wrapper(
          MENU_ENUM_LABEL_COLLECTION,
-         MSG_UNKNOWN, idx, entry_idx,
+         idx, entry_idx,
          path, label, type, false);
 }
 

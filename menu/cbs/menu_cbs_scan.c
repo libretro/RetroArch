@@ -51,14 +51,12 @@ int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH];
-   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
@@ -76,14 +74,12 @@ int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH];
-   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    strlcpy(fullpath, menu_path, sizeof(fullpath));
 

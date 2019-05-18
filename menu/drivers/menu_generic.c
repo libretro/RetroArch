@@ -71,13 +71,12 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
-   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *label              = NULL;
 
    if (!menu)
       return 0;
 
-   menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
+   menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
 
    menu->menu_state_msg[0]   = '\0';
 
