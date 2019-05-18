@@ -5136,11 +5136,13 @@ rarch_setting_t *menu_setting_find(const char *label)
 {
    rarch_setting_t *setting = NULL;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
-
-   if (!setting || !label)
+   if (!label)
       return NULL;
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting)
+      return NULL;
    return menu_setting_find_internal(setting, label);
 }
 
@@ -5148,11 +5150,13 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 {
    rarch_setting_t *setting = NULL;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
-
-   if (!setting || enum_idx == 0)
+   if (enum_idx == 0)
       return NULL;
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting)
+      return NULL;
    return menu_setting_find_internal_enum(setting, enum_idx);
 }
 
