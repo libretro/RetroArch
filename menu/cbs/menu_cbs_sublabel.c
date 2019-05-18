@@ -23,6 +23,7 @@
 #include "../../cheevos/cheevos.h"
 #include "../../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
 #endif
+#include "../../core_info.h"
 #include "../../verbosity.h"
 
 #include <string.h>
@@ -56,6 +57,38 @@
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
    return 1; \
+}
+
+static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
+{
+   core_info_list_t *core_list = NULL;
+
+   core_info_get_list(&core_list);
+
+   if (core_list)
+   {
+      unsigned j;
+      for (j = 0; j < core_list->count; j++)
+      {
+         if (string_is_equal(path_basename(core_list->list[j].path), 
+                  path))
+         {
+            if (core_list->list[j].licenses_list)
+            {
+               char tmp[PATH_MAX_LENGTH];
+               tmp[0] = '\0';
+
+               string_list_join_concat(tmp, sizeof(tmp),
+                     core_list->list[j].licenses_list, ", ");
+               snprintf(s, len, "License: %s", tmp);
+               return 1;
+            }
+         }
+      }
+   }
+
+   strlcpy(s, "License: N/A", len);
+   return 1;
 }
 
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
@@ -604,6 +637,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
 
    return 0;
 }
+
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1042,6 +1076,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
+            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_file_browser_core);
+            break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer);
