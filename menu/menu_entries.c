@@ -47,15 +47,6 @@ struct menu_list
 
 #define menu_entries_need_refresh() ((!menu_entries_nonblocking_refresh) && menu_entries_need_refresh)
 
-static rarch_setting_t *menu_entries_get_setting(uint32_t i)
-{
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
-   return (cbs) ? cbs->setting : NULL;
-}
-
-
 /* This file provides an abstraction of the currently displayed
  * menu.
  *
@@ -70,11 +61,18 @@ static rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
-   rarch_setting_t *setting  = menu_entries_get_setting(i);
-
-   /* XXX Really a special kind of ST_ACTION, but this should be changed */
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = NULL;
+   rarch_setting_t *setting   = NULL;
+   
+   /* FIXME/TODO - XXX Really a special kind of ST_ACTION, 
+    * but this should be changed */
    if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
       return MENU_ENTRY_PATH;
+
+   cbs                        = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   setting                    = cbs ? cbs->setting : NULL;
 
    if (setting)
    {
@@ -207,8 +205,11 @@ unsigned menu_entry_get_type_new(menu_entry_t *entry)
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   bool *ptr                = (bool*)setting_get_ptr(setting);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+   bool *ptr                  = setting ? (bool*)setting->value.target.boolean : NULL;
    if (!ptr)
       return 0;
    return *ptr;
@@ -216,8 +217,11 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 
 struct string_list *menu_entry_enum_values(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   const char      *values  = setting->values;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+   const char      *values    = setting->values;
 
    if (!values)
       return NULL;
@@ -226,13 +230,19 @@ struct string_list *menu_entry_enum_values(uint32_t i)
 
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
    setting_set_with_string_representation(setting, s);
 }
 
 int32_t menu_entry_bind_index(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
 
    if (setting)
       return setting->index - 1;
@@ -241,34 +251,43 @@ int32_t menu_entry_bind_index(uint32_t i)
 
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t      *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)
-      setting_get_ptr(setting);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
    if (keybind)
       keybind->key = (enum retro_key)value;
 }
 
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t      *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)
-      setting_get_ptr(setting);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
    if (keybind)
       keybind->joykey = value;
 }
 
 void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)
-      setting_get_ptr(setting);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
    if (keybind)
       keybind->joyaxis = value;
 }
 
 void menu_entry_pathdir_selected(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
 
    if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
       menu_setting_ctl(MENU_SETTING_CTL_ACTION_RIGHT, setting);
@@ -276,24 +295,33 @@ void menu_entry_pathdir_selected(uint32_t i)
 
 bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting->flags;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
 
    return flags & SD_FLAG_ALLOW_EMPTY;
 }
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting->flags;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
 
    return flags & SD_FLAG_PATH_DIR;
 }
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   const char      *values  = setting->values;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   const char      *values       = setting->values;
 
    if (!values)
       return;
@@ -329,7 +357,10 @@ void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
 
 void menu_entry_set_value(uint32_t i, const char *s)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
    setting_set_with_string_representation(setting, s);
 }
 
@@ -340,23 +371,32 @@ bool menu_entry_is_password(menu_entry_t *entry)
 
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting->flags;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
 
    return (flags & SD_FLAG_HAS_RANGE);
 }
 
 float menu_entry_num_min(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   double               min = setting->min;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   double               min      = setting->min;
    return (float)min;
 }
 
 float menu_entry_num_max(uint32_t i)
 {
-   rarch_setting_t *setting = menu_entries_get_setting(i);
-   double               max = setting->max;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   double               max      = setting->max;
    return (float)max;
 }
 

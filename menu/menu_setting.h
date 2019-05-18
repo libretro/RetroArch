@@ -127,8 +127,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
 
-void *setting_get_ptr(rarch_setting_t *setting);
-
 void general_write_handler(rarch_setting_t *setting);
 
 void general_read_handler(rarch_setting_t *setting);

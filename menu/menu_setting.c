@@ -284,6 +284,39 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
+/* TODO/FIXME - get rid of this eventually */
+static void *setting_get_ptr(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+
+   switch (setting_get_type(setting))
+   {
+      case ST_BOOL:
+         return setting->value.target.boolean;
+      case ST_INT:
+         return setting->value.target.integer;
+      case ST_UINT:
+         return setting->value.target.unsigned_integer;
+      case ST_SIZE:
+         return setting->value.target.sizet;
+      case ST_FLOAT:
+         return setting->value.target.fraction;
+      case ST_BIND:
+         return setting->value.target.keybind;
+      case ST_STRING:
+      case ST_STRING_OPTIONS:
+      case ST_PATH:
+      case ST_DIR:
+         return setting->value.target.string;
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+
 static void menu_input_st_hex_cb(void *userdata, const char *str)
 {
    if (str && *str)
@@ -401,27 +434,23 @@ static void setting_add_special_callbacks(
    setting_add_special_callbacks(a, b, c); \
 }
 
-static bool settings_list_append(rarch_setting_t **list,
+static bool settings_list_append_internal(
+      rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-   if (!list || !*list || !list_info)
+   unsigned new_size              = list_info->size * 2;
+   rarch_setting_t *list_settings = (rarch_setting_t*)
+      realloc(*list, sizeof(rarch_setting_t) * new_size);
+
+   if (!list_settings)
       return false;
-
-   if (list_info->index == list_info->size)
-   {
-      rarch_setting_t *list_settings = NULL;
-
-      list_info->size *= 2;
-      list_settings = (rarch_setting_t*)
-         realloc(*list, sizeof(rarch_setting_t) * list_info->size);
-
-      if (!list_settings)
-         return false;
-      *list = list_settings;
-   }
+   list_info->size                = new_size;
+   *list                          = list_settings;
 
    return true;
 }
+
+#define settings_list_append(a, b) ((a && *a && b) ? ((((b)->index == (b)->size)) ? settings_list_append_internal(a, b) : true) : false)
 
 unsigned setting_get_bind_type(rarch_setting_t *setting)
 {
@@ -5201,37 +5230,6 @@ int menu_setting_set(unsigned type, unsigned action, bool wraparound)
    if (ret == -1)
       return 0;
    return ret;
-}
-
-void *setting_get_ptr(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-
-   switch (setting_get_type(setting))
-   {
-      case ST_BOOL:
-         return setting->value.target.boolean;
-      case ST_INT:
-         return setting->value.target.integer;
-      case ST_UINT:
-         return setting->value.target.unsigned_integer;
-      case ST_SIZE:
-         return setting->value.target.sizet;
-      case ST_FLOAT:
-         return setting->value.target.fraction;
-      case ST_BIND:
-         return setting->value.target.keybind;
-      case ST_STRING:
-      case ST_STRING_OPTIONS:
-      case ST_PATH:
-      case ST_DIR:
-         return setting->value.target.string;
-      default:
-         break;
-   }
-
-   return NULL;
 }
 
 /**
@@ -14701,6 +14699,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(
          list_info->size, sizeof(*list));
+   rarch_setting_t **list_ptr           = NULL;
 
    if (!list)
       return NULL;
@@ -14714,7 +14713,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       }
    }
 
-   if (!settings_list_append(&list, list_info))
+   list_ptr = &list;
+
+   if (!settings_list_append(list_ptr, list_info))
    {
       free(list);
       return NULL;

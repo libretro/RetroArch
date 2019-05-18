@@ -105,7 +105,7 @@ static int menu_input_key_bind_set_mode_common(
    switch (state)
    {
       case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
-         keybind    = (struct retro_keybind*)setting_get_ptr(setting);
+         keybind    = (struct retro_keybind*)setting->value.target.keybind;
 
          if (!keybind)
             return -1;
