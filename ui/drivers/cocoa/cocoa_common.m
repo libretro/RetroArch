@@ -209,10 +209,10 @@ void *glkitview_init(void);
         CGRect newFrame = screenSize;
         if ( orientation == UIInterfaceOrientationPortrait ) {
             newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y + inset.top, screenSize.size.width, screenSize.size.height - inset.top);
-        } else if ( orientation == UIInterfaceOrientationLandscapeLeft ) {
-            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y, screenSize.size.width - inset.right, screenSize.size.height);
-        } else if ( orientation == UIInterfaceOrientationLandscapeRight ) {
-            newFrame = CGRectMake(screenSize.origin.x + inset.left, screenSize.origin.y, screenSize.size.width - inset.left, screenSize.size.height);
+		} else if ( orientation == UIInterfaceOrientationLandscapeLeft ) {
+		    newFrame = CGRectMake(screenSize.origin.x + inset.right, screenSize.origin.y, screenSize.size.width - inset.right * 2, screenSize.size.height);
+		} else if ( orientation == UIInterfaceOrientationLandscapeRight ) {
+		    newFrame = CGRectMake(screenSize.origin.x + inset.left, screenSize.origin.y, screenSize.size.width - inset.left * 2, screenSize.size.height);
         }
         self.view.frame = newFrame;
     }
