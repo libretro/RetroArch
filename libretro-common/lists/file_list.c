@@ -39,15 +39,15 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
 
    new_data = (struct item_file*)realloc(list->list, nitems * item_size);
 
-   if (new_data)
-   {
-      memset(&new_data[list->capacity], 0, item_size * (nitems - list->capacity));
+   if (!new_data)
+      return false;
 
-      list->list     = new_data;
-      list->capacity = nitems;
-   }
+   memset(&new_data[list->capacity], 0, item_size * (nitems - list->capacity));
 
-   return new_data != NULL;
+   list->list     = new_data;
+   list->capacity = nitems;
+
+   return true;
 }
 
 bool file_list_prepend(file_list_t *list,
