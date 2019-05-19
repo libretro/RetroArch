@@ -1186,6 +1186,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
    SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
+   SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, default_discord_app_id, true);
    SETTING_ARRAY("translation_service_url",  settings->arrays.translation_service_url, true, default_translation_service_url, true);
 
