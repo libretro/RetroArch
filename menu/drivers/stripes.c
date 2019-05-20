@@ -1090,6 +1090,11 @@ static void stripes_update_thumbnail_image(void *data)
       }
 }
 
+static void stripes_refresh_thumbnail_image(void *data)
+{
+   stripes_update_thumbnail_image(data);
+}
+
 static void stripes_set_thumbnail_system(void *data, char*s, size_t len)
 {
    stripes_handle_t *stripes = (stripes_handle_t*)data;
@@ -4451,6 +4456,7 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_pointer_tap,
    stripes_update_thumbnail_path,
    stripes_update_thumbnail_image,
+   stripes_refresh_thumbnail_image,
    stripes_set_thumbnail_system,
    stripes_get_thumbnail_system,
    stripes_set_thumbnail_content,

@@ -2788,6 +2788,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    NULL,
+   NULL,
    menu_display_osk_ptr_at_pos,
    NULL, /* update_savestate_thumbnail_path */
    NULL, /* update_savestate_thumbnail_image */
