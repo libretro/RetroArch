@@ -1807,9 +1807,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
             snprintf(s, len,
-                     "Specifies the man-in-the-middle server \n"
-                             "to use for netplay. A server that is \n"
-                             "located closer to you may have less latency. \n");
+                     "Especifica o servidor homem no meio \n"
+                             "para usar no jogo em rede. Um servidor localizado \n"
+                             "mais perto de você pode ter menos latência. \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
@@ -1817,9 +1817,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Isto pode informar ao driver de vídeo para \n"
                              "usar um modo de buffer específico. \n"
                              " \n"
-                             "Single buffering - 1\n"
-                             "Double buffering - 2\n"
-                             "Triple buffering - 3\n"
+                             "Buffer único - 1\n"
+                             "Buffer duplo - 2\n"
+                             "Buffer triplo - 3\n"
                              " \n"
                              "Definir o modo de buffer correto pode \n"
                              "ter um grande impacto na latência.");
@@ -1835,7 +1835,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_TIMEDATE_STYLE:
            snprintf(s, len,
-              "Style to show the current date and/or time in.");
+              "Estilo para mostrar a data atual e/ou a hora.");
            break;
         case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
             snprintf(s, len,
