@@ -10096,6 +10096,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_stream_quality;
+               (*list)[list_info->index - 1].offset_by = RECORD_CONFIG_TYPE_STREAMING_CUSTOM;
             menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
 
             CONFIG_PATH(
