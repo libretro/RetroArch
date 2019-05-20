@@ -1304,7 +1304,7 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
    if (!src)
    {
       strlcpy(msg, "unable to open source file", size);
-      return false;
+      ret = false;
    }
 
    dst = filestream_open(dst_path,
@@ -1314,7 +1314,7 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
    if (!dst)
    {
       strlcpy(msg, "unable to open destination file", size);
-      return false;
+      ret = false;
    }
 
    while (!filestream_eof(src))
@@ -1430,6 +1430,7 @@ static int generic_action_ok(const char *path,
                   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_LOG("[sideload] %s: %s\n", msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), message);
+               RARCH_LOG(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR));
             }
             else
             {
@@ -3510,26 +3511,8 @@ void cb_generic_download(retro_task_t *task,
          dir_path = settings->paths.directory_thumbnails;
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-      {
-         char core_name[256], core_path[PATH_MAX_LENGTH], backup_core_path[PATH_MAX_LENGTH];
-         char message[PATH_MAX_LENGTH];
-
-         fill_pathname_base_noext(core_name, transf->path, sizeof(core_name));
-         fill_pathname_join(core_path, settings->paths.directory_libretro, core_name, sizeof(core_path));
-         fill_pathname_join(backup_core_path, settings->paths.directory_core_assets, core_name, sizeof(backup_core_path));
-         if(!file_copy(core_path, backup_core_path, message, sizeof(message)))
-         {
-            RARCH_LOG("[backup] %s: %s\n", msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_BACKUP_CORE_ERROR), message);
-         }
-         else
-         {
-            RARCH_LOG("[backup] %s\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BACKUP_CORE_SUCCESS));
-         }
-
          dir_path = settings->paths.directory_libretro;
          break;
-      }
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)

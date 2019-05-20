@@ -698,14 +698,6 @@ MSG_HASH(
     "Core installation succesful"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BACKUP_CORE_ERROR,
-    "Core backup failed"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BACKUP_CORE_SUCCESS,
-    "Core backup succesful"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
     "Options"
     )
