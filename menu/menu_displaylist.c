@@ -2486,13 +2486,12 @@ static unsigned menu_displaylist_parse_cores(
       return 0;
 
    {
-      enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
       core_info_list_t *list         = NULL;
       const char *dir                = NULL;
 
       core_info_get_list(&list);
 
-      menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
+      menu_entries_get_last_stack(&dir, NULL, NULL, NULL, NULL);
 
       list_size = file_list_get_size(info->list);
 
