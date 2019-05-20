@@ -408,6 +408,8 @@ static void ozone_update_thumbnail_image(void *data)
       else
          video_driver_texture_unload(&ozone->thumbnail);
    }
+   else
+      video_driver_texture_unload(&ozone->thumbnail);
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
@@ -417,6 +419,8 @@ static void ozone_update_thumbnail_image(void *data)
       else
          video_driver_texture_unload(&ozone->left_thumbnail);
    }
+   else
+      video_driver_texture_unload(&ozone->left_thumbnail);
 }
 
 /* TODO: Scale text */
@@ -2188,8 +2192,31 @@ static bool ozone_load_image(void *userdata, void *data, enum menu_image_type ty
    unsigned maximum_height, maximum_width;
    float display_aspect_ratio;
 
-   if (!ozone || !data)
+   if (!ozone)
       return false;
+
+   if (!data)
+   {
+      /* If this happens, the image we attempted to load
+       * was corrupt/incorrectly formatted. If this was a
+       * thumbnail image, have unload any existing thumbnails
+       * (otherwise entry with 'corrupt' thumbnail will show
+       * thumbnail from last selected 'good' entry) */
+      if (type == MENU_IMAGE_THUMBNAIL)
+      {
+         ozone->dimensions.thumbnail_width = 0.0f;
+         ozone->dimensions.thumbnail_height = 0.0f;
+         video_driver_texture_unload(&ozone->thumbnail);
+      }
+      else if (type == MENU_IMAGE_LEFT_THUMBNAIL)
+      {
+         ozone->dimensions.left_thumbnail_width = 0.0f;
+         ozone->dimensions.left_thumbnail_height = 0.0f;
+         video_driver_texture_unload(&ozone->left_thumbnail);
+      }
+
+      return false;
+   }
 
    video_driver_get_size(NULL, &height);
 
