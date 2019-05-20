@@ -550,10 +550,8 @@ void recording_driver_update_streaming_url(void)
                "%s%s", twitch_url, settings->arrays.twitch_stream_key);
          else
          {
-            runloop_msg_queue_push(
-                  "Twitch streaming key empty. You need to fill this in before streaming will work.",
-                  2, 180, false,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            /* To-Do: Show input box for twitch_stream_key*/
+            RARCH_LOG("[recording] twitch streaming key empty\n");
          }
          break;
       }
@@ -566,10 +564,8 @@ void recording_driver_update_streaming_url(void)
          }
          else
          {
-            runloop_msg_queue_push(
-                  "YouTube streaming key empty. You need to fill this in before streaming will work.",
-                  2, 180, false,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            /* To-Do: Show input box for youtube_stream_key*/
+            RARCH_LOG("[recording] youtube streaming key empty\n");
          }
          break;
       }
