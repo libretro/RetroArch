@@ -248,6 +248,7 @@ typedef struct xmb_handle
    bool assets_missing;
    bool is_playlist;
    bool is_db_manager_list;
+   bool is_quick_menu;
 
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
@@ -1035,6 +1036,59 @@ static void xmb_update_thumbnail_image(void *data)
       video_driver_texture_unload(&xmb->left_thumbnail);
 }
 
+static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
+{
+   if (i <= xmb->system_tab_end)
+   {
+      return xmb->tabs[i];
+   }
+   return UINT_MAX;
+}
+
+static void xmb_refresh_thumbnail_image(void *data)
+{
+   xmb_handle_t *xmb                = (xmb_handle_t*)data;
+
+   if (!xmb)
+      return;
+
+   /* Only refresh thumbnails if thumbnails are enabled */
+   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   {
+      unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+      unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+
+      /* Only refresh thumbnails if we are viewing a playlist or
+       * the quick menu... */
+
+      /* If we are currently viewing a playlist, then it's almost inevitable
+       * that we've just gone up a level from the quick menu. In this case,
+       * xmb_set_thumbnail_system() will have been called, which resets
+       * thumbnail path data. We therefore have to regenerate the thumbnail
+       * paths... */
+      if (((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
+           (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
+          xmb->is_playlist)
+      {
+         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
+
+         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
+
+         xmb_update_thumbnail_image(xmb);
+      }
+      else if (xmb->is_quick_menu)
+      {
+         /* If this is the quick menu (most likely, since this is
+          * where the 'download thumbnails' option is located),
+          * then thumbnail paths are already valid - just need to
+          * update images */
+         xmb_update_thumbnail_image(xmb);
+      }
+   }
+}
+
 static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
@@ -1137,15 +1191,6 @@ static void xmb_update_savestate_thumbnail_image(void *data)
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&xmb->savestate_thumbnail);
-}
-
-static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
-{
-   if (i <= xmb->system_tab_end)
-   {
-      return xmb->tabs[i];
-   }
-   return UINT_MAX;
 }
 
 static void xmb_selection_pointer_changed(
@@ -2191,6 +2236,9 @@ static void xmb_populate_entries(void *data,
 
    /* Determine whether this is a database manager list */
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
+
+   /* Determine whether this is the quick menu */
+   xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS));
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
@@ -5768,6 +5816,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
+   xmb_refresh_thumbnail_image,
    xmb_set_thumbnail_system,
    xmb_get_thumbnail_system,
    xmb_set_thumbnail_content,

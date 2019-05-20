@@ -423,6 +423,20 @@ static void ozone_update_thumbnail_image(void *data)
       video_driver_texture_unload(&ozone->left_thumbnail);
 }
 
+static void ozone_refresh_thumbnail_image(void *data)
+{
+   ozone_handle_t *ozone            = (ozone_handle_t*)data;
+
+   if (!ozone)
+      return;
+
+   /* Only refresh thumbnails if thumbnails are enabled
+    * and we are currently viewing a playlist */
+   if ((menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)) &&
+       (ozone->is_playlist && ozone->depth == 1))
+      ozone_update_thumbnail_image(ozone);
+}
+
 /* TODO: Scale text */
 static void ozone_context_reset(void *data, bool is_threaded)
 {
@@ -2338,6 +2352,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_pointer_tap,
    ozone_update_thumbnail_path,
    ozone_update_thumbnail_image,
+   ozone_refresh_thumbnail_image,
    ozone_set_thumbnail_system,
    ozone_get_thumbnail_system,
    ozone_set_thumbnail_content,

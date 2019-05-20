@@ -4271,6 +4271,44 @@ static void rgui_update_thumbnail_image(void *userdata)
    rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
+static void rgui_refresh_thumbnail_image(void *userdata)
+{
+   rgui_t *rgui         = (rgui_t*)userdata;
+   settings_t *settings = config_get_ptr();
+   if (!rgui || !settings)
+      return;
+
+   /* Only refresh thumbnails if thumbnails are enabled */
+   if ((rgui->show_fs_thumbnail || settings->bools.menu_rgui_inline_thumbnails) &&
+       (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)))
+   {
+      /* In all cases, reset current thumbnails */
+      fs_thumbnail.width = 0;
+      fs_thumbnail.height = 0;
+      fs_thumbnail.is_valid = false;
+      free(fs_thumbnail.path);
+      fs_thumbnail.path = NULL;
+
+      mini_thumbnail.width = 0;
+      mini_thumbnail.height = 0;
+      mini_thumbnail.is_valid = false;
+      free(mini_thumbnail.path);
+      mini_thumbnail.path = NULL;
+
+      mini_left_thumbnail.width = 0;
+      mini_left_thumbnail.height = 0;
+      mini_left_thumbnail.is_valid = false;
+      free(mini_left_thumbnail.path);
+      mini_left_thumbnail.path = NULL;
+
+      /* Only load thumbnails if currently viewing a
+       * playlist (note that thumbnails are loaded
+       * immediately, for an optimal user experience) */
+      if (rgui->is_playlist)
+         rgui_scan_selected_entry_thumbnail(rgui, true);
+   }
+}
+
 static void rgui_update_menu_sublabel(rgui_t *rgui)
 {
    size_t selection = menu_navigation_get_selection();
@@ -4689,6 +4727,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_pointer_tap,
    NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
+   rgui_refresh_thumbnail_image,
    rgui_set_thumbnail_system,
    rgui_get_thumbnail_system,
    NULL,                               /* set_thumbnail_content */

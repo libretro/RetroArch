@@ -735,6 +735,7 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* pointer_tap */
    NULL,          /* update_thumbnail_path */
    NULL,          /* update_thumbnail_image */
+   NULL,          /* refresh_thumbnail_image */
    NULL,          /* set_thumbnail_system */
    NULL,          /* get_thumbnail_system */
    NULL,          /* set_thumbnail_content */

@@ -232,16 +232,7 @@ static void cb_task_pl_thumbnail_refresh_menu(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   settings_t *settings = config_get_ptr();
-   
-   if (!settings)
-      return;
-   
-   /* RGUI is a special case where update_thumbnail_image()
-    * toggles fullscreen thumbnails - it should therefore
-    * never be 'refreshed' like this */
-   if(!string_is_equal(settings->arrays.menu_driver, "rgui"))
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
 }
 
 /*******************************/
