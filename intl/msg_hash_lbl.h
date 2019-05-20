@@ -1883,3 +1883,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
       "xmb_menu_animation_move_up_down")
 MSG_HASH(MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "xmb_menu_animation_opening_main_menu")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
+      "video_record_threads")
