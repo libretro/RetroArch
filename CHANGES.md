@@ -6,9 +6,11 @@
 - MENU/OZONE: Add it for PS3
 - MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it.
 - MENU/XMB: Add menu animation settings.
+- MENU: Fix Record -> Streaming Quality, and Record -> Recording Threads settings.
 - NETBSD: Audioio is now the default audio driver.
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
+- RECORD: Fix Twitch streaming.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7
