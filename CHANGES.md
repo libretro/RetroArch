@@ -1,4 +1,5 @@
 # 1.7.8 (future)
+- COMMON: Show license per core (if available) inside 'Load Core'.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
