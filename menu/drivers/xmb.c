@@ -1020,6 +1020,8 @@ static void xmb_update_thumbnail_image(void *data)
       else
          video_driver_texture_unload(&xmb->thumbnail);
    }
+   else
+      video_driver_texture_unload(&xmb->thumbnail);
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
@@ -1029,6 +1031,8 @@ static void xmb_update_thumbnail_image(void *data)
       else
          video_driver_texture_unload(&xmb->left_thumbnail);
    }
+   else
+      video_driver_texture_unload(&xmb->left_thumbnail);
 }
 
 static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
@@ -4505,8 +4509,23 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
 {
    xmb_handle_t *xmb = (xmb_handle_t*)userdata;
 
-   if (!xmb || !data)
+   if (!xmb)
       return false;
+
+   if (!data)
+   {
+      /* If this happens, the image we attempted to load
+       * was corrupt/incorrectly formatted. If this was a
+       * thumbnail image, have unload any existing thumbnails
+       * (otherwise entry with 'corrupt' thumbnail will show
+       * thumbnail from last selected 'good' entry) */
+      if (type == MENU_IMAGE_THUMBNAIL)
+         video_driver_texture_unload(&xmb->thumbnail);
+      else if (type == MENU_IMAGE_LEFT_THUMBNAIL)
+         video_driver_texture_unload(&xmb->left_thumbnail);
+
+      return false;
+   }
 
    switch (type)
    {
