@@ -3143,6 +3143,18 @@ MSG_HASH(
     "Atualizador de Miniaturas"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+    "Baixe o pacote completo de miniaturas para o sistema selecionado."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Atualizador de Miniaturas da Lista de Reprodução"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Baixe miniaturas individuais para cada entrada da lista de reprodução selecionada."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
     "Arte da Embalagem"
     )
