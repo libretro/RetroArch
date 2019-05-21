@@ -1730,10 +1730,7 @@ static bool command_event_main_state(unsigned cmd)
             {
 #ifdef HAVE_CHEEVOS
                /* RCHEEVOS TODO: remove duplication below */
-               if (cheevos_hardcore_active)
-                  cheevos_state_loaded_flag = true;
-               if (rcheevos_hardcore_active)
-                  rcheevos_state_loaded_flag = true;
+               rcheevos_state_loaded_flag = cheevos_state_loaded_flag = true;
 #endif
                ret = true;
 #ifdef HAVE_NETWORKING

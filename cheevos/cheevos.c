@@ -2282,9 +2282,6 @@ bool cheevos_toggle_hardcore_mode(void)
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
 
-      /* reset the state loaded flag in case it was set */
-      cheevos_state_loaded_flag = false;
-
       /* send reset core cmd to avoid any user
        * savestate previusly loaded. */
       command_event(CMD_EVENT_RESET, NULL);
