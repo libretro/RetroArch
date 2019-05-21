@@ -644,16 +644,17 @@ enum frontend_fork win32_fork_mode;
 
 static void frontend_win32_respawn(char *s, size_t len)
 {
-   if (win32_fork_mode != FRONTEND_FORK_RESTART)
-      return;
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
-
-   ZeroMemory( &si, sizeof(si) );
-   si.cb = sizeof(si);
-   ZeroMemory( &pi, sizeof(pi) );
-
    char executable_path[PATH_MAX_LENGTH] = {0};
+
+   if (win32_fork_mode != FRONTEND_FORK_RESTART)
+      return;
+
+   memset(&si, 0, sizeof(si));
+   si.cb = sizeof(si);
+   memset(&pi, 0, sizeof(pi));
+
    fill_pathname_application_path(executable_path,
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
