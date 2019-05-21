@@ -6865,10 +6865,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_INFORMATION_LIST,
                      PARSE_ACTION, false) == 0)
                   count++;
-            if (menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_RESTART_RETROARCH,
-                  PARSE_ACTION, false) == 0)
-               count++;
             if (settings->bools.menu_show_configurations)
                if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
