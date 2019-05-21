@@ -1295,7 +1295,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   if (!first_run)
+   if (first_run)
    {
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
