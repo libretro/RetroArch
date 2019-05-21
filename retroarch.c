@@ -1241,7 +1241,7 @@ static void retroarch_print_help(const char *arg0)
  **/
 static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
-   static bool first_run = false;
+   static bool first_run = true;
    const char *optstring = NULL;
    bool explicit_menu    = false;
    unsigned i;
@@ -1306,7 +1306,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       string_trim_whitespace_left(launch_arguments);
       string_trim_whitespace_right(launch_arguments);
 
-      first_run = true;
+      first_run = false;
    }
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
