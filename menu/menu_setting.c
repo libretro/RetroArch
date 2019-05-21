@@ -6648,7 +6648,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if !defined(__CELLOS_LV2__) && !defined(HAVE_DYNAMIC)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_RESTART_RETROARCH,
@@ -6657,7 +6656,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
-#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -6765,14 +6763,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RESTART_RETROARCH,
-               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
 #endif
 
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
