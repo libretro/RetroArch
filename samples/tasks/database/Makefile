@@ -30,22 +30,44 @@ endif
 
 ifneq (,$(findstring armv7,$(extra_rules_gcc)))
 extra_flags += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
+CFLAGS += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
+CXXFLAGS += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
 use_neon := 1
 endif
 
 ifneq (,$(findstring hardfloat,$(extra_rules_gcc)))
 extra_flags += -mfloat-abi=hard
+CFLAGS += -mfloat-abi=hard
+CXXFLAGS += -mfloat-abi=hard
+endif
+
+ifeq ($(build),)
+build = release
+endif
+
+ifeq ($(DEBUG), 1)
+build = debug
 endif
 
 ifeq (release,$(build))
 extra_flags += -O2
+CFLAGS += -O2
+CXXFLAGS += -O2
+LDFLAGS += -O2
 endif
 
 ifeq (debug,$(build))
 extra_flags += -O0 -g
+CFLAGS += -O0 -g
+CXXFLAGS += -O0 -g
+LDFLAGS += -O0 -g
 endif
 
-ldflags :=
+ifneq ($(SANITIZER),)
+   CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
+   CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
+   LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
 
 EXE_EXT :=
 ifeq ($(platform), unix)
@@ -63,7 +85,6 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
 asflags := $(extra_flags)
-LDFLAGS :=
 flags   += -std=c99
 
 SOURCES_C := \
