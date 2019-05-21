@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(_MSC_VER) && !defined(_XBOX)
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
+#pragma warning(disable:4566)
 #endif
 
 static const char *symbols_page1_grid[] = {

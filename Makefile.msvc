@@ -123,7 +123,7 @@ endif
 FLAGS  += -nologo -MP
 FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 #FLAGS  += -Zc:wchar_t -Zp16 -Z7
-#FLAGS += -utf-8
+FLAGS += -utf-8
 #FLAGS += -source-charset:utf-8
 
 CXXFLAGS += $(CFLAGS) -TP -EHsc
