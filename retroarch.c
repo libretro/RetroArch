@@ -4167,12 +4167,11 @@ static enum runloop_state runloop_check_state(
    /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
    rcheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
-      && rcheevos_loaded && rcheevos_hardcore_paused;
+      && rcheevos_loaded && !rcheevos_hardcore_paused;
 
    cheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
-      && cheevos_loaded && cheevos_hardcore_paused;
-
+      && cheevos_loaded && !cheevos_hardcore_paused;
    if (!settings->bools.cheevos_old_enable)
    {
       if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)

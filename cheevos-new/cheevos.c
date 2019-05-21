@@ -952,6 +952,7 @@ bool rcheevos_unload(void)
       rcheevos_locals.lboards    = NULL;
 
       rcheevos_loaded            = false;
+      rcheevos_hardcore_active   = false;
       rcheevos_hardcore_paused   = false;
       rcheevos_state_loaded_flag = false;
    }
