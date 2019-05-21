@@ -4167,28 +4167,22 @@ static enum runloop_state runloop_check_state(
    /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
    rcheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
-      && rcheevos_loaded && rcheevos_hardcore_paused;
+      && rcheevos_loaded && !rcheevos_hardcore_paused;
 
    cheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
-      && cheevos_loaded && cheevos_hardcore_paused;
+      && cheevos_loaded && !cheevos_hardcore_paused;
 
-   if (!settings->bools.cheevos_old_enable)
-   {
-      if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
-      {
-         rcheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
-   else
-   {
-      if (cheevos_hardcore_active && cheevos_state_loaded_flag)
-      {
-         cheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
+   rcheevos_hardcore_paused = !settings->bools.cheevos_old_enable
+      && rcheevos_hardcore_active
+      && rcheevos_state_loaded_flag;
+
+   cheevos_hardcore_paused = settings->bools.cheevos_old_enable
+      && cheevos_hardcore_active
+      && cheevos_state_loaded_flag;
+
+   if (rcheevos_hardcore_paused || cheevos_hardcore_paused)
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
 #endif
