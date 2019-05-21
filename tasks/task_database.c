@@ -38,9 +38,9 @@
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
 #include "../retroarch.h"
+#include "../ui/ui_companion_driver.h"
 #endif
 #include "../verbosity.h"
-#include "../ui/ui_companion_driver.h"
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE                99999
 #endif
@@ -1314,10 +1314,10 @@ static void task_database_handler(retro_task_t *task)
             task_free_title(task);
             task_set_title(task, strdup(msg));
             task_set_progress(task, 100);
+            ui_companion_driver_notify_refresh();
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
-            ui_companion_driver_notify_refresh();
             goto task_finished;
          }
          break;

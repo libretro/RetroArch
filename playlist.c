@@ -85,15 +85,17 @@ typedef int (playlist_sort_fun_t)(
  **/
 static bool playlist_path_equal(const char *real_path, const char *entry_path)
 {
-   settings_t *settings = config_get_ptr();
    bool real_path_is_compressed;
    bool entry_real_path_is_compressed;
    char entry_real_path[PATH_MAX_LENGTH];
+#ifdef RARCH_INTERNAL
+   settings_t *settings = config_get_ptr();
+#endif
 
    entry_real_path[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(real_path) || string_is_empty(entry_path) || !settings)
+   if (string_is_empty(real_path) || string_is_empty(entry_path))
       return false;
 
    /* Get entry 'real' path */
@@ -113,9 +115,11 @@ static bool playlist_path_equal(const char *real_path, const char *entry_path)
       return true;
 #endif
 
+#ifdef RARCH_INTERNAL
    /* If fuzzy matching is disabled, we can give up now */
-   if (!settings->bools.playlist_fuzzy_archive_match)
+   if (!settings || !settings->bools.playlist_fuzzy_archive_match)
       return false;
+#endif
 
    /* If we reach this point, we have to work
     * harder...
@@ -1114,7 +1118,9 @@ void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
    RFILE          *file = NULL;
+#ifdef RARCH_INTERNAL
    settings_t *settings = config_get_ptr();
+#endif
 
    if (!playlist || !playlist->modified)
       return;
@@ -1128,6 +1134,7 @@ void playlist_write_file(playlist_t *playlist)
       return;
    }
 
+#ifdef RARCH_INTERNAL
    if (settings->bools.playlist_use_old_format)
    {
       for (i = 0; i < playlist->size; i++)
@@ -1141,6 +1148,7 @@ void playlist_write_file(playlist_t *playlist)
                );
    }
    else
+#endif
    {
       JSONContext context = {0};
       context.writer      = JSON_Writer_Create(NULL);
