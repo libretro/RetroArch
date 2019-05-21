@@ -1241,6 +1241,7 @@ static void retroarch_print_help(const char *arg0)
  **/
 static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
+   static bool first_run = false;
    const char *optstring = NULL;
    bool explicit_menu    = false;
    unsigned i;
@@ -1294,14 +1295,19 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   /* Copy the args into a buffer so launch arguments can be reused */
-   for (i = 0; i < (unsigned)argc; i++)
+   if (!first_run)
    {
-      strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
-      strlcat(launch_arguments, " ", sizeof(launch_arguments));
+      /* Copy the args into a buffer so launch arguments can be reused */
+      for (i = 0; i < (unsigned)argc; i++)
+      {
+         strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
+         strlcat(launch_arguments, " ", sizeof(launch_arguments));
+      }
+      string_trim_whitespace_left(launch_arguments);
+      string_trim_whitespace_right(launch_arguments);
+
+      first_run = true;
    }
-   string_trim_whitespace_left(launch_arguments);
-   string_trim_whitespace_right(launch_arguments);
 
    /* Handling the core type is finicky. Based on the arguments we pass in,
     * we handle it differently.
