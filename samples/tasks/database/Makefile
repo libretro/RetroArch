@@ -4,6 +4,8 @@ use_neon    := 0
 release	   := release
 EXE_EXT	      :=
 TARGET      := database_task
+HAVE_ZLIB   := 1
+HAVE_7ZIP   := 1
 
 ifeq ($(platform),)
 platform = unix
@@ -54,15 +56,15 @@ EXE_EXT = .exe
 endif
 
 CORE_DIR = ../../..
+DEPS_DIR = $(CORE_DIR)/deps
 LIBRETRO_COMM_DIR = $(CORE_DIR)/libretro-common
+INCDIRS := -I$(LIBRETRO_COMM_DIR)/include
 
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
-flags   := -I$(LIBRETRO_COMM_DIR)/include
 asflags := $(extra_flags)
 LDFLAGS :=
 flags   += -std=c99
-INCFLAGS  := -I$(LIBRETRO_COMM_DIR)/include
 
 SOURCES_C := \
 	$(CORE_DIR)/samples/tasks/database/main.c \
@@ -103,6 +105,39 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
+
+ifeq ($(HAVE_ZLIB), 1)
+SOURCES_C += \
+				 $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
+				 $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c
+DEFINES += -DHAVE_ZLIB
+LIBS += -lz
+endif
+
+ifeq ($(HAVE_7ZIP), 1)
+SOURCES_C +=  \
+				 $(LIBRETRO_COMM_DIR)/file/archive_file_7z.c
+DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
+INCDIRS += -I$(DEPS_DIR)
+
+SOURCES_C += $(DEPS_DIR)/7zip/7zIn.c \
+				 $(DEPS_DIR)/7zip/Bra86.c \
+				 $(DEPS_DIR)/7zip/7zFile.c \
+				 $(DEPS_DIR)/7zip/7zStream.c \
+				 $(DEPS_DIR)/7zip/LzFind.c \
+				 $(DEPS_DIR)/7zip/LzmaDec.c \
+				 $(DEPS_DIR)/7zip/LzmaEnc.c \
+				 $(DEPS_DIR)/7zip/7zCrcOpt.c \
+				 $(DEPS_DIR)/7zip/Bra.c \
+				 $(DEPS_DIR)/7zip/7zDec.c \
+				 $(DEPS_DIR)/7zip/Bcj2.c \
+				 $(DEPS_DIR)/7zip/7zCrc.c \
+				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
+				 $(DEPS_DIR)/7zip/7zBuf.c
+endif
+
+flags     := $(INCDIRS)
+INCFLAGS  := $(INCDIRS)
 
 CFLAGS    += $(DEFINES)
 CXXFLAGS  += $(DEFINES)
