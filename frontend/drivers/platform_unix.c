@@ -119,7 +119,7 @@ static char unix_cpu_model_name[64] = {0};
 
 static volatile sig_atomic_t unix_sighandler_quit;
 
-#ifndef HAVE_DYNAMIC
+#ifndef ANDROID
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
@@ -2137,7 +2137,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-#ifndef HAVE_DYNAMIC
+#ifndef ANDROID
 
 static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 {
@@ -2550,13 +2550,13 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
    frontend_unix_deinit,        /* deinit */
-#ifdef HAVE_DYNAMIC
+#ifdef ANDROID
    NULL,                         /* exitspawn */
 #else
    frontend_unix_exitspawn,     /* exitspawn */
 #endif
    NULL,                         /* process_args */
-#ifdef HAVE_DYNAMIC
+#ifdef ANDROID
    NULL,                         /* exec */
    NULL,                         /* set_fork */
 #else
