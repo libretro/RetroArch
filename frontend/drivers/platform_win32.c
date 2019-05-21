@@ -20,8 +20,10 @@
 
 #include <retro_miscellaneous.h>
 #include <windows.h>
+#if defined(_WIN32) && !defined(_XBOX)
 #include <process.h>
 #include <errno.h>
+#endif
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -637,9 +639,10 @@ enum retro_language frontend_win32_get_user_language(void)
    return lang;
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
 enum frontend_fork win32_fork_mode;
 
-void frontend_win32_respawn(char *s, size_t len)
+static void frontend_win32_respawn(char *s, size_t len)
 {
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
@@ -665,7 +668,7 @@ void frontend_win32_respawn(char *s, size_t len)
    return;
 }
 
-bool frontend_win32_set_fork(enum frontend_fork fork_mode)
+static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
@@ -683,15 +686,24 @@ bool frontend_win32_set_fork(enum frontend_fork fork_mode)
    win32_fork_mode = fork_mode;
    return true;
 }
+#endif
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
+#if defined(_WIN32) && !defined(_XBOX)
    frontend_win32_respawn,         /* exitspawn */
+#else
+   NULL,                           /* exitspawn */
+#endif
    NULL,                           /* process_args */
    NULL,                           /* exec */
-   frontend_win32_set_fork,         /* set_fork */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_set_fork,        /* set_fork */
+#else
+   NULL,                           /* set_fork */
+#endif
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_win32_get_os,
