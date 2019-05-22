@@ -5931,9 +5931,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
-               PARSE_ONLY_BOOL, false);
+         if (video_driver_supports_viewport_read())
+            menu_displaylist_parse_settings_enum(info->list,
+                  MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
+                  PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
                PARSE_ONLY_BOOL, false);
