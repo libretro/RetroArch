@@ -13,6 +13,7 @@
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
 - RECORD: Fix Twitch streaming.
+- SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7
