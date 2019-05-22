@@ -24,9 +24,9 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
+#ifdef RARCH_INTERNAL
 #include "../gfx/video_driver.h"
-#include "../file_path_special.h"
-#include "../verbosity.h"
+#endif
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -55,7 +55,7 @@ struct nbio_image_handle
    struct texture_image ti;
 };
 
-static int cb_image_menu_upload_generic(void *data, size_t len)
+static int cb_image_upload_generic(void *data, size_t len)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
    nbio_handle_t             *nbio = (nbio_handle_t*)data;
@@ -106,7 +106,7 @@ static int task_image_process(
    return retval;
 }
 
-static int cb_image_menu_thumbnail(void *data, size_t len)
+static int cb_image_thumbnail(void *data, size_t len)
 {
    unsigned width                   = 0;
    unsigned height                  = 0;
@@ -121,7 +121,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 
    image->is_blocking_on_processing = (retval != IMAGE_PROCESS_END);
    image->is_finished               = (retval == IMAGE_PROCESS_END);
-   image->cb                        = &cb_image_menu_upload_generic;
+   image->cb                        = &cb_image_upload_generic;
 
    return 0;
 }
@@ -179,7 +179,7 @@ static void task_image_load_free(retro_task_t *task)
    }
 }
 
-static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
+static int cb_nbio_image_thumbnail(void *data, size_t len)
 {
    void *ptr                       = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data;
@@ -192,7 +192,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 
    image->handle                   = handle;
    image->size                     = len;
-   image->cb                       = &cb_image_menu_thumbnail;
+   image->cb                       = &cb_image_thumbnail;
 
    ptr                             = nbio_get_ptr(nbio->handle, &len);
 
@@ -293,12 +293,15 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    retro_task_t                   *t = task_init();
 
    if (!t)
-      goto error_msg;
+      return false;
 
    nbio                = (nbio_handle_t*)malloc(sizeof(*nbio));
 
    if (!nbio)
-      goto error;
+   {
+      free(t);
+      return false;
+   }
 
    nbio->type          = NBIO_TYPE_NONE;
    nbio->is_finished   = false;
@@ -306,17 +309,24 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    nbio->pos_increment = 0;
    nbio->status_flags  = 0;
    nbio->data          = NULL;
-   nbio->path          = strdup(fullpath);
    nbio->handle        = NULL;
    nbio->msg_queue     = NULL;
-   nbio->cb            = &cb_nbio_image_menu_thumbnail;
+   nbio->cb            = &cb_nbio_image_thumbnail;
 
+#ifdef RARCH_INTERNAL
    if (video_driver_supports_rgba())
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
+#endif
 
    image              = (struct nbio_image_handle*)malloc(sizeof(*image));
    if (!image)
-      goto error;
+   {
+      free(nbio);
+      free(t);
+      return false;
+   }
+
+   nbio->path                        = strdup(fullpath);
 
    image->type                       = IMAGE_TYPE_NONE;
    image->status                     = IMAGE_STATUS_TRANSFER;
@@ -334,23 +344,23 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    image->ti.pixels                  = NULL;
    image->ti.supports_rgba           = false;
 
-   if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
+   if (strstr(fullpath, ".png"))
    {
       nbio->type       = NBIO_TYPE_PNG;
       image->type      = IMAGE_TYPE_PNG;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION))
-         || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
+   else if (strstr(fullpath, ".jpeg")
+         || strstr(fullpath, ".jpg"))
    {
       nbio->type       = NBIO_TYPE_JPEG;
       image->type      = IMAGE_TYPE_JPEG;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
+   else if (strstr(fullpath, ".bmp"))
    {
       nbio->type       = NBIO_TYPE_BMP;
       image->type      = IMAGE_TYPE_BMP;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
+   else if (strstr(fullpath, ".tga"))
    {
       nbio->type       = NBIO_TYPE_TGA;
       image->type      = IMAGE_TYPE_TGA;
@@ -367,20 +377,4 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    task_queue_push(t);
 
    return true;
-
-error:
-   task_image_load_free(t);
-   free(t);
-   if (nbio)
-   {
-      if (!string_is_empty(nbio->path))
-         free(nbio->path);
-      free(nbio);
-   }
-
-error_msg:
-   RARCH_ERR("[image load] Failed to open '%s': %s.\n",
-         fullpath, strerror(errno));
-
-   return false;
 }
