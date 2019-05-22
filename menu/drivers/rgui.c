@@ -2314,10 +2314,9 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 
 /* blit_line() */
 
-static void blit_line_regular(int x, int y,
+static void blit_line_regular(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width        = rgui_frame_buf.width;
    uint16_t *frame_buf_data = rgui_frame_buf.data;
 
    while (!string_is_empty(message))
@@ -2346,10 +2345,9 @@ static void blit_line_regular(int x, int y,
    }
 }
 
-static void blit_line_regular_shadow(int x, int y,
+static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width         = rgui_frame_buf.width;
    uint16_t *frame_buf_data  = rgui_frame_buf.data;
    uint32_t shadow_colour_32 = shadow_color;
 
@@ -2394,10 +2392,9 @@ static void blit_line_regular_shadow(int x, int y,
    }
 }
 
-static void blit_line_extended(int x, int y,
+static void blit_line_extended(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width        = rgui_frame_buf.width;
    uint16_t *frame_buf_data = rgui_frame_buf.data;
 
    while (!string_is_empty(message))
@@ -2439,10 +2436,9 @@ static void blit_line_extended(int x, int y,
    }
 }
 
-static void blit_line_extended_shadow(int x, int y,
+static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width         = rgui_frame_buf.width;
    uint16_t *frame_buf_data  = rgui_frame_buf.data;
    uint32_t shadow_colour_32 = shadow_color;
 
@@ -2500,7 +2496,7 @@ static void blit_line_extended_shadow(int x, int y,
    }
 }
 
-static void (*blit_line)(int x, int y,
+static void (*blit_line)(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
 
 /* blit_symbol() */
@@ -2540,11 +2536,10 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
    return NULL;
 }
 
-static void blit_symbol_regular(int x, int y,
+static void blit_symbol_regular(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   unsigned fb_width          = rgui_frame_buf.width;
    uint16_t *frame_buf_data   = rgui_frame_buf.data;
    const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
 
@@ -2563,11 +2558,10 @@ static void blit_symbol_regular(int x, int y,
    }
 }
 
-static void blit_symbol_shadow(int x, int y,
+static void blit_symbol_shadow(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   unsigned fb_width          = rgui_frame_buf.width;
    uint16_t *frame_buf_data   = rgui_frame_buf.data;
    uint32_t shadow_colour_32  = shadow_color;
    const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
@@ -2602,7 +2596,7 @@ static void blit_symbol_shadow(int x, int y,
    }
 }
 
-static void (*blit_symbol)(int x, int y,
+static void (*blit_symbol)(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color) = blit_symbol_regular;
 
 static void rgui_set_blit_functions(bool draw_shadow, bool extended_ascii)
@@ -2763,7 +2757,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       if (rgui_frame_buf.data)
-         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg,
+         blit_line(fb_width, x + 8 + offset_x, y + 8 + offset_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
    }
 
@@ -2926,7 +2920,7 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       input_label_x      = osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
       input_label_y      = osk_y + input_offset_y;
       
-      blit_line(input_label_x, input_label_y, input_label_buf,
+      blit_line(fb_width, input_label_x, input_label_y, input_label_buf,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -2950,13 +2944,13 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       input_str_y = osk_y + input_offset_y + FONT_HEIGHT_STRIDE;
       
       if (!string_is_empty(input_str + input_str_char_offset))
-         blit_line(input_str_x, input_str_y, input_str + input_str_char_offset,
+         blit_line(fb_width, input_str_x, input_str_y, input_str + input_str_char_offset,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       
       /* Draw text cursor */
       text_cursor_x = osk_x + input_offset_x + (input_str_length * FONT_WIDTH_STRIDE);
       
-      blit_symbol(text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
+      blit_symbol(fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -2977,39 +2971,39 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
        * using blit_line(). */
 #ifdef HAVE_LANGEXTRA
       if (     string_is_equal(key_text, "\xe2\x87\xa6")) /* backspace character */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8f\x8e")) /* return character */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa7")) /* up arrow */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa9")) /* down arrow */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8a\x95")) /* plus sign (next button) */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #else
       if (     string_is_equal(key_text, "Bksp"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Enter"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Upper"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Lower"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Next"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #endif
       else
-         blit_line(key_text_x, key_text_y, key_text,
+         blit_line(fb_width, key_text_x, key_text_y, key_text,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       
       /* Draw selection pointer */
@@ -3043,6 +3037,13 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       }
    }
 }
+
+#if defined(GEKKO)
+/* Need to forward declare this for the Wii build
+ * (I'm not going to reorder the functions and mess
+ * up the git diff for a single platform...) */
+static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update);
+#endif
 
 static void rgui_render(void *data, bool is_idle)
 {
@@ -3094,6 +3095,16 @@ static void rgui_render(void *data, bool is_idle)
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
    fb_size_changed = (rgui->last_width != fb_width) || (rgui->last_height != fb_height);
+
+#if defined(GEKKO)
+   /* Wii gfx driver changes menu framebuffer size at
+    * will... If a change is detected, all texture buffers
+    * must be regenerated - easiest way is to just call
+    * rgui_set_aspect_ratio() */
+   if (fb_size_changed)
+      rgui_set_aspect_ratio(rgui, false);
+#endif
+
    if (rgui->bg_modified || fb_size_changed)
    {
       rgui_cache_background(rgui);
@@ -3225,7 +3236,7 @@ static void rgui_render(void *data, bool is_idle)
                rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
          /* Draw thumbnail title */
-         blit_line((int)title_x, 0, thumbnail_title_buf,
+         blit_line(fb_width, (int)title_x, 0, thumbnail_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3322,11 +3333,11 @@ static void rgui_render(void *data, bool is_idle)
                powerstate_x = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
 
                /* Draw symbol */
-               blit_symbol(powerstate_x, title_y, powerstate_symbol,
+               blit_symbol(fb_width, powerstate_x, title_y, powerstate_symbol,
                            powerstate_color, rgui->colors.shadow_color);
 
                /* Print text */
-               blit_line(powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
+               blit_line(fb_width, powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
                          percent_str, powerstate_color, rgui->colors.shadow_color);
 
                /* Final length of battery indicator is 'powerstate_len' + a
@@ -3360,7 +3371,7 @@ static void rgui_render(void *data, bool is_idle)
          if (title_len > title_max_len - (powerstate_len - 5))
             title_x -= (powerstate_len - 5) * FONT_WIDTH_STRIDE / 2;
 
-      blit_line(title_x, title_y,
+      blit_line(fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
@@ -3466,7 +3477,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          /* Print entry title */
-         blit_line(x + (2 * FONT_WIDTH_STRIDE), y,
+         blit_line(fb_width, x + (2 * FONT_WIDTH_STRIDE), y,
                entry_title_buf,
                entry_color, rgui->colors.shadow_color);
 
@@ -3481,14 +3492,14 @@ static void rgui_render(void *data, bool is_idle)
             menu_animation_ticker(&ticker);
 
             /* Print entry value */
-            blit_line(term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+            blit_line(fb_width, term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
                   type_str_buf,
                   entry_color, rgui->colors.shadow_color);
          }
 
          /* Print selection marker, if required */
          if (entry_selected)
-            blit_line(x, y, ">",
+            blit_line(fb_width, x, y, ">",
                   entry_color, rgui->colors.shadow_color);
 
          menu_entry_free(&entry);
@@ -3518,6 +3529,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          blit_line(
+               fb_width,
                RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
@@ -3539,6 +3551,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          blit_line(
+               fb_width,
                RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
                (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
@@ -3560,6 +3573,7 @@ static void rgui_render(void *data, bool is_idle)
          menu_display_timedate(&datetime);
 
          blit_line(
+               fb_width,
                timedate_x,
                (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
                RGUI_TERM_START_Y(fb_height) + 2, timedate,
@@ -3767,22 +3781,21 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    rgui->menu_aspect_ratio = settings->uints.menu_rgui_aspect_ratio;
    
 #if defined(GEKKO)
-   /* Set frame buffer dimensions
-    * and update menu aspect index */
-   rgui_frame_buf.height = 240;
-   rgui_frame_buf.width  = 320;
-   base_term_width       = rgui_frame_buf.width;
-   
-   /* Allocate frame buffer */
-   rgui_frame_buf.data = (uint16_t*)calloc(
-         400 * rgui_frame_buf.height, sizeof(uint16_t));
-   
+   {
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+      
+      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      
+      /* Set frame buffer dimensions */
+      rgui_frame_buf.height = fb_height;
+      rgui_frame_buf.width  = fb_width;
+      base_term_width       = rgui_frame_buf.width;
+   }
 #else
-   
-   /* Set frame buffer dimensions
-    * and update menu aspect index */
+   /* Set frame buffer dimensions */
    rgui_frame_buf.height = 240;
-   switch (settings->uints.menu_rgui_aspect_ratio)
+   switch (rgui->menu_aspect_ratio)
    {
       case RGUI_ASPECT_RATIO_16_9:
          rgui_frame_buf.width = 426;
@@ -3806,12 +3819,11 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
          base_term_width = rgui_frame_buf.width;
          break;
    }
+#endif
    
    /* Allocate frame buffer */
    rgui_frame_buf.data = (uint16_t*)calloc(
          rgui_frame_buf.width * rgui_frame_buf.height, sizeof(uint16_t));
-   
-#endif
    
    if (!rgui_frame_buf.data)
       return false;
