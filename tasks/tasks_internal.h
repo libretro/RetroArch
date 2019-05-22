@@ -82,7 +82,13 @@ bool task_push_dbscan(
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
-        retro_task_callback_t cb, void *user_data);
+      retro_task_callback_t cb,
+      const char *overlay_path,
+      bool overlay_hide_in_menu,
+      bool input_overlay_enable,
+      float input_overlay_opacity,
+      float input_overlay_scale,
+      void *user_data);
 #endif
 
 bool task_check_decompress(const char *source_file);

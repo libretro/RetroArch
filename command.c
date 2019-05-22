@@ -2183,7 +2183,15 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
             if (settings->bools.input_overlay_enable)
-               task_push_overlay_load_default(input_overlay_loaded, NULL);
+            {
+               task_push_overlay_load_default(input_overlay_loaded,
+                     settings->paths.path_overlay,
+                     settings->bools.input_overlay_hide_in_menu,
+                     settings->bools.input_overlay_enable,
+                     settings->floats.input_overlay_opacity,
+                     settings->floats.input_overlay_scale,
+                     NULL);
+            }
 #endif
          }
          break;
