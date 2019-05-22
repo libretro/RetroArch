@@ -24,7 +24,6 @@
 #include "task_audio_mixer.h"
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
-#include "../verbosity.h"
 
 bool task_image_load_handler(retro_task_t *task);
 
