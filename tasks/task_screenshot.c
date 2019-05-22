@@ -230,7 +230,6 @@ static bool screenshot_dump(
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
    const char *screenshot_dir     = settings->paths.directory_screenshot;
-   retro_task_t *task             = task_init();
    screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
@@ -302,23 +301,22 @@ static bool screenshot_dump(
    buf = (uint8_t*)malloc(width * height * 3);
    if (!buf)
    {
-      if (task)
-         free(task);
       free(state);
       return false;
    }
    state->out_buffer = buf;
 #endif
 
-   task->type        = TASK_TYPE_BLOCKING;
-   task->state       = state;
-   task->handler     = task_screenshot_handler;
-#ifdef HAVE_MENU_WIDGETS
-   task->callback    = task_screenshot_callback;
-#endif
-
    if (use_thread)
    {
+      retro_task_t *task= task_init();
+
+      task->type        = TASK_TYPE_BLOCKING;
+      task->state       = state;
+      task->handler     = task_screenshot_handler;
+#ifdef HAVE_MENU_WIDGETS
+      task->callback    = task_screenshot_callback;
+#endif
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_ready() && !savestate)
          task_free_title(task);
@@ -346,8 +344,6 @@ static bool screenshot_dump(
       return false;
    }
 
-   if (task)
-      free(task);
    return screenshot_dump_direct(state);
 }
 
@@ -376,20 +372,21 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate,
       return false;
 
    if (!video_driver_read_viewport(buffer, is_idle))
-      goto error;
+   {
+      free(buffer);
+      return false;
+   }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base,
             buffer, vp.width, vp.height,
             vp.width * 3, true, buffer, savestate, is_idle, is_paused, fullpath, use_thread))
-      goto error;
+   {
+      free(buffer);
+      return false;
+   }
 
    return true;
-
-error:
-   if (buffer)
-      free(buffer);
-   return false;
 }
 #endif
 
