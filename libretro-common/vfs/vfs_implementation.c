@@ -62,6 +62,7 @@
 #  include <unistd.h>
 #  if defined(ORBIS)
 #  include <sys/fcntl.h>
+#  include <sys/dirent.h>
 #  include <orbisFile.h>
 #  endif
 #endif
@@ -788,9 +789,6 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
    bool is_dir, is_character_special;
-#if defined(ORBIS)
-   return 0; /* for now */
-#endif
 #if defined(VITA) || defined(PSP)
    SceIoStat buf;
    int stat_ret;
@@ -803,6 +801,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    free(tmp);
    if (stat_ret < 0)
       return 0;
+#elif defined(ORBIS)
+   int dir_ret;
 #elif defined(PS2)
    iox_stat_t buf;
    char *tmp  = strdup(path);
@@ -864,6 +864,10 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
 #if defined(VITA) || defined(PSP)
    is_dir = FIO_S_ISDIR(buf.st_mode);
+#elif defined(ORBIS)
+   dir_ret = orbisDopen(path);
+   is_dir  = dir_ret > 0;
+   orbisDclose(dfd);
 #elif defined(PS2)
    if (!buf.mode)
    {

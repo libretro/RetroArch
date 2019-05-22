@@ -78,11 +78,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(ORBIS)
-#include <orbisFile.h>
-#include <sys/fcntl.h>
-#include <sys/dirent.h>
-#endif
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
@@ -156,19 +151,7 @@ int path_stat(const char *path)
  */
 bool path_is_directory(const char *path)
 {
-#ifdef ORBIS
-   /* TODO: This should be moved to the VFS module */
-   int dfd;
-   if (!path)
-      return false;
-   dfd = orbisDopen(path);
-   if (dfd < 0)
-      return false;
-   orbisDclose(dfd);
-   return true;
-#else
    return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
-#endif
 }
 
 bool path_is_character_special(const char *path)
