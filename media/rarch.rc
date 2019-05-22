@@ -102,4 +102,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 2                  RT_MANIFEST    "rarch.manifest"
 
+// Per the documentation, this should be used before including resource files.
+// https://docs.microsoft.com/en-us/windows/desktop/menurc/pragma-directives
+#pragma code_page(932)
 #include "rarch_ja.rc"
