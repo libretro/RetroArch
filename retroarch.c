@@ -3574,7 +3574,8 @@ static enum runloop_state runloop_check_state(
             RARCH_LOG("Taking a screenshot before exiting...\n");
 
             /* Take a screenshot before we exit. */
-            if (!take_screenshot(screenshot_path, false,
+            if (!take_screenshot(settings->paths.directory_screenshot,
+                     screenshot_path, false,
                      video_driver_cached_frame_has_valid_framebuffer(), fullpath, false))
             {
                RARCH_ERR("Could not take a screenshot before exiting.\n");

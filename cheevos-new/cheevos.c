@@ -529,8 +529,9 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       cheevo->info->id);
       shotname[sizeof(shotname) - 1] = '\0';
 
-      if (take_screenshot(shotname, true,
-            video_driver_cached_frame_has_valid_framebuffer(), false, true))
+      if (take_screenshot(settings->paths.directory_screenshot,
+               shotname, true,
+               video_driver_cached_frame_has_valid_framebuffer(), false, true))
          CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
       else
          CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);

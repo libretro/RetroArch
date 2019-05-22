@@ -1684,8 +1684,11 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
                   cheevo->id);
                shotname[sizeof(shotname) - 1] = '\0';
 
-               if (take_screenshot(shotname, true,
-                        video_driver_cached_frame_has_valid_framebuffer(), false, true))
+               if (take_screenshot(
+                        settings->paths.directory_screenshot,
+                        shotname, true,
+                        video_driver_cached_frame_has_valid_framebuffer(),
+                        false, true))
                   CHEEVOS_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->id);
                else
                   CHEEVOS_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->id);
