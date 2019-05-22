@@ -1,11 +1,12 @@
-compiler    := gcc
-extra_flags :=
-use_neon    := 0
-release	   := release
-EXE_EXT	      :=
-TARGET      := database_task
-HAVE_ZLIB   := 1
-HAVE_7ZIP   := 1
+compiler     := gcc
+extra_flags  :=
+use_neon     := 0
+release	    := release
+EXE_EXT	    :=
+TARGET       := database_task
+HAVE_ZLIB    := 1
+HAVE_7ZIP    := 1
+HAVE_THREADS := 1
 
 ifeq ($(platform),)
 platform = unix
@@ -155,6 +156,12 @@ SOURCES_C += $(DEPS_DIR)/7zip/7zIn.c \
 				 $(DEPS_DIR)/7zip/7zCrc.c \
 				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
 				 $(DEPS_DIR)/7zip/7zBuf.c
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+SOURCES_C +=  \
+				 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+DEFINES += -DHAVE_THREADS
 endif
 
 flags     := $(INCDIRS)
