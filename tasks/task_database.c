@@ -139,7 +139,7 @@ static int task_database_iterate_start(retro_task_t *task,
       const char *name)
 {
    char msg[256];
-   const char *basename_path = !string_is_empty(name) ? 
+   const char *basename_path = !string_is_empty(name) ?
       path_basename(name) : "";
 
    msg[0] = '\0';
@@ -947,13 +947,18 @@ static int task_database_iterate_crc_lookup(
          /* don't scan files that can't be in this database.
           *
           * Could be because of:
-          * A matching core missing */
-         if (!(path_contains_compressed_file(name) &&
-                  core_info_database_match_archive_member(
-                     db_state->list->elems[db_state->list_index].data)) &&
-               !core_info_database_supports_content_path(
-                  db_state->list->elems[db_state->list_index].data, name))
+          * - A matching core missing
+          * - Incompatible file extension */
+         if (!core_info_database_supports_content_path(
+               db_state->list->elems[db_state->list_index].data, name))
             return database_info_list_iterate_next(db_state);
+
+         if (!path_contains_compressed_file(name))
+         {
+            if (core_info_database_match_archive_member(
+                  db_state->list->elems[db_state->list_index].data))
+               return database_info_list_iterate_next(db_state);
+         }
       }
 
       snprintf(query, sizeof(query),
