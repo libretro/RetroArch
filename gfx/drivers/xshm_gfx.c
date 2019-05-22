@@ -143,21 +143,6 @@ static void xshm_gfx_free(void *data)
 
 }
 
-static void xshm_gfx_set_rotation(void *data, unsigned rotation)
-{
-
-}
-
-static void xshm_gfx_viewport_info(void *data, struct video_viewport *vp)
-{
-
-}
-
-static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   return false;
-}
-
 static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth)
 {
 
@@ -256,9 +241,9 @@ video_driver_t video_xshm = {
    "xshm",
 
    NULL,
-   xshm_gfx_set_rotation,
-   xshm_gfx_viewport_info,
-   xshm_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
     NULL,

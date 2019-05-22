@@ -270,12 +270,6 @@ static bool xenon360_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static bool xenon360_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -284,20 +278,6 @@ static bool xenon360_gfx_set_shader(void *data,
    (void)path;
 
    return false;
-}
-
-static void xenon360_gfx_viewport_info(void *data, struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool xenon360_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
 }
 
 static void xenon360_gfx_get_poke_interface(void *data,
@@ -319,9 +299,9 @@ video_driver_t video_xenon360 = {
    xenon360_gfx_free,
    "xenon360",
    NULL, /* set_viewport */
-   xenon360_gfx_set_rotation,
-   xenon360_gfx_viewport_info,
-   xenon360_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

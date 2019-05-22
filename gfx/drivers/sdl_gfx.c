@@ -429,7 +429,8 @@ static bool sdl_gfx_has_windowed(void *data)
 static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
-   vp->x = vp->y = 0;
+   vp->x      = 0;
+   vp->y      = 0;
    vp->width  = vp->full_width  = vid->screen->w;
    vp->height = vp->full_height = vid->screen->h;
 }
@@ -566,20 +567,6 @@ static bool sdl_gfx_set_shader(void *data,
    return false;
 }
 
-static void sdl_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
@@ -592,9 +579,9 @@ video_driver_t video_sdl = {
    sdl_gfx_free,
    "sdl",
    NULL,
-   sdl_gfx_set_rotation,
+   NULL, /* set_rotation */
    sdl_gfx_viewport_info,
-   sdl_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL,

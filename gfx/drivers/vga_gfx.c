@@ -303,28 +303,6 @@ static bool vga_gfx_set_shader(void *data,
    return false;
 }
 
-static void vga_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void vga_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool vga_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void vga_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -444,9 +422,9 @@ video_driver_t video_vga = {
    vga_gfx_free,
    "vga",
    vga_gfx_set_viewport,
-   vga_gfx_set_rotation,
-   vga_gfx_viewport_info,
-   vga_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

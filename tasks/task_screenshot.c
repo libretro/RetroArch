@@ -350,7 +350,6 @@ static bool screenshot_dump(
    return screenshot_dump_direct(state);
 }
 
-#if !defined(VITA)
 static bool take_screenshot_viewport(
       const char *screenshot_dir,
       const char *name_base,
@@ -400,7 +399,6 @@ static bool take_screenshot_viewport(
 
    return true;
 }
-#endif
 
 static bool take_screenshot_raw(const char *screenshot_dir,
       const char *name_base, void *userbuf,
@@ -446,7 +444,8 @@ static bool take_screenshot_choice(
       bool use_thread,
       bool supports_viewport_read,
       bool supports_read_frame_raw,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type
+      )
 {
    size_t old_pitch;
    unsigned old_width, old_height;
@@ -459,15 +458,9 @@ static bool take_screenshot_choice(
       video_driver_set_texture_enable(false, false);
       if (!is_idle)
          video_driver_cached_frame();
-#if defined(VITA)
-      return take_screenshot_raw(screenshot_dir,
-            name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread,
-            pixel_format_type);
-#else
       return take_screenshot_viewport(screenshot_dir,
             name_base, savestate, is_idle, is_paused, fullpath, use_thread,
             pixel_format_type);
-#endif
    }
 
    if (!has_valid_framebuffer)

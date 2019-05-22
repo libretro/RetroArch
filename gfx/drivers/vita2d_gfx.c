@@ -565,14 +565,6 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void vita_set_filtering(void *data, unsigned index, bool smooth)
 {
    vita_video_t *vita = (vita_video_t *)data;
@@ -979,7 +971,7 @@ video_driver_t video_vita2d = {
    vita2d_gfx_set_viewport,
    vita2d_gfx_set_rotation,
    vita2d_gfx_viewport_info,
-   vita2d_gfx_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    vita2d_get_overlay_interface,

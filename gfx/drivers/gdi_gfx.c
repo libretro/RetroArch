@@ -472,28 +472,6 @@ static bool gdi_gfx_set_shader(void *data,
    return false;
 }
 
-static void gdi_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void gdi_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool gdi_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void gdi_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -689,9 +667,9 @@ video_driver_t video_gdi = {
    gdi_gfx_free,
    "gdi",
    gdi_gfx_set_viewport,
-   gdi_gfx_set_rotation,
-   gdi_gfx_viewport_info,
-   gdi_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

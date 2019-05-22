@@ -1230,13 +1230,6 @@ static void gx_viewport_info(void *data, struct video_viewport *vp)
    *vp = gx->vp;
 }
 
-static bool gx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-   return true;
-}
-
 static void gx_get_video_output_prev(void *data)
 {
    global_t *global = global_get_ptr();
@@ -1679,7 +1672,7 @@ video_driver_t video_gx = {
    NULL, /* set_viewport */
    gx_set_rotation,
    gx_viewport_info,
-   gx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,

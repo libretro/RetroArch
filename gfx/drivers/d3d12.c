@@ -1632,14 +1632,6 @@ static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d12->vp;
 }
 
-static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
@@ -1858,7 +1850,7 @@ video_driver_t video_d3d12 = {
    NULL, /* set_viewport */
    d3d12_gfx_set_rotation,
    d3d12_gfx_viewport_info,
-   d3d12_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
