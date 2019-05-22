@@ -162,6 +162,10 @@ ifeq ($(HAVE_THREADS), 1)
 SOURCES_C +=  \
 				 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 DEFINES += -DHAVE_THREADS
+
+ifeq (,$(findstring MSYS,$(uname -s)))
+LIBS += -lpthread
+endif
 endif
 
 flags     := $(INCDIRS)
