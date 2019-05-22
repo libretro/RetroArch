@@ -2,49 +2,48 @@
 
 #include "mem_util.h"
 
-char *strcpy_alloc(const char *sourceStr)
+char *strcpy_alloc(const char *src)
 {
-   size_t   len = 0;
    char *result = NULL;
-
-   if (sourceStr)
-      len = strlen(sourceStr);
+   size_t   len = src ? strlen(src) : 0;
 
    if (len == 0)
       return NULL;
 
    result = (char*)malloc(len + 1);
-   strcpy(result, sourceStr);
+   strcpy(result, src);
    return result;
 }
 
-char *strcpy_alloc_force(const char *sourceStr)
+char *strcpy_alloc_force(const char *src)
 {
-   char *result = strcpy_alloc(sourceStr);
+   char *result = strcpy_alloc(src);
    if (!result)
-      result = (char*)calloc(1, 1);
+      return (char*)calloc(1, 1);
    return result;
 }
 
-void strcat_alloc(char ** destStr_p, const char *appendStr)
+void strcat_alloc(char **dst, const char *s)
 {
-   size_t len1, len2, newLen;
-   char *destStr = *destStr_p;
+   size_t len1;
+   char *src  = *dst;
 
-   if (!destStr)
+   if (!src)
    {
-      destStr    = strcpy_alloc_force(appendStr);
-      *destStr_p = destStr;
+      src     = strcpy_alloc_force(s);
+      *dst    = src;
       return;
    }
 
-   if (!appendStr)
+   if (!s)
       return;
 
-   len1       = strlen(destStr);
-   len2       = strlen(appendStr);
-   newLen     = len1 + len2 + 1;
-   destStr    = (char*)realloc(destStr, newLen);
-   *destStr_p = destStr;
-   strcpy(destStr + len1, appendStr);
+   len1       = strlen(src);
+   src        = (char*)realloc(src, len1 + strlen(s) + 1);
+
+   if (!src)
+      return;
+
+   *dst       = src;
+   strcpy(src + len1, s);
 }
