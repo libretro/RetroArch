@@ -673,17 +673,15 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 int retro_vfs_file_remove_impl(const char *path)
 {
 #if defined(_WIN32) && !defined(_XBOX)
+   /* Win32 (no Xbox) */
+
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    char *path_local    = NULL;
 #else
    wchar_t *path_wide  = NULL;
 #endif
-#endif
-
    if (!path || !*path)
       return -1;
-
-#if defined(_WIN32) && !defined(_XBOX)
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    path_local = utf8_to_local_string_alloc(path);
 
@@ -707,33 +705,32 @@ int retro_vfs_file_remove_impl(const char *path)
          return 0;
    }
 #endif
-#else
-#ifdef ORBIS
-   /* stub for now */
+   return -1;
+#elif defined(ORBIS)
+   /* Orbis
+    * TODO/FIXME - stub for now */
    return 0;
 #else
    if (remove(path) == 0)
       return 0;
-#endif
-#endif
    return -1;
+#endif
 }
 
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
-   int ret                 = -1;
 #if defined(_WIN32) && !defined(_XBOX)
+   /* Win32 (no Xbox) */
+   int ret                 = -1;
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    char *old_path_local    = NULL;
 #else
    wchar_t *old_path_wide  = NULL;
 #endif
-#endif
 
    if (!old_path || !*old_path || !new_path || !*new_path)
       return -1;
 
-#if defined(_WIN32) && !defined(_XBOX)
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    old_path_local = utf8_to_local_string_alloc(old_path);
 
@@ -768,17 +765,24 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    }
 #endif
    return ret;
-#else
-#ifdef ORBIS
-   /* stub for now */
+
+#elif defined(ORBIS)
+   /* Orbis */
+   /* TODO/FIXME - Stub for now */
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return -1;
    return 0;
+
 #else
+   /* Every other platform */
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return -1;
    return rename(old_path, new_path) == 0 ? 0 : -1;
-#endif
 #endif
 }
 
-const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
+const char *retro_vfs_file_get_path_impl(
+      libretro_vfs_implementation_file *stream)
 {
    /* should never happen, do something noisy so caller can be fixed */
    if (!stream)
