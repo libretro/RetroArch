@@ -786,14 +786,21 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
+#if defined(VITA) || defined(PSP)
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
-   bool is_dir, is_character_special;
-#if defined(VITA) || defined(PSP)
    SceIoStat buf;
    int stat_ret;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
+   bool is_dir               = false;
+   bool is_character_special = false;
+   char *tmp                 = NULL;
+   size_t len                = 0;
+
+   if (!path || !*path)
+      return 0;
+   
+   tmp                       = strdup(path);
+   len                       = strlen(tmp);
    if (tmp[len-1] == '/')
       tmp[len-1] = '\0';
 
@@ -801,28 +808,99 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    free(tmp);
    if (stat_ret < 0)
       return 0;
+
+   if (size)
+      *size = (int32_t)buf.st_size;
+
+   is_dir = FIO_S_ISDIR(buf.st_mode);
+
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+}
 #elif defined(ORBIS)
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   bool is_dir, is_character_special;
    int dir_ret;
+
+   if (!path || !*path)
+      return 0;
+
+   if (size)
+      *size = (int32_t)buf.st_size;
+
+   dir_ret = orbisDopen(path);
+   is_dir  = dir_ret > 0;
+   orbisDclose(dir_ret);
+
+   is_character_special = S_ISCHR(buf.st_mode);
+
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+}
 #elif defined(PS2)
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
    iox_stat_t buf;
-   char *tmp  = strdup(path);
-   size_t len = strlen(tmp);
+   bool is_dir;
+   bool is_character_special = false;
+   char *tmp                 = NULL;
+   size_t len                = 0;
+
+   if (!path || !*path)
+      return 0;
+
+   tmp        = strdup(path);
+   len        = strlen(tmp);
    if (tmp[len-1] == '/')
       tmp[len-1] = '\0';
 
    fileXioGetStat(tmp, &buf);
    free(tmp);
+
+   if (size)
+      *size = (int32_t)buf.size;
+
+   if (!buf.mode)
+   {
+      /* if fileXioGetStat fails */
+      int dir_ret = fileXioDopen(path);
+      is_dir      =  dir_ret > 0;
+      fileXioDclose(dir_ret);
+   }
+   else
+      is_dir = FIO_S_ISDIR(buf.mode);
+
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+}
 #elif defined(__CELLOS_LV2__)
-    CellFsStat buf;
-    if (cellFsStat(path, &buf) < 0)
-       return 0;
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   bool is_dir;
+   bool is_character_special = false;
+   CellFsStat buf;
+
+   if (!path || !*path)
+      return 0;
+   if (cellFsStat(path, &buf) < 0)
+      return 0;
+
+   if (size)
+      *size = (int32_t)buf.st_size;
+
+   is_dir = ((buf.st_mode & S_IFMT) == S_IFDIR);
+
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+}
 #elif defined(_WIN32)
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   bool is_dir;
    DWORD file_info;
    struct _stat buf;
+   bool is_character_special = false;
 #if defined(LEGACY_WIN32)
-   char *path_local   = NULL;
+   char *path_local          = NULL;
 #else
-   wchar_t *path_wide = NULL;
+   wchar_t *path_wide        = NULL;
 #endif
 
    if (!path || !*path)
@@ -849,51 +927,34 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
    if (file_info == INVALID_FILE_ATTRIBUTES)
       return 0;
-#else
-   struct stat buf;
-   if (stat(path, &buf) < 0)
-      return 0;
-#endif
 
    if (size)
-#if defined(PS2)
-      *size = (int32_t)buf.size;
-#else
       *size = (int32_t)buf.st_size;
-#endif
 
-#if defined(VITA) || defined(PSP)
-   is_dir = FIO_S_ISDIR(buf.st_mode);
-#elif defined(ORBIS)
-   dir_ret = orbisDopen(path);
-   is_dir  = dir_ret > 0;
-   orbisDclose(dfd);
-#elif defined(PS2)
-   if (!buf.mode)
-   {
-      /* if fileXioGetStat fails */
-      int dir_ret = fileXioDopen(path);
-      is_dir      =  dir_ret > 0;
-      fileXioDclose(dir_ret);
-   }
-   else
-      is_dir = FIO_S_ISDIR(buf.mode);
-#elif defined(__CELLOS_LV2__)
-   is_dir = ((buf.st_mode & S_IFMT) == S_IFDIR);
-#elif defined(_WIN32)
    is_dir = (file_info & FILE_ATTRIBUTE_DIRECTORY);
-#else
-   is_dir = S_ISDIR(buf.st_mode);
-#endif
-
-#if defined(VITA) || defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__) || defined(_WIN32)
-   is_character_special = false;
-#else
-   is_character_special = S_ISCHR(buf.st_mode);
-#endif
 
    return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 }
+#else
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   bool is_dir, is_character_special;
+   struct stat buf;
+
+   if (!path || !*path)
+      return 0;
+   if (stat(path, &buf) < 0)
+      return 0;
+
+   if (size)
+      *size             = (int32_t)buf.st_size;
+
+   is_dir               = S_ISDIR(buf.st_mode);
+   is_character_special = S_ISCHR(buf.st_mode);
+
+   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+}
+#endif
 
 #if defined(VITA)
 #define path_mkdir_error(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
