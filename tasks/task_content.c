@@ -654,6 +654,7 @@ static bool content_file_load(
 
             fill_pathname_join(new_path, new_basedir,
                path_basename(path), new_path_size);
+            free(new_basedir);
 
             /* TODO: This may fail on very large files...
              * but copying large files is not a good idea anyway */
@@ -697,7 +698,6 @@ static bool content_file_load(
             string_list_append(content_ctx->temporary_content,
                new_path, attributes);
 
-            free(new_basedir);
             free(new_path);
 
             used_vfs_fallback_copy = true;
@@ -741,11 +741,20 @@ static bool content_file_load(
       settings_t *settings         = config_get_ptr();
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
+      bool cheevos_old_enable      = settings->bools.cheevos_old_enable;
 
-      !settings->bools.cheevos_old_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
+      if (cheevos_old_enable)
+         cheevos_set_cheats();
+      else
+         rcheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
-         !settings->bools.cheevos_old_enable ? rcheevos_load(info) : cheevos_load(info);
+      {
+         if (cheevos_old_enable)
+            cheevos_load(info);
+         else
+            rcheevos_load(info);
+      }
    }
 #endif
 

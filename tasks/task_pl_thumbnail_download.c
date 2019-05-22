@@ -30,9 +30,14 @@
 
 #include "../file_path_special.h"
 #include "../playlist.h"
+
+#ifdef RARCH_INTERNAL
+#ifdef HAVE_MENU
 #include "../menu/menu_thumbnail_path.h"
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"
+#endif
+#endif
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
@@ -229,7 +234,9 @@ static void cb_task_pl_thumbnail_refresh_menu(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
+#endif
 }
 
 /*******************************/
