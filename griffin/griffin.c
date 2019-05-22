@@ -276,6 +276,7 @@ VIDEO CONTEXT
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
 #include "../gfx/common/xinerama_common.c"
+#include "../gfx/display_servers/dispserv_x11.c"
 
 #ifdef HAVE_DBUS
 #include "../gfx/common/dbus_common.c"
@@ -588,7 +589,7 @@ INPUT
 #endif
 
 #ifdef HAVE_X11
-#include "../input/common/x11_input_common.c"
+#include "../input/common/input_x11_common.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
@@ -848,6 +849,10 @@ AUDIO
 
 #ifdef HAVE_TINYALSA
 #include "../audio/drivers/tinyalsa.c"
+#endif
+
+#ifdef HAVE_PULSE
+#include "../audio/drivers/pulse.c"
 #endif
 
 #ifdef HAVE_AL

@@ -53,7 +53,7 @@ typedef struct
 
 static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
-static int x_nul_handler(Display *dpy, XErrorEvent *event)
+static int xegl_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -430,7 +430,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    /* This can blow up on some drivers. It's not fatal,
     * so override errors for this call.
     */
-   old_handler = XSetErrorHandler(x_nul_handler);
+   old_handler = XSetErrorHandler(xegl_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
    XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);

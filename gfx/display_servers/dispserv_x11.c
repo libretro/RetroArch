@@ -23,7 +23,9 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 
+#ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
