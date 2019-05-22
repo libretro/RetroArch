@@ -133,6 +133,7 @@ struct content_information_ctx
    char *directory_cache;
    char *directory_system;
 
+   bool cheevos_old_enable;
    bool is_ips_pref;
    bool is_bps_pref;
    bool is_ups_pref;
@@ -738,19 +739,17 @@ static bool content_file_load(
    if (!special)
    {
       /* RCHEEVOS TODO: remove settings and settings tests */
-      settings_t *settings         = config_get_ptr();
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
-      bool cheevos_old_enable      = settings->bools.cheevos_old_enable;
 
-      if (cheevos_old_enable)
+      if (content_ctx->cheevos_old_enable)
          cheevos_set_cheats();
       else
          rcheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
       {
-         if (cheevos_old_enable)
+         if (content_ctx->cheevos_old_enable)
             cheevos_load(info);
          else
             rcheevos_load(info);
@@ -1226,6 +1225,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -1317,6 +1317,7 @@ bool task_push_load_content_from_playlist_from_menu(
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -1415,6 +1416,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -1539,6 +1541,7 @@ bool task_push_load_content_with_new_core_from_menu(
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -1642,6 +1645,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -2109,6 +2113,7 @@ bool content_init(void)
 
    temporary_content                          = string_list_new();
 
+   content_ctx.cheevos_old_enable             = settings->bools.cheevos_old_enable;
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
