@@ -63,7 +63,7 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
 #ifdef HAVE_MENU
 bool task_push_pl_thumbnail_download(const char *system, const char *playlist_path);
-bool task_push_pl_entry_thumbnail_download(const char *system, playlist_t *playlist, unsigned idx);
+bool task_push_pl_entry_thumbnail_download(const char *system, const char *dir_thumbnails, playlist_t *playlist, unsigned idx);
 #endif
 
 #endif

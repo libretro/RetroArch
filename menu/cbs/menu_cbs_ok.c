@@ -5394,9 +5394,10 @@ static int action_ok_pl_content_thumbnails(const char *path,
 static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char system[PATH_MAX_LENGTH];
    menu_handle_t *menu  = NULL;
    playlist_t *playlist = playlist_get_cached();
-   char system[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
    system[0] = '\0';
 
@@ -5408,7 +5409,9 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
 
    menu_driver_get_thumbnail_system(system, sizeof(system));
 
-   task_push_pl_entry_thumbnail_download(system, playlist, menu->rpl_entry_selection_ptr);
+   task_push_pl_entry_thumbnail_download(system,
+         settings->paths.directory_thumbnails,
+         playlist, menu->rpl_entry_selection_ptr);
    return 0;
 }
 #endif
