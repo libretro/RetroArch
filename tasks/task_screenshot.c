@@ -230,27 +230,16 @@ static bool screenshot_dump(
       unsigned pixel_format_type)
 {
    struct retro_system_info system_info;
-   char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
    screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
-   screenshot_path[0]             = '\0';
 
    /* If fullpath is true, name_base already contains a 
     * static path + filename to save the screenshot to. */
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
-   else
-   {
-      if (string_is_empty(screenshot_dir) || settings->bools.screenshots_in_content_dir)
-      {
-         fill_pathname_basedir(screenshot_path, name_base,
-               sizeof(screenshot_path));
-         screenshot_dir = screenshot_path;
-      }
-   }
 
    state->is_idle             = is_idle;
    state->is_paused           = is_paused;
@@ -295,8 +284,19 @@ static bool screenshot_dump(
             snprintf(state->shotname, sizeof(state->shotname),
                   "%s.png", path_basename(name_base));
 
-         fill_pathname_join(state->filename, screenshot_dir,
-               state->shotname, sizeof(state->filename));
+         if (  string_is_empty(screenshot_dir) || 
+               settings->bools.screenshots_in_content_dir)
+         {
+            char screenshot_path[PATH_MAX_LENGTH];
+            screenshot_path[0]             = '\0';
+            fill_pathname_basedir(screenshot_path, name_base,
+                  sizeof(screenshot_path));
+            fill_pathname_join(state->filename, screenshot_path,
+                  state->shotname, sizeof(state->filename));
+         }
+         else
+            fill_pathname_join(state->filename, screenshot_dir,
+                  state->shotname, sizeof(state->filename));
       }
    }
 
