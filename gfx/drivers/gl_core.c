@@ -1030,6 +1030,29 @@ static void *gl_core_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
+   {
+      char device_str[128];
+
+      device_str[0] = '\0';
+
+      strlcpy(device_str, vendor, sizeof(device_str));
+      strlcat(device_str, " ", sizeof(device_str));
+      strlcat(device_str, renderer, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+      video_driver_set_gpu_api_version_string(version);
+   }
+
+#ifdef _WIN32
+   if (string_is_equal(vendor, "Microsoft Corporation"))
+      if (string_is_equal(renderer, "GDI Generic"))
+#ifdef HAVE_OPENGL1
+         rarch_force_video_driver_fallback("gl1");
+#else
+         rarch_force_video_driver_fallback("gdi");
+#endif
+#endif
+
    gl->vsync       = video->vsync;
    gl->fullscreen  = video->fullscreen;
    gl->keep_aspect = video->force_aspect;
