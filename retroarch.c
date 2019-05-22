@@ -1524,34 +1524,37 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    #ifdef HAVE_DYNAMIC
             case 'L':
-               if (path_is_directory(optarg))
                {
-                  settings_t *settings  = config_get_ptr();
+                  int path_stats = path_stat(optarg);
 
-                  path_clear(RARCH_PATH_CORE);
-                  strlcpy(settings->paths.directory_libretro, optarg,
-                        sizeof(settings->paths.directory_libretro));
+                  if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+                  {
+                     settings_t *settings  = config_get_ptr();
 
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
-                  RARCH_WARN("Using old --libretro behavior. "
-                        "Setting libretro_directory to \"%s\" instead.\n",
-                        optarg);
+                     path_clear(RARCH_PATH_CORE);
+                     strlcpy(settings->paths.directory_libretro, optarg,
+                           sizeof(settings->paths.directory_libretro));
+
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+                     RARCH_WARN("Using old --libretro behavior. "
+                           "Setting libretro_directory to \"%s\" instead.\n",
+                           optarg);
+                  }
+                  else if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0)
+                  {
+                     path_set(RARCH_PATH_CORE, optarg);
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+
+                     /* We requested explicit core, so use PLAIN core type. */
+                     retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
+                  }
+                  else
+                  {
+                     RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
+                           optarg);
+                  }
                }
-               else if (filestream_exists(optarg))
-               {
-                  path_set(RARCH_PATH_CORE, optarg);
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-
-                  /* We requested explicit core, so use PLAIN core type. */
-                  retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-               }
-               else
-               {
-                  RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
-                        optarg);
-               }
-
                break;
    #endif
             case 'P':

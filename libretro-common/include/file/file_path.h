@@ -494,6 +494,8 @@ bool path_is_directory(const char *path);
 
 bool path_is_character_special(const char *path);
 
+int path_stat(const char *path);
+
 bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
