@@ -420,6 +420,7 @@ static bool load_content_from_compressed_archive(
 
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), new_path_size);
+   free(new_basedir);
 
    ret = file_archive_compressed_read(path,
          NULL, new_path, &new_path_len);
@@ -435,25 +436,21 @@ static bool load_content_from_compressed_archive(
             path);
       *error_string = strdup(str);
       free(str);
-      goto error;
+      free(new_path);
+      return false;
    }
 
    string_list_append(additional_path_allocs, new_path, attributes);
    info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
+   free(new_path);
+
    if (!string_list_append(content_ctx->temporary_content,
             new_path, attributes))
-      goto error;
+      return false;
 
-   free(new_basedir);
-   free(new_path);
    return true;
-
-error:
-   free(new_basedir);
-   free(new_path);
-   return false;
 }
 
 /* Try to extract all content we're going to load if appropriate. */
@@ -516,9 +513,11 @@ static bool content_file_init_extract(
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
+            *error_string = strdup(str);
             free(temp_content);
             free(str);
-            goto error;
+            free(new_path);
+            return false;
          }
 
          string_list_set(content, i, new_path);
@@ -527,17 +526,16 @@ static bool content_file_init_extract(
 
          if (!string_list_append(content_ctx->temporary_content,
                   new_path, *attr))
-            goto error;
+         {
+            free(new_path);
+            return false;
+         }
 
          free(new_path);
       }
    }
 
    return true;
-
-error:
-   free(new_path);
-   return false;
 }
 #endif
 
