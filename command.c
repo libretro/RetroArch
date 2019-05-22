@@ -1529,7 +1529,7 @@ static bool command_event_save_core_config(void)
    config_path[0]                  = '\0';
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(core_path) && filestream_exists(core_path))
+   if (path_is_valid(core_path))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));

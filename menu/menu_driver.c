@@ -1683,10 +1683,12 @@ bool menu_display_reset_textures_list(
    ti.pixels                     = NULL;
    ti.supports_rgba              = video_driver_supports_rgba();
 
-   if (!string_is_empty(texture_path))
-      fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+   if (string_is_empty(texture_path))
+      return false;
 
-   if (string_is_empty(texpath) || !filestream_exists(texpath))
+   fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+
+   if (!path_is_valid(texpath))
       return false;
 
    if (!image_texture_load(&ti, texpath))

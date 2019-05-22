@@ -723,7 +723,7 @@ static void xmb_draw_icon(
       draw.y            = height - y - shadow_offset;
 
 #if defined(VITA) || defined(WIIU)
-      if(scale_factor < 1)
+      if (scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size-draw.width)/2;
          draw.y         = draw.y + (icon_size-draw.width)/2;
@@ -737,7 +737,7 @@ static void xmb_draw_icon(
    draw.y               = height - y;
 
 #if defined(VITA) || defined(WIIU)
-   if(scale_factor < 1)
+   if (scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size-draw.width)/2;
       draw.y            = draw.y + (icon_size-draw.width)/2;
@@ -1185,8 +1185,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (!string_is_empty(xmb->savestate_thumbnail_file_path)
-         && filestream_exists(xmb->savestate_thumbnail_file_path))
+   if (path_is_valid(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -1636,9 +1635,9 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-      if(!string_is_equal(path, xmb->bg_file_path))
+      if (!string_is_equal(path, xmb->bg_file_path))
       {
-         if(filestream_exists(path))
+         if (filestream_exists(path))
          {
             task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
@@ -2044,7 +2043,7 @@ static void xmb_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->icon);
                video_driver_texture_load(&ti,
@@ -2072,7 +2071,7 @@ static void xmb_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, content_texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->content_icon);
                video_driver_texture_load(&ti,
