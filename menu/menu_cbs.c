@@ -173,7 +173,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_BREAK,          "Break"},
    {RETROK_MENU,           "Menu"},
    {RETROK_POWER,          "Power"},
-   {RETROK_EURO,           {(char)0xE2, (char)0x82, (char)0xAC, (char)0x00}}, /* "€" */
+   {RETROK_EURO,           {-30, -126, -84, 0}}, /* "€" */
    {RETROK_UNDO,           "Undo"},
    {RETROK_OEM_102,        "OEM-102"}
 };
