@@ -910,8 +910,8 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
          if (pos == 'R' || (pos == 'L' && string_is_equal(stripes_thumbnails_ident('R'),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
          {
-            if (!string_is_empty(entry.label))
-               strlcpy(new_path, entry.label,
+            if (!string_is_empty(entry->label))
+               strlcpy(new_path, entry->label,
                      sizeof(new_path));
             goto end;
          }
@@ -1062,6 +1062,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
 static void stripes_update_thumbnail_image(void *data)
 {
    stripes_handle_t *stripes = (stripes_handle_t*)data;
+   bool supports_rgba        = video_driver_supports_rgba();
    if (!stripes)
       return;
 
@@ -1069,6 +1070,7 @@ static void stripes_update_thumbnail_image(void *data)
       {
          if (filestream_exists(stripes->thumbnail_file_path))
             task_push_image_load(stripes->thumbnail_file_path,
+                  supports_rgba,
                   menu_display_handle_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->thumbnail);
@@ -1081,6 +1083,7 @@ static void stripes_update_thumbnail_image(void *data)
       {
          if (filestream_exists(stripes->left_thumbnail_file_path))
             task_push_image_load(stripes->left_thumbnail_file_path,
+                  supports_rgba,
                   menu_display_handle_left_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->left_thumbnail);
@@ -1142,9 +1145,9 @@ static void stripes_update_savestate_thumbnail_image(void *data)
    if (!stripes)
       return;
 
-   if (!string_is_empty(stripes->savestate_thumbnail_file_path)
-         && filestream_exists(stripes->savestate_thumbnail_file_path))
+   if (path_is_valid(stripes->savestate_thumbnail_file_path))
       task_push_image_load(stripes->savestate_thumbnail_file_path,
+            video_driver_supports_rgba(),
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&stripes->savestate_thumbnail);
@@ -1524,6 +1527,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
            if(filestream_exists(path))
            {
               task_push_image_load(path,
+                    video_driver_supports_rgba(),
                   menu_display_handle_wallpaper_upload, NULL);
               if (!string_is_empty(stripes->bg_file_path))
                  free(stripes->bg_file_path);
@@ -1835,12 +1839,15 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
    info.list                    = stripes->horizontal_list;
    info.path                    = strdup(
          settings->paths.directory_playlist);
+#if 0
+   /* TODO/FIXME - will need to look what to do here */
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+#endif
    info.exts                    = strdup(
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
-   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 
    if (!string_is_empty(info.path))
    {
@@ -3691,6 +3698,7 @@ static void stripes_context_reset_background(const char *iconpath)
 
    if (filestream_exists(path))
       task_push_image_load(path,
+            video_driver_supports_rgba(),
             menu_display_handle_wallpaper_upload, NULL);
 
    if (path)
@@ -4161,11 +4169,14 @@ static int stripes_list_push(void *data, void *userdata,
             }
 
 #ifdef HAVE_LIBRETRODB
+#if 0
+            /* TODO/FIXME - figure out what to do here */
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
                   MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
                   MENU_SETTING_ACTION, 0, 0);
+#endif
 #endif
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)

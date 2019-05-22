@@ -24,10 +24,6 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
-#ifdef RARCH_INTERNAL
-#include "../gfx/video_driver.h"
-#endif
-
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
@@ -286,7 +282,9 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
+bool task_push_image_load(const char *fullpath, 
+      bool supports_rgba,
+      retro_task_callback_t cb, void *user_data)
 {
    nbio_handle_t             *nbio   = NULL;
    struct nbio_image_handle   *image = NULL;
@@ -313,10 +311,8 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    nbio->msg_queue     = NULL;
    nbio->cb            = &cb_nbio_image_thumbnail;
 
-#ifdef RARCH_INTERNAL
-   if (video_driver_supports_rgba())
+   if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
-#endif
 
    image              = (struct nbio_image_handle*)malloc(sizeof(*image));
    if (!image)
@@ -342,6 +338,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    image->ti.width                   = 0;
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
+   /* TODO/FIXME - shouldn't we set this ? */
    image->ti.supports_rgba           = false;
 
    if (strstr(fullpath, ".png"))

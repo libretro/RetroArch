@@ -1017,6 +1017,7 @@ static void xmb_update_thumbnail_image(void *data)
    {
       if (filestream_exists(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
+               video_driver_supports_rgba(),
                menu_display_handle_thumbnail_upload, NULL);
       else
          video_driver_texture_unload(&xmb->thumbnail);
@@ -1028,6 +1029,7 @@ static void xmb_update_thumbnail_image(void *data)
    {
       if (filestream_exists(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
+               video_driver_supports_rgba(),
                menu_display_handle_left_thumbnail_upload, NULL);
       else
          video_driver_texture_unload(&xmb->left_thumbnail);
@@ -1187,6 +1189,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 
    if (path_is_valid(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
+            video_driver_supports_rgba(),
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&xmb->savestate_thumbnail);
@@ -1640,6 +1643,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          if (filestream_exists(path))
          {
             task_push_image_load(path,
+                  video_driver_supports_rgba(),
                   menu_display_handle_wallpaper_upload, NULL);
             if (!string_is_empty(xmb->bg_file_path))
                free(xmb->bg_file_path);
@@ -5022,6 +5026,7 @@ static void xmb_context_reset_background(const char *iconpath)
 
    if (filestream_exists(path))
       task_push_image_load(path,
+            video_driver_supports_rgba(),
             menu_display_handle_wallpaper_upload, NULL);
 
 #ifdef ORBIS

@@ -1561,21 +1561,6 @@ static void rgui_render_particle_effect(rgui_t *rgui)
       rgui_render_border(rgui, rgui_frame_buf.data, fb_width, fb_height);
 }
 
-static void request_wallpaper(const char *path)
-{
-   /* Ensure that path is valid... */
-   if (!string_is_empty(path))
-   {
-      if (filestream_exists(path))
-      {
-         /* Unlike thumbnails, we don't worry about queued images
-          * here - in general, wallpaper is loaded once per session
-          * and then forgotten, so performance issues are not a concern */
-         task_push_image_load(path, menu_display_handle_wallpaper_upload, NULL);
-      }
-   }
-}
-
 static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
@@ -1607,10 +1592,8 @@ static bool request_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thu
 {
    /* Do nothing if current thumbnail path hasn't changed */
    if (!string_is_empty(path) && !string_is_empty(thumbnail->path))
-   {
       if (string_is_equal(thumbnail->path, path))
          return true;
-   }
 
    /* 'Reset' current thumbnail */
    thumbnail->width = 0;
@@ -1627,7 +1610,9 @@ static bool request_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thu
       {
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
-         if(task_push_image_load(thumbnail->path, (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
+         if(task_push_image_load(thumbnail->path,
+                  video_driver_supports_rgba(),
+                  (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
             menu_display_handle_left_thumbnail_upload : menu_display_handle_thumbnail_upload, NULL))
          {
             *queue_size = *queue_size + 1;
@@ -2220,7 +2205,14 @@ end:
          wallpaper_path[0] = '\0';
 
          fill_pathname_resolve_relative(wallpaper_path, theme_path, wallpaper_file, sizeof(wallpaper_path));
-         request_wallpaper(wallpaper_path);
+         /* Ensure that path is valid... */
+         if (path_is_valid(wallpaper_path))
+            /* Unlike thumbnails, we don't worry about queued images
+             * here - in general, wallpaper is loaded once per session
+             * and then forgotten, so performance issues are not a concern */
+            task_push_image_load(wallpaper_path,
+                  video_driver_supports_rgba(),
+                  menu_display_handle_wallpaper_upload, NULL);
       }
    }
    else

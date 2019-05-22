@@ -1390,6 +1390,7 @@ static int generic_action_ok(const char *path,
 
             if (filestream_exists(action_path))
                task_push_image_load(action_path,
+                     video_driver_supports_rgba(),
                      menu_display_handle_wallpaper_upload, NULL);
          }
          break;

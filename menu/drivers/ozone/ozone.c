@@ -396,6 +396,7 @@ static void ozone_update_thumbnail_image(void *data)
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
+   bool supports_rgba               = video_driver_supports_rgba();
 
    if (!ozone)
       return;
@@ -404,6 +405,7 @@ static void ozone_update_thumbnail_image(void *data)
    {
       if (filestream_exists(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
+               supports_rgba,
                menu_display_handle_thumbnail_upload, NULL);
       else
          video_driver_texture_unload(&ozone->thumbnail);
@@ -415,6 +417,7 @@ static void ozone_update_thumbnail_image(void *data)
    {
       if (filestream_exists(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
+               supports_rgba,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
          video_driver_texture_unload(&ozone->left_thumbnail);
