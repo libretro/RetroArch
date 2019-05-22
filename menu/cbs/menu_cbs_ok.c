@@ -2910,7 +2910,7 @@ static int action_ok_audio_run(const char *path,
 #endif
 }
 
-static int action_ok_core_option_dropdown_list(const char *path,
+int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_option_lbl[256];

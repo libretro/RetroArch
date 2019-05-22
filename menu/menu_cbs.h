@@ -265,6 +265,9 @@ int action_scan_file(const char *path,
 int bind_right_generic(unsigned type, const char *label,
        bool wraparound);
 
+int action_ok_core_option_dropdown_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 /* This sets up all the callback functions for a menu entry.
  *
  * OK     : When we press the 'OK' button on an entry.

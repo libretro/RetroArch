@@ -118,7 +118,7 @@ static int action_select_path_use_directory(const char *path,
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-   return core_setting_right(type, label, true);
+   return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
 static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
