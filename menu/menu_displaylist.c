@@ -373,6 +373,27 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 #endif
    {
       char cpu_str[255];
+      const char *model = frontend_driver_get_cpu_model_name();
+
+      cpu_str[0] = '\0';
+
+      fill_pathname_noext(cpu_str,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
+            ": ",
+            sizeof(cpu_str));
+
+      if (string_is_empty(model))
+         strlcat(cpu_str, "N/A", sizeof(cpu_str));
+      else
+         strlcat(cpu_str, model, sizeof(cpu_str));
+
+      if (menu_entries_append_enum(info->list, cpu_str, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
+   }
+
+   {
+      char cpu_str[255];
 
       cpu_str[0] = '\0';
 

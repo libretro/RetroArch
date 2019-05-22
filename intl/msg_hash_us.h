@@ -2735,6 +2735,10 @@ MSG_HASH(
     "CoreText support"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+    "CPU Model"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
     "CPU Features"
     )
