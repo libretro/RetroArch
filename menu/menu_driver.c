@@ -503,8 +503,28 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 /* Begin scissoring operation */
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
+   if (y < 0)
+      y = 0;
+   if (x < 0)
+      x = 0;
+   if (y >= menu_display_framebuf_height)
+      goto skipts;
+   if (x >= menu_display_framebuf_width)
+      goto skipts;
+   if ((y + height) > menu_display_framebuf_height)
+      height = menu_display_framebuf_height - y;
+   if ((x + width) > menu_display_framebuf_width)
+      width = menu_display_framebuf_width - x;
+   if (height <= 0)
+      goto skipts;
+   if (width <= 0)
+      goto skipts;
+
    if (menu_disp && menu_disp->scissor_begin)
       menu_disp->scissor_begin(video_info, x, y, width, height);
+   return;
+skipts:
+   ;/*RARCH_WARN("[Menu]: discard scissor %.4i %.4i %.4u %.4u\n", x, y, width, height);*/
 }
 
 /* End scissoring operation */
@@ -792,9 +812,15 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
 
    /* TODO - edge case */
    if (draw->height <= 0)
-      draw->height = 1;
+      goto skipts;
+   if (draw->width <= 0)
+      goto skipts;
 
    menu_disp->draw(draw, video_info);
+   return;
+skipts:
+   ;/*RARCH_WARN("[Menu]: discard draw %.4i %.4i %.4i %.4i\n",
+      (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
 }
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,

@@ -23,8 +23,47 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_driver.h"
 #include "../../gfx/common/gl_common.h"
+#include "../../verbosity.h"
 
 #include "../menu_driver.h"
+
+#if defined(__arm__) || defined(__aarch64__)
+#define MALI_BUG
+#endif
+
+#ifdef MALI_BUG
+static int scInit, scMali4xx, scx0, scx1, scy0, scy1;
+static const struct {
+   const char *str;
+   int len;
+} scDevStr[] = {
+   { "ARM Mali-4xx", 10 },
+   { 0, 0 }
+};
+
+static void scSetRekt(int x0, int x1, int y0, int y1, int sc)
+{
+   const int dx = sc ? 10 : 2;
+   const int dy = dx;
+   scx0 = x0 + dx;
+   scx1 = x1 - dx;
+   scy0 = y0 + dy;
+   scy1 = y1 - dy;
+}
+
+static bool scRekt(int x0, int x1, int y0, int y1)
+{
+   if (x1 < scx0)
+      return true;
+   if (scx1 < x0)
+      return true;
+   if (y1 < scy0)
+      return true;
+   if (scy1 < y0)
+      return true;
+   return false;
+}
+#endif
 
 static const GLfloat gl_vertexes[] = {
    0, 0,
@@ -79,7 +118,7 @@ static GLenum menu_display_prim_to_gl_enum(
 
 static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
 {
-   gl_t             *gl          = (gl_t*)video_info->userdata;
+   gl_t *gl = (gl_t*)video_info->userdata;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -103,10 +142,44 @@ static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
 static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   gl_t             *gl          = (gl_t*)video_info->userdata;
+#ifdef MALI_BUG
+   int i;
+   const char *gpuDevStr;
+#endif
+   gl_t *gl = (gl_t*)video_info->userdata;
 
    if (!gl || !draw)
       return;
+
+#ifdef MALI_BUG
+   if (!scInit)
+   {
+      scInit = 1;
+      if ((scx0 + scx1 + scy0 + scy1) == 0)
+         scSetRekt(0, video_info->width - 1, 0, video_info->height - 1, 0);
+      gpuDevStr = video_driver_get_gpu_device_string();
+      if (gpuDevStr)
+      {
+         for (i = 0; scDevStr[i].len; ++i)
+         {
+            if (strncmp(gpuDevStr, scDevStr[i].str, scDevStr[i].len) == 0)
+            {
+               scMali4xx = 1;
+               break;
+            }
+         }
+      }
+   }
+   /* discards not only out-of-bounds scissoring, but also out-of-view draws
+      this is intentional */
+   if (scMali4xx &&
+       scRekt(draw->x, draw->x + draw->width - 1, draw->y, draw->y + draw->height - 1))
+   {
+      /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
+         (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
+      return;
+   }
+#endif
 
    if (!draw->coords->vertex)
       draw->coords->vertex = menu_display_gl_get_default_vertices();
@@ -243,12 +316,18 @@ static void menu_display_gl_scissor_begin(
 {
    glScissor(x, video_info->height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
+#ifdef MALI_BUG
+   scSetRekt(x, x + width - 1, y, y + height - 1, 1);
+#endif
 }
 
 static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
 {
    glScissor(0, 0, video_info->width, video_info->height);
    glDisable(GL_SCISSOR_TEST);
+#ifdef MALI_BUG
+   scSetRekt(0, video_info->width - 1, 0, video_info->height - 1, 0);
+#endif
 }
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {
