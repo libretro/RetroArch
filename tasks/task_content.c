@@ -571,8 +571,9 @@ static bool content_file_load(
       const char *path     = content->elems[i].data;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
+      bool path_empty      = string_is_empty(path);
 
-      if (require_content && string_is_empty(path))
+      if (require_content && path_empty)
       {
          *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
          return false;
@@ -580,10 +581,10 @@ static bool content_file_load(
 
       info[i].path = NULL;
 
-      if (!string_is_empty(path))
+      if (!path_empty)
          info[i].path = path;
 
-      if (!need_fullpath && !string_is_empty(path))
+      if (!need_fullpath && !path_empty)
       {
          /* Load the content into memory. */
 
@@ -998,13 +999,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
       if (!string_is_empty(path_content))
          strlcpy(tmp, path_content, tmp_size);
 
-      if (!launched_from_menu)
-      {
-         /* Path can be relative here.
-          * Ensure we're pushing absolute path. */
-         if (!string_is_empty(tmp))
-            path_resolve_realpath(tmp, tmp_size);
-      }
+      /* Path can be relative here.
+       * Ensure we're pushing absolute path. */
+      if (!launched_from_menu && !string_is_empty(tmp))
+         path_resolve_realpath(tmp, tmp_size);
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
@@ -1165,12 +1163,14 @@ static bool firmware_update_status(
    bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *s                    = (char*)malloc(s_size);
-
+   char *s                    = NULL;
+   
    core_info_get_current_core(&core_info);
 
    if (!core_info)
-      goto error;
+      return false;
+
+   s                          = (char*)malloc(s_size);
 
    firmware_info.path         = core_info->path;
 
@@ -1189,7 +1189,10 @@ static bool firmware_update_status(
 
    rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
-   core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+   core_info_list_update_missing_firmware(&firmware_info,
+         &set_missing_firmware);
+
+   free(s);
 
    if (set_missing_firmware)
       rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
@@ -1200,16 +1203,14 @@ static bool firmware_update_status(
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FIRMWARE),
-            100, 500, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            100, 500, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("Load content blocked. Reason: %s\n",
             msg_hash_to_str(MSG_FIRMWARE));
 
-      free(s);
       return true;
    }
 
-error:
-   free(s);
    return false;
 }
 
