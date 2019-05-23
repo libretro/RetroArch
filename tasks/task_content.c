@@ -739,7 +739,6 @@ static bool content_file_load(
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
-      /* RCHEEVOS TODO: remove settings and settings tests */
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
 
