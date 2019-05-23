@@ -225,6 +225,10 @@ static void frontend_gx_get_environment_settings(
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], g_defaults.dirs[DEFAULT_DIR_CORE],
          "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
 #endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          "retroarch.cfg", sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_PORT],
