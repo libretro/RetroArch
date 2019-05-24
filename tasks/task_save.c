@@ -236,7 +236,7 @@ static autosave_t *autosave_new(const char *path,
    if (!buf)
    {
       free(handle);
-      return false;
+      return NULL;
    }
 
    handle->buffer                = buf;
