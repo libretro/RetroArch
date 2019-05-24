@@ -1921,6 +1921,14 @@ MSG_HASH(
     "Network Remote Base Port"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+    "On-Demand Thumbnail Downloads"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Automatically download missing thumbnail images while browsing playlists. Has a severe performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Network"
     )

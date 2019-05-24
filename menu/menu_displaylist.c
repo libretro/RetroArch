@@ -3389,6 +3389,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                count++;
 
             if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                     PARSE_ONLY_BOOL, false) != -1)
+               count++;
+
+            if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_UPDATER_SETTINGS,
                      PARSE_ACTION, false) != -1)
                count++;

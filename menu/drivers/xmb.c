@@ -1009,6 +1009,14 @@ static void xmb_update_thumbnail_image(void *data)
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
+   bool supports_rgba               = video_driver_supports_rgba();
+
+   /* Have to wrap `thumbnails_missing` like this to silence
+    * brain dead `set but not used` warnings when networking
+    * is disabled... */
+#ifdef HAVE_NETWORKING
+   bool thumbnails_missing          = false;
+#endif
 
    if (!xmb)
       return;
@@ -1017,10 +1025,15 @@ static void xmb_update_thumbnail_image(void *data)
    {
       if (filestream_exists(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
-               video_driver_supports_rgba(),
+               supports_rgba,
                menu_display_handle_thumbnail_upload, NULL);
       else
+      {
          video_driver_texture_unload(&xmb->thumbnail);
+#ifdef HAVE_NETWORKING
+         thumbnails_missing = true;
+#endif
+      }
    }
    else
       video_driver_texture_unload(&xmb->thumbnail);
@@ -1029,13 +1042,39 @@ static void xmb_update_thumbnail_image(void *data)
    {
       if (filestream_exists(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
-               video_driver_supports_rgba(),
+               supports_rgba,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
+      {
          video_driver_texture_unload(&xmb->left_thumbnail);
+#ifdef HAVE_NETWORKING
+         thumbnails_missing = true;
+#endif
+      }
    }
    else
       video_driver_texture_unload(&xmb->left_thumbnail);
+
+#ifdef HAVE_NETWORKING
+   /* On demand thumbnail downloads */
+   if (thumbnails_missing)
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (!settings)
+         return;
+
+      if (settings->bools.network_on_demand_thumbnails)
+      {
+         const char *system = NULL;
+
+         if (menu_thumbnail_get_system(xmb->thumbnail_path_data, &system))
+            task_push_pl_entry_thumbnail_download(system,
+                  playlist_get_cached(), menu_navigation_get_selection(),
+                  false, true);
+      }
+   }
+#endif
 }
 
 static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)

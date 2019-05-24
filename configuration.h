@@ -231,6 +231,7 @@ typedef struct settings
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
+      bool network_on_demand_thumbnails;
 
       /* UI */
       bool ui_menubar_enable;
