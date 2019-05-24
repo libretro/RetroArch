@@ -398,6 +398,13 @@ static void ozone_update_thumbnail_image(void *data)
    const char *left_thumbnail_path  = NULL;
    bool supports_rgba               = video_driver_supports_rgba();
 
+   /* Have to wrap `thumbnails_missing` like this to silence
+    * brain dead `set but not used` warnings when networking
+    * is disabled... */
+#ifdef HAVE_NETWORKING
+   bool thumbnails_missing          = false;
+#endif
+
    if (!ozone)
       return;
 
@@ -408,7 +415,12 @@ static void ozone_update_thumbnail_image(void *data)
                supports_rgba,
                menu_display_handle_thumbnail_upload, NULL);
       else
+      {
          video_driver_texture_unload(&ozone->thumbnail);
+#ifdef HAVE_NETWORKING
+         thumbnails_missing = true;
+#endif
+      }
    }
    else
       video_driver_texture_unload(&ozone->thumbnail);
@@ -420,10 +432,36 @@ static void ozone_update_thumbnail_image(void *data)
                supports_rgba,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
+      {
          video_driver_texture_unload(&ozone->left_thumbnail);
+#ifdef HAVE_NETWORKING
+         thumbnails_missing = true;
+#endif
+      }
    }
    else
       video_driver_texture_unload(&ozone->left_thumbnail);
+
+#ifdef HAVE_NETWORKING
+   /* On demand thumbnail downloads */
+   if (thumbnails_missing)
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (!settings)
+         return;
+
+      if (settings->bools.network_on_demand_thumbnails)
+      {
+         const char *system = NULL;
+
+         if (menu_thumbnail_get_system(ozone->thumbnail_path_data, &system))
+            task_push_pl_entry_thumbnail_download(system,
+                  playlist_get_cached(), menu_navigation_get_selection(),
+                  false, true);
+      }
+   }
+#endif
 }
 
 static void ozone_refresh_thumbnail_image(void *data)

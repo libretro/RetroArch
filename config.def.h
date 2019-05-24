@@ -730,6 +730,9 @@ static const uint16_t network_cmd_port = 55355;
 static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
+
+static const bool network_on_demand_thumbnails = false;
+
 /* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
 

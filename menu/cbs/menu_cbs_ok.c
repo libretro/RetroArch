@@ -5397,7 +5397,6 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
    char system[PATH_MAX_LENGTH];
    menu_handle_t *menu  = NULL;
    playlist_t *playlist = playlist_get_cached();
-   settings_t *settings = config_get_ptr();
 
    system[0] = '\0';
 
@@ -5410,8 +5409,9 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
    menu_driver_get_thumbnail_system(system, sizeof(system));
 
    task_push_pl_entry_thumbnail_download(system,
-         settings->paths.directory_thumbnails,
-         playlist, menu->rpl_entry_selection_ptr);
+         playlist, menu->rpl_entry_selection_ptr,
+         true, false);
+
    return 0;
 }
 #endif

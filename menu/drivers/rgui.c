@@ -1588,7 +1588,12 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
    rgui->force_redraw = true;
 }
 
-static bool request_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thumbnail_id, uint32_t *queue_size, const char *path)
+static bool request_thumbnail(
+      thumbnail_t *thumbnail,
+      enum menu_thumbnail_id thumbnail_id,
+      uint32_t *queue_size,
+      const char *path,
+      bool *file_missing)
 {
    /* Do nothing if current thumbnail path hasn't changed */
    if (!string_is_empty(path) && !string_is_empty(thumbnail->path))
@@ -1619,8 +1624,10 @@ static bool request_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thu
             return true;
          }
       }
+      else
+         *file_missing = true;
    }
-   
+
    return false;
 }
 
@@ -4157,10 +4164,11 @@ static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
       strlcpy(s, system, len);
 }
 
-static void rgui_load_current_thumbnails(rgui_t *rgui)
+static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
 {
    const char *thumbnail_path      = NULL;
    const char *left_thumbnail_path = NULL;
+   bool thumbnails_missing         = false;
    
    /* Right (or fullscreen) thumbnail */
    if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
@@ -4168,7 +4176,10 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
    {
       rgui->entry_has_thumbnail = request_thumbnail(
             rgui->show_fs_thumbnail ? &fs_thumbnail : &mini_thumbnail,
-            MENU_THUMBNAIL_RIGHT, &rgui->thumbnail_queue_size, thumbnail_path);
+            MENU_THUMBNAIL_RIGHT,
+            &rgui->thumbnail_queue_size,
+            thumbnail_path,
+            &thumbnails_missing);
    }
    
    /* Left thumbnail
@@ -4180,7 +4191,11 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
             MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
       {
          rgui->entry_has_left_thumbnail = request_thumbnail(
-               &mini_left_thumbnail, MENU_THUMBNAIL_LEFT, &rgui->left_thumbnail_queue_size, left_thumbnail_path);
+               &mini_left_thumbnail,
+               MENU_THUMBNAIL_LEFT,
+               &rgui->left_thumbnail_queue_size,
+               left_thumbnail_path,
+               &thumbnails_missing);
       }
    }
    
@@ -4190,6 +4205,19 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
    /* Force a redraw (so 'entry_has_thumbnail' values are
     * applied immediately) */
    rgui->force_redraw = true;
+   
+#ifdef HAVE_NETWORKING
+   /* On demand thumbnail downloads */
+   if (thumbnails_missing && download_missing)
+   {
+      const char *system = NULL;
+
+      if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+         task_push_pl_entry_thumbnail_download(system,
+               playlist_get_cached(), menu_navigation_get_selection(),
+               false, true);
+   }
+#endif
 }
 
 static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
@@ -4224,7 +4252,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    {
       /* Check whether thumbnails should be loaded immediately */
       if ((settings->uints.menu_rgui_thumbnail_delay == 0) || force_load)
-         rgui_load_current_thumbnails(rgui);
+         rgui_load_current_thumbnails(rgui, settings->bools.network_on_demand_thumbnails);
       else
       {
          /* Schedule a delayed load */
@@ -4613,7 +4641,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * fullscreen thumbnail view is incredibly jarring...) */
       if ((cpu_features_get_time_usec() - rgui->thumbnail_load_trigger_time) >=
           (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
-         rgui_load_current_thumbnails(rgui);
+         rgui_load_current_thumbnails(rgui, settings->bools.network_on_demand_thumbnails);
    }
 }
 
