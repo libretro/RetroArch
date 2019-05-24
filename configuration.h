@@ -171,6 +171,7 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
+      bool menu_show_legacy_thumbnail_updater;
 #ifdef HAVE_VIDEO_LAYOUT
       bool menu_show_video_layout;
 #endif

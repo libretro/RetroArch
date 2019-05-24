@@ -329,6 +329,7 @@ static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
 #endif
+static bool menu_show_legacy_thumbnail_updater = false;
 static bool menu_show_sublabels          = true;
 
 static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
