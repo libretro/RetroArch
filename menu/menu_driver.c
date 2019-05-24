@@ -504,7 +504,26 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    if (menu_disp && menu_disp->scissor_begin)
+   {
+      if (y < 0)
+         y = 0;
+      if (x < 0)
+         x = 0;
+      if (y >= menu_display_framebuf_height)
+         return;
+      if (x >= menu_display_framebuf_width)
+         return;
+      if ((y + height) > menu_display_framebuf_height)
+         height = menu_display_framebuf_height - y;
+      if ((x + width) > menu_display_framebuf_width)
+         width = menu_display_framebuf_width - x;
+      if (height <= 0)
+         return;
+      if (width <= 0)
+         return;      
+
       menu_disp->scissor_begin(video_info, x, y, width, height);
+   }
 }
 
 /* End scissoring operation */
@@ -790,9 +809,10 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
    if (!menu_disp || !draw || !menu_disp->draw)
       return;
 
-   /* TODO - edge case */
    if (draw->height <= 0)
-      draw->height = 1;
+      return;
+   if (draw->width <= 0)
+      return;
 
    menu_disp->draw(draw, video_info);
 }

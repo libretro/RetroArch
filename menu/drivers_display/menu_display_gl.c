@@ -26,6 +26,48 @@
 
 #include "../menu_driver.h"
 
+#if defined(__arm__) || defined(__aarch64__)
+static int scx0, scx1, scy0, scy1;
+
+/* This array contains problematic GPU drivers
+ * that have problems when we draw outside the
+ * bounds of the framebuffer */
+static const struct {
+   const char *str;
+   int len;
+} scissor_device_strings[] = {
+   { "ARM Mali-4xx", 10 },
+   { 0, 0 }
+};
+
+static void scissor_set_rectangle(
+      int x0, int x1, int y0, int y1, int sc)
+{
+   const int dx = sc ? 10 : 2;
+   const int dy = dx;
+   scx0         = x0 + dx;
+   scx1         = x1 - dx;
+   scy0         = y0 + dy;
+   scy1         = y1 - dy;
+}
+
+static bool scissor_is_outside_rectangle(
+      int x0, int x1, int y0, int y1)
+{
+   if (x1 < scx0)
+      return true;
+   if (scx1 < x0)
+      return true;
+   if (y1 < scy0)
+      return true;
+   if (scy1 < y0)
+      return true;
+   return false;
+}
+
+#define MALI_BUG
+#endif
+
 static const GLfloat gl_vertexes[] = {
    0, 0,
    1, 0,
@@ -100,6 +142,63 @@ static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
       glViewport(draw->x, draw->y, draw->width, draw->height);
 }
 
+#ifdef MALI_BUG
+static bool 
+menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info
+      )
+{
+   static bool mali_4xx_detected = false;
+   static bool scissor_inited    = false;
+
+   if (!scissor_inited)
+   {
+      unsigned i;
+      const char *gpu_device_string = NULL;
+      scissor_inited                = true;
+
+      if ((scx0 + scx1 + scy0 + scy1) == 0)
+         scissor_set_rectangle(0,
+               video_info->width - 1,
+               0,
+               video_info->height - 1,
+               0);
+
+      /* TODO/FIXME - This might be thread unsafe in the long run -
+       * preferably call this once outside of the menu display driver
+       * and then just pass this string as a parameter */
+      gpu_device_string = video_driver_get_gpu_device_string();
+
+      if (gpu_device_string)
+      {
+         for (i = 0; scissor_device_strings[i].len; ++i)
+         {
+            if (strncmp(gpu_device_string,
+                     scissor_device_strings[i].str,
+                     scissor_device_strings[i].len) == 0)
+            {
+               mali_4xx_detected = true;
+               break;
+            }
+         }
+      }
+   }
+
+   /* discards not only out-of-bounds scissoring, 
+    * but also out-of-view draws.
+    *
+    * This is intentional.
+    */
+   if (mali_4xx_detected &&
+       scissor_is_outside_rectangle(
+          draw->x, draw->x + draw->width - 1,
+          draw->y, draw->y + draw->height - 1))
+      return true;
+
+   return false;
+}
+#endif
+
 static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
@@ -107,6 +206,15 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
 
    if (!gl || !draw)
       return;
+
+#ifdef MALI_BUG
+   if (menu_display_gl_discard_draw_rectangle(draw, video_info))
+   {
+      /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
+        (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
+      return;
+   }
+#endif
 
    if (!draw->coords->vertex)
       draw->coords->vertex = menu_display_gl_get_default_vertices();
@@ -243,12 +351,18 @@ static void menu_display_gl_scissor_begin(
 {
    glScissor(x, video_info->height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
+#ifdef MALI_BUG
+   scissor_set_rectangle(x, x + width - 1, y, y + height - 1, 1);
+#endif
 }
 
 static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
 {
    glScissor(0, 0, video_info->width, video_info->height);
    glDisable(GL_SCISSOR_TEST);
+#ifdef MALI_BUG
+   scissor_set_rectangle(0, video_info->width - 1, 0, video_info->height - 1, 0);
+#endif
 }
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {
