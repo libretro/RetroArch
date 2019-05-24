@@ -34,6 +34,7 @@
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../record/record_driver.h"
+#include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1654,6 +1655,7 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+   gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 

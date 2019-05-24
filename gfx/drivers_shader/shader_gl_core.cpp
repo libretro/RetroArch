@@ -941,6 +941,11 @@ public:
       frame_count_period = period;
    }
 
+   void set_frame_direction(int32_t direction)
+   {
+      frame_direction = direction;
+   }
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -1026,6 +1031,8 @@ private:
                             unsigned width, unsigned height);
    void build_semantic_uint(uint8_t *data,
          slang_semantic semantic, uint32_t value);
+   void build_semantic_int(uint8_t *data,
+         slang_semantic semantic, int32_t value);
    void build_semantic_parameter(uint8_t *data, unsigned index, float value);
    void build_semantic_texture_vec4(uint8_t *data,
          slang_texture_semantic semantic,
@@ -1041,6 +1048,7 @@ private:
 
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
+   int32_t frame_direction = 1;
    unsigned pass_number = 0;
 
    size_t ubo_offset = 0;
@@ -1230,6 +1238,7 @@ bool Pass::init_pipeline()
    reflect_parameter("OutputSize", reflection.semantics[SLANG_SEMANTIC_OUTPUT]);
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
+   reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1422,6 +1431,38 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
+                              int32_t value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+   {
+      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      {
+         if (refl.location.ubo_vertex >= 0)
+            glUniform1i(refl.location.ubo_vertex, value);
+         if (refl.location.ubo_fragment >= 0)
+            glUniform1i(refl.location.ubo_fragment, value);
+      }
+      else
+         *reinterpret_cast<int32_t *>(data + reflection.semantics[semantic].ubo_offset) = value;
+   }
+
+   if (refl.push_constant)
+   {
+      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      {
+         if (refl.location.push_vertex >= 0)
+            glUniform1i(refl.location.push_vertex, value);
+         if (refl.location.push_fragment >= 0)
+            glUniform1i(refl.location.push_fragment, value);
+      }
+      else
+         *reinterpret_cast<int32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+   }
+}
+
 void Pass::build_semantic_texture(uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1596,6 +1637,9 @@ void Pass::build_semantics(uint8_t *buffer,
                        ? uint32_t(frame_count % frame_count_period) 
                        : uint32_t(frame_count));
 
+   build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
+                      frame_direction);
+
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -1761,6 +1805,7 @@ public:
 
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
+   void set_frame_direction(int32_t direction);
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(unique_ptr<gl_core::StaticTexture> texture);
@@ -2204,6 +2249,13 @@ void gl_core_filter_chain::set_frame_count_period(unsigned pass, unsigned period
    passes[pass]->set_frame_count_period(period);
 }
 
+void gl_core_filter_chain::set_frame_direction(int32_t direction)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_direction(direction);
+}
+
 void gl_core_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2617,6 +2669,13 @@ void gl_core_filter_chain_set_frame_count(
       uint64_t count)
 {
    chain->set_frame_count(count);
+}
+
+void gl_core_filter_chain_set_frame_direction(
+      gl_core_filter_chain_t *chain,
+      int32_t direction)
+{
+   chain->set_frame_direction(direction);
 }
 
 void gl_core_filter_chain_set_frame_count_period(

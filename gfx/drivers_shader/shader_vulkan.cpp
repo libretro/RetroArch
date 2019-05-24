@@ -378,6 +378,11 @@ class Pass
          frame_count_period = period;
       }
 
+      void set_frame_direction(int32_t direction)
+      {
+         frame_direction = direction;
+      }
+
       void set_name(const char *name)
       {
          pass_name = name;
@@ -476,6 +481,7 @@ class Pass
       void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             unsigned width, unsigned height);
       void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
+      void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
       void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
@@ -489,6 +495,7 @@ class Pass
             slang_texture_semantic semantic, unsigned index, const Texture &texture);
 
       uint64_t frame_count = 0;
+      uint32_t frame_direction = 1;
       unsigned frame_count_period = 0;
       unsigned pass_number = 0;
 
@@ -548,6 +555,7 @@ struct vulkan_filter_chain
 
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
+      void set_frame_direction(int32_t direction);
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(unique_ptr<StaticTexture> texture);
@@ -1142,6 +1150,13 @@ void vulkan_filter_chain::set_frame_count(uint64_t count)
 void vulkan_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
 {
    passes[pass]->set_frame_count_period(period);
+}
+
+void vulkan_filter_chain::set_frame_direction(int32_t direction)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_direction(direction);
 }
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
@@ -2127,6 +2142,18 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
+void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
+                              int32_t value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+      *reinterpret_cast<int32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+
+   if (refl.push_constant)
+      *reinterpret_cast<int32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+}
+
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -2179,6 +2206,9 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                        frame_count_period 
                        ? uint32_t(frame_count % frame_count_period) 
                        : uint32_t(frame_count));
+
+   build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
+                      frame_direction);
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -3183,6 +3213,13 @@ void vulkan_filter_chain_set_frame_count_period(
       unsigned period)
 {
    chain->set_frame_count_period(pass, period);
+}
+
+void vulkan_filter_chain_set_frame_direction(
+      vulkan_filter_chain_t *chain,
+      int32_t direction)
+{
+   chain->set_frame_direction(direction);
 }
 
 void vulkan_filter_chain_set_pass_name(

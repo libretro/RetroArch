@@ -48,6 +48,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../record/record_driver.h"
+#include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1751,6 +1752,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index((vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count((vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+   vulkan_filter_chain_set_frame_direction((vulkan_filter_chain_t*)vk->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
 
    /* Render offscreen filter chain passes. */
    {
