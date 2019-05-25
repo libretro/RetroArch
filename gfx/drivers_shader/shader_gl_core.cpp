@@ -85,6 +85,26 @@ static GLuint gl_core_compile_shader(GLenum stage, const char *source)
    return shader;
 }
 
+static uint32_t gl_core_get_cross_compiler_target_version()
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major = 0;
+   unsigned minor = 0;
+   unsigned patch = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (version && sscanf(version, "OpenGL ES %u.%u.%u", &major, &minor, &patch) < 2)
+      return 300u;
+#else
+   if (version && sscanf(version, "%u.%u.%u", &major, &minor, &patch) < 2)
+      return 150u;
+#endif
+   if (major == 3u && minor == 2u)
+      return 150u;
+
+   return 100u * major + 10u * minor + patch;
+}
+
 GLuint gl_core_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -100,11 +120,10 @@ GLuint gl_core_cross_compile_program(
       spirv_cross::CompilerGLSL::Options opts;
 #ifdef HAVE_OPENGLES3
       opts.es                               = true;
-      opts.version                          = 300;
 #else
       opts.es                               = false;
-      opts.version                          = 150;
 #endif
+      opts.version                          = gl_core_get_cross_compiler_target_version();
       opts.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
       opts.fragment.default_int_precision   = spirv_cross::CompilerGLSL::Options::Precision::Highp;
       opts.enable_420pack_extension         = false;
