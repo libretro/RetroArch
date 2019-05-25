@@ -165,7 +165,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-    "Boş oyuncu slotu yok"
+    "Boş oyuncu yuvası yok"
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
@@ -717,7 +717,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-    "Buildbot Cores URL"
+    "Corelar için Buildbot URL"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
@@ -961,51 +961,51 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-    "Left Analog X"
+    "Sol Analog X"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-    "Left analog X- (left)"
+    "Sol analog X- (sol)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-    "Left analog X+ (right)"
+    "Sol analog X+ (right)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-    "Left Analog Y"
+    "Sol Analog Y"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-    "Left analog Y- (up)"
+    "Sol analog Y- (yukarı)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-    "Left analog Y+ (down)"
+    "Sol analog Y+ (aşağı)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-    "Right Analog X"
+    "Sağ Analog X"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-    "Right analog X- (left)"
+    "Sağ analog X- (sol)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-    "Right analog X+ (right)"
+    "Sağ analog X+ (sağ)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-    "Right Analog Y"
+    "Sağ Analog Y"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-    "Right analog Y- (up)"
+    "Sağ analog Y- (yukarı)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-    "Right analog Y+ (down)"
+    "Sağ analog Y+ (aşağı)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
@@ -1073,11 +1073,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-    "Bind All"
+    "Tümünü Bağla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-    "Bind Default All"
+    "Tümünü Varsayılana Bağla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -1089,31 +1089,31 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-    "Input Block Timeout"
+    "Giriş Bloğu Zaman Aşımı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-    "Hide Unbound Core Input Descriptors"
+    "Sınırlanmamış Core Giriş Tanımlayıcılarını Gizle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
-    "Display Input Descriptor Labels"
+    "Giriş Tanımlayıcı Etiketlerini Göster"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
-    "Device Index"
+    "Aygıt İndeksi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-    "Device Type"
+    "Aygıt Tipi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
-    "Mouse Index"
+    "Fare İndeksi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-    "Input"
+    "Giriş"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -1137,11 +1137,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-    "Down D-pad"
+    "Aşağı D-pad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-    "L2 tuşu (trigger)"
+    "L2 tuşu (tetikleme)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
@@ -1153,7 +1153,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
-    "Left D-pad"
+    "Sol D-pad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
@@ -1169,7 +1169,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
-    "Right D-pad"
+    "Sağ D-pad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
@@ -1181,7 +1181,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-    "Up D-pad"
+    "Yukarı D-pad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
@@ -1193,47 +1193,47 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-    "(Key: %s)"
+    "(Tuş: %s)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-    "Mouse 1"
+    "Fare 1"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-    "Mouse 2"
+    "Fare 2"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-    "Mouse 3"
+    "Fare 3"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
-    "Mouse 4"
+    "Fare 4"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
-    "Mouse 5"
+    "Fare 5"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-    "Wheel Up"
+    "Tekerlek Yukarı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-    "Wheel Down"
+    "Tekerlek Aşağı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-    "Wheel Left"
+    "Tekerlek Sola"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-    "Wheel Right"
+    "Tekerlek Sağa"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-    "Keyboard Gamepad Mapping Type"
+    "Klavye Gamepad Eşleme Türü"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -1241,7 +1241,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-    "Menu Toggle Gamepad Combo"
+    "Menü Geçiş Gamepad Kombosu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
@@ -1368,7 +1368,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-    "Start or Continue Cheat Search"
+    "Hile Aramaya Başla veya Devam Et"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -1384,7 +1384,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-    "Previous shader"
+    "Önceki Gölgelendirici"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -1424,7 +1424,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-    "Show Inputs Listen Port"
+    "Girişleri Bağlantıları Noktasını Göster"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -1444,31 +1444,31 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-    "Prefer Front Touch"
+    "Ön Dokunmayı Tercih Et"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
-    "Input Remapping"
+    "Giriş yeniden yapılandırması"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-    "Remap Binds for this core"
+    "Bu Core için Eşleşmeyi Yeniden Yapılandır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-    "Save Autoconfig"
+    "Oto-yapılandırmayı Kaydet"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-    "Input"
+    "Giriş"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-    "Small Keyboard"
+    "Ufak Klavye"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-    "Touch"
+    "Dokunmatik"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
@@ -1476,7 +1476,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-    "Turbo Period"
+    "Turbo Aralığı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -1492,7 +1492,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-    "Input Autoconfig"
+    "Oto-yapılandırma Girişi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -1604,7 +1604,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-    "Load Recent"
+    "En Sonuncuyu Yükle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -1660,15 +1660,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
-    "Blue"
+    "Mavi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
-    "Blue Grey"
+    "Mavi Gri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
-    "Dark Blue"
+    "Karanlık Mavi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
@@ -1708,7 +1708,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-    "Menu Linear Filter"
+    "Menü Linear Filtresi"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
@@ -1772,7 +1772,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-    "Netplay Check Frames"
+    "Netplay Kareleri Kontrol eder"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -1780,11 +1780,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-    "Input Latency Frames Range"
+    "Kare Gecikme Aralığı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-    "Netplay Delay Frames"
+    "Netplay Kareleri Geciktirir"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -1832,7 +1832,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
-    "Request Device %u"
+    "%u Aygıt Talebi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
@@ -1964,7 +1964,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-    "Geçmiş yok.."
+    "Geçmiş yok..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -1984,7 +1984,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-    "No performance counters."
+    "Performans sayacı yok."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -2000,7 +2000,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-    "No shader parameters."
+    "Gölgelendirici parametreleri yok."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OFF,
@@ -2056,7 +2056,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-    "Overlay"
+    "Kaplama"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -2211,7 +2211,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-    "Franchise"
+    "Seri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
@@ -2654,7 +2654,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-    "Konum Slotu"
+    "Konum Yuvası"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STATUS,
@@ -4534,15 +4534,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FOUND_LAST_STATE_SLOT,
-    "Found last state slot"
+    "Son konum yuvası bulundu"
     )
 MSG_HASH(
     MSG_FOUND_SHADER,
-    "Found shader"
+    "Gölgelendirici bulundu"
     )
 MSG_HASH(
     MSG_FRAMES,
-    "Frames"
+    "Kareler"
     )
 MSG_HASH(
     MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
@@ -4550,39 +4550,39 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_GOT_INVALID_DISK_INDEX,
-    "Got invalid disk index."
+    "Geçersiz disk dizini var."
     )
 MSG_HASH(
     MSG_GRAB_MOUSE_STATE,
-    "Grab mouse state"
+    "Fare tutma durumu"
     )
 MSG_HASH(
     MSG_GAME_FOCUS_ON,
-    "Game focus açık"
+    "Oyun Odaklanması açık"
     )
 MSG_HASH(
     MSG_GAME_FOCUS_OFF,
-    "Game focus kapalı"
+    "Oyun Odaklanması kapalı"
     )
 MSG_HASH(
     MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-    "Libretro core is hardware rendered. Must use post-shaded recording as well."
+    "Libretro çekirdek donanımdır. Sonrası gölgeli kayıt kullanmanız gerekir."
     )
 MSG_HASH(
     MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
-    "Inflated checksum did not match CRC32."
+    "Sağlama toplamı CRC32 ile eşleşmedi."
     )
 MSG_HASH(
     MSG_INPUT_CHEAT,
-    "Input Cheat"
+    "Hile Girişi"
     )
 MSG_HASH(
     MSG_INPUT_CHEAT_FILENAME,
-    "Input Cheat Filename"
+    "Hile Dosya İsmi Girişi"
     )
 MSG_HASH(
     MSG_INPUT_PRESET_FILENAME,
-    "Input Preset Filename"
+    "Önceden Ayarlanmış Dosya Adı Girin"
     )
 MSG_HASH(
     MSG_INPUT_RENAME_ENTRY,
@@ -4594,43 +4594,43 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_INTERNAL_STORAGE,
-    "Internal Storage"
+    "Dahili Depolama"
     )
 MSG_HASH(
     MSG_REMOVABLE_STORAGE,
-    "Removable Storage"
+    "Çıkartılabilir Depolama"
     )
 MSG_HASH(
     MSG_INVALID_NICKNAME_SIZE,
-    "Invalid nickname size."
+    "Geçersiz Kullanıcı Adı Boyutu."
     )
 MSG_HASH(
     MSG_IN_BYTES,
-    "in bytes"
+    "bayt cinsinden"
     )
 MSG_HASH(
     MSG_IN_GIGABYTES,
-    "in gigabytes"
+    "gigabayt cinsinden"
     )
 MSG_HASH(
     MSG_IN_MEGABYTES,
-    "in megabytes"
+    "megabayt olarak"
     )
 MSG_HASH(
     MSG_LIBRETRO_ABI_BREAK,
-    "is compiled against a different version of libretro than this libretro implementation."
+    "bu libretro uygulamasından farklı bir libretro sürümüne karşı derlenmiştir."
     )
 MSG_HASH(
     MSG_LIBRETRO_FRONTEND,
-    "Frontend for libretro"
+    "Libretro için ön uç"
     )
 MSG_HASH(
     MSG_LOADED_STATE_FROM_SLOT,
-    "Loaded state from slot #%d."
+    "#%d yuvasından durum yüklendi."
     )
 MSG_HASH(
     MSG_LOADED_STATE_FROM_SLOT_AUTO,
-    "Loaded state from slot #-1 (auto)."
+    "#-1 yuvasından durum yüklendi (otomatik)."
     )
 MSG_HASH(
     MSG_LOADING,
@@ -4638,7 +4638,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FIRMWARE,
-    "One or more firmware files are missing"
+    "Bir veya daha fazla ürün yazılımı dosyası eksik"
     )
 MSG_HASH(
     MSG_LOADING_CONTENT_FILE,
@@ -4650,27 +4650,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOADING_STATE,
-    "Loading state"
+    "Konum yükleniyor"
     )
 MSG_HASH(
     MSG_MEMORY,
-    "Memory"
+    "Hafıza"
     )
 MSG_HASH(
     MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-    "Input replay movie file is not a valid BSV1 file."
+    "Giriş tekrar film dosyası geçerli bir BSV1 dosyası değil."
     )
 MSG_HASH(
     MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-    "Input replay movie format seems to have a different serializer version. Will most likely fail."
+    "Giriş tekrar film formatı farklı bir seri hale getirici sürümüne sahip görünüyor. Büyük olasılıkla başarısız olacak."
     )
 MSG_HASH(
     MSG_MOVIE_PLAYBACK_ENDED,
-    "Input replay movie playback ended."
+    "Giriş tekrar filmi oynatımı sona erdi."
     )
 MSG_HASH(
     MSG_MOVIE_RECORD_STOPPED,
-    "Stopping movie record."
+    "Video kaydı durduruluyor."
     )
 MSG_HASH(
     MSG_NETPLAY_FAILED,
@@ -4686,15 +4686,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-    "No state has been loaded yet."
+    "Henüz bir konum yüklenmedi."
     )
 MSG_HASH(
     MSG_OVERRIDES_ERROR_SAVING,
-    "Error saving overrides."
+    "Üzerine yazmalar kaydedilemedi."
     )
 MSG_HASH(
     MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-    "Overrides saved successfully."
+    "Üzerine yazmalar başarıyla kaydedildi."
     )
 MSG_HASH(
     MSG_PAUSED,
@@ -4706,7 +4706,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_READING_FIRST_DATA_TRACK,
-    "Reading first data track..."
+    "İlk veri parçasını okunuyor..."
     )
 MSG_HASH(
     MSG_RECEIVED,
@@ -4714,35 +4714,35 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
-    "Recording terminated due to resize."
+    "Kayıt, yeniden boyutlandırma nedeniyle sonlandırıldı."
     )
 MSG_HASH(
     MSG_RECORDING_TO,
-    "Recording to"
+    "Kayıt ediliyor"
     )
 MSG_HASH(
     MSG_REDIRECTING_CHEATFILE_TO,
-    "Redirecting cheat file to"
+    "Hile dosyası yeniden yölnediriliyor"
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVEFILE_TO,
-    "Redirecting save file to"
+    "Kayıt dosyası yeniden yönlendiriliyor"
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVESTATE_TO,
-    "Redirecting savestate to"
+    "Konum kaydı yeniden yönlendiriliyor"
     )
 MSG_HASH(
     MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-    "Remap file saved successfully."
+    "Yeniden yapılandırma dosyası başarıyla kaydedildi."
     )
 MSG_HASH(
     MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-    "Remap file removed successfully."
+    "Yeniden yapılandırma dosyası başarıyla kaldırıldı."
     )
 MSG_HASH(
     MSG_REMOVED_DISK_FROM_TRAY,
-    "Removed disk from tray."
+    "Tepsiden çıkarılmış disk."
     )
 MSG_HASH(
     MSG_REMOVING_TEMPORARY_CONTENT_FILE,
@@ -4754,23 +4754,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-    "Restarting recording due to driver reinit."
+    "Sürücü yeniden başlatması nedeniyle kayıt yeniden başlatılıyor."
     )
 MSG_HASH(
     MSG_RESTORED_OLD_SAVE_STATE,
-    "Restored old save state."
+    "Eski durum kaydı geri yüklendi."
     )
 MSG_HASH(
     MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-    "Shaders: restoring default shader preset to"
+    "Gölgelendiriciler: varsayılan gölgelendirici önayarını geri yükleniyor"
     )
 MSG_HASH(
     MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-    "Reverting savefile directory to"
+    "Savefile dizinini geri alınıyor"
     )
 MSG_HASH(
     MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-    "Reverting savestate directory to"
+    "Kayıt yeri dizinini geri döndürülüyor"
     )
 MSG_HASH(
     MSG_REWINDING,
@@ -4782,11 +4782,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REWIND_INIT_FAILED,
-    "Failed to initialize rewind buffer. Rewinding will be disabled."
+    "Geri alma başlatılamadı. Geri sarma devre dışı bırakılacak."
     )
 MSG_HASH(
     MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-    "Implementation uses threaded audio. Cannot use rewind."
+    "Uygulamada threaded ses kullanıyor. Geri sarma kullanılamaz."
     )
 MSG_HASH(
     MSG_REWIND_REACHED_END,
@@ -4794,27 +4794,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SAVED_NEW_CONFIG_TO,
-    "Saved new config to"
+    "Yeni yapılandırma kaydedildi"
     )
 MSG_HASH(
     MSG_SAVED_STATE_TO_SLOT,
-    "Saved state to slot #%d."
+    "#%d konum yuvasına kaydedildi."
     )
 MSG_HASH(
     MSG_SAVED_STATE_TO_SLOT_AUTO,
-    "Saved state to slot #-1 (auto)."
+    "Durum #-1 yuvasına kaydedildi (otomatik)."
     )
 MSG_HASH(
     MSG_SAVED_SUCCESSFULLY_TO,
-    "Saved successfully to"
+    "Başarıyla kaydedildi"
     )
 MSG_HASH(
     MSG_SAVING_RAM_TYPE,
-    "Saving RAM type"
+    "RAM türü kayedediliyor"
     )
 MSG_HASH(
     MSG_SAVING_STATE,
-    "Saving state"
+    "Konum kaydediliyor"
     )
 MSG_HASH(
     MSG_SCANNING,
@@ -4862,7 +4862,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_STARTING_MOVIE_PLAYBACK,
-    "Starting movie playback."
+    "Film oynatmaya başlama."
     )
 MSG_HASH(
     MSG_STARTING_MOVIE_RECORD_TO,
@@ -4902,11 +4902,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_UNDID_LOAD_STATE,
-    "Undid load state."
+    "Konum yükleme geri alındı."
     )
 MSG_HASH(
     MSG_UNDOING_SAVE_STATE,
-    "Undoing save state"
+    "Konum kaydı geri alınıyor."
     )
 MSG_HASH(
     MSG_UNKNOWN,
@@ -4930,11 +4930,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
-    "Connect device from a valid port."
+    "Cihazı geçerli bir porttan bağlayın."
     )
 MSG_HASH(
     MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-    "Disconnecting device from port"
+    "Aygıtın bağlantı noktasından çıkarılması"
     )
 MSG_HASH(
     MSG_VALUE_REBOOTING,
@@ -4954,7 +4954,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_VIRTUAL_DISK_TRAY,
-    "virtual disk tray."
+    "sanal disk tepsisi."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -4994,15 +4994,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-    "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
+    "WASAPI sürücüsünün ses cihazının kontrolünü tamamen ele geçirmesine izin verin. Devre dışı bırakılırsa, bunun yerine paylaşılan modu kullanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-    "Use float format for the WASAPI driver, if supported by your audio device."
+    "Ses cihazınız tarafından destekleniyorsa, WASAPI sürücüsü için kayan nokta biçimini kullanın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-    "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
+    "WASAPI sürücüsünü paylaşılan modda kullanırken ara arabellek uzunluğu (karelerde)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -5010,7 +5010,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-    "How far an axis must be tilted to result in a button press."
+    "Bir düğmeye basılmasıyla sonuçlanacak eksenin ne kadar uzağa eğilmesi gerektiği."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -5018,7 +5018,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-    "Amount of seconds to hold an input to bind it."
+    "Bir girişi bağlamak için tutulan saniye miktarı."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
@@ -5071,19 +5071,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-    "not configured, using fallback"
+    "yapılandırılmamış, geri dönülüyor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-    "Database Cursor List"
+    "Veritabanı İmleç Listesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-    "Veritabanı - Filter : Geliştirici"
+    "Veritabanı - Filtre : Geliştirici"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-    "Veritabanı - Filter : Dağıtıcı"
+    "Veritabanı - Filtre : Dağıtıcı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISABLED,
@@ -5095,55 +5095,55 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-    "Content History Path"
+    "İçerik Geçmişi Yolu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-    "Veritabanı - Filter : Origin"
+    "Veritabanı - Filtre : Origin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-    "Veritabanı - Filter : Franchise"
+    "Veritabanı - Filtre : Seri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-    "Veritabanı - Filter : ESRB Değerlendirmesi"
+    "Veritabanı - Filtre : ESRB Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-    "Veritabanı - Filter : ELSPA Değerlendirmesi"
+    "Veritabanı - Filtre : ELSPA Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-    "Veritabanı - Filter : PEGI Değerlendirmesi"
+    "Veritabanı - Filtre : PEGI Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-    "Veritabanı - Filter : CERO Değerlendirmesi"
+    "Veritabanı - Filtre : CERO Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-    "Veritabanı - Filter : BBFC Değerlendirmesi"
+    "Veritabanı - Filtre : BBFC Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-    "Veritabanı - Filter : Max Users"
+    "Veritabanı - Filtre : Max Users"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-    "Veritabanı - Filter : Releasedate By Month"
+    "Veritabanı - Filtre : Releasedate By Month"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-    "Veritabanı - Filter : Releasedate By Year"
+    "Veritabanı - Filtre : Releasedate By Year"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-    "Veritabanı - Filter : Edge Magazine Issue"
+    "Veritabanı - Filtre : Edge Magazine Issue"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-    "Veritabanı - Filter : Edge Magazine Değerlendirmesi"
+    "Veritabanı - Filtre : Edge Magazine Değerlendirmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
@@ -5223,11 +5223,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
-    "Filter"
+    "Filtre"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SCALE,
-    "Scale"
+    "Ölçek"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
@@ -5239,11 +5239,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-    "Browse URL"
+    "URL'ye Gözat"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-    "URL Path"
+    "URL yolu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_START,
@@ -5255,27 +5255,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
-    "Snowflake"
+    "Kar Tanesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-    "Refresh Room List"
+    "Oda Listesini Yenile"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
-    "Nickname: %s"
+    "Kulanıcı Adı: %s"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-    "Nickname (lan): %s"
+    "Kulanıcı Adı (lan): %s"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
-    "Compatible content found"
+    "Uyumlu içerik bulundu"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-    "Cuts off a few pixels around the edges of the image customarily left blank by developers which sometimes also contain garbage pixels."
+    "Görüntünün kenarları etrafındaki birkaç pikseli, bazen de çöp pikselleri de içeren geliştiriciler tarafından geleneksel olarak boş bırakılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
@@ -5355,11 +5355,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-    "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    "Penceresiz tam ekran modu için özel genişlik boyutunu ayarlayın. Bunu ayarsız bırakmak masaüstü çözünürlüğünü kullanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-    "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    "Penceresiz tam ekran modu için özel yükseklik boyutunu ayarlayın. Bunu ayarsız bırakmak masaüstü çözünürlüğünü kullanır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -5383,7 +5383,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-    "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
+    "Yerleşim Girdilerini Göster seçeneği etkinse dinlenecek portu seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -5411,7 +5411,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-    "If fullscreen, prefer using a windowed fullscreen mode."
+    "Tam ekran ise, pencereli bir tam ekran modu kullanmayı tercih edin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
@@ -5419,11 +5419,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-    "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
+    "Bir kayıt yapma işlemi yaparken, kaydetme durumu indeksi, kaydedilmeden önce otomatik olarak artırılır. İçerik yüklenirken, dizin mevcut en yüksek dizine ayarlanacaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-    "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
+    "Kaydetme durumları yüklenirken RAM'ın üzerine yazılmasını engelleyin. Potansiyel olarak buggy oyunlara yol açabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
@@ -5473,11 +5473,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-    "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
+    "Her “Yineleme Sayısı” ndan sonra Hafıza Adresi, bu sayı ile “Hafıza Arama Boyutu” ile artacaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-    "After each 'Number of Iterations' the Value will be increased by this amount."
+    "Her “İterasyon Sayısı” ndan sonra, Değer bu miktar kadar artacaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
@@ -5485,7 +5485,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-    "The amount of memory (in MB) to reserve for the rewind buffer.  Increasing this will increase the amount of rewind history."
+    "Geri alma arabelleği için ayrılacak bellek miktarı (MB cinsinden). Bunun arttırılması, geri sarma geçmişinin miktarını artıracaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
@@ -5493,11 +5493,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_IDX,
-    "Index position in list."
+    "Listedeki dizin konumu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
-    "Address bitmask when Memory Search Size < 8-bit."
+    "ABellek Arama Boyutu <8-bit olduğunda adres bit maskesi."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
@@ -5595,23 +5595,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-    "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
+    "RetroArch'ın çalışma zamanının sonunda otomatik olarak bir kayıt ekranı oluşturur. 'Otomatik Yükleme Durumu' etkinse, RetroArch otomatik olarak bu ekranı yükleyecektir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-    "Automatically load the auto save state on startup."
+    "Otomatik kaydetme durumunu başlangıçta otomatik olarak yükle."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-    "Show thumbnails of save states inside the menu."
+    "Menü içindeki kaydetme durumlarının küçük resimlerini göster."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-    "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
+    "Geçici olmayan Save RAM'i düzenli aralıklarla otomatik olarak kaydeder. Aksi belirtilmedikçe, bu varsayılan olarak devre dışıdır. Aralık saniye cinsinden ölçülür. 0 değeri otomatik kaydetmeyi devre dışı bırakır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-    "If enabled, overrides the input binds with the remapped binds set for the current core."
+    "Etkinleştirilirse, giriş, geçerli çekirdek için ayarlanan yeniden birleştirilen ciltlerle geçersiz kılınır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
@@ -5775,11 +5775,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
-    "Type of thumbnail to display at the left."
+    "Solda görüntülenecek küçük resim türü."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-    "Type of thumbnail to display at the bottom right of playlists."
+    "Oynatma listelerinin sağ alt kısmında gösterilecek küçük resim türü."
     )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -5787,7 +5787,7 @@ MSG_HASH(
    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
-    "Display the left thumbnail under the right one, on the right side of the screen."
+    "Soldaki küçük resmi, ekranın sağ tarafında, sağ alt köşesinde görüntüleyin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
@@ -5803,7 +5803,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-    "Enables netplay in host (server) mode."
+    "Ana bilgisayar (host) modunda netplay'i etkinleştirir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
@@ -5823,7 +5823,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-    "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
+    "Vsync için özel bir değiştirme aralığı kullanır. Bunu, monitör yenileme oranını etkin bir şekilde yarıya indirmek için ayarlayın."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -5835,15 +5835,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
-    "Request to play with the given input device."
+    "Verilen giriş cihazıyla oynama isteği."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-    "URL to core updater directory on the Libretro buildbot."
+    "Libretro buildbotundaki core güncelleyici dizininin URL'si."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-    "URL to assets updater directory on the Libretro buildbot."
+    "Libretro buildbot'taki varlıklar güncelleyici dizinindeki URL."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -5907,7 +5907,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-    "Closes the current content. Any unsaved changes might be lost."
+    "Geçerli içeriği kapatır. Kaydedilmemiş değişiklikler kaybolabilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_STATE,
@@ -5927,15 +5927,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_STATE_SLOT,
-    "Changes the currently selected state slot."
+    "Seçili durum yuvasını değiştirir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-    "If a state was loaded, content will go back to the state prior to loading."
+    "Bir durum yüklendiyse, içerik yüklenmeden önceki duruma geri döner."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-    "If a state was overwritten, it will roll back to the previous save state."
+    "Bir durumun üzerine yazılmışsa, önceki kaydetme durumuna geri döner."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -5967,11 +5967,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-    "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration."
+    "Geçerli dosyayla aynı dizinden yüklenen tüm içerik için geçerli olacak üzerine yapılandırma dosyasını kaydeder. Ana yapılandırmadan öncelikli olacaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-    "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration."
+    "Yalnızca geçerli içerik için üzerine yazma yapılandırma dosyasını kaydeder. Ana yapılandırmadan öncelikli olacaktır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -6059,11 +6059,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-    "Select a different layout for the XMB interface."
+    "XMB arayüzü için farklı bir düzen seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_THEME,
-    "Select a different icon theme for RetroArch."
+    "RetroArch için farklı bir simge teması seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -6072,7 +6072,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-    "Select a different background color gradient theme."
+    "Farklı bir arka plan rengi gradyan teması seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
@@ -6084,11 +6084,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-    "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect."
+    "Animasyonlu bir arka plan efekti seçin. Efektine bağlı olarak GPU-yoğunluğu olabilir. Performans yetersizse, bunu kapatın veya daha basit bir efekte geri dönün."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_FONT,
-    "Select a different main font to be used by the menu."
+    "Menü tarafından kullanılacak farklı bir ana yazı tipi seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
@@ -6136,11 +6136,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-    "Modify the opacity of the footer graphic."
+    "Altbilgi grafiğinin opaklığını değiştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this."
+    "Menü normalde kendini dinamik olarak ölçeklendirir. Bunun yerine belirli bir ölçekleme boyutu ayarlamak istiyorsanız, bunu etkinleştirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
@@ -6165,7 +6165,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-    "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory."
+    "Bir joypad takılıysa, bu dizinde dosyaya karşılık gelen bir yapılandırma dosyası varsa, o joypad otomatik olarak yapılandırılır."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -6237,7 +6237,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-    "Increase or decrease the amount of shader pipeline passes. You can bind a separate shader to each pipeline pass and configure its scale and filtering."
+    "Gölgelendirici hattı geçiş miktarını artırın veya azaltın. Her hat geçişine ayrı bir gölgelendirici bağlayabilir ve ölçeğini ve filtrelemesini yapılandırabilirsiniz."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -6249,11 +6249,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-    "Save the current shader settings as the default settings for this application/core."
+    "Geçerli gölgelendirici ayarlarını, uygulama/core için varsayılan ayarlar olarak kaydedin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-    "Save the current shader settings as the default settings for all files in the current content directory."
+    "Geçerli gölgelendirici ayarlarını, geçerli içerik dizinindeki tüm dosyalar için varsayılan ayarlar olarak kaydedin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -6261,11 +6261,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-    "Modifies the current shader directly. Changes will not be saved to the preset file."
+    "Geçerli gölgelendiriciyi doğrudan değiştirir. Değişiklikler önceden ayarlanmış dosyaya kaydedilmeyecek."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-    "Modifies the shader preset itself currently used in the menu."
+    "Şu anda menüde kullanılan gölgelendirici hazır ayarının kendisini değiştirir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
@@ -6277,7 +6277,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-    "Start search for a new cheat.  Number of bits can be changed."
+    "Yeni bir hile aramaya başlayın. Bit sayısı değiştirilebilir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
@@ -6305,7 +6305,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-    "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config'."
+    "En boy oranı 'Yapılandırma' olarak ayarlanmışsa, video boy oranı için kayan nokta değeri (genişlik / yükseklik)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -6429,7 +6429,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-    "Content which you have added to 'Favorites' will appear here."
+    "'Sık Kullanılanlar'a eklediğiniz içerik burada görünecektir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -6453,7 +6453,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-    "Videos which have been previously played will appear here."
+    "Daha önce oynatılmış olan videolar burada görünecektir."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
@@ -6465,11 +6465,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-    "Settings Tab"
+    "Ayarlar Sekmesi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-    "Set Password For Enabling Settings Tab"
+    "Ayarları Etkinleştirmek için Şifreyi Ayarla Sekmesi"
     )
 MSG_HASH(
     MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
