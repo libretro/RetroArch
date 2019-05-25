@@ -90,19 +90,18 @@ static uint32_t gl_core_get_cross_compiler_target_version()
    const char *version = (const char*)glGetString(GL_VERSION);
    unsigned major = 0;
    unsigned minor = 0;
-   unsigned patch = 0;
 
 #ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u.%u", &major, &minor, &patch) < 2)
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
       return 300u;
 #else
-   if (!version || sscanf(version, "%u.%u.%u", &major, &minor, &patch) < 2)
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
       return 150u;
 #endif
    if (major == 3u && minor == 2u)
       return 150u;
 
-   return 100u * major + 10u * minor + patch;
+   return 100u * major + 10u * minor;
 }
 
 GLuint gl_core_cross_compile_program(
