@@ -912,6 +912,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
    uint32_t cmd;
    uint32_t cmd_size;
    ssize_t recvd;
+   static bool previous_frame_paused = false;
 
    /* We don't handle the initial handshake here */
    if (connection->mode < NETPLAY_CONNECTION_CONNECTED)
@@ -1787,12 +1788,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
             }
-            RARCH_LOG("[netplay] %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+            if (!previous_frame_paused)
+            {
+               RARCH_LOG("[netplay] %s\n", msg);
+               runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            previous_frame_paused = true;
             break;
          }
 
       case NETPLAY_CMD_RESUME:
+         RARCH_LOG("[netplay] resumed\n");
+         previous_frame_paused = false;
          remote_unpaused(netplay, connection);
          break;
 
