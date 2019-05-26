@@ -12,6 +12,7 @@
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
 - MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan.
 - MENU/WIDGETS: Fine tune progress bar colors.
+- MENU: Fix longstanding menu display issues on Mali400 GPUs (on ARM hardware, SBCs and mobile phones/tablets).
 - MENU/THUMBNAILS: Ensure that displayed thumbnails are always refreshed correctly after selecting 'Download Thumbnails' from Quick Menu.
 - MENU/OZONE: Add it for PS3
 - MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it.
