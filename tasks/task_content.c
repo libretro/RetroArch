@@ -1136,6 +1136,8 @@ static bool command_event_cmd_exec(const char *data,
    content_info.environ_get = menu_content_environment_get;
 #endif
 
+   RARCH_LOG("WAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+
    if (path_get(RARCH_PATH_CONTENT) != data)
    {
       path_clear(RARCH_PATH_CONTENT);
@@ -1580,6 +1582,7 @@ bool task_push_load_content_with_new_core_from_menu(
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
+RARCH_LOG("WEEEEEEEEEEEEEEEEEEEEEEEEEE\n");
 
 #ifdef HAVE_DYNAMIC
    /* Load core */
