@@ -654,7 +654,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_GIF:
          params->threads              = settings->uints.video_record_threads;
-         params->frame_drop_ratio     = 1;
+         params->frame_drop_ratio     = 4;
          params->audio_enable         = false;
          params->audio_global_quality = 0;
          params->out_pix_fmt          = PIX_FMT_RGB8;
