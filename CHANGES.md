@@ -1,6 +1,8 @@
 # 1.7.8 (future)
 - COMMON: Show license per core (if available) inside 'Load Core'.
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
+- GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
+- GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
@@ -15,6 +17,7 @@
 - OSD: OSD is now drawn above the overlay with Vulkan.
 - RECORD: Fix Twitch streaming.
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
+- VULKAN/SLANG: Added "FrameDirection" slang semantic.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7
