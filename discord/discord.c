@@ -392,6 +392,7 @@ void discord_update(enum discord_presence presence)
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
+               discord_presence.joinSecret = '\0';
                connecting = false;
             }
          }
@@ -427,13 +428,14 @@ void discord_update(enum discord_presence presence)
          break;
       case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
          {
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) && 
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
             !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
             {
                peer_party_id[0] = '\0';
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
+               discord_presence.joinSecret = '\0';
                connecting = false;
             }
          }
@@ -442,6 +444,7 @@ void discord_update(enum discord_presence presence)
             discord_presence.partyId    = NULL;
             discord_presence.partyMax   = 0;
             discord_presence.partySize  = 0;
+            discord_presence.joinSecret = '\0';
             connecting = false;
       default:
          break;
