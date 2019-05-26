@@ -1618,6 +1618,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
             &gpu_count, gpus) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+      free(gpus);
       return false;
    }
 
