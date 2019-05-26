@@ -673,12 +673,25 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->out_pix_fmt          = PIX_FMT_YUV420P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "mp3", sizeof(params->acodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
          av_dict_set(&params->video_opts, "crf", "20", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+
+         /* TO-DO: detect if hwaccel is available and use it instead of the preset above
+         strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "llhp", 0);
+         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+         av_dict_set(&params->video_opts, "zerolatency", "1", 0);
+         av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
+         av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         */
+
          break;
       default:
          break;
