@@ -1,5 +1,7 @@
 # 1.7.8 (future)
+- COMMON: Add optional 'on demand' thumbnail downloads.
 - COMMON: Show license per core (if available) inside 'Load Core'.
+- GAMECUBE: Add default video/audio filter directories.
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
@@ -18,6 +20,7 @@
 - RECORD: Fix Twitch streaming.
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
 - VULKAN/SLANG: Added "FrameDirection" slang semantic.
+- WII: Add default video/audio filter directories.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7
