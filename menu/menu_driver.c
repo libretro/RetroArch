@@ -517,10 +517,6 @@ void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, un
          height = menu_display_framebuf_height - y;
       if ((x + width) > menu_display_framebuf_width)
          width = menu_display_framebuf_width - x;
-      if (height <= 0)
-         return;
-      if (width <= 0)
-         return;      
 
       menu_disp->scissor_begin(video_info, x, y, width, height);
    }
