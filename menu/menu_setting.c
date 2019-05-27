@@ -2710,6 +2710,9 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
       case RECORD_CONFIG_TYPE_RECORDING_GIF:
          strlcpy(s, "GIF", len);
          break;
+      case RECORD_CONFIG_TYPE_RECORDING_APNG:
+         strlcpy(s, "APNG", len);
+         break;
    }
 }
 
@@ -10017,7 +10020,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_record_quality;
-            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_GIF, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_APNG, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_PATH(

@@ -110,6 +110,10 @@ extern "C" {
 #define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
 #endif
 
+#ifndef PIX_FMT_RGBA
+#define PIX_FMT_RGBA AV_PIX_FMT_RGBA
+#endif
+
 #ifndef PIX_FMT_NONE
 #define PIX_FMT_NONE AV_PIX_FMT_NONE
 #endif
@@ -665,6 +669,19 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->video_opts, "framerate", "30", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
          break;
+      case RECORD_CONFIG_TYPE_RECORDING_APNG:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = false;
+         params->audio_global_quality = 0;
+         params->out_pix_fmt          = PIX_FMT_RGB24;
+
+         strlcpy(params->vcodec, "apng", sizeof(params->vcodec));
+         strlcpy(params->acodec, "", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "pred", "avg", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
+         break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
          params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
@@ -715,10 +732,19 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->scale_factor = 1;
       strlcpy(params->format, "webm", sizeof(params->format));
    }
+   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_GIF && preset < RECORD_CONFIG_TYPE_RECORDING_APNG)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "gif", sizeof(params->format));
+   }
    else if (preset < RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "gif", sizeof(params->format));
+      strlcpy(params->format, "apng", sizeof(params->format));
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
    {
