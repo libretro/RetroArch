@@ -1164,33 +1164,35 @@ static void command_event_load_auto_state(void)
 {
    bool ret;
    char msg[128]                   = {0};
-   char *savestate_name_auto       = (char*)calloc(PATH_MAX_LENGTH,
-         sizeof(*savestate_name_auto));
+   char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      goto error;
+      return;
 #endif
-
 #ifdef HAVE_CHEEVOS
    /* RCHEEVOS TODO: remove OR below */
    if (cheevos_hardcore_active || rcheevos_hardcore_active)
-      goto error;
+      return;
 #endif
+   if (!global || !settings->bools.savestate_auto_load)
+      return;
 
-   if (!settings->bools.savestate_auto_load)
-      goto error;
+   savestate_name_auto             = (char*)calloc(PATH_MAX_LENGTH,
+         sizeof(*savestate_name_auto));
 
-   if (global)
-      fill_pathname_noext(savestate_name_auto, global->name.savestate,
-            file_path_str(FILE_PATH_AUTO_EXTENSION),
-            savestate_name_auto_size);
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
+         file_path_str(FILE_PATH_AUTO_EXTENSION),
+         savestate_name_auto_size);
 
    if (!filestream_exists(savestate_name_auto))
-      goto error;
+   {
+      free(savestate_name_auto);
+      return;
+   }
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -1202,11 +1204,6 @@ static void command_event_load_auto_state(void)
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
 
-   free(savestate_name_auto);
-
-   return;
-
-error:
    free(savestate_name_auto);
 }
 
@@ -1285,7 +1282,6 @@ static bool event_init_content(void)
 {
    bool contentless = false;
    bool is_inited   = false;
-   settings_t *settings            = config_get_ptr();
 
    content_get_status(&contentless, &is_inited);
 
@@ -1313,13 +1309,19 @@ static bool event_init_content(void)
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
-   Since the operations are asynchronouse we can't guarantee users will not use auto_load_state to cheat on
-   achievements so we forbid auto_load_state from happening if cheevos_enable and cheevos_hardcode_mode_enable
-   are true
+   Since the operations are asynchronouse we can't 
+   guarantee users will not use auto_load_state to cheat on
+   achievements so we forbid auto_load_state from happening 
+   if cheevos_enable and cheevos_hardcode_mode_enable
+   are true.
 */
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_enable || !settings->bools.cheevos_hardcore_mode_enable)
-      command_event_load_auto_state();
+   {
+      settings_t *settings = config_get_ptr();
+      if (  !settings->bools.cheevos_enable || 
+            !settings->bools.cheevos_hardcore_mode_enable)
+         command_event_load_auto_state();
+   }
 #else
    command_event_load_auto_state();
 #endif
@@ -1408,30 +1410,30 @@ static bool command_event_save_auto_state(void)
    bool ret                    = false;
    bool contentless            = false;
    bool is_inited              = false;
-   char *savestate_name_auto   = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
 
-   if (!settings || !settings->bools.savestate_auto_save)
-      goto error;
-   if (!global)
-      goto error;
+   if (!global || !settings || !settings->bools.savestate_auto_save)
+      return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      goto error;
+      return false;
 
    content_get_status(&contentless, &is_inited);
 
    if (contentless)
-      goto error;
+      return false;
 
 #ifdef HAVE_CHEEVOS
    /* RCHEEVOS TODO: remove OR below */
    if (cheevos_hardcore_active || rcheevos_hardcore_active)
-      goto error;
+      return false;
 #endif
+
+   savestate_name_auto         = (char*)
+      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
@@ -1445,10 +1447,6 @@ static bool command_event_save_auto_state(void)
 
    free(savestate_name_auto);
    return true;
-
-error:
-   free(savestate_name_auto);
-   return false;
 }
 
 static bool command_event_save_config(
