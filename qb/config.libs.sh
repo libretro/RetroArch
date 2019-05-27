@@ -360,9 +360,7 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    HAVE_OPENGL_CORE='no'
 fi
 
-if [ "$HAVE_ZLIB" = 'no' ]; then
-   HAVE_BUILTINZLIB=no
-elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
+if [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
    HAVE_ZLIB=yes
 else
    check_val '' ZLIB '-lz' '' zlib '' '' false
@@ -528,5 +526,10 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
 fi
 
 check_enabled MENU MENU_WIDGETS 'menu widgets' 'The menu is' false
-check_enabled ZLIB RPNG RPNG 'zlib is' false
+
+if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_BUILTINZLIB" = 'no' ]; then
+   eval "HAVE_RPNG=no"
+   die : "Notice: zlib disabled, rpng support will also be disabled."
+fi
+
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
