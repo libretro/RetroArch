@@ -620,6 +620,11 @@ INPUT
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
 #elif defined(__wiiu__)
+#include "../input/common/hid/hid_device_driver.c"
+#include "../input/common/hid/device_wiiu_gca.c"
+#include "../input/common/hid/device_ds3.c"
+#include "../input/common/hid/device_ds4.c"
+#include "../input/common/hid/device_null.c"
 #include "../input/drivers/wiiu_input.c"
 #include "../input/drivers_joypad/wiiu_joypad.c"
 #include "../input/drivers_joypad/wiiu/hidpad_driver.c"
