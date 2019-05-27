@@ -1210,35 +1210,40 @@ static void command_event_load_auto_state(void)
 static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
-   char *state_dir                   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
-   char *state_base                  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+   char *state_dir                   = NULL;
+   char *state_base                  = NULL;
+   
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    settings_t *settings              = config_get_ptr();
    global_t   *global                = global_get_ptr();
 
-   if (!settings->bools.savestate_auto_index)
-      goto error;
+   if (!global || !settings->bools.savestate_auto_index)
+      return;
 
-   if (global)
-   {
-      /* Find the file in the same directory as global->savestate_name
-       * with the largest numeral suffix.
-       *
-       * E.g. /foo/path/content.state, will try to find
-       * /foo/path/content.state%d, where %d is the largest number available.
-       */
-      fill_pathname_basedir(state_dir, global->name.savestate,
-            state_size);
-      fill_pathname_base(state_base, global->name.savestate,
-            state_size);
-   }
+   state_dir                         = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+
+   /* Find the file in the same directory as global->savestate_name
+    * with the largest numeral suffix.
+    *
+    * E.g. /foo/path/content.state, will try to find
+    * /foo/path/content.state%d, where %d is the largest number available.
+    */
+   fill_pathname_basedir(state_dir, global->name.savestate,
+         state_size);
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
+   free(state_dir);
+
    if (!dir_list)
-      goto error;
+      return;
+
+   state_base                        = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+
+   fill_pathname_base(state_base, global->name.savestate,
+         state_size);
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1262,20 +1267,13 @@ static void command_event_set_savestate_auto_index(void)
    }
 
    dir_list_free(dir_list);
+   free(state_base);
 
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
-
-   free(state_dir);
-   free(state_base);
-   return;
-
-error:
-   free(state_dir);
-   free(state_base);
 }
 
 static bool event_init_content(void)
