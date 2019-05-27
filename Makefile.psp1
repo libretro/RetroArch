@@ -21,7 +21,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-INCDIR = deps deps/stb deps/libz deps/7zip deps/pthreads deps/pthreads/platform/psp deps/pthreads/platform/helper libretro-common/include
+INCDIR = deps deps/stb deps/libz deps/7zip deps/pthreads deps/pthreads/platform/psp deps/pthreads/platform/helper libretro-common/include libretro-common/include/compat/zlib
 CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 

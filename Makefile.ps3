@@ -39,7 +39,8 @@ INCDIRS = -I. \
 			 -Ideps/libz \
 			 -Ideps/stb \
 			 -Ideps/rcheevos/include \
-			 -Ilibretro-common/include
+			 -Ilibretro-common/include \
+			 -Ilibretro-common/include/compat/zlib
 
 # system platform
 system_platform = unix

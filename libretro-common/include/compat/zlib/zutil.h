@@ -24,7 +24,7 @@
 #  define ZLIB_INTERNAL
 #endif
 
-#include <compat/zlib.h>
+#include <zlib.h>
 
 #if defined(STDC) && !defined(Z_SOLO)
 #  if !(defined(_WIN32_WCE) && defined(_MSC_VER))

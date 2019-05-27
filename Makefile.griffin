@@ -838,6 +838,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -DHAVE_ZLIB
+   INCLUDE     += -I./libretro-common/include/compat/zlib
 endif
 
 ifeq ($(WANT_ZLIB), 1)

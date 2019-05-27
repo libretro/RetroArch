@@ -1594,7 +1594,7 @@ ifeq ($(HAVE_ZLIB), 1)
              $(DEPS_DIR)/libz/trees.o \
              $(DEPS_DIR)/libz/uncompr.o \
              $(DEPS_DIR)/libz/zutil.o
-      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat
+      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
       DEFINES += -DWANT_ZLIB
    else
       LIBS += $(ZLIB_LIBS)
