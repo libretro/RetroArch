@@ -16,7 +16,8 @@
 
 #include "../include/gamepad.h"
 
-enum pad_axes {
+enum gamepad_pad_axes
+{
    AXIS_LEFT_ANALOG_X,
    AXIS_LEFT_ANALOG_Y,
    AXIS_RIGHT_ANALOG_X,
@@ -24,11 +25,11 @@ enum pad_axes {
    AXIS_INVALID
 };
 
-static int16_t clamp_axis(int16_t value, bool is_negative)
+static int16_t gamepad_clamp_axis(int16_t value, bool is_negative)
 {
-   if(is_negative && value > 0)
+   if (is_negative && value > 0)
       return 0;
-   if(!is_negative && value < 0)
+   if (!is_negative && value < 0)
       return 0;
 
    return value;
@@ -72,5 +73,5 @@ int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
          break;
    }
 
-   return clamp_axis(value, data->is_negative);
+   return gamepad_clamp_axis(value, data->is_negative);
 }
