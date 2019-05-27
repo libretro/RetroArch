@@ -3210,7 +3210,7 @@ void runloop_msg_queue_push(const char *msg,
    runloop_ctx_msg_info_t msg_info;
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_msg_queue_push(msg,
-            duration / 60 * 1000, title, icon, category, prio, flush))
+            roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush))
       return;
 #endif
 
