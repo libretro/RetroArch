@@ -88,7 +88,12 @@ static int task_image_process(
       unsigned *width,
       unsigned *height)
 {
-   int retval = image_transfer_process(
+   int retval;
+
+   if (!image_transfer_is_valid(image->handle, image->type))
+      return IMAGE_PROCESS_ERROR;
+
+   retval = image_transfer_process(
          image->handle,
          image->type,
          &image->ti.pixels, image->size, width, height);
@@ -131,8 +136,9 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    for (i = 0; i < image->processing_pos_increment; i++)
    {
-      if ((retval = task_image_process(image,
-               &width, &height) != IMAGE_PROCESS_NEXT))
+      retval = task_image_process(image, &width, &height);
+
+      if (retval != IMAGE_PROCESS_NEXT)
          break;
    }
 
@@ -192,7 +198,7 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    ptr                             = nbio_get_ptr(nbio->handle, &len);
 
-   image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
+   image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
 
    image->size                     = len;
    image->pos_increment            = (len / 2) ?
@@ -231,7 +237,8 @@ bool task_image_load_handler(retro_task_t *task)
             if (image->handle && image->cb)
             {
                size_t len = 0;
-               image->cb(nbio, len);
+               if (image->cb(nbio, len) == -1)
+                  return false;
             }
             if (image->is_blocking_on_processing)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
@@ -253,7 +260,8 @@ bool task_image_load_handler(retro_task_t *task)
             if (image->handle && image->cb)
             {
                size_t len = 0;
-               image->cb(nbio, len);
+               if (image->cb(nbio, len) == -1)
+                  return false;
             }
             if (!image->is_finished)
                break;
@@ -261,7 +269,7 @@ bool task_image_load_handler(retro_task_t *task)
    }
 
    if (     nbio->is_finished
-         && (image && image->is_finished )
+         && (image && image->is_finished)
          && (!task_get_cancelled(task)))
    {
       struct texture_image *img = (struct texture_image*)malloc(sizeof(struct texture_image));
