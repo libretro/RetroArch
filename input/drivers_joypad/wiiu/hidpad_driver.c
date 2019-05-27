@@ -25,7 +25,7 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis);
 static void hidpad_poll(void);
 static const char *hidpad_name(unsigned pad);
 
-static bool ready = false;
+static bool hidpad_ready = false;
 
 static bool init_hid_driver(void)
 {
@@ -44,19 +44,19 @@ static bool hidpad_init(void *data)
    }
 
    hidpad_poll();
-   ready = true;
+   hidpad_ready = true;
 
    return true;
 }
 
 static bool hidpad_query_pad(unsigned pad)
 {
-   return ready && pad < MAX_USERS;
+   return hidpad_ready && pad < MAX_USERS;
 }
 
 static void hidpad_destroy(void)
 {
-   ready = false;
+   hidpad_ready = false;
 
    hid_deinit(&hid_instance);
 }
@@ -87,7 +87,7 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
 
 static void hidpad_poll(void)
 {
-   if (ready)
+   if (hidpad_ready)
       HID_POLL();
 }
 
