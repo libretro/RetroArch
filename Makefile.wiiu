@@ -157,8 +157,7 @@ endif
 
 OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 
-#todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
-DEFINES += -DWIIU -DMSB_FIRST -D__WUT__
+DEFINES += -DWIIU -DMSB_FIRST -D__WUT__ -DHW_WUP -D__wiiu__
 #DEFINES += -D_GNU_SOURCE
 DEFINES += -DHAVE_MAIN
 DEFINES += -DRARCH_CONSOLE
@@ -207,7 +206,7 @@ INCDIRS += -Iwiiu/include
 INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
-CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
+CFLAGS  := -mcpu=750 -meabi -mhard-float
 LDFLAGS :=
 
 ifeq ($(DEBUG), 1)
@@ -221,6 +220,7 @@ LDFLAGS := $(CFLAGS)
 ASFLAGS := $(CFLAGS) -mregnames
 
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
+CFLAGS +=  -ffunction-sections -fdata-sections
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
 
