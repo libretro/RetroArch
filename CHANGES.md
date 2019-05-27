@@ -23,7 +23,7 @@
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
 - RECORD: Fix Twitch streaming.
-- SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24.
+- SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport).
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
 - VULKAN/SLANG: Added "FrameDirection" slang semantic.
 - WII: Add default video/audio filter directories.
