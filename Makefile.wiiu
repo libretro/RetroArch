@@ -102,6 +102,8 @@ endif
       INCDIRS += -Ilibretro-common/include/compat/zlib
       # for stb
       INCDIRS += -Ideps
+      # pad_functions uses wiiu/input.h
+      INCDIRS += -Iinput/include
 
       DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_LIBRETRODB
       DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
@@ -109,6 +111,7 @@ endif
       #DEFINES += -DWANT_IFADDRS
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
+      DEFINES += -DHAVE_HID
 
    # $(GRIFFIN_BUILD),0
    else

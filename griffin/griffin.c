@@ -622,6 +622,10 @@ INPUT
 #elif defined(__wiiu__)
 #include "../input/drivers/wiiu_input.c"
 #include "../input/drivers_joypad/wiiu_joypad.c"
+#include "../input/drivers_joypad/wiiu/hidpad_driver.c"
+#include "../input/drivers_joypad/wiiu/kpad_driver.c"
+#include "../input/drivers_joypad/wiiu/wpad_driver.c"
+#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers_joypad/xdk_joypad.c"
@@ -1182,7 +1186,7 @@ NETPLAY
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
+#if !defined(HAVE_SOCKET_LEGACY)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
