@@ -694,12 +694,14 @@ static void handle_toplevel_config(void *data,
       wl->height      = height;
    }
 
+#ifdef HAVE_EGL
    if (wl->win)
       wl_egl_window_resize(wl->win, width, height, 0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
             wl->width * wl->buffer_scale,
             wl->height * wl->buffer_scale);
+#endif
 
    wl->configured = false;
 }
@@ -774,12 +776,14 @@ static void handle_zxdg_toplevel_config(
       wl->height = height;
    }
 
+#ifdef HAVE_EGL
    if (wl->win)
       wl_egl_window_resize(wl->win, width, height, 0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
             wl->width * wl->buffer_scale,
             wl->height * wl->buffer_scale);
+#endif
 
    wl->configured = false;
 }
@@ -1068,22 +1072,22 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    }
 
 #ifdef HAVE_EGL
-   wl->win        = NULL;
+   wl->win              = NULL;
 #endif
-   wl->xdg_shell      = NULL;
-   wl->zxdg_shell     = NULL;
-   wl->shell          = NULL;
-   wl->compositor = NULL;
-   wl->registry   = NULL;
+   wl->xdg_shell        = NULL;
+   wl->zxdg_shell       = NULL;
+   wl->shell            = NULL;
+   wl->compositor       = NULL;
+   wl->registry         = NULL;
    wl->input.dpy        = NULL;
-   wl->xdg_surface = NULL;
-   wl->surface    = NULL;
-   wl->xdg_toplevel = NULL;
-   wl->zxdg_toplevel = NULL;
-   wl->shell_surf    = NULL;
+   wl->xdg_surface      = NULL;
+   wl->surface          = NULL;
+   wl->xdg_toplevel     = NULL;
+   wl->zxdg_toplevel    = NULL;
+   wl->shell_surf       = NULL;
 
-   wl->width      = 0;
-   wl->height     = 0;
+   wl->width            = 0;
+   wl->height           = 0;
 
 }
 
