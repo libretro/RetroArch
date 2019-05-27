@@ -327,6 +327,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
    memset(&wiiu->menu.texture, 0, sizeof(GX2Texture));
    wiiu->menu.texture.surface.width    = 512;
    wiiu->menu.texture.surface.height   = 512;
+   wiiu->menu.texture.surface.pitch    = wiiu->menu.texture.surface.width * sizeof(uint16_t);
    wiiu->menu.texture.surface.depth    = 1;
    wiiu->menu.texture.surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
    wiiu->menu.texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R4_G4_B4_A4;
