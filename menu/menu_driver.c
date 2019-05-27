@@ -509,9 +509,9 @@ void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, un
          y = 0;
       if (x < 0)
          x = 0;
-      if (y >= menu_display_framebuf_height)
+      if (y >= (int)menu_display_framebuf_height)
          return;
-      if (x >= menu_display_framebuf_width)
+      if (x >= (int)menu_display_framebuf_width)
          return;
       if ((y + height) > menu_display_framebuf_height)
          height = menu_display_framebuf_height - y;

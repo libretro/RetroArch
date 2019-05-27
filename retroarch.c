@@ -4520,15 +4520,19 @@ int runloop_iterate(unsigned *sleep_ms)
          *sleep_ms = 10;
          return 1;
       case RUNLOOP_STATE_END:
+#ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
             && settings->bools.menu_pause_libretro)
          {
             runloop_netplay_pause();
          }
+#endif
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
-            runloop_netplay_pause();
+#ifdef HAVE_NETWORKING
+         runloop_netplay_pause();
          return 0;
+#endif
       case RUNLOOP_STATE_ITERATE:
          break;
    }
