@@ -48,7 +48,7 @@ typedef struct hid_null_instance
  *
  * If initialization fails, return NULL.
  */
-static void *null_init(void *handle)
+static void *hid_null_init(void *handle)
 {
    hid_null_instance_t *instance = (hid_null_instance_t *)calloc(1, sizeof(hid_null_instance_t));
    if (!instance)
@@ -75,7 +75,7 @@ static void *null_init(void *handle)
  * Gets called when the pad is disconnected. It must clean up any memory
  * allocated and used by the instance data.
  */
-static void null_free(void *data)
+static void hid_null_free(void *data)
 {
    hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
@@ -91,7 +91,7 @@ static void null_free(void *data)
  * For most pads you'd just forward it onto the pad driver (see below).
  * A more complicated example is in the Wii U GC adapter driver.
  */
-static void null_handle_packet(void *data, uint8_t *buffer, size_t size)
+static void hid_null_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
    hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
@@ -102,7 +102,7 @@ static void null_handle_packet(void *data, uint8_t *buffer, size_t size)
 /**
  * Return true if the passed in VID and PID are supported by the driver.
  */
-static bool null_detect(uint16_t vendor_id, uint16_t product_id)
+static bool hid_null_detect(uint16_t vendor_id, uint16_t product_id)
 {
   return vendor_id == VID_NONE && product_id == PID_NONE;
 }
@@ -111,10 +111,10 @@ static bool null_detect(uint16_t vendor_id, uint16_t product_id)
  * Assign function pointers to the driver structure.
  */
 hid_device_t null_hid_device = {
-  null_init,
-  null_free,
-  null_handle_packet,
-  null_detect,
+  hid_null_init,
+  hid_null_free,
+  hid_null_handle_packet,
+  hid_null_detect,
   "Null HID device"
 };
 
