@@ -3883,6 +3883,10 @@ MSG_HASH(
     "RetroActive"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROLIVE,
+    "RetroLive"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
     "Retrosystem"
     )

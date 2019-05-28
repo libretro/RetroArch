@@ -467,6 +467,8 @@ const char* xmb_theme_ident(void)
          return "flatui";
       case XMB_ICON_THEME_RETROACTIVE:
          return "retroactive";
+      case XMB_ICON_THEME_RETROLIVE:
+         return "retrolive";
       case XMB_ICON_THEME_RETROSYSTEM:
          return "retrosystem";
       case XMB_ICON_THEME_PIXEL:
