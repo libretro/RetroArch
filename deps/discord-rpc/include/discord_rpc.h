@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-/* clang-format off */
+// clang-format off
 
 #if defined(DISCORD_DYNAMIC_LIB)
 #  if defined(_WIN32)
@@ -17,7 +17,7 @@
 #  define DISCORD_EXPORT
 #endif
 
-/* clang-format on */
+// clang-format on
 
 #ifdef __cplusplus
 extern "C" {
