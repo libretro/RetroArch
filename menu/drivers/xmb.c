@@ -990,7 +990,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1023,7 +1023,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
-      if (filestream_exists(right_thumbnail_path))
+      if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
                supports_rgba,
                menu_display_handle_thumbnail_upload, NULL);
@@ -1040,7 +1040,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (filestream_exists(left_thumbnail_path))
+      if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
                supports_rgba,
                menu_display_handle_left_thumbnail_upload, NULL);
@@ -1673,13 +1673,13 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!filestream_exists(path))
+      if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
       if (!string_is_equal(path, xmb->bg_file_path))
       {
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             task_push_image_load(path,
                   video_driver_supports_rgba(),
@@ -2074,7 +2074,7 @@ static void xmb_context_reset_horizontal_list(
 
          /* If the playlist icon doesn't exist return default */
 
-         if (!filestream_exists(texturepath))
+         if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
@@ -2104,7 +2104,7 @@ static void xmb_context_reset_horizontal_list(
 
          /* If the content icon doesn't exist return default-content */
 
-         if (!filestream_exists(content_texturepath))
+         if (!path_is_valid(content_texturepath))
          {
             strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, iconpath,
@@ -5063,7 +5063,7 @@ static void xmb_context_reset_background(const char *iconpath)
             PATH_MAX_LENGTH * sizeof(char));
    }
 
-   if (filestream_exists(path))
+   if (path_is_valid(path))
       task_push_image_load(path,
             video_driver_supports_rgba(),
             menu_display_handle_wallpaper_upload, NULL);
