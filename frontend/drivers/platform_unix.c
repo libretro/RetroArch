@@ -1297,6 +1297,7 @@ static void frontend_unix_get_env(int *argc,
    jstring                      jstr  = NULL;
    jboolean                     jbool = JNI_FALSE;
    struct android_app   *android_app  = (struct android_app*)data;
+   char parent_path[PATH_MAX_LENGTH];
 
    if (!android_app)
       return;
@@ -1622,201 +1623,66 @@ static void frontend_unix_get_env(int *argc,
             {
                /* only /sdcard/Android/data/com.retroarch is writable */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        internal_storage_app_path, "saves",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        internal_storage_app_path, "states",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        internal_storage_app_path, "system",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-
-                  /* remaps is nested in config */
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        internal_storage_app_path, "config",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        internal_storage_app_path, "thumbnails",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        internal_storage_app_path, "playlists",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        internal_storage_app_path, "cheats",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-#ifdef HAVE_VIDEO_LAYOUT
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-                        internal_storage_app_path, "layouts",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
-                        internal_storage_app_path, "temp",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
-                  if(!string_is_empty(screenshot_dir)
-                     && test_permissions(screenshot_dir))
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "RetroArch",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-                  }
-                  else
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           internal_storage_app_path, "screenshots",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-                  }
-
-                  if(!string_is_empty(downloads_dir)
-                     && test_permissions(downloads_dir))
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                           downloads_dir, "RetroArch",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-                  }
-                  else
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                           internal_storage_app_path, "downloads",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-                  }
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
-                        internal_storage_app_path, "logs",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-
+                  strlcpy(parent_path, internal_storage_app_path, sizeof(parent_path));
                   break;
-
                /* only the internal app dir is writable, this should never happen but it did
                   a few years ago in some devices  */
                case INTERNAL_STORAGE_NOT_WRITABLE:
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        app_dir, "saves",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        app_dir, "states",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        app_dir, "system",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-
-                  /* remaps is nested in config */
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        app_dir, "config",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        app_dir, "thumbnails",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        app_dir, "playlists",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        app_dir, "cheats",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-#ifdef HAVE_VIDEO_LAYOUT
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-                        app_dir, "layouts",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
-                        app_dir, "temp",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
-                  if(      !string_is_empty(screenshot_dir)
-                        &&  test_permissions(screenshot_dir))
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "RetroArch",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-                  }
-                  else
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           app_dir, "screenshots",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-                  }
-
-                  if(!string_is_empty(downloads_dir)
-                     && test_permissions(downloads_dir))
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                           downloads_dir, "RetroArch",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-                  }
-                  else
-                  {
-                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                           app_dir, "downloads",
-                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-                  }
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
-                        app_dir, "logs",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-
+                  strlcpy(parent_path, app_dir, sizeof(parent_path));
                   break;
-
                /* sdcard is writable, this should be the case most of the time*/
                case INTERNAL_STORAGE_WRITABLE:
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        internal_storage_path, "RetroArch/saves",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        internal_storage_path, "RetroArch/states",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        internal_storage_path, "RetroArch/system",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                        internal_storage_path, "RetroArch/screenshots",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                        internal_storage_path, "RetroArch/downloads",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
-                        internal_storage_path, "RetroArch/logs",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-
-                  /* remaps is nested in config */
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        internal_storage_path, "RetroArch/config",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        internal_storage_path, "RetroArch/thumbnails",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        internal_storage_path, "RetroArch/playlists",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        internal_storage_path, "RetroArch/cheats",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-#ifdef HAVE_VIDEO_LAYOUT
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-                        internal_storage_path, "RetroArch/layouts",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-
-                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
-                        internal_storage_path, "temp",
-                        sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-               default:
+                  fill_pathname_join(parent_path,
+                        internal_storage_path, "RetroArch",
+                        sizeof(parent_path));
                   break;
             }
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+                  parent_path, "saves",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                  parent_path, "states",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                  parent_path, "system",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                  parent_path, "screenshots",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                  parent_path, "downloads",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+                  parent_path, "logs",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
+            /* remaps is nested in config */
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                  parent_path, "config",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+                  g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                  parent_path, "thumbnails",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                  parent_path, "playlists",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                  parent_path, "cheats",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+#ifdef HAVE_VIDEO_LAYOUT
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+                  parent_path, "layouts",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
+
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
+                  parent_path, "temp",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default savefile folder: [%s]",
@@ -2158,14 +2024,6 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
-   if (!string_is_empty(app_dir))
-   {
-      menu_entries_append_enum(list,
-            app_dir,
-            msg_hash_to_str(MSG_APPLICATION_DIR),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
-   }
    if (!string_is_empty(internal_storage_app_path))
    {
       menu_entries_append_enum(list,
@@ -2174,13 +2032,21 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
    }
+   if (!string_is_empty(app_dir))
+   {
+      menu_entries_append_enum(list,
+            app_dir,
+            msg_hash_to_str(MSG_APPLICATION_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
 
    /* this path is not really desirable a user with root permissions could
-      screw up his system messing with it */
+      screw up his system messing with it
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);*/
 #endif
 
 
