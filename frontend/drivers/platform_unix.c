@@ -1446,50 +1446,6 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   /* Screenshots */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
-         (*env)->NewStringUTF(env, "SCREENSHOTS"));
-
-   if (android_app->getStringExtra && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-
-      *screenshot_dir = '\0';
-
-      if (argv && *argv)
-         strlcpy(screenshot_dir, argv, sizeof(screenshot_dir));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      if (!string_is_empty(screenshot_dir))
-      {
-         __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: android picture folder location [%s]\n",
-            screenshot_dir);
-      }
-   }
-
-   /* Downloads */
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
-         (*env)->NewStringUTF(env, "DOWNLOADS"));
-
-   if (android_app->getStringExtra && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-
-      *downloads_dir = '\0';
-
-      if (argv && *argv)
-         strlcpy(downloads_dir, argv, sizeof(downloads_dir));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      if (!string_is_empty(downloads_dir))
-      {
-         __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: android download folder location [%s]\n",
-            downloads_dir);
-      }
-   }
-
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "APK"));
 
@@ -1610,10 +1566,6 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
                   app_dir, "assets/wallpapers",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
-
-            __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default download folder: [%s]",
-               g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
 
             /* This switch tries to handle the different locations for devices with
                weird write permissions. Should be largelly unnecesary nowadays. Most
@@ -2016,11 +1968,6 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
    menu_entries_append_enum(list,
          "/storage",
-         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
-         "/mnt",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
