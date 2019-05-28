@@ -162,6 +162,7 @@ static void get_first_valid_core(char *path_return)
 
 static void frontend_switch_get_environment_settings(int *argc, char *argv[], void *args, void *params_data)
 {
+   unsigned i;
    (void)args;
 
 #ifndef IS_SALAMANDER
@@ -246,16 +247,17 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
-   int i = 0;
-   for (i; i < DEFAULT_DIR_LAST; i++)
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
 
-   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
-                      file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.path.config,
+         g_defaults.dirs[DEFAULT_DIR_PORT],
+         file_path_str(FILE_PATH_MAIN_CONFIG),
+         sizeof(g_defaults.path.config));
 }
 
 extern switch_ctx_data_t *nx_ctx_ptr;
