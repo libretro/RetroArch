@@ -217,9 +217,6 @@ int image_transfer_process(
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         if (!rpng_is_valid((rpng_t*)data))
-            return IMAGE_PROCESS_ERROR;
-
          return rpng_process_image(
                (rpng_t*)data,
                (void**)buf, len, width, height);

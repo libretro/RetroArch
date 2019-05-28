@@ -774,8 +774,7 @@ static int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, rpng->process);
 }
 
-static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height)
+static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng, uint32_t **data)
 {
    bool zstatus;
    enum trans_stream_error terror;
@@ -803,8 +802,6 @@ end:
    process->stream_backend->stream_free(process->stream);
    process->stream = NULL;
 
-   *width  = rpng->ihdr.width;
-   *height = rpng->ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
    *data = (uint32_t*)memalign(32, rpng->ihdr.width *
@@ -870,7 +867,7 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
    return true;
 }
 
-static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, unsigned *height)
+static struct rpng_process *rpng_process_init(rpng_t *rpng)
 {
    uint8_t *inflate_buf         = NULL;
    struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
@@ -1114,8 +1111,7 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process)
    {
-      struct rpng_process *process = rpng_process_init(
-            rpng, width, height);
+      struct rpng_process *process = rpng_process_init(rpng);
 
       if (!process)
          goto error;
@@ -1126,11 +1122,13 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process->inflate_initialized)
    {
-      if (rpng_load_image_argb_process_inflate_init(rpng, data,
-               width, height) == -1)
+      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
          goto error;
       return IMAGE_PROCESS_NEXT;
    }
+
+   *width  = rpng->ihdr.width;
+   *height = rpng->ihdr.height;
 
    return png_reverse_filter_iterate(rpng, data);
 
