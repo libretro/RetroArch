@@ -23,13 +23,17 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
+#include "../dynamic.h"
+
 enum image_status_enum
 {
-   IMAGE_STATUS_TRANSFER = 0,
+   IMAGE_STATUS_WAIT = 0,
+   IMAGE_STATUS_TRANSFER,
    IMAGE_STATUS_TRANSFER_PARSE,
    IMAGE_STATUS_PROCESS_TRANSFER,
    IMAGE_STATUS_PROCESS_TRANSFER_PARSE
@@ -43,8 +47,7 @@ struct nbio_image_handle
    bool is_blocking_on_processing;
    bool is_finished;
    int processing_final_state;
-   unsigned processing_pos_increment;
-   unsigned pos_increment;
+   unsigned frame_duration;
    size_t size;
    void *handle;
    transfer_cb_t  cb;
@@ -129,18 +132,19 @@ static int cb_image_thumbnail(void *data, size_t len)
 
 static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 {
-   unsigned i;
    int retval                      = 0;
    unsigned width                  = 0;
    unsigned height                 = 0;
+   retro_time_t start_time         = cpu_features_get_time_usec();
 
-   for (i = 0; i < image->processing_pos_increment; i++)
+   do
    {
       retval = task_image_process(image, &width, &height);
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
    }
+   while (cpu_features_get_time_usec() - start_time < image->frame_duration);
 
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
@@ -185,13 +189,14 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 {
    void *ptr                       = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data;
-   struct nbio_image_handle *image = nbio ?
-      (struct nbio_image_handle*)nbio->data : NULL;
-   void *handle                    = image ? image_transfer_new(image->type) : NULL;
+   struct nbio_image_handle *image = nbio  ? (struct nbio_image_handle*)nbio->data : NULL;
+   void *handle                    = image ? image_transfer_new(image->type)       : NULL;
+   float refresh_rate;
 
    if (!handle)
       return -1;
 
+   image->status                   = IMAGE_STATUS_TRANSFER;
    image->handle                   = handle;
    image->size                     = len;
    image->cb                       = &cb_image_thumbnail;
@@ -200,11 +205,11 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
 
-   image->size                     = len;
-   image->pos_increment            = (len / 2) ?
-      ((unsigned)(len / 2)) : 1;
-   image->processing_pos_increment = (len / 4) ?
-       ((unsigned)(len / 4)) : 1;
+   /* Set task iteration duration */
+   rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &refresh_rate);
+   if (refresh_rate == 0.0f)
+      refresh_rate = 60.0f;
+   image->frame_duration = (unsigned)((1.0 / refresh_rate) * 1000000.0f);
 
    if (!image_transfer_start(image->handle, image->type))
    {
@@ -221,7 +226,6 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
 bool task_image_load_handler(retro_task_t *task)
 {
-   unsigned i;
    nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
@@ -229,8 +233,10 @@ bool task_image_load_handler(retro_task_t *task)
    {
       switch (image->status)
       {
+         case IMAGE_STATUS_WAIT:
+            return true;
          case IMAGE_STATUS_PROCESS_TRANSFER:
-            if (image && task_image_iterate_process_transfer(image) == -1)
+            if (task_image_iterate_process_transfer(image) == -1)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
             break;
          case IMAGE_STATUS_TRANSFER_PARSE:
@@ -246,7 +252,8 @@ bool task_image_load_handler(retro_task_t *task)
          case IMAGE_STATUS_TRANSFER:
             if (!image->is_blocking && !image->is_finished)
             {
-               for (i = 0; i < image->pos_increment; i++)
+               retro_time_t start_time = cpu_features_get_time_usec();
+               do
                {
                   if (!image_transfer_iterate(image->handle, image->type))
                   {
@@ -254,6 +261,7 @@ bool task_image_load_handler(retro_task_t *task)
                      break;
                   }
                }
+               while (cpu_features_get_time_usec() - start_time < image->frame_duration);
             }
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
@@ -333,13 +341,12 @@ bool task_push_image_load(const char *fullpath,
    nbio->path                        = strdup(fullpath);
 
    image->type                       = IMAGE_TYPE_NONE;
-   image->status                     = IMAGE_STATUS_TRANSFER;
+   image->status                     = IMAGE_STATUS_WAIT;
    image->is_blocking                = false;
    image->is_blocking_on_processing  = false;
    image->is_finished                = false;
    image->processing_final_state     = 0;
-   image->processing_pos_increment   = 0;
-   image->pos_increment              = 0;
+   image->frame_duration             = 0;
    image->size                       = 0;
    image->handle                     = NULL;
 
