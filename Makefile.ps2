@@ -37,12 +37,12 @@ GPVAL = -G0
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
+RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
 LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L$(CDVD_DIR)/lib -L.
-LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio 
+LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lz
 LIBS += -lcdvdfs -lpatches -lpoweroff
 
 
