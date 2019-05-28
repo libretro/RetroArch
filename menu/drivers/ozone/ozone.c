@@ -1148,8 +1148,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       if (do_swap)
       {
-         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
-         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
       }
       else
       {

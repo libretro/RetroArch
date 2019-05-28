@@ -35,6 +35,7 @@
 
 #include "../configuration.h"
 #include "../retroarch.h"
+#include "../verbosity.h"
 #include "../performance_counters.h"
 #include "../tasks/tasks_internal.h"
 
