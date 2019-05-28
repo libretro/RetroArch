@@ -96,6 +96,8 @@ enum
    INTERNAL_STORAGE_NOT_WRITABLE
 };
 
+unsigned storage_permissions = 0;
+
 static void frontend_unix_set_sustained_performance_mode(bool on);
 
 struct android_app *g_android = NULL;
@@ -1536,7 +1538,6 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      int perms = 0;
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *app_dir = '\0';
@@ -1554,32 +1555,35 @@ static void frontend_unix_get_env(int *argc,
       if(!string_is_empty(internal_storage_path))
       {
          if(test_permissions(internal_storage_path))
-            perms = INTERNAL_STORAGE_WRITABLE;
+            storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
       else if(!string_is_empty(internal_storage_app_path))
       {
          if(test_permissions(internal_storage_app_path))
-            perms = INTERNAL_STORAGE_APPDIR_WRITABLE;
+            storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
       else
-         perms = INTERNAL_STORAGE_NOT_WRITABLE;
+         storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
 
+      /* code to populate default paths*/
       if (!string_is_empty(app_dir))
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
+
+            /* this section populates the paths for the assets that are bundled
+               with the apk.
+               TO-DO: change the extraction method so it honors the user defined paths instead
+            */
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
                   "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], app_dir,
-                  "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
+
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
@@ -1610,9 +1614,13 @@ static void frontend_unix_get_env(int *argc,
                "RetroArch", "[ENV]: default download folder: [%s]",
                g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
 
-            switch (perms)
+            /* This switch tries to handle the different locations for devices with
+               weird write permissions. Should be largelly unnecesary nowadays. Most
+               devices I have tested are INTERNAL_STORAGE_WRITABLE but better safe than sorry */
+
+            switch (storage_permissions)
             {
-               /* only sdcard/Android/data/com.retroarch is writable */
+               /* only /sdcard/Android/data/com.retroarch is writable */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
                         internal_storage_app_path, "saves",
@@ -1624,12 +1632,14 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_app_path, "system",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
+                  /* remaps is nested in config */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         internal_storage_app_path, "config",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
                         g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
                         internal_storage_app_path, "thumbnails",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
@@ -1639,6 +1649,11 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         internal_storage_app_path, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+#ifdef HAVE_VIDEO_LAYOUT
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+                        internal_storage_app_path, "layouts",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                         internal_storage_app_path, "temp",
@@ -1678,7 +1693,8 @@ static void frontend_unix_get_env(int *argc,
 
                   break;
 
-               /* only the internal app dir is writable, this should never happen*/
+               /* only the internal app dir is writable, this should never happen but it did
+                  a few years ago in some devices  */
                case INTERNAL_STORAGE_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
                         app_dir, "saves",
@@ -1690,6 +1706,7 @@ static void frontend_unix_get_env(int *argc,
                         app_dir, "system",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
+                  /* remaps is nested in config */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         app_dir, "config",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
@@ -1705,6 +1722,11 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         app_dir, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+#ifdef HAVE_VIDEO_LAYOUT
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+                        app_dir, "layouts",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                         app_dir, "temp",
@@ -1743,6 +1765,7 @@ static void frontend_unix_get_env(int *argc,
                         sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
                   break;
+
                /* sdcard is writable, this should be the case most of the time*/
                case INTERNAL_STORAGE_WRITABLE:
 
@@ -1766,6 +1789,7 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_path, "RetroArch/logs",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
+                  /* remaps is nested in config */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         internal_storage_path, "RetroArch/config",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
@@ -1781,6 +1805,11 @@ static void frontend_unix_get_env(int *argc,
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                         internal_storage_path, "RetroArch/cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+#ifdef HAVE_VIDEO_LAYOUT
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+                        internal_storage_path, "RetroArch/layouts",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                         internal_storage_path, "temp",
@@ -2089,24 +2118,22 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       MSG_UNKNOWN;
 
 #ifdef ANDROID
-   if (!string_is_empty(app_dir))
-   {
-      menu_entries_append_enum(list,
-            app_dir,
-            msg_hash_to_str(MSG_APPLICATION_DIR),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
-   }
-   if (!string_is_empty(internal_storage_app_path))
-   {
-      menu_entries_append_enum(list,
-            internal_storage_app_path,
-            msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
-   }
    if (!string_is_empty(internal_storage_path))
    {
+      if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+      {
+         char user_data_path[PATH_MAX_LENGTH];
+         fill_pathname_join(user_data_path,
+               internal_storage_path, "RetroArch",
+               sizeof(user_data_path));
+
+         menu_entries_append_enum(list,
+               user_data_path,
+               msg_hash_to_str(MSG_INTERNAL_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0);
+      }
+
       menu_entries_append_enum(list,
             internal_storage_path,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
@@ -2126,12 +2153,37 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
-#endif
+   menu_entries_append_enum(list,
+         "/mnt",
+         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   if (!string_is_empty(app_dir))
+   {
+      menu_entries_append_enum(list,
+            app_dir,
+            msg_hash_to_str(MSG_APPLICATION_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+   if (!string_is_empty(internal_storage_app_path))
+   {
+      menu_entries_append_enum(list,
+            internal_storage_app_path,
+            msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
 
+   /* this path is not really desirable a user with root permissions could
+      screw up his system messing with it */
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
+#endif
+
+
 #endif
 
    return 0;
