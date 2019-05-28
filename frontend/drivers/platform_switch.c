@@ -443,7 +443,7 @@ void frontend_switch_showsplash(void)
 }
 
 /* From rpng_test.c */
-bool rpng_load_image_argb(const char *path,
+static bool rpng_load_image_argb(const char *path,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int retval;
