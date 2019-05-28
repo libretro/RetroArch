@@ -198,12 +198,14 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    image->status                   = IMAGE_STATUS_TRANSFER;
    image->handle                   = handle;
-   image->size                     = len;
    image->cb                       = &cb_image_thumbnail;
 
    ptr                             = nbio_get_ptr(nbio->handle, &len);
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
+
+   /* Set image size */
+   image->size                     = len;
 
    /* Set task iteration duration */
    rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &refresh_rate);
