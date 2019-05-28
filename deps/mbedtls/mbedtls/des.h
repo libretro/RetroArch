@@ -40,8 +40,7 @@
 #define MBEDTLS_DES_KEY_SIZE    8
 
 #if !defined(MBEDTLS_DES_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

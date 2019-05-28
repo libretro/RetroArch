@@ -32,8 +32,7 @@
 #include <stddef.h>
 
 #if !defined(MBEDTLS_ARC4_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

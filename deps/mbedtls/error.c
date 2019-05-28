@@ -167,9 +167,9 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
     {
         use_ret = ret & 0xFF80;
 
-        // High level error codes
-        //
-        // BEGIN generated code
+        /* High level error codes
+         *
+         * BEGIN generated code */
 #if defined(MBEDTLS_CIPHER_C)
         if( use_ret == -(MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE) )
             mbedtls_snprintf( buf, buflen, "CIPHER - The selected feature is not available" );
@@ -481,7 +481,7 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
         if( use_ret == -(MBEDTLS_ERR_X509_BUFFER_TOO_SMALL) )
             mbedtls_snprintf( buf, buflen, "X509 - Destination buffer is too small" );
 #endif /* MBEDTLS_X509_USE_C || MBEDTLS_X509_CREATE_C */
-        // END generated code
+        /* END generated code */
 
         if( strlen( buf ) == 0 )
             mbedtls_snprintf( buf, buflen, "UNKNOWN ERROR CODE (%04X)", use_ret );
@@ -492,9 +492,8 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
     if( use_ret == 0 )
         return;
 
-    // If high level code is present, make a concatenation between both
-    // error strings.
-    //
+    /* If high level code is present, make a concatenation between both
+     * error strings. */
     len = strlen( buf );
 
     if( len > 0 )
@@ -508,9 +507,10 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
         buflen -= len + 3;
     }
 
-    // Low level error codes
-    //
-    // BEGIN generated code
+    /* Low level error codes
+     *
+     * BEGIN generated code
+     */
 #if defined(MBEDTLS_AES_C)
     if( use_ret == -(MBEDTLS_ERR_AES_INVALID_KEY_LENGTH) )
         mbedtls_snprintf( buf, buflen, "AES - Invalid key length" );
@@ -679,7 +679,7 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
     if( use_ret == -(MBEDTLS_ERR_XTEA_INVALID_INPUT_LENGTH) )
         mbedtls_snprintf( buf, buflen, "XTEA - The data input has an invalid length" );
 #endif /* MBEDTLS_XTEA_C */
-    // END generated code
+    /* END generated code */
 
     if( strlen( buf ) != 0 )
         return;
