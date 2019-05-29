@@ -1274,13 +1274,12 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 {
    int i;
-#ifdef HAVE_OPENGL
+#ifdef HAVE_EGL
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
-#endif
 
 #ifdef HAVE_OPENGLES
 #ifdef HAVE_OPENGLES2
@@ -1303,16 +1302,15 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
 #endif
 
-#ifdef HAVE_EGL
    static const EGLint egl_attribs_vg[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
 
-   EGLint major = 0, minor = 0;
    EGLint n;
-   const EGLint *attrib_ptr = NULL;
+   EGLint major = 0, minor    = 0;
+   const EGLint *attrib_ptr   = NULL;
 #endif
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
