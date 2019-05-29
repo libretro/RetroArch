@@ -44,7 +44,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "../cheevos/badges.h" /* RCHEEVOS TODO: fix path */
+#include "badges.h"
 #include "cheevos.h"
 #include "fixup.h"
 #include "parser.h"

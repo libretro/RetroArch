@@ -40,8 +40,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU

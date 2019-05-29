@@ -40,9 +40,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
-#include "cheevos/var.h"
-#include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove lines */
+#include "cheevos-new/cheevos.h"
 #include "cheevos-new/fixup.h"
 #endif
 
@@ -290,10 +288,6 @@ bool command_set_shader(const char *arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings    = config_get_ptr();
-   cheevos_var_t var;
-
    unsigned i;
    char *reply             = NULL;
    const uint8_t  *data    = NULL;
@@ -309,16 +303,7 @@ static bool command_read_ram(const char *arg)
    reply[0]   = '\0';
    reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
-   /* RCHEEVOS TODO: remove if condition below */
-   if (!settings->bools.cheevos_old_enable)
-      data = rcheevos_patch_address(addr, rcheevos_get_console());
-   /* RCHEEVOS TODO: remove whole else block below */
-   else
-   {
-      var.value = addr;
-      cheevos_var_patch_addr(&var, cheevos_get_console());
-      data      = cheevos_var_get_memory(&var);
-   }
+   data = rcheevos_patch_address(addr, rcheevos_get_console());
 
    if (data)
    {
@@ -343,24 +328,8 @@ static bool command_write_ram(const char *arg)
    uint8_t *data        = NULL;
    unsigned int addr    = 0;
 
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings = config_get_ptr();
-
-   if (!settings->bools.cheevos_old_enable)
-   {
-      addr = strtoul(arg, (char**)&arg, 16);
-      data = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
-   }
-   /* RCHEEVOS TODO: remove the whole else block below */
-   else
-   {
-      cheevos_var_t var;
-
-      var.value = strtoul(arg, (char**)&arg, 16);
-      cheevos_var_patch_addr(&var, cheevos_get_console());
-
-      data = cheevos_var_get_memory(&var);
-   }
+   addr = strtoul(arg, (char**)&arg, 16);
+   data = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
 
    if (data)
    {
@@ -1119,9 +1088,7 @@ static void command_event_init_controllers(void)
 static void command_event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings      = config_get_ptr();
-   !settings->bools.cheevos_old_enable ? rcheevos_unload() : cheevos_unload();
+   rcheevos_unload();
 #endif
 
    RARCH_LOG("Unloading game..\n");
@@ -1174,8 +1141,7 @@ static void command_event_load_auto_state(void)
       return;
 #endif
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove OR below */
-   if (cheevos_hardcore_active || rcheevos_hardcore_active)
+   if (rcheevos_hardcore_active)
       return;
 #endif
    if (!global || !settings->bools.savestate_auto_load)
@@ -1425,8 +1391,7 @@ static bool command_event_save_auto_state(void)
       return false;
 
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove OR below */
-   if (cheevos_hardcore_active || rcheevos_hardcore_active)
+   if (rcheevos_hardcore_active)
       return false;
 #endif
 
@@ -1725,9 +1690,6 @@ static bool command_event_main_state(unsigned cmd)
             if (content_load_state(state_path, false, false))
             {
 #ifdef HAVE_CHEEVOS
-               /* RCHEEVOS TODO: remove duplication below */
-               if (cheevos_hardcore_active)
-                  cheevos_state_loaded_flag = true;
                if (rcheevos_hardcore_active)
                   rcheevos_state_loaded_flag = true;
 #endif
@@ -1876,8 +1838,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove OR below */
-         if (cheevos_hardcore_active || rcheevos_hardcore_active)
+         if (rcheevos_hardcore_active)
             return false;
 #endif
          if (!command_event_main_state(cmd))
@@ -1907,28 +1868,24 @@ bool command_event(enum event_command cmd, void *data)
          command_event_init_controllers();
          break;
       case CMD_EVENT_RESET:
-         /* RCHEEVOS TODO: remove starting block bracket, settings init and tests */
-         {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-            rcheevos_state_loaded_flag = cheevos_state_loaded_flag = false;
-            rcheevos_hardcore_paused = cheevos_hardcore_paused = false;
+         rcheevos_state_loaded_flag = false;
+         rcheevos_hardcore_paused = false;
 #endif
-            RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
-            !settings->bools.cheevos_old_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
+         rcheevos_set_cheats();
 #endif
-            core_reset();
+         core_reset();
 #ifdef HAVE_CHEEVOS
-            !settings->bools.cheevos_old_enable ? rcheevos_reset_game() : cheevos_reset_game();
+         rcheevos_reset_game();
 #endif
 #if HAVE_NETWORKING
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-            return false;
-         }
+         return false;
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
@@ -2015,11 +1972,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove starting block bracket, settings init and test */
-         {
-            settings_t *settings      = config_get_ptr();
-            !settings->bools.cheevos_old_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
-         }
+         rcheevos_toggle_hardcore_mode();
 #endif
          break;
       /* this fallthrough is on purpose, it should do
@@ -2060,8 +2013,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove OR below */
-         if (cheevos_hardcore_active || rcheevos_hardcore_active)
+         if (rcheevos_hardcore_active)
             return false;
 #endif
          state_manager_event_deinit();
@@ -2070,8 +2022,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            /* RCHEEVOS TODO: remove OR below */
-            if (cheevos_hardcore_active || rcheevos_hardcore_active)
+            if (rcheevos_hardcore_active)
                return false;
 #endif
             if (settings->bools.rewind_enable)

@@ -78,8 +78,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
-#include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "cheevos-new/cheevos.h"
 #endif
 
 #ifdef HAVE_DISCORD
@@ -3276,8 +3275,7 @@ bool runloop_msg_queue_pull(const char **ret)
  */
 #define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
-/* RCHEEVOS TODO: remove 'rcheevos_*' tests below */
-#define runloop_check_cheevos() (settings->bools.cheevos_enable && (rcheevos_loaded || cheevos_loaded) && (!(rcheevos_cheats_are_enabled || cheats_are_enabled) && !(rcheevos_cheats_were_enabled || cheats_were_enabled)))
+#define runloop_check_cheevos() (settings->bools.cheevos_enable && rcheevos_loaded && (!rcheevos_cheats_are_enabled && !rcheevos_cheats_were_enabled))
 
 #ifdef HAVE_NETWORKING
 /* FIXME: This is an ugly way to tell Netplay this... */
@@ -4174,32 +4172,17 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
    rcheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
       && rcheevos_loaded && !rcheevos_hardcore_paused;
 
-   cheevos_hardcore_active = settings->bools.cheevos_enable
-      && settings->bools.cheevos_hardcore_mode_enable
-      && cheevos_loaded && !cheevos_hardcore_paused;
-   if (!settings->bools.cheevos_old_enable)
+   if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
    {
-      if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
-      {
-         rcheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
-   else
-   {
-      if (cheevos_hardcore_active && cheevos_state_loaded_flag)
-      {
-         cheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
+      rcheevos_hardcore_paused = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
-   if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+   if (!rcheevos_hardcore_active)
 #endif
    {
       char s[128];
@@ -4225,8 +4208,7 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
-   if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+   if (!rcheevos_hardcore_active)
 #endif
    {
       static bool old_slowmotion_button_state      = false;
@@ -4588,8 +4570,8 @@ int runloop_iterate(unsigned *sleep_ms)
    rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
-   if (runloop_check_cheevos()) /* RCHEEVOS TODO: remove settings test */
-      !settings->bools.cheevos_old_enable ? rcheevos_test() : cheevos_test();
+   if (runloop_check_cheevos())
+      rcheevos_test();
 #endif
    cheat_manager_apply_retro_cheats();
 
