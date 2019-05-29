@@ -7,6 +7,7 @@
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - IOS: Correctly centers screen on iPhone X landscape.
+- LOCALIZATION: Update Korean translation.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
