@@ -525,14 +525,15 @@ static bool content_file_init_extract(
 
          free(temp_content);
 
-         if (!string_list_append(content_ctx->temporary_content,
-                  new_path, *attr))
          {
-            free(new_path);
-            return false;
-         }
+            bool append_success = string_list_append(content_ctx->temporary_content,
+                     new_path, *attr);
 
-         free(new_path);
+            free(new_path);
+
+            if (!append_success)
+               return false;
+         }
       }
    }
 
