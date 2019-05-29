@@ -356,13 +356,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
    void (*proc)(struct retro_system_info*);
 
    if (!lib)
-   {
-      RARCH_ERR("%s: \"%s\"\n",
-            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
-            path);
-      RARCH_ERR("Error(s): %s\n", dylib_error());
       return NULL;
-   }
 
    proc = (void (*)(struct retro_system_info*))
       dylib_proc(lib, "retro_get_system_info");
@@ -382,10 +376,8 @@ static dylib_t libretro_get_system_info_lib(const char *path,
       set_environ = (void (*)(retro_environment_t))
          dylib_proc(lib, "retro_set_environment");
 
-      if (!set_environ)
-         return lib;
-
-      libretro_get_environment_info(set_environ, load_no_content);
+      if (set_environ)
+         libretro_get_environment_info(set_environ, load_no_content);
    }
 
    return lib;
@@ -427,7 +419,13 @@ bool libretro_get_system_info(const char *path,
          path, &dummy_info, load_no_content);
 
    if (!lib)
+   {
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+            path);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
       return false;
+   }
 #else
    if (load_no_content)
    {
