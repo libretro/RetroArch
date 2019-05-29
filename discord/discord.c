@@ -392,7 +392,7 @@ void discord_update(enum discord_presence presence)
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
-               discord_presence.joinSecret = '\0';
+               discord_presence.joinSecret = (const char*)'\0';
                connecting = false;
             }
          }
@@ -435,7 +435,7 @@ void discord_update(enum discord_presence presence)
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
-               discord_presence.joinSecret = '\0';
+               discord_presence.joinSecret = (const char*)'\0';
                connecting = false;
             }
          }
@@ -444,7 +444,7 @@ void discord_update(enum discord_presence presence)
             discord_presence.partyId    = NULL;
             discord_presence.partyMax   = 0;
             discord_presence.partySize  = 0;
-            discord_presence.joinSecret = '\0';
+            discord_presence.joinSecret = (const char*)'\0';
             connecting = false;
       default:
          break;
