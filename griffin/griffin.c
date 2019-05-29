@@ -1470,6 +1470,25 @@ DEPENDENCIES
 #include "../deps/7zip/7zBuf.c"
 #endif
 
+#ifdef WANT_LIBFAT
+#include "../deps/libfat/cache.c"
+#include "../deps/libfat/directory.c"
+#include "../deps/libfat/disc.c"
+#include "../deps/libfat/fatdir.c"
+#include "../deps/libfat/fatfile.c"
+#include "../deps/libfat/file_allocation_table.c"
+#include "../deps/libfat/filetime.c"
+#include "../deps/libfat/libfat.c"
+#include "../deps/libfat/lock.c"
+#include "../deps/libfat/partition.c"
+#endif
+
+#ifdef WANT_IOSUHAX
+#include "../deps/libiosuhax/iosuhax.c"
+#include "../deps/libiosuhax/iosuhax_devoptab.c"
+#include "../deps/libiosuhax/iosuhax_disc_interface.c"
+#endif
+
 /*============================================================
 XML
 ============================================================ */

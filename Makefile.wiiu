@@ -100,8 +100,8 @@ endif
       OBJ += griffin/griffin.o
 
       INCDIRS += -Ilibretro-common/include/compat/zlib
-      # for stb
-      INCDIRS += -Ideps
+      # for stb, libfat, iosuhax
+      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
 
@@ -112,6 +112,7 @@ endif
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
       DEFINES += -DHAVE_HID
+      DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_IOSUHAX -DHAVE_IOSUHAX
 
    # $(GRIFFIN_BUILD),0
    else
@@ -224,18 +225,7 @@ endif
 
 LIBS := $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
-# Use portlibs libfat/iosuhax if not using ones in deps/
-ifneq ($(WANT_LIBFAT), 1)
-   INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
-   LIBDIRS += -L$(DEVKITPRO)/portlibs/ppc/lib
-   LIBS += -lfat
-endif
-ifneq ($(WANT_IOSUHAX), 1)
-   INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
-   LIBDIRS += -L$(DEVKITPRO)/portlibs/ppc/lib
-   LIBS += -liosuhax
-endif
-# Same deal for zlib
+# Use portlibs zlib if deps/ isn't being used
 ifeq ($(HAVE_ZLIB),1)
 ifeq ($(HAVE_BUILTINZLIB),0)
    INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
