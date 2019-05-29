@@ -323,14 +323,11 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
    ignore_environment_cb = false;
 }
 
-static bool load_dynamic_core(void)
+static bool load_dynamic_core(const char *path, char *buf, size_t size)
 {
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* Can't lookup symbols in itself on UWP */
-#else
-   function_t sym       = dylib_proc(NULL, "retro_init");
-
-   if (sym)
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   if (dylib_proc(NULL, "retro_init"))
    {
       /* Try to verify that -lretro was not linked in from other modules
        * since loading it dynamically and with -l will fail hard. */
@@ -343,33 +340,12 @@ static bool load_dynamic_core(void)
    }
 #endif
 
-   if (string_is_empty(path_get(RARCH_PATH_CORE)))
-   {
-      RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
-            "libretro_path is not set. Cannot continue.\n");
-      retroarch_fail(1, "init_libretro_sym()");
-   }
-
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(
-         path_get_ptr(RARCH_PATH_CORE),
-         path_get_realsize(RARCH_PATH_CORE));
-
-   RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-         path_get(RARCH_PATH_CORE));
-   lib_handle = dylib_load(path_get(RARCH_PATH_CORE));
-
-   if (lib_handle)
+   path_resolve_realpath(buf, size);
+   if ((lib_handle = dylib_load(path)))
       return true;
-
-   RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-         path_get(RARCH_PATH_CORE));
-   RARCH_ERR("Error(s): %s\n", dylib_error());
-
-   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
    return false;
 }
 
@@ -509,7 +485,8 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
+bool init_libretro_sym_custom(enum rarch_core_type type,
+      struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
@@ -526,8 +503,30 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
             if (!lib_path || !lib_handle_p)
 #endif
             {
-               if (!load_dynamic_core())
+               const char *path = path_get(RARCH_PATH_CORE);
+
+               if (string_is_empty(path))
+               {
+                  RARCH_ERR("Frontend is built for dynamic libretro cores, but "
+                        "path is not set. Cannot continue.\n");
+                  retroarch_fail(1, "init_libretro_sym()");
+               }
+
+               RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+                     path);
+
+               if (!load_dynamic_core(
+                        path,
+                        path_get_ptr(RARCH_PATH_CORE),
+                        path_get_realsize(RARCH_PATH_CORE)
+                        ))
+               {
+                  RARCH_ERR("Failed to open libretro core: \"%s\"\n", path);
+                  RARCH_ERR("Error(s): %s\n", dylib_error());
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                        1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
+               }
                lib_handle_local = lib_handle;
             }
 #ifdef HAVE_RUNAHEAD
@@ -843,11 +842,6 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
    return true;
 }
 
-static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
-{
-   return init_libretro_sym_custom(type, current_core, NULL, NULL);
-}
-
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
@@ -860,7 +854,8 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
  **/
 bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
-   if (!load_symbols(type, current_core))
+   /* Load symbols */
+   if (!init_libretro_sym_custom(type, current_core, NULL, NULL))
       return false;
 
 #ifdef HAVE_RUNAHEAD
