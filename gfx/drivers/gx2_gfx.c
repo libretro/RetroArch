@@ -25,6 +25,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -873,7 +874,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 }
 
 static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *ubo, int id,
-      int size, int uniformVarCount, GX2UniformVar *uniformVars, uint64_t frame_count)
+      int size, int uniformVarCount, GX2UniformVar *uniformVars,
+      uint64_t frame_count, int32_t frame_direction)
 {
    for (int i = 0; i < uniformVarCount; i++)
    {
@@ -912,6 +914,13 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          *dst = wiiu->shader_preset->pass[pass].frame_count_mod ?
                 frame_count % wiiu->shader_preset->pass[pass].frame_count_mod :
                 frame_count;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "FrameDirection"))
+      {
+         *dst = frame_direction;
          *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
          continue;
       }
@@ -1146,6 +1155,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 
    if (wiiu->shader_preset)
    {
+      int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
       {
 
@@ -1155,7 +1166,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                                           wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                                      wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -1166,7 +1178,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                                           wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                                     wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }
@@ -1444,7 +1457,7 @@ static bool wiiu_gfx_set_shader(void *data,
    video_shader_resolve_relative(wiiu->shader_preset, path);
 
    #if 0
-		video_shader_resolve_parameters(conf, wiiu->shader_preset);
+      video_shader_resolve_parameters(conf, wiiu->shader_preset);
    #else
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
           slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
