@@ -59,9 +59,7 @@ static struct string_list *string_list_clone(
    dest->size      = src->size;
    dest->cap       = src->cap;
    if (dest->cap < dest->size)
-   {
-      dest->cap = dest->size;
-   }
+      dest->cap    = dest->size;
 
    elems           = (struct string_list_elem*)
       calloc(dest->cap, sizeof(struct string_list_elem));
