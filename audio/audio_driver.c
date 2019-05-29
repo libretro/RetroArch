@@ -617,33 +617,15 @@ void audio_driver_set_nonblocking_state(bool enable)
  * Writes audio samples to audio driver. Will first
  * perform DSP processing (if enabled) and resampling.
  **/
-static void audio_driver_flush(const int16_t *data, size_t samples)
+static void audio_driver_flush(const int16_t *data, size_t samples,
+      bool is_slowmotion)
 {
    struct resampler_data src_data;
-   bool is_perfcnt_enable            = false;
-   bool is_paused                    = false;
-   bool is_idle                      = false;
-   bool is_slowmotion                = false;
-   bool is_active                    = false;
-   const void *output_data           = NULL;
-   unsigned output_frames            = 0;
    float audio_volume_gain           = !audio_driver_mute_enable ?
       audio_driver_volume_gain : 0.0f;
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
-
-   if (recording_data)
-      recording_push_audio(data, samples);
-
-   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
-         &is_perfcnt_enable);
-
-   if (            is_paused                ||
-		   !audio_driver_active     ||
-		   !audio_driver_input_data ||
-		   !audio_driver_output_samples_buf)
-      return;
 
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_volume_gain);
@@ -713,9 +695,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
-   is_active = audio_mixer_active;
-
-   if (is_active)
+   if (audio_mixer_active)
    {
       bool override     = audio_driver_mixer_mute_enable ? true :
          (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
@@ -725,23 +705,25 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
             src_data.output_frames, mixer_gain, override);
    }
 
-   output_data        = audio_driver_output_samples_buf;
-   output_frames      = (unsigned)src_data.output_frames;
-
-   if (audio_driver_use_float)
-      output_frames  *= sizeof(float);
-   else
    {
-      convert_float_to_s16(audio_driver_output_samples_conv_buf,
-            (const float*)output_data, output_frames * 2);
+      const void *output_data = audio_driver_output_samples_buf;
+      unsigned output_frames  = (unsigned)src_data.output_frames;
 
-      output_data     = audio_driver_output_samples_conv_buf;
-      output_frames  *= sizeof(int16_t);
+      if (audio_driver_use_float)
+         output_frames  *= sizeof(float);
+      else
+      {
+         convert_float_to_s16(audio_driver_output_samples_conv_buf,
+               (const float*)output_data, output_frames * 2);
+
+         output_data     = audio_driver_output_samples_conv_buf;
+         output_frames  *= sizeof(int16_t);
+      }
+
+      if (current_audio->write(audio_driver_context_audio_data,
+               output_data, output_frames * 2) < 0)
+         audio_driver_active = false;
    }
-
-   if (current_audio->write(audio_driver_context_audio_data,
-            output_data, output_frames * 2) < 0)
-      audio_driver_active = false;
 }
 
 /**
@@ -753,6 +735,11 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
  **/
 void audio_driver_sample(int16_t left, int16_t right)
 {
+   bool is_perfcnt_enable            = false;
+   bool is_paused                    = false;
+   bool is_idle                      = false;
+   bool is_slowmotion                = false;
+
    if (audio_suspended)
       return;
 
@@ -762,25 +749,55 @@ void audio_driver_sample(int16_t left, int16_t right)
    if (audio_driver_data_ptr < audio_driver_chunk_size)
       return;
 
-   audio_driver_flush(audio_driver_output_samples_conv_buf,
-         audio_driver_data_ptr);
+   if (recording_data)
+      recording_push_audio(audio_driver_output_samples_conv_buf,
+            audio_driver_data_ptr);
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
+
+   if (!(is_paused                ||
+		   !audio_driver_active     ||
+		   !audio_driver_input_data ||
+		   !audio_driver_output_samples_buf))
+      audio_driver_flush(audio_driver_output_samples_conv_buf,
+            audio_driver_data_ptr, is_slowmotion);
 
    audio_driver_data_ptr = 0;
 }
 
 void audio_driver_menu_sample(void)
 {
+   bool check_flush                       = false;
+   bool is_perfcnt_enable                 = false;
+   bool is_paused                         = false;
+   bool is_idle                           = false;
+   bool is_slowmotion                     = false;
    static int16_t samples_buf[1024]       = {0};
    struct retro_system_av_info *av_info   = video_viewport_get_system_av_info();
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
+   check_flush                            = !(
+         is_paused                ||
+         !audio_driver_active     ||
+         !audio_driver_input_data ||
+         !audio_driver_output_samples_buf);
+
    while (sample_count > 1024)
    {
-      audio_driver_flush(samples_buf, 1024);
+      if (recording_data)
+         recording_push_audio(samples_buf, 1024);
+      if (check_flush)
+         audio_driver_flush(samples_buf, 1024, is_slowmotion);
       sample_count -= 1024;
    }
-   audio_driver_flush(samples_buf, sample_count);
+   if (recording_data)
+      recording_push_audio(samples_buf, sample_count);
+   if (check_flush)
+      audio_driver_flush(samples_buf, sample_count, is_slowmotion);
 }
 
 /**
@@ -795,13 +812,28 @@ void audio_driver_menu_sample(void)
  **/
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
+   bool is_perfcnt_enable                 = false;
+   bool is_paused                         = false;
+   bool is_idle                           = false;
+   bool is_slowmotion                     = false;
+
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
    if (audio_suspended)
       return frames;
 
-   audio_driver_flush(data, frames << 1);
+   if (recording_data)
+      recording_push_audio(data, frames << 1);
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
+   if (!(
+         is_paused                ||
+         !audio_driver_active     ||
+         !audio_driver_input_data ||
+         !audio_driver_output_samples_buf))
+      audio_driver_flush(data, frames << 1, is_slowmotion);
 
    return frames;
 }
@@ -1698,10 +1730,28 @@ void audio_driver_unset_callback(void)
 
 void audio_driver_frame_is_reverse(void)
 {
+   bool is_perfcnt_enable                 = false;
+   bool is_paused                         = false;
+   bool is_idle                           = false;
+   bool is_slowmotion                     = false;
+
    /* We just rewound. Flush rewind audio buffer. */
-   audio_driver_flush(
-         audio_driver_rewind_buf + audio_driver_rewind_ptr,
-         audio_driver_rewind_size - audio_driver_rewind_ptr);
+   if (recording_data)
+      recording_push_audio(
+            audio_driver_rewind_buf + audio_driver_rewind_ptr,
+            audio_driver_rewind_size - audio_driver_rewind_ptr);
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
+   if (!(
+         is_paused                ||
+         !audio_driver_active     ||
+         !audio_driver_input_data ||
+         !audio_driver_output_samples_buf))
+      audio_driver_flush(
+            audio_driver_rewind_buf + audio_driver_rewind_ptr,
+            audio_driver_rewind_size - audio_driver_rewind_ptr,
+            is_slowmotion);
 }
 
 void audio_driver_destroy_data(void)
