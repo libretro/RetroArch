@@ -1922,7 +1922,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
-   DEFINES += -I$(DEPS_DIR)/libiosuhax
+   DEFINES += -DHAVE_IOSUHAX
    DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
@@ -1930,7 +1930,7 @@ ifeq ($(WANT_IOSUHAX), 1)
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
-   DEFINES += -I$(DEPS_DIR)/libfat/include
+   DEFINES += -DHAVE_LIBFAT
    DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \
