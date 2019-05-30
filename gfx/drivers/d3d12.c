@@ -32,6 +32,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -398,10 +399,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d12->luts[0].size_data, sizeof(*d3d12->luts)},
          },
          {
-            &d3d12->mvp,                  /* MVP */
-            &d3d12->pass[i].rt.size_data, /* OutputSize */
-            &d3d12->frame.output_size,    /* FinalViewportSize */
-            &d3d12->pass[i].frame_count,  /* FrameCount */
+            &d3d12->mvp,                     /* MVP */
+            &d3d12->pass[i].rt.size_data,    /* OutputSize */
+            &d3d12->frame.output_size,       /* FinalViewportSize */
+            &d3d12->pass[i].frame_count,     /* FrameCount */
+            &d3d12->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -1293,6 +1295,8 @@ static bool d3d12_gfx_frame(
                   frame_count % d3d12->shader_preset->pass[i].frame_count_mod;
          else
             d3d12->pass[i].frame_count = frame_count;
+
+         d3d12->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
