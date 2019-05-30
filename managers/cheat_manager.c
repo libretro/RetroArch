@@ -40,8 +40,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #include "cheat_manager.h"
@@ -69,8 +68,6 @@ unsigned cheat_manager_get_size(void)
 void cheat_manager_apply_cheats(void)
 {
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove settings init */
-   settings_t *settings = config_get_ptr();
    bool data_bool  = false;
 
 #endif
@@ -104,8 +101,7 @@ void cheat_manager_apply_cheats(void)
 
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
-   /* RCHEEVOS TODO: remove settings test */
-   !settings->bools.cheevos_old_enable ? rcheevos_apply_cheats(&data_bool) : cheevos_apply_cheats(&data_bool);
+   rcheevos_apply_cheats(&data_bool);
 #endif
 }
 

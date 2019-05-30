@@ -38,8 +38,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -1789,8 +1788,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_SAVE_STATE,
                MENU_SETTING_ACTION_SAVESTATE, 0, 0);
 #ifdef HAVE_CHEEVOS
-          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
-         if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+         if (!rcheevos_hardcore_active)
 #endif
          {
             menu_entries_append_enum(info->list,
@@ -1805,8 +1803,7 @@ static int menu_displaylist_parse_load_content_settings(
           settings->bools.quick_menu_show_undo_save_load_state)
       {
 #ifdef HAVE_CHEEVOS
-          /* RCHEEVOS TODO: remove 'rcheevos_*' below */
-         if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+         if (!rcheevos_hardcore_active)
 #endif
          {
             menu_entries_append_enum(info->list,
@@ -3666,7 +3663,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,                                PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,                               PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_CHEEVOS_OLD_ENABLE,                                    PARSE_ONLY_BOOL  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -5315,11 +5311,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
-         {  /* RCHEEVOS TODO: remove brackets, settings and settings test */
-            settings_t *settings = config_get_ptr();
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            !settings->bools.cheevos_old_enable ? rcheevos_populate_menu(info) : cheevos_populate_menu(info);
-         }
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         rcheevos_populate_menu(info);
 #endif
          info->need_push    = true;
          info->need_refresh = true;

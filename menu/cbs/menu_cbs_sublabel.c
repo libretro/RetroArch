@@ -20,8 +20,7 @@
 #include "../menu_cbs.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
-#include "../../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../../cheevos-new/cheevos.h"
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"
@@ -143,7 +142,6 @@ default_sublabel_macro(action_bind_sublabel_cheevos_leaderboards_enable,   MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_badges_enable,         MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_verbose_enable,        MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_auto_screenshot,       MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT)
-default_sublabel_macro(action_bind_sublabel_cheevos_old_enable,            MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
@@ -648,14 +646,12 @@ static int action_bind_sublabel_cheevos_entry(
       char *s, size_t len)
 {
 #ifdef HAVE_CHEEVOS
-   settings_t *settings = config_get_ptr(); /* RCHEEVOS TODO: remove line */
-   cheevos_ctx_desc_t desc_info;
+   rcheevos_ctx_desc_t desc_info;
    unsigned new_id = type - MENU_SETTINGS_CHEEVOS_START;
    desc_info.idx   = new_id;
    desc_info.s     = s;
    desc_info.len   = len;
-   /* RCHEEVOS TODO: remove test */
-   !settings->bools.cheevos_old_enable ? rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info) : cheevos_get_description(&desc_info);
+   rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
 
    strlcpy(s, desc_info.s, len);
 #endif
@@ -2209,9 +2205,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_auto_screenshot);
-            break;
-         case MENU_ENUM_LABEL_CHEEVOS_OLD_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_old_enable);
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);

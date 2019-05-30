@@ -1723,11 +1723,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS \
                  -Ideps/rcheevos/include
 
-      OBJ += cheevos/cheevos.o \
-             cheevos/badges.o \
-             cheevos/var.o \
-             cheevos/cond.o \
-             cheevos-new/cheevos.o \
+      OBJ += cheevos-new/cheevos.o \
+             cheevos-new/badges.o \
              cheevos-new/fixup.o \
              cheevos-new/parser.o \
              cheevos-new/hash.o \

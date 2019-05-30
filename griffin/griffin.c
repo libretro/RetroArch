@@ -157,12 +157,8 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
-#include "../cheevos/cond.c"
-#include "../cheevos/var.c"
-
 #include "../cheevos-new/cheevos.c"
+#include "../cheevos-new/badges.c"
 #include "../cheevos-new/fixup.c"
 #include "../cheevos-new/hash.c"
 #include "../cheevos-new/parser.c"
