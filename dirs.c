@@ -291,12 +291,10 @@ void dir_check_defaults(void)
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
-#ifdef ORBIS
-   if (filestream_exists("host0:app/custom.ini"))
-#elif defined(ANDROID)
-   if (filestream_exists("host0:app/custom.ini"))
+#if defined(ORBIS) || defined(ANDROID)
+   if (path_is_valid("host0:app/custom.ini"))
 #else
-   if (filestream_exists("custom.ini"))
+   if (path_is_valid("custom.ini"))
 #endif
       return;
 

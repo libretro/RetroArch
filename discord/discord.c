@@ -138,7 +138,7 @@ static bool discord_download_avatar(
    fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
    strlcpy(user_avatar, avatar_id, sizeof(user_avatar));
 
-   if(filestream_exists(full_path))
+   if (path_is_valid(full_path))
       return true;
 
    if (string_is_empty(avatar_id))
