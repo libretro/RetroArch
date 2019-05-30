@@ -1167,8 +1167,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, default_discord_app_id, true);
-   SETTING_ARRAY("translation_service_url",  settings->arrays.translation_service_url, true, default_translation_service_url, true);
-   SETTING_ARRAY("ai_service_url", settings->arrays.ai_service_url, true, "", true);
+   SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, default_ai_service_url, true);
 
    *size = count;
 
@@ -1616,8 +1615,6 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
 #endif
-   SETTING_BOOL("translation_service_enable", &settings->bools.translation_service_enable, true, default_translation_service_enable, false);
-
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, log_to_file_timestamp, false);
@@ -2022,8 +2019,8 @@ void config_set_defaults(void)
    strlcpy(settings->arrays.discord_app_id,
       default_discord_app_id,  sizeof(settings->arrays.discord_app_id));
 
-   strlcpy(settings->arrays.translation_service_url,
-      default_translation_service_url,  sizeof(settings->arrays.translation_service_url));
+   strlcpy(settings->arrays.ai_service_url,
+      default_ai_service_url,  sizeof(settings->arrays.ai_service_url));
 
 
 #ifdef HAVE_MATERIALUI

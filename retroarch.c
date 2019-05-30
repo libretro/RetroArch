@@ -2215,7 +2215,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
-      DECLARE_META_BIND(2, streaming_toggle,      RARCH_AI_SERVICE,      MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
+      DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
 typedef struct turbo_buttons turbo_buttons_t;
@@ -16900,7 +16900,6 @@ void rarch_force_video_driver_fallback(const char *driver)
 
       free(title);
    }
-
    exit(1);
 }
 
