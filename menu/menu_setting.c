@@ -6651,6 +6651,7 @@ static bool setting_append_list(
 
 #if !defined(IOS)
          if (frontend_driver_has_fork())
+         {
             CONFIG_ACTION(
                   list, list_info,
                   MENU_ENUM_LABEL_RESTART_RETROARCH,
@@ -6659,6 +6660,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+         }
 #endif
 
          CONFIG_ACTION(
