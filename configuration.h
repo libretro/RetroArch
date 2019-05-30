@@ -166,6 +166,7 @@ typedef struct settings
       bool menu_show_configurations;
       bool menu_show_help;
       bool menu_show_quit_retroarch;
+      bool menu_show_restart_retroarch;
       bool menu_show_reboot;
       bool menu_show_shutdown;
       bool menu_show_latency;

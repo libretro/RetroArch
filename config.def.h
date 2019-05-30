@@ -322,6 +322,7 @@ static bool menu_show_information        = true;
 static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
+static bool menu_show_restart_retroarch  = true;
 static bool menu_show_reboot             = true;
 static bool menu_show_shutdown           = true;
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)

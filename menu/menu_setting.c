@@ -6649,14 +6649,17 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RESTART_RETROARCH,
-               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+#if !defined(IOS)
+         if (frontend_driver_has_fork())
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_RESTART_RETROARCH,
+                  MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -11797,6 +11800,24 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+#else
+#if !defined(IOS)
+            if (frontend_driver_has_fork())
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.menu_show_restart_retroarch,
+                     MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH,
+                     MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+                     menu_show_restart_retroarch,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE);
+#endif
 #endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
