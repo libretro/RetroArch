@@ -59,7 +59,6 @@
 
 /* Thumbnail additions */
 #include "../menu_thumbnail_path.h"
-#include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
@@ -1611,7 +1610,7 @@ static bool request_thumbnail(
    if (!string_is_empty(path))
    {
       thumbnail->path = strdup(path);
-      if (filestream_exists(path))
+      if (path_is_valid(path))
       {
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
@@ -2144,7 +2143,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    /* Sanity check */
    if (string_is_empty(theme_path))
       goto end;
-   if (!filestream_exists(theme_path))
+   if (!path_is_valid(theme_path))
       goto end;
 
    /* Open config file */

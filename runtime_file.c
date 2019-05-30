@@ -435,7 +435,7 @@ runtime_log_t *runtime_log_init(const char *content_path,
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
    
    /* Load existing log file, if it exists */
-   if (filestream_exists(runtime_log->path))
+   if (path_is_valid(runtime_log->path))
       runtime_log_read_file(runtime_log);
    
    return runtime_log;

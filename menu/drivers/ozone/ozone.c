@@ -31,7 +31,6 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
-#include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <formats/image.h>
 #include <math/float_minmax.h>
@@ -410,7 +409,7 @@ static void ozone_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
-      if (filestream_exists(right_thumbnail_path))
+      if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
                supports_rgba,
                menu_display_handle_thumbnail_upload, NULL);
@@ -427,7 +426,7 @@ static void ozone_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (filestream_exists(left_thumbnail_path))
+      if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
                supports_rgba,
                menu_display_handle_left_thumbnail_upload, NULL);
