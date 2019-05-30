@@ -1846,26 +1846,32 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
          if ((major * 1000 + minor) >= 3001)
             return false;
 #endif
-         return eglBindAPI(EGL_OPENGL_API);
-#else
-         break;
+#ifdef HAVE_EGL
+         if (eglBindAPI(EGL_OPENGL_API) == EGL_TRUE)
+            return true;
 #endif
+#endif
+         break;
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
 #ifndef EGL_KHR_create_context
          if (major >= 3)
             return false;
 #endif
-         return eglBindAPI(EGL_OPENGL_ES_API);
-#else
-         break;
+#ifdef HAVE_EGL
+         if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_TRUE)
+            return true;
 #endif
+#endif
+         break;
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_VG
-         return eglBindAPI(EGL_OPENVG_API);
-#else
-         break;
+#ifdef HAVE_EGL
+         if (eglBindAPI(EGL_OPENVG_API) == EGL_TRUE)
+            return true;
 #endif
+#endif
+         break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          return true;
