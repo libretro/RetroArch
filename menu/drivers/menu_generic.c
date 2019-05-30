@@ -233,10 +233,15 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
             selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
             menu_entry_init(&entry);
+            /* Note: If menu_entry_action() is modified,
+             * will have to verify that these parameters
+             * remain unused... */
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
             menu_entry_get(&entry, 0, selection, NULL, false);
             ret = menu_entry_action(&entry,
                   (unsigned)selection, (enum menu_action)action);
-            menu_entry_free(&entry);
             if (ret)
                goto end;
 

@@ -3389,10 +3389,11 @@ static void rgui_render(void *data, bool is_idle)
 
       for (i = new_start; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
-         char entry_value[255];
          char entry_title_buf[255];
          char type_str_buf[255];
          menu_entry_t entry;
+         const char *entry_label               = NULL;
+         const char *entry_value               = NULL;
          size_t entry_title_max_len            = 0;
          unsigned entry_value_len              = 0;
          bool entry_selected                   = (i == selection);
@@ -3402,19 +3403,19 @@ static void rgui_render(void *data, bool is_idle)
          if (i > (selection + 100))
             continue;
 
-         entry_value[0]     = '\0';
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
 
          /* Get current entry */
          menu_entry_init(&entry);
+         entry.path_enabled     = false;
+         entry.label_enabled    = false;
+         entry.sublabel_enabled = false;
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
-         /* Read entry parameters
-          * Note: can use entry.path/entry.rich_label directly,
-          * but have to use menu_entry_get_value() for the value
-          * since this function handles password entries... */
-         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+         /* Read entry parameters */
+         menu_entry_get_rich_label(&entry, &entry_label);
+         menu_entry_get_value(&entry, &entry_value);
 
          /* Get base length of entry title field */
          entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
@@ -3478,7 +3479,7 @@ static void rgui_render(void *data, bool is_idle)
          /* Format entry title string */
          ticker.s        = entry_title_buf;
          ticker.len      = entry_title_max_len;
-         ticker.str      = string_is_empty(entry.rich_label) ? entry.path : entry.rich_label;
+         ticker.str      = entry_label;
          ticker.selected = entry_selected;
 
          menu_animation_ticker(&ticker);
@@ -3508,8 +3509,6 @@ static void rgui_render(void *data, bool is_idle)
          if (entry_selected)
             blit_line(fb_width, x, y, ">",
                   entry_color, rgui->colors.shadow_color);
-
-         menu_entry_free(&entry);
       }
 
       /* Draw mini thumbnails, if required */
@@ -4351,10 +4350,18 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
    if (settings->bools.menu_show_sublabels && selection < menu_entries_get_size())
    {
       menu_entry_t entry;
+      const char *sublabel = NULL;
+      
       menu_entry_init(&entry);
+      entry.path_enabled       = false;
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
       menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
       
-      if (!string_is_empty(entry.sublabel))
+      menu_entry_get_sublabel(&entry, &sublabel);
+      
+      if (!string_is_empty(sublabel))
       {
          static const char* const sublabel_spacer = RGUI_TICKER_SPACER;
          struct string_list *list = NULL;
@@ -4364,7 +4371,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
          /* Sanitise sublabel
           * > Replace newline characters with standard delimiter
           * > Remove whitespace surrounding each sublabel line */
-         list = string_split(entry.sublabel, "\n");
+         list = string_split(sublabel, "\n");
          if (list)
          {
             for (line_index = 0; line_index < list->size; line_index++)
@@ -4382,8 +4389,6 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
             string_list_free(list);
          }
       }
-      
-      menu_entry_free(&entry);
    }
 }
 

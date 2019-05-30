@@ -208,19 +208,25 @@ typedef struct menu_entry
    unsigned type;
    unsigned spacing;
    size_t entry_idx;
-   char *path;
-   char *label;
-   char *sublabel;
-   char *rich_label;
-   char *value;
+   char path[255];
+   char label[255];
+   char sublabel[512];
+   char rich_label[255];
+   char value[255];
+   char password_value[255];
    bool checked;
+   bool path_enabled;
+   bool label_enabled;
+   bool rich_label_enabled;
+   bool value_enabled;
+   bool sublabel_enabled;
 } menu_entry_t;
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-char *menu_entry_get_path(menu_entry_t *entry);
+void menu_entry_get_path(menu_entry_t *entry, const char **path);
 
-void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
+void menu_entry_get_label(menu_entry_t *entry, const char **label);
 
 unsigned menu_entry_get_spacing(menu_entry_t *entry);
 
@@ -250,11 +256,11 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
 
 void menu_entry_reset(uint32_t i);
 
-char *menu_entry_get_rich_label(menu_entry_t *entry);
+void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label);
 
-char *menu_entry_get_sublabel(menu_entry_t *entry);
+void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel);
 
-void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len);
+void menu_entry_get_value(menu_entry_t *entry, const char **value);
 
 void menu_entry_set_value(uint32_t i, const char *s);
 
@@ -275,8 +281,6 @@ int menu_entry_select(uint32_t i);
 
 int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
-
-void menu_entry_free(menu_entry_t *entry);
 
 void menu_entry_init(menu_entry_t *entry);
 
