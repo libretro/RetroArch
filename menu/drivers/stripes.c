@@ -4309,8 +4309,11 @@ static int stripes_list_push(void *data, void *userdata,
             }
 
 #ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_restart_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+               menu_displaylist_setting(&entry);
+            }
 #endif
 
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)

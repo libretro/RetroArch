@@ -924,11 +924,6 @@ static int ozone_list_push(void *data, void *userdata,
             menu_displaylist_setting(&entry);
 #endif
 
-#ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
-#endif
-
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
@@ -942,7 +937,7 @@ static int ozone_list_push(void *data, void *userdata,
             }
 
 #if !defined(IOS)
-            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+            if (settings->bools.menu_show_restart_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
                menu_displaylist_setting(&entry);

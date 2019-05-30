@@ -2136,10 +2136,7 @@ static int materialui_list_push(void *data, void *userdata,
                entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
                menu_displaylist_setting(&entry);
             }
-#ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
-#endif
+
             if (settings->bools.menu_show_configurations)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
@@ -2152,6 +2149,13 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 #if !defined(IOS)
+
+            if (settings->bools.menu_show_restart_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+               menu_displaylist_setting(&entry);
+            }
+
             entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
             menu_displaylist_setting(&entry);
 #endif

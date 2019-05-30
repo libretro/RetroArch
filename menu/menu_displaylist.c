@@ -3800,6 +3800,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_SHOW_WIMP,                                             PARSE_ONLY_UINT  },
                {MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,                              PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH,                           PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_MENU_SHOW_REBOOT,                                      PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,                                    PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,                                 PARSE_ONLY_BOOL  },
@@ -6901,7 +6902,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      PARSE_ACTION, false) == 0)
                   count++;
 
-            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+            if (settings->bools.menu_show_restart_retroarch)
                if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_RESTART_RETROARCH,
                      PARSE_ACTION, false) == 0)
