@@ -955,6 +955,10 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       return;
 
    menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
@@ -1000,8 +1004,6 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          free(path);
       }
    }
-
-   menu_entry_free(&entry);
 }
 
 static void xmb_update_thumbnail_image(void *data)
@@ -1184,12 +1186,14 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
 
          menu_entry_init(&entry);
+         entry.label_enabled      = false;
+         entry.rich_label_enabled = false;
+         entry.value_enabled      = false;
+         entry.sublabel_enabled   = false;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
             menu_thumbnail_set_content(xmb->thumbnail_path_data, entry.path);
-
-         menu_entry_free(&entry);
       }
    }
    else if (string_is_equal(s, "imageviewer"))
@@ -1200,13 +1204,15 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
 
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
+      entry.sublabel_enabled   = false;
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
          if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
             menu_thumbnail_set_content_image(xmb->thumbnail_path_data, node->fullpath, entry.path);
-
-      menu_entry_free(&entry);
    }
    else if (!string_is_empty(s))
    {
@@ -1246,12 +1252,17 @@ static void xmb_selection_pointer_changed(
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
-   menu_entry_init(&entry);
-
    if (!xmb)
-      goto end;
+      return;
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+
+   menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_size();
@@ -1377,9 +1388,6 @@ static void xmb_selection_pointer_changed(
          menu_animation_push(&anim_entry);
       }
    }
-
-end:
-   menu_entry_free(&entry);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
@@ -2832,7 +2840,7 @@ static int xmb_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
-   char *ticker_str                  = NULL;
+   const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
    uintptr_t texture_switch          = 0;
@@ -2876,11 +2884,7 @@ static int xmb_draw_item(
             sizeof(entry_path));
 
       if (!string_is_empty(entry_path))
-      {
-         if (!string_is_empty(entry->path))
-            free(entry->path);
-         entry->path = strdup(entry_path);
-      }
+         strlcpy(entry->path, entry_path, sizeof(entry->path));
    }
 
    if (string_is_equal(entry->value,
@@ -2948,7 +2952,7 @@ static int xmb_draw_item(
    }
 
    if (!string_is_empty(entry->path))
-      ticker_str   = menu_entry_get_rich_label(entry);
+      menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2997,8 +3001,8 @@ static int xmb_draw_item(
 
    if (!string_is_empty(entry->value))
    {
-      char entry_value[255];
-      menu_entry_get_value(entry, entry_value, sizeof(entry_value));
+      const char *entry_value = NULL;
+      menu_entry_get_value(entry, &entry_value);
       ticker.str   = entry_value;
 
       menu_animation_ticker(&ticker);
@@ -3079,8 +3083,6 @@ static int xmb_draw_item(
             &color[0],
             xmb->shadow_offset);
 
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return 0;
 }
 
@@ -3141,6 +3143,9 @@ static void xmb_draw_items(
       int ret;
       menu_entry_t entry;
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.sublabel_enabled   = (i == current);
       menu_entry_get(&entry, 0, i, list, true);
       ret = xmb_draw_item(video_info,
             &entry,
@@ -3149,7 +3154,6 @@ static void xmb_draw_items(
             list, color,
             i, current,
             width, height);
-      menu_entry_free(&entry);
       if (ret == -1)
          break;
    }

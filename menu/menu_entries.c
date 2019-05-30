@@ -109,84 +109,59 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    return MENU_ENTRY_ACTION;
 }
 
-void menu_entry_free(menu_entry_t *entry)
-{
-   if (!entry)
-      return;
-   if (!string_is_empty(entry->label))
-      free(entry->label);
-   if (!string_is_empty(entry->rich_label))
-      free(entry->rich_label);
-   if (!string_is_empty(entry->sublabel))
-      free(entry->sublabel);
-   if (!string_is_empty(entry->path))
-      free(entry->path);
-   if (!string_is_empty(entry->value))
-      free(entry->value);
-   entry->path          = NULL;
-   entry->label         = NULL;
-   entry->value         = NULL;
-   entry->sublabel      = NULL;
-   entry->rich_label    = NULL;
-}
-
 void menu_entry_init(menu_entry_t *entry)
 {
-   entry->path          = NULL;
-   entry->label         = NULL;
-   entry->value         = NULL;
-   entry->sublabel      = NULL;
-   entry->rich_label    = NULL;
-   entry->enum_idx      = MSG_UNKNOWN;
-   entry->entry_idx     = 0;
-   entry->idx           = 0;
-   entry->type          = 0;
-   entry->spacing       = 0;
+   entry->path[0]            = '\0';
+   entry->label[0]           = '\0';
+   entry->sublabel[0]        = '\0';
+   entry->rich_label[0]      = '\0';
+   entry->value[0]           = '\0';
+   entry->password_value[0]  = '\0';
+   entry->enum_idx           = MSG_UNKNOWN;
+   entry->entry_idx          = 0;
+   entry->idx                = 0;
+   entry->type               = 0;
+   entry->spacing            = 0;
+   entry->path_enabled       = true;
+   entry->label_enabled      = true;
+   entry->rich_label_enabled = true;
+   entry->value_enabled      = true;
+   entry->sublabel_enabled   = true;
 }
 
-char *menu_entry_get_path(menu_entry_t *entry)
+void menu_entry_get_path(menu_entry_t *entry, const char **path)
 {
-   if (!entry || string_is_empty(entry->path))
-      return NULL;
-   return strdup(entry->path);
+   if (!entry || !path)
+      return;
+
+   *path = entry->path;
 }
 
-/*
- * Return Value
- *
- * The function returns a heap-allocated string if
- * successful. It's the callee's responsibility to
- * free this.
- */
-char *menu_entry_get_rich_label(menu_entry_t *entry)
+void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label)
 {
-   if (!entry)
-      return NULL;
+   if (!entry || !rich_label)
+      return;
+
    if (!string_is_empty(entry->rich_label))
-      return strdup(entry->rich_label);
-   if (!string_is_empty(entry->path))
-      return strdup(entry->path);
-   return NULL;
+      *rich_label = entry->rich_label;
+   else
+      *rich_label = entry->path;
 }
 
-/*
- * Return Value
- *
- * The function returns a heap-allocated string if
- * successful. It's the callee's responsibility to
- * free this.
- */
-char *menu_entry_get_sublabel(menu_entry_t *entry)
+void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel)
 {
-   if (!entry || string_is_empty(entry->sublabel))
-      return NULL;
-   return strdup(entry->sublabel);
+   if (!entry || !sublabel)
+      return;
+
+   *sublabel = entry->sublabel;
 }
 
-void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len)
+void menu_entry_get_label(menu_entry_t *entry, const char **label)
 {
-   if (entry && !string_is_empty(entry->label))
-      strlcpy(s, entry->label, len);
+   if (!entry || !label)
+      return;
+
+   *label = entry->label;
 }
 
 unsigned menu_entry_get_spacing(menu_entry_t *entry)
@@ -339,20 +314,15 @@ void menu_entry_reset(uint32_t i)
    menu_entry_action(&entry, i, MENU_ACTION_START);
 }
 
-void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
+void menu_entry_get_value(menu_entry_t *entry, const char **value)
 {
-   size_t size, i;
-
-   if (!entry || string_is_empty(entry->value))
+   if (!entry || !value)
       return;
 
-   size = strlcpy(s, entry->value, len);
-
    if (menu_entry_is_password(entry))
-   {
-      for (i = 0; i < size; i++)
-         s[i] = '*';
-   }
+      *value = entry->password_value;
+   else
+      *value = entry->value;
 }
 
 void menu_entry_set_value(uint32_t i, const char *s)
@@ -409,6 +379,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(stack_idx);
    file_list_t *list          = (userdata) ? (file_list_t*)userdata : selection_buf;
+   bool path_enabled          = entry->path_enabled;
 
    newpath[0]                 = '\0';
 
@@ -421,8 +392,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
 
-   if (!string_is_empty(entry_label))
-      entry->label = strdup(entry_label);
+   if (entry->label_enabled && !string_is_empty(entry_label))
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
 
    if (cbs)
    {
@@ -433,79 +404,85 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
 
-      if (cbs->action_get_value && use_representation)
+      if (entry->rich_label_enabled && cbs->action_label)
       {
-         char tmp[255];
-         tmp[0] = '\0';
-
-         cbs->action_get_value(list,
-               &entry->spacing, entry->type,
-               (unsigned)i, label,
-               tmp,
-               sizeof(tmp),
-               path,
-               newpath,
-               sizeof(newpath)
-               );
-
-         if (!string_is_empty(tmp))
-            entry->value = strdup(tmp);
-      }
-
-      if (cbs->action_label)
-      {
-         char tmp[255];
-         tmp[0] = '\0';
-
          cbs->action_label(list,
                entry->type, (unsigned)i,
                label, path,
-               tmp,
-               sizeof(tmp));
+               entry->rich_label,
+               sizeof(entry->rich_label));
 
-         if (!string_is_empty(tmp))
-            entry->rich_label = strdup(tmp);
+         if (string_is_empty(entry->rich_label))
+            path_enabled = true;
       }
 
-      if (cbs->action_sublabel)
+      if ((path_enabled || entry->value_enabled) &&
+          cbs->action_get_value &&
+          use_representation)
       {
-         char tmp[512];
-         tmp[0] = '\0';
+         cbs->action_get_value(list,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
+               entry->value,
+               entry->value_enabled ? sizeof(entry->value) : 0,
+               path,
+               newpath,
+               path_enabled ? sizeof(newpath) : 0);
 
-         if (!string_is_empty(cbs->action_sublabel_cache))
-            entry->sublabel = strdup(cbs->action_sublabel_cache);
-         else
+         if (!string_is_empty(entry->value))
          {
+            if (menu_entry_is_password(entry))
+            {
+               size_t size, i;
+               size = strlcpy(entry->password_value, entry->value,
+                     sizeof(entry->password_value));
+               for (i = 0; i < size; i++)
+                  entry->password_value[i] = '*';
+            }
+         }
+      }
+
+      if (entry->sublabel_enabled)
+      {
+         if (!string_is_empty(cbs->action_sublabel_cache))
+            strlcpy(entry->sublabel,
+                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
+         else if (cbs->action_sublabel)
+         {
+            char tmp[512];
+            tmp[0] = '\0';
+
             if (cbs->action_sublabel(list,
                      entry->type, (unsigned)i,
                      label, path,
                      tmp,
-                     sizeof(tmp)))
+                     sizeof(tmp)) > 0)
             {
-               /* if this function callback returns true,
+               /* If this function callback returns true,
                 * we know that the value won't change - so we
                 * can cache it instead. */
                strlcpy(cbs->action_sublabel_cache,
                      tmp, sizeof(cbs->action_sublabel_cache));
             }
 
-            if (!string_is_empty(tmp))
-               entry->sublabel = strdup(tmp);
+            strlcpy(entry->sublabel, tmp, sizeof(entry->sublabel));
          }
       }
    }
 
-   if (!string_is_empty(path) && !use_representation)
-      strlcpy(newpath,  path, sizeof(newpath));
-   else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
-         && !cbs->setting->dont_use_enum_idx_representation)
-      strlcpy(newpath,
-            msg_hash_to_str(cbs->setting->enum_value_idx),
-            sizeof(newpath));
+   if (path_enabled)
+   {
+      if (!string_is_empty(path) && !use_representation)
+         strlcpy(newpath, path, sizeof(newpath));
+      else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
+            && !cbs->setting->dont_use_enum_idx_representation)
+         strlcpy(newpath,
+               msg_hash_to_str(cbs->setting->enum_value_idx),
+               sizeof(newpath));
 
-   if (!string_is_empty(newpath))
-      entry->path = strdup(newpath);
-
+      if (!string_is_empty(newpath))
+         strlcpy(entry->path, newpath, sizeof(entry->path));
+   }
 }
 
 bool menu_entry_is_currently_selected(unsigned id)

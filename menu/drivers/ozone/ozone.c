@@ -1285,12 +1285,14 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
 
          menu_entry_init(&entry);
+         entry.label_enabled      = false;
+         entry.rich_label_enabled = false;
+         entry.value_enabled      = false;
+         entry.sublabel_enabled   = false;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
             menu_thumbnail_set_content(ozone->thumbnail_path_data, entry.path);
-
-         menu_entry_free(&entry);
       }
    }
    else if (string_is_equal(s, "imageviewer"))
@@ -1301,13 +1303,15 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
 
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
+      entry.sublabel_enabled   = false;
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
          if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
             menu_thumbnail_set_content_image(ozone->thumbnail_path_data, node->fullpath, entry.path);
-
-      menu_entry_free(&entry);
    }
    else if (!string_is_empty(s))
    {
@@ -1366,11 +1370,15 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
    size_t new_selection = menu_navigation_get_selection();
    ozone_node_t *node   = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, new_selection);
 
-   menu_entry_init(&entry);
-
    if (!node)
       return;
 
+   menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    if (ozone->selection != new_selection)
@@ -1424,8 +1432,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
       /* TODO: update savestate thumbnail and path */
    }
-
-   menu_entry_free(&entry);
 }
 
 static void ozone_navigation_clear(void *data, bool pending_push)
