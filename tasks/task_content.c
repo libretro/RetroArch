@@ -393,7 +393,6 @@ static bool load_content_from_compressed_archive(
    size_t new_path_size              = PATH_MAX_LENGTH * sizeof(char);
    char *new_basedir                 = (char*)malloc(new_basedir_size);
    char *new_path                    = (char*)malloc(new_path_size);
-   bool ret                          = false;
 
    new_path[0]                       = '\0';
    new_basedir[0]                    = '\0';
@@ -421,10 +420,8 @@ static bool load_content_from_compressed_archive(
          path_basename(path), new_path_size);
    free(new_basedir);
 
-   ret = file_archive_compressed_read(path,
-         NULL, new_path, &new_path_len);
-
-   if (!ret || new_path_len < 0)
+   if (!file_archive_compressed_read(path,
+         NULL, new_path, &new_path_len) || new_path_len < 0)
    {
       size_t path_size = 1024 * sizeof(char);
       char *str        = (char*)malloc(path_size);
@@ -744,9 +741,7 @@ static bool content_file_load(
       rcheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
-      {
          rcheevos_load(info);
-      }
    }
 #endif
 
