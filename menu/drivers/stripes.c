@@ -612,7 +612,7 @@ static void stripes_draw_icon(
       draw.y            = height - y - shadow_offset;
 
 #if defined(VITA) || defined(WIIU)
-      if(scale_factor < 1)
+      if (scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size-draw.width)/2;
          draw.y         = draw.y + (icon_size-draw.width)/2;
@@ -626,7 +626,7 @@ static void stripes_draw_icon(
    draw.y               = height - y;
 
 #if defined(VITA) || defined(WIIU)
-   if(scale_factor < 1)
+   if (scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size-draw.width)/2;
       draw.y            = draw.y + (icon_size-draw.width)/2;
@@ -1042,7 +1042,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             if (!string_is_empty(stripes->savestate_thumbnail_file_path))
                free(stripes->savestate_thumbnail_file_path);
@@ -1063,7 +1063,7 @@ static void stripes_update_thumbnail_image(void *data)
 
    if (!(string_is_empty(stripes->thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->thumbnail_file_path))
+         if (path_is_valid(stripes->thumbnail_file_path))
             task_push_image_load(stripes->thumbnail_file_path,
                   supports_rgba,
                   menu_display_handle_thumbnail_upload, NULL);
@@ -1076,7 +1076,7 @@ static void stripes_update_thumbnail_image(void *data)
 
    if (!(string_is_empty(stripes->left_thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->left_thumbnail_file_path))
+         if (path_is_valid(stripes->left_thumbnail_file_path))
             task_push_image_load(stripes->left_thumbnail_file_path,
                   supports_rgba,
                   menu_display_handle_left_thumbnail_upload, NULL);
@@ -1510,13 +1510,13 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!filestream_exists(path))
+      if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-       if(!string_is_equal(path, stripes->bg_file_path))
+       if (!string_is_equal(path, stripes->bg_file_path))
        {
-           if(filestream_exists(path))
+           if (path_is_valid(path))
            {
               task_push_image_load(path,
                     video_driver_supports_rgba(),
@@ -1944,7 +1944,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->icon);
                video_driver_texture_load(&ti,
@@ -1961,7 +1961,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, content_texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->content_icon);
                video_driver_texture_load(&ti,
@@ -3679,7 +3679,7 @@ static void stripes_context_reset_background(const char *iconpath)
             PATH_MAX_LENGTH * sizeof(char));
    }
 
-   if (filestream_exists(path))
+   if (path_is_valid(path))
       task_push_image_load(path,
             video_driver_supports_rgba(),
             menu_display_handle_wallpaper_upload, NULL);

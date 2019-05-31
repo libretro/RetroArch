@@ -24,7 +24,6 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1136,16 +1135,16 @@ static void command_event_load_auto_state(void)
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
 
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   if (!global || !settings->bools.savestate_auto_load)
       return;
-#endif
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active)
       return;
 #endif
-   if (!global || !settings->bools.savestate_auto_load)
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return;
+#endif
 
    savestate_name_auto             = (char*)calloc(PATH_MAX_LENGTH,
          sizeof(*savestate_name_auto));
@@ -1154,7 +1153,7 @@ static void command_event_load_auto_state(void)
          file_path_str(FILE_PATH_AUTO_EXTENSION),
          savestate_name_auto_size);
 
-   if (!filestream_exists(savestate_name_auto))
+   if (!path_is_valid(savestate_name_auto))
    {
       free(savestate_name_auto);
       return;
@@ -1518,7 +1517,7 @@ static bool command_event_save_core_config(void)
                   sizeof(tmp));
 
          strlcat(config_path, tmp, config_size);
-         if (!filestream_exists(config_path))
+         if (!path_is_valid(config_path))
          {
             found_path = true;
             break;

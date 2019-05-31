@@ -1261,7 +1261,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
    if (save_to_disk)
    {
-      if (filestream_exists(path) && !autosave)
+      if (path_is_valid(path) && !autosave)
       {
          /* Before overwritting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
