@@ -1914,32 +1914,17 @@ static void retroarch_validate_cpu_features(void)
 #endif
 }
 
-static void retroarch_main_init_media(void)
+static void retroarch_main_init_media(enum rarch_content_type cont_type,
+      bool builtin_mediaplayer, bool builtin_imageviewer)
 {
-   settings_t     *settings = config_get_ptr();
-   const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
-   bool builtin_imageviewer = false;
-   bool builtin_mediaplayer = false;
-
-   if (!settings)
-      return;
-
-   builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
-   builtin_mediaplayer      = settings->bools.multimedia_builtin_mediaplayer_enable;
-
-   if (!builtin_mediaplayer && !builtin_imageviewer)
-      return;
-
-   if (string_is_empty(fullpath))
-      return;
-
-   switch (path_is_media_type(fullpath))
+   switch (cont_type)
    {
       case RARCH_CONTENT_MOVIE:
       case RARCH_CONTENT_MUSIC:
          if (builtin_mediaplayer)
          {
-            /* TODO/FIXME - it needs to become possible to switch between FFmpeg and MPV at runtime */
+            /* TODO/FIXME - it needs to become possible to 
+             * switch between FFmpeg and MPV at runtime */
 #if defined(HAVE_MPV)
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_MPV, false);
@@ -2037,7 +2022,27 @@ bool retroarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
 
-   retroarch_main_init_media();
+   {
+      const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+      settings_t     *settings = config_get_ptr();
+
+      if (string_is_empty(fullpath))
+      {
+         settings_t     *settings          = config_get_ptr();
+         bool builtin_imageviewer          = false;
+         bool builtin_mediaplayer          = false;
+         enum rarch_content_type cont_type = path_is_media_type(fullpath);
+         
+         if (settings)
+         {
+            builtin_imageviewer   = settings->bools.multimedia_builtin_imageviewer_enable;
+            builtin_mediaplayer   = settings->bools.multimedia_builtin_mediaplayer_enable;
+         }
+
+         retroarch_main_init_media(cont_type, builtin_mediaplayer,
+               builtin_imageviewer);
+      }
+   }
 
    /* Pre-initialize all drivers 
     * Attempts to find a default driver for
