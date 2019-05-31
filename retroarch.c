@@ -5380,16 +5380,16 @@ finish:
 
 void rarch_log_file_init(void)
 {
+   char log_directory[PATH_MAX_LENGTH];
+   char log_file_path[PATH_MAX_LENGTH];
    FILE             *fp       = NULL;
    settings_t *settings       = config_get_ptr();
    bool log_to_file           = settings->bools.log_to_file;
    bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
-   char log_directory[PATH_MAX_LENGTH];
-   char log_file_path[PATH_MAX_LENGTH];
    
-   log_directory[0] = '\0';
-   log_file_path[0] = '\0';
+   log_directory[0]           = '\0';
+   log_file_path[0]           = '\0';
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5434,15 +5434,14 @@ void rarch_log_file_init(void)
    /* > Get directory/file paths */
    if (log_file_override_active)
    {
-      const char *last_slash        = NULL;
-      char tmp_buf[PATH_MAX_LENGTH] = {0};
-      size_t path_length;
-      
       /* Get log directory */
-      last_slash = find_last_slash(log_file_override_path);
+      const char *last_slash        = find_last_slash(log_file_override_path);
+
       if (last_slash)
       {
-         path_length = last_slash + 1 - log_file_override_path;
+         char tmp_buf[PATH_MAX_LENGTH] = {0};
+         size_t path_length            = last_slash + 1 - log_file_override_path;
+
          if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
             strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
