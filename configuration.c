@@ -3585,7 +3585,6 @@ static bool config_load_shader_preset_internal(
 {
    unsigned idx;
    size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
-   bool   ret              = false;
    char *shader_path       = (char*)malloc(path_size);
    
    shader_path[0]          = '\0';
@@ -3609,13 +3608,13 @@ static bool config_load_shader_preset_internal(
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
       retroarch_set_shader_preset(shader_path);
-      ret = true;
-      break;
+      free(shader_path);
+      return true;
    }
 
    free(shader_path);
 
-   return ret;
+   return false;
 }
 
 /**
@@ -4019,10 +4018,8 @@ bool config_save_file(const char *path)
 
    /* Verbosity isn't in bool_settings since it needs to be loaded differently */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-   {
       config_set_bool(conf, "log_verbosity",
             verbosity_is_enabled());
-   }
    config_set_bool(conf, "perfcnt_enable",
          rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
