@@ -54,9 +54,9 @@
 #endif
 
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
-static const bool pointer_enable = true;
+#define DEFAULT_POINTER_ENABLE true
 #else
-static const bool pointer_enable = false;
+#define DEFAULT_POINTER_ENABLE false
 #endif
 
 /* Certain platforms might have assets stored in the bundle that
@@ -64,9 +64,9 @@ static const bool pointer_enable = false;
  *
  * Examples include: Android, iOS/OSX) */
 #if defined(ANDROID) || defined(IOS)
-static bool bundle_assets_extract_enable = true;
+#define DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE true
 #else
-static bool bundle_assets_extract_enable = false;
+#define DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE false
 #endif
 
 #ifdef HAVE_MATERIALUI
@@ -191,14 +191,14 @@ static unsigned swap_interval = 1;
  * at the cost of worse synchronization and latency.
  */
 #if defined(HAVE_LIBNX)
-static const bool video_threaded = true;
+#define DEFAULT_VIDEO_THREADED true
 #else
-static const bool video_threaded = false;
+#define DEFAULT_VIDEO_THREADED false
 #endif
 
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
-/* For single-core consoles right now it's better to have this be disabled. */
+/* For single-core consoles right now it's best to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
 static const bool threaded_data_runloop_enable = true;
