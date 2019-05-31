@@ -3488,7 +3488,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Save State thumbnail, right side */
    if (xmb->savestate_thumbnail)
-   {
       xmb_draw_thumbnail(video_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left * scale_mod[5] +
@@ -3498,7 +3497,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->savestate_thumbnail_width * scale_mod[4],
             xmb->savestate_thumbnail_height * scale_mod[4],
             xmb->savestate_thumbnail);
-   }
 
    /* This is used for hiding thumbnails when going into sub-levels in the
     * Quick Menu as well as when selecting "Information" for a playlist entry.
@@ -4078,31 +4076,29 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_end(video_info);
 
    /* Vertical icons */
-   if (xmb)
-      xmb_draw_items(
-            video_info,
-            xmb,
-            xmb->selection_buf_old,
-            xmb->selection_ptr_old,
-            (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-            ? xmb->categories_selection_ptr :
-            xmb->categories_selection_ptr_old,
-            &item_color[0],
-            width,
-            height);
+   xmb_draw_items(
+         video_info,
+         xmb,
+         xmb->selection_buf_old,
+         xmb->selection_ptr_old,
+         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
+         ? xmb->categories_selection_ptr :
+         xmb->categories_selection_ptr_old,
+         &item_color[0],
+         width,
+         height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   if (xmb)
-      xmb_draw_items(
-            video_info,
-            xmb,
-            selection_buf,
-            selection,
-            xmb->categories_selection_ptr,
-            &item_color[0],
-            width,
-            height);
+   xmb_draw_items(
+         video_info,
+         xmb,
+         selection_buf,
+         selection,
+         xmb->categories_selection_ptr,
+         &item_color[0],
+         width,
+         height);
 
    font_driver_flush(video_info->width, video_info->height, xmb->font,
          video_info);
@@ -5148,9 +5144,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (xmb)
-   {
       xmb_context_reset_internal(xmb, is_threaded, true);
-   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
@@ -5813,13 +5807,13 @@ static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_ite
    {
       xmb_node_t *node = (xmb_node_t*) file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
 
-      *icon          = node->icon;
-      *playlist_name = xmb->title_name;
+      *icon            = node->icon;
+      *playlist_name   = xmb->title_name;
    }
    else
    {
-      *icon          = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
-      *playlist_name = "RetroArch";
+      *icon            = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+      *playlist_name   = "RetroArch";
    }
 
    return true;

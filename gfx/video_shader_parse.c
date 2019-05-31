@@ -29,7 +29,6 @@
 #include <rhash.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
-#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #include "../verbosity.h"
