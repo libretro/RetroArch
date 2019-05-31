@@ -508,6 +508,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
+				INFOPLIST_OUTPUT_FORMAT = XML;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
@@ -594,6 +595,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
+				INFOPLIST_OUTPUT_FORMAT = XML;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
