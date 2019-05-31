@@ -2300,6 +2300,7 @@ void config_set_defaults(void)
          fill_pathname_join(config_file_path, settings->paths.directory_menu_config, file_path_str(FILE_PATH_MAIN_CONFIG), config_file_path_size);
          path_set(RARCH_PATH_CONFIG,
                config_file_path);
+         free(config_file_path);
       }
 #endif
    }
