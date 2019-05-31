@@ -198,7 +198,6 @@ enum  runloop_state
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
@@ -837,12 +836,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 void rarch_core_runtime_tick(void)
 {
-   retro_time_t frame_time;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (av_info && av_info->timing.fps)
    {
-      frame_time = (1.0 / av_info->timing.fps) * 1000000;
+      retro_time_t frame_time = (1.0 / av_info->timing.fps) * 1000000;
 
       /* Account for slow motion */
       if (runloop_slowmotion)
@@ -3356,11 +3354,9 @@ static bool input_driver_toggle_button_combo(
             return false;
          }
 
+         /* user started holding down the start button, start the timer */
          if (!rarch_timer_is_running(&timer))
-         {
-            /* user started holding down the start button, start the timer */
             rarch_timer_begin(&timer, HOLD_START_DELAY_SEC);
-         }
 
          rarch_timer_tick(&timer);
 
@@ -3743,7 +3739,10 @@ static enum runloop_state runloop_check_state(
       seq = 0;
 #endif
       if (runloop_idle)
-         return RUNLOOP_STATE_SLEEP;
+      {
+         retro_ctx.poll_cb();
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
    }
 
    /* Check game focus toggle */
@@ -4045,11 +4044,17 @@ static enum runloop_state runloop_check_state(
       }
 
       if (!check_is_oneshot)
-         return RUNLOOP_STATE_SLEEP;
+      {
+         retro_ctx.poll_cb();
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
    }
 
    if (!focused)
-      return RUNLOOP_STATE_SLEEP;
+   {
+      retro_ctx.poll_cb();
+      return RUNLOOP_STATE_POLLED_AND_SLEEP;
+   }
 
    /* Check if we have pressed the fast forward button */
    /* To avoid continous switching if we hold the button down, we require
@@ -4491,18 +4496,11 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_netplay_pause();
          *sleep_ms = 10;
          return 1;
-      case RUNLOOP_STATE_SLEEP:
-         retro_ctx.poll_cb();
-         runloop_netplay_pause();
-         *sleep_ms = 10;
-         return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
-            && settings->bools.menu_pause_libretro)
-         {
+               && settings->bools.menu_pause_libretro)
             runloop_netplay_pause();
-         }
 #endif
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
