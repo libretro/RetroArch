@@ -3817,12 +3817,12 @@ static enum runloop_state runloop_check_state(
     * Must press 3 times in a row to activate, but it will
     * alert the user of this with each press of the hotkey. */
    {
-      static uint32_t debug_seq = 0;
-      static bool old_pressed = false;
-      static bool old_any_pressed = false;
       int any_i;
-      bool any_pressed = false;
-      bool pressed = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
+      static uint32_t debug_seq   = 0;
+      static bool old_pressed     = false;
+      static bool old_any_pressed = false;
+      bool any_pressed            = false;
+      bool pressed                = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
 
       for (any_i = 0; any_i < ARRAY_SIZE(current_input.data); any_i++)
       {
@@ -4224,19 +4224,9 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_SLOWMOTION_HOLD_KEY);
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
-      {
-         if (runloop_slowmotion)
-            runloop_slowmotion = false;
-         else
-            runloop_slowmotion = true;
-      }
+         runloop_slowmotion = !runloop_slowmotion;
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
-      {
-         if (new_slowmotion_hold_button_state)
-            runloop_slowmotion = true;
-         else
-            runloop_slowmotion = false;
-      }
+         runloop_slowmotion = new_slowmotion_hold_button_state;
 
       if (runloop_slowmotion)
       {
