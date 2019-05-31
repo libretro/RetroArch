@@ -126,7 +126,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
   menu_entry_init(&entry);
   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
   menu_entry_get_path(&entry, &label);
-  menu_entry_get_value(&entry, buffer, sizeof(buffer));
+  menu_entry_get_value(&entry, &buffer);
 
   if (string_is_empty(label))
     strlcpy(buffer,
@@ -453,7 +453,7 @@ replacementString:(NSString *)string
    field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
-   menu_entry_get_value(&entry, buffer, sizeof(buffer));
+   menu_entry_get_value(&entry, &buffer);
    if (string_is_empty(buffer))
       strlcpy(buffer,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
