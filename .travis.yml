@@ -31,6 +31,8 @@ matrix:
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
     - compiler: clang
       env: CC=clang-6.0 CXX=clang++-6.0
     - compiler: clang
