@@ -73,7 +73,7 @@ before_install:
 script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
-       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib"
+       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
      fi
   - |
      if [ -n "$DISABLE_MENU" ]; then
