@@ -348,6 +348,7 @@ else
    HAVE_OPENGL='no'
 fi
 
+check_enabled EGL OPENGLES3 OpenGLES3 'EGL is' false
 check_enabled OPENGL CG Cg 'OpenGL is' false
 check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
 check_enabled OPENGL OPENGL1 OpenGL1 'OpenGL is' false
