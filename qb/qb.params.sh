@@ -68,6 +68,8 @@ opt_exists() # $opt is returned if exists in OPTS
 parse_input() # Parse stuff :V
 {	BUILD=''
 	OPTS=''
+	config_opts='./configure'
+
 	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
@@ -78,6 +80,7 @@ parse_input() # Parse stuff :V
 	#things in opt_exists()
 
 	while [ $# -gt 0 ]; do
+		config_opts="${config_opts} $1"
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
 			--global-config-dir=*|--sysconfdir=*) GLOBAL_CONFIG_DIR="${1#*=}";;
@@ -110,6 +113,17 @@ parse_input() # Parse stuff :V
 		esac
 		shift
 	done
+
+	cat > config.log << EOF
+Command line invocation:
+
+  \$ ${config_opts}
+
+## ----------- ##
+## Core Tests. ##
+## ----------- ##
+
+EOF
 }
 
 . qb/config.params.sh
