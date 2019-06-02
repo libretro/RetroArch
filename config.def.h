@@ -142,11 +142,11 @@ static const unsigned int def_user_language  = 0;
 #define DEFAULT_WINDOW_DECORATIONS true
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
-static const bool load_dummy_on_core_shutdown = false;
+#define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
 #else
-static const bool load_dummy_on_core_shutdown = true;
+#define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
-static const bool check_firmware_before_loading = false;
+#define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
@@ -211,11 +211,11 @@ static const bool check_firmware_before_loading = false;
 #define DEFAULT_VIDEO_SHARED_CONTEXT false
 
 /* Sets GC/Wii screen width. */
-static const unsigned video_viwidth = 640;
+#define DEFAULT_VIDEO_VI_WIDTH 640
 
 #ifdef GEKKO
 /* Removes 480i flicker, smooths picture a little. */
-static const bool video_vfilter = true;
+#define DEFAULT_VIDEO_VFILTER true
 #endif
 
 /* Smooths picture. */
@@ -258,25 +258,25 @@ static const bool video_vfilter = true;
 #endif
 
 /* Save configuration file on exit. */
-static bool config_save_on_exit = true;
+#define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
-static bool show_hidden_files = false;
+#define DEFAULT_SHOW_HIDDEN_FILES false
 
-static const bool overlay_hide_in_menu = true;
+#define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
-static const bool display_keyboard_overlay = false;
+#define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
 #ifdef HAKCHI
-static const float default_input_overlay_opacity = 0.5f;
+#define DEFAULT_INPUT_OVERLAY_OPACITY 0.5f
 #else
-static const float default_input_overlay_opacity = 0.7f;
+#define DEFAULT_INPUT_OVERLAY_OPACITY 0.7f
 #endif
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_animation.h"
 
-static bool default_block_config_read    = true;
+#define DEFAULT_BLOCK_CONFIG_READ true
 
 #ifdef HAVE_LIBNX
 static bool menu_use_preferred_system_color_theme = true;
@@ -688,7 +688,7 @@ static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFE
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
-static const bool block_sram_overwrite = false;
+#define DEFAULT_BLOCK_SRAM_OVERWRITE false
 
 /* When saving savestates, state index is automatically
  * incremented before saving.
