@@ -1342,15 +1342,14 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_D3DX = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX), 1)
-      DEFINES += -DHAVE_D3DX
+   ifeq ($(HAVE_D3DX9), 1)
+      HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d9
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx9
+      LIBS += $(D3D9_LIBS)
+      ifeq ($(HAVE_D3DX9), 1)
+         LIBS += $(D3DX9_LIBS)
       endif
    endif
    HAVE_DX_COMMON  = 1
@@ -1412,12 +1411,19 @@ ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
+   ifeq ($(HAVE_D3DX8), 1)
+      HAVE_D3DX_COMMON = 1
+   endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d8
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx8
+      LIBS += $(D3D8_LIBS)
+      ifeq ($(HAVE_D3DX8), 1)
+         LIBS += $(D3DX8_LIBS)
       endif
    endif
+endif
+
+ifeq ($(HAVE_D3DX_COMMON), 1)
+   DEFINES += -DHAVE_D3DX
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
