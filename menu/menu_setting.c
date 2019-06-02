@@ -7299,7 +7299,7 @@ static bool setting_append_list(
             bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].default_value  = load_dummy_on_core_shutdown;
+            bool_entries[1].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[2].target         = &settings->bools.set_supports_no_game_enable;
@@ -7357,13 +7357,13 @@ static bool setting_append_list(
             bool_entries[0].target         = &settings->bools.config_save_on_exit;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
-            bool_entries[0].default_value  = config_save_on_exit;
+            bool_entries[0].default_value  = DEFAULT_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].flags          = SD_FLAG_NONE;
 
             bool_entries[1].target         = &settings->bools.show_hidden_files;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
-            bool_entries[1].default_value  = show_hidden_files;
+            bool_entries[1].default_value  = DEFAULT_SHOW_HIDDEN_FILES;
             bool_entries[1].flags          = SD_FLAG_NONE;
 
             bool_entries[2].target         = &settings->bools.game_specific_options;
@@ -7552,7 +7552,7 @@ static bool setting_append_list(
             bool_entries[2].target         = &settings->bools.block_sram_overwrite;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
-            bool_entries[2].default_value  = block_sram_overwrite;
+            bool_entries[2].default_value  = DEFAULT_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].flags          = SD_FLAG_NONE;
 
             bool_entries[3].target         = &settings->bools.savestate_auto_index;
@@ -8713,7 +8713,7 @@ static bool setting_append_list(
                   &settings->uints.video_viwidth,
                   MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
                   MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-                  video_viwidth,
+                  DEFAULT_VIDEO_VI_WIDTH,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -10660,7 +10660,7 @@ static bool setting_append_list(
                &settings->bools.input_overlay_hide_in_menu,
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-               overlay_hide_in_menu,
+               DEFAULT_OVERLAY_HIDE_IN_MENU,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -10701,13 +10701,14 @@ static bool setting_append_list(
                   general_read_handler
                   );
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.input_overlay_show_mouse_cursor,
                MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-               overlay_show_mouse_cursor,
+               DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -10717,8 +10718,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-
-         menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
 
          CONFIG_PATH(
                list, list_info,
