@@ -7293,7 +7293,7 @@ static bool setting_append_list(
             bool_entries[0].target         = &settings->bools.video_shared_context;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].default_value  = video_shared_context;
+            bool_entries[0].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
             bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
@@ -7413,7 +7413,7 @@ static bool setting_append_list(
                   &settings->bools.video_shader_enable,
                   MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-                  shader_enable,
+                  DEFAULT_SHADER_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8645,7 +8645,7 @@ static bool setting_append_list(
                      &settings->uints.video_window_opacity,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-                     window_opacity,
+                     DEFAULT_WINDOW_OPACITY,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8662,7 +8662,7 @@ static bool setting_append_list(
                   &settings->bools.video_window_show_decorations,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-                  window_decorations,
+                  DEFAULT_WINDOW_DECORATIONS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8693,7 +8693,7 @@ static bool setting_append_list(
                   &settings->bools.video_scale_integer,
                   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-                  scale_integer,
+                  DEFAULT_SCALE_INTEGER,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -9003,7 +9003,7 @@ static bool setting_append_list(
                   &settings->bools.video_crop_overscan,
                   MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
                   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-                  crop_overscan,
+                  DEFAULT_CROP_OVERSCAN,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -11364,7 +11364,7 @@ static bool setting_append_list(
                &settings->bools.threaded_data_runloop_enable,
                MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-               threaded_data_runloop_enable,
+               DEFAULT_THREADED_DATA_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

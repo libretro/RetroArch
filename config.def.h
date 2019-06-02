@@ -136,10 +136,10 @@ static const unsigned int def_user_language  = 0;
 /* Amount of transparency to use for the main window.
  * 1 is the most transparent while 100 is opaque.
  */
-static const unsigned window_opacity = 100;
+#define DEFAULT_WINDOW_OPACITY 100
 
 /* Whether to show the usual window decorations like border, titlebar etc. */
-static const bool window_decorations = true;
+#define DEFAULT_WINDOW_DECORATIONS true
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 static const bool load_dummy_on_core_shutdown = false;
@@ -199,16 +199,16 @@ static const bool check_firmware_before_loading = false;
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */
-static const bool threaded_data_runloop_enable = false;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #else
-static const bool threaded_data_runloop_enable = true;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE true
 #endif
 #else
-static const bool threaded_data_runloop_enable = false;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #endif
 
 /* Set to true if HW render cores should get their private context. */
-static const bool video_shared_context = false;
+#define DEFAULT_VIDEO_SHARED_CONTEXT false
 
 /* Sets GC/Wii screen width. */
 static const unsigned video_viwidth = 640;
@@ -226,16 +226,16 @@ static const bool video_vfilter = true;
 
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
-static const bool shader_enable = true;
+#define DEFAULT_SHADER_ENABLE true
 #else
-static const bool shader_enable = false;
+#define DEFAULT_SHADER_ENABLE false
 #endif
 
 /* Only scale in integer steps.
  * The base size depends on system-reported geometry and aspect ratio.
  * If video_force_aspect is not set, X/Y will be integer scaled independently.
  */
-static const bool scale_integer = false;
+#define DEFAULT_SCALE_INTEGER false
 
 /* Controls aspect ratio handling. */
 
@@ -453,7 +453,7 @@ static bool default_log_to_file = false;
 static bool log_to_file_timestamp = false;
 
 /* Crop overscanned frames. */
-static const bool crop_overscan = true;
+#define DEFAULT_CROP_OVERSCAN true
 
 /* Font size for on-screen messages. */
 #if defined(HAVE_LIBDBGFONT)
