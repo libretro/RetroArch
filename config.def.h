@@ -263,6 +263,7 @@ static bool config_save_on_exit = true;
 static bool show_hidden_files = false;
 
 static const bool overlay_hide_in_menu = true;
+static const bool overlay_show_mouse_cursor = true;
 
 static const bool display_keyboard_overlay = false;
 
