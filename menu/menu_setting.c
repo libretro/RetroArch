@@ -10703,6 +10703,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_show_mouse_cursor,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+               DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_overlay,

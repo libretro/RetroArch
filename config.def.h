@@ -263,6 +263,7 @@ static const unsigned int def_user_language  = 0;
 #define DEFAULT_SHOW_HIDDEN_FILES false
 
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
