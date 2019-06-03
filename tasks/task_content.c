@@ -157,6 +157,9 @@ static int  pending_subsystem_rom_num                         = 0;
 static int  pending_subsystem_id                              = 0;
 static unsigned  pending_subsystem_rom_id                     = 0;
 
+static bool pending_content_rom_crc                           = false;
+static char pending_content_rom_crc_path[PATH_MAX_LENGTH]     = {0};
+
 static char pending_subsystem_ident[255];
 #if 0
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
@@ -349,12 +352,14 @@ static bool load_content_into_memory(
       /* If we have a media type, ignore CRC32 calculation. */
       if (type == RARCH_CONTENT_NONE)
       {
+         bool has_patch = false;
+
          /* First content file is significant, attempt to do patching,
           * CRC checking, etc. */
 
          /* Attempt to apply a patch. */
          if (!content_ctx->patch_is_blocked)
-            patch_content(
+            has_patch = patch_content(
                   content_ctx->is_ips_pref,
                   content_ctx->is_bps_pref,
                   content_ctx->is_ups_pref,
@@ -364,9 +369,17 @@ static bool load_content_into_memory(
                   (uint8_t**)&ret_buf,
                   (void*)length);
 
-         content_rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
-
-         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+         if (has_patch)
+         {
+            content_rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
+            RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+         }
+         else
+         {
+            pending_content_rom_crc      = true;
+            strlcpy(pending_content_rom_crc_path,
+                  path, sizeof(pending_content_rom_crc_path));
+         }
       }
       else
          content_rom_crc = 0;
@@ -644,14 +657,14 @@ static bool content_file_load(
             if (string_is_empty(new_basedir) || !path_is_directory(new_basedir) || !is_path_accessible_using_standard_io(new_basedir))
             {
                RARCH_WARN("Tried copying to cache directory, but "
-                  "cache directory was not set or found. "
-                  "Setting cache directory to root of "
-                  "writable app directory...\n");
+                     "cache directory was not set or found. "
+                     "Setting cache directory to root of "
+                     "writable app directory...\n");
                strlcpy(new_basedir, uwp_dir_data, new_basedir_size);
             }
 
             fill_pathname_join(new_path, new_basedir,
-               path_basename(path), new_path_size);
+                  path_basename(path), new_path_size);
             free(new_basedir);
 
             /* TODO: This may fail on very large files...
@@ -679,10 +692,10 @@ static bool content_file_load(
 
                free(buf);
                snprintf(msg,
-                  msg_size,
-                  "%s \"%s\". (during copy write)\n",
-                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                  path);
+                     msg_size,
+                     "%s \"%s\". (during copy write)\n",
+                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                     path);
                *error_string = strdup(msg);
                free(msg);
                return false;
@@ -694,7 +707,7 @@ static bool content_file_load(
                additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
             string_list_append(content_ctx->temporary_content,
-               new_path, attributes);
+                  new_path, attributes);
 
             free(new_path);
 
@@ -702,14 +715,11 @@ static bool content_file_load(
          }
 #endif
 
-/* It adds up to 10 seconds when loading large roms.
- * It's mainly used for network play which isn't available for these platforms. */
-#if !defined(GEKKO)
          RARCH_LOG("%s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
-         content_rom_crc = file_crc32(0, path);
-         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
-#endif
+         pending_content_rom_crc      = true;
+         strlcpy(pending_content_rom_crc_path,
+               path, sizeof(pending_content_rom_crc_path));
 
       }
    }
@@ -2032,6 +2042,13 @@ void content_unset_does_not_need_content(void)
 
 uint32_t content_get_crc(void)
 {
+   if (pending_content_rom_crc)
+   {
+      pending_content_rom_crc      = false;
+      content_rom_crc              = file_crc32(0,
+            (const char*)pending_content_rom_crc_path);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+   }
    return content_rom_crc;
 }
 
@@ -2069,6 +2086,7 @@ void content_deinit(void)
    content_rom_crc            = 0;
    _content_is_inited         = false;
    core_does_not_need_content = false;
+   pending_content_rom_crc    = false;
 }
 
 /* Set environment variables before a subsystem load */
