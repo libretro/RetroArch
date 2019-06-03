@@ -1733,7 +1733,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("network_remote_base_port",     &settings->uints.network_remote_base_port, true, network_remote_base_port, false);
 #endif
 #ifdef GEKKO
-   SETTING_UINT("video_viwidth",                &settings->uints.video_viwidth, true, video_viwidth, false);
+   SETTING_UINT("video_viwidth",                &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif
 #ifdef HAVE_MENU
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
