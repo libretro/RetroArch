@@ -1675,10 +1675,10 @@ static void wiiu_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu->menu.v->pos.x = 0.0f;
-   wiiu->menu.v->pos.y = 0.0f;
-   wiiu->menu.v->pos.width = width;
-   wiiu->menu.v->pos.height = height;
+   wiiu->menu.v->pos.x = wiiu->vp.x;
+   wiiu->menu.v->pos.y = wiiu->vp.y;
+   wiiu->menu.v->pos.width = wiiu->vp.width;
+   wiiu->menu.v->pos.height = wiiu->vp.height;
    wiiu->menu.v->coord.u = 0.0f;
    wiiu->menu.v->coord.v = 0.0f;
    wiiu->menu.v->coord.width = (float)width / wiiu->menu.texture.surface.width;
