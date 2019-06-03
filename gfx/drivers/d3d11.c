@@ -43,6 +43,7 @@
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_preprocess.h"
+#include "../../managers/state_manager.h"
 
 #include "../common/d3d_common.h"
 #include "../common/d3d11_common.h"
@@ -408,10 +409,11 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
-            &d3d11->mvp,                  /* MVP */
-            &d3d11->pass[i].rt.size_data, /* OutputSize */
-            &d3d11->frame.output_size,    /* FinalViewportSize */
-            &d3d11->pass[i].frame_count,  /* FrameCount */
+            &d3d11->mvp,                     /* MVP */
+            &d3d11->pass[i].rt.size_data,    /* OutputSize */
+            &d3d11->frame.output_size,       /* FinalViewportSize */
+            &d3d11->pass[i].frame_count,     /* FrameCount */
+            &d3d11->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -1355,6 +1357,8 @@ static bool d3d11_gfx_frame(
                frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
          else
             d3d11->pass[i].frame_count = frame_count;
+
+         d3d11->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {

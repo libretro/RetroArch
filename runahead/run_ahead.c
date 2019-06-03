@@ -161,7 +161,7 @@ static void runahead_clear_variables(void)
    runahead_last_frame_count         = 0;
 }
 
-static uint64_t runahead_get_frame_count()
+static uint64_t runahead_get_frame_count(void)
 {
    bool is_alive, is_focused = false;
    uint64_t frame_count = 0;

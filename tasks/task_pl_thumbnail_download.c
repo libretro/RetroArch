@@ -22,7 +22,6 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <net/net_http.h>
 
 #include "tasks_internal.h"
@@ -181,7 +180,7 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
    if (get_thumbnail_paths(pl_thumb, path, sizeof(path), url, sizeof(url)))
    {
       /* Only download missing thumbnails */
-      if (!filestream_exists(path) || pl_thumb->overwrite)
+      if (!path_is_valid(path) || pl_thumb->overwrite)
       {
          file_transfer_t *transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
          if (!transf)
@@ -262,7 +261,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
       case PL_THUMB_BEGIN:
          {
             /* Load playlist */
-            if (!filestream_exists(pl_thumb->playlist_path))
+            if (!path_is_valid(pl_thumb->playlist_path))
                goto task_finished;
             
             pl_thumb->playlist = playlist_init(pl_thumb->playlist_path, COLLECTION_SIZE);
@@ -519,13 +518,13 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    if (!pl_thumb->right_thumbnail_exists || pl_thumb->overwrite)
       if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &thumbnail_path))
-            do_refresh = filestream_exists(thumbnail_path);
+            do_refresh = path_is_valid(thumbnail_path);
    
    if (!do_refresh)
       if (!pl_thumb->left_thumbnail_exists || pl_thumb->overwrite)
          if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
             if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
-               do_refresh = filestream_exists(left_thumbnail_path);
+               do_refresh = path_is_valid(left_thumbnail_path);
    
    if (do_refresh)
       menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
@@ -586,12 +585,12 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             pl_thumb->right_thumbnail_exists = false;
             if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
                if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
-                  pl_thumb->right_thumbnail_exists = filestream_exists(right_thumbnail_path);
+                  pl_thumb->right_thumbnail_exists = path_is_valid(right_thumbnail_path);
             
             pl_thumb->left_thumbnail_exists = false;
             if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
                if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
-                  pl_thumb->left_thumbnail_exists = filestream_exists(left_thumbnail_path);
+                  pl_thumb->left_thumbnail_exists = path_is_valid(left_thumbnail_path);
             
             /* Set task title */
             task_free_title(task);

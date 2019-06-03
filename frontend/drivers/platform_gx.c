@@ -418,7 +418,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (filestream_exists(path))
+      if (path_is_valid(path))
          path_set(RARCH_PATH_CORE, path);
    }
 #endif

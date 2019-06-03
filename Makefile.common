@@ -1342,15 +1342,14 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_D3DX = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX), 1)
-      DEFINES += -DHAVE_D3DX
+   ifeq ($(HAVE_D3DX9), 1)
+      HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d9
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx9
+      LIBS += $(D3D9_LIBS)
+      ifeq ($(HAVE_D3DX9), 1)
+         LIBS += $(D3DX9_LIBS)
       endif
    endif
    HAVE_DX_COMMON  = 1
@@ -1412,12 +1411,19 @@ ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
+   ifeq ($(HAVE_D3DX8), 1)
+      HAVE_D3DX_COMMON = 1
+   endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d8
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx8
+      LIBS += $(D3D8_LIBS)
+      ifeq ($(HAVE_D3DX8), 1)
+         LIBS += $(D3DX8_LIBS)
       endif
    endif
+endif
+
+ifeq ($(HAVE_D3DX_COMMON), 1)
+   DEFINES += -DHAVE_D3DX
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
@@ -1723,11 +1729,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS \
                  -Ideps/rcheevos/include
 
-      OBJ += cheevos/cheevos.o \
-             cheevos/badges.o \
-             cheevos/var.o \
-             cheevos/cond.o \
-             cheevos-new/cheevos.o \
+      OBJ += cheevos-new/cheevos.o \
+             cheevos-new/badges.o \
              cheevos-new/fixup.o \
              cheevos-new/parser.o \
              cheevos-new/hash.o \
@@ -1922,7 +1925,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
-   DEFINES += -I$(DEPS_DIR)/libiosuhax
+   DEFINES += -DHAVE_IOSUHAX
    DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
@@ -1930,7 +1933,7 @@ ifeq ($(WANT_IOSUHAX), 1)
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
-   DEFINES += -I$(DEPS_DIR)/libfat/include
+   DEFINES += -DHAVE_LIBFAT
    DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \

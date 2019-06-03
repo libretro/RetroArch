@@ -27,6 +27,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #include "../video_driver.h"
 #include "../font_driver.h"
@@ -390,10 +391,11 @@ static bool d3d10_gfx_set_shader(void* data,
                &d3d10->luts[0].size_data, sizeof(*d3d10->luts)},
          },
          {
-            &d3d10->mvp,                  /* MVP */
-            &d3d10->pass[i].rt.size_data, /* OutputSize */
-            &d3d10->frame.output_size,    /* FinalViewportSize */
-            &d3d10->pass[i].frame_count,  /* FrameCount */
+            &d3d10->mvp,                     /* MVP */
+            &d3d10->pass[i].rt.size_data,    /* OutputSize */
+            &d3d10->frame.output_size,       /* FinalViewportSize */
+            &d3d10->pass[i].frame_count,     /* FrameCount */
+            &d3d10->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -1282,6 +1284,8 @@ static bool d3d10_gfx_frame(
                frame_count % d3d10->shader_preset->pass[i].frame_count_mod;
          else
             d3d10->pass[i].frame_count = frame_count;
+
+         d3d10->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {

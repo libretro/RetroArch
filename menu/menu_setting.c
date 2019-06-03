@@ -49,8 +49,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #include "../frontend/frontend_driver.h"
@@ -6045,8 +6044,7 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 
    if (settings && settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
    {
-      /* RCHEEVOS TODO: remove settings test */
-      !settings->bools.cheevos_old_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
+      rcheevos_toggle_hardcore_mode();
       command_event(CMD_EVENT_RESET, NULL);
       return;
    }
@@ -6655,14 +6653,19 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_RESTART_RETROARCH,
-               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+#if !defined(IOS)
+         if (frontend_driver_has_fork())
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_RESTART_RETROARCH,
+                  MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
+         }
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -7294,13 +7297,13 @@ static bool setting_append_list(
             bool_entries[0].target         = &settings->bools.video_shared_context;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].default_value  = video_shared_context;
+            bool_entries[0].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
             bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].default_value  = load_dummy_on_core_shutdown;
+            bool_entries[1].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[2].target         = &settings->bools.set_supports_no_game_enable;
@@ -7358,13 +7361,13 @@ static bool setting_append_list(
             bool_entries[0].target         = &settings->bools.config_save_on_exit;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
-            bool_entries[0].default_value  = config_save_on_exit;
+            bool_entries[0].default_value  = DEFAULT_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].flags          = SD_FLAG_NONE;
 
             bool_entries[1].target         = &settings->bools.show_hidden_files;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
-            bool_entries[1].default_value  = show_hidden_files;
+            bool_entries[1].default_value  = DEFAULT_SHOW_HIDDEN_FILES;
             bool_entries[1].flags          = SD_FLAG_NONE;
 
             bool_entries[2].target         = &settings->bools.game_specific_options;
@@ -7414,7 +7417,7 @@ static bool setting_append_list(
                   &settings->bools.video_shader_enable,
                   MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-                  shader_enable,
+                  DEFAULT_SHADER_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -7553,7 +7556,7 @@ static bool setting_append_list(
             bool_entries[2].target         = &settings->bools.block_sram_overwrite;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
-            bool_entries[2].default_value  = block_sram_overwrite;
+            bool_entries[2].default_value  = DEFAULT_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].flags          = SD_FLAG_NONE;
 
             bool_entries[3].target         = &settings->bools.savestate_auto_index;
@@ -7628,7 +7631,7 @@ static bool setting_append_list(
                   &settings->uints.autosave_interval,
                   MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
                   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-                  autosave_interval,
+                  DEFAULT_AUTOSAVE_INTERVAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -7704,7 +7707,7 @@ static bool setting_append_list(
                &settings->bools.rewind_enable,
                MENU_ENUM_LABEL_REWIND_ENABLE,
                MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-               rewind_enable,
+               DEFAULT_REWIND_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -7720,7 +7723,7 @@ static bool setting_append_list(
                   &settings->uints.rewind_granularity,
                   MENU_ENUM_LABEL_REWIND_GRANULARITY,
                   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-                  rewind_granularity,
+                  DEFAULT_REWIND_GRANULARITY,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -7735,7 +7738,7 @@ static bool setting_append_list(
                   &settings->sizes.rewind_buffer_size,
                   MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
                   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-                  rewind_buffer_size,
+                  DEFAULT_REWIND_BUFFER_SIZE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -7749,7 +7752,7 @@ static bool setting_append_list(
                   &settings->uints.rewind_buffer_size_step,
                   MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
                   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-                  rewind_buffer_size_step,
+                  DEFAULT_REWIND_BUFFER_SIZE_STEP,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -7775,7 +7778,7 @@ static bool setting_append_list(
                   &settings->bools.apply_cheats_after_load,
                   MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
                   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
-                  apply_cheats_after_load,
+                  DEFAULT_APPLY_CHEATS_AFTER_LOAD,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -7790,7 +7793,7 @@ static bool setting_append_list(
                   &settings->bools.apply_cheats_after_toggle,
                   MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
                   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
-                  apply_cheats_after_toggle,
+                  DEFAULT_APPLY_CHEATS_AFTER_TOGGLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8221,7 +8224,7 @@ static bool setting_append_list(
                   &settings->bools.video_fps_show,
                   MENU_ENUM_LABEL_FPS_SHOW,
                   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-                  fps_show,
+                  DEFAULT_FPS_SHOW,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8236,7 +8239,7 @@ static bool setting_append_list(
                   &settings->bools.video_memory_show,
                   MENU_ENUM_LABEL_MEMORY_SHOW,
                   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-                  memory_show,
+                  DEFAULT_MEMORY_SHOW,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8251,7 +8254,7 @@ static bool setting_append_list(
                   &settings->bools.video_statistics_show,
                   MENU_ENUM_LABEL_STATISTICS_SHOW,
                   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-                  statistics_show,
+                  DEFAULT_STATISTICS_SHOW,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8266,7 +8269,7 @@ static bool setting_append_list(
                &settings->bools.video_framecount_show,
                MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
                MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-               framecount_show,
+               DEFAULT_FRAMECOUNT_SHOW,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -8291,7 +8294,7 @@ static bool setting_append_list(
                   &settings->uints.video_monitor_index,
                   MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
                   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-                  monitor_index,
+                  DEFAULT_MONITOR_INDEX,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8309,7 +8312,7 @@ static bool setting_append_list(
                      &settings->bools.video_fullscreen,
                      MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
                      MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-                     fullscreen,
+                     DEFAULT_FULLSCREEN,
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
@@ -8328,7 +8331,7 @@ static bool setting_append_list(
                      &settings->bools.video_windowed_fullscreen,
                      MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-                     windowed_fullscreen,
+                     DEFAULT_WINDOWED_FULLSCREEN,
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
@@ -8344,7 +8347,7 @@ static bool setting_append_list(
                      &settings->uints.video_fullscreen_x,
                      MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
                      MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-                     fullscreen_x,
+                     DEFAULT_FULLSCREEN_X,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8359,7 +8362,7 @@ static bool setting_append_list(
                      &settings->uints.video_fullscreen_y,
                      MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
                      MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-                     fullscreen_y,
+                     DEFAULT_FULLSCREEN_Y,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8454,7 +8457,7 @@ static bool setting_append_list(
                   &settings->uints.video_aspect_ratio_idx,
                   MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-                  aspect_ratio_idx,
+                  DEFAULT_ASPECT_RATIO_IDX,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8603,7 +8606,7 @@ static bool setting_append_list(
                      &settings->floats.video_scale,
                      MENU_ENUM_LABEL_VIDEO_SCALE,
                      MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-                     scale,
+                     DEFAULT_SCALE,
                      "%.1fx",
                      &group_info,
                      &subgroup_info,
@@ -8618,7 +8621,7 @@ static bool setting_append_list(
                      &settings->uints.window_position_width,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-                     window_width,
+                     DEFAULT_WINDOW_WIDTH,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8632,7 +8635,7 @@ static bool setting_append_list(
                      &settings->uints.window_position_height,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-                     window_height,
+                     DEFAULT_WINDOW_HEIGHT,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8646,7 +8649,7 @@ static bool setting_append_list(
                      &settings->uints.video_window_opacity,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                      MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-                     window_opacity,
+                     DEFAULT_WINDOW_OPACITY,
                      &group_info,
                      &subgroup_info,
                      parent_group,
@@ -8663,7 +8666,7 @@ static bool setting_append_list(
                   &settings->bools.video_window_show_decorations,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-                  window_decorations,
+                  DEFAULT_WINDOW_DECORATIONS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8694,7 +8697,7 @@ static bool setting_append_list(
                   &settings->bools.video_scale_integer,
                   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-                  scale_integer,
+                  DEFAULT_SCALE_INTEGER,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8714,7 +8717,7 @@ static bool setting_append_list(
                   &settings->uints.video_viwidth,
                   MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
                   MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-                  video_viwidth,
+                  DEFAULT_VIDEO_VI_WIDTH,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8743,7 +8746,7 @@ static bool setting_append_list(
                   &settings->bools.video_smooth,
                   MENU_ENUM_LABEL_VIDEO_SMOOTH,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-                  video_smooth,
+                  DEFAULT_VIDEO_SMOOTH,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8805,7 +8808,7 @@ static bool setting_append_list(
                   video_driver_get_threaded(),
                   MENU_ENUM_LABEL_VIDEO_THREADED,
                   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-                  video_threaded,
+                  DEFAULT_VIDEO_THREADED,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8823,7 +8826,7 @@ static bool setting_append_list(
                   &settings->bools.video_vsync,
                   MENU_ENUM_LABEL_VIDEO_VSYNC,
                   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-                  vsync,
+                  DEFAULT_VSYNC,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8839,7 +8842,7 @@ static bool setting_append_list(
                   &settings->uints.video_swap_interval,
                   MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-                  swap_interval,
+                  DEFAULT_SWAP_INTERVAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8862,7 +8865,7 @@ static bool setting_append_list(
                         &settings->uints.video_max_swapchain_images,
                         MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                         MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        max_swapchain_images,
+                        DEFAULT_MAX_SWAPCHAIN_IMAGES,
                         &group_info,
                         &subgroup_info,
                         parent_group,
@@ -8883,7 +8886,7 @@ static bool setting_append_list(
                         &settings->bools.video_hard_sync,
                         MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
                         MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-                        hard_sync,
+                        DEFAULT_HARD_SYNC,
                         MENU_ENUM_LABEL_VALUE_OFF,
                         MENU_ENUM_LABEL_VALUE_ON,
                         &group_info,
@@ -8899,7 +8902,7 @@ static bool setting_append_list(
                         &settings->uints.video_hard_sync_frames,
                         MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
                         MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-                        hard_sync_frames,
+                        DEFAULT_HARD_SYNC_FRAMES,
                         &group_info,
                         &subgroup_info,
                         parent_group,
@@ -8920,7 +8923,7 @@ static bool setting_append_list(
                         &settings->bools.video_adaptive_vsync,
                         MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
                         MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-                        false,
+                        DEFAULT_ADAPTIVE_VSYNC,
                         MENU_ENUM_LABEL_VALUE_OFF,
                         MENU_ENUM_LABEL_VALUE_ON,
                         &group_info,
@@ -8938,7 +8941,7 @@ static bool setting_append_list(
                   &settings->uints.video_frame_delay,
                   MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
                   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-                  frame_delay,
+                  DEFAULT_FRAME_DELAY,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -8959,7 +8962,7 @@ static bool setting_append_list(
                         &settings->bools.video_black_frame_insertion,
                         MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                         MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-                        black_frame_insertion,
+                        DEFAULT_BLACK_FRAME_INSERTION,
                         MENU_ENUM_LABEL_VALUE_OFF,
                         MENU_ENUM_LABEL_VALUE_ON,
                         &group_info,
@@ -9004,7 +9007,7 @@ static bool setting_append_list(
                   &settings->bools.video_crop_overscan,
                   MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
                   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-                  crop_overscan,
+                  DEFAULT_CROP_OVERSCAN,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -9104,7 +9107,7 @@ static bool setting_append_list(
                &settings->bools.crt_switch_custom_refresh_enable,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
                MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-               audio_enable,
+               DEFAULT_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9223,7 +9226,7 @@ static bool setting_append_list(
                &settings->bools.audio_enable,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-               audio_enable,
+               DEFAULT_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9271,7 +9274,7 @@ static bool setting_append_list(
                &settings->floats.audio_volume,
                MENU_ENUM_LABEL_AUDIO_VOLUME,
                MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-               audio_volume,
+               DEFAULT_AUDIO_VOLUME,
                "%.1f",
                &group_info,
                &subgroup_info,
@@ -9286,7 +9289,7 @@ static bool setting_append_list(
                &settings->floats.audio_mixer_volume,
                MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
                MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-               audio_mixer_volume,
+               DEFAULT_AUDIO_MIXER_VOLUME,
                "%.1f",
                &group_info,
                &subgroup_info,
@@ -9314,7 +9317,7 @@ static bool setting_append_list(
                &settings->bools.audio_sync,
                MENU_ENUM_LABEL_AUDIO_SYNC,
                MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-               audio_sync,
+               DEFAULT_AUDIO_SYNC,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -9332,7 +9335,7 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
                g_defaults.settings.out_latency ?
-               g_defaults.settings.out_latency : out_latency,
+               g_defaults.settings.out_latency : DEFAULT_OUT_LATENCY,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -9364,7 +9367,7 @@ static bool setting_append_list(
                audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),
                MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
                MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-               rate_control_delta,
+               DEFAULT_RATE_CONTROL_DELTA,
                "%.3f",
                &group_info,
                &subgroup_info,
@@ -9386,7 +9389,7 @@ static bool setting_append_list(
                &settings->floats.audio_max_timing_skew,
                MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
                MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-               max_timing_skew,
+               DEFAULT_MAX_TIMING_SKEW,
                "%.2f",
                &group_info,
                &subgroup_info,
@@ -9455,7 +9458,7 @@ static bool setting_append_list(
                &settings->uints.audio_out_rate,
                MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-               out_rate,
+               DEFAULT_OUTPUT_RATE,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -10139,7 +10142,7 @@ static bool setting_append_list(
                &settings->uints.video_record_threads,
                MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
                MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
-               video_record_threads,
+               DEFAULT_VIDEO_RECORD_THREADS,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -10256,7 +10259,7 @@ static bool setting_append_list(
                &settings->floats.fastforward_ratio,
                MENU_ENUM_LABEL_FASTFORWARD_RATIO,
                MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-               fastforward_ratio,
+               DEFAULT_FASTFORWARD_RATIO,
                "%.1fx",
                &group_info,
                &subgroup_info,
@@ -10288,7 +10291,7 @@ static bool setting_append_list(
                &settings->floats.slowmotion_ratio,
                MENU_ENUM_LABEL_SLOWMOTION_RATIO,
                MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-               slowmotion_ratio,
+               DEFAULT_SLOWMOTION_RATIO,
                "%.1fx",
                &group_info,
                &subgroup_info,
@@ -10447,7 +10450,7 @@ static bool setting_append_list(
                &settings->floats.video_font_size,
                MENU_ENUM_LABEL_VIDEO_FONT_SIZE,
                MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-               font_size,
+               DEFAULT_FONT_SIZE,
                "%.1f",
                &group_info,
                &subgroup_info,
@@ -10661,7 +10664,7 @@ static bool setting_append_list(
                &settings->bools.input_overlay_hide_in_menu,
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-               overlay_hide_in_menu,
+               DEFAULT_OVERLAY_HIDE_IN_MENU,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -10918,7 +10921,7 @@ static bool setting_append_list(
                &settings->bools.menu_mouse_enable,
                MENU_ENUM_LABEL_MOUSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-               def_mouse_enable,
+               DEFAULT_MOUSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -10934,7 +10937,7 @@ static bool setting_append_list(
                &settings->bools.menu_pointer_enable,
                MENU_ENUM_LABEL_POINTER_ENABLE,
                MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-               pointer_enable,
+               DEFAULT_POINTER_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11365,7 +11368,7 @@ static bool setting_append_list(
                &settings->bools.threaded_data_runloop_enable,
                MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-               threaded_data_runloop_enable,
+               DEFAULT_THREADED_DATA_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11803,6 +11806,24 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+#else
+#if !defined(IOS)
+            if (frontend_driver_has_fork())
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.menu_show_restart_retroarch,
+                     MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH,
+                     MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+                     menu_show_restart_retroarch,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE);
+#endif
 #endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -11980,7 +12001,7 @@ static bool setting_append_list(
                   &settings->bools.menu_materialui_icons_enable,
                   MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-                  materialui_icons_enable,
+                  DEFAULT_MATERIALUI_ICONS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -12457,7 +12478,7 @@ static bool setting_append_list(
                &settings->bools.pause_nonactive,
                MENU_ENUM_LABEL_PAUSE_NONACTIVE,
                MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-               pause_nonactive,
+               DEFAULT_PAUSE_NONACTIVE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -12474,7 +12495,7 @@ static bool setting_append_list(
                &settings->bools.video_disable_composition,
                MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,
                MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-               disable_composition,
+               DEFAULT_DISABLE_COMPOSITION,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -13111,7 +13132,7 @@ static bool setting_append_list(
                &settings->bools.cheevos_enable,
                MENU_ENUM_LABEL_CHEEVOS_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-               cheevos_enable,
+               DEFAULT_CHEEVOS_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -13192,22 +13213,6 @@ static bool setting_append_list(
                &settings->bools.cheevos_auto_screenshot,
                MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.cheevos_old_enable,
-               MENU_ENUM_LABEL_CHEEVOS_OLD_ENABLE,
-               MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,

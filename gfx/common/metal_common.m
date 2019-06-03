@@ -14,6 +14,7 @@
 #include <simd/simd.h>
 
 #import <gfx/video_frame.h>
+#include "../../managers/state_manager.h"
 
 #import "metal_common.h"
 #import "../../ui/drivers/cocoa/cocoa_common.h"
@@ -552,6 +553,7 @@ typedef struct MTLALIGN(16)
       texture_t rt;
       texture_t feedback;
       uint32_t frame_count;
+      int32_t frame_direction;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -927,6 +929,8 @@ typedef struct MTLALIGN(16)
       if (_shader->pass[i].frame_count_mod)
          _engine.pass[i].frame_count %= _shader->pass[i].frame_count_mod;
 
+      _engine.pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
       for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          id<MTLBuffer> buffer = _engine.pass[i].buffers[j];
@@ -1176,10 +1180,11 @@ typedef struct MTLALIGN(16)
                   &_engine.luts[0].size_data, sizeof(*_engine.luts)},
             },
             {
-               mvp,                           /* MVP */
-               &_engine.pass[i].rt.size_data, /* OutputSize */
-               &_engine.frame.output_size,    /* FinalViewportSize */
-               &_engine.pass[i].frame_count,  /* FrameCount */
+               mvp,                              /* MVP */
+               &_engine.pass[i].rt.size_data,    /* OutputSize */
+               &_engine.frame.output_size,       /* FinalViewportSize */
+               &_engine.pass[i].frame_count,     /* FrameCount */
+               &_engine.pass[i].frame_direction, /* FrameDirection */
             }
          };
          /* clang-format on */

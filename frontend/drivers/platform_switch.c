@@ -8,7 +8,6 @@
 #include <dirent.h>
 
 #include <file/nbio.h>
-#include <formats/rpng.h>
 #include <formats/image.h>
 
 #ifdef HAVE_LIBNX
@@ -397,7 +396,10 @@ static void frontend_switch_exitspawn(char *s, size_t len)
    frontend_switch_exec(s, should_load_game);
 }
 
-void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
+#if 0
+/* TODO/FIXME - should be refactored into something that can be used for all
+ * RetroArch versions, and not just Switch */
+static void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
 {
    uint32_t h, w;
    /* Convert */
@@ -418,7 +420,7 @@ void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
    }
 }
 
-void frontend_switch_showsplash(void)
+static void frontend_switch_showsplash(void)
 {
    printf("[Splash] Showing splashScreen\n");
 
@@ -521,6 +523,7 @@ end:
 
    return ret;
 }
+#endif
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
@@ -686,8 +689,6 @@ static void frontend_switch_init(void *data)
 {
 #ifdef HAVE_LIBNX
    bool recording_supported      = false;
-   rarch_system_info_t *sys_info = NULL;
-   const char *core_name         = NULL;
    uint32_t width                = 0;
    uint32_t height               = 0;
 
@@ -723,20 +724,19 @@ static void frontend_switch_init(void *data)
        RARCH_WARN("Error initializing psm\n");
    }
 
-   sys_info = runloop_get_system_info();
-   retro_get_system_info(sys_info);
-
-
+#if 0
 #ifndef HAVE_OPENGL
    /* Load splash */
    if (!splashData)
    {
+      rarch_system_info_t *sys_info = runloop_get_system_info();
+      retro_get_system_info(sys_info);
+
       if (sys_info)
       {
-         char *full_core_splash_path;
+         const char *core_name       = sys_info->info.library_name;
+         char *full_core_splash_path = (char*)malloc(PATH_MAX);
 
-         core_name             = sys_info->info.library_name;
-         full_core_splash_path = (char*)malloc(PATH_MAX);
          snprintf(full_core_splash_path,
                PATH_MAX, "/retroarch/rgui/splash/%s.png", core_name);
 
@@ -781,6 +781,8 @@ static void frontend_switch_init(void *data)
       frontend_switch_showsplash();
    }
 #endif
+#endif
+
 #endif /* HAVE_LIBNX (splash) */
 }
 

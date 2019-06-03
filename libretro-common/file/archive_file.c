@@ -584,7 +584,6 @@ end:
 struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
-   int ret;
    struct archive_extract_userdata userdata;
 
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
@@ -609,14 +608,9 @@ struct string_list *file_archive_get_file_list(const char *path,
    if (!userdata.list)
       goto error;
 
-   ret = file_archive_walk(path, valid_exts,
-         file_archive_get_file_list_cb, &userdata);
-
-   if (ret <= 0)
-   {
-      if (ret != -1)
-         goto error;
-   }
+   if (!file_archive_walk(path, valid_exts,
+         file_archive_get_file_list_cb, &userdata))
+      goto error;
 
    return userdata.list;
 

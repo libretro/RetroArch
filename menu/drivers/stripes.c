@@ -614,7 +614,7 @@ static void stripes_draw_icon(
       draw.y            = height - y - shadow_offset;
 
 #if defined(VITA) || defined(WIIU)
-      if(scale_factor < 1)
+      if (scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size-draw.width)/2;
          draw.y         = draw.y + (icon_size-draw.width)/2;
@@ -628,7 +628,7 @@ static void stripes_draw_icon(
    draw.y               = height - y;
 
 #if defined(VITA) || defined(WIIU)
-   if(scale_factor < 1)
+   if (scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size-draw.width)/2;
       draw.y            = draw.y + (icon_size-draw.width)/2;
@@ -865,11 +865,10 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    playlist_t     *playlist       = NULL;
    const char    *dir_thumbnails  = settings->paths.directory_thumbnails;
 
-   menu_entry_init(&entry);
-
    if (!stripes || string_is_empty(dir_thumbnails))
       goto end;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    entry_type = menu_entry_get_type_new(&entry);
@@ -998,8 +997,6 @@ end:
       if (pos == 'L')
          stripes->left_thumbnail_file_path = strdup(new_path);
    }
-
-   menu_entry_free(&entry);
 }
 
 static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1047,7 +1044,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             if (!string_is_empty(stripes->savestate_thumbnail_file_path))
                free(stripes->savestate_thumbnail_file_path);
@@ -1057,8 +1054,6 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
          free(path);
       }
    }
-
-   menu_entry_free(&entry);
 }
 
 static void stripes_update_thumbnail_image(void *data)
@@ -1070,7 +1065,7 @@ static void stripes_update_thumbnail_image(void *data)
 
    if (!(string_is_empty(stripes->thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->thumbnail_file_path))
+         if (path_is_valid(stripes->thumbnail_file_path))
             task_push_image_load(stripes->thumbnail_file_path,
                   supports_rgba,
                   menu_display_handle_thumbnail_upload, NULL);
@@ -1083,7 +1078,7 @@ static void stripes_update_thumbnail_image(void *data)
 
    if (!(string_is_empty(stripes->left_thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->left_thumbnail_file_path))
+         if (path_is_valid(stripes->left_thumbnail_file_path))
             task_push_image_load(stripes->left_thumbnail_file_path,
                   supports_rgba,
                   menu_display_handle_left_thumbnail_upload, NULL);
@@ -1182,7 +1177,7 @@ static void stripes_selection_pointer_changed(
    menu_entry_init(&entry);
 
    if (!stripes)
-      goto end;
+      return;
 
    menu_entry_get(&entry, 0, selection, NULL, true);
 
@@ -1246,9 +1241,6 @@ static void stripes_selection_pointer_changed(
          menu_animation_push(&anim_entry);
       }
    }
-
-end:
-   menu_entry_free(&entry);
 }
 
 static void stripes_list_open_old(stripes_handle_t *stripes,
@@ -1520,13 +1512,13 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!filestream_exists(path))
+      if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-       if(!string_is_equal(path, stripes->bg_file_path))
+       if (!string_is_equal(path, stripes->bg_file_path))
        {
-           if(filestream_exists(path))
+           if (path_is_valid(path))
            {
               task_push_image_load(path,
                     video_driver_supports_rgba(),
@@ -1751,8 +1743,6 @@ static void stripes_list_switch(stripes_handle_t *stripes)
       if (!string_is_empty(entry.path))
          stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
 
-      menu_entry_free(&entry);
-
       stripes_update_thumbnail_path(stripes, 0, 'R');
       stripes_update_thumbnail_image(stripes);
    }
@@ -1766,8 +1756,6 @@ static void stripes_list_switch(stripes_handle_t *stripes)
 
       if (!string_is_empty(entry.path))
          stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
-
-      menu_entry_free(&entry);
 
       stripes_update_thumbnail_path(stripes, 0, 'L');
       stripes_update_thumbnail_image(stripes);
@@ -1958,7 +1946,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->icon);
                video_driver_texture_load(&ti,
@@ -1975,7 +1963,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, content_texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->content_icon);
                video_driver_texture_load(&ti,
@@ -2352,7 +2340,7 @@ static int stripes_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
-   char *ticker_str                  = NULL;
+   const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
    const float half_size             = stripes->icon_size / 2.0f;
    uintptr_t texture_switch          = 0;
@@ -2469,7 +2457,7 @@ static int stripes_draw_item(
    }
 
    if (!string_is_empty(entry->path))
-      ticker_str      = menu_entry_get_rich_label(entry);
+      menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2587,13 +2575,9 @@ static int stripes_draw_item(
             stripes->shadow_offset);
 
 iterate:
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return 0;
 
 end:
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return -1;
 }
 
@@ -2664,7 +2648,6 @@ static void stripes_draw_items(
             list, color, thumb_ident, left_thumb_ident,
             i, current,
             width, height);
-      menu_entry_free(&entry);
       if (ret == -1)
          break;
    }
@@ -3698,7 +3681,7 @@ static void stripes_context_reset_background(const char *iconpath)
             PATH_MAX_LENGTH * sizeof(char));
    }
 
-   if (filestream_exists(path))
+   if (path_is_valid(path))
       task_push_image_load(path,
             video_driver_supports_rgba(),
             menu_display_handle_wallpaper_upload, NULL);
@@ -4328,8 +4311,11 @@ static int stripes_list_push(void *data, void *userdata,
             }
 
 #ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_restart_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+               menu_displaylist_setting(&entry);
+            }
 #endif
 
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
