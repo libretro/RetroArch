@@ -63,18 +63,6 @@
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
 
-#if defined(GEKKO)
-#define RGUI_TERM_START_X(fb_width)        (fb_width / 21)
-#define RGUI_TERM_START_Y(fb_height)       (fb_height / 9)
-#define RGUI_TERM_WIDTH(fb_width)          (((fb_width - RGUI_TERM_START_X(fb_width) - RGUI_TERM_START_X(fb_width)) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT(fb_height)        (((fb_height - RGUI_TERM_START_Y(fb_height) - RGUI_TERM_START_Y(fb_height)) / (FONT_HEIGHT_STRIDE)))
-#else
-#define RGUI_TERM_START_X(fb_width)        rgui_term_layout.start_x
-#define RGUI_TERM_START_Y(fb_height)       rgui_term_layout.start_y
-#define RGUI_TERM_WIDTH(fb_width)          rgui_term_layout.width
-#define RGUI_TERM_HEIGHT(fb_height)        rgui_term_layout.height
-#endif
-
 #define MAX_FB_WIDTH 426
 
 #define RGUI_ENTRY_VALUE_MAXLEN 19
@@ -533,7 +521,7 @@ typedef struct
    unsigned particle_effect;
    bool extended_ascii_enable;
    float scroll_y;
-   char *msgbox;
+   char msgbox[1024];
    unsigned color_theme;
    rgui_colors_t colors;
    bool is_playlist;
@@ -761,7 +749,7 @@ typedef struct
    unsigned width;
    unsigned height;
    bool is_valid;
-   char *path;
+   char path[PATH_MAX_LENGTH];
    uint16_t *data;
 } thumbnail_t;
 
@@ -771,7 +759,7 @@ static thumbnail_t fs_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -781,7 +769,7 @@ static thumbnail_t mini_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -791,7 +779,7 @@ static thumbnail_t mini_left_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -935,27 +923,27 @@ static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgb
 
 static void rgui_set_pixel_format_function(void)
 {
-	const char *driver_ident = video_driver_get_ident();
-	
-	/* Default fallback... */
-	if (string_is_empty(driver_ident))
-	{
-		argb32_to_pixel_platform_format = argb32_to_rgba4444;
-		return;
-	}
-	
-	if (     string_is_equal(driver_ident, "ps2"))     /* PS2 */
-		argb32_to_pixel_platform_format = argb32_to_abgr1555;
-	else if (string_is_equal(driver_ident, "gx"))      /* GEKKO */
-		argb32_to_pixel_platform_format = argb32_to_rgb5a3;
-	else if (string_is_equal(driver_ident, "psp1"))    /* PSP */
-		argb32_to_pixel_platform_format = argb32_to_abgr4444;
-	else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
-				string_is_equal(driver_ident, "d3d11") ||
-				string_is_equal(driver_ident, "d3d12"))
-		argb32_to_pixel_platform_format = argb32_to_bgra4444;
-	else
-		argb32_to_pixel_platform_format = argb32_to_rgba4444;
+   const char *driver_ident = video_driver_get_ident();
+   
+   /* Default fallback... */
+   if (string_is_empty(driver_ident))
+   {
+      argb32_to_pixel_platform_format = argb32_to_rgba4444;
+      return;
+   }
+   
+   if (     string_is_equal(driver_ident, "ps2"))     /* PS2 */
+      argb32_to_pixel_platform_format = argb32_to_abgr1555;
+   else if (string_is_equal(driver_ident, "gx"))      /* GEKKO */
+      argb32_to_pixel_platform_format = argb32_to_rgb5a3;
+   else if (string_is_equal(driver_ident, "psp1"))    /* PSP */
+      argb32_to_pixel_platform_format = argb32_to_abgr4444;
+   else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
+            string_is_equal(driver_ident, "d3d11") ||
+            string_is_equal(driver_ident, "d3d12"))
+      argb32_to_pixel_platform_format = argb32_to_bgra4444;
+   else
+      argb32_to_pixel_platform_format = argb32_to_rgba4444;
 }
 
 /* ==============================
@@ -1603,13 +1591,12 @@ static bool request_thumbnail(
    thumbnail->width = 0;
    thumbnail->height = 0;
    thumbnail->is_valid = false;
-   free(thumbnail->path);
-   thumbnail->path = NULL;
+   thumbnail->path[0] = '\0';
 
    /* Ensure that new path is valid... */
    if (!string_is_empty(path))
    {
-      thumbnail->path = strdup(path);
+      strlcpy(thumbnail->path, path, sizeof(thumbnail->path));
       if (path_is_valid(path))
       {
          /* Would like to cancel any existing image load tasks
@@ -1992,25 +1979,25 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
 
       menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-      term_width = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE;
-      term_height = RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE;
+      term_width = rgui_term_layout.width * FONT_WIDTH_STRIDE;
+      term_height = rgui_term_layout.height * FONT_HEIGHT_STRIDE;
 
       /* Sanity check (this can never, ever happen, so just return
        * instead of trying to crop the thumbnail image...) */
       if ((thumbnail_fullwidth > term_width) || (thumbnail->height > term_height))
          return;
 
-      fb_x_offset = (RGUI_TERM_START_X(fb_width) + term_width) -
+      fb_x_offset = (rgui_term_layout.start_x + term_width) -
             (thumbnail->width + ((thumbnail_fullwidth - thumbnail->width) >> 1));
       
       if (((thumbnail_id == MENU_THUMBNAIL_RIGHT) && !settings->bools.menu_rgui_swap_thumbnails) ||
           ((thumbnail_id == MENU_THUMBNAIL_LEFT)  && settings->bools.menu_rgui_swap_thumbnails))
       {
-         fb_y_offset = RGUI_TERM_START_Y(fb_height) + ((thumbnail->max_height - thumbnail->height) >> 1);
+         fb_y_offset = rgui_term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
       }
       else
       {
-         fb_y_offset = (RGUI_TERM_START_Y(fb_height) + term_height) -
+         fb_y_offset = (rgui_term_layout.start_y + term_height) -
                (thumbnail->height + ((thumbnail->max_height - thumbnail->height) >> 1));
       }
 
@@ -2656,12 +2643,14 @@ static void rgui_set_message(void *data, const char *message)
 {
    rgui_t           *rgui = (rgui_t*)data;
 
-   if (!rgui || !message || !*message)
+   if (!rgui || !message)
       return;
 
-   if (!string_is_empty(rgui->msgbox))
-      free(rgui->msgbox);
-   rgui->msgbox       = strdup(message);
+   rgui->msgbox[0] = '\0';
+
+   if (!string_is_empty(message))
+      strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+
    rgui->force_redraw = true;
 }
 
@@ -2694,13 +2683,13 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       char     *msg   = list->elems[i].data;
       unsigned msglen = (unsigned)utf8len(msg);
 
-      if (msglen > RGUI_TERM_WIDTH(fb_width))
+      if (msglen > rgui_term_layout.width)
       {
-         msg[RGUI_TERM_WIDTH(fb_width) - 2] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) - 1] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) - 0] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) + 1] = '\0';
-         msglen = RGUI_TERM_WIDTH(fb_width);
+         msg[rgui_term_layout.width - 2] = '.';
+         msg[rgui_term_layout.width - 1] = '.';
+         msg[rgui_term_layout.width - 0] = '.';
+         msg[rgui_term_layout.width + 1] = '\0';
+         msglen = rgui_term_layout.width;
       }
 
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
@@ -3170,13 +3159,13 @@ static void rgui_render(void *data, bool is_idle)
    }
 
    /* Do not scroll if all items are visible. */
-   if (menu_entries_get_size() <= RGUI_TERM_HEIGHT(fb_height))
+   if (menu_entries_get_size() <= rgui_term_layout.height)
    {
       size_t start = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
 
-   bottom    = (int)(menu_entries_get_size() - RGUI_TERM_HEIGHT(fb_height));
+   bottom    = (int)(menu_entries_get_size() - rgui_term_layout.height);
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
@@ -3186,8 +3175,8 @@ static void rgui_render(void *data, bool is_idle)
 
    entries_end = menu_entries_get_size();
 
-   end         = ((old_start + RGUI_TERM_HEIGHT(fb_height)) <= (entries_end)) ?
-      old_start + RGUI_TERM_HEIGHT(fb_height) : entries_end;
+   end         = ((old_start + rgui_term_layout.height) <= (entries_end)) ?
+      old_start + rgui_term_layout.height : entries_end;
 
    /* Render background */
    rgui_render_background();
@@ -3228,13 +3217,13 @@ static void rgui_render(void *data, bool is_idle)
       {
          /* Format thumbnail title */
          ticker.s        = thumbnail_title_buf;
-         ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+         ticker.len      = rgui_term_layout.width - 10;
          ticker.str      = thumbnail_title;
          ticker.selected = true;
          menu_animation_ticker(&ticker);
 
          title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
-         title_x         = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
+         title_x         = rgui_term_layout.start_x + ((rgui_term_layout.width * FONT_WIDTH_STRIDE) - title_width) / 2;
 
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
@@ -3254,10 +3243,10 @@ static void rgui_render(void *data, bool is_idle)
       size_t title_max_len;
       size_t title_len;
       unsigned title_x;
-      unsigned title_y = RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE;
-      unsigned term_end_x = RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE);
+      unsigned title_y = rgui_term_layout.start_y - FONT_HEIGHT_STRIDE;
+      unsigned term_end_x = rgui_term_layout.start_x + (rgui_term_layout.width * FONT_WIDTH_STRIDE);
       unsigned timedate_x = term_end_x - (5 * FONT_WIDTH_STRIDE);
-      unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
+      unsigned core_name_len = ((timedate_x - rgui_term_layout.start_x) / FONT_WIDTH_STRIDE) - 3;
       bool show_mini_thumbnails = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
       bool show_thumbnail = false;
       bool show_left_thumbnail = false;
@@ -3286,7 +3275,7 @@ static void rgui_render(void *data, bool is_idle)
           * the vertical centre of RGUI's 'terminal'
           * (required to determine whether a particular entry
           * is adjacent to the 'right' or 'left' thumbnail) */
-         term_mid_point = (unsigned)((RGUI_TERM_HEIGHT(fb_height) * 0.5f) + 0.5f) - 1;
+         term_mid_point = (unsigned)((rgui_term_layout.height * 0.5f) + 0.5f) - 1;
       }
 
       /* Show battery indicator, if required */
@@ -3354,7 +3343,7 @@ static void rgui_render(void *data, bool is_idle)
       }
 
       /* Print title */
-      title_max_len = RGUI_TERM_WIDTH(fb_width) - 5 - (powerstate_len > 5 ? powerstate_len : 5);
+      title_max_len = rgui_term_layout.width - 5 - (powerstate_len > 5 ? powerstate_len : 5);
       title_buf[0] = '\0';
 
       ticker.s        = title_buf;
@@ -3367,8 +3356,8 @@ static void rgui_render(void *data, bool is_idle)
       string_to_upper(title_buf);
 
       title_len = utf8len(title_buf);
-      title_x = RGUI_TERM_START_X(fb_width) +
-                (RGUI_TERM_WIDTH(fb_width) - title_len) * FONT_WIDTH_STRIDE / 2;
+      title_x = rgui_term_layout.start_x +
+                (rgui_term_layout.width - title_len) * FONT_WIDTH_STRIDE / 2;
 
       /* Title is always centred, unless it is long enough
        * to infringe upon the battery indicator, in which case
@@ -3381,8 +3370,8 @@ static void rgui_render(void *data, bool is_idle)
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
-      x = RGUI_TERM_START_X(fb_width);
-      y = RGUI_TERM_START_Y(fb_height);
+      x = rgui_term_layout.start_x;
+      y = rgui_term_layout.start_y;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &new_start);
 
@@ -3417,13 +3406,13 @@ static void rgui_render(void *data, bool is_idle)
          menu_entry_get_value(&entry, &entry_value);
 
          /* Get base length of entry title field */
-         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
+         entry_title_max_len = rgui_term_layout.width - (1 + 2);
 
          /* If showing mini thumbnails, reduce title field length accordingly */
          if (show_mini_thumbnails)
          {
             unsigned term_offset = settings->bools.menu_rgui_swap_thumbnails ?
-                  (RGUI_TERM_HEIGHT(fb_height) - (i - new_start) - 1) : (i - new_start);
+                  (rgui_term_layout.height - (i - new_start) - 1) : (i - new_start);
             unsigned thumbnail_width = 0;
 
             /* Note:
@@ -3436,7 +3425,7 @@ static void rgui_render(void *data, bool is_idle)
              * standard layout (even though it always will...),
              * so have to check whether there are an odd or even
              * number of entries... */
-            if((RGUI_TERM_HEIGHT(fb_height) & 1) == 0)
+            if((rgui_term_layout.height & 1) == 0)
             {
                /* Even number of entries */
                if ((show_thumbnail      && (term_offset <= term_mid_point)) ||
@@ -3535,9 +3524,9 @@ static void rgui_render(void *data, bool is_idle)
 
          blit_line(
                fb_width,
-               RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
+               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, sublabel_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
       else if (settings->bools.menu_core_enable)
@@ -3557,9 +3546,9 @@ static void rgui_render(void *data, bool is_idle)
 
          blit_line(
                fb_width,
-               RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
+               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, core_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
 
@@ -3580,8 +3569,8 @@ static void rgui_render(void *data, bool is_idle)
          blit_line(
                fb_width,
                timedate_x,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, timedate,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, timedate,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3589,8 +3578,7 @@ static void rgui_render(void *data, bool is_idle)
    if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui, rgui->msgbox);
-      free(rgui->msgbox);
-      rgui->msgbox       = NULL;
+      rgui->msgbox[0]    = '\0';
       rgui->force_redraw = true;
    }
 
@@ -3634,10 +3622,7 @@ static void rgui_thumbnail_free(thumbnail_t *thumbnail)
    thumbnail->width = 0;
    thumbnail->height = 0;
    thumbnail->is_valid = false;
-   
-   if (!string_is_empty(thumbnail->path))
-      free(thumbnail->path);
-   thumbnail->path = NULL;
+   thumbnail->path[0] = '\0';
    
    if (thumbnail->data)
       free(thumbnail->data);
@@ -3940,8 +3925,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->menu_title[0] = '\0';
    rgui->menu_sublabel[0] = '\0';
 
-	/* Set pixel format conversion function */
-	rgui_set_pixel_format_function();
+   /* Set pixel format conversion function */
+   rgui_set_pixel_format_function();
 
    /* Cache initial video settings */
    rgui_get_video_config(&rgui->content_video_settings);
@@ -4281,16 +4266,14 @@ static void rgui_update_thumbnail_image(void *userdata)
          mini_thumbnail.width = 0;
          mini_thumbnail.height = 0;
          mini_thumbnail.is_valid = false;
-         free(mini_thumbnail.path);
-         mini_thumbnail.path = NULL;
+         mini_thumbnail.path[0] = '\0';
       }
       else
       {
          fs_thumbnail.width = 0;
          fs_thumbnail.height = 0;
          fs_thumbnail.is_valid = false;
-         free(fs_thumbnail.path);
-         fs_thumbnail.path = NULL;
+         fs_thumbnail.path[0] = '\0';
       }
    }
 
@@ -4316,20 +4299,17 @@ static void rgui_refresh_thumbnail_image(void *userdata)
       fs_thumbnail.width = 0;
       fs_thumbnail.height = 0;
       fs_thumbnail.is_valid = false;
-      free(fs_thumbnail.path);
-      fs_thumbnail.path = NULL;
+      fs_thumbnail.path[0] = '\0';
 
       mini_thumbnail.width = 0;
       mini_thumbnail.height = 0;
       mini_thumbnail.is_valid = false;
-      free(mini_thumbnail.path);
-      mini_thumbnail.path = NULL;
+      mini_thumbnail.path[0] = '\0';
 
       mini_left_thumbnail.width = 0;
       mini_left_thumbnail.height = 0;
       mini_left_thumbnail.is_valid = false;
-      free(mini_left_thumbnail.path);
-      mini_left_thumbnail.path = NULL;
+      mini_left_thumbnail.path[0] = '\0';
 
       /* Only load thumbnails if currently viewing a
        * playlist (note that thumbnails are loaded
@@ -4393,8 +4373,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t start, fb_pitch;
-   unsigned fb_width, fb_height;
+   size_t start;
    bool do_set_start              = false;
    size_t end                     = menu_entries_get_size();
    size_t selection               = menu_navigation_get_selection();
@@ -4409,23 +4388,20 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!scroll)
       return;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
-
-   if (selection < RGUI_TERM_HEIGHT(fb_height) /2)
+   if (selection < rgui_term_layout.height /2)
    {
       start        = 0;
       do_set_start = true;
    }
-   else if (selection >= (RGUI_TERM_HEIGHT(fb_height) /2)
-         && selection < (end - RGUI_TERM_HEIGHT(fb_height) /2))
+   else if (selection >= (rgui_term_layout.height /2)
+         && selection < (end - rgui_term_layout.height /2))
    {
-      start        = selection - RGUI_TERM_HEIGHT(fb_height) /2;
+      start        = selection - rgui_term_layout.height /2;
       do_set_start = true;
    }
-   else if (selection >= (end - RGUI_TERM_HEIGHT(fb_height) /2))
+   else if (selection >= (end - rgui_term_layout.height /2))
    {
-      start        = end - RGUI_TERM_HEIGHT(fb_height);
+      start        = end - rgui_term_layout.height;
       do_set_start = true;
    }
 
