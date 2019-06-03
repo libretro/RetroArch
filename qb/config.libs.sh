@@ -430,18 +430,36 @@ else
    HAVE_OPENGLES=no
 fi
 
+check_pkgconf DBUS dbus-1
+check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
 check_val '' X11 -lX11 '' x11 '' '' false
 check_val '' XCB -lxcb '' xcb '' '' false
+
+if [ "$HAVE_X11" != 'no' ]; then
+   check_val '' XEXT -lXext '' xext '' '' false
+   check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
+else
+   die : 'Notice: X11 not present. Skipping X11 code paths.'
+fi
+
+check_enabled X11 XINERAMA Xinerama 'X11 is' false
+check_enabled X11 XSHM XShm 'X11 is' false
+check_enabled X11 XRANDR Xrandr 'X11 is' false
+check_enabled X11 XVIDEO XVideo 'X11 is' false
+check_enabled XEXT XVIDEO XVideo 'Xext is' false
+check_enabled XF86VM XVIDEO XVideo 'XF86vm is' false
+
+check_val '' XVIDEO -lXv '' xv '' '' false
+check_val '' XINERAMA -lXinerama '' xinerama '' '' false
+check_lib '' XRANDR -lXrandr
+check_header XSHM X11/Xlib.h X11/extensions/XShm.h
+check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
-check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
-check_pkgconf DBUS dbus-1
-check_val '' XEXT -lXext '' xext '' '' false
-check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
@@ -456,24 +474,6 @@ else
     HAVE_WAYLAND='no'
 fi
 
-if [ "$HAVE_X11" = 'no' ]; then
-	HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no; HAVE_XRANDR=no
-fi
-
-check_lib '' XRANDR -lXrandr
-check_val '' XINERAMA -lXinerama '' xinerama '' '' false
-
-if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
-   check_val '' XVIDEO -lXv '' xv '' '' false
-else
-   die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
-   HAVE_X11='no'
-   HAVE_XVIDEO='no'
-fi
-
-check_val '' UDEV "-ludev" '' libudev '' '' false
-
-check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
