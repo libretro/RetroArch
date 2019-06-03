@@ -1681,8 +1681,8 @@ static void wiiu_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
    wiiu->menu.v->pos.height = height;
    wiiu->menu.v->coord.u = 0.0f;
    wiiu->menu.v->coord.v = 0.0f;
-   wiiu->menu.v->coord.width = (float)width / wiiu->texture.surface.width;
-   wiiu->menu.v->coord.height = (float)height / wiiu->texture.surface.height;
+   wiiu->menu.v->coord.width = (float)width / wiiu->menu.texture.surface.width;
+   wiiu->menu.v->coord.height = (float)height / wiiu->menu.texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
 }
