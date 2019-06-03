@@ -367,8 +367,6 @@ static bool xmb_shadows_enable   = true;
 #endif
 #endif
 
-static bool automatically_add_content_to_playlist = false;
-
 static float menu_framebuffer_opacity = 0.900;
 
 static float menu_wallpaper_opacity = 0.300;
@@ -399,9 +397,10 @@ static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 static bool rgui_extended_ascii = false;
 
 #else
-static bool default_block_config_read = false;
-static bool automatically_add_content_to_playlist = false;
+#define DEFAULT_BLOCK_CONFIG_READ false
 #endif
+
+static bool automatically_add_content_to_playlist = false;
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
