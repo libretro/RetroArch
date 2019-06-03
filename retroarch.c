@@ -5038,7 +5038,7 @@ bool rarch_write_debug_info(void)
       if (joypad_driver && string_is_equal(joypad_driver->ident, settings->arrays.input_joypad_driver))
          filestream_printf(file, "  - Joypad: %s\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a");
       else
-         filestream_printf(file, "  - Input: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
+         filestream_printf(file, "  - Joypad: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
    }
 
    filestream_printf(file, "\n");
