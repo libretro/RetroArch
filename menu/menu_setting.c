@@ -6649,7 +6649,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if !defined(IOS)
+#if !defined(IOS) && !defined(HAVE_LAKKA)
          if (frontend_driver_has_fork())
          {
             CONFIG_ACTION(
