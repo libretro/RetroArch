@@ -216,6 +216,11 @@ static const unsigned int def_user_language  = 0;
 #ifdef GEKKO
 /* Removes 480i flicker, smooths picture a little. */
 #define DEFAULT_VIDEO_VFILTER true
+
+/* Allow overscan to be corrected on displays that
+ * do not have proper 'pixel perfect' scaling */
+#define DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP 0
+#define DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM 0
 #endif
 
 /* Smooths picture. */

@@ -581,6 +581,11 @@ default_sublabel_macro(action_bind_sublabel_video_3ds_lcd_bottom,           MENU
 default_sublabel_macro(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
 #endif
 
+#if defined(GEKKO)
+default_sublabel_macro(action_bind_sublabel_video_overscan_correction_top,    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP)
+default_sublabel_macro(action_bind_sublabel_video_overscan_correction_bottom, MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM)
+#endif
+
 default_sublabel_macro(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
@@ -2505,6 +2510,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
+            break;
+#endif
+#if defined(GEKKO)
+         case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_top);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_bottom);
             break;
 #endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:

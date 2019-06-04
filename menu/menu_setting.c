@@ -8726,7 +8726,7 @@ static bool setting_append_list(
                   &settings->bools.video_vfilter,
                   MENU_ENUM_LABEL_VIDEO_VFILTER,
                   MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-                  video_vfilter,
+                  DEFAULT_VIDEO_VFILTER,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8735,6 +8735,32 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_overscan_correction_top,
+                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+                  DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 24, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_overscan_correction_bottom,
+                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                  DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 24, 1, true, true);
 #endif
 
             CONFIG_BOOL(

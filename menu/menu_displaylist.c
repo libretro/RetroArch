@@ -5916,6 +5916,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                MENU_ENUM_LABEL_VIDEO_VFILTER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_ROTATION,
                PARSE_ONLY_UINT, false);
          if (video_display_server_can_set_screen_orientation())

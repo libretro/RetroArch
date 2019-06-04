@@ -3777,6 +3777,22 @@ MSG_HASH(
     "Set VI Screen Width"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Overscan Correction (Top)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from top of screen). Note: May introduce scaling artefacts."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Overscan Correction (Bottom)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from bottom of screen). Note: May introduce scaling artefacts."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
     "Vertical Sync (Vsync)"
     )
