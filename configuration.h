@@ -450,6 +450,10 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
+#ifdef GEKKO
+      unsigned video_overscan_correction_top;
+      unsigned video_overscan_correction_bottom;
+#endif
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
