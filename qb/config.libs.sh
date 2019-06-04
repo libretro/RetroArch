@@ -244,18 +244,18 @@ if [ "$HAVE_QT" != 'no' ]; then
 
    # pkg-config is needed to reliably find Qt5 libraries.
 
-   if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
-      die : 'Notice: Not building Qt support, required libraries were not found.'
-      HAVE_QT=no
-   else
-      HAVE_QT=yes
+   check_enabled QT5CORE QT Qt 'Qt5Core is' true
+   check_enabled QT5GUI QT Qt 'Qt5GUI is' true
+   check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
+   check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
+   check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
+   #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+
+   if [ "$HAVE_QT" != yes ]; then
+      die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
    check_pkgconf OPENSSL openssl 1.0.0
-
-   #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
-   #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
-   #fi
 fi
 
 if [ "$HAVE_FLAC" = 'no' ]; then
