@@ -1807,12 +1807,17 @@ end:
 static bool d3d9_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   d3d9_video_t *d3d       = (d3d9_video_t*)data;
-   char *old_shader       = (d3d && !string_is_empty(d3d->shader_path)) ? strdup(d3d->shader_path) : NULL;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return false;
 
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
    d3d->shader_path = NULL;
+
+   if (string_is_empty(path))
+      return true;
 
    switch (type)
    {
@@ -1822,19 +1827,13 @@ static bool d3d9_set_shader(void *data,
             d3d->shader_path = strdup(path);
          break;
       default:
-         break;
+         RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
+         return false;
    }
 
    if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
    {
-      RARCH_ERR("[D3D9]: Setting shader failed.\n");
-      if (!string_is_empty(old_shader))
-      {
-         d3d->shader_path = strdup(old_shader);
-         d3d9_process_shader(d3d);
-         d3d9_restore(d3d);
-      }
-      free(old_shader);
+      RARCH_ERR("[D3D9]: Failed to set shader.\n");
       return false;
    }
 

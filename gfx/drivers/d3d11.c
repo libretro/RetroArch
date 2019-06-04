@@ -355,12 +355,12 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    D3D11Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
 
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D11] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -1024,13 +1024,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
 
-   if (settings->bools.video_shader_enable)
-   {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
-
-      if (ext && !strncmp(ext, "slang", 5))
-         d3d11_gfx_set_shader(d3d11, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
-   }
+   const char *shader_preset   = retroarch_get_shader_preset();
+   enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+   d3d11_gfx_set_shader(d3d11, type, shader_preset);
 
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
          video_driver_get_hw_context()->version_major == 11)

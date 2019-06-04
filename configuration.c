@@ -2608,35 +2608,6 @@ static bool check_menu_driver_compatibility(void)
 }
 #endif
 
-static bool check_shader_compatibility(enum file_path_enum enum_idx)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (string_is_equal(settings->arrays.video_driver, "vulkan") ||
-       string_is_equal(settings->arrays.video_driver, "metal") ||
-       string_is_equal(settings->arrays.video_driver, "glcore") ||
-       string_is_equal(settings->arrays.video_driver, "d3d11") ||
-       string_is_equal(settings->arrays.video_driver, "d3d12") ||
-       string_is_equal(settings->arrays.video_driver, "gx2"))
-   {
-      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   if (string_is_equal(settings->arrays.video_driver, "gl")   ||
-       string_is_equal(settings->arrays.video_driver, "d3d8") ||
-       string_is_equal(settings->arrays.video_driver, "d3d9")
-      )
-   {
-      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   return false;
-}
-
 /**
  * config_load:
  * @path                : path to be read from.
@@ -3125,26 +3096,6 @@ static bool config_load_file(const char *path, settings_t *settings)
 
    config_read_keybinds_conf(conf);
 
-   shader_ext = path_get_extension(settings->paths.path_shader);
-
-   if (!string_is_empty(shader_ext))
-   {
-      for (i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
-      {
-         enum file_path_enum ext = (enum file_path_enum)(i);
-         if (!strstr(file_path_str(ext), shader_ext))
-            continue;
-
-         if (check_shader_compatibility(ext))
-            continue;
-
-         RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
-               settings->arrays.video_driver);
-         settings->paths.path_shader[0] = '\0';
-         break;
-      }
-   }
-
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility())
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
@@ -3582,9 +3533,6 @@ static bool config_load_shader_preset_internal(
 
    for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-      if (!check_shader_compatibility((enum file_path_enum)(idx)))
-         continue;
-
       /* Concatenate strings into full paths */
       fill_pathname_join_special_ext(shader_path,
             shader_directory, core_name,
@@ -4398,8 +4346,5 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
    /* Load core in new config. */
    path_clear(RARCH_PATH_CORE);
 
-   if (!task_push_start_dummy_core(&content_info))
-      return false;
-
-   return true;
+   return task_push_start_dummy_core(&content_info);
 }

@@ -5685,7 +5685,7 @@ void general_write_handler(rarch_setting_t *setting)
                menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
             }
-            else if (!*setting->value.target.boolean)
+            else
             {
                bool refresh                = false;
                settings_t *settings        = config_get_ptr();

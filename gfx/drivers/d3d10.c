@@ -322,8 +322,7 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    d3d10->resize_render_targets = false;
 }
 
-static bool d3d10_gfx_set_shader(void* data,
-      enum rarch_shader_type type, const char* path)
+static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
@@ -337,12 +336,12 @@ static bool d3d10_gfx_set_shader(void* data,
    D3D10Flush(d3d10->device);
    d3d10_free_shader_preset(d3d10);
 
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D10] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -423,7 +422,6 @@ static bool d3d10_gfx_set_shader(void* data,
          const char*       slang_path = d3d10->shader_preset->pass[i].source.path;
          const char*       vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
          const char*       ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
-         int               base_len   = strlen(slang_path) - STRLEN_CONST(".slang");
 
          strlcpy(vs_path, slang_path, sizeof(vs_path));
          strlcpy(ps_path, slang_path, sizeof(ps_path));
@@ -950,13 +948,9 @@ d3d10_gfx_init(const video_info_t* video,
 
    font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
 
-   if (settings->bools.video_shader_enable)
-   {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
-
-      if (ext && !strncmp(ext, "slang", 5))
-         d3d10_gfx_set_shader(d3d10, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
-   }
+   const char *shader_preset   = retroarch_get_shader_preset();
+   enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+   d3d10_gfx_set_shader(d3d10, type, shader_preset);
 
 #if 0
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&

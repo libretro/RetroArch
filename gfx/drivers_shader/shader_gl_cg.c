@@ -1074,16 +1074,27 @@ static void *gl_cg_init(void *data, const char *path)
 
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
-   if (    !string_is_empty(path)
-         && string_is_equal(path_get_extension(path), "cgp"))
    {
-      if (!gl_cg_load_preset(cg, path))
-         goto error;
-   }
-   else
-   {
-      if (!gl_cg_load_plain(cg, path))
-         goto error;
+      bool is_preset;
+      enum rarch_shader_type type =
+         video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
+
+      if (!string_is_empty(path) && type != RARCH_SHADER_CG)
+      {
+         RARCH_ERR("[CG]: Invalid shader type, falling back to stock.\n");
+         path = NULL;
+      }
+
+      if (!string_is_empty(path) && is_preset)
+      {
+         if (!gl_cg_load_preset(cg, path))
+            goto error;
+      }
+      else
+      {
+         if (!gl_cg_load_plain(cg, path))
+            goto error;
+      }
    }
 
    cg->prg[0].mvp = cgGetNamedParameter(cg->prg[0].vprg, "IN.mvp_matrix");
@@ -1099,7 +1110,7 @@ static void *gl_cg_init(void *data, const char *path)
    cg->prg[cg->shader->passes + 1] = cg->prg[0];
 
    /* No need to apply Android hack in Cg. */
-   cg->prg[VIDEO_SHADER_STOCK_BLEND]    = cg->prg[0];
+   cg->prg[VIDEO_SHADER_STOCK_BLEND] = cg->prg[0];
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 

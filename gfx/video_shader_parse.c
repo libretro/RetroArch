@@ -730,7 +730,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
    (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
-   shader->type = RARCH_SHADER_CG;
 
    if (!config_get_uint(conf, "shaders", &shaders))
    {
@@ -1128,6 +1127,29 @@ void video_shader_write_conf_preset(config_file_t *conf,
    }
 }
 
+const char *video_shader_to_str(enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+         return "Cg";
+      case RARCH_SHADER_HLSL:
+         return "HLSL";
+      case RARCH_SHADER_GLSL:
+         return "GLSL";
+      case RARCH_SHADER_SLANG:
+         return "Slang";
+      case RARCH_SHADER_METAL:
+         return "Metal";
+      case RARCH_SHADER_NONE:
+         return "none";
+      default:
+         break;
+   }
+
+   return "???";
+}
+
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    enum display_flags flag = GFX_CTX_FLAGS_NONE;
@@ -1156,14 +1178,11 @@ bool video_shader_is_supported(enum rarch_shader_type type)
 
 bool video_shader_any_supported(void)
 {
-   if (
-         video_shader_is_supported(RARCH_SHADER_SLANG) ||
-         video_shader_is_supported(RARCH_SHADER_HLSL)  ||
-         video_shader_is_supported(RARCH_SHADER_GLSL)  ||
-         video_shader_is_supported(RARCH_SHADER_CG)
-      )
-      return true;
-   return false;
+   return
+      video_shader_is_supported(RARCH_SHADER_SLANG) ||
+      video_shader_is_supported(RARCH_SHADER_HLSL)  ||
+      video_shader_is_supported(RARCH_SHADER_GLSL)  ||
+      video_shader_is_supported(RARCH_SHADER_CG);
 }
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
@@ -1175,38 +1194,25 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
    if (strlen(ext) > 1 && ext[0] == '.')
       ext++;
 
-   if (
-         string_is_equal_case_insensitive(ext, "cgp") ||
-         string_is_equal_case_insensitive(ext, "glslp") ||
-         string_is_equal_case_insensitive(ext, "slangp")
+   *is_preset =
+      string_is_equal_case_insensitive(ext, "cgp")   ||
+      string_is_equal_case_insensitive(ext, "glslp") ||
+      string_is_equal_case_insensitive(ext, "slangp");
+
+   if (string_is_equal_case_insensitive(ext, "cgp") ||
+       string_is_equal_case_insensitive(ext, "cg")
       )
-      *is_preset = true;
-   else
-      *is_preset = false;
+      return RARCH_SHADER_CG;
 
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "cgp") ||
-          string_is_equal_case_insensitive(ext, "cg")
-         )
-         return RARCH_SHADER_CG;
-   }
+   if (string_is_equal_case_insensitive(ext, "glslp") ||
+       string_is_equal_case_insensitive(ext, "glsl")
+      )
+      return RARCH_SHADER_GLSL;
 
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "glslp") ||
-          string_is_equal_case_insensitive(ext, "glsl")
-         )
-         return RARCH_SHADER_GLSL;
-   }
-
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "slangp") ||
-          string_is_equal_case_insensitive(ext, "slang")
-         )
-         return RARCH_SHADER_SLANG;
-   }
+   if (string_is_equal_case_insensitive(ext, "slangp") ||
+       string_is_equal_case_insensitive(ext, "slang")
+      )
+      return RARCH_SHADER_SLANG;
 
    return RARCH_SHADER_NONE;
 }

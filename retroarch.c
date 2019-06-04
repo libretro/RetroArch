@@ -10176,7 +10176,7 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
  * @testflag          : flag to test
  *
  * Poll both the video and context driver's flags and test
- * whether testflag is set or not.
+ * whether @testflag is set or not.
  **/
 bool video_driver_test_all_flags(enum display_flags testflag)
 {

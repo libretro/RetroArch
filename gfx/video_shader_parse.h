@@ -141,8 +141,6 @@ struct video_shader_lut
  * Avoid lots of allocation for convenience. */
 struct video_shader
 {
-   enum rarch_shader_type type;
-
    char prefix[64];
    char script_class[512];
    char script_path[PATH_MAX_LENGTH];
@@ -249,6 +247,8 @@ bool video_shader_is_supported(enum rarch_shader_type type);
 bool video_shader_any_supported(void);
 
 bool video_shader_check_for_changes(void);
+
+const char *video_shader_to_str(enum rarch_shader_type type);
 
 RETRO_END_DECLS
 
