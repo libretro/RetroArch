@@ -276,7 +276,6 @@ typedef struct settings
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;
-      bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
       bool vrr_runloop_enable;
@@ -482,6 +481,7 @@ typedef struct settings
       unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
 
+      unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
       unsigned playlist_sublabel_runtime_type;
 

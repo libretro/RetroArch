@@ -3862,6 +3862,36 @@ static void setting_get_string_representation_uint_playlist_inline_core_display_
    }
 }
 
+static void setting_get_string_representation_uint_playlist_entry_remove_enable(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV),
+               len);
+         break;
+      case PLAYLIST_ENTRY_REMOVE_ENABLE_ALL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL),
+               len);
+         break;
+      case PLAYLIST_ENTRY_REMOVE_ENABLE_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE),
+               len);
+         break;
+   }
+}
+
 #if defined(_3DS)
 static void setting_get_string_representation_uint_video_3ds_display_mode(
       rarch_setting_t *setting,
@@ -13042,20 +13072,21 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.playlist_entry_remove,
+               &settings->uints.playlist_entry_remove_enable,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-               def_playlist_entry_remove,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               playlist_entry_remove_enable,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_playlist_entry_remove_enable;
+         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_ENTRY_REMOVE_ENABLE_LAST-1, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,
