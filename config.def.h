@@ -78,7 +78,6 @@ static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;
-static const bool def_playlist_entry_remove  = true;
 static const bool def_playlist_entry_rename  = true;
 
 static const unsigned int def_user_language  = 0;
@@ -747,6 +746,8 @@ static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISP
 
 /* Specifies which runtime record to use on playlist sublabels */
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+
+static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
 #endif
 
 static const bool scan_without_core_match      = false;
