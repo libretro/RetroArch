@@ -371,7 +371,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.v->coord.v = 0.0f;
    wiiu->menu.v->coord.width = 1.0f;
    wiiu->menu.v->coord.height = 1.0f;
-   wiiu->menu.v->color = 0xFFFFFF80;
+   wiiu->menu.v->color = 0xFFFFFFFF;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
    wiiu->vertex_cache.size       = 0x1000;
