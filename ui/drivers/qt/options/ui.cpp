@@ -111,6 +111,7 @@ QWidget *ViewsPage::widget()
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_INFORMATION);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_HELP);
+   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_REBOOT);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN);
@@ -139,6 +140,7 @@ QWidget *ViewsPage::widget()
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(tabs);
    leftLayout->addRow(startScreen);
+   leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
 
    rightLayout->addWidget(quickMenu);
    rightLayout->addWidget(status);

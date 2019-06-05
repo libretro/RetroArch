@@ -7114,7 +7114,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
-         "&Options..."
+         "&Réglages..."
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
@@ -7146,7 +7146,7 @@ MSG_HASH(
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-         "Options"
+         "Réglages"
          )
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
