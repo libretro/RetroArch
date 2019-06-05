@@ -70,7 +70,7 @@
 #endif
 
 #ifdef HAVE_MATERIALUI
-static bool materialui_icons_enable      = true;
+#define DEFAULT_MATERIALUI_ICONS_ENABLE true
 #endif
 
 static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
@@ -78,19 +78,18 @@ static const int crt_switch_resolution_super = 2560;
 static const int crt_switch_center_adjust    = 0;
 
 static const bool def_history_list_enable    = true;
-static const bool def_playlist_entry_remove  = true;
 static const bool def_playlist_entry_rename  = true;
 
 static const unsigned int def_user_language  = 0;
 
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
-static const bool def_mouse_enable = true;
+#define DEFAULT_MOUSE_ENABLE true
 #else
-static const bool def_mouse_enable = false;
+#define DEFAULT_MOUSE_ENABLE false
 #endif
 
 #ifdef HAVE_CHEEVOS
-static const bool cheevos_enable = false;
+#define DEFAULT_CHEEVOS_ENABLE false
 #endif
 
 /* VIDEO */
@@ -105,87 +104,87 @@ static const bool cheevos_enable = false;
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale
  */
-static const float scale = 3.0;
+#define DEFAULT_SCALE (3.0)
 
 /* Fullscreen */
 
 /* To start in Fullscreen, or not. */
-static const bool fullscreen = false;
+#define DEFAULT_FULLSCREEN false
 
 /* To use windowed mode or not when going fullscreen. */
-static const bool windowed_fullscreen = true;
+#define DEFAULT_WINDOWED_FULLSCREEN true
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
-static const unsigned monitor_index = 0;
+#define DEFAULT_MONITOR_INDEX 0
 
 /* Window */
 /* Window size. A value of 0 uses window scale
  * multiplied by the core framebuffer size. */
-static const unsigned window_width = 1280;
-static const unsigned window_height = 720;
+#define DEFAULT_WINDOW_WIDTH 1280
+#define DEFAULT_WINDOW_HEIGHT 720
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
-static const unsigned fullscreen_x = 0;
-static const unsigned fullscreen_y = 0;
+#define DEFAULT_FULLSCREEN_X 0
+#define DEFAULT_FULLSCREEN_Y 0
 
 /* Number of threads to use for video recording */
-
-static const unsigned video_record_threads = 2;
+#define DEFAULT_VIDEO_RECORD_THREADS 2
 
 /* Amount of transparency to use for the main window.
  * 1 is the most transparent while 100 is opaque.
  */
-static const unsigned window_opacity = 100;
+#define DEFAULT_WINDOW_OPACITY 100
 
 /* Whether to show the usual window decorations like border, titlebar etc. */
-static const bool window_decorations = true;
+#define DEFAULT_WINDOW_DECORATIONS true
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
-static const bool load_dummy_on_core_shutdown = false;
+#define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
 #else
-static const bool load_dummy_on_core_shutdown = true;
+#define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
-static const bool check_firmware_before_loading = false;
+#define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
+
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
-static const bool disable_composition = false;
+#define DEFAULT_DISABLE_COMPOSITION false
 
 /* Video VSYNC (recommended) */
-static const bool vsync = true;
+#define DEFAULT_VSYNC false
 
-static const unsigned max_swapchain_images = 3;
+#define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
-static const bool adaptive_vsync = false;
+#define DEFAULT_ADAPTIVE_VSYNC false
 
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
-static const bool hard_sync = false;
+#define DEFAULT_HARD_SYNC false
 
 /* Configures how many frames the GPU can run ahead of CPU.
  * 0: Syncs to GPU immediately.
  * 1: Syncs to previous frame.
  * 2: Etc ...
  */
-static const unsigned hard_sync_frames = 0;
+#define DEFAULT_HARD_SYNC_FRAMES 0
 
 /* Sets how many milliseconds to delay after VSync before running the core.
  * Can reduce latency at cost of higher risk of stuttering.
  */
-static const unsigned frame_delay = 0;
+#define DEFAULT_FRAME_DELAY 0
 
 /* Inserts a black frame inbetween frames.
  * Useful for 120 Hz monitors who want to play 60 Hz material with eliminated
  * ghosting. video_refresh_rate should still be configured as if it
  * is a 60 Hz monitor (divide refresh rate by 2).
  */
-static bool black_frame_insertion = false;
+#define DEFAULT_BLACK_FRAME_INSERTION false
 
 /* Uses a custom swap interval for VSync.
  * Set this to effectively halve monitor refresh rate.
  */
-static unsigned swap_interval = 1;
+#define DEFAULT_SWAP_INTERVAL 1
 
 /* Threaded video. Will possibly increase performance significantly
  * at the cost of worse synchronization and latency.
@@ -199,87 +198,90 @@ static unsigned swap_interval = 1;
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */
-static const bool threaded_data_runloop_enable = false;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #else
-static const bool threaded_data_runloop_enable = true;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE true
 #endif
 #else
-static const bool threaded_data_runloop_enable = false;
+#define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #endif
 
 /* Set to true if HW render cores should get their private context. */
-static const bool video_shared_context = false;
+#define DEFAULT_VIDEO_SHARED_CONTEXT false
 
 /* Sets GC/Wii screen width. */
-static const unsigned video_viwidth = 640;
+#define DEFAULT_VIDEO_VI_WIDTH 640
 
 #ifdef GEKKO
 /* Removes 480i flicker, smooths picture a little. */
-static const bool video_vfilter = true;
+#define DEFAULT_VIDEO_VFILTER true
+
+/* Allow overscan to be corrected on displays that
+ * do not have proper 'pixel perfect' scaling */
+#define DEFAULT_VIDEO_OVERSCAN_CORRECTION_TOP 0
+#define DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM 0
 #endif
 
 /* Smooths picture. */
-static const bool video_smooth = true;
+#define DEFAULT_VIDEO_SMOOTH true
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
-static const bool force_aspect = true;
+#define DEFAULT_FORCE_ASPECT true
 
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
-static const bool shader_enable = true;
+#define DEFAULT_SHADER_ENABLE true
 #else
-static const bool shader_enable = false;
+#define DEFAULT_SHADER_ENABLE false
 #endif
 
 /* Only scale in integer steps.
  * The base size depends on system-reported geometry and aspect ratio.
  * If video_force_aspect is not set, X/Y will be integer scaled independently.
  */
-static const bool scale_integer = false;
+#define DEFAULT_SCALE_INTEGER false
 
 /* Controls aspect ratio handling. */
 
-/* Automatic */
-static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
-
 /* 1:1 PAR */
-static const bool aspect_ratio_auto = false;
+#define DEFAULT_ASPECT_RATIO_AUTO false
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
-static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
+#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_16_9
 #elif defined(PSP)
-static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
 #elif defined(_3DS)
 /* Previously defaulted to ASPECT_RATIO_4_3.
  * Non-4:3 content looks dreadful when stretched
  * to 4:3 on the 3DS screen... */
-static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
 #elif defined(RARCH_CONSOLE)
-static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
+#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_4_3
 #else
-static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
+#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
 #endif
 
 /* Save configuration file on exit. */
-static bool config_save_on_exit = true;
+#define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
-static bool show_hidden_files = false;
+#define DEFAULT_SHOW_HIDDEN_FILES false
 
-static const bool overlay_hide_in_menu = true;
+#define DEFAULT_OVERLAY_HIDE_IN_MENU true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
 
-static const bool display_keyboard_overlay = false;
+#define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
 #ifdef HAKCHI
-static const float default_input_overlay_opacity = 0.5f;
+#define DEFAULT_INPUT_OVERLAY_OPACITY 0.5f
 #else
-static const float default_input_overlay_opacity = 0.7f;
+#define DEFAULT_INPUT_OVERLAY_OPACITY 0.7f
 #endif
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_animation.h"
 
-static bool default_block_config_read    = true;
+#define DEFAULT_BLOCK_CONFIG_READ true
 
 #ifdef HAVE_LIBNX
 static bool menu_use_preferred_system_color_theme = true;
@@ -370,8 +372,6 @@ static bool xmb_shadows_enable   = true;
 #endif
 #endif
 
-static bool automatically_add_content_to_playlist = false;
-
 static float menu_framebuffer_opacity = 0.900;
 
 static float menu_wallpaper_opacity = 0.300;
@@ -402,9 +402,10 @@ static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 static bool rgui_extended_ascii = false;
 
 #else
-static bool default_block_config_read = false;
-static bool automatically_add_content_to_playlist = false;
+#define DEFAULT_BLOCK_CONFIG_READ false
 #endif
+
+static bool automatically_add_content_to_playlist = false;
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
@@ -456,13 +457,13 @@ static bool default_log_to_file = false;
 static bool log_to_file_timestamp = false;
 
 /* Crop overscanned frames. */
-static const bool crop_overscan = true;
+#define DEFAULT_CROP_OVERSCAN true
 
 /* Font size for on-screen messages. */
 #if defined(HAVE_LIBDBGFONT)
-static const float font_size = 1.0f;
+#define DEFAULT_FONT_SIZE 1.0f
 #else
-static const float font_size = 32;
+#define DEFAULT_FONT_SIZE 32
 #endif
 
 /* Offset for where messages will be placed on-screen.
@@ -536,7 +537,7 @@ static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
 /* AUDIO */
 
 /* Will enable audio or not. */
-static const bool audio_enable = true;
+#define DEFAULT_AUDIO_ENABLE true
 
 /* Enable menu audio sounds. */
 static const bool audio_enable_menu        = false;
@@ -553,11 +554,11 @@ static const bool menu_enable_widgets      = false;
 
 /* Output samplerate. */
 #ifdef GEKKO
-static const unsigned out_rate = 32000;
+#define DEFAULT_OUTPUT_RATE 32000
 #elif defined(_3DS)
-static const unsigned out_rate = 32730;
+#define DEFAULT_OUTPUT_RATE 32730
 #else
-static const unsigned out_rate = 48000;
+#define DEFAULT_OUTPUT_RATE 48000
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
@@ -567,34 +568,34 @@ static const char *audio_device = NULL;
  * if driver can't provide given latency. */
 #if defined(ANDROID) || defined(EMSCRIPTEN)
 /* For most Android devices, 64ms is way too low. */
-static const int out_latency = 128;
+#define DEFAULT_OUT_LATENCY 128
 #else
-static const int out_latency = 64;
+#define DEFAULT_OUT_LATENCY 64
 #endif
 
 /* Will sync audio. (recommended) */
-static const bool audio_sync = true;
+#define DEFAULT_AUDIO_SYNC true
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
-static const bool rate_control = true;
+#define DEFAULT_RATE_CONTROL true
 #else
-static const bool rate_control = false;
+#define DEFAULT_RATE_CONTROL false
 #endif
 
 /* Rate control delta. Defines how much rate_control
  * is allowed to adjust input rate. */
-static const float rate_control_delta = 0.005;
+#define DEFAULT_RATE_CONTROL_DELTA  0.005
 
 /* Maximum timing skew. Defines how much adjust_system_rates
  * is allowed to adjust input rate. */
-static const float max_timing_skew = 0.05;
+#define DEFAULT_MAX_TIMING_SKEW  0.05
 
 /* Default audio volume in dB. (0.0 dB == unity gain). */
-static const float audio_volume = 0.0;
+#define DEFAULT_AUDIO_VOLUME 0.0
 
 /* Default audio volume of the audio mixer in dB. (0.0 dB == unity gain). */
-static const float audio_mixer_volume = 0.0;
+#define DEFAULT_AUDIO_MIXER_VOLUME 0.0
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
@@ -606,56 +607,56 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* MISC */
 
 /* Enables displaying the current frames per second. */
-static const bool fps_show = false;
+#define DEFAULT_FPS_SHOW false
 
 /* Enables displaying the current frame count. */
-static const bool framecount_show = false;
+#define DEFAULT_FRAMECOUNT_SHOW false
 
 /* Includes displaying the current memory usage/total with FPS/Frames. */
-static const bool memory_show = false;
+#define DEFAULT_MEMORY_SHOW false
 
 /* Enables displaying various timing statistics. */
-static const bool statistics_show = false;
+#define DEFAULT_STATISTICS_SHOW false
 
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
-static const bool rewind_enable = false;
+#define DEFAULT_REWIND_ENABLE false
 
 /* When set, any time a cheat is toggled it is immediately applied. */
-static const bool apply_cheats_after_toggle = false;
+#define DEFAULT_APPLY_CHEATS_AFTER_TOGGLE false
 
 /* When set, all enabled cheats are auto-applied when a game is loaded. */
-static const bool apply_cheats_after_load = false;
+#define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
 /* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
-static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
+#define DEFAULT_REWIND_BUFFER_SIZE (20 << 20) /* 20MiB */
 
 /* The amount of MB to increase/decrease the rewind_buffer_size when it is changed via the UI. */
-static const unsigned rewind_buffer_size_step = 10; /* 10MB */
+#define DEFAULT_REWIND_BUFFER_SIZE_STEP 10 /* 10MB */
 
 /* How many frames to rewind at a time. */
-static const unsigned rewind_granularity = 1;
+#define DEFAULT_REWIND_GRANULARITY 1
 
 /* Pause gameplay when gameplay loses focus. */
 #ifdef EMSCRIPTEN
-static const bool pause_nonactive = false;
+#define DEFAULT_PAUSE_NONACTIVE false
 #else
-static const bool pause_nonactive = true;
+#define DEFAULT_PAUSE_NONACTIVE true
 #endif
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
 #if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
 /* Flush to file every 10 seconds on modern platforms by default */
-static const unsigned autosave_interval = 10;
+#define DEFAULT_AUTOSAVE_INTERVAL 10
 #else
 /* Default to disabled on I/O-constrained platforms */
-static const unsigned autosave_interval = 0;
+#define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
 /* Publicly announce netplay */
-static const bool netplay_public_announce = true;
+#define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
 
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
@@ -691,7 +692,7 @@ static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFE
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
-static const bool block_sram_overwrite = false;
+#define DEFAULT_BLOCK_SRAM_OVERWRITE false
 
 /* When saving savestates, state index is automatically
  * incremented before saving.
@@ -709,16 +710,16 @@ static const bool savestate_auto_load = false;
 static const bool savestate_thumbnail_enable = false;
 
 /* Slowmotion ratio. */
-static const float slowmotion_ratio = 3.0;
+#define DEFAULT_SLOWMOTION_RATIO 3.0
 
 /* Maximum fast forward ratio. */
-static const float fastforward_ratio = 0.0;
+#define DEFAULT_FASTFORWARD_RATIO 0.0
 
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
-static const bool vrr_runloop_enable = false;
+#define DEFAULT_VRR_RUNLOOP_ENABLE false
 
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
-static const unsigned run_ahead_frames = 1;
+#define DEFAULT_RUN_AHEAD_FRAMES 1
 
 /* When using the Run Ahead feature, use a secondary instance of the core. */
 static const bool run_ahead_secondary_instance = true;
@@ -750,6 +751,8 @@ static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISP
 
 /* Specifies which runtime record to use on playlist sublabels */
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+
+static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
 #endif
 
 static const bool scan_without_core_match      = false;
@@ -858,8 +861,8 @@ static const unsigned midi_volume = 100;
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
 
-static const bool vibrate_on_keypress = false;
-static const bool enable_device_vibration = false;
+static const bool vibrate_on_keypress        = false;
+static const bool enable_device_vibration    = false;
 
 #if defined(HAKCHI)
 static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";

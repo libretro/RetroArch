@@ -31,6 +31,8 @@ matrix:
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
     - compiler: clang
       env: CC=clang-6.0 CXX=clang++-6.0
     - compiler: clang
@@ -73,7 +75,7 @@ before_install:
 script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
-       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib"
+       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
      fi
   - |
      if [ -n "$DISABLE_MENU" ]; then

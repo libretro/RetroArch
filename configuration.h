@@ -129,6 +129,7 @@ typedef struct settings
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
       bool input_overlay_show_physical_inputs;
+      bool input_overlay_show_mouse_cursor;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -275,7 +276,6 @@ typedef struct settings
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;
-      bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
       bool vrr_runloop_enable;
@@ -449,6 +449,10 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
+#ifdef GEKKO
+      unsigned video_overscan_correction_top;
+      unsigned video_overscan_correction_bottom;
+#endif
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
@@ -477,6 +481,7 @@ typedef struct settings
       unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
 
+      unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
       unsigned playlist_sublabel_runtime_type;
 

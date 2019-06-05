@@ -473,6 +473,33 @@ bool libretro_get_system_info(const char *path,
    return true;
 }
 
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
+
 /**
  * load_symbols:
  * @type                        : Type of core to be loaded.
@@ -542,296 +569,40 @@ bool init_libretro_sym_custom(enum rarch_core_type type,
 #endif
 #endif
 
-            SYMBOL(retro_init);
-            SYMBOL(retro_deinit);
-
-            SYMBOL(retro_api_version);
-            SYMBOL(retro_get_system_info);
-            SYMBOL(retro_get_system_av_info);
-
-            SYMBOL(retro_set_environment);
-            SYMBOL(retro_set_video_refresh);
-            SYMBOL(retro_set_audio_sample);
-            SYMBOL(retro_set_audio_sample_batch);
-            SYMBOL(retro_set_input_poll);
-            SYMBOL(retro_set_input_state);
-
-            SYMBOL(retro_set_controller_port_device);
-
-            SYMBOL(retro_reset);
-            SYMBOL(retro_run);
-
-            SYMBOL(retro_serialize_size);
-            SYMBOL(retro_serialize);
-            SYMBOL(retro_unserialize);
-
-            SYMBOL(retro_cheat_reset);
-            SYMBOL(retro_cheat_set);
-
-            SYMBOL(retro_load_game);
-            SYMBOL(retro_load_game_special);
-
-            SYMBOL(retro_unload_game);
-            SYMBOL(retro_get_region);
-            SYMBOL(retro_get_memory_data);
-            SYMBOL(retro_get_memory_size);
+            CORE_SYMBOLS(SYMBOL);
          }
          break;
       case CORE_TYPE_DUMMY:
-         SYMBOL_DUMMY(retro_init);
-         SYMBOL_DUMMY(retro_deinit);
-
-         SYMBOL_DUMMY(retro_api_version);
-         SYMBOL_DUMMY(retro_get_system_info);
-         SYMBOL_DUMMY(retro_get_system_av_info);
-
-         SYMBOL_DUMMY(retro_set_environment);
-         SYMBOL_DUMMY(retro_set_video_refresh);
-         SYMBOL_DUMMY(retro_set_audio_sample);
-         SYMBOL_DUMMY(retro_set_audio_sample_batch);
-         SYMBOL_DUMMY(retro_set_input_poll);
-         SYMBOL_DUMMY(retro_set_input_state);
-
-         SYMBOL_DUMMY(retro_set_controller_port_device);
-
-         SYMBOL_DUMMY(retro_reset);
-         SYMBOL_DUMMY(retro_run);
-
-         SYMBOL_DUMMY(retro_serialize_size);
-         SYMBOL_DUMMY(retro_serialize);
-         SYMBOL_DUMMY(retro_unserialize);
-
-         SYMBOL_DUMMY(retro_cheat_reset);
-         SYMBOL_DUMMY(retro_cheat_set);
-
-         SYMBOL_DUMMY(retro_load_game);
-         SYMBOL_DUMMY(retro_load_game_special);
-
-         SYMBOL_DUMMY(retro_unload_game);
-         SYMBOL_DUMMY(retro_get_region);
-         SYMBOL_DUMMY(retro_get_memory_data);
-         SYMBOL_DUMMY(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_DUMMY);
          break;
       case CORE_TYPE_FFMPEG:
 #ifdef HAVE_FFMPEG
-         SYMBOL_FFMPEG(retro_init);
-         SYMBOL_FFMPEG(retro_deinit);
-
-         SYMBOL_FFMPEG(retro_api_version);
-         SYMBOL_FFMPEG(retro_get_system_info);
-         SYMBOL_FFMPEG(retro_get_system_av_info);
-
-         SYMBOL_FFMPEG(retro_set_environment);
-         SYMBOL_FFMPEG(retro_set_video_refresh);
-         SYMBOL_FFMPEG(retro_set_audio_sample);
-         SYMBOL_FFMPEG(retro_set_audio_sample_batch);
-         SYMBOL_FFMPEG(retro_set_input_poll);
-         SYMBOL_FFMPEG(retro_set_input_state);
-
-         SYMBOL_FFMPEG(retro_set_controller_port_device);
-
-         SYMBOL_FFMPEG(retro_reset);
-         SYMBOL_FFMPEG(retro_run);
-
-         SYMBOL_FFMPEG(retro_serialize_size);
-         SYMBOL_FFMPEG(retro_serialize);
-         SYMBOL_FFMPEG(retro_unserialize);
-
-         SYMBOL_FFMPEG(retro_cheat_reset);
-         SYMBOL_FFMPEG(retro_cheat_set);
-
-         SYMBOL_FFMPEG(retro_load_game);
-         SYMBOL_FFMPEG(retro_load_game_special);
-
-         SYMBOL_FFMPEG(retro_unload_game);
-         SYMBOL_FFMPEG(retro_get_region);
-         SYMBOL_FFMPEG(retro_get_memory_data);
-         SYMBOL_FFMPEG(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_FFMPEG);
 #endif
          break;
       case CORE_TYPE_MPV:
 #ifdef HAVE_MPV
-         SYMBOL_MPV(retro_init);
-         SYMBOL_MPV(retro_deinit);
-
-         SYMBOL_MPV(retro_api_version);
-         SYMBOL_MPV(retro_get_system_info);
-         SYMBOL_MPV(retro_get_system_av_info);
-
-         SYMBOL_MPV(retro_set_environment);
-         SYMBOL_MPV(retro_set_video_refresh);
-         SYMBOL_MPV(retro_set_audio_sample);
-         SYMBOL_MPV(retro_set_audio_sample_batch);
-         SYMBOL_MPV(retro_set_input_poll);
-         SYMBOL_MPV(retro_set_input_state);
-
-         SYMBOL_MPV(retro_set_controller_port_device);
-
-         SYMBOL_MPV(retro_reset);
-         SYMBOL_MPV(retro_run);
-
-         SYMBOL_MPV(retro_serialize_size);
-         SYMBOL_MPV(retro_serialize);
-         SYMBOL_MPV(retro_unserialize);
-
-         SYMBOL_MPV(retro_cheat_reset);
-         SYMBOL_MPV(retro_cheat_set);
-
-         SYMBOL_MPV(retro_load_game);
-         SYMBOL_MPV(retro_load_game_special);
-
-         SYMBOL_MPV(retro_unload_game);
-         SYMBOL_MPV(retro_get_region);
-         SYMBOL_MPV(retro_get_memory_data);
-         SYMBOL_MPV(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_MPV);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
-         SYMBOL_IMAGEVIEWER(retro_init);
-         SYMBOL_IMAGEVIEWER(retro_deinit);
-
-         SYMBOL_IMAGEVIEWER(retro_api_version);
-         SYMBOL_IMAGEVIEWER(retro_get_system_info);
-         SYMBOL_IMAGEVIEWER(retro_get_system_av_info);
-
-         SYMBOL_IMAGEVIEWER(retro_set_environment);
-         SYMBOL_IMAGEVIEWER(retro_set_video_refresh);
-         SYMBOL_IMAGEVIEWER(retro_set_audio_sample);
-         SYMBOL_IMAGEVIEWER(retro_set_audio_sample_batch);
-         SYMBOL_IMAGEVIEWER(retro_set_input_poll);
-         SYMBOL_IMAGEVIEWER(retro_set_input_state);
-
-         SYMBOL_IMAGEVIEWER(retro_set_controller_port_device);
-
-         SYMBOL_IMAGEVIEWER(retro_reset);
-         SYMBOL_IMAGEVIEWER(retro_run);
-
-         SYMBOL_IMAGEVIEWER(retro_serialize_size);
-         SYMBOL_IMAGEVIEWER(retro_serialize);
-         SYMBOL_IMAGEVIEWER(retro_unserialize);
-
-         SYMBOL_IMAGEVIEWER(retro_cheat_reset);
-         SYMBOL_IMAGEVIEWER(retro_cheat_set);
-
-         SYMBOL_IMAGEVIEWER(retro_load_game);
-         SYMBOL_IMAGEVIEWER(retro_load_game_special);
-
-         SYMBOL_IMAGEVIEWER(retro_unload_game);
-         SYMBOL_IMAGEVIEWER(retro_get_region);
-         SYMBOL_IMAGEVIEWER(retro_get_memory_data);
-         SYMBOL_IMAGEVIEWER(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_IMAGEVIEWER);
 #endif
          break;
       case CORE_TYPE_NETRETROPAD:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-         SYMBOL_NETRETROPAD(retro_init);
-         SYMBOL_NETRETROPAD(retro_deinit);
-
-         SYMBOL_NETRETROPAD(retro_api_version);
-         SYMBOL_NETRETROPAD(retro_get_system_info);
-         SYMBOL_NETRETROPAD(retro_get_system_av_info);
-
-         SYMBOL_NETRETROPAD(retro_set_environment);
-         SYMBOL_NETRETROPAD(retro_set_video_refresh);
-         SYMBOL_NETRETROPAD(retro_set_audio_sample);
-         SYMBOL_NETRETROPAD(retro_set_audio_sample_batch);
-         SYMBOL_NETRETROPAD(retro_set_input_poll);
-         SYMBOL_NETRETROPAD(retro_set_input_state);
-
-         SYMBOL_NETRETROPAD(retro_set_controller_port_device);
-
-         SYMBOL_NETRETROPAD(retro_reset);
-         SYMBOL_NETRETROPAD(retro_run);
-
-         SYMBOL_NETRETROPAD(retro_serialize_size);
-         SYMBOL_NETRETROPAD(retro_serialize);
-         SYMBOL_NETRETROPAD(retro_unserialize);
-
-         SYMBOL_NETRETROPAD(retro_cheat_reset);
-         SYMBOL_NETRETROPAD(retro_cheat_set);
-
-         SYMBOL_NETRETROPAD(retro_load_game);
-         SYMBOL_NETRETROPAD(retro_load_game_special);
-
-         SYMBOL_NETRETROPAD(retro_unload_game);
-         SYMBOL_NETRETROPAD(retro_get_region);
-         SYMBOL_NETRETROPAD(retro_get_memory_data);
-         SYMBOL_NETRETROPAD(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_NETRETROPAD);
 #endif
          break;
       case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEOPROCESSOR)
-         SYMBOL_VIDEOPROCESSOR(retro_init);
-         SYMBOL_VIDEOPROCESSOR(retro_deinit);
-
-         SYMBOL_VIDEOPROCESSOR(retro_api_version);
-         SYMBOL_VIDEOPROCESSOR(retro_get_system_info);
-         SYMBOL_VIDEOPROCESSOR(retro_get_system_av_info);
-
-         SYMBOL_VIDEOPROCESSOR(retro_set_environment);
-         SYMBOL_VIDEOPROCESSOR(retro_set_video_refresh);
-         SYMBOL_VIDEOPROCESSOR(retro_set_audio_sample);
-         SYMBOL_VIDEOPROCESSOR(retro_set_audio_sample_batch);
-         SYMBOL_VIDEOPROCESSOR(retro_set_input_poll);
-         SYMBOL_VIDEOPROCESSOR(retro_set_input_state);
-
-         SYMBOL_VIDEOPROCESSOR(retro_set_controller_port_device);
-
-         SYMBOL_VIDEOPROCESSOR(retro_reset);
-         SYMBOL_VIDEOPROCESSOR(retro_run);
-
-         SYMBOL_VIDEOPROCESSOR(retro_serialize_size);
-         SYMBOL_VIDEOPROCESSOR(retro_serialize);
-         SYMBOL_VIDEOPROCESSOR(retro_unserialize);
-
-         SYMBOL_VIDEOPROCESSOR(retro_cheat_reset);
-         SYMBOL_VIDEOPROCESSOR(retro_cheat_set);
-
-         SYMBOL_VIDEOPROCESSOR(retro_load_game);
-         SYMBOL_VIDEOPROCESSOR(retro_load_game_special);
-
-         SYMBOL_VIDEOPROCESSOR(retro_unload_game);
-         SYMBOL_VIDEOPROCESSOR(retro_get_region);
-         SYMBOL_VIDEOPROCESSOR(retro_get_memory_data);
-         SYMBOL_VIDEOPROCESSOR(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
 #endif
          break;
       case CORE_TYPE_GONG:
 #ifdef HAVE_EASTEREGG
-         SYMBOL_GONG(retro_init);
-         SYMBOL_GONG(retro_deinit);
-
-         SYMBOL_GONG(retro_api_version);
-         SYMBOL_GONG(retro_get_system_info);
-         SYMBOL_GONG(retro_get_system_av_info);
-
-         SYMBOL_GONG(retro_set_environment);
-         SYMBOL_GONG(retro_set_video_refresh);
-         SYMBOL_GONG(retro_set_audio_sample);
-         SYMBOL_GONG(retro_set_audio_sample_batch);
-         SYMBOL_GONG(retro_set_input_poll);
-         SYMBOL_GONG(retro_set_input_state);
-
-         SYMBOL_GONG(retro_set_controller_port_device);
-
-         SYMBOL_GONG(retro_reset);
-         SYMBOL_GONG(retro_run);
-
-         SYMBOL_GONG(retro_serialize_size);
-         SYMBOL_GONG(retro_serialize);
-         SYMBOL_GONG(retro_unserialize);
-
-         SYMBOL_GONG(retro_cheat_reset);
-         SYMBOL_GONG(retro_cheat_set);
-
-         SYMBOL_GONG(retro_load_game);
-         SYMBOL_GONG(retro_load_game_special);
-
-         SYMBOL_GONG(retro_unload_game);
-         SYMBOL_GONG(retro_get_region);
-         SYMBOL_GONG(retro_get_memory_data);
-         SYMBOL_GONG(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
    }

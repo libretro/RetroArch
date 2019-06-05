@@ -2042,13 +2042,34 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_RENAME_ENTRY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_remove &&
-            !settings->bools.kiosk_mode_enable)
-         menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
-            msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
-            MENU_ENUM_LABEL_DELETE_ENTRY,
-            MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+      if (!settings->bools.kiosk_mode_enable)
+      {
+         bool remove_entry_enabled = false;
+
+         if (settings->uints.playlist_entry_remove_enable == PLAYLIST_ENTRY_REMOVE_ENABLE_ALL)
+            remove_entry_enabled = true;
+         else if (settings->uints.playlist_entry_remove_enable == PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV)
+         {
+            char system[PATH_MAX_LENGTH];
+            system[0] = '\0';
+
+            menu_driver_get_thumbnail_system(system, sizeof(system));
+
+            if (!string_is_empty(system))
+               remove_entry_enabled = string_is_equal(system, "history") ||
+                                      string_is_equal(system, "favorites") ||
+                                      string_is_equal(system, "images_history") ||
+                                      string_is_equal(system, "music_history") ||
+                                      string_is_equal(system, "video_history");
+         }
+
+         if (remove_entry_enabled)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
+                  MENU_ENUM_LABEL_DELETE_ENTRY,
+                  MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+      }
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
@@ -3889,6 +3910,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,             PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,     PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH  },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT },
                {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT },
@@ -5627,7 +5649,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,            PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,           PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,           PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,           PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,  PARSE_ONLY_UINT},
@@ -5914,6 +5936,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_VFILTER,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_ROTATION,
                PARSE_ONLY_UINT, false);
