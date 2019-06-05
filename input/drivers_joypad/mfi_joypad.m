@@ -95,10 +95,14 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         *buttons             |= gp.rightShoulder.pressed   ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
         *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
         *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 120100 || __TV_OS_VERSION_MAX_ALLOWED >= 120100
         if (@available(iOS 12.1, *)) {
             *buttons         |= gp.leftThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
             *buttons         |= gp.rightThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
         }
+#endif
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
         if (@available(iOS 13, *)) {
             // Support "Options" button present in PS4 / XBox One controllers
             *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
@@ -120,6 +124,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
                 }
             }
         }
+#endif
+
         mfi_axes[slot][0]     = gp.leftThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][1]     = gp.leftThumbstick.yAxis.value * 32767.0f;
         mfi_axes[slot][2]     = gp.rightThumbstick.xAxis.value * 32767.0f;
