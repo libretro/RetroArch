@@ -1065,7 +1065,7 @@ static void stripes_update_thumbnail_image(void *data)
       {
          if (path_is_valid(stripes->thumbnail_file_path))
             task_push_image_load(stripes->thumbnail_file_path,
-                  supports_rgba,
+                  supports_rgba, 0,
                   menu_display_handle_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->thumbnail);
@@ -1078,7 +1078,7 @@ static void stripes_update_thumbnail_image(void *data)
       {
          if (path_is_valid(stripes->left_thumbnail_file_path))
             task_push_image_load(stripes->left_thumbnail_file_path,
-                  supports_rgba,
+                  supports_rgba, 0,
                   menu_display_handle_left_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->left_thumbnail);
@@ -1142,7 +1142,7 @@ static void stripes_update_savestate_thumbnail_image(void *data)
 
    if (path_is_valid(stripes->savestate_thumbnail_file_path))
       task_push_image_load(stripes->savestate_thumbnail_file_path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&stripes->savestate_thumbnail);
@@ -1519,7 +1519,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
            if (path_is_valid(path))
            {
               task_push_image_load(path,
-                    video_driver_supports_rgba(),
+                    video_driver_supports_rgba(), 0,
                   menu_display_handle_wallpaper_upload, NULL);
               if (!string_is_empty(stripes->bg_file_path))
                  free(stripes->bg_file_path);
@@ -3681,7 +3681,7 @@ static void stripes_context_reset_background(const char *iconpath)
 
    if (path_is_valid(path))
       task_push_image_load(path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
    if (path)

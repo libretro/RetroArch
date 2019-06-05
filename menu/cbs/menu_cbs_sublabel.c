@@ -357,6 +357,7 @@ default_sublabel_macro(action_bind_sublabel_thumbnails_rgui,               MENU_
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_rgui,          MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
+default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
@@ -1718,6 +1719,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
             }
+            break;
+         case MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_thumbnail_upscale_threshold);
             break;
          case MENU_ENUM_LABEL_MOUSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable);

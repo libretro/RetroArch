@@ -1602,7 +1602,7 @@ static bool request_thumbnail(
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
          if(task_push_image_load(thumbnail->path,
-                  video_driver_supports_rgba(),
+                  video_driver_supports_rgba(), 0,
                   (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
             menu_display_handle_left_thumbnail_upload : menu_display_handle_thumbnail_upload, NULL))
          {
@@ -2204,7 +2204,7 @@ end:
              * here - in general, wallpaper is loaded once per session
              * and then forgotten, so performance issues are not a concern */
             task_push_image_load(wallpaper_path,
-                  video_driver_supports_rgba(),
+                  video_driver_supports_rgba(), 0,
                   menu_display_handle_wallpaper_upload, NULL);
       }
    }

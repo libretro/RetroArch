@@ -457,6 +457,7 @@ typedef struct settings
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_dpi_override_value;
