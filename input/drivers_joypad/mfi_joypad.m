@@ -65,12 +65,18 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
     buttons            = &mfi_buttons[slot];
 
     /* retain the values from the paused controller handler and pass them through */
-    pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
-    select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-    l3                 = *buttons & ( 1 << RETRO_DEVICE_ID_JOYPAD_L3 );
-    r3                 = *buttons & ( 1 << RETRO_DEVICE_ID_JOYPAD_R3 );
-    *buttons           = 0 | pause | select | l3 | r3;
-
+    if (@available(iOS 13, *)) {
+        // The menu button can be pressed/unpressed like any other button in iOS 13
+        // so no need to passthrough anything
+        *buttons = 0;
+    } else {
+        // Use the paused controller handler for iOS versions below 13
+        pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+        select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+        l3                 = *buttons & ( 1 << RETRO_DEVICE_ID_JOYPAD_L3 );
+        r3                 = *buttons & ( 1 << RETRO_DEVICE_ID_JOYPAD_R3 );
+        *buttons           = 0 | pause | select | l3 | r3;
+    }
     memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
 
     if (controller.extendedGamepad)
@@ -89,6 +95,31 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         *buttons             |= gp.rightShoulder.pressed   ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
         *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
         *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
+        if (@available(iOS 12.1, *)) {
+            *buttons         |= gp.leftThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+            *buttons         |= gp.rightThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+        }
+        if (@available(iOS 13, *)) {
+            // Support "Options" button present in PS4 / XBox One controllers
+            *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+            
+            // Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
+            //
+            // LS + Menu => Select
+            // LT + Menu => L3
+            // RT + Menu => R3
+            if ( gp.buttonMenu.pressed ) {
+                if ( gp.leftShoulder.pressed ) {
+                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
+                } else if ( gp.leftTrigger.pressed ) {
+                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_L3;
+                } else if ( gp.rightTrigger.pressed ) {
+                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_R3;
+                } else {
+                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
+                }
+            }
+        }
         mfi_axes[slot][0]     = gp.leftThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][1]     = gp.leftThumbstick.yAxis.value * 32767.0f;
         mfi_axes[slot][2]     = gp.rightThumbstick.xAxis.value * 32767.0f;
@@ -128,51 +159,57 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
         apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
     };
 
-    gamepad.controller.controllerPausedHandler = ^(GCController *controller)
-    {
-        uint32_t slot      = (uint32_t)controller.playerIndex;
-
-        // Support buttons that aren't supported by the mFi controller via "hotkey" combinations:
-        //
-        // LS + Menu => Select
-        // LT + Menu => L3
-        // RT + Menu => R3
-        // Note that these are just button presses, and it does not simulate holding down the button
-        if ( controller.gamepad.leftShoulder.pressed || controller.extendedGamepad.leftShoulder.pressed ) {
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L);
-            mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+    if (@available(iOS 13, *)) {
+        // controllerPausedHandler is deprecated in favor of being able to deal with the menu
+        // button as any other button
+        return;
+    } else {
+        gamepad.controller.controllerPausedHandler = ^(GCController *controller)
+        {
+            uint32_t slot      = (uint32_t)controller.playerIndex;
+            
+            // Support buttons that aren't supported by the mFi controller via "hotkey" combinations:
+            //
+            // LS + Menu => Select
+            // LT + Menu => L3
+            // RT + Menu => R3
+            // Note that these are just button presses, and it does not simulate holding down the button
+            if ( controller.gamepad.leftShoulder.pressed || controller.extendedGamepad.leftShoulder.pressed ) {
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L);
+                mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+                });
+                return;
+            }
+            if ( controller.extendedGamepad.leftTrigger.pressed ) {
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L2);
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+                mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L3);
+                });
+                return;
+            }
+            if ( controller.extendedGamepad.rightTrigger.pressed ) {
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R2);
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+                mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R3);
+                });
+                return;
+            }
+            
+            mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+            
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
             });
-            return;
-        }
-        if ( controller.extendedGamepad.leftTrigger.pressed ) {
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L2);
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-            mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L3);
-            });
-            return;
-        }
-        if ( controller.extendedGamepad.rightTrigger.pressed ) {
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R2);
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-            mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R3);
-            });
-            return;
-        }
-
-        mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
-
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-        });
-
-    };
+            
+        };
+    }
 }
 
 static void apple_gamecontroller_joypad_connect(GCController *controller)
