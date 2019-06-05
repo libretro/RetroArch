@@ -333,7 +333,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R4_G4_B4_A4;
    wiiu->menu.texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
    wiiu->menu.texture.viewNumSlices    = 1;
-   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_A, _R, _G, _B);
+   /* Presumably an endian thing. RGBA, but swap R and G, then B and A. */
+   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_G, _R, _A, _B);
    GX2CalcSurfaceSizeAndAlignment(&wiiu->menu.texture.surface);
    GX2InitTextureRegs(&wiiu->menu.texture);
 
@@ -370,7 +371,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.v->coord.v = 0.0f;
    wiiu->menu.v->coord.width = 1.0f;
    wiiu->menu.v->coord.height = 1.0f;
-   wiiu->menu.v->color = 0xFFFFFF80;
+   wiiu->menu.v->color = 0xFFFFFFFF;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
    wiiu->vertex_cache.size       = 0x1000;
