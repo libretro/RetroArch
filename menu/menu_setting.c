@@ -12289,6 +12289,23 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_thumbnail_upscale_threshold,
+                  MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+                  MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+                  menu_thumbnail_upscale_threshold,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 1024, 256, true, true);
+         }
+
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_UINT(

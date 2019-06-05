@@ -392,6 +392,7 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 
 static void ozone_update_thumbnail_image(void *data)
 {
+   settings_t *settings             = config_get_ptr();
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
@@ -404,14 +405,14 @@ static void ozone_update_thumbnail_image(void *data)
    bool thumbnails_missing          = false;
 #endif
 
-   if (!ozone)
+   if (!ozone || !settings)
       return;
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
       if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_thumbnail_upload, NULL);
       else
       {
@@ -428,7 +429,7 @@ static void ozone_update_thumbnail_image(void *data)
    {
       if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
       {
@@ -445,11 +446,6 @@ static void ozone_update_thumbnail_image(void *data)
    /* On demand thumbnail downloads */
    if (thumbnails_missing)
    {
-      settings_t *settings = config_get_ptr();
-
-      if (!settings)
-         return;
-
       if (settings->bools.network_on_demand_thumbnails)
       {
          const char *system = NULL;

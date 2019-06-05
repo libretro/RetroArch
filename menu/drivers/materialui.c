@@ -1885,7 +1885,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    if (path_is_valid(settings->paths.path_menu_wallpaper))
       task_push_image_load(settings->paths.path_menu_wallpaper,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
 }
 

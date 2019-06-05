@@ -1008,6 +1008,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
 static void xmb_update_thumbnail_image(void *data)
 {
+   settings_t *settings             = config_get_ptr();
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
@@ -1020,14 +1021,14 @@ static void xmb_update_thumbnail_image(void *data)
    bool thumbnails_missing          = false;
 #endif
 
-   if (!xmb)
+   if (!xmb || !settings)
       return;
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
       if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_thumbnail_upload, NULL);
       else
       {
@@ -1044,7 +1045,7 @@ static void xmb_update_thumbnail_image(void *data)
    {
       if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
       {
@@ -1061,11 +1062,6 @@ static void xmb_update_thumbnail_image(void *data)
    /* On demand thumbnail downloads */
    if (thumbnails_missing)
    {
-      settings_t *settings = config_get_ptr();
-
-      if (!settings)
-         return;
-
       if (settings->bools.network_on_demand_thumbnails)
       {
          const char *system = NULL;
@@ -1234,7 +1230,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 
    if (path_is_valid(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&xmb->savestate_thumbnail);
@@ -1690,7 +1686,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          if (path_is_valid(path))
          {
             task_push_image_load(path,
-                  video_driver_supports_rgba(),
+                  video_driver_supports_rgba(), 0,
                   menu_display_handle_wallpaper_upload, NULL);
             if (!string_is_empty(xmb->bg_file_path))
                free(xmb->bg_file_path);
@@ -5065,7 +5061,7 @@ static void xmb_context_reset_background(const char *iconpath)
 
    if (path_is_valid(path))
       task_push_image_load(path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
 #ifdef ORBIS
