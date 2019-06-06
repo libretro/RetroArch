@@ -1537,6 +1537,13 @@ bool video_driver_supports_viewport_read(void)
    return current_video->read_viewport && current_video->viewport_info;
 }
 
+bool video_driver_prefer_viewport_read(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->bools.video_gpu_screenshot ||
+      (video_driver_is_hw_context() && !current_video->read_frame_raw);
+}
+
 bool video_driver_supports_read_frame_raw(void)
 {
    if (current_video->read_frame_raw)

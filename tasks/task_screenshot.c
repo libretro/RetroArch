@@ -516,8 +516,8 @@ bool take_screenshot(
          screenshot_dir,
          name_base, silence, is_paused, is_idle,
          has_valid_framebuffer, fullpath, use_thread,
-         video_driver_supports_viewport_read()
-         && settings->bools.video_gpu_screenshot,
+         video_driver_supports_viewport_read() &&
+         video_driver_prefer_viewport_read(),
          video_driver_supports_read_frame_raw(),
          video_driver_get_pixel_format()
          );
