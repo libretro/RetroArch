@@ -1241,8 +1241,6 @@ static bool event_init_content(void)
    bool contentless = false;
    bool is_inited   = false;
 
-   content_get_status(&contentless, &is_inited);
-
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
    /* No content to be loaded for dummy core,
@@ -1251,14 +1249,13 @@ static bool event_init_content(void)
       return true;
 
    content_set_subsystem_info();
+   content_get_status(&contentless, &is_inited);
 
    if (!contentless)
       path_fill_names();
 
    if (!content_init())
       return false;
-
-   content_get_status(&contentless, &is_inited);
 
    command_event_set_savestate_auto_index();
 
@@ -1267,7 +1264,7 @@ static bool event_init_content(void)
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
-   Since the operations are asynchronouse we can't 
+   Since the operations are asynchronous we can't 
    guarantee users will not use auto_load_state to cheat on
    achievements so we forbid auto_load_state from happening 
    if cheevos_enable and cheevos_hardcode_mode_enable
