@@ -316,12 +316,12 @@ bool menu_shader_manager_save_preset(
    if (!conf)
       return false;
 
-   video_shader_write_conf_cgp(conf, shader);
-
    if (fullpath)
    {
       if (!string_is_empty(basename))
          strlcpy(preset_path, buffer, sizeof(preset_path));
+
+      video_shader_write_conf_cgp(conf, shader, preset_path);
 
       if (config_file_write(conf, preset_path, false))
       {
@@ -342,6 +342,8 @@ bool menu_shader_manager_save_preset(
 
          fill_pathname_join(preset_path, dirs[d],
                buffer, sizeof(preset_path));
+
+         video_shader_write_conf_cgp(conf, shader, preset_path);
 
          if (config_file_write(conf, preset_path, false))
          {

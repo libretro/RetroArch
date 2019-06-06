@@ -945,16 +945,27 @@ static void shader_write_variable(config_file_t *conf,
 
 /**
  * video_shader_write_conf_cgp:
- * @conf              : Preset file to read from.
+ * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
+ * @preset_path       : Optional path to where the preset will be written.
  *
  * Saves preset and all associated state (passes,
  * textures, imports, etc) to disk.
+ * If @preset_path is not NULL, shader paths are saved
+ * relative to it.
  **/
 void video_shader_write_conf_cgp(config_file_t *conf,
-      struct video_shader *shader)
+      struct video_shader *shader, const char *preset_path)
 {
    unsigned i;
+   char key[64];
+   size_t tmp_size = PATH_MAX_LENGTH;
+   char *tmp       = (char*)malloc(tmp_size);
+   char *tmp_rel   = (char*)malloc(tmp_size);
+   char *tmp_base  = (char*)malloc(tmp_size);
+
+   if (!tmp || !tmp_rel || !tmp_base)
+      return;
 
    config_set_int(conf, "shaders", shader->passes);
    if (shader->feedback_pass >= 0)
@@ -962,48 +973,51 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char key[64];
-      size_t tmp_size                      = PATH_MAX_LENGTH * sizeof(char);
-      char *tmp                            = (char*)malloc(tmp_size);
       const struct video_shader_pass *pass = &shader->pass[i];
 
-      if (tmp)
+      snprintf(key, sizeof(key), "shader%u", i);
+      strlcpy(tmp, pass->source.path, tmp_size);
+
+      if (preset_path)
       {
-         key[0] = '\0';
+         strlcpy(tmp_base, preset_path, tmp_size);
 
-         snprintf(key, sizeof(key), "shader%u", i);
-         strlcpy(tmp, pass->source.path, tmp_size);
+         path_basedir(tmp_base);
+         path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
 
-         if (!path_is_absolute(tmp))
-            path_resolve_realpath(tmp, tmp_size);
-         config_set_string(conf, key, tmp);
-
-         free(tmp);
-
-         if (pass->filter != RARCH_FILTER_UNSPEC)
-         {
-            snprintf(key, sizeof(key), "filter_linear%u", i);
-            config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
-         }
-
-         snprintf(key, sizeof(key), "wrap_mode%u", i);
-         config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
-
-         if (pass->frame_count_mod)
-         {
-            snprintf(key, sizeof(key), "frame_count_mod%u", i);
-            config_set_int(conf, key, pass->frame_count_mod);
-         }
-
-         snprintf(key, sizeof(key), "mipmap_input%u", i);
-         config_set_bool(conf, key, pass->mipmap);
-
-         snprintf(key, sizeof(key), "alias%u", i);
-         config_set_string(conf, key, pass->alias);
-
-         shader_write_fbo(conf, &pass->fbo, i);
+         config_set_path(conf, key, tmp_rel);
       }
+      else
+         config_set_path(conf, key, tmp);
+
+
+      if (pass->filter != RARCH_FILTER_UNSPEC)
+      {
+         snprintf(key, sizeof(key), "filter_linear%u", i);
+         config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+      }
+
+      snprintf(key, sizeof(key), "wrap_mode%u", i);
+      config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
+
+      if (pass->frame_count_mod)
+      {
+         snprintf(key, sizeof(key), "frame_count_mod%u", i);
+         config_set_int(conf, key, pass->frame_count_mod);
+      }
+
+      snprintf(key, sizeof(key), "mipmap_input%u", i);
+      config_set_bool(conf, key, pass->mipmap);
+
+      snprintf(key, sizeof(key), "alias%u", i);
+      config_set_string(conf, key, pass->alias);
+
+      shader_write_fbo(conf, &pass->fbo, i);
    }
+
+   free(tmp);
+   free(tmp_rel);
+   free(tmp_base);
 
    if (shader->num_parameters)
    {

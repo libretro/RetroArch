@@ -732,7 +732,8 @@ bool path_is_absolute(const char *path)
  * @buf                : buffer for path
  * @size               : size of buffer
  *
- * Turns relative paths into absolute path.
+ * Turns relative paths into absolute paths and
+ * resolves use of "." and ".." in absolute paths.
  * If relative, rebases on current working dir.
  **/
 void path_resolve_realpath(char *buf, size_t size)
@@ -760,6 +761,47 @@ void path_resolve_realpath(char *buf, size_t size)
 }
 
 /**
+ * path_relative_to:
+ * @out                : buffer to write the relative path to
+ * @path               : path to be expressed relatively
+ * @base               : base directory to start out on
+ * @size               : size of output buffer
+ *
+ * Turns @path into a path relative to @base and writes it to @out.
+ *
+ * @base is assumed to be a base directory, i.e. a path ending with '/' or '\'.
+ * Both @path and @base are assumed to be absolute paths without "." or "..".
+ *
+ * E.g. path /a/b/e/f.cg with base /a/b/c/d/ turns into ../../e/f.cg
+ **/
+void path_relative_to(char *out, const char *path, const char *base, size_t size)
+{
+   unsigned i;
+   const char *trimmed_path, *trimmed_base;
+
+#ifdef _WIN32
+   /* For different drives, return absolute path */
+   if (strlen(path) > 2 && strlen(base) > 2)
+      if (path[1] == ':' && base[1] == ':')
+         if (path[0] != base[0])
+            return path;
+#endif
+
+   /* Trim common beginning */
+   for (i = 0; path[i] && base[i] && path[i] == base[i]; )
+      i++;
+   trimmed_path = path+i;
+   trimmed_base = base+i;
+
+   /* Each segment of base turns into ".." */
+   out[0] = '\0';
+   for (i = 0; trimmed_base[i]; i++)
+      if (trimmed_base[i] == '/' || trimmed_base[i] == '\\')
+         strlcat(out, "../", size); /* Use '/' as universal separator */
+   strlcat(out, trimmed_path, size);
+}
+
+/**
  * fill_pathname_resolve_relative:
  * @out_path           : output path
  * @in_refpath         : input reference path
@@ -782,6 +824,7 @@ void fill_pathname_resolve_relative(char *out_path,
 
    fill_pathname_basedir(out_path, in_refpath, size);
    strlcat(out_path, in_path, size);
+   path_resolve_realpath(out_path, size);
 }
 
 /**

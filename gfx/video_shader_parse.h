@@ -183,14 +183,17 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
 /**
  * video_shader_write_conf_cgp:
- * @conf              : Preset file to read from.
+ * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
+ * @preset_path       : Optional path to where the preset will be written.
  *
  * Saves preset and all associated state (passes,
  * textures, imports, etc) to disk.
+ * If @preset_path is not NULL, shader paths are saved
+ * relative to it.
  **/
 void video_shader_write_conf_cgp(config_file_t *conf,
-      struct video_shader *shader);
+      struct video_shader *shader, const char *preset_path);
 
 /**
  * video_shader_resolve_relative:
