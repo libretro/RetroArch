@@ -1,12 +1,4 @@
-﻿#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-
-#ifdef HAVE_LAKKA_SWITCH
+﻿#ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
     "Overclock da GPU"
@@ -911,7 +903,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-    "Alterando a Transparência de Gamepad Virtual"
+    "Alterando a Sobreposição do Gamepad Virtual"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
@@ -1343,7 +1335,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-    "Próxima Transparência"
+    "Próxima Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -1418,15 +1410,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-    "Mostrar Transparência"
+    "Mostrar Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-    "Ocultar Transparência no Menu"
+    "Ocultar Sobreposição no Menu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-    "Exibir Comandos Na Transparência"
+    "Exibir Comandos Na Sobreposição"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Exibir Cursor do Mouse com Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
@@ -1929,6 +1925,14 @@ MSG_HASH(
     "Porta Base Remota de Rede"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Baixar Miniaturas Sob Demanda"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Faça o download automático de imagens em miniatura ausentes ao navegar pelas listas de reprodução. Tem um grande impacto no desempenho."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Rede"
     )
@@ -2030,7 +2034,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-    "Transparência na Tela"
+    "Sobreposição na Tela"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
@@ -2064,15 +2068,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY,
-    "Transparência"
+    "Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-    "Carrega Automaticamente Transparência Favorita"
+    "Carrega Automaticamente Sobreposição Favorita"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-    "Transparência"
+    "Sobreposição"
     )
 #ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
@@ -2082,19 +2086,19 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-    "Opacidade da Transparência"
+    "Opacidade da Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-    "Predefinição de Transparência"
+    "Predefinição de Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-    "Escala da Transparência"
+    "Escala da Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-    "Transparência na Tela"
+    "Sobreposição na Tela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -2173,6 +2177,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Sair do RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+    "Reiniciar o RetroArch"
     )
 #endif
 MSG_HASH(
@@ -2377,10 +2385,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
     "Reiniciar"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-    "Reiniciar RetroArch"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESUME,
@@ -2743,6 +2747,10 @@ MSG_HASH(
     "Suporte a CoreText"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+    "Modelo da CPU"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
     "Características de CPU"
     )
@@ -2876,7 +2884,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-    "Suporte à Transparência"
+    "Suporte à Sobreposição"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
@@ -3027,6 +3035,14 @@ MSG_HASH(
     "Disposição Vertical de Miniaturas"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Limite de Redimensionamento de Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Automaticamente redimensiona imagens em miniatura com uma largura/altura menor do que o valor especificado. Melhora a qualidade da imagem. Tem um impacto moderado no desempenho."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
     "Mostrar Miniaturas da Lista de Reprodução"
     )
@@ -3060,7 +3076,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-    "Vizinho mais próximo (Rápido)"
+    "Vizinho Mais Próximo (Rápido)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
@@ -3164,7 +3180,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-    "Arte da Embalagem"
+    "Arte da Caixa"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -3468,7 +3484,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-    "Atualizar Transparências"
+    "Atualizar Sobreposições"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
@@ -3769,6 +3785,22 @@ MSG_HASH(
     "Definir Largura de Tela do VI"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Correção de Overscan (Superior)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte superior da tela). Nota: pode introduzir artefatos de dimensionamento."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Correção de Overscan (Inferior)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte inferior da tela). Nota: pode introduzir artefatos de dimensionamento."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
     "Sincronização Vertical (V-Sync)"
     )
@@ -3996,7 +4028,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-    "Layout do Menu"
+    "Esquema do Menu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -4065,7 +4097,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-    "Altera as configurações de Transparência e Transparência de teclado, e as configurações de notificação na tela."
+    "Altera as configurações de sobreposição e sobreposição de teclado, e as configurações de notificação na tela."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -4529,7 +4561,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_OVERLAY,
-    "Falha em carregar a Transparência."
+    "Falha em carregar a Sobreposição."
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_STATE,
@@ -5463,6 +5495,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Sai do programa."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+    "Reinicia o programa."
+    )
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -5498,15 +5534,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-    "Oculta a Transparência enquanto estiver dentro do menu e exibe novamente ao sair."
+    "Oculta a Sobreposição enquanto estiver dentro do menu e exibe novamente ao sair."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-    "Exibe comandos de teclado/controle na transparência."
+    "Exibe comandos de teclado/controle na sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-    "Selecione a porta para a transparência escutar se Exibir Comandos na Transparência estiver habilitado."
+    "Selecione a porta para a sobreposição escutar se Exibir Comandos na Sobreposição estiver habilitado."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Mostra o cursor do mouse ao usar uma sobreposição na tela."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -5822,19 +5862,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-    "Opacidade de todos os elementos de interface da Transparência."
+    "Opacidade de todos os elementos de interface da Sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-    "Escala de todos os elementos de interface da Transparência."
+    "Escala de todos os elementos de interface da Sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-    "Habilita a Transparência."
+    "As Sobreposições são usadas para bordas e controles na tela"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-    "Selecione uma Transparência pelo navegador de arquivos."
+    "Selecione uma Sobreposição pelo navegador de arquivos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -6186,7 +6226,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-    "Selecione um layout diferente para a interface XMB."
+    "Selecione um esquema diferente para a interface XMB."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -6328,8 +6368,14 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-    "Define um diretório onde as Transparências são mantidas para fácil acesso."
+    "Define um diretório onde as sobreposições são mantidas para facilitar o acesso."
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+    "Define um diretório onde os esquemas de vídeo são mantidos para facilitar o acesso."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "Os arquivos de Trapaça são mantidos aqui."
@@ -6515,6 +6561,14 @@ MSG_HASH(
     "Exibir ou ocultar a opção 'Atualizador On-line'."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Exibir Atualizador de Miniaturas Herdadas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Exibir ou ocultar a capacidade de baixar pacotes de miniaturas herdadas."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
     "Visualizações"
     )
@@ -6691,6 +6745,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
     "Exibir ou ocultar a opção 'Sair do RetroArch'."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+    "Exibir 'Reiniciar o RetroArch'"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+    "Exibir ou ocultar a opção 'Reiniciar o RetroArch'"
     )
 #endif
 MSG_HASH(
@@ -7031,11 +7093,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
-    "Usar Layout de Largura Total"
+    "Usar Esquema de Largura Total"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-    "Redimensiona e posiciona as entradas do menu para aproveitar melhor o espaço disponível na tela. Desabilite isso para usar o layout clássico de duas colunas de largura fixa."
+    "Redimensiona e posiciona as entradas do menu para aproveitar melhor o espaço disponível na tela. Desabilite isso para usar o esquema clássico de duas colunas de largura fixa."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -8426,6 +8488,10 @@ MSG_HASH(
     "Alternar transmissão"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+    "Serviço IA"
+    )
+MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
     "Um estado do jogo foi carregado, Conquistas no Modo Hardcore foram desativadas para a sessão atual. Reinicie para ativar o modo hardcore."
     )
@@ -8588,6 +8654,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
     "Nunca"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+    "Histórico e Favoritos"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+    "Todas as Listas de Rprodução"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+    "DESLIGADO"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
