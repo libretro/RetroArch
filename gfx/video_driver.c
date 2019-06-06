@@ -1534,10 +1534,7 @@ bool video_driver_supports_recording(void)
 
 bool video_driver_supports_viewport_read(void)
 {
-   settings_t *settings = config_get_ptr();
-   return (settings->bools.video_gpu_screenshot ||
-         (video_driver_is_hw_context() && !current_video->read_frame_raw))
-      && current_video->read_viewport && current_video->viewport_info;
+   return current_video->read_viewport && current_video->viewport_info;
 }
 
 bool video_driver_supports_read_frame_raw(void)

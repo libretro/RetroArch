@@ -417,7 +417,7 @@ static bool load_content_from_compressed_archive(
    if (!string_is_empty(content_ctx->directory_cache))
       strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
 
-   if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
+   if (!path_is_directory(new_basedir))
    {
       RARCH_WARN("Tried extracting to cache directory, but "
             "cache directory was not set or found. "
