@@ -8488,6 +8488,10 @@ MSG_HASH(
     "Streaming toggle"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+    "AI Service"
+    )
+MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
     "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )

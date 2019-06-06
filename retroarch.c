@@ -3963,6 +3963,23 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check if we have pressed the AI Service toggle button */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_AI_SERVICE);
+
+      if (pressed && !old_pressed)
+      {
+#if 0
+         /* TODO/FIXME */
+         command_event(CMD_EVENT_RECORD_INIT, NULL);
+#endif
+      }
+
+      old_pressed             = pressed;
+   }
+
    /* Check if we have pressed the streaming toggle button */
    {
       static bool old_pressed = false;
