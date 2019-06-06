@@ -3140,7 +3140,6 @@ static void xmb_draw_items(
       menu_entry_t entry;
       menu_entry_init(&entry);
       entry.label_enabled      = false;
-      entry.rich_label_enabled = false;
       entry.sublabel_enabled   = (i == current);
       menu_entry_get(&entry, 0, i, list, true);
       ret = xmb_draw_item(video_info,

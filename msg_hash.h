@@ -1229,6 +1229,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST,
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST,
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
+   MENU_ENUM_LABEL_DEFERRED_INFORMATION,
 
    MENU_LABEL(FILE_DETECT_CORE_LIST_PUSH_DIR),
    MENU_LABEL(DOWNLOADED_FILE_DETECT_CORE_LIST),
@@ -1596,6 +1597,15 @@ enum msg_hash_enums
    MENU_LABEL(RDB_ENTRY_SHA1),
    MENU_LABEL(RDB_ENTRY_MD5),
    MENU_LABEL(RDB_ENTRY_CRC32),
+   MENU_LABEL(RDB_ENTRY_DETAIL),
+
+   /* Content information settings */
+   MENU_LABEL(CONTENT_INFO_LABEL),
+   MENU_LABEL(CONTENT_INFO_PATH),
+   MENU_LABEL(CONTENT_INFO_CORE_NAME),
+   MENU_LABEL(CONTENT_INFO_DATABASE),
+   MENU_LABEL(CONTENT_INFO_RUNTIME),
+   MENU_LABEL(CONTENT_INFO_LAST_PLAYED),
 
    MENU_LABEL(NO_PLAYLIST_ENTRIES_AVAILABLE),
 
@@ -2458,6 +2468,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
+#define MENU_LABEL_DEFERRED_INFORMATION                                        0x3FCC9F2BU
 
 /* Cheevos settings */
 
@@ -2477,6 +2488,8 @@ enum msg_hash_enums
 /* Information settings */
 
 #define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
+
+#define MENU_LABEL_INFORMATION                                                 0x81E8DC6BU
 
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
 
