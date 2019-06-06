@@ -294,28 +294,28 @@ static bool command_read_ram(const char *arg)
    unsigned int nbytes     = 0;
    unsigned int alloc_size = 0;
    unsigned int addr       = -1;
+   unsigned int len        = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
-   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
+   alloc_size = 40 + nbytes * 3; /* We allocate more than needed, saving 20 bytes is not really relevant */
    reply      = (char*) malloc(alloc_size);
    reply[0]   = '\0';
    reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
-   data = rcheevos_patch_address(addr, rcheevos_get_console());
-
-   if (data)
+   if ((data = rcheevos_patch_address(addr, rcheevos_get_console())))
    {
       for (i = 0; i < nbytes; i++)
          snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
       reply_at[3 * nbytes] = '\n';
-      command_reply(reply, reply_at + 3 * nbytes + 1 - reply);
+      len                  = reply_at + 3 * nbytes + 1 - reply;
    }
    else
    {
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      command_reply(reply, reply_at + STRLEN_CONST(" -1\n") - reply);
+      len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
    }
+   command_reply(reply, len);
    free(reply);
    return true;
 }
