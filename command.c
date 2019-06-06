@@ -324,23 +324,18 @@ static bool command_read_ram(const char *arg)
 static bool command_write_ram(const char *arg)
 {
    unsigned nbytes      = 0;
-   uint8_t *data        = NULL;
-   unsigned int addr    = 0;
+   unsigned int addr    = strtoul(arg, (char**)&arg, 16);
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
 
-   addr = strtoul(arg, (char**)&arg, 16);
-   data = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
+   if (!data)
+      return false;
 
-   if (data)
+   while (*arg)
    {
-      while (*arg)
-      {
-         *data = strtoul(arg, (char**)&arg, 16);
-         data++;
-      }
-      return true;
+      *data = strtoul(arg, (char**)&arg, 16);
+      data++;
    }
-
-   return false;
+   return true;
 }
 #endif
 
