@@ -38,7 +38,7 @@ static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
       else
          return ozone->dimensions.entry_padding_horizontal_half;
    else if (ozone->depth == 2)
-      if (old_list && ozone->fade_direction == false) /* false = left to right */
+      if (old_list && !ozone->fade_direction) /* false = left to right */
          return ozone->dimensions.entry_padding_horizontal_half;
       else
          return ozone->dimensions.entry_padding_horizontal_full;

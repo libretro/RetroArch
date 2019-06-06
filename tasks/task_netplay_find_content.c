@@ -386,7 +386,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       for (i = 0; i < game_list->size; i++)
       {
          state->found = true;
-         if (found[i] == false)
+         if (!found[i])
          {
             state->found = false;
             break;

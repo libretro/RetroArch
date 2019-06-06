@@ -366,7 +366,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
    /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
    for (index = 0; index < 4; index++)
    {
-      if (stream_taken[index] == false)
+      if (!stream_taken[index])
          break;
    }
 

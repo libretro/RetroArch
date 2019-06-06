@@ -2344,10 +2344,8 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         {
-            driver_uninit(DRIVER_AUDIO_MASK);
-            drivers_init(DRIVER_AUDIO_MASK);
-         }
+         driver_uninit(DRIVER_AUDIO_MASK);
+         drivers_init(DRIVER_AUDIO_MASK);
          break;
       case CMD_EVENT_RESET_CONTEXT:
          {
@@ -2398,12 +2396,12 @@ TODO: Add a setting for these tweaks */
             {
                struct playlist_entry entry = {0};
 
-               entry.path = str_list->elems[0].data; /* content_path */
-               entry.label = str_list->elems[1].data; /* content_label */
+               entry.path      = str_list->elems[0].data; /* content_path */
+               entry.label     = str_list->elems[1].data; /* content_label */
                entry.core_path = str_list->elems[2].data; /* core_path */
                entry.core_name = str_list->elems[3].data; /* core_name */
-               entry.crc32 = str_list->elems[4].data; /* crc32 */
-               entry.db_name = str_list->elems[5].data; /* db_name */
+               entry.crc32     = str_list->elems[4].data; /* crc32 */
+               entry.db_name   = str_list->elems[5].data; /* db_name */
 
                /* Write playlist entry */
                command_playlist_push_write(
@@ -2505,7 +2503,7 @@ TODO: Add a setting for these tweaks */
                if (settings->bools.translation_service_enable)
                {
 #ifdef HAVE_TRANSLATE
-                  if (g_translation_service_status == false)
+                  if (!g_translation_service_status)
                   {
                      RARCH_LOG("OCR START\n");
                      run_translation_service();
