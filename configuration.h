@@ -341,6 +341,8 @@ typedef struct settings
       bool log_to_file_timestamp;
 
       bool scan_without_core_match;
+
+      bool ai_service_enable;
    } bools;
 
    struct
@@ -519,6 +521,7 @@ typedef struct settings
       unsigned video_record_threads;
 
       unsigned libnx_overclock;
+      unsigned ai_service_mode;
    } uints;
 
    struct
@@ -569,6 +572,7 @@ typedef struct settings
 
       char discord_app_id[PATH_MAX_LENGTH];
       char translation_service_url[2048];
+      char ai_service_url[PATH_MAX_LENGTH];
    } arrays;
 
    struct
