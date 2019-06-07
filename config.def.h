@@ -827,6 +827,8 @@ static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
 
+static const unsigned xmb_thumbnail_scale_factor = 100;
+
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;
 #else

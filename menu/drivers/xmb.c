@@ -2942,7 +2942,15 @@ static int xmb_draw_item(
              && xmb->left_thumbnail
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
+      {
          ticker_limit = 40 * scale_mod[1];
+
+         /* Can increase text length if thumbnail is downscaled */
+         if (settings->uints.menu_xmb_thumbnail_scale_factor < 100)
+            ticker_limit +=
+                  (unsigned)((1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f)) *
+                             15.0f * scale_mod[1]);
+      }
       else
          ticker_limit = 70 * scale_mod[2];
    }
@@ -3399,6 +3407,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned height                         = video_info->height;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
+   float thumbnail_scale_factor            = 0.0f;
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
@@ -3409,6 +3418,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       return;
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   thumbnail_scale_factor                  = ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
 
    msg[0]             = '\0';
@@ -3482,15 +3492,50 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Save State thumbnail, right side */
    if (xmb->savestate_thumbnail)
+   {
+      float thumb_width     = 0.0f;
+      float thumb_height    = 0.0f;
+      float thumb_max_width = (float)width - (xmb->icon_size / 6)
+         - (xmb->margins_screen_left * scale_mod[5]) -
+         xmb->icon_spacing_horizontal - pseudo_font_length;
+      float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
+
+      /* Limit thumbnail width */
+      if (xmb->savestate_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
+      {
+         thumb_width  = (xmb->savestate_thumbnail_width * scale_mod[4]) *
+            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
+         thumb_height = (xmb->savestate_thumbnail_height * scale_mod[4]) *
+            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
+      }
+      else
+      {
+         thumb_width  = xmb->savestate_thumbnail_width * scale_mod[4];
+         thumb_height = xmb->savestate_thumbnail_height * scale_mod[4];
+      }
+
+      /* Limit thumbnail height to screen height + margin. */
+      if (xmb->margins_screen_top + xmb->icon_size + thumb_height >=
+            ((float)height * under_thumb_margin))
+      {
+         thumb_width = thumb_width *
+            ((((float)height * under_thumb_margin) -
+              xmb->margins_screen_top - xmb->icon_size) /
+             thumb_height);
+         thumb_height = thumb_height *
+            ((((float)height * under_thumb_margin) -
+              xmb->margins_screen_top - xmb->icon_size) /
+             thumb_height);
+      }
+
       xmb_draw_thumbnail(video_info,
             xmb, &coord_white[0], width, height,
-            xmb->margins_screen_left * scale_mod[5] +
-            xmb->icon_spacing_horizontal + pseudo_font_length,
-            xmb->margins_screen_top + xmb->icon_size +
-            xmb->savestate_thumbnail_height * scale_mod[4],
-            xmb->savestate_thumbnail_width * scale_mod[4],
-            xmb->savestate_thumbnail_height * scale_mod[4],
+            (float)width - (xmb->icon_size / 6) - thumb_max_width +
+            ((thumb_max_width - thumb_width) / 2),
+            xmb->margins_screen_top + xmb->icon_size + thumb_height,
+            thumb_width, thumb_height,
             xmb->savestate_thumbnail);
+   }
 
    /* This is used for hiding thumbnails when going into sub-levels in the
     * Quick Menu as well as when selecting "Information" for a playlist entry.
@@ -3520,6 +3565,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6)
                - (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3527,12 +3573,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
                thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -3582,7 +3628,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          float left_thumb_width     = 0.0f;
          float left_thumb_height    = 0.0f;
-         float thumb_max_width = xmb->icon_size * 3.4;
+         float thumb_max_width      = xmb->icon_size * 3.4;
+         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
+         float y_offset_factor      = !(xmb->depth == 1) ? 2.1 : 1;
+         float thumb_max_height     = ((float)height - (96.0 * scale_factor)) -
+                                      xmb->margins_screen_top -
+                                      (xmb->icon_size * y_offset_factor);
 
 #ifdef XMB_DEBUG
          RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -3590,12 +3641,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-         if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+         if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
          {
             left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-               (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-               (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
          }
          else
          {
@@ -3604,30 +3655,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
 
          /* Limit left thumbnail height to screen height + margin. */
-         if (xmb->margins_screen_top + xmb->icon_size *
-               (!(xmb->depth == 1)? 2.1 : 1) +
-               left_thumb_height >=
-               ((float)height - (96.0 * scale_factor)))
+         if (left_thumb_height >= thumb_max_height)
          {
             left_thumb_width = left_thumb_width *
-               ((((float)height - (96.0 * scale_factor))
-                 - xmb->margins_screen_top -
-                 (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
-                left_thumb_height);
+               (thumb_max_height / left_thumb_height);
 
-            left_thumb_height = left_thumb_height *
-               ((((float)height - (96.0 * scale_factor))
-                 - xmb->margins_screen_top -
-                 (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
-                left_thumb_height);
+            left_thumb_height = thumb_max_height;
          }
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
                (xmb->icon_size / 6) +
                ((thumb_max_width - left_thumb_width) / 2),
-               xmb->margins_screen_top + xmb->icon_size *
-               (!(xmb->depth == 1)? 2.1 : 1) + left_thumb_height,
+               xmb->margins_screen_top + (xmb->icon_size * y_offset_factor) +
+               left_thumb_height + (!(xmb->depth == 1) ?
+               (1.0f - thumbnail_scale_factor) * 0.5f * (thumb_max_height - left_thumb_height) : 0),
                left_thumb_width, left_thumb_height,
                xmb->left_thumbnail);
       }
@@ -3654,6 +3696,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6)
                - (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3661,12 +3704,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
                left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -3715,6 +3758,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          float left_thumb_width     = 0.0f;
          float left_thumb_height    = 0.0f;
          float thumb_max_width = xmb->icon_size * 2.4;
+         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
          RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -3722,12 +3766,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-         if (xmb->left_thumbnail_width > thumb_max_width)
+         if (xmb->left_thumbnail_width > thumb_max_width_scaled)
          {
             left_thumb_width  = xmb->left_thumbnail_width *
-               (thumb_max_width / xmb->left_thumbnail_width);
+               (thumb_max_width_scaled / xmb->left_thumbnail_width);
             left_thumb_height = xmb->left_thumbnail_height *
-               (thumb_max_width / xmb->left_thumbnail_width);
+               (thumb_max_width_scaled / xmb->left_thumbnail_width);
          }
          else
          {
@@ -3958,6 +4002,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6) -
                (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3965,12 +4010,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
                thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -4020,6 +4065,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6) -
                (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -4027,12 +4073,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
                left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             }
             else
             {
