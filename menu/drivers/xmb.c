@@ -2947,8 +2947,7 @@ static int xmb_draw_item(
          ticker_limit = 70 * scale_mod[2];
    }
 
-   if (!string_is_empty(entry->path))
-      menu_entry_get_rich_label(entry, &ticker_str);
+   menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;

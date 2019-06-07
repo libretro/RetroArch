@@ -2796,10 +2796,16 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(core_name) &&
        !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
+      int n  = 0;
       tmp[0] = '\0';
 
-      snprintf(tmp, sizeof(tmp),
+      n = snprintf(tmp, sizeof(tmp),
             "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), core_name);
+
+      /* Silence gcc compiler warning
+       * (getting so sick of these...) */
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0;
 
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
@@ -2904,7 +2910,7 @@ static unsigned menu_displaylist_parse_content_information(
 #ifdef HAVE_LIBRETRODB
 
    /* Database entry */
-   if (!string_is_empty(db_name))
+   if (!string_is_empty(content_label) && !string_is_empty(db_name))
    {
       char db_path[PATH_MAX_LENGTH];
 
@@ -2920,7 +2926,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (path_is_valid(db_path))
          if (menu_entries_append_enum(info->list,
-               entry->label,
+               content_label,
                db_path,
                MENU_ENUM_LABEL_RDB_ENTRY_DETAIL,
                FILE_TYPE_RDB_ENTRY, 0, 0))
@@ -5061,27 +5067,47 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DATABASE_ENTRY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
-            struct string_list *str_list  = string_split(info->label, "|");
+            bool parse_database          = false;
+            struct string_list *str_list = NULL;
 
-            if (!str_list)
-               return false;
-
-            if (!string_is_empty(info->path_b))
-               free(info->path_b);
             if (!string_is_empty(info->label))
+            {
+               str_list     = string_split(info->label, "|");
                free(info->label);
+               info->label  = NULL;
+            }
+            if (!string_is_empty(info->path_b))
+            {
+               free(info->path_b);
+               info->path_b = NULL;
+            }
 
-            info->path_b = strdup(str_list->elems[1].data);
-            info->label  = strdup(str_list->elems[0].data);
+            if (str_list)
+            {
+               if (str_list->size > 1)
+               {
+                  if (!string_is_empty(str_list->elems[0].data) &&
+                      !string_is_empty(str_list->elems[1].data))
+                  {
+                     info->path_b   = strdup(str_list->elems[1].data);
+                     info->label    = strdup(str_list->elems[0].data);
+                     parse_database = true;
+                  }
+               }
 
-            string_list_free(str_list);
-         }
+               string_list_free(str_list);
+            }
 
 #ifdef HAVE_LIBRETRODB
-         ret = menu_displaylist_parse_database_entry(menu, info);
+            if (parse_database)
+               ret = menu_displaylist_parse_database_entry(menu, info);
+            else
+               info->need_push_no_playlist_entries = true;
 #else
-         ret = 0;
+            ret = 0;
+            info->need_push_no_playlist_entries = true;
 #endif
+         }
 
          info->need_push    = true;
          break;
