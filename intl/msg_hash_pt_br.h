@@ -2183,6 +2183,10 @@ MSG_HASH(
     "Reiniciar o RetroArch"
     )
 #endif
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+      "Entrada do banco de dados")
+MSG_HASH(MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+      "Exibir informações do banco de dados do conteúdo atual")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
     "Analógico suportado"
@@ -2294,6 +2298,30 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "Classificação TGDB"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+    "Nome"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+    "Caminho do arquivo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+    "Núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+    "Banco de Dados"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+    "Tempo de Jogo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+    "Jogou Pela Última Vez"
     )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -3033,6 +3061,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
     "Disposição Vertical de Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Fator de Escala de Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Reduz o tamanho da exibição de miniaturas dimensionando a largura máxima permitida."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
