@@ -40,6 +40,8 @@ matrix:
     - compiler: clang
       env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
+      env: CC=clang CXX=clang++
+    - os: osx
       osx_image: xcode8
       script:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
