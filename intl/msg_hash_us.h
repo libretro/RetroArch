@@ -3035,6 +3035,14 @@ MSG_HASH(
     "Thumbnails Vertical Disposition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Thumbnail Scale Factor"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Reduce thumbnail display size by scaling maximum allowed width."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
     "Thumbnail Upscaling Threshold"
     )
