@@ -617,6 +617,7 @@ default_sublabel_macro(action_bind_sublabel_menu_rgui_extended_ascii,           
 default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,                       MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_pl_thumbnails_updater_list,                    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
+default_sublabel_macro(action_bind_sublabel_rdb_entry_detail,                              MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -2622,6 +2623,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_help_send_debug_info);
+            break;
+         case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rdb_entry_detail);
             break;
          default:
          case MSG_UNKNOWN:

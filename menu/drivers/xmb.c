@@ -2947,8 +2947,7 @@ static int xmb_draw_item(
          ticker_limit = 70 * scale_mod[2];
    }
 
-   if (!string_is_empty(entry->path))
-      menu_entry_get_rich_label(entry, &ticker_str);
+   menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -3140,7 +3139,6 @@ static void xmb_draw_items(
       menu_entry_t entry;
       menu_entry_init(&entry);
       entry.label_enabled      = false;
-      entry.rich_label_enabled = false;
       entry.sublabel_enabled   = (i == current);
       menu_entry_get(&entry, 0, i, list, true);
       ret = xmb_draw_item(video_info,
