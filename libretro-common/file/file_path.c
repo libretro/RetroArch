@@ -781,10 +781,13 @@ void path_relative_to(char *out, const char *path, const char *base, size_t size
 
 #ifdef _WIN32
    /* For different drives, return absolute path */
-   if (strlen(path) > 2 && strlen(base) > 2)
-      if (path[1] == ':' && base[1] == ':')
-         if (path[0] != base[0])
-            return path;
+   if (strlen(path) >= 2 && strlen(base) >= 2
+         && path[1] == ':' && base[1] == ':'
+         && path[0] != base[0])
+   {
+      out[0] = '\0';
+      strlcat(out, path, size);
+   }
 #endif
 
    /* Trim common beginning */
