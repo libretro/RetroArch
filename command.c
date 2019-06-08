@@ -1749,6 +1749,45 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_BSV_RECORDING_TOGGLE:
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         bsv_movie_check();
+         break;
+      case CMD_EVENT_AI_SERVICE_TOGGLE:
+         /* TODO/FIXME - implement */
+         break;
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+#ifdef HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
+#endif
+         break;
+      case CMD_EVENT_STREAMING_TOGGLE:
+         if (streaming_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+         {
+            streaming_set_state(true);
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
+         break;
+      case CMD_EVENT_RECORDING_TOGGLE:
+         if (recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         break;
+      case CMD_EVENT_OSK_TOGGLE:
+         if (input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+         else
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+         break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {
@@ -1791,9 +1830,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             if (!libretro_get_system_info(
-                  core_path,
-                  system,
-                  &system_info->load_no_content))
+                     core_path,
+                     system,
+                     &system_info->load_no_content))
                return false;
             info_find.path = core_path;
 
@@ -1807,21 +1846,21 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-      {
-         bool success   = false;
-         subsystem_current_count = 0;
-         content_clear_subsystem();
-         success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-         (void)success;
+         {
+            bool success   = false;
+            subsystem_current_count = 0;
+            content_clear_subsystem();
+            success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+            (void)success;
 
 #ifndef HAVE_DYNAMIC
-         command_event(CMD_EVENT_QUIT, NULL);
+            command_event(CMD_EVENT_QUIT, NULL);
 #else
-         if (!success)
-            return false;
+            if (!success)
+               return false;
 #endif
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
@@ -1966,8 +2005,8 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_toggle_hardcore_mode();
 #endif
          break;
-      /* this fallthrough is on purpose, it should do
-         a CMD_EVENT_REINIT too */
+         /* this fallthrough is on purpose, it should do
+            a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
@@ -2048,21 +2087,21 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-    {
-#ifdef HAVE_NETWORKING
-         /* Only enable state manager if netplay is not underway
-            TODO: Add a setting for these tweaks */
-         settings_t *settings      = config_get_ptr();
-         if (settings->uints.autosave_interval != 0
-            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-#endif
          {
-            if (autosave_init())
-               runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-            else
-               runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+#ifdef HAVE_NETWORKING
+            /* Only enable state manager if netplay is not underway
+TODO: Add a setting for these tweaks */
+            settings_t *settings      = config_get_ptr();
+            if (settings->uints.autosave_interval != 0
+                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+            {
+               if (autosave_init())
+                  runloop_set(RUNLOOP_ACTION_AUTOSAVE);
+               else
+                  runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+            }
          }
-    }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -2117,9 +2156,9 @@ TODO: Add a setting for these tweaks */
          {
 #if defined(GEKKO)
             /* Avoid a crash at startup or even when toggling overlay in rgui */
-						uint64_t memory_used       = frontend_driver_get_used_memory();
-						if(memory_used > (72 * 1024 * 1024))
-							break;
+            uint64_t memory_used       = frontend_driver_get_used_memory();
+            if(memory_used > (72 * 1024 * 1024))
+               break;
 #endif
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
@@ -2387,53 +2426,53 @@ TODO: Add a setting for these tweaks */
             ui_companion_driver_toggle(false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
-      {
-         struct string_list *str_list = (struct string_list*)data;
-
-         if (str_list)
          {
-            if (str_list->size >= 6)
+            struct string_list *str_list = (struct string_list*)data;
+
+            if (str_list)
             {
-               struct playlist_entry entry = {0};
+               if (str_list->size >= 6)
+               {
+                  struct playlist_entry entry = {0};
 
-               entry.path      = str_list->elems[0].data; /* content_path */
-               entry.label     = str_list->elems[1].data; /* content_label */
-               entry.core_path = str_list->elems[2].data; /* core_path */
-               entry.core_name = str_list->elems[3].data; /* core_name */
-               entry.crc32     = str_list->elems[4].data; /* crc32 */
-               entry.db_name   = str_list->elems[5].data; /* db_name */
+                  entry.path      = str_list->elems[0].data; /* content_path */
+                  entry.label     = str_list->elems[1].data; /* content_label */
+                  entry.core_path = str_list->elems[2].data; /* core_path */
+                  entry.core_name = str_list->elems[3].data; /* core_name */
+                  entry.crc32     = str_list->elems[4].data; /* crc32 */
+                  entry.db_name   = str_list->elems[5].data; /* db_name */
 
-               /* Write playlist entry */
-               command_playlist_push_write(
-                     g_defaults.content_favorites,
-                     &entry
-                     );
-               runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  /* Write playlist entry */
+                  command_playlist_push_write(
+                        g_defaults.content_favorites,
+                        &entry
+                        );
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
             }
+
+            break;
          }
-
-         break;
-      }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
-      {
-         const char *core_name          = "DETECT";
-         const char *core_path          = "DETECT";
-         size_t *playlist_index         = (size_t*)data;
-         struct playlist_entry entry = {0};
+         {
+            const char *core_name          = "DETECT";
+            const char *core_path          = "DETECT";
+            size_t *playlist_index         = (size_t*)data;
+            struct playlist_entry entry = {0};
 
-         /* the update function reads our entry as const, so these casts are safe */
-         entry.core_path = (char*)core_path;
-         entry.core_name = (char*)core_name;
+            /* the update function reads our entry as const, so these casts are safe */
+            entry.core_path = (char*)core_path;
+            entry.core_name = (char*)core_name;
 
-         command_playlist_update_write(
-            NULL,
-            *playlist_index,
-            &entry);
+            command_playlist_update_write(
+                  NULL,
+                  *playlist_index,
+                  &entry);
 
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         break;
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
 
-      }
+         }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
@@ -2595,7 +2634,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETWORK_INIT:
          network_init();
          break;
-      /* init netplay manually */
+         /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
             char       *hostname = (char *) data;
@@ -2604,22 +2643,22 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(NULL, hostname ? hostname :
-               settings->paths.netplay_server,
-               settings->uints.netplay_port))
+                     settings->paths.netplay_server,
+                     settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
 
             /* Disable rewind & sram autosave if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      /* init netplay via lobby when content is loaded */
+         /* init netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             /* buf is expected to be address|port */
@@ -2634,12 +2673,12 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d (direct)\n",
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
+                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     !string_is_empty(hostname->elems[1].data)
+                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2649,14 +2688,14 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      /* init netplay via lobby when content is not loaded */
+         /* init netplay via lobby when content is not loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
             static struct string_list *hostname = NULL;
@@ -2665,18 +2704,18 @@ TODO: Add a setting for these tweaks */
             char *buf                           = (char *)data;
 
             RARCH_LOG("[netplay] buf %s\n", buf);
-            
-			hostname = string_split(buf, "|");
+
+            hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d (deferred)\n",
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
+                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     !string_is_empty(hostname->elems[1].data)
+                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2686,67 +2725,64 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      case CMD_EVENT_NETPLAY_GAME_WATCH:
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-         break;
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
-      {
-#ifdef HAVE_MENU
-         bool contentless  = false;
-         bool is_inited    = false;
-
-         content_get_status(&contentless, &is_inited);
-
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-
-         /* If we haven't yet started, this will load on its own */
-         if (!is_inited)
          {
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-                  1, 480, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            return false;
-         }
+#ifdef HAVE_MENU
+            bool contentless  = false;
+            bool is_inited    = false;
 
-         /* Enable Netplay itself */
-         if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
-            return false;
+            content_get_status(&contentless, &is_inited);
+
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+            /* If we haven't yet started, this will load on its own */
+            if (!is_inited)
+            {
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                     1, 480, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               return false;
+            }
+
+            /* Enable Netplay itself */
+            if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+               return false;
 #endif
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_NETPLAY_DISCONNECT:
-      {
-         settings_t *settings = config_get_ptr();
+         {
+            settings_t *settings = config_get_ptr();
 
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-         /* Re-enable rewind if it was enabled
-            TODO: Add a setting for these tweaks */
-         if (settings->bools.rewind_enable)
-            command_event(CMD_EVENT_REWIND_INIT, NULL);
-         if (settings->uints.autosave_interval != 0)
-            command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+            /* Re-enable rewind if it was enabled
+TODO: Add a setting for these tweaks */
+            if (settings->bools.rewind_enable)
+               command_event(CMD_EVENT_REWIND_INIT, NULL);
+            if (settings->uints.autosave_interval != 0)
+               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
             command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
          else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+               !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
             command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
          else
             command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
@@ -2949,9 +2985,9 @@ TODO: Add a setting for these tweaks */
              * any other: toggle
              */
             if (mode == 1)
-                game_focus_state = true;
+               game_focus_state = true;
             else if (mode != -1)
-                game_focus_state = !game_focus_state;
+               game_focus_state = !game_focus_state;
 
             RARCH_LOG("%s: %s.\n",
                   "Game focus is: ",

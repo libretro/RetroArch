@@ -3873,77 +3873,16 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE); 
 
    /* Check if we have pressed the OSK toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(current_input, RARCH_OSK);
-
-      if (pressed && !old_pressed)
-      {
-         if (input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
-         else
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE); 
 
    /* Check if we have pressed the recording toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_RECORDING_TOGGLE);
-
-      if (pressed && !old_pressed)
-      {
-         if (recording_is_enabled())
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         else
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE); 
 
    /* Check if we have pressed the AI Service toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_AI_SERVICE);
-
-      if (pressed && !old_pressed)
-      {
-#if 0
-         /* TODO/FIXME */
-         command_event(CMD_EVENT_RECORD_INIT, NULL);
-#endif
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE); 
 
    /* Check if we have pressed the streaming toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_STREAMING_TOGGLE);
-
-      if (pressed && !old_pressed)
-      {
-         if (streaming_is_enabled())
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         else
-         {
-            streaming_set_state(true);
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-         }
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE); 
 
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
@@ -3952,16 +3891,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
-   {
-      static bool old_netplay_watch = false;
-      bool netplay_watch            = BIT256_GET(
-            current_input, RARCH_NETPLAY_GAME_WATCH);
-
-      if (netplay_watch && !old_netplay_watch)
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-
-      old_netplay_watch             = netplay_watch;
-   }
+   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH); 
 #endif
 
    /* Check if we have pressed the pause button */
@@ -4209,22 +4139,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check movie record toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_BSV_RECORD_TOGGLE);
-
-      if (pressed && !old_pressed)
-      {
-         if (!recording_is_enabled())
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-         else
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         bsv_movie_check();
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE);
 
    /* Check shader prev/next */
    {
