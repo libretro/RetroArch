@@ -99,6 +99,7 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
 fi
 
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
+   check_header EGL EGL/egl.h EGL/eglext.h
    # some systems have EGL libs, but no pkgconfig
    # https://github.com/linux-sunxi/sunxi-mali/pull/8
    check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
@@ -353,6 +354,7 @@ else
    HAVE_OPENGL='no'
 fi
 
+check_enabled EGL OPENGLES OpenGLES 'EGL is' false
 check_enabled EGL OPENGLES3 OpenGLES3 'EGL is' false
 check_enabled OPENGL CG Cg 'OpenGL is' false
 check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
