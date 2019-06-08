@@ -3500,16 +3500,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check mouse grab toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_GRAB_MOUSE_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE); 
 
 #ifdef HAVE_OVERLAY
    {
