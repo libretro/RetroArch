@@ -3378,6 +3378,15 @@ static bool input_driver_toggle_button_combo(
 }
 #endif
 
+#define HOTKEY_CHECK(cmd1, cmd2) \
+   { \
+      static bool old_pressed                   = false; \
+      bool pressed                              = BIT256_GET(current_input, cmd1); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+   }
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -3464,16 +3473,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
-   {
-      static bool old_should_check_next_overlay = false;
-      bool should_check_next_overlay            = BIT256_GET(
-            current_input, RARCH_OVERLAY_NEXT);
-
-      if (should_check_next_overlay && !old_should_check_next_overlay)
-         command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
-
-      old_should_check_next_overlay             = should_check_next_overlay;
-   }
+   HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT);
 #endif
 
    /* Check fullscreen toggle */
@@ -3746,28 +3746,9 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check game focus toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_GAME_FOCUS_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
-
-      old_pressed             = pressed;
-   }
-
+   HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE);
    /* Check if we have pressed the UI companion toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_UI_COMPANION_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_UI_COMPANION_TOGGLE, (void*)(intptr_t)0);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE);
 
 #ifdef HAVE_MENU
    /* Check if we have pressed the menu toggle button */
@@ -3868,28 +3849,10 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the FPS toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_FPS_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_FPS_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE);
 
    /* Check if we have pressed the netplay host toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_NETPLAY_HOST_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_NETPLAY_HOST_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE);
 
    if (menu_driver_is_alive())
    {
@@ -3916,16 +3879,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the audio mute toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_MUTE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE); 
 
    /* Check if we have pressed the OSK toggle button */
    {
@@ -4181,22 +4135,8 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed any of the savestate buttons */
-   {
-      static bool old_should_savestate = false;
-      static bool old_should_loadstate = false;
-      bool should_savestate            = BIT256_GET(
-            current_input, RARCH_SAVE_STATE_KEY);
-      bool should_loadstate            = BIT256_GET(
-            current_input, RARCH_LOAD_STATE_KEY);
-
-      if (should_savestate && !old_should_savestate)
-         command_event(CMD_EVENT_SAVE_STATE, NULL);
-      if (should_loadstate && !old_should_loadstate)
-         command_event(CMD_EVENT_LOAD_STATE, NULL);
-
-      old_should_savestate             = should_savestate;
-      old_should_loadstate             = should_loadstate;
-   }
+   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE);
 
 #ifdef HAVE_CHEEVOS
    rcheevos_hardcore_active = settings->bools.cheevos_enable
@@ -4338,16 +4278,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the reset button */
-   {
-      static bool old_state = false;
-      bool new_state        = BIT256_GET(
-            current_input, RARCH_RESET);
-
-      if (new_state && !old_state)
-         command_event(CMD_EVENT_RESET, NULL);
-
-      old_state = new_state;
-   }
+   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET);
 
    /* Check cheats */
    {
