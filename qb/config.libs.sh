@@ -98,14 +98,15 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
-if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
-   check_header EGL EGL/egl.h EGL/eglext.h
-   # some systems have EGL libs, but no pkgconfig
-   # https://github.com/linux-sunxi/sunxi-mali/pull/8
-   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
-   if [ "$HAVE_EGL" = "yes" ]; then
-      EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
-   fi
+check_platform Win32 EGL 'EGL is' false
+
+check_header EGL EGL/egl.h EGL/eglext.h
+# some systems have EGL libs, but no pkgconfig
+# https://github.com/linux-sunxi/sunxi-mali/pull/8
+check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+
+if [ "$HAVE_EGL" = 'yes' ]; then
+   EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
 check_lib '' SSA -lass ass_library_init
@@ -356,6 +357,7 @@ fi
 
 check_enabled EGL OPENGLES OpenGLES 'EGL is' false
 check_enabled EGL OPENGLES3 OpenGLES3 'EGL is' false
+check_enabled EGL VG OpenVG 'EGL is' false
 check_enabled OPENGL CG Cg 'OpenGL is' false
 check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
 check_enabled OPENGL OPENGL1 OpenGL1 'OpenGL is' false
@@ -427,9 +429,6 @@ if [ "$HAVE_EGL" = "yes" ]; then
       fi
    fi
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
-else
-   HAVE_VG=no
-   HAVE_OPENGLES=no
 fi
 
 check_pkgconf DBUS dbus-1
