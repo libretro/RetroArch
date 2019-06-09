@@ -140,7 +140,7 @@ bool dir_is_empty(enum rarch_dir_type type)
    switch (type)
    {
       case RARCH_DIR_SYSTEM:
-         return string_is_empty(dir_savefile);
+         return string_is_empty(dir_system);
       case RARCH_DIR_SAVEFILE:
          return string_is_empty(dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
