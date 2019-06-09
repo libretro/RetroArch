@@ -1749,6 +1749,12 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_SHADER_NEXT:
+         dir_check_shader(true, false);
+         break;
+      case CMD_EVENT_SHADER_PREV:
+         dir_check_shader(false, true);
+         break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
          if (!recording_is_enabled())
             command_event(CMD_EVENT_RECORD_INIT, NULL);

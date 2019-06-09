@@ -3378,12 +3378,13 @@ static bool input_driver_toggle_button_combo(
 }
 #endif
 
-#define HOTKEY_CHECK(cmd1, cmd2) \
+#define HOTKEY_CHECK(cmd1, cmd2, cond) \
    { \
       static bool old_pressed                   = false; \
       bool pressed                              = BIT256_GET(current_input, cmd1); \
       if (pressed && !old_pressed) \
-         command_event(cmd2, (void*)(intptr_t)0); \
+         if (cond) \
+            command_event(cmd2, (void*)(intptr_t)0); \
       old_pressed                               = pressed; \
    }
 
@@ -3473,34 +3474,23 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
-   HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT);
+   HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true);
 #endif
 
    /* Check fullscreen toggle */
    {
-      static bool old_fs_toggle_pressed = false;
-      bool fs_toggle_pressed            = BIT256_GET(
-            current_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-      fs_toggle_triggered               = fs_toggle_pressed && !old_fs_toggle_pressed;
-
-      if (fs_toggle_triggered)
-      {
-         bool fullscreen_toggled = !runloop_is_paused
+      bool fullscreen_toggled = !runloop_is_paused
 #ifdef HAVE_MENU
-            || menu_is_alive;
+         || menu_is_alive;
 #else
-         ;
+      ;
 #endif
-
-         if (fullscreen_toggled)
-            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-      }
-
-      old_fs_toggle_pressed = fs_toggle_pressed;
+      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+            fullscreen_toggled);
    }
 
    /* Check mouse grab toggle */
-   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE); 
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true); 
 
 #ifdef HAVE_OVERLAY
    {
@@ -3734,9 +3724,9 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check game focus toggle */
-   HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE);
+   HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true);
    /* Check if we have pressed the UI companion toggle button */
-   HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE);
+   HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true);
 
 #ifdef HAVE_MENU
    /* Check if we have pressed the menu toggle button */
@@ -3837,10 +3827,10 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the FPS toggle button */
-   HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE);
+   HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true);
 
    /* Check if we have pressed the netplay host toggle button */
-   HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE);
+   HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true);
 
    if (menu_driver_is_alive())
    {
@@ -3867,19 +3857,19 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the audio mute toggle button */
-   HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE); 
+   HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true); 
 
    /* Check if we have pressed the OSK toggle button */
-   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE); 
+   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true); 
 
    /* Check if we have pressed the recording toggle button */
-   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE); 
+   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true); 
 
    /* Check if we have pressed the AI Service toggle button */
-   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE); 
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true); 
 
    /* Check if we have pressed the streaming toggle button */
-   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE); 
+   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true); 
 
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
@@ -3888,7 +3878,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
-   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH); 
+   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true); 
 #endif
 
    /* Check if we have pressed the pause button */
@@ -4047,8 +4037,8 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed any of the savestate buttons */
-   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE);
-   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true);
 
 #ifdef HAVE_CHEEVOS
    rcheevos_hardcore_active = settings->bools.cheevos_enable
@@ -4130,25 +4120,11 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check movie record toggle */
-   HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE);
+   HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true);
 
    /* Check shader prev/next */
-   {
-      static bool old_shader_next = false;
-      static bool old_shader_prev = false;
-      bool shader_next            = BIT256_GET(
-            current_input, RARCH_SHADER_NEXT);
-      bool shader_prev            = BIT256_GET(
-            current_input, RARCH_SHADER_PREV);
-      bool trig_shader_next       = shader_next && !old_shader_next;
-      bool trig_shader_prev       = shader_prev && !old_shader_prev;
-
-      if (trig_shader_next || trig_shader_prev)
-         dir_check_shader(trig_shader_next, trig_shader_prev);
-
-      old_shader_next             = shader_next;
-      old_shader_prev             = shader_prev;
-   }
+   HOTKEY_CHECK(RARCH_SHADER_NEXT, CMD_EVENT_SHADER_NEXT, true);
+   HOTKEY_CHECK(RARCH_SHADER_PREV, CMD_EVENT_SHADER_PREV, true);
 
    /* Check if we have pressed any of the disk buttons */
    {
@@ -4175,7 +4151,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the reset button */
-   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET);
+   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true);
 
    /* Check cheats */
    {
