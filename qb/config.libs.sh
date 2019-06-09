@@ -145,7 +145,7 @@ fi
 
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
-if [ "$HAVE_NETWORKING" = 'yes' ]; then
+if [ "$HAVE_NETWORKING" != 'no' ]; then
    HAVE_GETADDRINFO=auto
    HAVE_SOCKET_LEGACY=no
 
@@ -159,24 +159,22 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
          die : 'Notice: RetroArch will use legacy socket support'
       fi
    fi
+
    HAVE_NETWORK_CMD=yes
-   HAVE_NETWORKGAMEPAD=yes
-
-   if [ "$HAVE_MINIUPNPC" = 'no' ]; then
-      HAVE_BUILTINMINIUPNPC=no
-   fi
-
-   check_lib '' MINIUPNPC '-lminiupnpc'
 else
-   die : 'Warning: All networking features have been disabled.'
-   HAVE_NETWORK_CMD='no'
-   HAVE_NETWORKGAMEPAD='no'
-   HAVE_CHEEVOS='no'
-   HAVE_DISCORD='no'
-   HAVE_TRANSLATE='no'
-   HAVE_SSL='no'
+   HAVE_NETWORK_CMD=no
 fi
 
+check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
+check_enabled NETWORKING DISCORD discord 'Networking is' false
+check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
+check_enabled NETWORKING SSL ssl 'Networking is' false
+check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
+
+check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
+check_enabled MINIUPNPC BUILTINMINIUPNPC 'builtin miniupnpc' 'miniupnpc is' true
+
+check_lib '' MINIUPNPC '-lminiupnpc'
 check_lib '' STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
@@ -260,15 +258,11 @@ if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf OPENSSL openssl 1.0.0
 fi
 
-if [ "$HAVE_FLAC" = 'no' ]; then
-   HAVE_BUILTINFLAC=no
-fi
+check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
-if [ "$HAVE_SSL" = 'no' ]; then
-   HAVE_BUILTINMBEDTLS=no
-fi
+check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' true
 
 if [ "$HAVE_SSL" != 'no' ]; then
    check_header MBEDTLS \
@@ -370,14 +364,9 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    HAVE_OPENGL_CORE='no'
 fi
 
-if [ "$HAVE_ZLIB" = 'no' ]; then
-   HAVE_BUILTINZLIB=no
-elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
-   HAVE_ZLIB=yes
-else
-   check_val '' ZLIB '-lz' '' zlib '' '' false
-fi
+check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
+check_val '' ZLIB '-lz' '' zlib '' '' false
 check_val '' MPV -lmpv '' mpv '' '' false
 
 check_header DRMINGW exchndl.h
