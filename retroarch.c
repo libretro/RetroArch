@@ -3717,10 +3717,7 @@ static enum runloop_state runloop_check_state(
       old_input                 = current_input;
       old_action                = action;
 
-      if (!focused)
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
-
-      if (runloop_idle)
+      if (!focused || runloop_idle)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
@@ -3898,7 +3895,6 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
-      bool check_is_oneshot         = true;
       bool frameadvance_pressed     = BIT256_GET(
             current_input, RARCH_FRAMEADVANCE);
       bool pause_pressed            = BIT256_GET(
@@ -3924,21 +3920,16 @@ static enum runloop_state runloop_check_state(
 
       if (runloop_is_paused)
       {
-         check_is_oneshot = trig_frameadvance ||
-            BIT256_GET(current_input, RARCH_REWIND);
-
          if (fs_toggle_triggered)
          {
             command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
             if (!runloop_idle)
                video_driver_cached_frame();
          }
-      }
 
-      if (!check_is_oneshot)
-      {
-         retro_ctx.poll_cb();
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         /* Check if it's not oneshot */
+         if (!(trig_frameadvance || BIT256_GET(current_input, RARCH_REWIND)))
+            focused = false;
       }
    }
 
