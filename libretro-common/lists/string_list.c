@@ -315,3 +315,49 @@ bool string_list_find_elem_prefix(const struct string_list *list,
 
    return false;
 }
+
+struct string_list *string_list_clone(
+      const struct string_list *src)
+{
+   unsigned i;
+   struct string_list_elem *elems = NULL;
+   struct string_list *dest       = (struct string_list*)
+      calloc(1, sizeof(struct string_list));
+
+   if (!dest)
+      return NULL;
+
+   dest->size      = src->size;
+   dest->cap       = src->cap;
+   if (dest->cap < dest->size)
+      dest->cap    = dest->size;
+
+   elems           = (struct string_list_elem*)
+      calloc(dest->cap, sizeof(struct string_list_elem));
+
+   if (!elems)
+   {
+      free(dest);
+      return NULL;
+   }
+
+   dest->elems            = elems;
+
+   for (i = 0; i < src->size; i++)
+   {
+      const char *_src    = src->elems[i].data;
+      size_t      len     = _src ? strlen(_src) : 0;
+
+      dest->elems[i].data = NULL;
+      dest->elems[i].attr = src->elems[i].attr;
+
+      if (len != 0)
+      {
+         char *result        = (char*)malloc(len + 1);
+         strcpy(result, _src);
+         dest->elems[i].data = result;
+      }
+   }
+
+   return dest;
+}
