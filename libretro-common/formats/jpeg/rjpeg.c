@@ -1806,7 +1806,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
 
          /* Out of memory? */
-         if (z->img_comp[i].raw_data == NULL)
+         if (!z->img_comp[i].raw_data)
          {
             for(--i; i >= 0; --i)
             {
@@ -1844,7 +1844,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
 
          /* Out of memory? */
-         if (z->img_comp[i].raw_data == NULL)
+         if (!z->img_comp[i].raw_data)
          {
             for(--i; i >= 0; --i)
             {
@@ -2419,13 +2419,7 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z,
    rjpeg__resample res_comp[4];
    uint8_t *coutput[4] = {0};
    uint8_t *output     = NULL;
-   z->s->img_n         = 0; /* make rjpeg__cleanup_jpeg safe */
-
-   /* validate req_comp */
-
-   /* Internal error? */
-   if (req_comp < 0 || req_comp > 4)
-      return NULL;
+   z->s->img_n         = 0;
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
    if (!rjpeg__decode_jpeg_image(z))
@@ -2541,25 +2535,11 @@ error:
    return NULL;
 }
 
-static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
-      unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   rjpeg__jpeg j;
-   rjpeg__context s;
-
-   s.img_buffer          = (uint8_t*)buffer;
-   s.img_buffer_original = (uint8_t*)buffer;
-   s.img_buffer_end      = (uint8_t*)buffer+len;
-
-   j.s                   = &s;
-   rjpeg__setup_jpeg(&j);
-
-   return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
-}
-
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
+   rjpeg__jpeg j;
+   rjpeg__context s;
    int comp;
    uint32_t *img         = NULL;
    uint32_t *pixels      = NULL;
@@ -2568,7 +2548,15 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;
 
-   img   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, (int)size, width, height, &comp, 4);
+   s.img_buffer          = (uint8_t*)rjpeg->buff_data;
+   s.img_buffer_original = (uint8_t*)rjpeg->buff_data;
+   s.img_buffer_end      = (uint8_t*)rjpeg->buff_data + (int)size;
+
+   j.s                   = &s;
+
+   rjpeg__setup_jpeg(&j);
+
+   img                   =  (uint32_t*)rjpeg_load_jpeg_image(&j, width, height, &comp, 4);
 
    if (!img)
       return IMAGE_PROCESS_ERROR;
