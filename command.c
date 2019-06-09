@@ -1759,11 +1759,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AI_SERVICE_TOGGLE:
          /* TODO/FIXME - implement */
          break;
-      case CMD_EVENT_NETPLAY_GAME_WATCH:
-#ifdef HAVE_NETWORKING
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-#endif
-         break;
       case CMD_EVENT_STREAMING_TOGGLE:
          if (streaming_is_enabled())
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -2625,6 +2620,9 @@ TODO: Add a setting for these tweaks */
          bsv_movie_init();
          break;
 #ifdef HAVE_NETWORKING
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
+         break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
          break;
