@@ -1749,6 +1749,15 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_CHEAT_INDEX_PLUS:
+         cheat_manager_index_next();
+         break;
+      case CMD_EVENT_CHEAT_INDEX_MINUS:
+         cheat_manager_index_prev();
+         break;
+      case CMD_EVENT_CHEAT_TOGGLE:
+         cheat_manager_toggle();
+         break;
       case CMD_EVENT_SHADER_NEXT:
          dir_check_shader(true, false);
          break;

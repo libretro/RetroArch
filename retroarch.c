@@ -3388,6 +3388,25 @@ static bool input_driver_toggle_button_combo(
       old_pressed                               = pressed; \
    }
 
+#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
+   { \
+      static bool old_pressed                   = false; \
+      static bool old_pressed2                  = false; \
+      static bool old_pressed3                  = false; \
+      bool pressed                              = BIT256_GET(current_input, cmd1); \
+      bool pressed2                             = BIT256_GET(current_input, cmd3); \
+      bool pressed3                             = BIT256_GET(current_input, cmd5); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      else if (pressed2 && !old_pressed2) \
+         command_event(cmd4, (void*)(intptr_t)0); \
+      else if (pressed3 && !old_pressed3) \
+         command_event(cmd6, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+      old_pressed2                              = pressed2; \
+      old_pressed3                              = pressed3; \
+   }
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -4127,55 +4146,19 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_SHADER_PREV, CMD_EVENT_SHADER_PREV, true);
 
    /* Check if we have pressed any of the disk buttons */
-   {
-      static bool old_disk_eject  = false;
-      static bool old_disk_next   = false;
-      static bool old_disk_prev   = false;
-      bool disk_eject             = BIT256_GET(
-            current_input, RARCH_DISK_EJECT_TOGGLE);
-      bool disk_next              = BIT256_GET(
-            current_input, RARCH_DISK_NEXT);
-      bool disk_prev              = BIT256_GET(
-            current_input, RARCH_DISK_PREV);
-
-      if (disk_eject && !old_disk_eject)
-         command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
-      else if (disk_next && !old_disk_next)
-         command_event(CMD_EVENT_DISK_NEXT, NULL);
-      else if (disk_prev && !old_disk_prev)
-         command_event(CMD_EVENT_DISK_PREV, NULL);
-
-      old_disk_eject              = disk_eject;
-      old_disk_prev               = disk_prev;
-      old_disk_next               = disk_next;
-   }
+   HOTKEY_CHECK3(
+         RARCH_DISK_EJECT_TOGGLE, CMD_EVENT_DISK_EJECT_TOGGLE,
+         RARCH_DISK_NEXT,         CMD_EVENT_DISK_NEXT,
+         RARCH_DISK_PREV,         CMD_EVENT_DISK_PREV);
 
    /* Check if we have pressed the reset button */
    HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true);
 
    /* Check cheats */
-   {
-      static bool old_cheat_index_plus   = false;
-      static bool old_cheat_index_minus  = false;
-      static bool old_cheat_index_toggle = false;
-      bool cheat_index_plus              = BIT256_GET(
-            current_input, RARCH_CHEAT_INDEX_PLUS);
-      bool cheat_index_minus             = BIT256_GET(
-            current_input, RARCH_CHEAT_INDEX_MINUS);
-      bool cheat_index_toggle            = BIT256_GET(
-            current_input, RARCH_CHEAT_TOGGLE);
-
-      if (cheat_index_plus && !old_cheat_index_plus)
-         cheat_manager_index_next();
-      else if (cheat_index_minus && !old_cheat_index_minus)
-         cheat_manager_index_prev();
-      else if (cheat_index_toggle && !old_cheat_index_toggle)
-         cheat_manager_toggle();
-
-      old_cheat_index_plus               = cheat_index_plus;
-      old_cheat_index_minus              = cheat_index_minus;
-      old_cheat_index_toggle             = cheat_index_toggle;
-   }
+   HOTKEY_CHECK3(
+         RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
+         RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
+         RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
    if (settings->bools.video_shader_watch_files)
    {
