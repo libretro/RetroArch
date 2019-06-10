@@ -45,44 +45,6 @@ static struct retro_game_info* clone_retro_game_info(const
    return dest;
 }
 
-static struct string_list *string_list_clone(
-      const struct string_list *src)
-{
-   unsigned i;
-   struct string_list_elem *elems = NULL;
-   struct string_list *dest       = (struct string_list*)
-      calloc(1, sizeof(struct string_list));
-
-   if (!dest)
-      return NULL;
-
-   dest->size      = src->size;
-   dest->cap       = src->cap;
-   if (dest->cap < dest->size)
-   {
-      dest->cap = dest->size;
-   }
-
-   elems           = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem));
-
-   if (!elems)
-   {
-      free(dest);
-      return NULL;
-   }
-
-   dest->elems     = elems;
-
-   for (i = 0; i < src->size; i++)
-   {
-      dest->elems[i].data = strcpy_alloc(src->elems[i].data);
-      dest->elems[i].attr = src->elems[i].attr;
-   }
-
-   return dest;
-}
-
 #if 0
 /* for cloning the Special field, however, attempting
  * to use this feature crashes retroarch */

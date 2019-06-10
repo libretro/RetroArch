@@ -24,7 +24,6 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -40,9 +39,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
-#include "cheevos/var.h"
-#include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove lines */
+#include "cheevos-new/cheevos.h"
 #include "cheevos-new/fixup.h"
 #endif
 
@@ -290,10 +287,6 @@ bool command_set_shader(const char *arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings    = config_get_ptr();
-   cheevos_var_t var;
-
    unsigned i;
    char *reply             = NULL;
    const uint8_t  *data    = NULL;
@@ -301,37 +294,28 @@ static bool command_read_ram(const char *arg)
    unsigned int nbytes     = 0;
    unsigned int alloc_size = 0;
    unsigned int addr       = -1;
+   unsigned int len        = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
-   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
+   alloc_size = 40 + nbytes * 3; /* We allocate more than needed, saving 20 bytes is not really relevant */
    reply      = (char*) malloc(alloc_size);
    reply[0]   = '\0';
    reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
-   /* RCHEEVOS TODO: remove if condition below */
-   if (!settings->bools.cheevos_old_enable)
-      data = rcheevos_patch_address(addr, rcheevos_get_console());
-   /* RCHEEVOS TODO: remove whole else block below */
-   else
-   {
-      var.value = addr;
-      cheevos_var_patch_addr(&var, cheevos_get_console());
-      data      = cheevos_var_get_memory(&var);
-   }
-
-   if (data)
+   if ((data = rcheevos_patch_address(addr, rcheevos_get_console())))
    {
       for (i = 0; i < nbytes; i++)
          snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
       reply_at[3 * nbytes] = '\n';
-      command_reply(reply, reply_at + 3 * nbytes + 1 - reply);
+      len                  = reply_at + 3 * nbytes + 1 - reply;
    }
    else
    {
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      command_reply(reply, reply_at + STRLEN_CONST(" -1\n") - reply);
+      len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
    }
+   command_reply(reply, len);
    free(reply);
    return true;
 }
@@ -340,39 +324,18 @@ static bool command_read_ram(const char *arg)
 static bool command_write_ram(const char *arg)
 {
    unsigned nbytes      = 0;
-   uint8_t *data        = NULL;
-   unsigned int addr    = 0;
+   unsigned int addr    = strtoul(arg, (char**)&arg, 16);
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
 
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings = config_get_ptr();
+   if (!data)
+      return false;
 
-   if (!settings->bools.cheevos_old_enable)
+   while (*arg)
    {
-      addr = strtoul(arg, (char**)&arg, 16);
-      data = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
+      *data = strtoul(arg, (char**)&arg, 16);
+      data++;
    }
-   /* RCHEEVOS TODO: remove the whole else block below */
-   else
-   {
-      cheevos_var_t var;
-
-      var.value = strtoul(arg, (char**)&arg, 16);
-      cheevos_var_patch_addr(&var, cheevos_get_console());
-
-      data = cheevos_var_get_memory(&var);
-   }
-
-   if (data)
-   {
-      while (*arg)
-      {
-         *data = strtoul(arg, (char**)&arg, 16);
-         data++;
-      }
-      return true;
-   }
-
-   return false;
+   return true;
 }
 #endif
 
@@ -1119,9 +1082,7 @@ static void command_event_init_controllers(void)
 static void command_event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove settings init and test */
-   settings_t *settings      = config_get_ptr();
-   !settings->bools.cheevos_old_enable ? rcheevos_unload() : cheevos_unload();
+   rcheevos_unload();
 #endif
 
    RARCH_LOG("Unloading game..\n");
@@ -1164,33 +1125,34 @@ static void command_event_load_auto_state(void)
 {
    bool ret;
    char msg[128]                   = {0};
-   char *savestate_name_auto       = (char*)calloc(PATH_MAX_LENGTH,
-         sizeof(*savestate_name_auto));
+   char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
 
+   if (!global || !settings->bools.savestate_auto_load)
+      return;
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active)
+      return;
+#endif
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      goto error;
+      return;
 #endif
 
-#ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove OR below */
-   if (cheevos_hardcore_active || rcheevos_hardcore_active)
-      goto error;
-#endif
+   savestate_name_auto             = (char*)calloc(PATH_MAX_LENGTH,
+         sizeof(*savestate_name_auto));
 
-   if (!settings->bools.savestate_auto_load)
-      goto error;
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
+         file_path_str(FILE_PATH_AUTO_EXTENSION),
+         savestate_name_auto_size);
 
-   if (global)
-      fill_pathname_noext(savestate_name_auto, global->name.savestate,
-            file_path_str(FILE_PATH_AUTO_EXTENSION),
-            savestate_name_auto_size);
-
-   if (!filestream_exists(savestate_name_auto))
-      goto error;
+   if (!path_is_valid(savestate_name_auto))
+   {
+      free(savestate_name_auto);
+      return;
+   }
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -1203,45 +1165,45 @@ static void command_event_load_auto_state(void)
    RARCH_LOG("%s\n", msg);
 
    free(savestate_name_auto);
-
-   return;
-
-error:
-   free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
-   char *state_dir                   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
-   char *state_base                  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+   char *state_dir                   = NULL;
+   char *state_base                  = NULL;
+   
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    settings_t *settings              = config_get_ptr();
    global_t   *global                = global_get_ptr();
 
-   if (!settings->bools.savestate_auto_index)
-      goto error;
+   if (!global || !settings->bools.savestate_auto_index)
+      return;
 
-   if (global)
-   {
-      /* Find the file in the same directory as global->savestate_name
-       * with the largest numeral suffix.
-       *
-       * E.g. /foo/path/content.state, will try to find
-       * /foo/path/content.state%d, where %d is the largest number available.
-       */
-      fill_pathname_basedir(state_dir, global->name.savestate,
-            state_size);
-      fill_pathname_base(state_base, global->name.savestate,
-            state_size);
-   }
+   state_dir                         = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+
+   /* Find the file in the same directory as global->savestate_name
+    * with the largest numeral suffix.
+    *
+    * E.g. /foo/path/content.state, will try to find
+    * /foo/path/content.state%d, where %d is the largest number available.
+    */
+   fill_pathname_basedir(state_dir, global->name.savestate,
+         state_size);
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
+   free(state_dir);
+
    if (!dir_list)
-      goto error;
+      return;
+
+   state_base                        = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+
+   fill_pathname_base(state_base, global->name.savestate,
+         state_size);
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1265,29 +1227,19 @@ static void command_event_set_savestate_auto_index(void)
    }
 
    dir_list_free(dir_list);
+   free(state_base);
 
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
-
-   free(state_dir);
-   free(state_base);
-   return;
-
-error:
-   free(state_dir);
-   free(state_base);
 }
 
 static bool event_init_content(void)
 {
    bool contentless = false;
    bool is_inited   = false;
-   settings_t *settings            = config_get_ptr();
-
-   content_get_status(&contentless, &is_inited);
 
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
@@ -1297,14 +1249,13 @@ static bool event_init_content(void)
       return true;
 
    content_set_subsystem_info();
+   content_get_status(&contentless, &is_inited);
 
    if (!contentless)
       path_fill_names();
 
    if (!content_init())
       return false;
-
-   content_get_status(&contentless, &is_inited);
 
    command_event_set_savestate_auto_index();
 
@@ -1313,13 +1264,19 @@ static bool event_init_content(void)
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
-   Since the operations are asynchronouse we can't guarantee users will not use auto_load_state to cheat on
-   achievements so we forbid auto_load_state from happening if cheevos_enable and cheevos_hardcode_mode_enable
-   are true
+   Since the operations are asynchronous we can't 
+   guarantee users will not use auto_load_state to cheat on
+   achievements so we forbid auto_load_state from happening 
+   if cheevos_enable and cheevos_hardcode_mode_enable
+   are true.
 */
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_enable || !settings->bools.cheevos_hardcore_mode_enable)
-      command_event_load_auto_state();
+   {
+      settings_t *settings = config_get_ptr();
+      if (  !settings->bools.cheevos_enable || 
+            !settings->bools.cheevos_hardcore_mode_enable)
+         command_event_load_auto_state();
+   }
 #else
    command_event_load_auto_state();
 #endif
@@ -1408,30 +1365,29 @@ static bool command_event_save_auto_state(void)
    bool ret                    = false;
    bool contentless            = false;
    bool is_inited              = false;
-   char *savestate_name_auto   = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
 
-   if (!settings || !settings->bools.savestate_auto_save)
-      goto error;
-   if (!global)
-      goto error;
+   if (!global || !settings || !settings->bools.savestate_auto_save)
+      return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      goto error;
+      return false;
 
    content_get_status(&contentless, &is_inited);
 
    if (contentless)
-      goto error;
+      return false;
 
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove OR below */
-   if (cheevos_hardcore_active || rcheevos_hardcore_active)
-      goto error;
+   if (rcheevos_hardcore_active)
+      return false;
 #endif
+
+   savestate_name_auto         = (char*)
+      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
@@ -1445,10 +1401,6 @@ static bool command_event_save_auto_state(void)
 
    free(savestate_name_auto);
    return true;
-
-error:
-   free(savestate_name_auto);
-   return false;
 }
 
 static bool command_event_save_config(
@@ -1557,7 +1509,7 @@ static bool command_event_save_core_config(void)
                   sizeof(tmp));
 
          strlcat(config_path, tmp, config_size);
-         if (!filestream_exists(config_path))
+         if (!path_is_valid(config_path))
          {
             found_path = true;
             break;
@@ -1729,9 +1681,6 @@ static bool command_event_main_state(unsigned cmd)
             if (content_load_state(state_path, false, false))
             {
 #ifdef HAVE_CHEEVOS
-               /* RCHEEVOS TODO: remove duplication below */
-               if (cheevos_hardcore_active)
-                  cheevos_state_loaded_flag = true;
                if (rcheevos_hardcore_active)
                   rcheevos_state_loaded_flag = true;
 #endif
@@ -1800,6 +1749,55 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_CHEAT_INDEX_PLUS:
+         cheat_manager_index_next();
+         break;
+      case CMD_EVENT_CHEAT_INDEX_MINUS:
+         cheat_manager_index_prev();
+         break;
+      case CMD_EVENT_CHEAT_TOGGLE:
+         cheat_manager_toggle();
+         break;
+      case CMD_EVENT_SHADER_NEXT:
+         dir_check_shader(true, false);
+         break;
+      case CMD_EVENT_SHADER_PREV:
+         dir_check_shader(false, true);
+         break;
+      case CMD_EVENT_BSV_RECORDING_TOGGLE:
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         bsv_movie_check();
+         break;
+      case CMD_EVENT_AI_SERVICE_TOGGLE:
+         /* TODO/FIXME - implement */
+         break;
+      case CMD_EVENT_STREAMING_TOGGLE:
+         if (streaming_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+         {
+            streaming_set_state(true);
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
+         break;
+      case CMD_EVENT_RECORDING_TOGGLE:
+         if (recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         break;
+      case CMD_EVENT_OSK_TOGGLE:
+         if (input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+         else
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+         break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {
@@ -1842,9 +1840,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             if (!libretro_get_system_info(
-                  core_path,
-                  system,
-                  &system_info->load_no_content))
+                     core_path,
+                     system,
+                     &system_info->load_no_content))
                return false;
             info_find.path = core_path;
 
@@ -1858,21 +1856,21 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-      {
-         bool success   = false;
-         subsystem_current_count = 0;
-         content_clear_subsystem();
-         success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-         (void)success;
+         {
+            bool success   = false;
+            subsystem_current_count = 0;
+            content_clear_subsystem();
+            success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+            (void)success;
 
 #ifndef HAVE_DYNAMIC
-         command_event(CMD_EVENT_QUIT, NULL);
+            command_event(CMD_EVENT_QUIT, NULL);
 #else
-         if (!success)
-            return false;
+            if (!success)
+               return false;
 #endif
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
@@ -1880,8 +1878,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove OR below */
-         if (cheevos_hardcore_active || rcheevos_hardcore_active)
+         if (rcheevos_hardcore_active)
             return false;
 #endif
          if (!command_event_main_state(cmd))
@@ -1911,28 +1908,24 @@ bool command_event(enum event_command cmd, void *data)
          command_event_init_controllers();
          break;
       case CMD_EVENT_RESET:
-         /* RCHEEVOS TODO: remove starting block bracket, settings init and tests */
-         {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-            rcheevos_state_loaded_flag = cheevos_state_loaded_flag = false;
-            rcheevos_hardcore_paused = cheevos_hardcore_paused = false;
+         rcheevos_state_loaded_flag = false;
+         rcheevos_hardcore_paused = false;
 #endif
-            RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
-            !settings->bools.cheevos_old_enable ? rcheevos_set_cheats() : cheevos_set_cheats();
+         rcheevos_set_cheats();
 #endif
-            core_reset();
+         core_reset();
 #ifdef HAVE_CHEEVOS
-            !settings->bools.cheevos_old_enable ? rcheevos_reset_game() : cheevos_reset_game();
+         rcheevos_reset_game();
 #endif
 #if HAVE_NETWORKING
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-            return false;
-         }
+         return false;
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
@@ -2019,15 +2012,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove starting block bracket, settings init and test */
-         {
-            settings_t *settings      = config_get_ptr();
-            !settings->bools.cheevos_old_enable ? rcheevos_toggle_hardcore_mode() : cheevos_toggle_hardcore_mode();
-         }
+         rcheevos_toggle_hardcore_mode();
 #endif
          break;
-      /* this fallthrough is on purpose, it should do
-         a CMD_EVENT_REINIT too */
+         /* this fallthrough is on purpose, it should do
+            a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
@@ -2064,8 +2053,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_DEINIT:
 #ifdef HAVE_CHEEVOS
-         /* RCHEEVOS TODO: remove OR below */
-         if (cheevos_hardcore_active || rcheevos_hardcore_active)
+         if (rcheevos_hardcore_active)
             return false;
 #endif
          state_manager_event_deinit();
@@ -2074,8 +2062,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            /* RCHEEVOS TODO: remove OR below */
-            if (cheevos_hardcore_active || rcheevos_hardcore_active)
+            if (rcheevos_hardcore_active)
                return false;
 #endif
             if (settings->bools.rewind_enable)
@@ -2110,21 +2097,21 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-    {
-#ifdef HAVE_NETWORKING
-         /* Only enable state manager if netplay is not underway
-            TODO: Add a setting for these tweaks */
-         settings_t *settings      = config_get_ptr();
-         if (settings->uints.autosave_interval != 0
-            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-#endif
          {
-            if (autosave_init())
-               runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-            else
-               runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+#ifdef HAVE_NETWORKING
+            /* Only enable state manager if netplay is not underway
+TODO: Add a setting for these tweaks */
+            settings_t *settings      = config_get_ptr();
+            if (settings->uints.autosave_interval != 0
+                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+            {
+               if (autosave_init())
+                  runloop_set(RUNLOOP_ACTION_AUTOSAVE);
+               else
+                  runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+            }
          }
-    }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -2179,9 +2166,9 @@ TODO: Add a setting for these tweaks */
          {
 #if defined(GEKKO)
             /* Avoid a crash at startup or even when toggling overlay in rgui */
-						uint64_t memory_used       = frontend_driver_get_used_memory();
-						if(memory_used > (72 * 1024 * 1024))
-							break;
+            uint64_t memory_used       = frontend_driver_get_used_memory();
+            if(memory_used > (72 * 1024 * 1024))
+               break;
 #endif
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
@@ -2406,10 +2393,8 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         {
-            driver_uninit(DRIVER_AUDIO_MASK);
-            drivers_init(DRIVER_AUDIO_MASK);
-         }
+         driver_uninit(DRIVER_AUDIO_MASK);
+         drivers_init(DRIVER_AUDIO_MASK);
          break;
       case CMD_EVENT_RESET_CONTEXT:
          {
@@ -2451,53 +2436,53 @@ TODO: Add a setting for these tweaks */
             ui_companion_driver_toggle(false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
-      {
-         struct string_list *str_list = (struct string_list*)data;
-
-         if (str_list)
          {
-            if (str_list->size >= 6)
+            struct string_list *str_list = (struct string_list*)data;
+
+            if (str_list)
             {
-               struct playlist_entry entry = {0};
+               if (str_list->size >= 6)
+               {
+                  struct playlist_entry entry = {0};
 
-               entry.path = str_list->elems[0].data; /* content_path */
-               entry.label = str_list->elems[1].data; /* content_label */
-               entry.core_path = str_list->elems[2].data; /* core_path */
-               entry.core_name = str_list->elems[3].data; /* core_name */
-               entry.crc32 = str_list->elems[4].data; /* crc32 */
-               entry.db_name = str_list->elems[5].data; /* db_name */
+                  entry.path      = str_list->elems[0].data; /* content_path */
+                  entry.label     = str_list->elems[1].data; /* content_label */
+                  entry.core_path = str_list->elems[2].data; /* core_path */
+                  entry.core_name = str_list->elems[3].data; /* core_name */
+                  entry.crc32     = str_list->elems[4].data; /* crc32 */
+                  entry.db_name   = str_list->elems[5].data; /* db_name */
 
-               /* Write playlist entry */
-               command_playlist_push_write(
-                     g_defaults.content_favorites,
-                     &entry
-                     );
-               runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  /* Write playlist entry */
+                  command_playlist_push_write(
+                        g_defaults.content_favorites,
+                        &entry
+                        );
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
             }
+
+            break;
          }
-
-         break;
-      }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
-      {
-         const char *core_name          = "DETECT";
-         const char *core_path          = "DETECT";
-         size_t *playlist_index         = (size_t*)data;
-         struct playlist_entry entry = {0};
+         {
+            const char *core_name          = "DETECT";
+            const char *core_path          = "DETECT";
+            size_t *playlist_index         = (size_t*)data;
+            struct playlist_entry entry = {0};
 
-         /* the update function reads our entry as const, so these casts are safe */
-         entry.core_path = (char*)core_path;
-         entry.core_name = (char*)core_name;
+            /* the update function reads our entry as const, so these casts are safe */
+            entry.core_path = (char*)core_path;
+            entry.core_name = (char*)core_name;
 
-         command_playlist_update_write(
-            NULL,
-            *playlist_index,
-            &entry);
+            command_playlist_update_write(
+                  NULL,
+                  *playlist_index,
+                  &entry);
 
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         break;
+            runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            break;
 
-      }
+         }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
@@ -2567,7 +2552,7 @@ TODO: Add a setting for these tweaks */
                if (settings->bools.translation_service_enable)
                {
 #ifdef HAVE_TRANSLATE
-                  if (g_translation_service_status == false)
+                  if (!g_translation_service_status)
                   {
                      RARCH_LOG("OCR START\n");
                      run_translation_service();
@@ -2650,6 +2635,9 @@ TODO: Add a setting for these tweaks */
          bsv_movie_init();
          break;
 #ifdef HAVE_NETWORKING
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
+         break;
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
          break;
@@ -2659,7 +2647,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETWORK_INIT:
          network_init();
          break;
-      /* init netplay manually */
+         /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
             char       *hostname = (char *) data;
@@ -2668,22 +2656,22 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(NULL, hostname ? hostname :
-               settings->paths.netplay_server,
-               settings->uints.netplay_port))
+                     settings->paths.netplay_server,
+                     settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
 
             /* Disable rewind & sram autosave if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      /* init netplay via lobby when content is loaded */
+         /* init netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             /* buf is expected to be address|port */
@@ -2698,12 +2686,12 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d (direct)\n",
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
+                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     !string_is_empty(hostname->elems[1].data)
+                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2713,14 +2701,14 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      /* init netplay via lobby when content is not loaded */
+         /* init netplay via lobby when content is not loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
             static struct string_list *hostname = NULL;
@@ -2729,18 +2717,18 @@ TODO: Add a setting for these tweaks */
             char *buf                           = (char *)data;
 
             RARCH_LOG("[netplay] buf %s\n", buf);
-            
-			hostname = string_split(buf, "|");
+
+            hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d (deferred)\n",
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
+                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     !string_is_empty(hostname->elems[1].data)
+                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2750,67 +2738,64 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-               TODO: Add a setting for these tweaks */
+TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-      case CMD_EVENT_NETPLAY_GAME_WATCH:
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-         break;
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
-      {
-#ifdef HAVE_MENU
-         bool contentless  = false;
-         bool is_inited    = false;
-
-         content_get_status(&contentless, &is_inited);
-
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-
-         /* If we haven't yet started, this will load on its own */
-         if (!is_inited)
          {
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-                  1, 480, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            return false;
-         }
+#ifdef HAVE_MENU
+            bool contentless  = false;
+            bool is_inited    = false;
 
-         /* Enable Netplay itself */
-         if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
-            return false;
+            content_get_status(&contentless, &is_inited);
+
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+            /* If we haven't yet started, this will load on its own */
+            if (!is_inited)
+            {
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                     1, 480, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               return false;
+            }
+
+            /* Enable Netplay itself */
+            if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+               return false;
 #endif
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_NETPLAY_DISCONNECT:
-      {
-         settings_t *settings = config_get_ptr();
+         {
+            settings_t *settings = config_get_ptr();
 
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-         /* Re-enable rewind if it was enabled
-            TODO: Add a setting for these tweaks */
-         if (settings->bools.rewind_enable)
-            command_event(CMD_EVENT_REWIND_INIT, NULL);
-         if (settings->uints.autosave_interval != 0)
-            command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+            /* Re-enable rewind if it was enabled
+TODO: Add a setting for these tweaks */
+            if (settings->bools.rewind_enable)
+               command_event(CMD_EVENT_REWIND_INIT, NULL);
+            if (settings->uints.autosave_interval != 0)
+               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
             command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
          else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-            !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+               !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
             command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
          else
             command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL);
@@ -2823,7 +2808,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
-      case CMD_EVENT_NETPLAY_GAME_WATCH:
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
@@ -3013,9 +2997,9 @@ TODO: Add a setting for these tweaks */
              * any other: toggle
              */
             if (mode == 1)
-                game_focus_state = true;
+               game_focus_state = true;
             else if (mode != -1)
-                game_focus_state = !game_focus_state;
+               game_focus_state = !game_focus_state;
 
             RARCH_LOG("%s: %s.\n",
                   "Game focus is: ",

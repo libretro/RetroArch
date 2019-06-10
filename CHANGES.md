@@ -5,8 +5,10 @@
 - GAMECUBE: Add default video/audio filter directories.
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
+- D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though.
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - IOS: Correctly centers screen on iPhone X landscape.
+- LOCALIZATION: Update Korean translation.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
@@ -19,15 +21,17 @@
 - MENU/XMB: Add menu animation settings.
 - MENU: Fix Record -> Streaming Quality, and Record -> Recording Threads settings.
 - MENU/QT/WIMP: Path selector fixes.
+- METAL/SLANG: Added "FrameDirection" slang semantic.
 - NETBSD: Audioio is now the default audio driver.
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
 - RECORD: Fix Twitch streaming.
-- SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24.
+- SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport).
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
 - VULKAN/SLANG: Added "FrameDirection" slang semantic.
 - WII: Add default video/audio filter directories.
 - WII: Fix RGUI display corruption.
+- WIIU/SLANG: Added "FrameDirection" slang semantic.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 
 # 1.7.7

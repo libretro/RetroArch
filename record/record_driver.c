@@ -378,10 +378,16 @@ bool recording_init(void)
                      "webm", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else
+         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
+            fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
+         }
+         else
+         {
+            fill_str_dated_filename(buf, game_name,
+                     "png", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
       }

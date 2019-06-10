@@ -68,16 +68,19 @@ opt_exists() # $opt is returned if exists in OPTS
 parse_input() # Parse stuff :V
 {	BUILD=''
 	OPTS=''
+	config_opts='./configure'
+
 	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="$OPTS $NEWVAR"
-		eval "USER_$NEWVAR=no"
+		eval "USER_$NEWVAR=auto"
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
 
 	while [ $# -gt 0 ]; do
+		config_opts="${config_opts} $1"
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
 			--global-config-dir=*|--sysconfdir=*) GLOBAL_CONFIG_DIR="${1#*=}";;
@@ -95,6 +98,7 @@ parse_input() # Parse stuff :V
 			--disable-*)
 				opt_exists "${1##--disable-}" "$1"
 				eval "HAVE_$opt=no"
+				eval "USER_$opt=no"
 				eval "HAVE_NO_$opt=yes"
 			;;
 			--with-*)
@@ -110,6 +114,17 @@ parse_input() # Parse stuff :V
 		esac
 		shift
 	done
+
+	cat > config.log << EOF
+Command line invocation:
+
+  \$ ${config_opts}
+
+## ----------- ##
+## Core Tests. ##
+## ----------- ##
+
+EOF
 }
 
 . qb/config.params.sh

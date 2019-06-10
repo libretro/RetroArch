@@ -140,7 +140,7 @@ bool dir_is_empty(enum rarch_dir_type type)
    switch (type)
    {
       case RARCH_DIR_SYSTEM:
-         return string_is_empty(dir_savefile);
+         return string_is_empty(dir_system);
       case RARCH_DIR_SAVEFILE:
          return string_is_empty(dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
@@ -291,12 +291,10 @@ void dir_check_defaults(void)
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
-#ifdef ORBIS
-   if (filestream_exists("host0:app/custom.ini"))
-#elif defined(ANDROID)
-   if (filestream_exists("host0:app/custom.ini"))
+#if defined(ORBIS) || defined(ANDROID)
+   if (path_is_valid("host0:app/custom.ini"))
 #else
-   if (filestream_exists("custom.ini"))
+   if (path_is_valid("custom.ini"))
 #endif
       return;
 

@@ -175,7 +175,7 @@ static bool image_texture_load_internal(
    if (!img)
       goto end;
 
-   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr);
+   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
 
    if (!image_transfer_start(img, type))
       goto end;

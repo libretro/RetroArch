@@ -167,6 +167,7 @@ default_title_macro(action_get_system_information_list,         MENU_ENUM_LABEL_
 default_title_macro(action_get_network_information_list,        MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION)
 default_title_macro(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 default_title_macro(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
+default_title_macro(action_get_title_information,               MENU_ENUM_LABEL_VALUE_INFORMATION)
 default_title_macro(action_get_title_goto_favorites,            MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
 default_title_macro(action_get_title_goto_image,                MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
 default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
@@ -736,6 +737,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
             break;
+         case MENU_ENUM_LABEL_INFORMATION:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_information);
+            break;
          case MENU_ENUM_LABEL_SETTINGS:
             BIND_ACTION_GET_TITLE(cbs, action_get_settings_list);
             break;
@@ -1083,6 +1087,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
+            break;
+         case MENU_LABEL_INFORMATION:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_information);
             break;
          case MENU_LABEL_SETTINGS:
             BIND_ACTION_GET_TITLE(cbs, action_get_settings_list);

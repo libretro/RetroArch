@@ -25,7 +25,6 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 
 #include "../../menu_animation.h"
 
@@ -621,7 +620,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* If the playlist icon doesn't exist return default */
 
-         if (!filestream_exists(texturepath))
+         if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, icons_path, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
@@ -652,7 +651,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
 
          /* If the content icon doesn't exist return default-content */
-         if (!filestream_exists(content_texturepath))
+         if (!path_is_valid(content_texturepath))
          {
             strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
             strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));

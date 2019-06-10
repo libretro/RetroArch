@@ -829,6 +829,7 @@ void video_driver_unset_stub_frame(void);
 bool video_driver_is_stub_frame(void);
 bool video_driver_supports_recording(void);
 bool video_driver_supports_viewport_read(void);
+bool video_driver_prefer_viewport_read(void);
 bool video_driver_supports_read_frame_raw(void);
 void video_driver_set_viewport_config(void);
 void video_driver_set_viewport_square_pixel(void);

@@ -25,6 +25,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -332,7 +333,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R4_G4_B4_A4;
    wiiu->menu.texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
    wiiu->menu.texture.viewNumSlices    = 1;
-   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_A, _R, _G, _B);
+   /* Presumably an endian thing. RGBA, but swap R and G, then B and A. */
+   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_G, _R, _A, _B);
    GX2CalcSurfaceSizeAndAlignment(&wiiu->menu.texture.surface);
    GX2InitTextureRegs(&wiiu->menu.texture);
 
@@ -369,7 +371,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.v->coord.v = 0.0f;
    wiiu->menu.v->coord.width = 1.0f;
    wiiu->menu.v->coord.height = 1.0f;
-   wiiu->menu.v->color = 0xFFFFFF80;
+   wiiu->menu.v->color = 0xFFFFFFFF;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
    wiiu->vertex_cache.size       = 0x1000;
@@ -873,7 +875,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 }
 
 static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *ubo, int id,
-      int size, int uniformVarCount, GX2UniformVar *uniformVars, uint64_t frame_count)
+      int size, int uniformVarCount, GX2UniformVar *uniformVars,
+      uint64_t frame_count, int32_t frame_direction)
 {
    for (int i = 0; i < uniformVarCount; i++)
    {
@@ -912,6 +915,13 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          *dst = wiiu->shader_preset->pass[pass].frame_count_mod ?
                 frame_count % wiiu->shader_preset->pass[pass].frame_count_mod :
                 frame_count;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "FrameDirection"))
+      {
+         *dst = frame_direction;
          *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
          continue;
       }
@@ -1146,6 +1156,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 
    if (wiiu->shader_preset)
    {
+      int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
       {
 
@@ -1155,7 +1167,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                                           wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                                      wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -1166,7 +1179,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                                           wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                                     wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }
@@ -1321,7 +1335,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->menu.v), sizeof(*wiiu->menu.v), wiiu->menu.v);
 
       GX2SetPixelTexture(&wiiu->menu.texture, sprite_shader.ps.samplerVars[0].location);
-      GX2SetPixelSampler(&wiiu->sampler_linear[RARCH_WRAP_DEFAULT],
+      GX2SetPixelSampler(wiiu->smooth ? &wiiu->sampler_linear[RARCH_WRAP_DEFAULT] :
+                         &wiiu->sampler_nearest[RARCH_WRAP_DEFAULT],
                          sprite_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, 0, 1);
@@ -1444,7 +1459,7 @@ static bool wiiu_gfx_set_shader(void *data,
    video_shader_resolve_relative(wiiu->shader_preset, path);
 
    #if 0
-		video_shader_resolve_parameters(conf, wiiu->shader_preset);
+      video_shader_resolve_parameters(conf, wiiu->shader_preset);
    #else
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
           slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
@@ -1662,14 +1677,14 @@ static void wiiu_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu->menu.v->pos.x = 0.0f;
-   wiiu->menu.v->pos.y = 0.0f;
-   wiiu->menu.v->pos.width = width;
-   wiiu->menu.v->pos.height = height;
+   wiiu->menu.v->pos.x = wiiu->vp.x;
+   wiiu->menu.v->pos.y = wiiu->vp.y;
+   wiiu->menu.v->pos.width = wiiu->vp.width;
+   wiiu->menu.v->pos.height = wiiu->vp.height;
    wiiu->menu.v->coord.u = 0.0f;
    wiiu->menu.v->coord.v = 0.0f;
-   wiiu->menu.v->coord.width = (float)width / wiiu->texture.surface.width;
-   wiiu->menu.v->coord.height = (float)height / wiiu->texture.surface.height;
+   wiiu->menu.v->coord.width = (float)width / wiiu->menu.texture.surface.width;
+   wiiu->menu.v->coord.height = (float)height / wiiu->menu.texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
 }

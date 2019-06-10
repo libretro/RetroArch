@@ -25,7 +25,7 @@
 
 #include "../../menu_driver.h"
 
-#include "../../../cheevos/badges.h"
+#include "../../../cheevos-new/badges.h"
 #include "../../../verbosity.h"
 
 menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,

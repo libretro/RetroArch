@@ -17,13 +17,13 @@
 #include "wiiu/input.h"
 
 enum wiiu_pad_axes {
-  AXIS_LEFT_ANALOG_X,
-  AXIS_LEFT_ANALOG_Y,
-  AXIS_RIGHT_ANALOG_X,
-  AXIS_RIGHT_ANALOG_Y,
-  AXIS_TOUCH_X,
-  AXIS_TOUCH_Y,
-  AXIS_INVALID
+  WIIU_AXIS_LEFT_ANALOG_X,
+  WIIU_AXIS_LEFT_ANALOG_Y,
+  WIIU_AXIS_RIGHT_ANALOG_X,
+  WIIU_AXIS_RIGHT_ANALOG_Y,
+  WIIU_AXIS_TOUCH_X,
+  WIIU_AXIS_TOUCH_Y,
+  WIIU_AXIS_INVALID
 };
 
 static int16_t clamp_axis(int16_t value, bool is_negative)
@@ -43,21 +43,21 @@ static int16_t wiiu_pad_get_axis_value(int32_t axis,
 
    switch(axis)
    {
-      case AXIS_LEFT_ANALOG_X:
+      case WIIU_AXIS_LEFT_ANALOG_X:
          value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X];
          break;
-      case AXIS_LEFT_ANALOG_Y:
+      case WIIU_AXIS_LEFT_ANALOG_Y:
          value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y];
          break;
-      case AXIS_RIGHT_ANALOG_X:
+      case WIIU_AXIS_RIGHT_ANALOG_X:
          value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X];
          break;
-      case AXIS_RIGHT_ANALOG_Y:
+      case WIIU_AXIS_RIGHT_ANALOG_Y:
          value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y];
          break;
-      case AXIS_TOUCH_X:
+      case WIIU_AXIS_TOUCH_X:
          return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X];
-      case AXIS_TOUCH_Y:
+      case WIIU_AXIS_TOUCH_Y:
          return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y];
    }
 

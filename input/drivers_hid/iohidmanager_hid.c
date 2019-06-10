@@ -844,7 +844,7 @@ static void iohidmanager_hid_device_add_device(
    /* take care of buttons/axes with duplicate 'use' values */
    for (i = 0; i < 11; i++)
    {
-      if (found_axis[i] == false && tmpAxes)
+      if (!found_axis[i] && tmpAxes)
       {
          apple_input_rec_t *next = tmpAxes->next;
          tmpAxes->id             = i;

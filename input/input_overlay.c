@@ -602,6 +602,7 @@ void input_overlay_loaded(retro_task_t *task,
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
    input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
+   settings_t *settings                   = config_get_ptr();
 
    if (err)
       return;
@@ -642,6 +643,10 @@ void input_overlay_loaded(retro_task_t *task,
    overlay_ptr    = ol;
 
    free(data);
+
+   if (!settings->bools.input_overlay_show_mouse_cursor)
+      video_driver_hide_mouse();
+
    return;
 
 abort_load:

@@ -190,6 +190,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_IBXM                := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -302,6 +303,7 @@ else ifeq ($(platform), vita)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
@@ -362,6 +364,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -410,6 +413,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -459,6 +463,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -531,6 +536,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -607,6 +613,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -683,6 +690,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -838,7 +846,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -DHAVE_ZLIB
-   INCLUDE     += -I./libretro-common/include/compat/zlib
+   CFLAGS += -I./libretro-common/include/compat/zlib
 endif
 
 ifeq ($(WANT_ZLIB), 1)

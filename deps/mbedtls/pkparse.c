@@ -1013,9 +1013,9 @@ static int pk_parse_key_pkcs8_encrypted_der(
             return( ret );
         }
 
-        // Best guess for password mismatch when using RC4. If first tag is
-        // not MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE
-        //
+        /* Best guess for password mismatch when using RC4. If first tag is
+         * not MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE
+         */
         if( *buf != ( MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) )
             return( MBEDTLS_ERR_PK_PASSWORD_MISMATCH );
 

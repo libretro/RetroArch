@@ -1444,6 +1444,7 @@ typedef struct
       D3D12_RECT                      scissorRect;
       pass_semantics_t                semantics;
       uint32_t                        frame_count;
+      int32_t                         frame_direction;
       D3D12_GPU_DESCRIPTOR_HANDLE     textures;
       D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
    } pass[GFX_MAX_SHADERS];

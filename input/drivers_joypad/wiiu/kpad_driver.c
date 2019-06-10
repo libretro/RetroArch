@@ -41,7 +41,7 @@ struct _wiimote_state
    uint8_t  type;
 };
 
-static bool ready = false;
+static bool kpad_ready = false;
 
 /* it would be nice to use designated initializers here,
  * but those are only in C99 and newer. Oh well.
@@ -84,17 +84,17 @@ static bool kpad_init(void *data)
    (void *)data;
 
    kpad_poll();
-   ready = true;
+   kpad_ready = true;
 }
 
 static bool kpad_query_pad(unsigned pad)
 {
-   return ready && pad < MAX_USERS;
+   return kpad_ready && pad < MAX_USERS;
 }
 
 static void kpad_destroy(void)
 {
-   ready = false;
+   kpad_ready = false;
 }
 
 static bool kpad_button(unsigned pad, uint16_t button_bit)

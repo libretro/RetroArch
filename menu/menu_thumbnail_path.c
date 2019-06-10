@@ -258,6 +258,10 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
    /* Determine content image name */
    fill_content_img(path_data);
    
+   /* Have to set content path to *something*...
+    * Just use label value (it doesn't matter) */
+   strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
+   
    /* Redundant error check... */
    if (string_is_empty(path_data->content_img))
       return false;

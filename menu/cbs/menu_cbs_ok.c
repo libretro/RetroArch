@@ -77,8 +77,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
-#include "../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #include "../../record/record_driver.h"
@@ -1388,10 +1387,9 @@ static int generic_action_ok(const char *path,
             strlcpy(settings->paths.path_menu_wallpaper,
                   action_path, sizeof(settings->paths.path_menu_wallpaper));
 
-            if (filestream_exists(action_path))
-               task_push_image_load(action_path,
-                     video_driver_supports_rgba(),
-                     menu_display_handle_wallpaper_upload, NULL);
+            task_push_image_load(action_path,
+                  video_driver_supports_rgba(), 0,
+                  menu_display_handle_wallpaper_upload, NULL);
          }
          break;
       case ACTION_OK_LOAD_CORE:
@@ -1425,7 +1423,8 @@ static int generic_action_ok(const char *path,
 
             fill_pathname_join(destination_path, settings->paths.directory_libretro, path_basename(action_path), sizeof(destination_path));
 
-            if(!file_copy(action_path, destination_path, message, sizeof(message)))
+            if (!file_copy(
+                     action_path, destination_path, message, sizeof(message)))
             {
                runloop_msg_queue_push(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -2356,7 +2355,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       else if (!string_is_empty(label))
          ret = menu_shader_manager_save_preset(str, false, false);
 
-      if(ret)
+      if (ret)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
                1, 100, true,
@@ -2488,7 +2487,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
          break;
    }
 
-   if(menu_shader_manager_save_preset(file, false, true))
+   if (menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true,
@@ -2572,7 +2571,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
-      if(input_remapping_save_file(file))
+      if (input_remapping_save_file(file))
       {
          if (action_type == ACTION_OK_REMAP_FILE_SAVE_CORE)
             rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
@@ -2594,7 +2593,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if(input_remapping_remove_file(file))
+      if (input_remapping_remove_file(file))
       {
          if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE &&
                rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
@@ -2765,9 +2764,10 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    config_get_ptr()->uints.libnx_overclock = entry_idx;
 
    unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
-   if(hosversionBefore(8, 0, 0)) {
+   if (hosversionBefore(8, 0, 0))
       pcvSetClockRate(PcvModule_CpuBus, (u32)profile_clock);
-   } else {
+   else
+   {
       ClkrstSession session = {0};
       clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
       clkrstSetClockRate(&session, profile_clock);
@@ -3306,7 +3306,6 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CHEEVOS
-   cheevos_hardcore_paused = !cheevos_hardcore_paused;
    rcheevos_hardcore_paused = !rcheevos_hardcore_paused;
 #endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
@@ -5797,6 +5796,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:
          case MENU_ENUM_LABEL_INFORMATION_LIST:
+         case MENU_ENUM_LABEL_INFORMATION:
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:

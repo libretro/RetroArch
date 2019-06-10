@@ -30,7 +30,7 @@ typedef struct ds3_instance {
    uint8_t data[64];
 } ds3_instance_t;
 
-static uint8_t activation_packet[] = {
+static uint8_t ds3_activation_packet[] = {
 #if defined(IOS)
   0x53, 0xF4,
 #elif defined(HAVE_WIIUSB_HID)
@@ -51,7 +51,7 @@ static uint8_t activation_packet[] = {
 #define MOTOR1_OFFSET 4
 #define MOTOR2_OFFSET 6
 
-static uint8_t control_packet[] = {
+static uint8_t ds3_control_packet[] = {
    0x52, 0x01,
    0x00, 0xff, 0x00, 0xff, 0x00,
    0x00, 0x00, 0x00, 0x00, 0x00,
@@ -65,25 +65,23 @@ static uint8_t control_packet[] = {
    0x00, 0x00, 0x00
 };
 
-static int control_packet_size = sizeof(control_packet);
-
 extern pad_connection_interface_t ds3_pad_connection;
 
-static void update_pad_state(ds3_instance_t *instance);
-static void update_analog_state(ds3_instance_t *instance);
+static void ds3_update_pad_state(ds3_instance_t *instance);
+static void ds3_update_analog_state(ds3_instance_t *instance);
 
-static int32_t send_activation_packet(ds3_instance_t *instance)
+static int32_t ds3_send_activation_packet(ds3_instance_t *instance)
 {
    int32_t result;
 #if defined(WIIU)
    result = HID_SET_REPORT(instance->handle,
                   HID_REPORT_FEATURE,
                   DS3_ACTIVATION_REPORT_ID,
-                  activation_packet,
-                  sizeof(activation_packet));
+                  ds3_activation_packet,
+                  sizeof(ds3_activation_packet));
 #else
    HID_SEND_CONTROL(instance->handle,
-                    activation_packet, sizeof(activation_packet));
+                    ds3_activation_packet, sizeof(ds3_activation_packet));
 #endif
 
    return result;
@@ -99,11 +97,11 @@ static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
    return result;
 }
 
-static int32_t send_control_packet(ds3_instance_t *instance)
+static int32_t ds3_send_control_packet(ds3_instance_t *instance)
 {
-   uint8_t packet_buffer[control_packet_size];
+   uint8_t packet_buffer[sizeof(ds3_control_packet)];
    int32_t result = 0;
-   memcpy(packet_buffer, control_packet, control_packet_size);
+   memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
 
    packet_buffer[LED_OFFSET] = 0;
    if(instance->pad) {
@@ -121,11 +119,11 @@ static int32_t send_control_packet(ds3_instance_t *instance)
                   HID_REPORT_OUTPUT,
                   DS3_RUMBLE_REPORT_ID,
                   packet_buffer+PACKET_OFFSET,
-                  control_packet_size-PACKET_OFFSET);
+                  sizeof(ds3_control_packet)-PACKET_OFFSET);
 #else
    HID_SEND_CONTROL(instance->handle,
                     packet_buffer+PACKET_OFFSET,
-                    control_packet_size-PACKET_OFFSET);
+                    sizeof(ds3_control_packet)-PACKET_OFFSET);
 #endif /* WIIU */
    return result;
 }
@@ -148,11 +146,11 @@ static void *ds3_init(void *handle)
    set_protocol(instance, 1);
 
    RARCH_LOG("[ds3]: sending control packet\n");
-   if(send_control_packet(instance) < 0)
+   if(ds3_send_control_packet(instance) < 0)
       errors++;
 
    RARCH_LOG("[ds3]: sending activation packet\n");
-   if(send_activation_packet(instance) < 0)
+   if(ds3_send_activation_packet(instance) < 0)
       errors++;
 
    if(errors)
@@ -246,23 +244,23 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 
    if(instance->pad && !instance->led_set)
    {
-      send_control_packet(instance);
+      ds3_send_control_packet(instance);
       instance->led_set = true;
    }
 
-   if(size > control_packet_size)
+   if(size > sizeof(ds3_control_packet))
    {
       RARCH_ERR("[ds3]: Expecting packet to be %d but was %d\n",
-         control_packet_size, size);
+         sizeof(ds3_control_packet), size);
       return;
    }
 
    memcpy(instance->data, packet, size);
-   update_pad_state(instance);
-   update_analog_state(instance);
+   ds3_update_pad_state(instance);
+   ds3_update_analog_state(instance);
 }
 
-static void update_analog_state(ds3_instance_t *instance)
+static void ds3_update_analog_state(ds3_instance_t *instance)
 {
    int pad_axis;
    int16_t interpolated;
@@ -277,7 +275,7 @@ static void update_analog_state(ds3_instance_t *instance)
    }
 }
 
-static void update_pad_state(ds3_instance_t *instance)
+static void ds3_update_pad_state(ds3_instance_t *instance)
 {
    uint32_t i, pressed_keys;
 

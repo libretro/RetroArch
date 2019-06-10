@@ -476,6 +476,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
+				INFOPLIST_OUTPUT_FORMAT = XML;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
@@ -564,6 +565,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
+				INFOPLIST_OUTPUT_FORMAT = XML;
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";

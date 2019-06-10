@@ -95,6 +95,8 @@ typedef struct gx_video
    bool menu_texture_enable;
    video_viewport_t vp;
    unsigned scale;
+   unsigned overscan_correction_top;
+   unsigned overscan_correction_bottom;
 #ifdef HAVE_OVERLAY
    struct gx_overlay_data *overlay;
    unsigned overlays;
@@ -909,7 +911,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
-static void gx_resize(void *data)
+static void gx_resize(void *data, settings_t *settings)
 {
    int gamma;
    unsigned degrees;
@@ -918,10 +920,9 @@ static void gx_resize(void *data)
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    gx_video_t                   *gx = (gx_video_t*)data;
-   settings_t             *settings = config_get_ptr();
    const global_t           *global = global_get_ptr();
 
-   if (!gx)
+   if (!gx || !settings)
       return;
 
    width  = gx->vp.full_width;
@@ -991,6 +992,24 @@ static void gx_resize(void *data)
             y      = (unsigned)(height * (0.5 - delta));
             height = (unsigned)(2.0 * height * delta);
          }
+      }
+   }
+
+   /* Overscan correction */
+   if ((settings->uints.video_overscan_correction_top > 0) ||
+       (settings->uints.video_overscan_correction_bottom > 0))
+   {
+      float current_aspect = (float)width / (float)height;
+      int new_height       = height - (settings->uints.video_overscan_correction_top +
+                                       settings->uints.video_overscan_correction_bottom);
+      int new_width        = (int)((new_height * current_aspect) + 0.5f);
+
+      if ((new_height > 0) && (new_width > 0))
+      {
+         x += (int)((float)(width - new_width) * 0.5f);
+         y += (int)settings->uints.video_overscan_correction_top;
+         width = (unsigned)new_width;
+         height = (unsigned)new_height;
       }
    }
 
@@ -1506,21 +1525,30 @@ static bool gx_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    char fps_text_buf[128];
+   settings_t               *settings = config_get_ptr();
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    uint32_t level                     = 0;
 
    fps_text_buf[0]                    = '\0';
 
-   if(!gx || (!frame && !gx->menu_texture_enable))
+   if(!gx || (!frame && !gx->menu_texture_enable) || !settings)
       return true;
 
    if (!frame)
       width = height = 4; /* draw a black square in the background */
 
+   if ((gx->overscan_correction_top != settings->uints.video_overscan_correction_top) ||
+       (gx->overscan_correction_bottom != settings->uints.video_overscan_correction_bottom))
+   {
+      gx->overscan_correction_top = settings->uints.video_overscan_correction_top;
+      gx->overscan_correction_bottom = settings->uints.video_overscan_correction_bottom;
+      gx->should_resize = true;
+   }
+
    if(gx->should_resize)
    {
-      gx_resize(gx);
+      gx_resize(gx, settings);
       clear_efb = GX_TRUE;
    }
 

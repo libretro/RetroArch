@@ -676,7 +676,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
     if( crt == NULL || buf == NULL )
         return( MBEDTLS_ERR_X509_BAD_INPUT_DATA );
 
-    // Use the original buffer until we figure out actual length
+    /* Use the original buffer until we figure out actual length */
     p = (unsigned char*) buf;
     len = buflen;
     end = p + len;
@@ -702,7 +702,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
     }
     crt_end = p + len;
 
-    // Create and populate a new buffer for the raw field
+    /* Create and populate a new buffer for the raw field */
     crt->raw.len = crt_end - buf;
     crt->raw.p = p = mbedtls_calloc( 1, crt->raw.len );
     if( p == NULL )
@@ -710,7 +710,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
 
     memcpy( p, buf, crt->raw.len );
 
-    // Direct pointers to the new buffer
+    /* Direct pointers to the new buffer */
     p += crt->raw.len - len;
     end = crt_end = p + len;
 
@@ -1199,8 +1199,7 @@ cleanup:
         if( !S_ISREG( sb.st_mode ) )
             continue;
 
-        // Ignore parse errors
-        //
+        /* Ignore parse errors */
         t_ret = mbedtls_x509_crt_parse_file( chain, entry_name );
         if( t_ret < 0 )
             ret++;

@@ -107,7 +107,7 @@ typedef enum
 {
     ECP_TYPE_NONE = 0,
     ECP_TYPE_SHORT_WEIERSTRASS,    /* y^2 = x^3 + a x + b      */
-    ECP_TYPE_MONTGOMERY,           /* y^2 = x^3 + a x^2 + x    */
+    ECP_TYPE_MONTGOMERY            /* y^2 = x^3 + a x^2 + x    */
 } ecp_curve_type;
 
 /*
@@ -256,15 +256,14 @@ const mbedtls_ecp_curve_info *mbedtls_ecp_curve_info_from_name( const char *name
 /*
  * Get the type of a curve
  */
-static inline ecp_curve_type ecp_get_type( const mbedtls_ecp_group *grp )
+static ecp_curve_type ecp_get_type( const mbedtls_ecp_group *grp )
 {
     if( grp->G.X.p == NULL )
         return( ECP_TYPE_NONE );
 
     if( grp->G.Y.p == NULL )
         return( ECP_TYPE_MONTGOMERY );
-    else
-        return( ECP_TYPE_SHORT_WEIERSTRASS );
+    return( ECP_TYPE_SHORT_WEIERSTRASS );
 }
 
 /*

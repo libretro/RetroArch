@@ -96,6 +96,7 @@ generic_deferred_push(deferred_push_configurations_list,            DISPLAYLIST_
 generic_deferred_push(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 generic_deferred_push(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
 generic_deferred_push(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
+generic_deferred_push(deferred_push_information,                    DISPLAYLIST_INFORMATION)
 generic_deferred_push(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
 generic_deferred_push(deferred_archive_action,                      DISPLAYLIST_ARCHIVE_ACTION)
 generic_deferred_push(deferred_push_management_options,             DISPLAYLIST_OPTIONS_MANAGEMENT)
@@ -1005,6 +1006,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
    }
    else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information);
+   }
+   else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
@@ -1162,6 +1168,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_INFORMATION_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
+               break;
+            case MENU_ENUM_LABEL_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information);
                break;
             case MENU_ENUM_LABEL_MANAGEMENT:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);

@@ -7,6 +7,11 @@ extern "C" {
 
 #define OS_MUTEX_SIZE                   44
 
+// RetroArch mod: use existing headers; prevents conflicts in griffin
+#include <wiiu/os.h>
+#include <wiiu/ios.h>
+#if 0
+
 #ifndef __WUT__
 //!----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //! Mutex functions
@@ -40,5 +45,7 @@ extern int IOS_Close(int fd);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // 0
 
 #endif // __OS_FUNCTIONS_H_

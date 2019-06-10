@@ -199,8 +199,7 @@ static int x509_write_name( unsigned char **p, unsigned char *start,
     int ret;
     size_t len = 0;
 
-    // Write PrintableString for all except MBEDTLS_OID_PKCS9_EMAIL
-    //
+    /* Write PrintableString for all except MBEDTLS_OID_PKCS9_EMAIL */
     if( MBEDTLS_OID_SIZE( MBEDTLS_OID_PKCS9_EMAIL ) == oid_len &&
         memcmp( oid, MBEDTLS_OID_PKCS9_EMAIL, oid_len ) == 0 )
     {
@@ -215,8 +214,7 @@ static int x509_write_name( unsigned char **p, unsigned char *start,
                                                         name_len ) );
     }
 
-    // Write OID
-    //
+    /* Write OID */
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_oid( p, start, oid, oid_len ) );
 
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( p, start, len ) );
@@ -275,8 +273,7 @@ int mbedtls_x509_write_sig( unsigned char **p, unsigned char *start,
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( p, start, len ) );
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( p, start, MBEDTLS_ASN1_BIT_STRING ) );
 
-    // Write OID
-    //
+    /* Write OID */
     MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_algorithm_identifier( p, start, oid,
                                                         oid_len, 0 ) );
 
