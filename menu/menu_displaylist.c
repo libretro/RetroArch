@@ -6639,13 +6639,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
          }
 
-#ifdef HAVE_LIBRETRODB
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-               MENU_ENUM_LABEL_PLAYLISTS_TAB,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
+#ifndef HAVE_LIBRETRODB
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->bools.menu_show_advanced_settings)
+#endif
+               if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#ifndef HAVE_LIBRETRODB
+         }
 #endif
 
          if (frontend_driver_parse_drive_list(info->list, true) != 0)
@@ -7171,15 +7177,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                      PARSE_ACTION, false) == 0)
                   count++;
-#ifdef HAVE_LIBRETRODB
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") && settings->bools.menu_content_show_playlists)
+
+            if (string_is_equal(settings->arrays.menu_driver, "rgui") &&
+#ifndef HAVE_LIBRETRODB
+                settings->bools.menu_show_advanced_settings &&
+#endif
+                settings->bools.menu_content_show_playlists)
                if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
                      msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
                      MENU_ENUM_LABEL_PLAYLISTS_TAB,
                      MENU_SETTING_ACTION, 0, 0))
                   count++;
-#endif
+
             if (settings->bools.menu_content_show_add)
                if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_ADD_CONTENT_LIST,
