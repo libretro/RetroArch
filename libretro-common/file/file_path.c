@@ -205,6 +205,20 @@ bool path_mkdir(const char *dir)
       return false;
    }
 
+#if defined(GEKKO)
+   {
+      size_t len = strlen(basedir);
+
+      /* path_parent_dir() keeps the trailing slash.
+       * On Wii, mkdir() fails if the path has a
+       * trailing slash...
+       * We must therefore remove it. */
+      if (len > 0)
+         if (basedir[len - 1] == '/')
+            basedir[len - 1] = '\0';
+   }
+#endif
+
    if (path_is_directory(basedir))
       norecurse = true;
    else
