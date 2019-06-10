@@ -21,12 +21,6 @@
     <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <Filter>griffin</Filter>
     </ClCompile>
-    <ClCompile Include="MetaObjects\moc_ui_qt.cpp">
-      <Filter>QT</Filter>
-    </ClCompile>
-    <ClCompile Include="MetaObjects\moc_ui_qt_load_core_window.cpp">
-      <Filter>QT</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
@@ -35,5 +29,14 @@
     <CustomBuild Include="..\..\..\ui\drivers\qt\ui_qt_load_core_window.h">
       <Filter>QT</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\shaderparamsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\viewoptionsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\playlistentrydialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\gridview.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreoptionsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreinfodialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\filedropwidget.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\settingswidgets.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\options\options.h" />
   </ItemGroup>
 </Project>
