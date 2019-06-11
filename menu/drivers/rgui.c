@@ -63,6 +63,13 @@
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
 
+#if defined(GEKKO)
+/* Required for the Wii build, since we have
+ * to query the hardware for the actual display
+ * aspect ratio... */
+#include "../../wii/libogc/include/ogc/conf.h"
+#endif
+
 #define MAX_FB_WIDTH 426
 
 #define RGUI_ENTRY_VALUE_MAXLEN 19
@@ -1552,9 +1559,18 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
 
+   /* Note: Ugly hacks required for the Wii, since GEKKO
+    * platforms only support a 16:9 framebuffer width of
+    * 424 instead of the usual 426... */
+
    /* Sanity check */
    if (!image->pixels ||
+#if defined(GEKKO)
+       (image->width != ((rgui_background_buf.width == 424) ?
+            (rgui_background_buf.width + 2) : rgui_background_buf.width)) ||
+#else
        (image->width != rgui_background_buf.width) ||
+#endif
        (image->height != rgui_background_buf.height) ||
        !rgui_background_buf.data)
       return;
@@ -1565,7 +1581,13 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
       for (y = 0; y < rgui_background_buf.height; y++)
       {
          rgui_background_buf.data[x + (y * rgui_background_buf.width)] =
+#if defined(GEKKO)
+            argb32_to_pixel_platform_format(image->pixels[
+                  x + ((rgui_background_buf.width == 424) ? 1 : 0) +
+                  (y * image->width)]);
+#else
             argb32_to_pixel_platform_format(image->pixels[x + (y * rgui_background_buf.width)]);
+#endif
       }
    }
 
@@ -3705,6 +3727,32 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    /* Determine custom viewport layout */
    if (fb_width > 0 && fb_height > 0 && vp.full_width > 0 && vp.full_height > 0)
    {
+#if defined(GEKKO)
+      /* The Wii is a special case, since it uses anamorphic
+       * widescreen. The display aspect ratio cannot therefore
+       * be determined simply by dividing viewport width by height */
+#ifdef HW_RVL
+      float device_aspect  = (CONF_GetAspectRatio() == CONF_ASPECT_4_3) ?
+            (4.0f / 3.0f) : (16.0f / 9.0f);
+#else
+      float device_aspect  = (4.0f / 3.0f);
+#endif
+      float desired_aspect = (float)fb_width / (float)fb_height;
+      float delta;
+      
+      if (device_aspect > desired_aspect)
+      {
+         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         rgui->menu_video_settings.viewport.width  = (unsigned)(2.0f * (float)vp.full_width * delta);
+         rgui->menu_video_settings.viewport.height = vp.full_height;
+      }
+      else
+      {
+         delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         rgui->menu_video_settings.viewport.height = (unsigned)(2.0 * vp.full_height * delta);
+         rgui->menu_video_settings.viewport.width  = vp.full_width;
+      }
+#else
       /* Check whether we need to perform integer scaling */
       bool do_integer_scaling = (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_INTEGER);
       
@@ -3739,6 +3787,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
             rgui->menu_video_settings.viewport.width = fb_width * vp.full_height / fb_height;
          }
       }
+#endif
       
       /* Sanity check */
       rgui->menu_video_settings.viewport.width = (rgui->menu_video_settings.viewport.width < 1) ?
@@ -3779,8 +3828,58 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
       
       /* Set frame buffer dimensions */
       rgui_frame_buf.height = fb_height;
-      rgui_frame_buf.width  = fb_width;
-      base_term_width       = rgui_frame_buf.width;
+      switch (rgui->menu_aspect_ratio)
+      {
+         /* Note: Maximum Wii framebuffer width is 424, not
+          * the usual 426, since the last two bits of the
+          * width value must be zero... */
+         case RGUI_ASPECT_RATIO_16_9:
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 424;
+            else
+               rgui_frame_buf.width = (unsigned)((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            if (rgui_frame_buf.height == 240)
+            {
+               rgui_frame_buf.width = 424;
+               base_term_width      = 320;
+            }
+            else
+            {
+               rgui_frame_buf.width = (unsigned)((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
+               base_term_width      = (unsigned)(( 4.0f / 3.0f) * (float)rgui_frame_buf.height) & ~3;
+            }
+            break;
+         case RGUI_ASPECT_RATIO_16_10:
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 384;
+            else
+               rgui_frame_buf.width = (unsigned)((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            if (rgui_frame_buf.height == 240)
+            {
+               rgui_frame_buf.width = 384;
+               base_term_width      = 320;
+            }
+            else
+            {
+               rgui_frame_buf.width = (unsigned)((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
+               base_term_width      = (unsigned)(( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
+            }
+            break;
+         default:
+            /* 4:3 */
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 320;
+            else
+               rgui_frame_buf.width = (unsigned)(( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+      }
    }
 #else
    /* Set frame buffer dimensions */
