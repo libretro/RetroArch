@@ -521,20 +521,20 @@ void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, un
             width += x;
          x = 0;
       }
-      if (y >= (int)menu_display_framebuf_height)
+      if (y >= (int)video_info->height)
       {
          height = 0;
          y = 0;
       }
-      if (x >= (int)menu_display_framebuf_width)
+      if (x >= (int)video_info->width)
       {
          width = 0;
          x = 0;
       }
-      if ((y + height) > menu_display_framebuf_height)
-         height = menu_display_framebuf_height - y;
-      if ((x + width) > menu_display_framebuf_width)
-         width = menu_display_framebuf_width - x;
+      if ((y + height) > video_info->height)
+         height = video_info->height - y;
+      if ((x + width) > video_info->width)
+         width = video_info->width - x;
 
       menu_disp->scissor_begin(video_info, x, y, width, height);
    }
