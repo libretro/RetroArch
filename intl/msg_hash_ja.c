@@ -2145,36 +2145,41 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Positive X axis is right. \n"
                "Positive Y axis is down.");
          break;
-      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
-         snprintf(s, len,
-               "RetroArch自身だけでは何も実行できません。 \n"
-               " \n"
-               "何かを実行するためには、それに対応する \n"
-               "プログラムをロードする必要があります。 \n"
-               "\n"
-               "そのようなプログラムを｢Libretroコア｣、 \n"
-               "または省略して｢コア｣と呼びます。 \n"
-               " \n"
-               "コアをロードするには、[%s]から \n"
-               "対応するコアを選択してください。\n"
-               " \n"
+      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC: {
+         /* Work around C89 limitations */
+         char u[501];
+         const char *t =
+            "RetroArch自身だけでは何も実行できません。\n"
+            "\n"
+            "何かを実行するためには、それに対応する\n"
+            "プログラムをロードする必要があります。\n"
+            "\n"
+            "そのようなプログラムを｢Libretroコア｣、\n"
+            "または省略して｢コア｣と呼びます。\n"
+            " \n";
+         snprintf(u, sizeof(u),
+            "コアをロードするには、[%s]から\n"
+            "対応するコアを選択してください。\n"
+            "\n"
 #ifdef HAVE_NETWORKING
-               "以下のいずれかの方法でコアを利用できます: \n"
-               "* [%s]→[%s]\n"
-               "からダウンロードする。\n"
-               "* [%s] に手動で移動する。"
-               " \n",
-#endif
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
-#ifdef HAVE_NETWORKING
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+            "以下のいずれかの方法でコアを利用できます:\n"
+            "* [%s]→[%s]\n"
+            "からダウンロードする。\n"
+            "* [%s] に手動で移動する。"
+            " \n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "手動で[%s]に移動することでコアを利用できます。\n",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+            "手動で[%s]に移動することでコアを利用できます。\n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
-               );
+         );
+         strlcpy(s, t, len);
+         strlcat(s, u, len);
+      }
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
