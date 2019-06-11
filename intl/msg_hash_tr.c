@@ -754,13 +754,13 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                            "joypad API'sini kullanır. Hotplugging \n"
                            "özelliğini destekler ve geribildirimi zorlar. \n"
                            " \n"
-                           "The driver reads evdev events for keyboard \n"
-                           "support. It also supports keyboard callback, \n"
-                           "mice and touchpads. \n"
+                           "Sürücü, klavye desteği için evdev olaylarını \n"
+                           "okur. Ayrıca klavye geri çağırma, fareler ve \n"
+                           "dokunmatik yüzeyleri de destekler.  \n"
                            " \n"
-                           "By default in most distros, /dev/input nodes \n"
-                           "are root-only (mode 600). You can set up a udev \n"
-                           "rule which makes these accessible to non-root."
+                           "Çoğu dağıtımda varsayılan olarak, /dev/input düğümleri \n"
+                           "yalnızca root'tur (mod 600). Bunları root olmayanlar \n"
+                           "için erişilebilir kılan bir udev kuralı ayarlayabilirsiniz."
                            );
                else if (string_is_equal(lbl,
                         msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
