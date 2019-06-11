@@ -116,7 +116,7 @@ static struct
 
 static struct
 {
-   uint32_t data[240 * 200];
+   uint32_t data[240 * 212];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -463,14 +463,44 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
-   /* calculate menu dimensions */
+   /* Calculate menu dimensions
+    * > Height is set as large as possible, limited to
+    *   maximum of 240 (standard RGUI framebuffer height) */
    new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
-
    if (new_fb_height > 240)
       new_fb_height = 240;
-   new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
-   if (new_fb_width > 400)
-      new_fb_width = 400;
+   /* > Width is dertermined by current RGUI aspect ratio
+    *   (note that width is in principal limited by hardware
+    *    constraints to 640, but we impose a lower limit of
+    *    424 since this is the nearest to the RGUI 'standard'
+    *    for 16:9 aspect ratios which is supported by the Wii
+    *    - i.e. last two bits of value must be zero, so 426->424) */
+   switch (settings->uints.menu_rgui_aspect_ratio)
+   {
+      case RGUI_ASPECT_RATIO_16_9:
+      case RGUI_ASPECT_RATIO_16_9_CENTRE:
+         if (new_fb_height == 240)
+            new_fb_width = 424;
+         else
+            new_fb_width = (unsigned)((16.0f / 9.0f) * (float)new_fb_height) & ~3;
+         break;
+      case RGUI_ASPECT_RATIO_16_10:
+      case RGUI_ASPECT_RATIO_16_10_CENTRE:
+         if (new_fb_height == 240)
+            new_fb_width = 384;
+         else
+            new_fb_width = (unsigned)((16.0f / 10.0f) * (float)new_fb_height) & ~3;
+         break;
+      default:
+         /* 4:3 */
+         if (new_fb_height == 240)
+            new_fb_width = 320;
+         else
+            new_fb_width = (unsigned)((4.0f / 3.0f) * (float)new_fb_height) & ~3;
+         break;
+   }
+   if (new_fb_width > 424)
+      new_fb_width = 424;
 
    new_fb_pitch = new_fb_width * 2;
 
