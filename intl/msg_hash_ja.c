@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
  *
@@ -696,10 +696,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
-               "You can use the following controls below \n"
-               "on either your gamepad or keyboard in order\n"
-               "to control the menu: \n"
-               " \n"
+            "メニューを操作するのに \n"
+            "以下のゲームパッドまたはキーボードを使用できます: \n"
+            " \n"
                );
          break;
       case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
@@ -711,25 +710,23 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
             /* Work around C89 limitations */
             char u[501];
             const char *t =
-                  "RetroArch relies on an unique form of\n"
-                  "audio/video synchronization where it needs to be\n"
-                  "calibrated against the refresh rate of your\n"
-                  "display for best performance results.\n"
+                  "RetroArchは、オーディオとビデオの同期を独自の形態で行っています。\n"
+                  "最高のパフォーマンスを得るためには、ディスプレイの\n"
+                  "リフレッシュレート調整が必要です。\n"
                   " \n"
-                  "If you experience any audio crackling or video\n"
-                  "tearing, usually it means that you need to\n"
-                  "calibrate the settings. Some choices below:\n"
+                  "もしオーディオの歪みやビデオのティアリングが発生しているなら、\n"
+                  "設定を確認してみてください。\n"
+                  "以下の選択肢を試してみてください:\n"
                   " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                  "a) Go to '%s' -> '%s', and enable\n"
-                  "'Threaded Video'. Refresh rate will not matter\n"
-                  "in this mode, framerate will be higher,\n"
-                  "but video might be less smooth.\n"
-                  "b) Go to '%s' -> '%s', and look at\n"
-                  "'%s'. Let it run for\n"
-                  "2048 frames, then press 'OK'.",
+                  "a) [%s]→[%s]に行き、[%s]を有効にしてください。\n"
+                  "このモードでは、リフレッシュレートは重要ではありません。\n"
+                  "フレームレートは高くなりますが、ビデオは少しスムーズでなくなります。\n"
+                  "b) [%s]→[%s]に行き、[%s]が2048 framesに\n"
+                  "なっていることを確認してください。",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
@@ -739,21 +736,16 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
          case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,
-               "To scan for content, go to '%s' and\n"
-                   "select either '%s' or %s'.\n"
+               "コンテンツをスキャンするには、[%s]に行き\n"
+                   "[%s]または[%s]を選択してください。\n"
                    "\n"
-                   "Files will be compared to database entries.\n"
-                   "If there is a match, it will add an entry\n"
-                   "to a playlist.\n"
+                   "コンテンツファイルはデータベースのエントリーと比較されます。\n"
+                   "一致した場合、プレイリストに追加されます。\n"
                    "\n"
-                   "You can then easily access this content by\n"
-                   "going to '%s' ->\n"
-                   "'%s'\n"
-                   "instead of having to go through the\n"
-                   "file browser every time.\n"
+                   "毎回ファイルブラウザーを使用するかわりに、\n"
+                   "[%s]→[%s]でこのコンテンツに簡単にアクセスできます。\n"
                    "\n"
-                   "NOTE: Content for some cores might still not be\n"
-                   "scannable.",
+                   "NOTE: いくつかのコア向けのコンテンツはまだスキャンできません。\n",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
@@ -810,21 +802,18 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          snprintf(s, len,
-               "Load Content. \n"
-               "Browse for content. \n"
+               "コンテンツをロードするには、それを実行する \n"
+               "ための｢コア｣と、コンテンツファイルが必要です。 \n"
                " \n"
-               "To load content, you need a \n"
-               "'Core' to use, and a content file. \n"
+               "コンテンツの参照開始ディレクトリは、 \n"
+               "[%s]で設定してください。 \n"
+               "未設定のときは、ルートディレクトリとなります。 \n"
                " \n"
-               "To control where the menu starts \n"
-               "to browse for content, set  \n"
-               "'File Browser Directory'. \n"
-               "If not set, it will start in root. \n"
-               " \n"
-               "The browser will filter out \n"
-               "extensions for the last core set \n"
-               "in 'Load Core', and use that core \n"
-               "when content is loaded."
+               "ブラウザーでの参照時には、[%s]で \n"
+               "最後に設定したコアに対応する拡張子で \n"
+               "フィルターがかかります。 \n",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST)
                );
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
@@ -2158,46 +2147,45 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
          snprintf(s, len,
-               "RetroArch by itself does nothing. \n"
+               "RetroArch自身だけでは何も実行できません。 \n"
                " \n"
-               "To make it do things, you need to \n"
-               "load a program into it. \n"
+               "何かを実行するためには、それに対応する \n"
+               "プログラムをロードする必要があります。 \n"
                "\n"
-               "We call such a program 'Libretro core', \n"
-               "or 'core' in short. \n"
+               "そのようなプログラムを｢Libretroコア｣、 \n"
+               "または省略して｢コア｣と呼びます。 \n"
                " \n"
-               "To load a core, select one from\n"
-               "'Load Core'.\n"
+               "コアをロードするには、[%s]から \n"
+               "対応するコアを選択してください。\n"
                " \n"
 #ifdef HAVE_NETWORKING
-               "You can obtain cores in several ways: \n"
-               "* Download them by going to\n"
-               "'%s' -> '%s'.\n"
-               "* Manually move them over to\n"
-               "'%s'.",
+               "以下のいずれかの方法でコアを利用できます: \n"
+               "* [%s]→[%s]\n"
+               "からダウンロードする。\n"
+               "* [%s] に手動で移動する。"
+               " \n",
+#endif
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+#ifdef HAVE_NETWORKING
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "You can obtain cores by\n"
-               "manually moving them over to\n"
-               "'%s'.",
+               "手動で[%s]に移動することでコアを利用できます。\n",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "You can change the virtual gamepad overlay\n"
-               "by going to '%s' -> '%s'."
+               "[%s]→[%s]からバーチャルゲームパッドのオーバーレイを変更できます。\n"
                " \n"
-               "From there you can change the overlay,\n"
-               "change the size and opacity of the buttons, etc.\n"
+               "ボタンのサイズ、不透明度、その他を変更できます。\n"
                " \n"
-               "NOTE: By default, virtual gamepad overlays are\n"
-               "hidden when in the menu.\n"
-               "If you'd like to change this behavior,\n"
-               "you can set '%s' to false.",
+               "NOTE: デフォルトでは、バーチャルゲームパッドのオーバーレイは\n"
+               "メニュー表示中は隠されています。\n"
+               "この挙動を変更したければ、\n"
+               "[%s]をオフに変更してください。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
@@ -2297,7 +2285,7 @@ const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
 
 const char *msg_hash_to_str_jp(enum msg_hash_enums msg) {
 #ifdef HAVE_MENU
-    const char *ret = menu_hash_to_str_us_label_enum(msg);
+    const char *ret = menu_hash_to_str_jp_label_enum(msg);
 
     if (ret && !string_is_equal(ret, "null"))
        return ret;
