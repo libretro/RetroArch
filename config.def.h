@@ -903,16 +903,20 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
-#elif  defined(__arm__) || defined(_M_ARM)
+#elif defined(__arm__) || defined(_M_ARM)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/";
+#elif defined(__aarch64__) || defined(_M_ARM64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm64/latest/";
 #endif
 #else
 #if defined(__x86_64__) || defined(_M_X64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
-#elif  defined(__arm__) || defined(_M_ARM)
+#elif defined(__arm__) || defined(_M_ARM)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
+#elif defined(__aarch64__) || defined(_M_ARM64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm64/latest/";
 #endif
 #endif
 #elif _MSC_VER == 1600
