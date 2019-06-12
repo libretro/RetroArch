@@ -281,6 +281,8 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
             return x;
          case RETRO_DEVICE_ID_POINTER_Y:
             return y;
+         case RETRO_DEVICE_ID_POINTER_COUNT:
+            return apple->touch_count;
       }
    }
 

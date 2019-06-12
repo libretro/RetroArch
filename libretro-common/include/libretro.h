@@ -248,6 +248,7 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_X         0
 #define RETRO_DEVICE_ID_POINTER_Y         1
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
+#define RETRO_DEVICE_ID_POINTER_COUNT     3
 
 /* Returned from retro_get_region(). */
 #define RETRO_REGION_NTSC  0
