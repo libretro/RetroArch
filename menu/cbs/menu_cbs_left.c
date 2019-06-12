@@ -368,16 +368,15 @@ static int action_left_video_resolution(unsigned type, const char *label,
 static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned i;
-   char core_path[PATH_MAX_LENGTH];
-   char new_playlist_cores[PATH_MAX_LENGTH];
-   int next, found, current         = 0;
+   size_t i, next, found, current   = 0;
    core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
+   char core_path[PATH_MAX_LENGTH];
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
 
    core_info_get_list(&list);
 

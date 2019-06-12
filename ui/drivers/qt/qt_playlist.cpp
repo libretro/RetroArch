@@ -765,8 +765,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    int j = 0;
    size_t found = 0;
    const char *currentPlaylistFileNameData = NULL;
-   char new_playlist_names[PATH_MAX_LENGTH];
-   char new_playlist_cores[PATH_MAX_LENGTH];
+   char new_playlist_names[sizeof(settings->arrays.playlist_names) / sizeof(settings->arrays.playlist_names[0])];
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
    bool specialPlaylist = false;
    bool foundHiddenPlaylist = false;
 
