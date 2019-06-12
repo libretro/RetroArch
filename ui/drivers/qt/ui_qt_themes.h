@@ -355,7 +355,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QTableView, QListWidget {
       background-color:rgb(25,25,25);
    }
-   QTreeView QHeaderView::section, QTableView QHeaderView::section {
+   QHeaderView::section {
       /*height:24px;*/
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
       border-style:none;
@@ -363,7 +363,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       padding-left:5px;
       padding-right:5px;
    }
-   QTableView {
+   QTableView, QTreeView {
       background-color:rgb(25,25,25);
       alternate-background-color:rgb(40,40,40);
    }

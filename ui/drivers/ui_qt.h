@@ -220,7 +220,7 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
-class TableView : public QTableView
+class TableView : public QTreeView
 {
    Q_OBJECT
 public:
@@ -307,6 +307,8 @@ public:
 class FileSystemProxyModel : public QSortFilterProxyModel
 {
 protected:
+   virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+   virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
    virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 };
@@ -351,7 +353,7 @@ public:
    ListWidget* playlistListWidget();
    QStackedWidget* centralWidget();
    TableView* contentTableView();
-   QTableView* fileTableView();
+   QTreeView* fileTableView();
    FileDropWidget* playlistViews();
    GridView* contentGridView();
    QWidget* playlistViewsAndFooter();
@@ -497,7 +499,6 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
-   void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
@@ -564,7 +565,7 @@ private:
    ListWidget *m_listWidget;
    QStackedWidget *m_centralWidget;
    TableView *m_tableView;
-   QTableView *m_fileTableView;
+   TableView *m_fileTableView;
    FileDropWidget *m_playlistViews;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;

@@ -532,9 +532,11 @@ static void* ui_companion_qt_init(void)
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
 
    if (qsettings->contains("file_browser_table_headers"))
-      mainwindow->fileTableView()->horizontalHeader()->restoreState(qsettings->value("file_browser_table_headers").toByteArray());
+      mainwindow->fileTableView()->header()->restoreState(qsettings->value("file_browser_table_headers").toByteArray());
    else
-      mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
+      mainwindow->fileTableView()->header()->resizeSection(0, 300);
+
+   mainwindow->fileTableView()->header()->setHighlightSections(false);
 
    if (qsettings->contains("icon_view_zoom"))
       mainwindow->setIconViewZoom(qsettings->value("icon_view_zoom", 50).toInt());

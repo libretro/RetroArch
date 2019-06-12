@@ -56,6 +56,9 @@ int PlaylistModel::columnCount(const QModelIndex & /* parent */) const
 
 QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 {
+   if (role ==Qt::SizeHintRole)
+      return QSize(1, 22);
+
    if (index.column() == 0)
    {
       if (!index.isValid())
@@ -110,12 +113,16 @@ bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int
 
 QVariant PlaylistModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-   if (role != Qt::DisplayRole)
-      return QVariant();
-
-   if (orientation == Qt::Horizontal)
-      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
-   return section + 1;
+   switch (role)
+   {
+   case Qt::TextAlignmentRole:
+      return Qt::AlignLeft;
+   case Qt::DisplayRole:
+      if (orientation == Qt::Horizontal && section == 0)
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
+   default:
+      return QAbstractItemModel::headerData(section, orientation, role);
+   }
 }
 
 void PlaylistModel::setThumbnailType(const ThumbnailType type)
