@@ -78,8 +78,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
-#include "cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
+#include "cheevos-new/cheevos.h"
 #endif
 
 #ifdef HAVE_DISCORD
@@ -199,7 +198,6 @@ enum  runloop_state
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
@@ -838,12 +836,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 void rarch_core_runtime_tick(void)
 {
-   retro_time_t frame_time;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (av_info && av_info->timing.fps)
    {
-      frame_time = (1.0 / av_info->timing.fps) * 1000000;
+      retro_time_t frame_time = (1.0 / av_info->timing.fps) * 1000000;
 
       /* Account for slow motion */
       if (runloop_slowmotion)
@@ -1915,32 +1912,17 @@ static void retroarch_validate_cpu_features(void)
 #endif
 }
 
-static void retroarch_main_init_media(void)
+static void retroarch_main_init_media(enum rarch_content_type cont_type,
+      bool builtin_mediaplayer, bool builtin_imageviewer)
 {
-   settings_t     *settings = config_get_ptr();
-   const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
-   bool builtin_imageviewer = false;
-   bool builtin_mediaplayer = false;
-
-   if (!settings)
-      return;
-
-   builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
-   builtin_mediaplayer      = settings->bools.multimedia_builtin_mediaplayer_enable;
-
-   if (!builtin_mediaplayer && !builtin_imageviewer)
-      return;
-
-   if (string_is_empty(fullpath))
-      return;
-
-   switch (path_is_media_type(fullpath))
+   switch (cont_type)
    {
       case RARCH_CONTENT_MOVIE:
       case RARCH_CONTENT_MUSIC:
          if (builtin_mediaplayer)
          {
-            /* TODO/FIXME - it needs to become possible to switch between FFmpeg and MPV at runtime */
+            /* TODO/FIXME - it needs to become possible to 
+             * switch between FFmpeg and MPV at runtime */
 #if defined(HAVE_MPV)
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_MPV, false);
@@ -2038,7 +2020,27 @@ bool retroarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
 
-   retroarch_main_init_media();
+   {
+      const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+      settings_t     *settings = config_get_ptr();
+
+      if (!string_is_empty(fullpath))
+      {
+         settings_t     *settings          = config_get_ptr();
+         bool builtin_imageviewer          = false;
+         bool builtin_mediaplayer          = false;
+         enum rarch_content_type cont_type = path_is_media_type(fullpath);
+         
+         if (settings)
+         {
+            builtin_imageviewer   = settings->bools.multimedia_builtin_imageviewer_enable;
+            builtin_mediaplayer   = settings->bools.multimedia_builtin_mediaplayer_enable;
+         }
+
+         retroarch_main_init_media(cont_type, builtin_mediaplayer,
+               builtin_imageviewer);
+      }
+   }
 
    /* Pre-initialize all drivers 
     * Attempts to find a default driver for
@@ -3210,7 +3212,7 @@ void runloop_msg_queue_push(const char *msg,
    runloop_ctx_msg_info_t msg_info;
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_msg_queue_push(msg,
-            duration / 60 * 1000, title, icon, category, prio, flush))
+            roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush))
       return;
 #endif
 
@@ -3276,8 +3278,7 @@ bool runloop_msg_queue_pull(const char **ret)
  */
 #define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
-/* RCHEEVOS TODO: remove 'rcheevos_*' tests below */
-#define runloop_check_cheevos() (settings->bools.cheevos_enable && (rcheevos_loaded || cheevos_loaded) && (!(rcheevos_cheats_are_enabled || cheats_are_enabled) && !(rcheevos_cheats_were_enabled || cheats_were_enabled)))
+#define runloop_check_cheevos() (settings->bools.cheevos_enable && rcheevos_loaded && (!rcheevos_cheats_are_enabled && !rcheevos_cheats_were_enabled))
 
 #ifdef HAVE_NETWORKING
 /* FIXME: This is an ugly way to tell Netplay this... */
@@ -3353,11 +3354,9 @@ static bool input_driver_toggle_button_combo(
             return false;
          }
 
+         /* user started holding down the start button, start the timer */
          if (!rarch_timer_is_running(&timer))
-         {
-            /* user started holding down the start button, start the timer */
             rarch_timer_begin(&timer, HOLD_START_DELAY_SEC);
-         }
 
          rarch_timer_tick(&timer);
 
@@ -3378,6 +3377,35 @@ static bool input_driver_toggle_button_combo(
    return true;
 }
 #endif
+
+#define HOTKEY_CHECK(cmd1, cmd2, cond) \
+   { \
+      static bool old_pressed                   = false; \
+      bool pressed                              = BIT256_GET(current_input, cmd1); \
+      if (pressed && !old_pressed) \
+         if (cond) \
+            command_event(cmd2, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+   }
+
+#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
+   { \
+      static bool old_pressed                   = false; \
+      static bool old_pressed2                  = false; \
+      static bool old_pressed3                  = false; \
+      bool pressed                              = BIT256_GET(current_input, cmd1); \
+      bool pressed2                             = BIT256_GET(current_input, cmd3); \
+      bool pressed3                             = BIT256_GET(current_input, cmd5); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      else if (pressed2 && !old_pressed2) \
+         command_event(cmd4, (void*)(intptr_t)0); \
+      else if (pressed3 && !old_pressed3) \
+         command_event(cmd6, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+      old_pressed2                              = pressed2; \
+      old_pressed3                              = pressed3; \
+   }
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
@@ -3465,52 +3493,23 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
-   {
-      static bool old_should_check_next_overlay = false;
-      bool should_check_next_overlay            = BIT256_GET(
-            current_input, RARCH_OVERLAY_NEXT);
-
-      if (should_check_next_overlay && !old_should_check_next_overlay)
-         command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
-
-      old_should_check_next_overlay             = should_check_next_overlay;
-   }
+   HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true);
 #endif
 
    /* Check fullscreen toggle */
    {
-      static bool old_fs_toggle_pressed = false;
-      bool fs_toggle_pressed            = BIT256_GET(
-            current_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-      fs_toggle_triggered               = fs_toggle_pressed && !old_fs_toggle_pressed;
-
-      if (fs_toggle_triggered)
-      {
-         bool fullscreen_toggled = !runloop_is_paused
+      bool fullscreen_toggled = !runloop_is_paused
 #ifdef HAVE_MENU
-            || menu_is_alive;
+         || menu_is_alive;
 #else
-         ;
+      ;
 #endif
-
-         if (fullscreen_toggled)
-            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-      }
-
-      old_fs_toggle_pressed = fs_toggle_pressed;
+      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+            fullscreen_toggled);
    }
 
    /* Check mouse grab toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_GRAB_MOUSE_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true); 
 
 #ifdef HAVE_OVERLAY
    {
@@ -3727,10 +3726,7 @@ static enum runloop_state runloop_check_state(
       old_input                 = current_input;
       old_action                = action;
 
-      if (!focused)
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
-
-      if (runloop_idle)
+      if (!focused || runloop_idle)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
@@ -3740,32 +3736,16 @@ static enum runloop_state runloop_check_state(
       seq = 0;
 #endif
       if (runloop_idle)
-         return RUNLOOP_STATE_SLEEP;
+      {
+         retro_ctx.poll_cb();
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
    }
 
    /* Check game focus toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_GAME_FOCUS_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
-
-      old_pressed             = pressed;
-   }
-
+   HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true);
    /* Check if we have pressed the UI companion toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_UI_COMPANION_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_UI_COMPANION_TOGGLE, (void*)(intptr_t)0);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true);
 
 #ifdef HAVE_MENU
    /* Check if we have pressed the menu toggle button */
@@ -3814,12 +3794,12 @@ static enum runloop_state runloop_check_state(
     * Must press 3 times in a row to activate, but it will
     * alert the user of this with each press of the hotkey. */
    {
-      static uint32_t debug_seq = 0;
-      static bool old_pressed = false;
-      static bool old_any_pressed = false;
       int any_i;
-      bool any_pressed = false;
-      bool pressed = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
+      static uint32_t debug_seq   = 0;
+      static bool old_pressed     = false;
+      static bool old_any_pressed = false;
+      bool any_pressed            = false;
+      bool pressed                = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
 
       for (any_i = 0; any_i < ARRAY_SIZE(current_input.data); any_i++)
       {
@@ -3866,28 +3846,10 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the FPS toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_FPS_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_FPS_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true);
 
    /* Check if we have pressed the netplay host toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_NETPLAY_HOST_TOGGLE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_NETPLAY_HOST_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true);
 
    if (menu_driver_is_alive())
    {
@@ -3914,72 +3876,19 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed the audio mute toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_MUTE);
-
-      if (pressed && !old_pressed)
-         command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true); 
 
    /* Check if we have pressed the OSK toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(current_input, RARCH_OSK);
-
-      if (pressed && !old_pressed)
-      {
-         if (input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
-         else
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true); 
 
    /* Check if we have pressed the recording toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_RECORDING_TOGGLE);
+   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true); 
 
-      if (pressed && !old_pressed)
-      {
-         if (recording_is_enabled())
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         else
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-      }
-
-      old_pressed             = pressed;
-   }
+   /* Check if we have pressed the AI Service toggle button */
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true); 
 
    /* Check if we have pressed the streaming toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_STREAMING_TOGGLE);
-
-      if (pressed && !old_pressed)
-      {
-         if (streaming_is_enabled())
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         else
-         {
-            streaming_set_state(true);
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-         }
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true); 
 
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
@@ -3988,23 +3897,13 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
-   {
-      static bool old_netplay_watch = false;
-      bool netplay_watch            = BIT256_GET(
-            current_input, RARCH_NETPLAY_GAME_WATCH);
-
-      if (netplay_watch && !old_netplay_watch)
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-
-      old_netplay_watch             = netplay_watch;
-   }
+   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true); 
 #endif
 
    /* Check if we have pressed the pause button */
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
-      bool check_is_oneshot         = true;
       bool frameadvance_pressed     = BIT256_GET(
             current_input, RARCH_FRAMEADVANCE);
       bool pause_pressed            = BIT256_GET(
@@ -4030,23 +3929,24 @@ static enum runloop_state runloop_check_state(
 
       if (runloop_is_paused)
       {
-         check_is_oneshot = trig_frameadvance ||
-            BIT256_GET(current_input, RARCH_REWIND);
-
          if (fs_toggle_triggered)
          {
             command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
             if (!runloop_idle)
                video_driver_cached_frame();
          }
-      }
 
-      if (!check_is_oneshot)
-         return RUNLOOP_STATE_SLEEP;
+         /* Check if it's not oneshot */
+         if (!(trig_frameadvance || BIT256_GET(current_input, RARCH_REWIND)))
+            focused = false;
+      }
    }
 
    if (!focused)
-      return RUNLOOP_STATE_SLEEP;
+   {
+      retro_ctx.poll_cb();
+      return RUNLOOP_STATE_POLLED_AND_SLEEP;
+   }
 
    /* Check if we have pressed the fast forward button */
    /* To avoid continous switching if we hold the button down, we require
@@ -4156,50 +4056,21 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check if we have pressed any of the savestate buttons */
-   {
-      static bool old_should_savestate = false;
-      static bool old_should_loadstate = false;
-      bool should_savestate            = BIT256_GET(
-            current_input, RARCH_SAVE_STATE_KEY);
-      bool should_loadstate            = BIT256_GET(
-            current_input, RARCH_LOAD_STATE_KEY);
-
-      if (should_savestate && !old_should_savestate)
-         command_event(CMD_EVENT_SAVE_STATE, NULL);
-      if (should_loadstate && !old_should_loadstate)
-         command_event(CMD_EVENT_LOAD_STATE, NULL);
-
-      old_should_savestate             = should_savestate;
-      old_should_loadstate             = should_loadstate;
-   }
+   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true);
 
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
    rcheevos_hardcore_active = settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable
       && rcheevos_loaded && !rcheevos_hardcore_paused;
 
-   cheevos_hardcore_active = settings->bools.cheevos_enable
-      && settings->bools.cheevos_hardcore_mode_enable
-      && cheevos_loaded && !cheevos_hardcore_paused;
-   if (!settings->bools.cheevos_old_enable)
+   if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
    {
-      if (rcheevos_hardcore_active && rcheevos_state_loaded_flag)
-      {
-         rcheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
-   else
-   {
-      if (cheevos_hardcore_active && cheevos_state_loaded_flag)
-      {
-         cheevos_hardcore_paused = true;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
+      rcheevos_hardcore_paused = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
-   if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+   if (!rcheevos_hardcore_active)
 #endif
    {
       char s[128];
@@ -4225,8 +4096,7 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
-   /* RCHEEVOS TODO: remove the 'rcheevos_*' below */
-   if (!(rcheevos_hardcore_active || cheevos_hardcore_active))
+   if (!rcheevos_hardcore_active)
 #endif
    {
       static bool old_slowmotion_button_state      = false;
@@ -4237,19 +4107,9 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_SLOWMOTION_HOLD_KEY);
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
-      {
-         if (runloop_slowmotion)
-            runloop_slowmotion = false;
-         else
-            runloop_slowmotion = true;
-      }
+         runloop_slowmotion = !runloop_slowmotion;
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
-      {
-         if (new_slowmotion_hold_button_state)
-            runloop_slowmotion = true;
-         else
-            runloop_slowmotion = false;
-      }
+         runloop_slowmotion = new_slowmotion_hold_button_state;
 
       if (runloop_slowmotion)
       {
@@ -4279,100 +4139,26 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check movie record toggle */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_BSV_RECORD_TOGGLE);
-
-      if (pressed && !old_pressed)
-      {
-         if (!recording_is_enabled())
-            command_event(CMD_EVENT_RECORD_INIT, NULL);
-         else
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         bsv_movie_check();
-      }
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true);
 
    /* Check shader prev/next */
-   {
-      static bool old_shader_next = false;
-      static bool old_shader_prev = false;
-      bool shader_next            = BIT256_GET(
-            current_input, RARCH_SHADER_NEXT);
-      bool shader_prev            = BIT256_GET(
-            current_input, RARCH_SHADER_PREV);
-      bool trig_shader_next       = shader_next && !old_shader_next;
-      bool trig_shader_prev       = shader_prev && !old_shader_prev;
-
-      if (trig_shader_next || trig_shader_prev)
-         dir_check_shader(trig_shader_next, trig_shader_prev);
-
-      old_shader_next             = shader_next;
-      old_shader_prev             = shader_prev;
-   }
+   HOTKEY_CHECK(RARCH_SHADER_NEXT, CMD_EVENT_SHADER_NEXT, true);
+   HOTKEY_CHECK(RARCH_SHADER_PREV, CMD_EVENT_SHADER_PREV, true);
 
    /* Check if we have pressed any of the disk buttons */
-   {
-      static bool old_disk_eject  = false;
-      static bool old_disk_next   = false;
-      static bool old_disk_prev   = false;
-      bool disk_eject             = BIT256_GET(
-            current_input, RARCH_DISK_EJECT_TOGGLE);
-      bool disk_next              = BIT256_GET(
-            current_input, RARCH_DISK_NEXT);
-      bool disk_prev              = BIT256_GET(
-            current_input, RARCH_DISK_PREV);
-
-      if (disk_eject && !old_disk_eject)
-         command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
-      else if (disk_next && !old_disk_next)
-         command_event(CMD_EVENT_DISK_NEXT, NULL);
-      else if (disk_prev && !old_disk_prev)
-         command_event(CMD_EVENT_DISK_PREV, NULL);
-
-      old_disk_eject              = disk_eject;
-      old_disk_prev               = disk_prev;
-      old_disk_next               = disk_next;
-   }
+   HOTKEY_CHECK3(
+         RARCH_DISK_EJECT_TOGGLE, CMD_EVENT_DISK_EJECT_TOGGLE,
+         RARCH_DISK_NEXT,         CMD_EVENT_DISK_NEXT,
+         RARCH_DISK_PREV,         CMD_EVENT_DISK_PREV);
 
    /* Check if we have pressed the reset button */
-   {
-      static bool old_state = false;
-      bool new_state        = BIT256_GET(
-            current_input, RARCH_RESET);
-
-      if (new_state && !old_state)
-         command_event(CMD_EVENT_RESET, NULL);
-
-      old_state = new_state;
-   }
+   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true);
 
    /* Check cheats */
-   {
-      static bool old_cheat_index_plus   = false;
-      static bool old_cheat_index_minus  = false;
-      static bool old_cheat_index_toggle = false;
-      bool cheat_index_plus              = BIT256_GET(
-            current_input, RARCH_CHEAT_INDEX_PLUS);
-      bool cheat_index_minus             = BIT256_GET(
-            current_input, RARCH_CHEAT_INDEX_MINUS);
-      bool cheat_index_toggle            = BIT256_GET(
-            current_input, RARCH_CHEAT_TOGGLE);
-
-      if (cheat_index_plus && !old_cheat_index_plus)
-         cheat_manager_index_next();
-      else if (cheat_index_minus && !old_cheat_index_minus)
-         cheat_manager_index_prev();
-      else if (cheat_index_toggle && !old_cheat_index_toggle)
-         cheat_manager_toggle();
-
-      old_cheat_index_plus               = cheat_index_plus;
-      old_cheat_index_minus              = cheat_index_minus;
-      old_cheat_index_toggle             = cheat_index_toggle;
-   }
+   HOTKEY_CHECK3(
+         RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
+         RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
+         RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
    if (settings->bools.video_shader_watch_files)
    {
@@ -4514,17 +4300,18 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_netplay_pause();
          *sleep_ms = 10;
          return 1;
-      case RUNLOOP_STATE_SLEEP:
-         retro_ctx.poll_cb();
-         runloop_netplay_pause();
-         *sleep_ms = 10;
-         return 1;
       case RUNLOOP_STATE_END:
-         runloop_netplay_pause();
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
+               && settings->bools.menu_pause_libretro)
+            runloop_netplay_pause();
+#endif
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
+#ifdef HAVE_NETWORKING
          runloop_netplay_pause();
          return 0;
+#endif
       case RUNLOOP_STATE_ITERATE:
          break;
    }
@@ -4580,8 +4367,8 @@ int runloop_iterate(unsigned *sleep_ms)
    rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
-   if (runloop_check_cheevos()) /* RCHEEVOS TODO: remove settings test */
-      !settings->bools.cheevos_old_enable ? rcheevos_test() : cheevos_test();
+   if (runloop_check_cheevos())
+      rcheevos_test();
 #endif
    cheat_manager_apply_retro_cheats();
 
@@ -4623,41 +4410,41 @@ int runloop_iterate(unsigned *sleep_ms)
       autosave_unlock();
 
    /* Condition for max speed x0.0 when vrr_runloop is off to skip that part */
-   if (fastforward_ratio || vrr_runloop_enable)
-      end:
-   {
-      retro_time_t to_sleep_ms;
+   if (!(fastforward_ratio || vrr_runloop_enable))
+      return 0;
 
-      if (vrr_runloop_enable)
-      {
-         struct retro_system_av_info *av_info =
+end:
+   if (vrr_runloop_enable)
+   {
+      struct retro_system_av_info *av_info =
          video_viewport_get_system_av_info();
 
-         /* Sync on video only, block audio later. */
-         if (fastforward_after_frames && settings->bools.audio_sync)
+      /* Sync on video only, block audio later. */
+      if (fastforward_after_frames && settings->bools.audio_sync)
+      {
+         if (fastforward_after_frames == 1)
+            command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
+
+         fastforward_after_frames++;
+
+         if (fastforward_after_frames == 6)
          {
-            if (fastforward_after_frames == 1)
-               command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
-
-            fastforward_after_frames++;
-
-            if (fastforward_after_frames == 6)
-            {
-               command_event(CMD_EVENT_AUDIO_SET_BLOCKING_STATE, NULL);
-               fastforward_after_frames = 0;
-            }
+            command_event(CMD_EVENT_AUDIO_SET_BLOCKING_STATE, NULL);
+            fastforward_after_frames = 0;
          }
-
-         /* Fast Forward for max speed x0.0 */
-         if (!fastforward_ratio && runloop_fastmotion)
-            return 0;
-
-         frame_limit_minimum_time =
-            (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
-            (runloop_fastmotion ? fastforward_ratio : 1.0f)));
       }
 
-      to_sleep_ms  = (
+      /* Fast Forward for max speed x0.0 */
+      if (!fastforward_ratio && runloop_fastmotion)
+         return 0;
+
+      frame_limit_minimum_time =
+         (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
+                  (runloop_fastmotion ? fastforward_ratio : 1.0f)));
+   }
+
+   {
+      retro_time_t to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;
 
@@ -4668,9 +4455,9 @@ int runloop_iterate(unsigned *sleep_ms)
          frame_limit_last_time += frame_limit_minimum_time;
          return 1;
       }
-
-      frame_limit_last_time  = cpu_features_get_time_usec();
    }
+
+   frame_limit_last_time  = cpu_features_get_time_usec();
 
    return 0;
 }
@@ -5055,7 +4842,7 @@ bool rarch_write_debug_info(void)
       if (joypad_driver && string_is_equal(joypad_driver->ident, settings->arrays.input_joypad_driver))
          filestream_printf(file, "  - Joypad: %s\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a");
       else
-         filestream_printf(file, "  - Input: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
+         filestream_printf(file, "  - Joypad: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
    }
 
    filestream_printf(file, "\n");
@@ -5397,16 +5184,16 @@ finish:
 
 void rarch_log_file_init(void)
 {
+   char log_directory[PATH_MAX_LENGTH];
+   char log_file_path[PATH_MAX_LENGTH];
    FILE             *fp       = NULL;
    settings_t *settings       = config_get_ptr();
    bool log_to_file           = settings->bools.log_to_file;
    bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
-   char log_directory[PATH_MAX_LENGTH];
-   char log_file_path[PATH_MAX_LENGTH];
    
-   log_directory[0] = '\0';
-   log_file_path[0] = '\0';
+   log_directory[0]           = '\0';
+   log_file_path[0]           = '\0';
    
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -5451,15 +5238,14 @@ void rarch_log_file_init(void)
    /* > Get directory/file paths */
    if (log_file_override_active)
    {
-      const char *last_slash        = NULL;
-      char tmp_buf[PATH_MAX_LENGTH] = {0};
-      size_t path_length;
-      
       /* Get log directory */
-      last_slash = find_last_slash(log_file_override_path);
+      const char *last_slash        = find_last_slash(log_file_override_path);
+
       if (last_slash)
       {
-         path_length = last_slash + 1 - log_file_override_path;
+         char tmp_buf[PATH_MAX_LENGTH] = {0};
+         size_t path_length            = last_slash + 1 - log_file_override_path;
+
          if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
             strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));

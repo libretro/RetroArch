@@ -40,6 +40,8 @@ matrix:
     - compiler: clang
       env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
+      env: CC=clang CXX=clang++
+    - os: osx
       osx_image: xcode8
       script:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
@@ -75,7 +77,7 @@ before_install:
 script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
-       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib"
+       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
      fi
   - |
      if [ -n "$DISABLE_MENU" ]; then

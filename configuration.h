@@ -129,6 +129,7 @@ typedef struct settings
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
       bool input_overlay_show_physical_inputs;
+      bool input_overlay_show_mouse_cursor;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -166,6 +167,7 @@ typedef struct settings
       bool menu_show_configurations;
       bool menu_show_help;
       bool menu_show_quit_retroarch;
+      bool menu_show_restart_retroarch;
       bool menu_show_reboot;
       bool menu_show_shutdown;
       bool menu_show_latency;
@@ -250,7 +252,6 @@ typedef struct settings
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
-      bool cheevos_old_enable; /* RCHEEVOS TODO: remove line */
 
       /* Camera */
       bool camera_allow;
@@ -275,7 +276,6 @@ typedef struct settings
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;
-      bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
       bool vrr_runloop_enable;
@@ -341,6 +341,8 @@ typedef struct settings
       bool log_to_file_timestamp;
 
       bool scan_without_core_match;
+
+      bool ai_service_enable;
    } bools;
 
    struct
@@ -449,10 +451,15 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
+#ifdef GEKKO
+      unsigned video_overscan_correction_top;
+      unsigned video_overscan_correction_bottom;
+#endif
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_dpi_override_value;
@@ -466,6 +473,7 @@ typedef struct settings
       unsigned menu_xmb_alpha_factor;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
+      unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_materialui_color_theme;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
@@ -477,6 +485,7 @@ typedef struct settings
       unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
 
+      unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
       unsigned playlist_sublabel_runtime_type;
 
@@ -513,6 +522,7 @@ typedef struct settings
       unsigned video_record_threads;
 
       unsigned libnx_overclock;
+      unsigned ai_service_mode;
    } uints;
 
    struct
@@ -563,6 +573,7 @@ typedef struct settings
 
       char discord_app_id[PATH_MAX_LENGTH];
       char translation_service_url[2048];
+      char ai_service_url[PATH_MAX_LENGTH];
    } arrays;
 
    struct

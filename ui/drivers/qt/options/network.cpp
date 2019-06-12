@@ -57,6 +57,7 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);

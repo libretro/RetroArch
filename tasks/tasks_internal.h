@@ -74,7 +74,7 @@ bool task_push_pl_entry_thumbnail_download(
 #endif
 
 bool task_push_image_load(const char *fullpath,
-      bool supports_rgba,
+      bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB

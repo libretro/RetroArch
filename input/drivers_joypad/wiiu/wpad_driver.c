@@ -25,7 +25,7 @@
 
 #define PANIC_BUTTON_MASK (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L)
 
-static bool     ready        = false;
+static bool     wpad_ready        = false;
 static uint64_t button_state = 0;
 static int16_t  analog_state[3][2];
 
@@ -190,19 +190,19 @@ static bool wpad_init(void *data)
    hid_instance.pad_list[slot].connected = true;
    input_pad_connect(slot, &wpad_driver);
    wpad_poll();
-   ready = true;
+   wpad_ready = true;
 
    return true;
 }
 
 static bool wpad_query_pad(unsigned pad)
 {
-   return ready && pad < MAX_USERS;
+   return wpad_ready && pad < MAX_USERS;
 }
 
 static void wpad_destroy(void)
 {
-   ready = false;
+   wpad_ready = false;
 }
 
 static bool wpad_button(unsigned pad, uint16_t button_bit)

@@ -626,7 +626,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry"))
+   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
    {
       BIND_ACTION_RIGHT(cbs, action_right_scroll);
    }

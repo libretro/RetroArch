@@ -33,11 +33,6 @@
 
 #if !defined(MBEDTLS_ECP_ALT)
 
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
-#endif
-
 /*
  * Conversion macros for embedded constants:
  * build lists of mbedtls_mpi_uint's from lists of unsigned char's grouped by 8, 4 or 2
@@ -553,7 +548,7 @@ static const mbedtls_mpi_uint brainpoolP512r1_n[] = {
  * Create an MPI from embedded constants
  * (assumes len is an exact multiple of sizeof mbedtls_mpi_uint)
  */
-static inline void ecp_mpi_load( mbedtls_mpi *X, const mbedtls_mpi_uint *p, size_t len )
+static void ecp_mpi_load( mbedtls_mpi *X, const mbedtls_mpi_uint *p, size_t len )
 {
     X->s = 1;
     X->n = len / sizeof( mbedtls_mpi_uint );
@@ -563,7 +558,7 @@ static inline void ecp_mpi_load( mbedtls_mpi *X, const mbedtls_mpi_uint *p, size
 /*
  * Set an MPI to static value 1
  */
-static inline void ecp_mpi_set1( mbedtls_mpi *X )
+static void ecp_mpi_set1( mbedtls_mpi *X )
 {
     static mbedtls_mpi_uint one[] = { 1 };
     X->s = 1;
@@ -798,7 +793,7 @@ int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id id )
  */
 
 /* Add 64-bit chunks (dst += src) and update carry */
-static inline void add64( mbedtls_mpi_uint *dst, mbedtls_mpi_uint *src, mbedtls_mpi_uint *carry )
+static void add64( mbedtls_mpi_uint *dst, mbedtls_mpi_uint *src, mbedtls_mpi_uint *carry )
 {
     unsigned char i;
     mbedtls_mpi_uint c = 0;
@@ -811,7 +806,7 @@ static inline void add64( mbedtls_mpi_uint *dst, mbedtls_mpi_uint *src, mbedtls_
 }
 
 /* Add carry to a 64-bit chunk and update carry */
-static inline void carry64( mbedtls_mpi_uint *dst, mbedtls_mpi_uint *carry )
+static void carry64( mbedtls_mpi_uint *dst, mbedtls_mpi_uint *carry )
 {
     unsigned char i;
     for( i = 0; i < 8 / sizeof( mbedtls_mpi_uint ); i++, dst++ )
@@ -842,9 +837,9 @@ static int ecp_mod_p192( mbedtls_mpi *N )
     p = N->p;
     end = p + N->n;
 
-    ADD( 3 ); ADD( 5 );             NEXT; // A0 += A3 + A5
-    ADD( 3 ); ADD( 4 ); ADD( 5 );   NEXT; // A1 += A3 + A4 + A5
-    ADD( 4 ); ADD( 5 );             LAST; // A2 += A4 + A5
+    ADD( 3 ); ADD( 5 );             NEXT; /* A0 += A3 + A5 */
+    ADD( 3 ); ADD( 4 ); ADD( 5 );   NEXT; /* A1 += A3 + A4 + A5 */
+    ADD( 4 ); ADD( 5 );             LAST; /* A2 += A4 + A5 */
 
 cleanup:
     return( ret );
@@ -902,13 +897,13 @@ cleanup:
 /*
  * Helpers for addition and subtraction of chunks, with signed carry.
  */
-static inline void add32( uint32_t *dst, uint32_t src, signed char *carry )
+static void add32( uint32_t *dst, uint32_t src, signed char *carry )
 {
     *dst += src;
     *carry += ( *dst < src );
 }
 
-static inline void sub32( uint32_t *dst, uint32_t src, signed char *carry )
+static void sub32( uint32_t *dst, uint32_t src, signed char *carry )
 {
     *carry -= ( *dst < src );
     *dst -= src;
@@ -955,7 +950,7 @@ static inline void sub32( uint32_t *dst, uint32_t src, signed char *carry )
  * If the result is negative, we get it in the form
  * c * 2^(bits + 32) + N, with c negative and N positive shorter than 'bits'
  */
-static inline int fix_negative( mbedtls_mpi *N, signed char c, mbedtls_mpi *C, size_t bits )
+static int fix_negative( mbedtls_mpi *N, signed char c, mbedtls_mpi *C, size_t bits )
 {
     int ret;
 
@@ -986,13 +981,13 @@ static int ecp_mod_p224( mbedtls_mpi *N )
 {
     INIT( 224 );
 
-    SUB(  7 ); SUB( 11 );               NEXT; // A0 += -A7 - A11
-    SUB(  8 ); SUB( 12 );               NEXT; // A1 += -A8 - A12
-    SUB(  9 ); SUB( 13 );               NEXT; // A2 += -A9 - A13
-    SUB( 10 ); ADD(  7 ); ADD( 11 );    NEXT; // A3 += -A10 + A7 + A11
-    SUB( 11 ); ADD(  8 ); ADD( 12 );    NEXT; // A4 += -A11 + A8 + A12
-    SUB( 12 ); ADD(  9 ); ADD( 13 );    NEXT; // A5 += -A12 + A9 + A13
-    SUB( 13 ); ADD( 10 );               LAST; // A6 += -A13 + A10
+    SUB(  7 ); SUB( 11 );               NEXT; /* A0 += -A7 - A11 */
+    SUB(  8 ); SUB( 12 );               NEXT; /* A1 += -A8 - A12 */
+    SUB(  9 ); SUB( 13 );               NEXT; /* A2 += -A9 - A13 */
+    SUB( 10 ); ADD(  7 ); ADD( 11 );    NEXT; /* A3 += -A10 + A7 + A11 */
+    SUB( 11 ); ADD(  8 ); ADD( 12 );    NEXT; /* A4 += -A11 + A8 + A12 */
+    SUB( 12 ); ADD(  9 ); ADD( 13 );    NEXT; /* A5 += -A12 + A9 + A13 */
+    SUB( 13 ); ADD( 10 );               LAST; /* A6 += -A13 + A10 */
 
 cleanup:
     return( ret );
@@ -1008,28 +1003,28 @@ static int ecp_mod_p256( mbedtls_mpi *N )
     INIT( 256 );
 
     ADD(  8 ); ADD(  9 );
-    SUB( 11 ); SUB( 12 ); SUB( 13 ); SUB( 14 );             NEXT; // A0
+    SUB( 11 ); SUB( 12 ); SUB( 13 ); SUB( 14 );             NEXT; /* A0 */
 
     ADD(  9 ); ADD( 10 );
-    SUB( 12 ); SUB( 13 ); SUB( 14 ); SUB( 15 );             NEXT; // A1
+    SUB( 12 ); SUB( 13 ); SUB( 14 ); SUB( 15 );             NEXT; /* A1 */
 
     ADD( 10 ); ADD( 11 );
-    SUB( 13 ); SUB( 14 ); SUB( 15 );                        NEXT; // A2
+    SUB( 13 ); SUB( 14 ); SUB( 15 );                        NEXT; /* A2 */
 
     ADD( 11 ); ADD( 11 ); ADD( 12 ); ADD( 12 ); ADD( 13 );
-    SUB( 15 ); SUB(  8 ); SUB(  9 );                        NEXT; // A3
+    SUB( 15 ); SUB(  8 ); SUB(  9 );                        NEXT; /* A3 */
 
     ADD( 12 ); ADD( 12 ); ADD( 13 ); ADD( 13 ); ADD( 14 );
-    SUB(  9 ); SUB( 10 );                                   NEXT; // A4
+    SUB(  9 ); SUB( 10 );                                   NEXT; /* A4 */
 
     ADD( 13 ); ADD( 13 ); ADD( 14 ); ADD( 14 ); ADD( 15 );
-    SUB( 10 ); SUB( 11 );                                   NEXT; // A5
+    SUB( 10 ); SUB( 11 );                                   NEXT; /* A5 */
 
     ADD( 14 ); ADD( 14 ); ADD( 15 ); ADD( 15 ); ADD( 14 ); ADD( 13 );
-    SUB(  8 ); SUB(  9 );                                   NEXT; // A6
+    SUB(  8 ); SUB(  9 );                                   NEXT; /* A6 */
 
     ADD( 15 ); ADD( 15 ); ADD( 15 ); ADD( 8 );
-    SUB( 10 ); SUB( 11 ); SUB( 12 ); SUB( 13 );             LAST; // A7
+    SUB( 10 ); SUB( 11 ); SUB( 12 ); SUB( 13 );             LAST; /* A7 */
 
 cleanup:
     return( ret );
@@ -1045,40 +1040,40 @@ static int ecp_mod_p384( mbedtls_mpi *N )
     INIT( 384 );
 
     ADD( 12 ); ADD( 21 ); ADD( 20 );
-    SUB( 23 );                                              NEXT; // A0
+    SUB( 23 );                                              NEXT; /* A0 */
 
     ADD( 13 ); ADD( 22 ); ADD( 23 );
-    SUB( 12 ); SUB( 20 );                                   NEXT; // A2
+    SUB( 12 ); SUB( 20 );                                   NEXT; /* A2 */
 
     ADD( 14 ); ADD( 23 );
-    SUB( 13 ); SUB( 21 );                                   NEXT; // A2
+    SUB( 13 ); SUB( 21 );                                   NEXT; /* A2 */
 
     ADD( 15 ); ADD( 12 ); ADD( 20 ); ADD( 21 );
-    SUB( 14 ); SUB( 22 ); SUB( 23 );                        NEXT; // A3
+    SUB( 14 ); SUB( 22 ); SUB( 23 );                        NEXT; /* A3 */
 
     ADD( 21 ); ADD( 21 ); ADD( 16 ); ADD( 13 ); ADD( 12 ); ADD( 20 ); ADD( 22 );
-    SUB( 15 ); SUB( 23 ); SUB( 23 );                        NEXT; // A4
+    SUB( 15 ); SUB( 23 ); SUB( 23 );                        NEXT; /* A4 */
 
     ADD( 22 ); ADD( 22 ); ADD( 17 ); ADD( 14 ); ADD( 13 ); ADD( 21 ); ADD( 23 );
-    SUB( 16 );                                              NEXT; // A5
+    SUB( 16 );                                              NEXT; /* A5 */
 
     ADD( 23 ); ADD( 23 ); ADD( 18 ); ADD( 15 ); ADD( 14 ); ADD( 22 );
-    SUB( 17 );                                              NEXT; // A6
+    SUB( 17 );                                              NEXT; /* A6 */
 
     ADD( 19 ); ADD( 16 ); ADD( 15 ); ADD( 23 );
-    SUB( 18 );                                              NEXT; // A7
+    SUB( 18 );                                              NEXT; /* A7 */
 
     ADD( 20 ); ADD( 17 ); ADD( 16 );
-    SUB( 19 );                                              NEXT; // A8
+    SUB( 19 );                                              NEXT; /* A8 */
 
     ADD( 21 ); ADD( 18 ); ADD( 17 );
-    SUB( 20 );                                              NEXT; // A9
+    SUB( 20 );                                              NEXT; /* A9 */
 
     ADD( 22 ); ADD( 19 ); ADD( 18 );
-    SUB( 21 );                                              NEXT; // A10
+    SUB( 21 );                                              NEXT; /* A10 */
 
     ADD( 23 ); ADD( 20 ); ADD( 19 );
-    SUB( 22 );                                              LAST; // A11
+    SUB( 22 );                                              LAST; /* A11 */
 
 cleanup:
     return( ret );
@@ -1207,9 +1202,9 @@ cleanup:
  * Write N as A0 + 2^224 A1, return A0 + R * A1.
  * Actually do two passes, since R is big.
  */
-#define P_KOBLITZ_MAX   ( 256 / 8 / sizeof( mbedtls_mpi_uint ) )  // Max limbs in P
-#define P_KOBLITZ_R     ( 8 / sizeof( mbedtls_mpi_uint ) )        // Limbs in R
-static inline int ecp_mod_koblitz( mbedtls_mpi *N, mbedtls_mpi_uint *Rp, size_t p_limbs,
+#define P_KOBLITZ_MAX   ( 256 / 8 / sizeof( mbedtls_mpi_uint ) )  /* Max limbs in P */
+#define P_KOBLITZ_R     ( 8 / sizeof( mbedtls_mpi_uint ) )        /* Limbs in R */
+static int ecp_mod_koblitz( mbedtls_mpi *N, mbedtls_mpi_uint *Rp, size_t p_limbs,
                                    size_t adjust, size_t shift, mbedtls_mpi_uint mask )
 {
     int ret;

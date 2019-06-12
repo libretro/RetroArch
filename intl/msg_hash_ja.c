@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
  *
@@ -22,19 +22,30 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../configuration.h"
 #include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
+#endif
 #pragma warning(disable:4566)
 #endif
 
+#ifdef RARCH_INTERNAL
+#include "../configuration.h"
+
 int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   settings_t      *settings = config_get_ptr();
+   settings_t *settings = config_get_ptr();
 
+    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+    {
+       snprintf(s, len,
+             "TODO/FIXME - Fill in message here."
+             );
+       return 0;
+    }
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
@@ -53,6 +64,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "離すと普通のスピードで戻ります。"
                   );
+            break;
+         case RARCH_SLOWMOTION_KEY:
+            snprintf(s, len,
+                     "Toggles slowmotion.");
             break;
          case RARCH_SLOWMOTION_HOLD_KEY:
             snprintf(s, len,
@@ -96,6 +111,22 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Toggles onscreen keyboard.");
             break;
+         case RARCH_FPS_TOGGLE:
+            snprintf(s, len,
+                     "Toggles frames per second counter.");
+            break;
+         case RARCH_SEND_DEBUG_INFO:
+            snprintf(s, len,
+                     "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis.");
+            break;
+         case RARCH_NETPLAY_HOST_TOGGLE:
+            snprintf(s, len,
+                     "Toggles netplay hosting on/off.");
+            break;
+         case RARCH_NETPLAY_GAME_WATCH:
+            snprintf(s, len,
+                     "Netplay toggle play/spectate mode.");
+            break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
                   "Enable other hotkeys. \n"
@@ -104,11 +135,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "a keyboard, joybutton or joyaxis, \n"
                   "all other hotkeys will be enabled only \n"
                   "if this one is held at the same time. \n"
-                  " \n"
-                  "This is useful for RETRO_KEYBOARD centric \n"
-                  "implementations which query a large area of \n"
-                  "the keyboard, where it is not desirable that \n"
-                  "hotkeys get in the way. \n"
                   " \n"
                   "Alternatively, all hotkeys for keyboard \n"
                   "could be disabled by the user.");
@@ -146,6 +172,13 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "mouse, and keeps the mouse pointer inside \n"
                   "the window to allow relative mouse input to \n"
                   "work better.");
+            break;
+         case RARCH_GAME_FOCUS_TOGGLE:
+            snprintf(s, len,
+                     "Toggles game focus.\n"
+                     " \n"
+                     "When a game has focus, RetroArch will both disable \n"
+                     "hotkeys and keep/warp the mouse pointer inside the window.");
             break;
          case RARCH_MENU_TOGGLE:
             snprintf(s, len, "Toggles menu.");
@@ -275,13 +308,16 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
          snprintf(s, len, "If a state was overwritten, it will \n"
-               "roll back to the previojp save state.");
+               "roll back to the previous save state.");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "Create a screenshot. \n"
                " \n"
                "The screenshot will be stored inside the \n"
                "Screenshot Directory.");
+         break;
+      case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+         snprintf(s, len, "Add the entry to your Favorites.");
          break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "Start the content.");
@@ -343,7 +379,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
-               "Some libretro cores might have \n"
+               "Some cores might have \n"
                "a shutdown feature. \n"
                " \n"
                "If this option is left disabled, \n"
@@ -363,12 +399,21 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "If this option is disabled, \n"
                "it will try to load even if such \n"
-               "firmware is missing. \n"
-               "down. \n");
+               "firmware is missing. \n");
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
                "Go back to the parent directory.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
+         snprintf(s, len,
+                  "Open Windows permission settings to enable \n"
+                  "the broadFileSystemAccess capability.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
+         snprintf(s, len,
+                  "Open the system file picker to access \n"
+                  "additional directories.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -480,9 +525,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Setting it to 'Early' or 'Late' can result \n"
                "in less latency, \n"
                "depending on your configuration.\n\n"
-               "When netplay is enabled, the default polling \n"
-               "behavior (Normal) will be used, \n"
-               "regardless of the value set here."
+               "Will be ignored when using netplay."
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -553,6 +596,11 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Enables displaying the current frames \n"
                "per second.");
          break;
+      case MENU_ENUM_LABEL_MEMORY_SHOW:
+         snprintf(s, len,
+                  "Includes displaying the current memory \n"
+                  "usage/total with FPS/Frames.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
          snprintf(s, len,
                "Show and/or hide onscreen messages.");
@@ -572,6 +620,16 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Hide the current overlay from appearing \n"
                "inside the menu.");
          break;
+      case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
+         snprintf(s, len,
+                  "Show keyboard/controller button presses on \n"
+                  "the onscreen overlay.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+         snprintf(s, len,
+                  "Select the port to listen for controller input \n"
+                  "to display on the onscreen overlay.");
+         break;
       case MENU_ENUM_LABEL_OVERLAY_PRESET:
          snprintf(s, len,
                "Path to input overlay.");
@@ -580,6 +638,21 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Overlay opacity.");
          break;
+#ifdef HAVE_VIDEO_LAYOUT
+      case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
+         snprintf(s, len,
+                  "Enable or disable the current video layout.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH:
+         snprintf(s, len,
+                  "Path to video layout.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW:
+         snprintf(s, len,
+                  "Layouts can contain multiple views. \n"
+                  "Select a view.");
+         break;
+#endif
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
          snprintf(s, len,
                "Input bind timer timeout (in seconds). \n"
@@ -623,10 +696,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
-               "You can use the following controls below \n"
-               "on either your gamepad or keyboard in order\n"
-               "to control the menu: \n"
-               " \n"
+            "メニューを操作するのに \n"
+            "以下のゲームパッドまたはキーボードを使用できます: \n"
+            " \n"
                );
          break;
       case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
@@ -634,30 +706,27 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "RetroArchにようこそ\n"
                );
          break;
-      case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
-         {
+      case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
             /* Work around C89 limitations */
             char u[501];
-            const char * t =
-                  "RetroArch relies on an unique form of\n"
-                  "audio/video synchronization where it needs to be\n"
-                  "calibrated against the refresh rate of your\n"
-                  "display for best performance results.\n"
+            const char *t =
+                  "RetroArchは、オーディオとビデオの同期を独自の形態で行っています。\n"
+                  "最高のパフォーマンスを得るためには、ディスプレイの\n"
+                  "リフレッシュレート調整が必要です。\n"
                   " \n"
-                  "If you experience any audio crackling or video\n"
-                  "tearing, usually it means that you need to\n"
-                  "calibrate the settings. Some choices below:\n"
+                  "もしオーディオの歪みやビデオのティアリングが発生しているなら、\n"
+                  "設定を確認してみてください。\n"
+                  "以下の選択肢を試してみてください:\n"
                   " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                  "a) Go to '%s' -> '%s', and enable\n"
-                  "'Threaded Video'. Refresh rate will not matter\n"
-                  "in this mode, framerate will be higher,\n"
-                  "but video might be less smooth.\n"
-                  "b) Go to '%s' -> '%s', and look at\n"
-                  "'%s'. Let it run for\n"
-                  "2048 frames, then press 'OK'.",
+                  "a) [%s]→[%s]に行き、[%s]を有効にしてください。\n"
+                  "このモードでは、リフレッシュレートは重要ではありません。\n"
+                  "フレームレートは高くなりますが、ビデオは少しスムーズでなくなります。\n"
+                  "b) [%s]→[%s]に行き、[%s]が2048 framesに\n"
+                  "なっていることを確認してください。",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
@@ -667,21 +736,16 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
          case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,
-               "To scan for content, go to '%s' and\n"
-                   "select either '%s' or %s'.\n"
+               "コンテンツをスキャンするには、[%s]に行き\n"
+                   "[%s]または[%s]を選択してください。\n"
                    "\n"
-                   "Files will be compared to database entries.\n"
-                   "If there is a match, it will add an entry\n"
-                   "to a playlist.\n"
+                   "コンテンツファイルはデータベースのエントリーと比較されます。\n"
+                   "一致した場合、プレイリストに追加されます。\n"
                    "\n"
-                   "You can then easily access this content by\n"
-                   "going to '%s' ->\n"
-                   "'%s'\n"
-                   "instead of having to go through the\n"
-                   "file browser every time.\n"
+                   "毎回ファイルブラウザーを使用するかわりに、\n"
+                   "[%s]→[%s]でこのコンテンツに簡単にアクセスできます。\n"
                    "\n"
-                   "NOTE: Content for some cores might still not be\n"
-                   "scannable.",
+                   "NOTE: いくつかのコア向けのコンテンツはまだスキャンできません。\n",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
@@ -705,12 +769,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                snprintf(s, len,
                      "udev Input driver. \n"
                      " \n"
-                     "This driver can run without X. \n"
-                     " \n"
                      "It uses the recent evdev joypad API \n"
                      "for joystick support. It supports \n"
-                     "hotplugging and force feedback (if \n"
-                     "supported by device). \n"
+                     "hotplugging and force feedback. \n"
                      " \n"
                      "The driver reads evdev events for keyboard \n"
                      "support. It also supports keyboard callback, \n"
@@ -720,7 +781,8 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "are root-only (mode 600). You can set up a udev \n"
                      "rule which makes these accessible to non-root."
                      );
-            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
+            else if (string_is_equal(lbl,
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                snprintf(s, len,
                      "linuxraw Input driver. \n"
                      " \n"
@@ -740,21 +802,18 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          snprintf(s, len,
-               "Load Content. \n"
-               "Browse for content. \n"
+               "コンテンツをロードするには、それを実行する \n"
+               "ための｢コア｣と、コンテンツファイルが必要です。 \n"
                " \n"
-               "To load content, you need a \n"
-               "'Core' to use, and a content file. \n"
+               "コンテンツの参照開始ディレクトリは、 \n"
+               "[%s]で設定してください。 \n"
+               "未設定のときは、ルートディレクトリとなります。 \n"
                " \n"
-               "To control where the menu starts \n"
-               "to browse for content, set  \n"
-               "'File Browser Directory'. \n"
-               "If not set, it will start in root. \n"
-               " \n"
-               "The browser will filter out \n"
-               "extensions for the last core set \n"
-               "in 'Load Core', and use that core \n"
-               "when content is loaded."
+               "ブラウザーでの参照時には、[%s]で \n"
+               "最後に設定したコアに対応する拡張子で \n"
+               "フィルターがかかります。 \n",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST)
                );
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
@@ -862,45 +921,40 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
 
-            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+            if (string_is_equal(lbl, msg_hash_to_str(
+                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
                strlcpy(s,
                      "Windowed SINC implementation.", len);
-            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+            else if (string_is_equal(lbl, msg_hash_to_str(
+                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
                strlcpy(s,
                      "Convoluted Cosine implementation.", len);
             else if (string_is_empty(s))
                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          }
          break;
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
-         snprintf(s, len,
-               "Load Shader Preset. \n"
-               " \n"
-               " Load a "
-#ifdef HAVE_CG
-               "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-               "/"
-#endif
-               "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-               "/"
-#endif
-               "HLSL"
-#endif
-               " preset directly. \n"
-               "The menu shader menu is updated accordingly. \n"
-               " \n"
-               "If the CGP uses scaling methods which are not \n"
-               "simple, (i.e. source scaling, same scaling \n"
-               "factor for X/Y), the scaling factor displayed \n"
-               "in the menu might not be correct."
-               );
-         break;
+
+         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION:
+            snprintf(s, len, "SET CRT");
+            break;
+
+         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER:
+            snprintf(s, len, "SET CRT SUPER");
+            break;
+
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+            snprintf(s, len,
+                     "Load Shader Preset. \n"
+                     " \n"
+                     " Load a shader preset directly. \n"
+                     "The menu shader menu is updated accordingly. \n"
+                     " \n"
+                     "If the CGP uses scaling methods which are not \n"
+                     "simple, (i.e. source scaling, same scaling \n"
+                     "factor for X/Y), the scaling factor displayed \n"
+                     "in the menu might not be correct."
+                     );
+            break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
          snprintf(s, len,
                "Scale for this pass. \n"
@@ -1067,6 +1121,15 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "saved to Shader Directory."
                );
          break;
+      case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+         snprintf(s, len,
+                  "Watch shader files for new changes. \n"
+                  " \n"
+                  "After saving changes to a shader on disk, \n"
+                  "it will automatically be recompiled \n"
+                  "and applied to the running content."
+                  );
+         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Toggles menu.");
@@ -1079,6 +1142,13 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "mouse, and keeps the mouse pointer inside \n"
                "the window to allow relative mouse input to \n"
                "work better.");
+         break;
+      case MENU_ENUM_LABEL_GAME_FOCUS_TOGGLE:
+         snprintf(s, len,
+                  "Toggles game focus.\n"
+                  " \n"
+                  "When a game has focus, RetroArch will both disable \n"
+                  "hotkeys and keep/warp the mouse pointer inside the window.");
          break;
       case MENU_ENUM_LABEL_DISK_NEXT:
          snprintf(s, len,
@@ -1150,6 +1220,14 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "This will take a performance hit, \n"
                "so it is disabled by default.");
          break;
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+         snprintf(s, len,
+                  "Apply cheat immediately after toggling.");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+         snprintf(s, len,
+                  "Auto-apply cheats when game loads.");
+         break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
                "Core Directory. \n"
@@ -1177,6 +1255,13 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "not run at 60Hz, or something close to it, \n"
                "disable VSync, and leave this at its default.");
          break;
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
+         snprintf(s, len,
+                  "Set Polled Refresh Rate\n"
+                  " \n"
+                  "Sets the refresh rate to the actual value\n"
+                  "polled from the display driver.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
                "Forces a certain rotation \n"
@@ -1195,7 +1280,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "Fastforward ratio."
+               "Fastforward ratio.\n"
                " \n"
                "The maximum rate at which content will\n"
                "be run when using fast forward.\n"
@@ -1207,6 +1292,15 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "the maximum rate will not be exceeded.\n"
                "Do not rely on this cap to be perfectly \n"
                "accurate.");
+         break;
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+         snprintf(s, len,
+                  "Sync to Exact Content Framerate.\n"
+                  " \n"
+                  "This option is the equivalent of forcing x1 speed\n"
+                  "while still allowing fast forward.\n"
+                  "No deviation from the core requested refresh rate,\n"
+                  "no sound Dynamic Rate Control).");
          break;
       case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
@@ -1336,7 +1430,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Attempts to hard-synchronize \n"
                "CPU and GPU.\n"
                " \n"
-               "Can reduce latency at cost of \n"
+               "Can reduce latency at the cost of \n"
                "performance.");
          break;
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
@@ -1348,6 +1442,22 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "at a time, increasing the rewinding \n"
                "speed.");
          break;
+      case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE:
+         snprintf(s, len,
+                  "Rewind buffer size (MB).\n"
+                  " \n"
+                  " The amount of memory in MB to reserve \n"
+                  "for rewinding.  Increasing this value \n"
+                  "increases the rewind history length.\n");
+         break;
+      case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
+         snprintf(s, len,
+                  "Rewind buffer size step (MB).\n"
+                  " \n"
+                  " Each time you increase or decrease \n"
+                  "the rewind buffer size value via this \n"
+                  "UI it will change by this amount.\n");
+         break;
       case MENU_ENUM_LABEL_SCREENSHOT:
          snprintf(s, len,
                "Take screenshot.");
@@ -1357,7 +1467,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Sets how many milliseconds to delay\n"
                "after VSync before running the core.\n"
                "\n"
-               "Can reduce latency at cost of\n"
+               "Can reduce latency at the cost of\n"
                "higher risk of stuttering.\n"
                " \n"
                "Maximum is 15.");
@@ -1463,7 +1573,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Dynamic Wallpapers Directory. \n"
                " \n"
-               " The place to store wallpapers that will \n"
+               " The place to store backgrounds that will \n"
                "be loaded dynamically by the menu depending \n"
                "on context.");
          break;
@@ -1473,6 +1583,14 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "When slowmotion, content will slow\n"
                "down by factor.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
+         snprintf(s, len,
+                  "Defines the axis threshold.\n"
+                  " \n"
+                  "How far an axis must be tilted to result\n"
+                  "in a button press.\n"
+                  " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
@@ -1507,7 +1625,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Enable touch input inside the menu.");
          break;
       case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         snprintf(s, len, "Path to an image to set as the background.");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
          snprintf(s, len,
@@ -1517,7 +1635,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
          snprintf(s, len,
-               "If disabled, the libretro core will keep \n"
+               "If disabled, the game will keep \n"
                "running in the background when we are in the \n"
                "menu.");
          break;
@@ -1539,21 +1657,103 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Increasing this value will increase \n"
                "performance, but introduce more latency.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+         snprintf(s, len,
+                  "Whether to announce netplay games publicly. \n"
+                  " \n"
+                  "If set to false, clients must manually connect \n"
+                  "rather than using the public lobby.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
+         snprintf(s, len,
+                  "Whether to start netplay in spectator mode. \n"
+                  " \n"
+                  "If set to true, netplay will be in spectator mode \n"
+                  "on start. It's always possible to change mode \n"
+                  "later.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
+         snprintf(s, len,
+                  "Whether to allow connections in slave mode. \n"
+                  " \n"
+                  "Slave-mode clients require very little processing \n"
+                  "power on either side, but will suffer \n"
+                  "significantly from network latency.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
+         snprintf(s, len,
+                  "Whether to disallow connections not in slave mode. \n"
+                  " \n"
+                  "Not recommended except for very fast networks \n"
+                  "with very weak machines. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
+         snprintf(s, len,
+                  "Whether to run netplay in a mode not requiring\n"
+                  "save states. \n"
+                  " \n"
+                  "If set to true, a very fast network is required,\n"
+                  "but no rewinding is performed, so there will be\n"
+                  "no netplay jitter.\n");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          snprintf(s, len,
-               "The frequency in frames with which netplay \n"
-               "will verify that the host and client are in \n"
-               "sync. \n"
-               " \n"
-               "With most cores, this value will have no \n"
-               "visible effect and can be ignored. With \n"
-               "nondeterminstic cores, this value determines \n"
-               "how often the netplay peers will be brought \n"
-               "into sync. With buggy cores, setting this \n"
-               "to any non-zero value will cause severe \n"
-               "performance issues. Set to zero to perform \n"
-               "no checks. This value is only used on the \n"
-               "netplay host. \n");
+                  "The frequency in frames with which netplay \n"
+                  "will verify that the host and client are in \n"
+                  "sync. \n"
+                  " \n"
+                  "With most cores, this value will have no \n"
+                  "visible effect and can be ignored. With \n"
+                  "nondeterminstic cores, this value determines \n"
+                  "how often the netplay peers will be brought \n"
+                  "into sync. With buggy cores, setting this \n"
+                  "to any non-zero value will cause severe \n"
+                  "performance issues. Set to zero to perform \n"
+                  "no checks. This value is only used on the \n"
+                  "netplay host. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
+         snprintf(s, len,
+                  "The number of frames of input latency for \n"
+                  "netplay to use to hide network latency. \n"
+                  " \n"
+                  "When in netplay, this option delays local \n"
+                  "input, so that the frame being run is \n"
+                  "closer to the frames being received from \n"
+                  "the network. This reduces jitter and makes \n"
+                  "netplay less CPU-intensive, but at the \n"
+                  "price of noticeable input lag. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
+         snprintf(s, len,
+                  "The range of frames of input latency that \n"
+                  "may be used by netplay to hide network \n"
+                  "latency. \n"
+                  "\n"
+                  "If set, netplay will adjust the number of \n"
+                  "frames of input latency dynamically to \n"
+                  "balance CPU time, input latency and \n"
+                  "network latency. This reduces jitter and \n"
+                  "makes netplay less CPU-intensive, but at \n"
+                  "the price of unpredictable input lag. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
+         snprintf(s, len,
+                  "When hosting, attempt to listen for\n"
+                  "connections from the public internet, using\n"
+                  "UPnP or similar technologies to escape LANs. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
+         snprintf(s, len,
+                  "When hosting a netplay session, relay connection through a \n"
+                  "man-in-the-middle server \n"
+                  "to get around firewalls or NAT/UPnP issues. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+         snprintf(s, len,
+                  "Specifies the man-in-the-middle server \n"
+                  "to use for netplay. A server that is \n"
+                  "located closer to you may have less latency. \n");
          break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
@@ -1577,6 +1777,14 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shows current date and/or time inside menu.");
          break;
+      case MENU_ENUM_LABEL_TIMEDATE_STYLE:
+         snprintf(s, len,
+                  "Style to show the current date and/or time in.");
+         break;
+      case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
+         snprintf(s, len,
+                  "Shows current battery level inside menu.");
+         break;
       case MENU_ENUM_LABEL_CORE_ENABLE:
          snprintf(s, len,
                "Shows current core inside menu.");
@@ -1593,17 +1801,17 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Disconnects an active Netplay connection.");
          break;
-      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
-         snprintf(s, len,
-               "Setting related to Netplay.");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
          snprintf(s, len,
                "Search for and connect to netplay hosts on the local network.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
+         snprintf(s, len,
+               "Setting related to Netplay.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
-               "Dynamically load a new wallpaper \n"
+               "Dynamically load a new background \n"
                "depending on context.");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
@@ -1629,6 +1837,15 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Defines a directory where overlays are \n"
                "kept for easy access.");
          break;
+#ifdef HAVE_VIDEO_LAYOUT
+      case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
+         snprintf(s, len,
+                  "Video Layout Directory. \n"
+                  " \n"
+                  "Defines a directory where video layouts are \n"
+                  "kept for easy access.");
+         break;
+#endif
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          snprintf(s, len,
                "Maximum amount of users supported by \n"
@@ -1664,6 +1881,17 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "The address of the host to connect to.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
+         snprintf(s, len,
+                  "The password for connecting to the netplay \n"
+                  "host. Used only in host mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
+         snprintf(s, len,
+                  "The password for connecting to the netplay \n"
+                  "host with only spectator privileges. Used \n"
+                  "only in host mode.");
+         break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
                "Enable stdin command interface.");
@@ -1687,7 +1915,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "3 - Press Start + Select simultaneously.");
          break;
       case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-         snprintf(s, len, "Allow any RetroPad to control the menu.");
+            snprintf(s, len, "Allows any user to control the menu. \n"
+                    " \n"
+                    "When disabled, only user 1 can control the menu.");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
@@ -1752,6 +1982,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Saves state.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
+         snprintf(s, len,
+                  "Netplay toggle play/spectate mode.");
+         break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
                "Increment cheat index.\n");
@@ -1779,6 +2013,103 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
                "Toggle cheat index.\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_IDX:
+         snprintf(s, len,
+                  "Index position in list.\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION:
+         snprintf(s, len,
+                  "Address bitmask when Memory Search Size < 8-bit.\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
+         snprintf(s, len,
+                  "The number of times the cheat will be applied.\nUse with the other two Iteration options to affect large areas of memory.");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
+         snprintf(s, len,
+                  "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'.");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE:
+         snprintf(s, len,
+                  "After each 'Number of Iterations' the Value will be increased by this amount.");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_MATCH_IDX:
+         snprintf(s, len,
+                  "Select the match to view.");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
+         snprintf(s, len,
+                  "Scan memory to create new cheats");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
+         snprintf(s, len,
+                  "Left/Right to change bit-size\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT:
+         snprintf(s, len,
+                  "Left/Right to change value\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_LT:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_GT:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_EQ:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS:
+         snprintf(s, len,
+                  "Left/Right to change value\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
+         snprintf(s, len,
+                  "Left/Right to change value\n");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_CREATE_OPTION:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_DELETE_OPTION:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+         snprintf(s, len,
+                  " ");
+         break;
+      case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
+         snprintf(s, len,
+                  "Big endian    : 258 = 0x0102\n"
+                  "Little endian : 258 = 0x0201");
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
@@ -1814,52 +2145,112 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Positive X axis is right. \n"
                "Positive Y axis is down.");
          break;
-      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
-         snprintf(s, len,
-               "RetroArch by itself does nothing. \n"
-               " \n"
-               "To make it do things, you need to \n"
-               "load a program into it. \n"
-               "\n"
-               "We call such a program 'Libretro core', \n"
-               "or 'core' in short. \n"
-               " \n"
-               "To load a core, select one from\n"
-               "'Load Core'.\n"
-               " \n"
+      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC: {
+         /* Work around C89 limitations */
+         char u[501];
+         const char *t =
+            "RetroArch自身だけでは何も実行できません。\n"
+            "\n"
+            "何かを実行するためには、それに対応する\n"
+            "プログラムをロードする必要があります。\n"
+            "\n"
+            "そのようなプログラムを｢Libretroコア｣、\n"
+            "または省略して｢コア｣と呼びます。\n"
+            " \n";
+         snprintf(u, sizeof(u),
+            "コアをロードするには、[%s]から\n"
+            "対応するコアを選択してください。\n"
+            "\n"
 #ifdef HAVE_NETWORKING
-               "You can obtain cores in several ways: \n"
-               "* Download them by going to\n"
-               "'%s' -> '%s'.\n"
-               "* Manually move them over to\n"
-               "'%s'.",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+            "以下のいずれかの方法でコアを利用できます:\n"
+            "* [%s]→[%s]\n"
+            "からダウンロードする。\n"
+            "* [%s] に手動で移動する。"
+            " \n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "You can obtain cores by\n"
-               "manually moving them over to\n"
-               "'%s'.",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+            "手動で[%s]に移動することでコアを利用できます。\n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
-               );
+         );
+         strlcpy(s, t, len);
+         strlcat(s, u, len);
+      }
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "You can change the virtual gamepad overlay\n"
-               "by going to '%s' -> '%s'."
+               "[%s]→[%s]からバーチャルゲームパッドのオーバーレイを変更できます。\n"
                " \n"
-               "From there you can change the overlay,\n"
-               "change the size and opacity of the buttons, etc.\n"
+               "ボタンのサイズ、不透明度、その他を変更できます。\n"
                " \n"
-               "NOTE: By default, virtual gamepad overlays are\n"
-               "hidden when in the menu.\n"
-               "If you'd like to change this behavior,\n"
-               "you can set '%s' to false.",
+               "NOTE: デフォルトでは、バーチャルゲームパッドのオーバーレイは\n"
+               "メニュー表示中は隠されています。\n"
+               "この挙動を変更したければ、\n"
+               "[%s]をオフに変更してください。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+         snprintf(s, len,
+                  "Enables a background color for the OSD.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+         snprintf(s, len,
+                  "Sets the red value of the OSD background color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+         snprintf(s, len,
+                  "Sets the green value of the OSD background color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+         snprintf(s, len,
+                  "Sets the blue value of the OSD background color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+         snprintf(s, len,
+                  "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+         snprintf(s, len,
+                  "Sets the red value of the OSD text color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+         snprintf(s, len,
+                  "Sets the green value of the OSD text color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+         snprintf(s, len,
+                  "Sets the blue value of the OSD text color. Valid values are between 0 and 255.");
+         break;
+      case MENU_ENUM_LABEL_MIDI_DRIVER:
+         snprintf(s, len,
+                  "MIDI driver to use.");
+         break;
+      case MENU_ENUM_LABEL_MIDI_INPUT:
+         snprintf(s, len,
+                  "Sets the input device (driver specific).\n"
+                  "When set to \"Off\", MIDI input will be disabled.\n"
+                  "Device name can also be typed in.");
+         break;
+      case MENU_ENUM_LABEL_MIDI_OUTPUT:
+         snprintf(s, len,
+                  "Sets the output device (driver specific).\n"
+                  "When set to \"Off\", MIDI output will be disabled.\n"
+                  "Device name can also be typed in.\n"
+                  " \n"
+                  "When MIDI output is enabled and core and game/app support MIDI output,\n"
+                  "some or all sounds (depends on game/app) will be generated by MIDI device.\n"
+                  "In case of \"null\" MIDI driver this means that those sounds won't be audible.");
+         break;
+      case MENU_ENUM_LABEL_MIDI_VOLUME:
+         snprintf(s, len,
+                  "Sets the master volume of the output device.");
          break;
       default:
          if (string_is_empty(s))
@@ -1869,15 +2260,50 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    return 0;
 }
+#endif
 
-const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
+#ifdef HAVE_MENU
+const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
 {
+   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
+         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+   {
+      static char hotkey_lbl[128] = {0};
+      unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
+      snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
+      return hotkey_lbl;
+   }
+
    switch (msg)
    {
-      #include "msg_hash_ja.h"
+#include "msg_hash_lbl.h"
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
+#endif
+         break;
+   }
+
+   return "null";
+}
+#endif
+
+const char *msg_hash_to_str_jp(enum msg_hash_enums msg) {
+#ifdef HAVE_MENU
+    const char *ret = menu_hash_to_str_jp_label_enum(msg);
+
+    if (ret && !string_is_equal(ret, "null"))
+       return ret;
+#endif
+
+    switch (msg) {
+#include "msg_hash_ja.h"
+      default:
+#if 0
+         RARCH_LOG("Unimplemented: [%d]\n", msg);
+            {
+               RARCH_LOG("[%d] : %s\n", msg - 1, msg_hash_to_str(((enum msg_hash_enums)(msg - 1))));
+            }
 #endif
          break;
    }

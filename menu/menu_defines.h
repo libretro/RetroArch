@@ -349,6 +349,14 @@ enum playlist_inline_core_display_type
    PLAYLIST_INLINE_CORE_DISPLAY_LAST
 };
 
+enum playlist_entry_remove_enable_type
+{
+   PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV = 0,
+   PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   PLAYLIST_ENTRY_REMOVE_ENABLE_LAST
+};
+
 typedef uintptr_t menu_texture_item;
 
 typedef struct menu_display_ctx_clearcolor

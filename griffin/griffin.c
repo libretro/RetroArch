@@ -157,12 +157,8 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
-#include "../cheevos/cond.c"
-#include "../cheevos/var.c"
-
 #include "../cheevos-new/cheevos.c"
+#include "../cheevos-new/badges.c"
 #include "../cheevos-new/fixup.c"
 #include "../cheevos-new/hash.c"
 #include "../cheevos-new/parser.c"
@@ -620,8 +616,17 @@ INPUT
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
 #elif defined(__wiiu__)
+#include "../input/common/hid/hid_device_driver.c"
+#include "../input/common/hid/device_wiiu_gca.c"
+#include "../input/common/hid/device_ds3.c"
+#include "../input/common/hid/device_ds4.c"
+#include "../input/common/hid/device_null.c"
 #include "../input/drivers/wiiu_input.c"
 #include "../input/drivers_joypad/wiiu_joypad.c"
+#include "../input/drivers_joypad/wiiu/hidpad_driver.c"
+#include "../input/drivers_joypad/wiiu/kpad_driver.c"
+#include "../input/drivers_joypad/wiiu/wpad_driver.c"
+#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers_joypad/xdk_joypad.c"
@@ -680,6 +685,7 @@ INPUT
 INPUT (HID)
 ============================================================ */
 #ifdef HAVE_HID
+#include "../input/common/input_hid_common.c"
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_hid/null_hid.c"
 
@@ -1181,7 +1187,7 @@ NETPLAY
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
+#if !defined(HAVE_SOCKET_LEGACY)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
@@ -1458,6 +1464,25 @@ DEPENDENCIES
 #include "../deps/7zip/Lzma2Dec.c"
 #include "../deps/7zip/LzFind.c"
 #include "../deps/7zip/7zBuf.c"
+#endif
+
+#ifdef WANT_LIBFAT
+#include "../deps/libfat/cache.c"
+#include "../deps/libfat/directory.c"
+#include "../deps/libfat/disc.c"
+#include "../deps/libfat/fatdir.c"
+#include "../deps/libfat/fatfile.c"
+#include "../deps/libfat/file_allocation_table.c"
+#include "../deps/libfat/filetime.c"
+#include "../deps/libfat/libfat.c"
+#include "../deps/libfat/lock.c"
+#include "../deps/libfat/partition.c"
+#endif
+
+#ifdef WANT_IOSUHAX
+#include "../deps/libiosuhax/iosuhax.c"
+#include "../deps/libiosuhax/iosuhax_devoptab.c"
+#include "../deps/libiosuhax/iosuhax_disc_interface.c"
 #endif
 
 /*============================================================

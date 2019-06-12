@@ -207,7 +207,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
-       input/common/input_common.o \
+       input/common/input_hid_common.o \
        input/input_driver.o \
        input/input_mapper.o \
        led/led_driver.o \
@@ -1342,15 +1342,14 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_D3DX = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX), 1)
-      DEFINES += -DHAVE_D3DX
+   ifeq ($(HAVE_D3DX9), 1)
+      HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d9
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx9
+      LIBS += $(D3D9_LIBS)
+      ifeq ($(HAVE_D3DX9), 1)
+         LIBS += $(D3DX9_LIBS)
       endif
    endif
    HAVE_DX_COMMON  = 1
@@ -1412,12 +1411,19 @@ ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
+   ifeq ($(HAVE_D3DX8), 1)
+      HAVE_D3DX_COMMON = 1
+   endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d8
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx8
+      LIBS += $(D3D8_LIBS)
+      ifeq ($(HAVE_D3DX8), 1)
+         LIBS += $(D3DX8_LIBS)
       endif
    endif
+endif
+
+ifeq ($(HAVE_D3DX_COMMON), 1)
+   DEFINES += -DHAVE_D3DX
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
@@ -1574,49 +1580,54 @@ else ifeq ($(HAVE_FLAC),1)
    LIBS    += $(FLAC_LIBS)
 endif
 
-ifeq ($(HAVE_ZLIB), 1)
+ifeq ($(HAVE_BUILTINZLIB), 1)
+   HAVE_ZLIB_COMMON = 1
+   OBJ += $(DEPS_DIR)/libz/adler32.o \
+          $(DEPS_DIR)/libz/compress.o \
+          $(DEPS_DIR)/libz/libz-crc32.o \
+          $(DEPS_DIR)/libz/deflate.o \
+          $(DEPS_DIR)/libz/gzclose.o \
+          $(DEPS_DIR)/libz/gzlib.o \
+          $(DEPS_DIR)/libz/gzread.o \
+          $(DEPS_DIR)/libz/gzwrite.o \
+          $(DEPS_DIR)/libz/inffast.o \
+          $(DEPS_DIR)/libz/inflate.o \
+          $(DEPS_DIR)/libz/inftrees.o \
+          $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
+          $(DEPS_DIR)/libz/zutil.o
+   INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
+   DEFINES += -DWANT_ZLIB
+else
+   HAVE_ZLIB_COMMON = 1
+   LIBS += $(ZLIB_LIBS)
+endif
+
+ifeq ($(HAVE_ZLIB_COMMON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
           $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
-   ifeq ($(HAVE_BUILTINZLIB), 1)
-      OBJ += $(DEPS_DIR)/libz/adler32.o \
-             $(DEPS_DIR)/libz/compress.o \
-             $(DEPS_DIR)/libz/libz-crc32.o \
-             $(DEPS_DIR)/libz/deflate.o \
-             $(DEPS_DIR)/libz/gzclose.o \
-             $(DEPS_DIR)/libz/gzlib.o \
-             $(DEPS_DIR)/libz/gzread.o \
-             $(DEPS_DIR)/libz/gzwrite.o \
-             $(DEPS_DIR)/libz/inffast.o \
-             $(DEPS_DIR)/libz/inflate.o \
-             $(DEPS_DIR)/libz/inftrees.o \
-             $(DEPS_DIR)/libz/trees.o \
-             $(DEPS_DIR)/libz/uncompr.o \
-             $(DEPS_DIR)/libz/zutil.o
-      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat
-      DEFINES += -DWANT_ZLIB
-   else
-      LIBS += $(ZLIB_LIBS)
-   endif
-ifeq ($(HAVE_CHD), 1)
-   DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
-   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
-              $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
 
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
-   ifeq ($(HAVE_FLAC),1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
-             $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+   ifeq ($(HAVE_CHD), 1)
+      DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
+                 $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+
+      ifeq ($(HAVE_FLAC),1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
+                $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+      endif
+
+      ifeq ($(HAVE_7ZIP), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      endif
    endif
-   ifeq ($(HAVE_7ZIP), 1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
-   endif
-endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)
@@ -1645,10 +1656,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
-
-ifdef HAVE_COMPRESSION
-   DEFINES += -DHAVE_COMPRESSION
-endif
 
 # Easter Egg
 ifeq ($(HAVE_EASTEREGG),1)
@@ -1723,11 +1730,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS \
                  -Ideps/rcheevos/include
 
-      OBJ += cheevos/cheevos.o \
-             cheevos/badges.o \
-             cheevos/var.o \
-             cheevos/cond.o \
-             cheevos-new/cheevos.o \
+      OBJ += cheevos-new/cheevos.o \
+             cheevos-new/badges.o \
              cheevos-new/fixup.o \
              cheevos-new/parser.o \
              cheevos-new/hash.o \
@@ -1922,7 +1926,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
-   DEFINES += -I$(DEPS_DIR)/libiosuhax
+   DEFINES += -DHAVE_IOSUHAX
    DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
@@ -1930,7 +1934,7 @@ ifeq ($(WANT_IOSUHAX), 1)
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
-   DEFINES += -I$(DEPS_DIR)/libfat/include
+   DEFINES += -DHAVE_LIBFAT
    DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \

@@ -247,7 +247,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       snprintf(msg, sizeof(msg), "%s configured.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
       if (!remote_is_bound)
       {
@@ -263,7 +263,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name))
+            !string_is_empty(params->name))
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);

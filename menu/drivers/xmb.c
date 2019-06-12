@@ -62,7 +62,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../cheevos/badges.h"
+#include "../../cheevos-new/badges.h"
 #include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64
@@ -955,6 +955,10 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       return;
 
    menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
@@ -990,7 +994,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1000,12 +1004,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          free(path);
       }
    }
-
-   menu_entry_free(&entry);
 }
 
 static void xmb_update_thumbnail_image(void *data)
 {
+   settings_t *settings             = config_get_ptr();
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
@@ -1018,14 +1021,14 @@ static void xmb_update_thumbnail_image(void *data)
    bool thumbnails_missing          = false;
 #endif
 
-   if (!xmb)
+   if (!xmb || !settings)
       return;
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
-      if (filestream_exists(right_thumbnail_path))
+      if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_thumbnail_upload, NULL);
       else
       {
@@ -1040,9 +1043,9 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (filestream_exists(left_thumbnail_path))
+      if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
       {
@@ -1059,11 +1062,6 @@ static void xmb_update_thumbnail_image(void *data)
    /* On demand thumbnail downloads */
    if (thumbnails_missing)
    {
-      settings_t *settings = config_get_ptr();
-
-      if (!settings)
-         return;
-
       if (settings->bools.network_on_demand_thumbnails)
       {
          const char *system = NULL;
@@ -1184,12 +1182,14 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
 
          menu_entry_init(&entry);
+         entry.label_enabled      = false;
+         entry.rich_label_enabled = false;
+         entry.value_enabled      = false;
+         entry.sublabel_enabled   = false;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
             menu_thumbnail_set_content(xmb->thumbnail_path_data, entry.path);
-
-         menu_entry_free(&entry);
       }
    }
    else if (string_is_equal(s, "imageviewer"))
@@ -1200,13 +1200,15 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
 
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
+      entry.sublabel_enabled   = false;
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
          if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
             menu_thumbnail_set_content_image(xmb->thumbnail_path_data, node->fullpath, entry.path);
-
-      menu_entry_free(&entry);
    }
    else if (!string_is_empty(s))
    {
@@ -1228,7 +1230,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 
    if (path_is_valid(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&xmb->savestate_thumbnail);
@@ -1246,12 +1248,17 @@ static void xmb_selection_pointer_changed(
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
-   menu_entry_init(&entry);
-
    if (!xmb)
-      goto end;
+      return;
 
+   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+
+   menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_size();
@@ -1377,9 +1384,6 @@ static void xmb_selection_pointer_changed(
          menu_animation_push(&anim_entry);
       }
    }
-
-end:
-   menu_entry_free(&entry);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
@@ -1673,16 +1677,16 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!filestream_exists(path))
+      if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
       if (!string_is_equal(path, xmb->bg_file_path))
       {
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             task_push_image_load(path,
-                  video_driver_supports_rgba(),
+                  video_driver_supports_rgba(), 0,
                   menu_display_handle_wallpaper_upload, NULL);
             if (!string_is_empty(xmb->bg_file_path))
                free(xmb->bg_file_path);
@@ -2074,7 +2078,7 @@ static void xmb_context_reset_horizontal_list(
 
          /* If the playlist icon doesn't exist return default */
 
-         if (!filestream_exists(texturepath))
+         if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
@@ -2104,7 +2108,7 @@ static void xmb_context_reset_horizontal_list(
 
          /* If the content icon doesn't exist return default-content */
 
-         if (!filestream_exists(content_texturepath))
+         if (!path_is_valid(content_texturepath))
          {
             strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, iconpath,
@@ -2832,7 +2836,7 @@ static int xmb_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
-   char *ticker_str                  = NULL;
+   const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
    uintptr_t texture_switch          = 0;
@@ -2876,11 +2880,7 @@ static int xmb_draw_item(
             sizeof(entry_path));
 
       if (!string_is_empty(entry_path))
-      {
-         if (!string_is_empty(entry->path))
-            free(entry->path);
-         entry->path = strdup(entry_path);
-      }
+         strlcpy(entry->path, entry_path, sizeof(entry->path));
    }
 
    if (string_is_equal(entry->value,
@@ -2942,13 +2942,20 @@ static int xmb_draw_item(
              && xmb->left_thumbnail
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
+      {
          ticker_limit = 40 * scale_mod[1];
+
+         /* Can increase text length if thumbnail is downscaled */
+         if (settings->uints.menu_xmb_thumbnail_scale_factor < 100)
+            ticker_limit +=
+                  (unsigned)((1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f)) *
+                             15.0f * scale_mod[1]);
+      }
       else
          ticker_limit = 70 * scale_mod[2];
    }
 
-   if (!string_is_empty(entry->path))
-      ticker_str   = menu_entry_get_rich_label(entry);
+   menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2997,8 +3004,8 @@ static int xmb_draw_item(
 
    if (!string_is_empty(entry->value))
    {
-      char entry_value[255];
-      menu_entry_get_value(entry, entry_value, sizeof(entry_value));
+      const char *entry_value = NULL;
+      menu_entry_get_value(entry, &entry_value);
       ticker.str   = entry_value;
 
       menu_animation_ticker(&ticker);
@@ -3079,8 +3086,6 @@ static int xmb_draw_item(
             &color[0],
             xmb->shadow_offset);
 
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return 0;
 }
 
@@ -3141,6 +3146,8 @@ static void xmb_draw_items(
       int ret;
       menu_entry_t entry;
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.sublabel_enabled   = (i == current);
       menu_entry_get(&entry, 0, i, list, true);
       ret = xmb_draw_item(video_info,
             &entry,
@@ -3149,7 +3156,6 @@ static void xmb_draw_items(
             list, color,
             i, current,
             width, height);
-      menu_entry_free(&entry);
       if (ret == -1)
          break;
    }
@@ -3401,6 +3407,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned height                         = video_info->height;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
+   float thumbnail_scale_factor            = 0.0f;
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
@@ -3411,6 +3418,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       return;
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   thumbnail_scale_factor                  = ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
 
    msg[0]             = '\0';
@@ -3485,14 +3493,47 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Save State thumbnail, right side */
    if (xmb->savestate_thumbnail)
    {
+      float thumb_width     = 0.0f;
+      float thumb_height    = 0.0f;
+      float thumb_max_width = (float)width - (xmb->icon_size / 6)
+         - (xmb->margins_screen_left * scale_mod[5]) -
+         xmb->icon_spacing_horizontal - pseudo_font_length;
+      float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
+
+      /* Limit thumbnail width */
+      if (xmb->savestate_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
+      {
+         thumb_width  = (xmb->savestate_thumbnail_width * scale_mod[4]) *
+            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
+         thumb_height = (xmb->savestate_thumbnail_height * scale_mod[4]) *
+            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
+      }
+      else
+      {
+         thumb_width  = xmb->savestate_thumbnail_width * scale_mod[4];
+         thumb_height = xmb->savestate_thumbnail_height * scale_mod[4];
+      }
+
+      /* Limit thumbnail height to screen height + margin. */
+      if (xmb->margins_screen_top + xmb->icon_size + thumb_height >=
+            ((float)height * under_thumb_margin))
+      {
+         thumb_width = thumb_width *
+            ((((float)height * under_thumb_margin) -
+              xmb->margins_screen_top - xmb->icon_size) /
+             thumb_height);
+         thumb_height = thumb_height *
+            ((((float)height * under_thumb_margin) -
+              xmb->margins_screen_top - xmb->icon_size) /
+             thumb_height);
+      }
+
       xmb_draw_thumbnail(video_info,
             xmb, &coord_white[0], width, height,
-            xmb->margins_screen_left * scale_mod[5] +
-            xmb->icon_spacing_horizontal + pseudo_font_length,
-            xmb->margins_screen_top + xmb->icon_size +
-            xmb->savestate_thumbnail_height * scale_mod[4],
-            xmb->savestate_thumbnail_width * scale_mod[4],
-            xmb->savestate_thumbnail_height * scale_mod[4],
+            (float)width - (xmb->icon_size / 6) - thumb_max_width +
+            ((thumb_max_width - thumb_width) / 2),
+            xmb->margins_screen_top + xmb->icon_size + thumb_height,
+            thumb_width, thumb_height,
             xmb->savestate_thumbnail);
    }
 
@@ -3524,6 +3565,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6)
                - (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3531,12 +3573,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
                thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -3586,7 +3628,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          float left_thumb_width     = 0.0f;
          float left_thumb_height    = 0.0f;
-         float thumb_max_width = xmb->icon_size * 3.4;
+         float thumb_max_width      = xmb->icon_size * 3.4;
+         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
+         float y_offset_factor      = !(xmb->depth == 1) ? 2.1 : 1;
+         float thumb_max_height     = ((float)height - (96.0 * scale_factor)) -
+                                      xmb->margins_screen_top -
+                                      (xmb->icon_size * y_offset_factor);
 
 #ifdef XMB_DEBUG
          RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -3594,12 +3641,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-         if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+         if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
          {
             left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-               (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-               (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
          }
          else
          {
@@ -3608,30 +3655,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
 
          /* Limit left thumbnail height to screen height + margin. */
-         if (xmb->margins_screen_top + xmb->icon_size *
-               (!(xmb->depth == 1)? 2.1 : 1) +
-               left_thumb_height >=
-               ((float)height - (96.0 * scale_factor)))
+         if (left_thumb_height >= thumb_max_height)
          {
             left_thumb_width = left_thumb_width *
-               ((((float)height - (96.0 * scale_factor))
-                 - xmb->margins_screen_top -
-                 (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
-                left_thumb_height);
+               (thumb_max_height / left_thumb_height);
 
-            left_thumb_height = left_thumb_height *
-               ((((float)height - (96.0 * scale_factor))
-                 - xmb->margins_screen_top -
-                 (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
-                left_thumb_height);
+            left_thumb_height = thumb_max_height;
          }
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
                (xmb->icon_size / 6) +
                ((thumb_max_width - left_thumb_width) / 2),
-               xmb->margins_screen_top + xmb->icon_size *
-               (!(xmb->depth == 1)? 2.1 : 1) + left_thumb_height,
+               xmb->margins_screen_top + (xmb->icon_size * y_offset_factor) +
+               left_thumb_height + (!(xmb->depth == 1) ?
+               (1.0f - thumbnail_scale_factor) * 0.5f * (thumb_max_height - left_thumb_height) : 0),
                left_thumb_width, left_thumb_height,
                xmb->left_thumbnail);
       }
@@ -3658,6 +3696,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6)
                - (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3665,12 +3704,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
                left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -3719,6 +3758,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          float left_thumb_width     = 0.0f;
          float left_thumb_height    = 0.0f;
          float thumb_max_width = xmb->icon_size * 2.4;
+         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
          RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -3726,12 +3766,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-         if (xmb->left_thumbnail_width > thumb_max_width)
+         if (xmb->left_thumbnail_width > thumb_max_width_scaled)
          {
             left_thumb_width  = xmb->left_thumbnail_width *
-               (thumb_max_width / xmb->left_thumbnail_width);
+               (thumb_max_width_scaled / xmb->left_thumbnail_width);
             left_thumb_height = xmb->left_thumbnail_height *
-               (thumb_max_width / xmb->left_thumbnail_width);
+               (thumb_max_width_scaled / xmb->left_thumbnail_width);
          }
          else
          {
@@ -3962,6 +4002,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6) -
                (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
@@ -3969,12 +4010,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
                thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -4024,6 +4065,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float thumb_max_width = (float)width - (xmb->icon_size / 6) -
                (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
+            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
 
 #ifdef XMB_DEBUG
             RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
@@ -4031,12 +4073,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width)
+            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
             {
                left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
                left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width / (xmb->left_thumbnail_width * scale_mod[4]));
+                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
             }
             else
             {
@@ -4074,31 +4116,29 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_end(video_info);
 
    /* Vertical icons */
-   if (xmb)
-      xmb_draw_items(
-            video_info,
-            xmb,
-            xmb->selection_buf_old,
-            xmb->selection_ptr_old,
-            (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-            ? xmb->categories_selection_ptr :
-            xmb->categories_selection_ptr_old,
-            &item_color[0],
-            width,
-            height);
+   xmb_draw_items(
+         video_info,
+         xmb,
+         xmb->selection_buf_old,
+         xmb->selection_ptr_old,
+         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
+         ? xmb->categories_selection_ptr :
+         xmb->categories_selection_ptr_old,
+         &item_color[0],
+         width,
+         height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   if (xmb)
-      xmb_draw_items(
-            video_info,
-            xmb,
-            selection_buf,
-            selection,
-            xmb->categories_selection_ptr,
-            &item_color[0],
-            width,
-            height);
+   xmb_draw_items(
+         video_info,
+         xmb,
+         selection_buf,
+         selection,
+         xmb->categories_selection_ptr,
+         &item_color[0],
+         width,
+         height);
 
    font_driver_flush(video_info->width, video_info->height, xmb->font,
          video_info);
@@ -5063,9 +5103,9 @@ static void xmb_context_reset_background(const char *iconpath)
             PATH_MAX_LENGTH * sizeof(char));
    }
 
-   if (filestream_exists(path))
+   if (path_is_valid(path))
       task_push_image_load(path,
-            video_driver_supports_rgba(),
+            video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
 #ifdef ORBIS
@@ -5144,9 +5184,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (xmb)
-   {
       xmb_context_reset_internal(xmb, is_threaded, true);
-   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
@@ -5691,11 +5729,6 @@ static int xmb_list_push(void *data, void *userdata,
             menu_displaylist_setting(&entry);
 #endif
 
-#ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
-#endif
-
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
@@ -5709,7 +5742,7 @@ static int xmb_list_push(void *data, void *userdata,
             }
 
 #if !defined(IOS)
-            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+            if (settings->bools.menu_show_restart_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
                menu_displaylist_setting(&entry);
@@ -5814,13 +5847,13 @@ static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_ite
    {
       xmb_node_t *node = (xmb_node_t*) file_list_get_userdata_at_offset(xmb->horizontal_list, xmb->categories_selection_ptr - xmb->system_tab_end-1);
 
-      *icon          = node->icon;
-      *playlist_name = xmb->title_name;
+      *icon            = node->icon;
+      *playlist_name   = xmb->title_name;
    }
    else
    {
-      *icon          = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
-      *playlist_name = "RetroArch";
+      *icon            = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+      *playlist_name   = "RetroArch";
    }
 
    return true;

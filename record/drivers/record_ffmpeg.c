@@ -110,6 +110,10 @@ extern "C" {
 #define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
 #endif
 
+#ifndef PIX_FMT_RGBA
+#define PIX_FMT_RGBA AV_PIX_FMT_RGBA
+#endif
+
 #ifndef PIX_FMT_NONE
 #define PIX_FMT_NONE AV_PIX_FMT_NONE
 #endif
@@ -575,8 +579,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
-         av_dict_set(&params->video_opts, "tune", "animation", 0);
-         av_dict_set(&params->video_opts, "crf", "30", 0);
+         av_dict_set(&params->video_opts, "tune", "film", 0);
+         av_dict_set(&params->video_opts, "crf", "35", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
@@ -591,7 +595,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
-         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "25", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
          break;
@@ -601,13 +605,13 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
          params->audio_global_quality = 100;
-         params->out_pix_fmt          = PIX_FMT_YUV444P;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
-         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "15", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
@@ -621,10 +625,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
          strlcpy(params->acodec, "flac", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "preset", "medium", 0);
-         av_dict_set(&params->video_opts, "tune", "animation", 0);
-         av_dict_set(&params->video_opts, "crf", "0", 0);
-         av_dict_set(&params->audio_opts, "audio_global_quality", "80", 0);
+         av_dict_set(&params->video_opts, "qp", "0", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
          params->threads              = settings->uints.video_record_threads;
@@ -656,7 +658,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_GIF:
          params->threads              = settings->uints.video_record_threads;
-         params->frame_drop_ratio     = 1;
+         params->frame_drop_ratio     = 4;
          params->audio_enable         = false;
          params->audio_global_quality = 0;
          params->out_pix_fmt          = PIX_FMT_RGB8;
@@ -667,6 +669,19 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->video_opts, "framerate", "30", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
          break;
+      case RECORD_CONFIG_TYPE_RECORDING_APNG:
+         params->threads              = settings->uints.video_record_threads;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = false;
+         params->audio_global_quality = 0;
+         params->out_pix_fmt          = PIX_FMT_RGB24;
+
+         strlcpy(params->vcodec, "apng", sizeof(params->vcodec));
+         strlcpy(params->acodec, "", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "pred", "avg", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
+         break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
          params->threads              = settings->uints.video_record_threads;
          params->frame_drop_ratio     = 1;
@@ -675,12 +690,25 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->out_pix_fmt          = PIX_FMT_YUV420P;
 
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "mp3", sizeof(params->acodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
          av_dict_set(&params->video_opts, "crf", "20", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+
+         /* TO-DO: detect if hwaccel is available and use it instead of the preset above
+         strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
+         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "llhp", 0);
+         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+         av_dict_set(&params->video_opts, "zerolatency", "1", 0);
+         av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
+         av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         */
+
          break;
       default:
          break;
@@ -704,10 +732,19 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          params->scale_factor = 1;
       strlcpy(params->format, "webm", sizeof(params->format));
    }
+   else if (preset >= RECORD_CONFIG_TYPE_RECORDING_GIF && preset < RECORD_CONFIG_TYPE_RECORDING_APNG)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ?
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "gif", sizeof(params->format));
+   }
    else if (preset < RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "gif", sizeof(params->format));
+      strlcpy(params->format, "apng", sizeof(params->format));
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
    {
@@ -741,7 +778,7 @@ static bool ffmpeg_init_config_recording(struct ff_config_param *params)
    strlcpy(params->format, "matroska", sizeof(params->format));
 
    av_dict_set(&params->video_opts, "video_preset", "slow", 0);
-   av_dict_set(&params->video_opts, "video_tune", "animation", 0);
+   av_dict_set(&params->video_opts, "video_tune", "film", 0);
    av_dict_set(&params->video_opts, "video_crf", "10", 0);
    av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
 

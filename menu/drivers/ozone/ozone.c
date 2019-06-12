@@ -31,7 +31,6 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
-#include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <formats/image.h>
 #include <math/float_minmax.h>
@@ -393,6 +392,7 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 
 static void ozone_update_thumbnail_image(void *data)
 {
+   settings_t *settings             = config_get_ptr();
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    const char *right_thumbnail_path = NULL;
    const char *left_thumbnail_path  = NULL;
@@ -405,14 +405,14 @@ static void ozone_update_thumbnail_image(void *data)
    bool thumbnails_missing          = false;
 #endif
 
-   if (!ozone)
+   if (!ozone || !settings)
       return;
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
    {
-      if (filestream_exists(right_thumbnail_path))
+      if (path_is_valid(right_thumbnail_path))
          task_push_image_load(right_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_thumbnail_upload, NULL);
       else
       {
@@ -427,9 +427,9 @@ static void ozone_update_thumbnail_image(void *data)
 
    if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (filestream_exists(left_thumbnail_path))
+      if (path_is_valid(left_thumbnail_path))
          task_push_image_load(left_thumbnail_path,
-               supports_rgba,
+               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
       {
@@ -446,11 +446,6 @@ static void ozone_update_thumbnail_image(void *data)
    /* On demand thumbnail downloads */
    if (thumbnails_missing)
    {
-      settings_t *settings = config_get_ptr();
-
-      if (!settings)
-         return;
-
       if (settings->bools.network_on_demand_thumbnails)
       {
          const char *system = NULL;
@@ -925,11 +920,6 @@ static int ozone_list_push(void *data, void *userdata,
             menu_displaylist_setting(&entry);
 #endif
 
-#ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
-#endif
-
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
@@ -943,7 +933,7 @@ static int ozone_list_push(void *data, void *userdata,
             }
 
 #if !defined(IOS)
-            if (settings->bools.menu_show_quit_retroarch && frontend_driver_has_fork())
+            if (settings->bools.menu_show_restart_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
                menu_displaylist_setting(&entry);
@@ -1148,8 +1138,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       if (do_swap)
       {
-         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
-         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_info->width - 138, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
+         ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_info->width - 256, video_info->height - ozone->dimensions.footer_height / 2 - icon_offset, video_info->width,video_info->height, 0, 1, ozone->theme_dynamic.entries_icon);
       }
       else
       {
@@ -1285,12 +1275,14 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
 
          menu_entry_init(&entry);
+         entry.label_enabled      = false;
+         entry.rich_label_enabled = false;
+         entry.value_enabled      = false;
+         entry.sublabel_enabled   = false;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
             menu_thumbnail_set_content(ozone->thumbnail_path_data, entry.path);
-
-         menu_entry_free(&entry);
       }
    }
    else if (string_is_equal(s, "imageviewer"))
@@ -1301,13 +1293,15 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
 
       menu_entry_init(&entry);
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
+      entry.sublabel_enabled   = false;
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
          if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
             menu_thumbnail_set_content_image(ozone->thumbnail_path_data, node->fullpath, entry.path);
-
-      menu_entry_free(&entry);
    }
    else if (!string_is_empty(s))
    {
@@ -1366,11 +1360,15 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
    size_t new_selection = menu_navigation_get_selection();
    ozone_node_t *node   = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, new_selection);
 
-   menu_entry_init(&entry);
-
    if (!node)
       return;
 
+   menu_entry_init(&entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = false;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    if (ozone->selection != new_selection)
@@ -1424,8 +1422,6 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
       /* TODO: update savestate thumbnail and path */
    }
-
-   menu_entry_free(&entry);
 }
 
 static void ozone_navigation_clear(void *data, bool pending_push)

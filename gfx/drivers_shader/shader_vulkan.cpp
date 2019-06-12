@@ -495,7 +495,7 @@ class Pass
             slang_texture_semantic semantic, unsigned index, const Texture &texture);
 
       uint64_t frame_count = 0;
-      uint32_t frame_direction = 1;
+      int32_t frame_direction = 1;
       unsigned frame_count_period = 0;
       unsigned pass_number = 0;
 

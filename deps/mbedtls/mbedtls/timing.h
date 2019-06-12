@@ -30,8 +30,7 @@
 #endif
 
 #if !defined(MBEDTLS_TIMING_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #include <stdint.h>
 

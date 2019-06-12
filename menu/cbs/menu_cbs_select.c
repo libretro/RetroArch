@@ -46,6 +46,12 @@ static int action_select_default(const char *path, const char *label, unsigned t
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    menu_entry_init(&entry);
+   /* Note: If menu_entry_action() is modified,
+    * will have to verify that these parameters
+    * remain unused... */
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, idx, NULL, false);
 
    if (selection_buf)
@@ -53,10 +59,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
          file_list_get_actiondata_at_offset(selection_buf, idx);
 
    if (!cbs)
-   {
-      menu_entry_free(&entry);
       return -1;
-   }
 
    if (cbs->setting)
    {
@@ -101,8 +104,6 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
-
-   menu_entry_free(&entry);
 
    task_queue_check();
 

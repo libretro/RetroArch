@@ -44,7 +44,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "../cheevos/badges.h" /* RCHEEVOS TODO: fix path */
+#include "badges.h"
 #include "cheevos.h"
 #include "fixup.h"
 #include "parser.h"
@@ -1490,7 +1490,7 @@ found:
 
       /* Checks for the existence of a headered Lynx file.
          Unheadered files fall back to RCHEEVOS_GENERIC_MD5. */
-      if (coro->len <= lynx_header_len ||
+      if (coro->len <= (unsigned)lynx_header_len ||
         memcmp("LYNX", (void *)coro->data, 5) != 0)
       {
          coro->gameid = 0;
