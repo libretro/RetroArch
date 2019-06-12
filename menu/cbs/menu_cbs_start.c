@@ -224,13 +224,13 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_playlist_association(unsigned type, const char *label)
 {
-   int found;
-   char new_playlist_cores[PATH_MAX_LENGTH];
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
    core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
+   int found;
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
 
    core_info_get_list(&list);
    if (!list)

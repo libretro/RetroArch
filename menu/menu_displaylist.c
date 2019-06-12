@@ -2574,8 +2574,8 @@ static void menu_displaylist_parse_playlist_associations(
    if (str_list && str_list->size)
    {
       unsigned i;
-      char new_playlist_names[PATH_MAX_LENGTH];
-      char new_playlist_cores[PATH_MAX_LENGTH];
+      char new_playlist_names[sizeof(settings->arrays.playlist_names) / sizeof(settings->arrays.playlist_names[0])];
+      char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
       struct string_list *stnames  = string_split(settings->arrays.playlist_names, ";");
       struct string_list *stcores  = string_split(settings->arrays.playlist_cores, ";");
 
