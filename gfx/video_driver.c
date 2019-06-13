@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
+#include <retro_miscellaneous.h>
 
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
@@ -434,6 +435,15 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
    &gfx_ctx_null,
    NULL
+};
+
+typedef struct {
+   enum gfx_ctx_api api;
+   struct string_list *list;
+} gfx_api_gpu_map;
+
+static gfx_api_gpu_map gpu_map[] = {
+   { GFX_CTX_VULKAN_API, NULL }
 };
 
 bool video_driver_started_fullscreen(void)
@@ -3353,3 +3363,32 @@ const char* video_driver_get_gpu_api_version_string(void)
 {
    return video_driver_gpu_api_version_string;
 }
+
+/* string list stays owned by the caller and must be available at all times after the video driver is inited */
+void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   {
+      if (api == gpu_map[i].api)
+      {
+         gpu_map[i].list = list;
+         break;
+      }
+   }
+}
+
+struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   {
+      if (api == gpu_map[i].api)
+         return gpu_map[i].list;
+   }
+
+   return NULL;
+}
+

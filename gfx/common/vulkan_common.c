@@ -35,6 +35,7 @@
 #include "vksym.h"
 #include <libretro_vulkan.h>
 #include <retro_math.h>
+#include <lists/string_list.h>
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
@@ -48,6 +49,7 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
+static struct string_list *vulkan_gpu_list = NULL;
 
 //#define WSI_HARDENING_TEST
 #ifdef WSI_HARDENING_TEST
@@ -1596,6 +1598,9 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t gpu_count     = 0;
    VkPhysicalDevice *gpus = NULL;
+   int i;
+   union string_list_elem_attr attr = {0};
+   settings_t *settings = config_get_ptr();
 
    if (vk->context.gpu != VK_NULL_HANDLE)
       return true;
@@ -1629,7 +1634,36 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   vk->context.gpu = gpus[0];
+   if (vulkan_gpu_list)
+      string_list_free(vulkan_gpu_list);
+
+   vulkan_gpu_list = string_list_new();
+
+   for (i = 0; i < gpu_count; i++)
+   {
+      VkPhysicalDeviceProperties gpu_properties;
+
+      vkGetPhysicalDeviceProperties(gpus[i],
+            &gpu_properties);
+
+      RARCH_LOG("[Vulkan]: Found GPU: %s\n", gpu_properties.deviceName);
+
+      string_list_append(vulkan_gpu_list, gpu_properties.deviceName, attr);
+   }
+
+   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
+
+   if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < gpu_count)
+   {
+      RARCH_LOG("[Vulkan]: Using GPU index %d.\n", settings->ints.vulkan_gpu_index);
+      vk->context.gpu = gpus[settings->ints.vulkan_gpu_index];
+   }
+   else
+   {
+      RARCH_WARN("[Vulkan]: Invalid GPU index %d, using first device found.\n", settings->ints.vulkan_gpu_index);
+      vk->context.gpu = gpus[0];
+   }
+
    free(gpus);
    return true;
 }
@@ -2649,6 +2683,12 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             vulkan_library = NULL;
          }
       }
+   }
+
+   if (vulkan_gpu_list)
+   {
+      string_list_free(vulkan_gpu_list);
+      vulkan_gpu_list = NULL;
    }
 }
 

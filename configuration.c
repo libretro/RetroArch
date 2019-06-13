@@ -1885,6 +1885,9 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
    SETTING_INT("audio_wasapi_sh_buffer_length", &settings->ints.audio_wasapi_sh_buffer_length, true, wasapi_sh_buffer_length, false);
 #endif
    SETTING_INT("crt_switch_center_adjust",      &settings->ints.crt_switch_center_adjust, false, 0 /* TODO */, false);
+#ifdef HAVE_VULKAN
+   SETTING_INT("vulkan_gpu_index",              &settings->ints.vulkan_gpu_index, true, vulkan_gpu_index, false);
+#endif
 
    *size = count;
 

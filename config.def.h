@@ -868,6 +868,10 @@ static const bool sustained_performance_mode = false;
 static const bool vibrate_on_keypress        = false;
 static const bool enable_device_vibration    = false;
 
+#ifdef HAVE_VULKAN
+static const int vulkan_gpu_index = 0;
+#endif
+
 #if defined(HAKCHI)
 static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
 #elif defined(ANDROID)
