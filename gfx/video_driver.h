@@ -25,6 +25,7 @@
 #include <retro_inline.h>
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
+#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -1210,6 +1211,11 @@ const char* video_driver_get_gpu_device_string(void);
 void video_driver_set_gpu_api_version_string(const char *str);
 
 const char* video_driver_get_gpu_api_version_string(void);
+
+/* string list stays owned by the caller and must be available at all times after the video driver is inited */
+void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list);
+
+struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
 
 static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
 {

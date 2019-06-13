@@ -784,6 +784,20 @@ int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+   {
+      struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
+
+      if (list && *setting->value.target.integer < list->size)
+         snprintf(s, len, "%d - %s", *setting->value.target.integer, list->elems[*setting->value.target.integer].data);
+      else
+         snprintf(s, len, "%d", *setting->value.target.integer);
+   }
+}
+
 static void setting_get_string_representation_int(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -4982,7 +4996,7 @@ static void menu_settings_list_current_add_range(
    unsigned idx                   = list_info->index - 1;
 
    if ((*list)[idx].type == ST_FLOAT)
-      (*list)[list_info->index - 1].ui_type   
+      (*list)[list_info->index - 1].ui_type
                                   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
 
    (*list)[idx].min               = min;
@@ -8330,6 +8344,29 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_video_monitor_index;
+
+            /* prevent unused function warning on unsupported builds */
+            (void)setting_get_string_representation_int_gpu_index;
+
+#ifdef HAVE_VULKAN
+            if (string_is_equal(video_driver_get_ident(), "vulkan"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.vulkan_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
 
             if (video_driver_has_windowed())
             {

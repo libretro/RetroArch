@@ -444,6 +444,37 @@ static int disk_options_disk_idx_left(unsigned type, const char *label,
    return 0;
 }
 
+static int action_left_video_gpu_index(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   enum gfx_ctx_api api = video_context_driver_get_api();
+
+   switch (api)
+   {
+#ifdef HAVE_VULKAN
+      case GFX_CTX_VULKAN_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            if (settings->ints.vulkan_gpu_index > 0)
+               settings->ints.vulkan_gpu_index--;
+            else
+               settings->ints.vulkan_gpu_index = list->size - 1;
+         }
+
+         break;
+      }
+#endif
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 static int bind_left_generic(unsigned type, const char *label,
       bool wraparound)
 {
@@ -571,6 +602,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                   break;
                }
+            case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
+               BIND_ACTION_LEFT(cbs, action_left_video_gpu_index);
+               break;
             default:
                return -1;
          }
