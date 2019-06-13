@@ -41,6 +41,45 @@
 #include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
 
+void print_buf_lines_download_core(file_list_t *list, size_t offset, const char *path)
+{
+   settings_t          *settings;
+   core_info_ctx_find_t ci;
+   char                 display_name[255];
+   char                 core_path[PATH_MAX_LENGTH];
+
+   if (!(settings = config_get_ptr()))
+      return;
+
+   display_name[0] = '\0';
+
+   core_path[0] = '\0';
+   fill_pathname_join_noext(core_path,
+      settings->paths.directory_libretro, path, sizeof(core_path));
+
+   if (core_info_find(&ci, core_path))
+   {
+      strlcpy(display_name, "* ", sizeof(display_name));
+      strlcat(display_name, ci.inf->display_name, sizeof(display_name));
+   }
+   else
+   {
+      core_path[0] = '\0';
+      fill_pathname_join_noext(core_path,
+         settings->paths.path_libretro_info, path, sizeof(core_path));
+
+      path_remove_extension(core_path);
+      strlcat(core_path,
+         file_path_str(FILE_PATH_CORE_INFO_EXTENSION), sizeof(core_path));
+
+      if (path_is_valid(core_path))
+         core_info_get_display_name(core_path, display_name, sizeof(display_name));
+   }
+
+   if (strlen(display_name))
+      file_list_set_alt_at_offset(list, offset, display_name);
+}
+
 unsigned print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended)
@@ -126,44 +165,9 @@ unsigned print_buf_lines(file_list_t *list, char *buf,
       switch (type)
       {
          case FILE_TYPE_DOWNLOAD_CORE:
-            {
-               settings_t *settings      = config_get_ptr();
-
-               if (settings)
-               {
-                  char display_name[255];
-                  char core_path[PATH_MAX_LENGTH];
-                  char *last                         = NULL;
-
-                  display_name[0] = core_path[0]     = '\0';
-
-                  fill_pathname_join_noext(
-                        core_path,
-                        settings->paths.path_libretro_info,
-                        (extended && !string_is_empty(core_pathname))
-                        ? core_pathname : line_start,
-                        sizeof(core_path));
-                  path_remove_extension(core_path);
-
-                  last = (char*)strrchr(core_path, '_');
-
-                  if (!string_is_empty(last))
-                  {
-                     if (string_is_not_equal_fast(last, "_libretro", 9))
-                        *last = '\0';
-                  }
-
-                  strlcat(core_path,
-                        file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
-                        sizeof(core_path));
-
-                  if (
-                           path_is_valid(core_path)
-                        && core_info_get_display_name(
-                           core_path, display_name, sizeof(display_name)))
-                     file_list_set_alt_at_offset(list, j, display_name);
-               }
-            }
+            print_buf_lines_download_core(list, j,
+               (extended && !string_is_empty(core_pathname)) ?
+               core_pathname : line_start);
             break;
          default:
          case FILE_TYPE_NONE:
