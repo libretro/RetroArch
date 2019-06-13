@@ -791,7 +791,7 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
 
-      if (list && *setting->value.target.integer < list->size)
+      if (list && *setting->value.target.integer < list->size && !string_is_empty(list->elems[*setting->value.target.integer].data))
          snprintf(s, len, "%d - %s", *setting->value.target.integer, list->elems[*setting->value.target.integer].data);
       else
          snprintf(s, len, "%d", *setting->value.target.integer);
