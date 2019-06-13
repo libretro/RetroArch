@@ -3864,16 +3864,7 @@ static enum runloop_state runloop_check_state(
       focused                = is_focused;
 
    /* Check if we have pressed the screenshot toggle button */
-   {
-      static bool old_pressed = false;
-      bool pressed            = BIT256_GET(
-            current_input, RARCH_SCREENSHOT);
-
-      if (pressed && old_pressed)
-         command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
-
-      old_pressed             = pressed;
-   }
+   HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true);
 
    /* Check if we have pressed the audio mute toggle button */
    HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true); 
