@@ -642,7 +642,6 @@ private:
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
    QRegExp m_searchRegExp;
-   QByteArray m_fileTableHeaderState;
    QWidget *m_zoomWidget;
    QString m_itemsCountLiteral;
    QLabel *m_itemsCountLabel;
