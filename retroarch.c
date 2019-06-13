@@ -145,7 +145,7 @@
 #include "runahead/run_ahead.h"
 #endif
 
-#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
@@ -992,73 +992,72 @@ static void retroarch_print_features(void)
    puts("");
    puts("Features:");
 
-   _PSUPP(libretrodb,      "LibretroDB",      "LibretroDB support");
-   _PSUPP(command,         "Command",         "Command interface support");
-   _PSUPP(network_command, "Network Command", "Network Command interface "
+   _PSUPP(SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
+   _PSUPP(SUPPORTS_COMMAND,         "Command",         "Command interface support");
+   _PSUPP(SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface "
          "support");
 
-   _PSUPP(sdl,             "SDL",             "SDL input/audio/video drivers");
-   _PSUPP(sdl2,            "SDL2",            "SDL2 input/audio/video drivers");
-   _PSUPP(x11,             "X11",             "X11 input/video drivers");
-   _PSUPP(wayland,         "wayland",         "Wayland input/video drivers");
-   _PSUPP(thread,          "Threads",         "Threading support");
+   _PSUPP(SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
+   _PSUPP(SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+   _PSUPP(SUPPORTS_X11,             "X11",             "X11 input/video drivers");
+   _PSUPP(SUPPORTS_WAYLAND,         "wayland",         "Wayland input/video drivers");
+   _PSUPP(SUPPORTS_THREAD,          "Threads",         "Threading support");
 
-   _PSUPP(vulkan,          "Vulkan",          "Vulkan video driver");
-   _PSUPP(metal,           "Metal",           "Metal video driver");
-   _PSUPP(opengl,          "OpenGL",          "OpenGL   video driver support");
-   _PSUPP(opengles,        "OpenGL ES",       "OpenGLES video driver support");
-   _PSUPP(xvideo,          "XVideo",          "Video driver");
-   _PSUPP(udev,            "UDEV",            "UDEV/EVDEV input driver support");
-   _PSUPP(egl,             "EGL",             "Video context driver");
-   _PSUPP(kms,             "KMS",             "Video context driver");
-   _PSUPP(vg,              "OpenVG",          "Video context driver");
+   _PSUPP(SUPPORTS_VULKAN,          "Vulkan",          "Vulkan video driver");
+   _PSUPP(SUPPORTS_METAL,           "Metal",           "Metal video driver");
+   _PSUPP(SUPPORTS_OPENGL,          "OpenGL",          "OpenGL   video driver support");
+   _PSUPP(SUPPORTS_OPENGLES,        "OpenGL ES",       "OpenGLES video driver support");
+   _PSUPP(SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
+   _PSUPP(SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver support");
+   _PSUPP(SUPPORTS_EGL,             "EGL",             "Video context driver");
+   _PSUPP(SUPPORTS_KMS,             "KMS",             "Video context driver");
+   _PSUPP(SUPPORTS_VG,              "OpenVG",          "Video context driver");
 
-   _PSUPP(coreaudio,       "CoreAudio",       "Audio driver");
-   _PSUPP(coreaudio3,      "CoreAudioV3",     "Audio driver");
-   _PSUPP(alsa,            "ALSA",            "Audio driver");
-   _PSUPP(oss,             "OSS",             "Audio driver");
-   _PSUPP(jack,            "Jack",            "Audio driver");
-   _PSUPP(rsound,          "RSound",          "Audio driver");
-   _PSUPP(roar,            "RoarAudio",       "Audio driver");
-   _PSUPP(pulse,           "PulseAudio",      "Audio driver");
-   _PSUPP(dsound,          "DirectSound",     "Audio driver");
-   _PSUPP(wasapi,          "WASAPI",     "Audio driver");
-   _PSUPP(xaudio,          "XAudio2",         "Audio driver");
-   _PSUPP(al,              "OpenAL",          "Audio driver");
-   _PSUPP(sl,              "OpenSL",          "Audio driver");
+   _PSUPP(SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
+   _PSUPP(SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
+   _PSUPP(SUPPORTS_ALSA,            "ALSA",            "Audio driver");
+   _PSUPP(SUPPORTS_OSS,             "OSS",             "Audio driver");
+   _PSUPP(SUPPORTS_JACK,            "Jack",            "Audio driver");
+   _PSUPP(SUPPORTS_RSOUND,          "RSound",          "Audio driver");
+   _PSUPP(SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
+   _PSUPP(SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
+   _PSUPP(SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
+   _PSUPP(SUPPORTS_WASAPI,          "WASAPI",     "Audio driver");
+   _PSUPP(SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
+   _PSUPP(SUPPORTS_AL,              "OpenAL",          "Audio driver");
+   _PSUPP(SUPPORTS_SL,              "OpenSL",          "Audio driver");
 
-   _PSUPP(7zip,            "7zip",            "7zip extraction support");
-   _PSUPP(zlib,            "zlib",            ".zip extraction support");
+   _PSUPP(SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
+   _PSUPP(SUPPORTS_ZLIB,            "zlib",            ".zip extraction support");
 
-   _PSUPP(dylib,           "External",        "External filter and plugin support");
+   _PSUPP(SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
 
-   _PSUPP(cg,              "Cg",              "Fragment/vertex shader driver");
-   _PSUPP(glsl,            "GLSL",            "Fragment/vertex shader driver");
-   _PSUPP(glsl,            "HLSL",            "Fragment/vertex shader driver");
+   _PSUPP(SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
+   _PSUPP(SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
+   _PSUPP(SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
 
-   _PSUPP(sdl_image,       "SDL_image",       "SDL_image image loading");
-   _PSUPP(rpng,            "rpng",            "PNG image loading/encoding");
-   _PSUPP(rpng,            "rjpeg",           "JPEG image loading");
-   _PSUPP(dynamic,         "Dynamic",         "Dynamic run-time loading of "
+   _PSUPP(SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
+   _PSUPP(SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
+   _PSUPP(SUPPORTS_RJPEG,            "rjpeg",           "JPEG image loading");
+   _PSUPP(SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of "
                                               "libretro library");
-   _PSUPP(ffmpeg,          "FFmpeg",          "On-the-fly recording of gameplay "
+   _PSUPP(SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay "
                                               "with libavcodec");
 
-   _PSUPP(freetype,        "FreeType",        "TTF font rendering driver");
-   _PSUPP(coretext,        "CoreText",        "TTF font rendering driver "
+   _PSUPP(SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
+   _PSUPP(SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver "
                                               "(for OSX and/or iOS)");
-   _PSUPP(netplay,         "Netplay",         "Peer-to-peer netplay");
-   _PSUPP(python,          "Python",          "Script support in shaders");
+   _PSUPP(SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
+   _PSUPP(SUPPORTS_PYTHON,          "Python",          "Script support in shaders");
 
-   _PSUPP(libusb,          "Libusb",          "Libusb support");
+   _PSUPP(SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
 
-   _PSUPP(cocoa,           "Cocoa",           "Cocoa UI companion support "
+   _PSUPP(SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
 
-   _PSUPP(qt,              "Qt",              "Qt UI companion support");
-   _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
+   _PSUPP(SUPPORTS_QT,              "Qt",              "Qt UI companion support");
+   _PSUPP(SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
 }
-#undef _PSUPP
 
 static void retroarch_print_version(void)
 {
