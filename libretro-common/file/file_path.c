@@ -402,17 +402,14 @@ void fill_pathname_noext(char *out_path, const char *in_path,
 
 char *find_last_slash(const char *str)
 {
-#ifdef _WIN32
    const char *slash     = strrchr(str, '/');
+#ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
 
    if (backslash && ((slash && backslash > slash) || !slash))
       return (char*)backslash;
-
-   return (char*)slash;
-#else
-   return (char*)strrchr(str, '/');
 #endif
+   return (char*)slash;
 }
 
 /**
@@ -788,7 +785,8 @@ void path_resolve_realpath(char *buf, size_t size)
  *
  * E.g. path /a/b/e/f.cg with base /a/b/c/d/ turns into ../../e/f.cg
  **/
-void path_relative_to(char *out, const char *path, const char *base, size_t size)
+void path_relative_to(char *out,
+      const char *path, const char *base, size_t size)
 {
    unsigned i;
    const char *trimmed_path, *trimmed_base;
@@ -1181,7 +1179,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #elif defined(__APPLE__)
    if (bundle)
    {
-      CFURLRef bundle_url = CFBundleCopyBundleURL(bundle);
+      CFURLRef bundle_url     = CFBundleCopyBundleURL(bundle);
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
       CFRelease(bundle_path);
@@ -1202,7 +1200,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #elif defined(__QNX__)
    char *buff = malloc(len);
 
-   if(_cmdname(buff))
+   if (_cmdname(buff))
       strlcpy(s, buff, len);
 
    free(buff);
@@ -1262,7 +1260,7 @@ bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
    bool result;
-   size_t path_sizeof = PATH_MAX_LENGTH * sizeof(char);
+   size_t         path_sizeof = PATH_MAX_LENGTH * sizeof(char);
    char *relative_path_abbrev = (char*)malloc(path_sizeof);
    fill_pathname_abbreviate_special(relative_path_abbrev, path, path_sizeof);
 
