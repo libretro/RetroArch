@@ -2146,9 +2146,9 @@ bool retroarch_is_on_main_thread(void)
 
 void rarch_menu_running(void)
 {
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings                    = config_get_ptr();
-   (void)settings;
-
+#endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
 
@@ -2166,9 +2166,9 @@ void rarch_menu_running(void)
 
 void rarch_menu_running_finished(void)
 {
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings                    = config_get_ptr();
-   (void)settings;
-
+#endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
 
@@ -2223,7 +2223,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool has_set_username        = false;
    static bool rarch_block_config_read = false;
    static bool rarch_patch_blocked     = false;
-   static bool runloop_missing_bios    = false; /* TODO/FIXME - not used right now? */
+   static bool runloop_missing_bios    = false;
+   /* TODO/FIXME - not used right now? */
 
    switch(state)
    {
