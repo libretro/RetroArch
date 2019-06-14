@@ -284,8 +284,6 @@
 #include "menu/menu_driver.h"
 #include "menu/menu_animation.h"
 
-#define DEFAULT_BLOCK_CONFIG_READ true
-
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
 #else
@@ -405,7 +403,10 @@ static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static bool rgui_shadows = false;
 static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 static bool rgui_extended_ascii = false;
+#endif
 
+#ifdef HAVE_MENU
+#define DEFAULT_BLOCK_CONFIG_READ true
 #else
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
@@ -446,7 +447,7 @@ static unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_SHOW_PHYSICAL_INPUTS true
 
-static bool all_users_control_menu = false;
+#define DEFAULT_ALL_USERS_CONTROL_MENU false
 
 #if defined(ANDROID) || defined(_WIN32)
 static bool menu_swap_ok_cancel_buttons = true;
