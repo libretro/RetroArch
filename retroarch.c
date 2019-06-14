@@ -3416,7 +3416,7 @@ static enum runloop_state runloop_check_state(
 {
    input_bits_t current_input;
 #ifdef HAVE_MENU
-   static input_bits_t last_input   = {{0}};
+   static input_bits_t last_input      = {{0}};
 #endif
    static bool old_quit_key            = false;
    static bool quit_key                = false;
