@@ -118,6 +118,33 @@ static dylib_t lib_handle;
 #define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
 #endif
 
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
+
 static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
 static bool *load_no_content_hook   = NULL;
@@ -472,33 +499,6 @@ bool libretro_get_system_info(const char *path,
 #endif
    return true;
 }
-
-#define CORE_SYMBOLS(x) \
-            x(retro_init); \
-            x(retro_deinit); \
-            x(retro_api_version); \
-            x(retro_get_system_info); \
-            x(retro_get_system_av_info); \
-            x(retro_set_environment); \
-            x(retro_set_video_refresh); \
-            x(retro_set_audio_sample); \
-            x(retro_set_audio_sample_batch); \
-            x(retro_set_input_poll); \
-            x(retro_set_input_state); \
-            x(retro_set_controller_port_device); \
-            x(retro_reset); \
-            x(retro_run); \
-            x(retro_serialize_size); \
-            x(retro_serialize); \
-            x(retro_unserialize); \
-            x(retro_cheat_reset); \
-            x(retro_cheat_set); \
-            x(retro_load_game); \
-            x(retro_load_game_special); \
-            x(retro_unload_game); \
-            x(retro_get_region); \
-            x(retro_get_memory_data); \
-            x(retro_get_memory_size);
 
 /**
  * load_symbols:
