@@ -169,9 +169,7 @@ static void finish_task(retro_task_t *task, const char *title)
    task_set_finished(task, true);
 }
 
-static bool core_requires_content(netplay_crc_handle_t *state) {
-   return string_is_not_equal(state->content_path, "N/A");
-}
+#define core_requires_content(state) string_is_not_equal(state->content_path, "N/A")
 
 /**
  * Given a path to a content file, return the base name without the
@@ -179,9 +177,10 @@ static bool core_requires_content(netplay_crc_handle_t *state) {
  *
  * e.g. /home/user/foo.rom => foo
  */
-static void get_entry(char *entry, int len, const char *path) {
+static void get_entry(char *entry, int len, const char *path)
+{
    const char *buf = path_basename(path);
-   entry[0]    = '\0';
+   entry[0]        = '\0';
 
    strlcpy(entry, buf, len);
    path_remove_extension(entry);
