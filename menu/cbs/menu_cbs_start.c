@@ -189,7 +189,7 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = video_shader_watch_files;
+   settings->bools.video_shader_watch_files = DEFAULT_VIDEO_SHADER_WATCH_FILES;
    return 0;
 }
 

@@ -73,14 +73,17 @@
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
 #endif
 
-static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE;
-static const int crt_switch_resolution_super = 2560;
-static const int crt_switch_center_adjust    = 0;
+#define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
-static const bool def_history_list_enable    = true;
-static const bool def_playlist_entry_rename  = true;
+#define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
 
-static const unsigned int def_user_language  = 0;
+#define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
+
+#define DEFAULT_HISTORY_LIST_ENABLE true
+
+#define DEFAULT_PLAYLIST_ENTRY_RENAME true
+
+#define DEFAULT_USER_LANGUAGE 0
 
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
@@ -284,13 +287,13 @@ static const unsigned int def_user_language  = 0;
 #define DEFAULT_BLOCK_CONFIG_READ true
 
 #ifdef HAVE_LIBNX
-static bool menu_use_preferred_system_color_theme = true;
+#define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
 #else
-static bool menu_use_preferred_system_color_theme = false;
+#define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME false
 #endif
 
 #ifdef HAVE_OZONE
-static bool ozone_collapse_sidebar = false;
+#define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #endif
 
 static bool quick_menu_show_take_screenshot             = true;
@@ -365,10 +368,11 @@ static unsigned menu_font_color_blue = 255;
 static unsigned xmb_menu_layout  = 0;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
+
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
-static bool xmb_shadows_enable   = false;
+#define DEFAULT_XMB_SHADOWS_ENABLE false
 #else
-static bool xmb_shadows_enable   = true;
+#define DEFAULT_XMB_SHADOWS_ENABLE true
 #endif
 #endif
 
@@ -381,14 +385,15 @@ static float menu_footer_opacity = 1.000;
 static float menu_header_opacity = 1.000;
 
 #if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-static unsigned menu_shader_pipeline = 1;
+#define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
-static unsigned menu_shader_pipeline = 2;
+#define DEFAULT_MENU_SHADER_PIPELINE 2
 #endif
 
-static bool show_advanced_settings        = false;
+#define DEFAULT_SHOW_ADVANCED_SETTINGS false
 
-static unsigned rgui_color_theme          = RGUI_THEME_CLASSIC_GREEN;
+#define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
+
 static bool rgui_inline_thumbnails = false;
 static bool rgui_swap_thumbnails = false;
 static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
@@ -439,7 +444,7 @@ static unsigned input_backtouch_enable       = false;
 static unsigned input_backtouch_toggle       = false;
 #endif
 
-static bool show_physical_inputs             = true;
+#define DEFAULT_SHOW_PHYSICAL_INPUTS true
 
 static bool all_users_control_menu = false;
 
@@ -483,22 +488,22 @@ static const float message_bgcolor_opacity = 1.0f;
 
 /* Record post-filtered (CPU filter) video,
  * rather than raw game output. */
-static const bool post_filter_record = false;
+#define DEFAULT_POST_FILTER_RECORD false
 
 /* Screenshots post-shaded GPU output if available. */
-static const bool gpu_screenshot = true;
+#define DEFAULT_GPU_SCREENSHOT true
 
 /* Watch shader files for changes and auto-apply as necessary. */
-static const bool video_shader_watch_files = false;
+#define DEFAULT_VIDEO_SHADER_WATCH_FILES false
 
 /* Screenshots named automatically. */
-static const bool auto_screenshot_filename = true;
+#define DEFAULT_AUTO_SCREENSHOT_FILENAME true
 
 /* Record post-shaded GPU output instead of raw game footage if available. */
-static const bool gpu_record = false;
+#define DEFAULT_GPU_RECORD false
 
 /* OSD-messages. */
-static const bool font_enable = true;
+#define DEFAULT_FONT_ENABLE true
 
 /* The accurate refresh rate of your monitor (Hz).
  * This is used to calculate audio input rate with the formula:
@@ -521,7 +526,7 @@ static const float crt_refresh_rate = 60/1.001;
 /* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.
  * Used for setups where one manually rotates the monitor. */
-static const bool allow_rotate = true;
+#define DEFAULT_ALLOW_ROTATE true
 
 #if defined(_3DS)
 /* Enable bottom LCD screen */
@@ -543,9 +548,9 @@ static const bool audio_enable_menu_notice = false;
 static const bool audio_enable_menu_bgm    = false;
 
 #ifdef HAVE_MENU_WIDGETS
-static const bool menu_enable_widgets      = true;
+#define DEFAULT_MENU_ENABLE_WIDGETS true
 #else
-static const bool menu_enable_widgets      = false;
+#define DEFAULT_MENU_ENABLE_WIDGETS false
 #endif
 
 /* Output samplerate. */
@@ -558,7 +563,7 @@ static const bool menu_enable_widgets      = false;
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
-static const char *audio_device = NULL;
+#define DEFAULT_AUDIO_DEVICE NULL
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
@@ -865,7 +870,7 @@ static const bool vibrate_on_keypress        = false;
 static const bool enable_device_vibration    = false;
 
 #ifdef HAVE_VULKAN
-static const int vulkan_gpu_index = 0;
+#define DEFAULT_VULKAN_GPU_INDEX 0
 #endif
 
 #if defined(HAKCHI)
