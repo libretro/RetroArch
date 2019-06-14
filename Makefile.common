@@ -1922,7 +1922,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/blargg_ntsc_snes.o \
           gfx/video_filters/lq2x.o \
           gfx/video_filters/phosphor2x.o \
-          gfx/video_filters/normal2x.o
+          gfx/video_filters/normal2x.o \
+          gfx/video_filters/scanline2x.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)

@@ -334,6 +334,7 @@ extern const struct softfilter_implementation *twoxbr_get_implementation(softfil
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *normal2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *scanline2x_get_implementation(softfilter_simd_mask_t simd);
 
 static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    blargg_ntsc_snes_get_implementation,
@@ -347,6 +348,7 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    epx_get_implementation,
    scale2x_get_implementation,
    normal2x_get_implementation,
+   scanline2x_get_implementation,
 };
 
 static bool append_softfilter_plugs(rarch_softfilter_t *filt,
@@ -488,6 +490,10 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    }
    free(filt->thread_data);
 #endif
+
+   if (filt->conf)
+      config_file_free(filt->conf);
+
    free(filt);
 }
 
