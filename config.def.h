@@ -469,11 +469,7 @@ static bool log_to_file_timestamp = false;
 /* Offset for where messages will be placed on-screen.
  * Values are in range [0.0, 1.0]. */
 static const float message_pos_offset_x = 0.05;
-#if defined(_XBOX1)
-static const float message_pos_offset_y = 0.90;
-#else
 static const float message_pos_offset_y = 0.05;
-#endif
 
 /* Color of the message.
  * RGB hex value. */
