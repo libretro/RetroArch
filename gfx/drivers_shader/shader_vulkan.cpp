@@ -3009,8 +3009,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       pass_info.max_levels = 1;
 
       /* TODO: Expose max_levels in slangp.
-       * CGP format is a bit awkward in that it uses mipmap_input,
-       * so we much check if next pass needs the mipmapping.
+       * Preset format is a bit awkward in that it uses mipmap_input,
+       * so we must check if next pass needs the mipmapping.
        */
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
