@@ -1449,7 +1449,7 @@ static bool wiiu_gfx_set_shader(void *data,
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, wiiu->shader_preset))
+   if (!video_shader_read_conf_preset(conf, wiiu->shader_preset))
    {
       free(wiiu->shader_preset);
       wiiu->shader_preset = NULL;

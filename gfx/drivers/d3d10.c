@@ -354,7 +354,7 @@ static bool d3d10_gfx_set_shader(void* data,
 
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, d3d10->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d10->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d10->shader_preset, path);

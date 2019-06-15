@@ -2388,7 +2388,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    if (!conf)
       return nullptr;
 
-   if (!video_shader_read_conf_cgp(conf.get(), shader.get()))
+   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
       return nullptr;
 
    video_shader_resolve_relative(shader.get(), path);

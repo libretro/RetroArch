@@ -1142,13 +1142,16 @@ typedef struct MTLALIGN(16)
 
    @try
    {
-      if (!video_shader_read_conf_cgp(conf, shader))
+      unsigned i;
+      texture_t *source = NULL;
+      if (!video_shader_read_conf_preset(conf, shader))
          return NO;
 
       video_shader_resolve_relative(shader, path.UTF8String);
 
-      texture_t *source = &_engine.frame.texture[0];
-      for (unsigned i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
+      source = &_engine.frame.texture[0];
+
+      for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
          matrix_float4x4 *mvp = (i == shader->passes-1) ? &_context.uniforms->projectionMatrix : &_engine.mvp;
 
@@ -1321,7 +1324,7 @@ typedef struct MTLALIGN(16)
          }
       }
 
-      for (unsigned i = 0; i < shader->luts; i++)
+      for (i = 0; i < shader->luts; i++)
       {
          struct texture_image image = {0};
          image.supports_rgba = true;
@@ -1340,7 +1343,7 @@ typedef struct MTLALIGN(16)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         // TODO(sgc): generate mip maps
+         /* TODO(sgc): generate mip maps */
          image_texture_free(&image);
       }
 

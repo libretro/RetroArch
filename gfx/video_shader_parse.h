@@ -169,7 +169,7 @@ struct video_shader
 };
 
 /**
- * video_shader_read_conf_cgp:
+ * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -178,11 +178,11 @@ struct video_shader
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_read_conf_cgp(config_file_t *conf,
+bool video_shader_read_conf_preset(config_file_t *conf,
       struct video_shader *shader);
 
 /**
- * video_shader_write_conf_cgp:
+ * video_shader_write_conf_preset:
  * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
  * @preset_path       : Optional path to where the preset will be written.
@@ -192,7 +192,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
  * If @preset_path is not NULL, shader paths are saved
  * relative to it.
  **/
-void video_shader_write_conf_cgp(config_file_t *conf,
+void video_shader_write_conf_preset(config_file_t *conf,
       struct video_shader *shader, const char *preset_path);
 
 /**

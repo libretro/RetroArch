@@ -123,7 +123,7 @@ bool menu_shader_manager_init(void)
 
    if (
          !string_is_empty(new_path) && conf &&
-         video_shader_read_conf_cgp(conf, menu_driver_shader)
+         video_shader_read_conf_preset(conf, menu_driver_shader)
       )
    {
       video_shader_resolve_relative(menu_driver_shader, new_path);
@@ -181,7 +181,7 @@ bool menu_shader_manager_set_preset(void *data,
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
-   if (video_shader_read_conf_cgp(conf, shader))
+   if (video_shader_read_conf_preset(conf, shader))
    {
       video_shader_resolve_relative(shader, preset_path);
       video_shader_resolve_parameters(conf, shader);
@@ -321,7 +321,7 @@ bool menu_shader_manager_save_preset(
       if (!string_is_empty(basename))
          strlcpy(preset_path, buffer, sizeof(preset_path));
 
-      video_shader_write_conf_cgp(conf, shader, preset_path);
+      video_shader_write_conf_preset(conf, shader, preset_path);
 
       if (config_file_write(conf, preset_path, false))
       {
@@ -343,7 +343,7 @@ bool menu_shader_manager_save_preset(
          fill_pathname_join(preset_path, dirs[d],
                buffer, sizeof(preset_path));
 
-         video_shader_write_conf_cgp(conf, shader, preset_path);
+         video_shader_write_conf_preset(conf, shader, preset_path);
 
          if (config_file_write(conf, preset_path, false))
          {

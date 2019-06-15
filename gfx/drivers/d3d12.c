@@ -362,7 +362,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d12->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d12->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, d3d12->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d12->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d12->shader_preset, path);

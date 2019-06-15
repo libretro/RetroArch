@@ -899,7 +899,7 @@ static void *gl_glsl_init(void *data, const char *path)
          conf = config_file_new(path);
          if (conf)
          {
-            ret = video_shader_read_conf_cgp(conf, glsl->shader);
+            ret = video_shader_read_conf_preset(conf, glsl->shader);
             glsl->shader->modern = true;
          }
       }

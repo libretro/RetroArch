@@ -708,7 +708,7 @@ error:
 }
 
 /**
- * video_shader_read_conf_cgp:
+ * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -717,7 +717,7 @@ error:
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_read_conf_cgp(config_file_t *conf,
+bool video_shader_read_conf_preset(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
@@ -725,6 +725,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    unsigned shaders                 = 0;
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
+   bool watch_files                 = settings->bools.video_shader_watch_files;
 
    (void)file_list;
 
@@ -746,7 +747,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
    strlcpy(shader->path, conf->path, sizeof(shader->path));
 
-   if (settings->bools.video_shader_watch_files)
+   if (watch_files)
    {
       if (file_change_data)
          frontend_driver_watch_path_for_changes(NULL,
@@ -769,12 +770,12 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
          return false;
       }
 
-      if (settings->bools.video_shader_watch_files && file_list)
+      if (watch_files && file_list)
          string_list_append(file_list,
                shader->pass[i].source.path, attr);
    }
 
-   if (settings->bools.video_shader_watch_files)
+   if (watch_files)
    {
       int flags = PATH_CHANGE_TYPE_MODIFIED          |
                   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
@@ -938,7 +939,7 @@ static void shader_write_variable(config_file_t *conf,
 }
 
 /**
- * video_shader_write_conf_cgp:
+ * video_shader_write_conf_preset:
  * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
  * @preset_path       : Optional path to where the preset will be written.
@@ -948,7 +949,7 @@ static void shader_write_variable(config_file_t *conf,
  * If @preset_path is not NULL, shader paths are saved
  * relative to it.
  **/
-void video_shader_write_conf_cgp(config_file_t *conf,
+void video_shader_write_conf_preset(config_file_t *conf,
       struct video_shader *shader, const char *preset_path)
 {
    unsigned i;
