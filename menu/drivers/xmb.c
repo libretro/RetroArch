@@ -1078,9 +1078,7 @@ static void xmb_update_thumbnail_image(void *data)
 static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
 {
    if (i <= xmb->system_tab_end)
-   {
       return xmb->tabs[i];
-   }
    return UINT_MAX;
 }
 
@@ -1092,7 +1090,8 @@ static void xmb_refresh_thumbnail_image(void *data)
       return;
 
    /* Only refresh thumbnails if thumbnails are enabled */
-   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   if (  menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
+         menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
    {
       unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
       unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
@@ -1207,7 +1206,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
-         if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
+         if (  !string_is_empty(entry.path) && 
+               !string_is_empty(node->fullpath))
             menu_thumbnail_set_content_image(xmb->thumbnail_path_data, node->fullpath, entry.path);
    }
    else if (!string_is_empty(s))
@@ -1291,9 +1291,12 @@ static void xmb_selection_pointer_changed(
          unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
          unsigned entry_type     = menu_entry_get_type_new(&entry);
 
-         ia             = xmb->items_active_alpha;
-         iz             = xmb->items_active_zoom;
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         ia                      = xmb->items_active_alpha;
+         iz                      = xmb->items_active_zoom;
+         if (
+               menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
+               menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)
+            )
          {
             bool update_thumbnails = false;
 
@@ -1313,7 +1316,9 @@ static void xmb_selection_pointer_changed(
                update_thumbnails = true;
             }
             /* Filebrowser image updates */
-            else if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
+            else if (
+                  entry_type == FILE_TYPE_IMAGEVIEWER || 
+                  entry_type == FILE_TYPE_IMAGE)
             {
                xmb_set_thumbnail_content(xmb, "imageviewer");
                update_thumbnails = true;
@@ -1530,7 +1535,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS)
    {
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (  menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
+            menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
       {
          /* This code is horrible, full of hacks...
           * This hack ensures that thumbnails are not cleared
