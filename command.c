@@ -2815,6 +2815,7 @@ TODO: Add a setting for these tweaks */
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
+            bool *userdata            = (bool*)data;
             settings_t *settings      = config_get_ptr();
             bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
@@ -2841,6 +2842,9 @@ TODO: Add a setting for these tweaks */
                video_driver_show_mouse();
 
             retroarch_unset_switching_display_mode();
+
+            if (userdata && *userdata == true)
+               video_driver_cached_frame();
          }
          break;
       case CMD_EVENT_COMMAND_DEINIT:
