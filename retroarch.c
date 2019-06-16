@@ -602,18 +602,16 @@ static bool bsv_movie_init_handle(const char *path,
 bool bsv_movie_init(void)
 {
    bool set_granularity = false;
-   bool ret             = true;
 
    if (bsv_movie_state.movie_start_playback)
    {
-      ret = bsv_movie_init_handle(bsv_movie_state.movie_start_path,
-                  RARCH_MOVIE_PLAYBACK);
-      if (!ret)
+      if (!bsv_movie_init_handle(bsv_movie_state.movie_start_path,
+                  RARCH_MOVIE_PLAYBACK))
       {
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                bsv_movie_state.movie_start_path);
-         retroarch_fail(1, "event_init_movie()");
+         return false;
       }
 
       bsv_movie_state.movie_playback = true;
@@ -626,15 +624,8 @@ bool bsv_movie_init(void)
    }
    else if (bsv_movie_state.movie_start_recording)
    {
-      char msg[8192];
-      snprintf(msg, sizeof(msg),
-            "%s \"%s\".",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            bsv_movie_state.movie_start_path);
-
-      ret = bsv_movie_init_handle(bsv_movie_state.movie_start_path,
-                  RARCH_MOVIE_RECORD);
-      if (!ret)
+      if (!bsv_movie_init_handle(bsv_movie_state.movie_start_path,
+                  RARCH_MOVIE_RECORD))
       {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
@@ -642,13 +633,21 @@ bool bsv_movie_init(void)
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_ERR("%s.\n",
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-         return ret;
+         return false;
       }
 
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            bsv_movie_state.movie_start_path);
+      {
+         char msg[8192];
+         snprintf(msg, sizeof(msg),
+               "%s \"%s\".",
+               msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+               bsv_movie_state.movie_start_path);
+
+         runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+               bsv_movie_state.movie_start_path);
+      }
 
       set_granularity = true;
    }
@@ -660,7 +659,7 @@ bool bsv_movie_init(void)
             settings->uints.rewind_granularity, 1);
    }
 
-   return ret;
+   return true;
 }
 
 bool bsv_movie_get_input(int16_t *bsv_data)
@@ -747,38 +746,6 @@ void bsv_movie_deinit(void)
    bsv_movie_state_handle = NULL;
 }
 
-/* Checks if movie is being played back. */
-static bool bsv_movie_check_movie_playback(void)
-{
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-
-   bsv_movie_state.movie_end      = false;
-   bsv_movie_state.movie_playback = false;
-
-   return true;
-}
-
-/* Checks if movie is being recorded. */
-static bool runloop_check_movie_record(void)
-{
-   if (!bsv_movie_state_handle)
-      return false;
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-
-   return true;
-}
-
 static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
@@ -831,12 +798,34 @@ bool bsv_movie_check(void)
 
    if (bsv_movie_state.movie_playback)
    {
+      /* Checks if movie is being played back. */
       if (!bsv_movie_state.movie_end)
          return false;
-      return bsv_movie_check_movie_playback();
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+      command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+
+      bsv_movie_state.movie_end      = false;
+      bsv_movie_state.movie_playback = false;
+
+      return true;
    }
 
-   return runloop_check_movie_record();
+   /* Checks if movie is being recorded. */
+   if (!bsv_movie_state_handle)
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+
+   return true;
 }
 
 /**
