@@ -688,29 +688,11 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    {
       case BSV_MOVIE_CTL_IS_INITED:
          return (bsv_movie_state_handle != NULL);
-      case BSV_MOVIE_CTL_SET_START_RECORDING:
-         bsv_movie_state.movie_start_recording = true;
-         break;
-      case BSV_MOVIE_CTL_UNSET_START_RECORDING:
-         bsv_movie_state.movie_start_recording = false;
-         break;
-      case BSV_MOVIE_CTL_SET_START_PLAYBACK:
-         bsv_movie_state.movie_start_playback = true;
-         break;
-      case BSV_MOVIE_CTL_UNSET_START_PLAYBACK:
-         bsv_movie_state.movie_start_playback = false;
-         break;
-      case BSV_MOVIE_CTL_SET_END_EOF:
-         bsv_movie_state.eof_exit = true;
-         break;
       case BSV_MOVIE_CTL_SET_END:
          bsv_movie_state.movie_end = true;
          break;
       case BSV_MOVIE_CTL_UNSET_END:
          bsv_movie_state.movie_end = false;
-         break;
-      case BSV_MOVIE_CTL_UNSET_PLAYBACK:
-         bsv_movie_state.movie_playback = false;
          break;
       case BSV_MOVIE_CTL_FRAME_REWIND:
          bsv_movie_frame_rewind(bsv_movie_state_handle);
@@ -2084,14 +2066,14 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                      sizeof(bsv_movie_state.movie_start_path));
 
                if (c == 'P')
-                  bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_PLAYBACK, NULL);
+                  bsv_movie_state.movie_start_playback = true;
                else
-                  bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_PLAYBACK, NULL);
+                  bsv_movie_state.movie_start_playback = false;
 
                if (c == 'R')
-                  bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_RECORDING, NULL);
+                  bsv_movie_state.movie_start_recording = true;
                else
-                  bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_RECORDING, NULL);
+                  bsv_movie_state.movie_start_recording = false;
                break;
 
             case 'M':
@@ -2269,7 +2251,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                exit(0);
 
             case RA_OPT_EOF_EXIT:
-               bsv_movie_ctl(BSV_MOVIE_CTL_SET_END_EOF, NULL);
+               bsv_movie_state.eof_exit = true;
                break;
 
             case RA_OPT_VERSION:
@@ -3944,8 +3926,6 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
-   static bool old_quit_key            = false;
-   static bool quit_key                = false;
    static bool old_focus               = true;
    bool is_focused                     = false;
    bool is_alive                       = false;
@@ -4054,6 +4034,8 @@ static enum runloop_state runloop_check_state(
    /* Check quit key */
    {
       bool trig_quit_key;
+      static bool quit_key     = false;
+      static bool old_quit_key = false;
       static bool runloop_exec = false;
       quit_key                 = BIT256_GET(
             current_input, RARCH_QUIT_KEY);
@@ -4084,6 +4066,8 @@ static enum runloop_state runloop_check_state(
 
       if (time_to_exit(trig_quit_key))
       {
+         bool quit_runloop = false;
+
          if ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)
                && runloop_max_frames_screenshot)
          {
@@ -4121,16 +4105,25 @@ static enum runloop_state runloop_check_state(
             content_info.args               = NULL;
             content_info.environ_get        = NULL;
 
-            if (!task_push_start_dummy_core(&content_info))
-               goto quit;
-
-            /* Loads dummy core instead of exiting RetroArch completely.
-             * Aborts core shutdown if invoked. */
-            rarch_ctl(RARCH_CTL_UNSET_SHUTDOWN, NULL);
-            runloop_core_shutdown_initiated = false;
+            if (task_push_start_dummy_core(&content_info))
+            {
+               /* Loads dummy core instead of exiting RetroArch completely.
+                * Aborts core shutdown if invoked. */
+               rarch_ctl(RARCH_CTL_UNSET_SHUTDOWN, NULL);
+               runloop_core_shutdown_initiated = false;
+            }
+            else
+               quit_runloop = true;
          }
          else
-            goto quit;
+            quit_runloop = true;
+
+         if (quit_runloop)
+         {
+            old_quit_key                 = quit_key;
+            retroarch_main_quit();
+            return RUNLOOP_STATE_QUIT;
+         }
       }
    }
 
@@ -4718,11 +4711,6 @@ static enum runloop_state runloop_check_state(
    }
 
    return RUNLOOP_STATE_ITERATE;
-
-quit:
-   old_quit_key                 = quit_key;
-   retroarch_main_quit();
-   return RUNLOOP_STATE_QUIT;
 }
 
 void runloop_set(enum runloop_action action)
