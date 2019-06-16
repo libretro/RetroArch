@@ -3420,9 +3420,6 @@ static enum runloop_state runloop_check_state(
 #endif
    static bool old_quit_key            = false;
    static bool quit_key                = false;
-   static bool trig_quit_key           = false;
-   static retro_time_t quit_key_time   = 0;
-   static bool runloop_exec            = false;
    static bool old_focus               = true;
    bool is_focused                     = false;
    bool is_alive                       = false;
@@ -3531,6 +3528,8 @@ static enum runloop_state runloop_check_state(
 
    /* Check quit key */
    {
+      bool trig_quit_key;
+      static bool runloop_exec = false;
       quit_key                 = BIT256_GET(
             current_input, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
@@ -3539,19 +3538,23 @@ static enum runloop_state runloop_check_state(
       /* Check double press if enabled */
       if (trig_quit_key && settings->bools.quit_press_twice)
       {
-         retro_time_t cur_time;
-         float target_hz = 0.0;
-
-         rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
-
-         cur_time        = cpu_features_get_time_usec();
-         trig_quit_key   = trig_quit_key && (cur_time - quit_key_time < QUIT_DELAY_USEC);
-         quit_key_time   = cur_time;
+         static retro_time_t quit_key_time   = 0;
+         retro_time_t cur_time = cpu_features_get_time_usec();
+         trig_quit_key         = (cur_time - quit_key_time < QUIT_DELAY_USEC);
+         quit_key_time         = cur_time;
 
          if (!trig_quit_key)
+         {
+            float target_hz = 0.0;
+
+            rarch_environment_cb(
+                  RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
+
             runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1,
                   QUIT_DELAY_USEC * target_hz / 1000000,
-                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
       }
 
       if (time_to_exit(trig_quit_key))
