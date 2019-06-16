@@ -264,7 +264,6 @@ OBJ += frontend/frontend.o \
        input/drivers_hid/null_hid.o \
        input/drivers_joypad/null_joypad.o \
        playlist.o \
-       movie.o \
        record/record_driver.o \
        record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \

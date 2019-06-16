@@ -29,8 +29,8 @@
 
 #include "state_manager.h"
 #include "../msg_hash.h"
-#include "../movie.h"
 #include "../core.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
 

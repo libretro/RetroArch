@@ -433,6 +433,44 @@ void rarch_log_file_deinit(void);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);
 
+enum rarch_movie_type
+{
+   RARCH_MOVIE_PLAYBACK = 0,
+   RARCH_MOVIE_RECORD
+};
+
+enum bsv_ctl_state
+{
+   BSV_MOVIE_CTL_NONE = 0,
+   BSV_MOVIE_CTL_IS_INITED,
+   BSV_MOVIE_CTL_SET_INPUT,
+   BSV_MOVIE_CTL_SET_START_RECORDING,
+   BSV_MOVIE_CTL_UNSET_START_RECORDING,
+   BSV_MOVIE_CTL_SET_START_PLAYBACK,
+   BSV_MOVIE_CTL_UNSET_START_PLAYBACK,
+   BSV_MOVIE_CTL_UNSET_PLAYBACK,
+   BSV_MOVIE_CTL_FRAME_REWIND,
+   BSV_MOVIE_CTL_SET_END_EOF,
+   BSV_MOVIE_CTL_SET_END,
+   BSV_MOVIE_CTL_UNSET_END
+};
+
+void bsv_movie_deinit(void);
+
+bool bsv_movie_init(void);
+
+bool bsv_movie_is_playback_on(void);
+
+bool bsv_movie_is_playback_off(void);
+
+void bsv_movie_set_path(const char *path);
+
+bool bsv_movie_get_input(int16_t *bsv_data);
+
+bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
+
+bool bsv_movie_check(void);
+
 RETRO_END_DECLS
 
 #endif
