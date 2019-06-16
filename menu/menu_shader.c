@@ -451,16 +451,13 @@ void menu_shader_manager_clear_pass_path(unsigned i)
  **/
 unsigned menu_shader_manager_get_type(const void *data)
 {
-   enum rarch_shader_type type;
+   unsigned type                     = RARCH_SHADER_NONE;
    const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
    uint8_t i                         = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;
-
-   type = video_shader_parse_type(shader->path,
-         RARCH_SHADER_NONE);
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -473,7 +470,9 @@ unsigned menu_shader_manager_get_type(const void *data)
          case RARCH_SHADER_CG:
          case RARCH_SHADER_GLSL:
          case RARCH_SHADER_SLANG:
-            if (type != pass_type)
+            if (type == RARCH_SHADER_NONE)
+               type = pass_type;
+            else if (type != pass_type)
                return RARCH_SHADER_NONE;
             break;
          default:
@@ -499,7 +498,7 @@ void menu_shader_manager_apply_changes(void)
 
    shader_type = menu_shader_manager_get_type(shader);
 
-   if (shader_type != RARCH_SHADER_NONE)
+   if (shader->passes && shader_type != RARCH_SHADER_NONE)
    {
       menu_shader_manager_save_preset(NULL, true, false);
       return;
