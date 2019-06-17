@@ -202,7 +202,6 @@ typedef struct midi_driver
 } midi_driver_t;
 
 const void *midi_driver_find_handle(int index);
-const char *midi_driver_find_ident(int index);
 
 struct string_list *midi_driver_get_avail_inputs(void);
 struct string_list *midi_driver_get_avail_outputs(void);

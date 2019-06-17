@@ -159,7 +159,6 @@ DEF_FLAGS += -DHAVE_DR_MP3
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
-       ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
        ui/drivers/null/ui_null_window.o \
        ui/drivers/null/ui_null_browser_window.o \
@@ -263,7 +262,6 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/midi_driver.o \
        midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)

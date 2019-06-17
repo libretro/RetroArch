@@ -378,6 +378,283 @@ static void retroarch_msg_queue_init(void)
 #endif
 }
 
+/* UI Companion */
+
+static const ui_companion_driver_t *ui_companion_drivers[] = {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   &ui_companion_win32,
+#endif
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+   &ui_companion_cocoa,
+#endif
+#ifdef HAVE_COCOATOUCH
+   &ui_companion_cocoatouch,
+#endif
+   &ui_companion_null,
+   NULL
+};
+
+static bool main_ui_companion_is_on_foreground = false;
+static const ui_companion_driver_t *ui_companion = NULL;
+static void *ui_companion_data = NULL;
+
+#ifdef HAVE_QT
+static void *ui_companion_qt_data = NULL;
+static bool qt_is_inited = false;
+#endif
+
+/**
+ * ui_companion_find_driver:
+ * @ident               : Identifier name of driver to find.
+ *
+ * Finds driver with @ident. Does not initialize.
+ *
+ * Returns: pointer to driver if successful, otherwise NULL.
+ **/
+const ui_companion_driver_t *ui_companion_find_driver(const char *ident)
+{
+   unsigned i;
+
+   for (i = 0; ui_companion_drivers[i]; i++)
+   {
+      if (string_is_equal(ui_companion_drivers[i]->ident, ident))
+         return ui_companion_drivers[i];
+   }
+
+   return NULL;
+}
+
+void ui_companion_set_foreground(unsigned enable)
+{
+   main_ui_companion_is_on_foreground = enable;
+}
+
+bool ui_companion_is_on_foreground(void)
+{
+   return main_ui_companion_is_on_foreground;
+}
+
+/**
+ * ui_companion_init_first:
+ *
+ * Finds first suitable driver and initialize.
+ *
+ * Returns: pointer to first suitable driver, otherwise NULL.
+ **/
+const ui_companion_driver_t *ui_companion_init_first(void)
+{
+   return ui_companion_drivers[0];
+}
+
+const ui_companion_driver_t *ui_companion_get_ptr(void)
+{
+   return ui_companion;
+}
+
+void ui_companion_event_command(enum event_command action)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+
+   if (ui && ui->event_command)
+      ui->event_command(ui_companion_data, action);
+#ifdef HAVE_QT
+   if (ui_companion_qt.toggle && qt_is_inited)
+      ui_companion_qt.event_command(ui_companion_qt_data, action);
+#endif
+}
+
+void ui_companion_driver_deinit(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+
+   if (!ui)
+      return;
+   if (ui->deinit)
+      ui->deinit(ui_companion_data);
+
+#ifdef HAVE_QT
+   if (qt_is_inited)
+   {
+      ui_companion_qt.deinit(ui_companion_qt_data);
+      ui_companion_qt_data = NULL;
+   }
+#endif
+   ui_companion_data = NULL;
+}
+
+void ui_companion_driver_init_first(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
+
+#ifdef HAVE_QT
+   if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
+   {
+      ui_companion_qt_data = ui_companion_qt.init();
+      qt_is_inited = true;
+   }
+#endif
+
+   if (ui_companion)
+   {
+      if (settings->bools.ui_companion_start_on_boot)
+      {
+         if (ui_companion->init)
+            ui_companion_data = ui_companion->init();
+
+         ui_companion_driver_toggle(false);
+      }
+   }
+}
+
+void ui_companion_driver_toggle(bool force)
+{
+#ifdef HAVE_QT
+   settings_t *settings = config_get_ptr();
+#endif
+
+   if (ui_companion && ui_companion->toggle)
+      ui_companion->toggle(ui_companion_data, false);
+
+#ifdef HAVE_QT
+   if (settings->bools.desktop_menu_enable)
+   {
+      if ((settings->bools.ui_companion_toggle || force) && !qt_is_inited)
+      {
+         ui_companion_qt_data = ui_companion_qt.init();
+         qt_is_inited = true;
+      }
+
+      if (ui_companion_qt.toggle && qt_is_inited)
+         ui_companion_qt.toggle(ui_companion_qt_data, force);
+   }
+#endif
+}
+
+void ui_companion_driver_notify_refresh(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+#ifdef HAVE_QT
+   settings_t            *settings = config_get_ptr();
+#endif
+
+   if (!ui)
+      return;
+   if (ui->notify_refresh)
+      ui->notify_refresh(ui_companion_data);
+#ifdef HAVE_QT
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt.notify_refresh && qt_is_inited)
+         ui_companion_qt.notify_refresh(ui_companion_qt_data);
+#endif
+}
+
+void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return;
+   if (ui->notify_list_loaded)
+      ui->notify_list_loaded(ui_companion_data, list, menu_list);
+}
+
+void ui_companion_driver_notify_content_loaded(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return;
+   if (ui->notify_content_loaded)
+      ui->notify_content_loaded(ui_companion_data);
+}
+
+void ui_companion_driver_free(void)
+{
+   ui_companion = NULL;
+}
+
+const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return NULL;
+   return ui->msg_window;
+}
+
+const ui_window_t *ui_companion_driver_get_window_ptr(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return NULL;
+   return ui->window;
+}
+
+const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return NULL;
+   return ui->browser_window;
+}
+
+#ifdef HAVE_QT
+const ui_application_t *ui_companion_driver_get_qt_application_ptr(void)
+{
+   return ui_companion_qt.application;
+}
+#endif
+
+const ui_application_t *ui_companion_driver_get_application_ptr(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return NULL;
+   return ui->application;
+}
+
+void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+#ifdef HAVE_QT
+   settings_t *settings = config_get_ptr();
+#endif
+
+   if (ui && ui->msg_queue_push)
+      ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
+#ifdef HAVE_QT
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt.msg_queue_push && qt_is_inited)
+         ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
+#endif
+}
+
+void *ui_companion_driver_get_main_window(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui || !ui->get_main_window)
+      return NULL;
+   return ui->get_main_window(ui_companion_data);
+}
+
+const char *ui_companion_driver_get_ident(void)
+{
+   const ui_companion_driver_t *ui = ui_companion;
+   if (!ui)
+      return "null";
+   return ui->ident;
+}
+
+void ui_companion_driver_log_msg(const char *msg)
+{
+#ifdef HAVE_QT
+   settings_t *settings = config_get_ptr();
+
+   if (settings && settings->bools.desktop_menu_enable)
+      if (ui_companion_qt_data && qt_is_inited)
+         ui_companion_qt.log_msg(ui_companion_qt_data, msg);
+#endif
+}
+
 /* Recording */
 
 static const record_driver_t *record_drivers[] = {
@@ -3985,6 +4262,568 @@ void input_config_save_keybind(void *data, const char *prefix,
    save_keybind_joykey (conf, prefix, base, bind, save_empty);
    save_keybind_axis   (conf, prefix, base, bind, save_empty);
    save_keybind_mbutton(conf, prefix, base, bind, save_empty);
+}
+
+/* MIDI */
+
+#define MIDI_DRIVER_BUF_SIZE 4096
+
+extern midi_driver_t midi_null;
+extern midi_driver_t midi_winmm;
+extern midi_driver_t midi_alsa;
+
+static midi_driver_t *midi_drivers[] = {
+#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI)
+   &midi_alsa,
+#endif
+#ifdef HAVE_WINMM
+   &midi_winmm,
+#endif
+   &midi_null
+};
+
+static midi_driver_t *midi_drv = &midi_null;
+static void *midi_drv_data;
+static struct string_list *midi_drv_inputs;
+static struct string_list *midi_drv_outputs;
+static bool midi_drv_input_enabled;
+static bool midi_drv_output_enabled;
+static uint8_t *midi_drv_input_buffer;
+static uint8_t *midi_drv_output_buffer;
+static midi_event_t midi_drv_input_event;
+static midi_event_t midi_drv_output_event;
+static bool midi_drv_output_pending;
+
+static const uint8_t midi_drv_ev_sizes[128] =
+{
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
+
+static midi_driver_t *midi_driver_find_driver(const char *ident)
+{
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(midi_drivers); ++i)
+   {
+      if (string_is_equal(midi_drivers[i]->ident, ident))
+         return midi_drivers[i];
+   }
+
+   RARCH_ERR("[MIDI]: Unknown driver \"%s\", falling back to \"null\" driver.\n", ident);
+
+   return &midi_null;
+}
+
+const void *midi_driver_find_handle(int index)
+{
+   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
+      return NULL;
+
+   return midi_drivers[index];
+}
+
+const char *midi_driver_find_ident(int index)
+{
+   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
+      return NULL;
+
+   return midi_drivers[index]->ident;
+}
+
+struct string_list *midi_driver_get_avail_inputs(void)
+{
+   return midi_drv_inputs;
+}
+
+struct string_list *midi_driver_get_avail_outputs(void)
+{
+   return midi_drv_outputs;
+}
+bool midi_driver_set_all_sounds_off(void)
+{
+   midi_event_t event;
+   uint8_t i;
+   uint8_t data[3]     = { 0xB0, 120, 0 };
+   bool result         = true;
+
+   if (!midi_drv_data || !midi_drv_output_enabled)
+      return false;
+
+   event.data       = data;
+   event.data_size  = sizeof(data);
+   event.delta_time = 0;
+
+   for (i = 0; i < 16; ++i)
+   {
+      data[0] = 0xB0 | i;
+
+      if (!midi_drv->write(midi_drv_data, &event))
+         result = false;
+   }
+
+   if (!midi_drv->flush(midi_drv_data))
+      result = false;
+
+   if (!result)
+      RARCH_ERR("[MIDI]: All sounds off failed.\n");
+
+   return result;
+}
+
+bool midi_driver_set_volume(unsigned volume)
+{
+   midi_event_t event;
+   uint8_t data[8]     = { 0xF0, 0x7F, 0x7F, 0x04, 0x01, 0, 0, 0xF7 };
+
+   if (!midi_drv_data || !midi_drv_output_enabled)
+      return false;
+
+   volume = (unsigned)(163.83 * volume + 0.5);
+   if (volume > 16383)
+      volume = 16383;
+
+   data[5] = (uint8_t)(volume & 0x7F);
+   data[6] = (uint8_t)(volume >> 7);
+
+   event.data = data;
+   event.data_size = sizeof(data);
+   event.delta_time = 0;
+
+   if (!midi_drv->write(midi_drv_data, &event))
+   {
+      RARCH_ERR("[MIDI]: Volume change failed.\n");
+      return false;
+   }
+
+   return true;
+}
+
+bool midi_driver_init_io_buffers(void)
+{
+   midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+
+   if (!midi_drv_input_buffer || !midi_drv_output_buffer)
+      return false;
+
+   midi_drv_input_event.data = midi_drv_input_buffer;
+   midi_drv_input_event.data_size = 0;
+
+   midi_drv_output_event.data = midi_drv_output_buffer;
+   midi_drv_output_event.data_size = 0;
+
+   return true;
+}
+
+bool midi_driver_init(void)
+{
+   settings_t *settings             = config_get_ptr();
+   union string_list_elem_attr attr = {0};
+   const char *err_str              = NULL;
+
+   midi_drv_inputs                  = string_list_new();
+   midi_drv_outputs                 = string_list_new();
+
+   RARCH_LOG("[MIDI]: Initializing ...\n");
+
+   if (!settings)
+      err_str = "settings unavailable";
+   else if (!midi_drv_inputs || !midi_drv_outputs)
+      err_str = "string_list_new failed";
+   else if (!string_list_append(midi_drv_inputs, "Off", attr) ||
+         !string_list_append(midi_drv_outputs, "Off", attr))
+      err_str = "string_list_append failed";
+   else
+   {
+      char * input  = NULL;
+      char * output = NULL;
+
+      midi_drv = midi_driver_find_driver(settings->arrays.midi_driver);
+      if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
+         strlcpy(settings->arrays.midi_driver, midi_drv->ident,
+               sizeof(settings->arrays.midi_driver));
+
+      if (!midi_drv->get_avail_inputs(midi_drv_inputs))
+         err_str = "list of input devices unavailable";
+      else if (!midi_drv->get_avail_outputs(midi_drv_outputs))
+         err_str = "list of output devices unavailable";
+      else
+      {
+         if (string_is_not_equal(settings->arrays.midi_input, "Off"))
+         {
+            if (string_list_find_elem(midi_drv_inputs, settings->arrays.midi_input))
+               input = settings->arrays.midi_input;
+            else
+            {
+               RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
+                     settings->arrays.midi_input);
+               strlcpy(settings->arrays.midi_input, "Off",
+                     sizeof(settings->arrays.midi_input));
+            }
+         }
+
+         if (string_is_not_equal(settings->arrays.midi_output, "Off"))
+         {
+            if (string_list_find_elem(midi_drv_outputs, settings->arrays.midi_output))
+               output = settings->arrays.midi_output;
+            else
+            {
+               RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
+                     settings->arrays.midi_output);
+               strlcpy(settings->arrays.midi_output, "Off",
+                     sizeof(settings->arrays.midi_output));
+            }
+         }
+
+         midi_drv_data = midi_drv->init(input, output);
+         if (!midi_drv_data)
+            err_str = "driver init failed";
+         else
+         {
+            midi_drv_input_enabled = input != NULL;
+            midi_drv_output_enabled = output != NULL;
+
+            if (!midi_driver_init_io_buffers())
+               err_str = "out of memory";
+            else
+            {
+               if (input)
+                  RARCH_LOG("[MIDI]: Input device \"%s\".\n", input);
+               else
+                  RARCH_LOG("[MIDI]: Input disabled.\n");
+               if (output)
+               {
+                  RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
+                  midi_driver_set_volume(settings->uints.midi_volume);
+               }
+               else
+                  RARCH_LOG("[MIDI]: Output disabled.\n");
+            }
+         }
+      }
+   }
+
+   if (err_str)
+   {
+      midi_driver_free();
+      RARCH_ERR("[MIDI]: Initialization failed (%s).\n", err_str);
+   }
+   else
+      RARCH_LOG("[MIDI]: Initialized \"%s\" driver.\n", midi_drv->ident);
+
+   return err_str == NULL;
+}
+
+void midi_driver_free(void)
+{
+   if (midi_drv_data)
+   {
+      midi_drv->free(midi_drv_data);
+      midi_drv_data = NULL;
+   }
+
+   if (midi_drv_inputs)
+   {
+      string_list_free(midi_drv_inputs);
+      midi_drv_inputs = NULL;
+   }
+   if (midi_drv_outputs)
+   {
+      string_list_free(midi_drv_outputs);
+      midi_drv_outputs = NULL;
+   }
+
+   if (midi_drv_input_buffer)
+   {
+      free(midi_drv_input_buffer);
+      midi_drv_input_buffer = NULL;
+   }
+   if (midi_drv_output_buffer)
+   {
+      free(midi_drv_output_buffer);
+      midi_drv_output_buffer = NULL;
+   }
+
+   midi_drv_input_enabled  = false;
+   midi_drv_output_enabled = false;
+}
+
+bool midi_driver_set_input(const char *input)
+{
+   if (!midi_drv_data)
+   {
+#ifdef DEBUG
+      RARCH_ERR("[MIDI]: midi_driver_set_input called on uninitialized driver.\n");
+#endif
+      return false;
+   }
+
+   if (string_is_equal(input, "Off"))
+      input = NULL;
+
+   if (!midi_drv->set_input(midi_drv_data, input))
+   {
+      if (input)
+         RARCH_ERR("[MIDI]: Failed to change input device to \"%s\".\n", input);
+      else
+         RARCH_ERR("[MIDI]: Failed to disable input.\n");
+      return false;
+   }
+
+   if (input)
+      RARCH_LOG("[MIDI]: Input device changed to \"%s\".\n", input);
+   else
+      RARCH_LOG("[MIDI]: Input disabled.\n");
+
+   midi_drv_input_enabled = input != NULL;
+
+   return true;
+}
+
+bool midi_driver_set_output(const char *output)
+{
+   if (!midi_drv_data)
+   {
+#ifdef DEBUG
+      RARCH_ERR("[MIDI]: midi_driver_set_output called on uninitialized driver.\n");
+#endif
+      return false;
+   }
+
+   if (string_is_equal(output, "Off"))
+      output = NULL;
+
+   if (!midi_drv->set_output(midi_drv_data, output))
+   {
+      if (output)
+         RARCH_ERR("[MIDI]: Failed to change output device to \"%s\".\n", output);
+      else
+         RARCH_ERR("[MIDI]: Failed to disable output.\n");
+      return false;
+   }
+
+   if (output)
+   {
+      settings_t *settings = config_get_ptr();
+
+      midi_drv_output_enabled = true;
+      RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
+
+      if (settings)
+         midi_driver_set_volume(settings->uints.midi_volume);
+      else
+         RARCH_ERR("[MIDI]: Volume change failed (settings unavailable).\n");
+   }
+   else
+   {
+      midi_drv_output_enabled = false;
+      RARCH_LOG("[MIDI]: Output disabled.\n");
+   }
+
+   return true;
+}
+
+bool midi_driver_input_enabled(void)
+{
+   return midi_drv_input_enabled;
+}
+
+bool midi_driver_output_enabled(void)
+{
+   return midi_drv_output_enabled;
+}
+
+bool midi_driver_read(uint8_t *byte)
+{
+   static int i;
+
+   if (!midi_drv_data || !midi_drv_input_enabled || !byte)
+   {
+#ifdef DEBUG
+      if (!midi_drv_data)
+         RARCH_ERR("[MIDI]: midi_driver_read called on uninitialized driver.\n");
+      else if (!midi_drv_input_enabled)
+         RARCH_ERR("[MIDI]: midi_driver_read called when input is disabled.\n");
+      else
+         RARCH_ERR("[MIDI]: midi_driver_read called with null pointer.\n");
+#endif
+      return false;
+   }
+
+   if (i == midi_drv_input_event.data_size)
+   {
+      midi_drv_input_event.data_size = MIDI_DRIVER_BUF_SIZE;
+      if (!midi_drv->read(midi_drv_data, &midi_drv_input_event))
+      {
+         midi_drv_input_event.data_size = i;
+         return false;
+      }
+
+      i = 0;
+
+#ifdef DEBUG
+      if (midi_drv_input_event.data_size == 1)
+         RARCH_LOG("[MIDI]: In [0x%02X].\n",
+               midi_drv_input_event.data[0]);
+      else if (midi_drv_input_event.data_size == 2)
+         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X].\n",
+               midi_drv_input_event.data[0],
+               midi_drv_input_event.data[1]);
+      else if (midi_drv_input_event.data_size == 3)
+         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X, 0x%02X].\n",
+               midi_drv_input_event.data[0],
+               midi_drv_input_event.data[1],
+               midi_drv_input_event.data[2]);
+      else
+         RARCH_LOG("[MIDI]: In [0x%02X, ...], size %u.\n",
+               midi_drv_input_event.data[0],
+               midi_drv_input_event.data_size);
+#endif
+   }
+
+   *byte = midi_drv_input_event.data[i++];
+
+   return true;
+}
+
+bool midi_driver_write(uint8_t byte, uint32_t delta_time)
+{
+   static int event_size;
+
+   if (!midi_drv_data || !midi_drv_output_enabled)
+   {
+#ifdef DEBUG
+      if (!midi_drv_data)
+         RARCH_ERR("[MIDI]: midi_driver_write called on uninitialized driver.\n");
+      else
+         RARCH_ERR("[MIDI]: midi_driver_write called when output is disabled.\n");
+#endif
+      return false;
+   }
+
+   if (byte >= 0x80)
+   {
+      if (midi_drv_output_event.data_size &&
+            midi_drv_output_event.data[0] == 0xF0)
+      {
+         if (byte == 0xF7)
+            event_size = (int)midi_drv_output_event.data_size + 1;
+         else
+         {
+            if (!midi_drv->write(midi_drv_data, &midi_drv_output_event))
+               return false;
+
+#ifdef DEBUG
+            if (midi_drv_output_event.data_size == 1)
+               RARCH_LOG("[MIDI]: Out [0x%02X].\n",
+                     midi_drv_output_event.data[0]);
+            else if (midi_drv_output_event.data_size == 2)
+               RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
+                     midi_drv_output_event.data[0],
+                     midi_drv_output_event.data[1]);
+            else if (midi_drv_output_event.data_size == 3)
+               RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
+                     midi_drv_output_event.data[0],
+                     midi_drv_output_event.data[1],
+                     midi_drv_output_event.data[2]);
+            else
+               RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
+                     midi_drv_output_event.data[0],
+                     midi_drv_output_event.data_size);
+#endif
+
+            midi_drv_output_pending          = true;
+            event_size                       = (int)midi_driver_get_event_size(byte);
+            midi_drv_output_event.data_size  = 0;
+            midi_drv_output_event.delta_time = 0;
+         }
+      }
+      else
+      {
+         event_size                          = (int)midi_driver_get_event_size(byte);
+         midi_drv_output_event.data_size     = 0;
+         midi_drv_output_event.delta_time    = 0;
+      }
+   }
+
+   if (midi_drv_output_event.data_size < MIDI_DRIVER_BUF_SIZE)
+   {
+      midi_drv_output_event.data[midi_drv_output_event.data_size] = byte;
+      ++midi_drv_output_event.data_size;
+      midi_drv_output_event.delta_time += delta_time;
+   }
+   else
+   {
+#ifdef DEBUG
+      RARCH_ERR("[MIDI]: Output event dropped.\n");
+#endif
+      return false;
+   }
+
+   if (midi_drv_output_event.data_size == event_size)
+   {
+      if (!midi_drv->write(midi_drv_data, &midi_drv_output_event))
+         return false;
+
+#ifdef DEBUG
+      if (midi_drv_output_event.data_size == 1)
+         RARCH_LOG("[MIDI]: Out [0x%02X].\n",
+               midi_drv_output_event.data[0]);
+      else if (midi_drv_output_event.data_size == 2)
+         RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
+               midi_drv_output_event.data[0],
+               midi_drv_output_event.data[1]);
+      else if (midi_drv_output_event.data_size == 3)
+         RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
+               midi_drv_output_event.data[0],
+               midi_drv_output_event.data[1],
+               midi_drv_output_event.data[2]);
+      else
+         RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
+               midi_drv_output_event.data[0],
+               midi_drv_output_event.data_size);
+#endif
+
+      midi_drv_output_pending = true;
+   }
+
+   return true;
+}
+
+bool midi_driver_flush(void)
+{
+   if (!midi_drv_data)
+   {
+#ifdef DEBUG
+      RARCH_ERR("[MIDI]: midi_driver_flush called on uninitialized driver.\n");
+#endif
+      return false;
+   }
+
+   if (midi_drv_output_pending)
+      midi_drv_output_pending = !midi_drv->flush(midi_drv_data);
+
+   return !midi_drv_output_pending;
+}
+
+size_t midi_driver_get_event_size(uint8_t status)
+{
+   if (status < 0x80)
+   {
+#ifdef DEBUG
+      RARCH_ERR("[MIDI]: midi_driver_get_event_size called with invalid status.\n");
+#endif
+      return 0;
+   }
+
+   return midi_drv_ev_sizes[status - 0x80];
 }
 
 /* Audio */
@@ -13121,8 +13960,8 @@ static enum runloop_state runloop_check_state(
 
    if (!video_driver_is_threaded_internal())
    {
-      const ui_application_t *application =
-         ui_companion_driver_get_application_ptr();
+      const ui_application_t *application = ui_companion 
+         ? ui_companion->application : NULL;
       if (application)
          application->process_events();
    }

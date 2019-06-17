@@ -874,8 +874,6 @@ AUDIO
 /*============================================================
 MIDI
 ============================================================ */
-#include "../midi/midi_driver.c"
-
 #include "../midi/drivers/null_midi.c"
 
 #ifdef HAVE_WINMM
@@ -1043,8 +1041,6 @@ FRONTEND
 /*============================================================
 UI
 ============================================================ */
-#include "../ui/ui_companion_driver.c"
-
 #include "../ui/drivers/ui_null.c"
 #include "../ui/drivers/null/ui_null_window.c"
 #include "../ui/drivers/null/ui_null_browser_window.c"
