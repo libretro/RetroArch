@@ -1211,7 +1211,7 @@ void audio_driver_dsp_filter_free(void)
    audio_driver_dsp = NULL;
 }
 
-void audio_driver_dsp_filter_init(const char *device)
+bool audio_driver_dsp_filter_init(const char *device)
 {
    struct string_list *plugs     = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
@@ -1221,31 +1221,24 @@ void audio_driver_dsp_filter_init(const char *device)
    fill_pathname_basedir(basedir, device, str_size);
 
    if (!frontend_driver_get_core_extension(ext_name, str_size))
-      goto error;
+   {
+      free(ext_name);
+      free(basedir);
+      return false;
+   }
 
    plugs = dir_list_new(basedir, ext_name, false, true, false, false);
+   free(ext_name);
+   free(basedir);
    if (!plugs)
-      goto error;
+      return false;
 #endif
    audio_driver_dsp = retro_dsp_filter_new(
          device, plugs, audio_driver_input);
    if (!audio_driver_dsp)
-      goto error;
+      return false;
 
-#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   free(basedir);
-   free(ext_name);
-#endif
-
-   return;
-
-error:
-#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   free(basedir);
-   free(ext_name);
-#endif
-   if (!audio_driver_dsp)
-      RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
+   return true;
 }
 
 void audio_driver_set_buffer_size(size_t bufsize)
@@ -1969,11 +1962,6 @@ void audio_driver_frame_is_reverse(void)
             audio_driver_rewind_buf + audio_driver_rewind_ptr,
             audio_driver_rewind_size - audio_driver_rewind_ptr,
             runloop_slowmotion);
-}
-
-static void audio_driver_destroy_data(void)
-{
-   audio_driver_context_audio_data = NULL;
 }
 
 void audio_driver_suspend(void)
@@ -3400,7 +3388,7 @@ void driver_uninit(int flags)
       input_driver_destroy_data();
 
    if ((flags & DRIVER_AUDIO_MASK))
-      audio_driver_destroy_data();
+      audio_driver_context_audio_data = NULL;
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();
@@ -4499,14 +4487,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
 }
 
-static bool drivers_set_active(void)
-{
-   video_driver_set_active();
-   audio_driver_set_active();
-
-   return true;
-}
-
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char *config_directory                 = NULL;
@@ -4631,7 +4611,8 @@ bool retroarch_main_init(int argc, char *argv[])
    char log_file_name[128];
 #endif
 
-   drivers_set_active();
+   video_driver_set_active();
+   audio_driver_active = true;
 
    if (setjmp(error_sjlj_context) > 0)
    {
@@ -4998,7 +4979,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          sthread_tls_create(&rarch_tls);
          sthread_tls_set(&rarch_tls, MAGIC_POINTER);
 #endif
-         drivers_set_active();
+         video_driver_set_active();
+         audio_driver_active = true;
          {
             uint8_t i;
             for (i = 0; i < MAX_USERS; i++)

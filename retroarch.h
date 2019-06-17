@@ -615,7 +615,7 @@ bool audio_driver_mixer_extension_supported(const char *ext);
 
 void audio_driver_dsp_filter_free(void);
 
-void audio_driver_dsp_filter_init(const char *device);
+bool audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
 

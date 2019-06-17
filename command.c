@@ -2201,7 +2201,12 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
             if (string_is_empty(settings->paths.path_audio_dsp_plugin))
                break;
-            audio_driver_dsp_filter_init(settings->paths.path_audio_dsp_plugin);
+            if (!audio_driver_dsp_filter_init(
+                     settings->paths.path_audio_dsp_plugin))
+            {
+               RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
+                     settings->paths.path_audio_dsp_plugin);
+            }
          }
          break;
       case CMD_EVENT_GPU_RECORD_DEINIT:
