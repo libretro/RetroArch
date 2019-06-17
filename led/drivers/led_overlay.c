@@ -2,11 +2,12 @@
 #include "../led_driver.h"
 #include "../led_defines.h"
 
+#include "../../input/input_overlay.h"
+
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../../gfx/video_driver.h"
-#include "../../input/input_overlay.h"
 
 typedef struct
 {

@@ -36,7 +36,6 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/win32_common.h"
 #include "../../performance_counters.h"

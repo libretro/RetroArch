@@ -29,7 +29,6 @@
 #include "../../retroarch.h"
 #include "../../managers/state_manager.h"
 
-#include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"

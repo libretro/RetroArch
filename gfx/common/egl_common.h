@@ -26,7 +26,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 #ifndef EGL_CONTEXT_FLAGS_KHR
 #define EGL_CONTEXT_FLAGS_KHR 0x30FC

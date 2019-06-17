@@ -27,7 +27,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../frontend/frontend_driver.h"
 #include "win32_common.h"
 

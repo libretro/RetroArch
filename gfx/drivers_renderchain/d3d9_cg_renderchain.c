@@ -34,8 +34,8 @@
 #include "../common/d3d_common.h"
 #include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
-#include "../video_driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "d3d9_renderchain.h"

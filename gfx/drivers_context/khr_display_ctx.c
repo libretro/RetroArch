@@ -58,7 +58,8 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
    *height = khr->height;
 }
 
-static void *gfx_ctx_khr_display_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_khr_display_init(video_frame_info_t *video_info,
+      void *video_driver)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)

@@ -37,8 +37,8 @@
 
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../video_driver.h" /* needed to set refresh rate in set resolution */
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT

@@ -40,11 +40,11 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
 
 #include "../../gfx/common/wayland_common.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* TODO/FIXME -

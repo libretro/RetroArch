@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include "video_display_server.h"
-#include "video_driver.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 static const video_display_server_t *current_display_server = &dispserv_null;

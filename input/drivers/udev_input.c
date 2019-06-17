@@ -69,10 +69,10 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
-#include "../../configuration.h"
 
+#include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)

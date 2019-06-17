@@ -55,8 +55,6 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
-#include "../gfx/video_driver.h"
-
 #include "tasks_internal.h"
 
 typedef struct screenshot_task_state screenshot_task_state_t;

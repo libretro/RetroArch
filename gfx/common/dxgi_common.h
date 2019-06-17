@@ -786,7 +786,7 @@ static INLINE HRESULT DXGICreateFactory2(DXGIFactory2* factory)
 
 /* internal */
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../drivers_shader/glslang_util.h"
 
 #define DXGI_COLOR_RGBA(r, g, b, a) (((UINT32)(a) << 24) | ((UINT32)(b) << 16) | ((UINT32)(g) << 8) | ((UINT32)(r) << 0))

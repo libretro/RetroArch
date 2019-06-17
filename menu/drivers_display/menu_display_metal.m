@@ -22,7 +22,7 @@
 #include "../menu_driver.h"
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #import "../../gfx/common/metal_common.h"
 
 static const float *menu_display_metal_get_default_vertices(void)

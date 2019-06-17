@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "video_driver.h"
+#include "../retroarch.h"
 #include "video_crt_switch.h"
 #include "video_display_server.h"
 

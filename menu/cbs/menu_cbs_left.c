@@ -36,7 +36,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../driver.h"
-#include "../../gfx/video_driver.h"
 #include "../../retroarch.h"
 #include "../../network/netplay/netplay.h"
 

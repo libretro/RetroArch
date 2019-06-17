@@ -16,10 +16,10 @@
 #ifndef _MENU_WIDGETS_H
 #define _MENU_WIDGETS_H
 
-#include "../../gfx/video_driver.h"
-
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
+
+#include "../../retroarch.h"
 
 #define DEFAULT_BACKDROP               0.75f
 

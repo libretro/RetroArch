@@ -29,9 +29,9 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button */

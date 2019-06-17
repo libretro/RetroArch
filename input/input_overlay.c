@@ -30,8 +30,8 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#include "../retroarch.h"
 #include "../verbosity.h"
-#include "../gfx/video_driver.h"
 #include "input_overlay.h"
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)

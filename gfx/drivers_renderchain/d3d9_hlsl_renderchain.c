@@ -32,8 +32,6 @@
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 
-#include "../video_driver.h"
-
 #include "../video_shader_parse.h"
 #include "../../managers/state_manager.h"
 #include "../../configuration.h"

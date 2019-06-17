@@ -36,8 +36,6 @@
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
 
-#include "../../gfx/video_driver.h"
-
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 

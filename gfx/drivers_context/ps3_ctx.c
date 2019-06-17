@@ -33,11 +33,11 @@
 #include <compat/strl.h>
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../defines/ps3_defines.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
-#include "../video_driver.h"
 
 typedef struct gfx_ctx_ps3_data
 {

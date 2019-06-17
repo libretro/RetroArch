@@ -25,7 +25,7 @@
 
 #include "../menu_driver.h"
 
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../gfx/common/d3d_common.h"
 #include "../../gfx/common/d3d9_common.h"
 

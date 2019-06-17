@@ -37,7 +37,6 @@
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../video_driver.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../frontend/frontend_driver.h"
 

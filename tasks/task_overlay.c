@@ -26,8 +26,8 @@
 
 #include "tasks_internal.h"
 
-#include "../gfx/video_driver.h"
 #include "../input/input_overlay.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 typedef struct overlay_loader overlay_loader_t;

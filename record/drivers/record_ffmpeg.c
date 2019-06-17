@@ -67,7 +67,7 @@ extern "C" {
 #include "../record_driver.h"
 
 #include "../../configuration.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifndef AV_CODEC_FLAG_QSCALE

@@ -25,8 +25,8 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/gdi_common.h"
 #include "../common/win32_common.h"

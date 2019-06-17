@@ -13,14 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../video_driver.h"
-
-#include "../../driver.h"
-#include "../../verbosity.h"
-
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>
+
+#include "../../driver.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
+
 #include "../../libretro-common/include/libretro_gskit_ps2.h"
 
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen

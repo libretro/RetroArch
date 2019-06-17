@@ -40,8 +40,6 @@
 #include "../menu_setting.h"
 #include "../widgets/menu_input_dialog.h"
 
-#include "../../gfx/video_driver.h"
-
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"

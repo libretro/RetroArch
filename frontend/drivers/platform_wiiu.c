@@ -45,9 +45,8 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../paths.h"
-#include "../../verbosity.h"
 #include "../../retroarch.h"
-#include "../../gfx/video_driver.h"
+#include "../../verbosity.h"
 
 #include "hbl.h"
 #include "wiiu_dbg.h"

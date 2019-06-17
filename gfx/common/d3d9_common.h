@@ -24,7 +24,7 @@
 #include <d3d9.h>
 
 #include "d3d_common.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \

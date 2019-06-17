@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 #include "../../../../gfx/video_display_server.h"
-#include "../../../../gfx/video_driver.h"
+#include "../../../../retroarch.h"
 
 #ifndef CXX_BUILD
 }

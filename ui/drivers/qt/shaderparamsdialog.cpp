@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+#include <math.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>

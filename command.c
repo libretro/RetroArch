@@ -91,7 +91,6 @@
 #include "ui/ui_companion_driver.h"
 #include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
-#include "gfx/video_driver.h"
 #include "list_special.h"
 
 #include "core.h"

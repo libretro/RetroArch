@@ -1060,7 +1060,7 @@ static INLINE HRESULT D3D10CreateTexture2DShaderResourceView(
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 typedef struct d3d10_vertex_t
 {

@@ -1260,7 +1260,7 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 #include <gfx/math/matrix_4x4.h>
 
 #include "../common/d3dcompiler_common.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../drivers_shader/slang_process.h"
 
 typedef struct d3d12_vertex_t

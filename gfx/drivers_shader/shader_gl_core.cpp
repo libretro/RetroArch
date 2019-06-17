@@ -20,6 +20,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
+#include <math.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -30,7 +31,7 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 

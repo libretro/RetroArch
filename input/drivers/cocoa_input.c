@@ -28,7 +28,7 @@
 
 #include "cocoa_input.h"
 
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../driver.h"
 
 #include "../drivers_keyboard/keyboard_event_apple.h"

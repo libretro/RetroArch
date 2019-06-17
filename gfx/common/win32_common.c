@@ -56,7 +56,7 @@
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU

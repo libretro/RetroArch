@@ -30,7 +30,7 @@
 #include "slang_reflection.h"
 #include "slang_reflection.hpp"
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 

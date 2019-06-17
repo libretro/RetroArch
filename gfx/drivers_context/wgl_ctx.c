@@ -41,9 +41,9 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../video_driver.h"
 
 #include "../common/win32_common.h"
 

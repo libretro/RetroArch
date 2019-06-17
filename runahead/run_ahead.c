@@ -11,7 +11,6 @@
 
 #include "../core.h"
 #include "../dynamic.h"
-#include "../gfx/video_driver.h"
 #include "../configuration.h"
 #include "../retroarch.h"
 

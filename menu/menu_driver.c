@@ -43,8 +43,6 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-#include "../gfx/video_driver.h"
-
 #include "menu_animation.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"

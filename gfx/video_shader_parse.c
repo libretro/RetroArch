@@ -31,11 +31,11 @@
 #include <streams/interface_stream.h>
 #include <lists/string_list.h>
 
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../retroarch.h"
+#include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
-#include "video_driver.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)

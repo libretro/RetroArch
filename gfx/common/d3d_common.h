@@ -36,7 +36,7 @@
 #include <retro_common_api.h>
 
 #include "../font_driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 RETRO_BEGIN_DECLS
 

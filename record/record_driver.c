@@ -30,7 +30,6 @@
 #include "../command.h"
 #include "../configuration.h"
 #include "../driver.h"
-#include "../gfx/video_driver.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"

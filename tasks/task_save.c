@@ -48,7 +48,6 @@
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
-#include "../gfx/video_driver.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../verbosity.h"

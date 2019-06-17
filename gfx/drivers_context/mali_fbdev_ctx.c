@@ -92,7 +92,8 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
    *height = mali->height;
 }
 
-static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info,
+      void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;

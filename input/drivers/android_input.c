@@ -37,12 +37,12 @@
 
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
-#include "../../gfx/video_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3

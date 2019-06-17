@@ -55,7 +55,6 @@
 #include "record/record_driver.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
 

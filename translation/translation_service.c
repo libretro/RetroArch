@@ -4,7 +4,6 @@
 #include <libretro.h>
 #include <encodings/base64.h>
 #include "translation_service.h"
-#include "gfx/video_driver.h"
 #include "gfx/video_frame.h"
 #include "gfx/scaler/scaler.h"
 #include "tasks/tasks_internal.h"

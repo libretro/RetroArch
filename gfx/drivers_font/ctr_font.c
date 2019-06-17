@@ -24,11 +24,11 @@
 #include <retro_math.h>
 
 #include "../font_driver.h"
-#include "../video_driver.h"
 #include "../common/ctr_common.h"
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* FIXME: this is just a workaround to avoid
