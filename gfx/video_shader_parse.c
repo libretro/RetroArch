@@ -738,6 +738,12 @@ bool video_shader_read_conf_preset(config_file_t *conf,
       return false;
    }
 
+   if (!shaders)
+   {
+      RARCH_ERR("Need to define at least 1 shader.\n");
+      return false;
+   }
+
    if (!config_get_int(conf, "feedback_pass",
             &shader->feedback_pass))
       shader->feedback_pass = -1;
