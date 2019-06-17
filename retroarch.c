@@ -1481,7 +1481,7 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
 {
    unsigned user;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   settings_t   *settings = config_get_ptr();
+   settings_t   *settings = configuration_settings;
 #endif
    input_remote_t *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
