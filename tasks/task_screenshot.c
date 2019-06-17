@@ -496,7 +496,6 @@ bool take_screenshot(
       bool silence, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   settings_t *settings        = config_get_ptr();
    bool is_paused              = false;
    bool is_idle                = false;
    bool is_slowmotion          = false;

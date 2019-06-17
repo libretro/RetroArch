@@ -7996,7 +7996,6 @@ bool retroarch_main_init(int argc, char *argv[])
 
    {
       const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
-      settings_t     *settings = config_get_ptr();
 
       if (!string_is_empty(fullpath))
       {
