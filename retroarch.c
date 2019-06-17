@@ -4829,15 +4829,15 @@ int runloop_iterate(unsigned *sleep_ms)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)
    {
-      struct retro_keybind *general_binds = input_config_binds[i];
-      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
-      if (dpad_mode == ANALOG_DPAD_NONE)
-         continue;
-
-      input_push_analog_dpad(general_binds, dpad_mode);
-      input_push_analog_dpad(auto_binds,    dpad_mode);
+      if (dpad_mode != ANALOG_DPAD_NONE)
+      {
+         struct retro_keybind *general_binds = input_config_binds[i];
+         struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+         input_push_analog_dpad(general_binds, dpad_mode);
+         input_push_analog_dpad(auto_binds,    dpad_mode);
+      }
    }
 
    if ((video_frame_delay > 0) && !input_nonblock_state)
@@ -4884,15 +4884,16 @@ int runloop_iterate(unsigned *sleep_ms)
 
    for (i = 0; i < max_users; i++)
    {
-      struct retro_keybind *general_binds = input_config_binds[i];
-      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
-      if (dpad_mode == ANALOG_DPAD_NONE)
-         continue;
+      if (dpad_mode != ANALOG_DPAD_NONE)
+      {
+         struct retro_keybind *general_binds = input_config_binds[i];
+         struct retro_keybind *auto_binds    = input_autoconf_binds[i];
 
-      input_pop_analog_dpad(general_binds);
-      input_pop_analog_dpad(auto_binds);
+         input_pop_analog_dpad(general_binds);
+         input_pop_analog_dpad(auto_binds);
+      }
    }
 
    if (bsv_movie_state_handle)
