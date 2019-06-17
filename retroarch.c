@@ -484,9 +484,9 @@ void ui_companion_driver_deinit(void)
 
 void ui_companion_driver_init_first(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
-   ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
+   ui_companion         = (ui_companion_driver_t*)ui_companion_init_first();
 
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
@@ -511,7 +511,7 @@ void ui_companion_driver_init_first(void)
 void ui_companion_driver_toggle(bool force)
 {
 #ifdef HAVE_QT
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 #endif
 
    if (ui_companion && ui_companion->toggle)
@@ -536,7 +536,7 @@ void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
-   settings_t            *settings = config_get_ptr();
+   settings_t            *settings = configuration_settings;
 #endif
 
    if (!ui)
@@ -616,7 +616,7 @@ void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsi
 {
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
-   settings_t *settings = config_get_ptr();
+   settings_t *settings            = configuration_settings;
 #endif
 
    if (ui && ui->msg_queue_push)
@@ -647,7 +647,7 @@ const char *ui_companion_driver_get_ident(void)
 void ui_companion_driver_log_msg(const char *msg)
 {
 #ifdef HAVE_QT
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    if (settings && settings->bools.desktop_menu_enable)
       if (ui_companion_qt_data && qt_is_inited)
@@ -4424,7 +4424,7 @@ bool midi_driver_init_io_buffers(void)
 
 bool midi_driver_init(void)
 {
-   settings_t *settings             = config_get_ptr();
+   settings_t *settings             = configuration_settings;
    union string_list_elem_attr attr = {0};
    const char *err_str              = NULL;
 
@@ -4611,7 +4611,7 @@ bool midi_driver_set_output(const char *output)
 
    if (output)
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings    = configuration_settings;
 
       midi_drv_output_enabled = true;
       RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
