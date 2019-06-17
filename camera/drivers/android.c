@@ -17,7 +17,7 @@
 
 #include <glsym/glsym.h>
 
-#include "../camera_driver.h"
+#include "../../retroarch.h"
 
 typedef struct android_camera
 {

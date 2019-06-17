@@ -120,7 +120,6 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_driver.h"
-#include "camera/camera_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
@@ -302,6 +301,8 @@ static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
+
+/* BSV Movie */
 
 struct bsv_state
 {
@@ -804,6 +805,207 @@ bool bsv_movie_check(void)
 
    return true;
 }
+
+/* Camera */
+
+static const camera_driver_t *camera_drivers[] = {
+#ifdef HAVE_V4L2
+   &camera_v4l2,
+#endif
+#ifdef EMSCRIPTEN
+   &camera_rwebcam,
+#endif
+#ifdef ANDROID
+   &camera_android,
+#endif
+   &camera_null,
+   NULL,
+};
+
+static struct retro_camera_callback camera_cb;
+static const camera_driver_t *camera_driver   = NULL;
+static void *camera_data                      = NULL;
+static bool camera_driver_active              = false;
+
+/**
+ * camera_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to camera driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *camera_driver_find_handle(int idx)
+{
+   const void *drv = camera_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * camera_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of camera driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *camera_driver_find_ident(int idx)
+{
+   const camera_driver_t *drv = camera_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
+ * config_get_camera_driver_options:
+ *
+ * Get an enumerated list of all camera driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all camera driver names,
+ * separated by '|'.
+ **/
+const char* config_get_camera_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
+}
+
+void driver_camera_stop(void)
+{
+   camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
+}
+
+bool driver_camera_start(void)
+{
+   return camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
+}
+
+bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
+{
+   settings_t        *settings = config_get_ptr();
+
+   switch (state)
+   {
+      case RARCH_CAMERA_CTL_DESTROY:
+         camera_driver_active   = false;
+         camera_driver          = NULL;
+         camera_data            = NULL;
+         break;
+      case RARCH_CAMERA_CTL_SET_ACTIVE:
+         camera_driver_active = true;
+         break;
+      case RARCH_CAMERA_CTL_FIND_DRIVER:
+         {
+            int i;
+            driver_ctx_info_t drv;
+
+            drv.label = "camera_driver";
+            drv.s     = settings->arrays.camera_driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i         = (int)drv.len;
+
+            if (i >= 0)
+               camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
+            else
+            {
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+                        settings->arrays.camera_driver);
+                  RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+                  for (d = 0; camera_driver_find_handle(d); d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
+
+                  RARCH_WARN("Going to default to first camera driver...\n");
+               }
+
+               camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
+
+               if (!camera_driver)
+                  retroarch_fail(1, "find_camera_driver()");
+            }
+         }
+         break;
+      case RARCH_CAMERA_CTL_UNSET_ACTIVE:
+         camera_driver_active = false;
+         break;
+      case RARCH_CAMERA_CTL_IS_ACTIVE:
+        return camera_driver_active;
+      case RARCH_CAMERA_CTL_DEINIT:
+        if (camera_data && camera_driver)
+        {
+           if (camera_cb.deinitialized)
+              camera_cb.deinitialized();
+
+           if (camera_driver->free)
+              camera_driver->free(camera_data);
+        }
+
+        camera_data = NULL;
+        break;
+      case RARCH_CAMERA_CTL_STOP:
+        if (     camera_driver
+              && camera_driver->stop
+              && camera_data)
+           camera_driver->stop(camera_data);
+        break;
+      case RARCH_CAMERA_CTL_START:
+        if (camera_driver && camera_data && camera_driver->start)
+        {
+           if (settings->bools.camera_allow)
+              return camera_driver->start(camera_data);
+
+           runloop_msg_queue_push(
+                 "Camera is explicitly disabled.\n", 1, 180, false,
+                 NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+        }
+        break;
+      case RARCH_CAMERA_CTL_SET_CB:
+        {
+           struct retro_camera_callback *cb =
+              (struct retro_camera_callback*)data;
+           camera_cb          = *cb;
+        }
+        break;
+      case RARCH_CAMERA_CTL_INIT:
+        /* Resource leaks will follow if camera is initialized twice. */
+        if (camera_data)
+           return false;
+
+        camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
+
+        if (!camera_driver)
+           return false;
+
+        camera_data = camera_driver->init(
+              *settings->arrays.camera_device ? settings->arrays.camera_device : NULL,
+              camera_cb.caps,
+              settings->uints.camera_width ?
+              settings->uints.camera_width : camera_cb.width,
+              settings->uints.camera_height ?
+              settings->uints.camera_height : camera_cb.height);
+
+        if (!camera_data)
+        {
+           RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
+           camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+        }
+
+        if (camera_cb.initialized)
+           camera_cb.initialized();
+        break;
+      default:
+         break;
+   }
+
+   return true;
+}
+
+/* Drivers */
 
 /**
  * find_driver_nonempty:
@@ -4824,7 +5026,10 @@ int runloop_iterate(unsigned *sleep_ms)
       bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr]
          = intfstream_tell(bsv_movie_state_handle->file);
 
-   camera_driver_poll();
+   if (camera_cb.caps && camera_driver && camera_driver->poll && camera_data)
+      camera_driver->poll(camera_data,
+            camera_cb.frame_raw_framebuffer,
+            camera_cb.frame_opengl_texture);
 
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)

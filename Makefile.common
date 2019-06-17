@@ -216,7 +216,6 @@ OBJ += frontend/frontend.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
        gfx/video_crt_switch.o \
-       camera/camera_driver.o \
        wifi/wifi_driver.o \
        location/location_driver.o \
        configuration.o \

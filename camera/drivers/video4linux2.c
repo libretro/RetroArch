@@ -45,7 +45,7 @@
 
 #include <compat/strl.h>
 
-#include "../camera_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 struct buffer

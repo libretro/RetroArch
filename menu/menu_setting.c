@@ -74,7 +74,6 @@
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"
-#include "../camera/camera_driver.h"
 #include "../wifi/wifi_driver.h"
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"

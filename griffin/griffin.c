@@ -892,7 +892,6 @@ DRIVERS
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
 #include "../libretro-common/audio/audio_mixer.c"
-#include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
 
 /*============================================================

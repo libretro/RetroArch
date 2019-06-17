@@ -53,7 +53,6 @@
 #include "command.h"
 
 #include "audio/audio_driver.h"
-#include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
 #include "driver.h"
