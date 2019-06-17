@@ -53,7 +53,6 @@
 #include "command.h"
 
 #include "audio/audio_driver.h"
-#include "location/location_driver.h"
 #include "record/record_driver.h"
 #include "driver.h"
 #include "performance_counters.h"
@@ -663,7 +662,7 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
    rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
    rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
-   location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
    performance_counters_clear();
@@ -1440,7 +1439,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (system)
             system->location_cb    = *cb;
 
-         location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
+         rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
          break;
       }
 

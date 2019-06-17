@@ -35,8 +35,6 @@
 #include "wifi/wifi_driver.h"
 #endif
 
-#include "location/location_driver.h"
-
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
 #include "core_info.h"

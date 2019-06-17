@@ -192,7 +192,11 @@ enum rarch_ctl_state
    RARCH_CTL_CAMERA_SET_CB,
 
    /* BSV Movie */
-   RARCH_CTL_BSV_MOVIE_IS_INITED
+   RARCH_CTL_BSV_MOVIE_IS_INITED,
+
+   /* Location */
+   RARCH_CTL_LOCATION_SET_ACTIVE,
+   RARCH_CTL_LOCATION_UNSET_ACTIVE
 };
 
 enum rarch_capabilities
@@ -462,6 +466,108 @@ bool bsv_movie_get_input(int16_t *bsv_data);
 void bsv_movie_set_input(int16_t *bsv_data);
 
 bool bsv_movie_check(void);
+
+/* Location */
+
+enum rarch_location_ctl_state
+{
+   RARCH_LOCATION_CTL_NONE = 0,
+};
+
+typedef struct location_driver
+{
+   void *(*init)(void);
+   void (*free)(void *data);
+
+   bool (*start)(void *data);
+   void (*stop)(void *data);
+
+   bool (*get_position)(void *data, double *lat, double *lon,
+         double *horiz_accuracy, double *vert_accuracy);
+   void (*set_interval)(void *data, unsigned interval_msecs,
+         unsigned interval_distance);
+   const char *ident;
+} location_driver_t;
+
+extern location_driver_t location_corelocation;
+extern location_driver_t location_android;
+extern location_driver_t location_null;
+
+/**
+ * driver_location_start:
+ *
+ * Starts location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool driver_location_start(void);
+
+/**
+ * driver_location_stop:
+ *
+ * Stops location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+void driver_location_stop(void);
+
+/**
+ * driver_location_get_position:
+ * @lat                : Latitude of current position.
+ * @lon                : Longitude of current position.
+ * @horiz_accuracy     : Horizontal accuracy.
+ * @vert_accuracy      : Vertical accuracy.
+ *
+ * Gets current positioning information from
+ * location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
+bool driver_location_get_position(double *lat, double *lon,
+      double *horiz_accuracy, double *vert_accuracy);
+
+/**
+ * driver_location_set_interval:
+ * @interval_msecs     : Interval time in milliseconds.
+ * @interval_distance  : Distance at which to update.
+ *
+ * Sets interval update time for location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ **/
+void driver_location_set_interval(unsigned interval_msecs,
+      unsigned interval_distance);
+
+/**
+ * config_get_location_driver_options:
+ *
+ * Get an enumerated list of all location driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all location driver names,
+ * separated by '|'.
+ **/
+const char* config_get_location_driver_options(void);
+
+/**
+ * location_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to location driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *location_driver_find_handle(int index);
+
+/**
+ * location_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of location driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *location_driver_find_ident(int index);
 
 /* Camera */
 

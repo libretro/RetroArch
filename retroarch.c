@@ -121,7 +121,6 @@
 #endif
 #include "gfx/video_driver.h"
 #include "record/record_driver.h"
-#include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
@@ -792,6 +791,221 @@ bool bsv_movie_check(void)
    return true;
 }
 
+/* Location */
+
+static const location_driver_t *location_drivers[] = {
+#ifdef ANDROID
+   &location_android,
+#endif
+   &location_null,
+   NULL,
+};
+
+static const location_driver_t *location_driver;
+static void *location_data;
+
+static bool location_driver_active              = false;
+
+/**
+ * location_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to location driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *location_driver_find_handle(int idx)
+{
+   const void *drv = location_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * location_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of location driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *location_driver_find_ident(int idx)
+{
+   const location_driver_t *drv = location_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
+ * config_get_location_driver_options:
+ *
+ * Get an enumerated list of all location driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all location driver names,
+ * separated by '|'.
+ **/
+const char* config_get_location_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
+}
+
+static void find_location_driver(void)
+{
+   int i;
+   driver_ctx_info_t drv;
+   settings_t *settings = config_get_ptr();
+
+   drv.label = "location_driver";
+   drv.s     = settings->arrays.location_driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i         = (int)drv.len;
+
+   if (i >= 0)
+      location_driver = (const location_driver_t*)location_driver_find_handle(i);
+   else
+   {
+
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
+               settings->arrays.location_driver);
+         RARCH_LOG_OUTPUT("Available location drivers are:\n");
+         for (d = 0; location_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
+
+         RARCH_WARN("Going to default to first location driver...\n");
+      }
+
+      location_driver = (const location_driver_t*)location_driver_find_handle(0);
+
+      if (!location_driver)
+         retroarch_fail(1, "find_location_driver()");
+   }
+}
+
+/**
+ * driver_location_start:
+ *
+ * Starts location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool driver_location_start(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (location_driver && location_data && location_driver->start)
+   {
+      if (settings->bools.location_allow)
+         return location_driver->start(location_data);
+
+      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+   return false;
+}
+
+/**
+ * driver_location_stop:
+ *
+ * Stops location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+void driver_location_stop(void)
+{
+   if (location_driver && location_driver->stop && location_data)
+      location_driver->stop(location_data);
+}
+
+/**
+ * driver_location_set_interval:
+ * @interval_msecs     : Interval time in milliseconds.
+ * @interval_distance  : Distance at which to update.
+ *
+ * Sets interval update time for location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ **/
+void driver_location_set_interval(unsigned interval_msecs,
+      unsigned interval_distance)
+{
+   if (location_driver && location_driver->set_interval
+         && location_data)
+      location_driver->set_interval(location_data,
+            interval_msecs, interval_distance);
+}
+
+/**
+ * driver_location_get_position:
+ * @lat                : Latitude of current position.
+ * @lon                : Longitude of current position.
+ * @horiz_accuracy     : Horizontal accuracy.
+ * @vert_accuracy      : Vertical accuracy.
+ *
+ * Gets current positioning information from
+ * location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
+bool driver_location_get_position(double *lat, double *lon,
+      double *horiz_accuracy, double *vert_accuracy)
+{
+   if (location_driver && location_driver->get_position
+         && location_data)
+      return location_driver->get_position(location_data,
+            lat, lon, horiz_accuracy, vert_accuracy);
+
+   *lat = 0.0;
+   *lon = 0.0;
+   *horiz_accuracy = 0.0;
+   *vert_accuracy = 0.0;
+   return false;
+}
+
+static void init_location(void)
+{
+   rarch_system_info_t *system = &runloop_system;
+
+   /* Resource leaks will follow if location interface is initialized twice. */
+   if (location_data)
+      return;
+
+   find_location_driver();
+
+   location_data = location_driver->init();
+
+   if (!location_data)
+   {
+      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
+      rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+   }
+
+   if (system->location_cb.initialized)
+      system->location_cb.initialized();
+}
+
+static void uninit_location(void)
+{
+   rarch_system_info_t *system = &runloop_system;
+
+   if (location_data && location_driver)
+   {
+      if (system->location_cb.deinitialized)
+         system->location_cb.deinitialized();
+
+      if (location_driver->free)
+         location_driver->free(location_data);
+   }
+
+   location_data = NULL;
+}
+
 /* Camera */
 
 static const camera_driver_t *camera_drivers[] = {
@@ -1273,7 +1487,7 @@ void drivers_init(int flags)
    if (flags & DRIVER_LOCATION_MASK)
    {
       /* Only initialize location driver if we're ever going to use it. */
-      if (location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
+      if (location_driver_active)
          init_location();
    }
 
@@ -1362,7 +1576,7 @@ void driver_uninit(int flags)
 #endif
 
    if ((flags & DRIVER_LOCATION_MASK))
-      location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
+      uninit_location();
 
    if ((flags & DRIVER_CAMERA_MASK))
    {
@@ -1423,7 +1637,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 #ifdef HAVE_MENU
          menu_driver_destroy();
 #endif
-         location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
+         location_driver_active    = false;
+         location_driver           = NULL;
 
          /* Camera */
          camera_driver_active   = false;
@@ -2887,6 +3102,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_LOCATION_SET_ACTIVE:
+         location_driver_active = true;
+         break;
+      case RARCH_CTL_LOCATION_UNSET_ACTIVE:
+         location_driver_active = false;
+         break;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
