@@ -79,8 +79,6 @@
 #include "../cheevos-new/cheevos.h"
 #endif
 
-#include "../../record/record_driver.h"
-
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif

@@ -64,8 +64,6 @@ extern "C" {
 }
 #endif
 
-#include "../record_driver.h"
-
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"

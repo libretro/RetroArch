@@ -76,7 +76,6 @@
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
 #include "../paths.h"
-#include "../record/record_driver.h"
 #include "../retroarch.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"

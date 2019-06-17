@@ -50,7 +50,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../record/record_driver.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"

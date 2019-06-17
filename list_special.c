@@ -39,7 +39,6 @@
 #include "frontend/frontend_driver.h"
 #include "core_info.h"
 #include "input/input_driver.h"
-#include "record/record_driver.h"
 #include "midi/midi_driver.h"
 #include "configuration.h"
 #include "retroarch.h"

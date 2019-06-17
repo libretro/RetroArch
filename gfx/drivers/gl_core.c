@@ -33,7 +33,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../record/record_driver.h"
 #include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"

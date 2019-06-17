@@ -38,13 +38,12 @@
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
-#include "../record/record_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include <objbase.h>
 #endif
 
-/* griffin hack */
+/* Griffin hack */
 #ifdef HAVE_QT
 #ifndef HAVE_MAIN
 #define HAVE_MAIN
