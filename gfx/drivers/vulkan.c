@@ -830,7 +830,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 {
    const char     *shader_path = retroarch_get_shader_preset();
 
-   enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
+   enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
    if (type == RARCH_SHADER_NONE)
    {

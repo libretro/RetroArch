@@ -1130,7 +1130,6 @@ void video_shader_write_conf_preset(config_file_t *conf,
 
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
-   gfx_ctx_flags_t flags;
    enum display_flags flag = GFX_CTX_FLAGS_NONE;
 
    switch (type)
@@ -1152,10 +1151,7 @@ bool video_shader_is_supported(enum rarch_shader_type type)
          return false;
    }
 
-   if (video_driver_get_all_flags(&flags, flag))
-      return true;
-
-   return false;
+   return video_driver_test_all_flags(flag);
 }
 
 bool video_shader_any_supported(void)
@@ -1193,10 +1189,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
       if (string_is_equal_case_insensitive(ext, "cgp") ||
           string_is_equal_case_insensitive(ext, "cg")
          )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-            return RARCH_SHADER_CG;
-      }
+         return RARCH_SHADER_CG;
    }
 
    {
@@ -1204,10 +1197,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
       if (string_is_equal_case_insensitive(ext, "glslp") ||
           string_is_equal_case_insensitive(ext, "glsl")
          )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-            return RARCH_SHADER_GLSL;
-      }
+         return RARCH_SHADER_GLSL;
    }
 
    {
@@ -1215,10 +1205,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
       if (string_is_equal_case_insensitive(ext, "slangp") ||
           string_is_equal_case_insensitive(ext, "slang")
          )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-            return RARCH_SHADER_SLANG;
-      }
+         return RARCH_SHADER_SLANG;
    }
 
    return RARCH_SHADER_NONE;
@@ -1227,22 +1214,18 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
 /**
  * video_shader_parse_type:
  * @path              : Shader path.
- * @fallback          : Fallback shader type in case no
- *                      type could be found.
  *
  * Parses type of shader.
  *
- * Returns: value of shader type on success, otherwise will return
- * user-supplied @fallback value.
+ * Returns: value of shader type if it could be determined,
+ * otherwise RARCH_SHADER_NONE.
  **/
-enum rarch_shader_type video_shader_parse_type(const char *path,
-      enum rarch_shader_type fallback)
+enum rarch_shader_type video_shader_parse_type(const char *path)
 {
    bool is_preset = false;
    if (!path)
-      return fallback;
-   return  video_shader_get_type_from_ext(path_get_extension(path),
-         &is_preset);
+      return RARCH_SHADER_NONE;
+   return video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 }
 
 /**

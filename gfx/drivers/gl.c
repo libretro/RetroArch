@@ -2075,15 +2075,11 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
 {
    video_shader_ctx_init_t init_data;
    bool ret                        = false;
-   enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
    const char *shader_path         = retroarch_get_shader_preset();
+   enum rarch_shader_type type     = video_shader_parse_type(shader_path);
 
-   if (shader_path)
-   {
-      type = video_shader_parse_type(shader_path,
-         gl->core_context_in_use
-         ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
-   }
+   if (type == RARCH_SHADER_NONE)
+      type = gl->core_context_in_use ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE;
 
    switch (type)
    {

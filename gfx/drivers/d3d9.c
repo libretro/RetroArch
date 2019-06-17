@@ -1274,8 +1274,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (settings->bools.video_shader_enable)
    {
       enum rarch_shader_type type =
-         video_shader_parse_type(retroarch_get_shader_preset(),
-               RARCH_SHADER_NONE);
+         video_shader_parse_type(retroarch_get_shader_preset());
 
       switch (type)
       {

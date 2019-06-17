@@ -6804,44 +6804,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
             {
-               gfx_ctx_flags_t flags;
-
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-               {
-                  if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
-                           msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0))
-                     count++;
-               }
+               if (menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
+                     MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
             }
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               {
-                  if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
-                           msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0))
-                     count++;
-               }
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
+                        MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
             }
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-               {
-                  if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
-                           msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0))
-                     count++;
-               }
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
+                        MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
             }
 #endif
          }
@@ -7474,37 +7464,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             else if (type == DISPLAYLIST_SHADER_PASS)
                info->type_default = FILE_TYPE_SHADER;
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-               {
-                  if (type == DISPLAYLIST_SHADER_PRESET)
-                     string_list_append(str_list, "cgp", attr);
-                  else if (type == DISPLAYLIST_SHADER_PASS)
-                     string_list_append(str_list, "cg", attr);
-               }
+               if (type == DISPLAYLIST_SHADER_PRESET)
+                  string_list_append(str_list, "cgp", attr);
+               else if (type == DISPLAYLIST_SHADER_PASS)
+                  string_list_append(str_list, "cg", attr);
             }
-
+          
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               {
-                  if (type == DISPLAYLIST_SHADER_PRESET)
-                     string_list_append(str_list, "glslp", attr);
-                  else if (type == DISPLAYLIST_SHADER_PASS)
-                     string_list_append(str_list, "glsl", attr);
-               }
+               if (type == DISPLAYLIST_SHADER_PRESET)
+                  string_list_append(str_list, "glslp", attr);
+               else if (type == DISPLAYLIST_SHADER_PASS)
+                  string_list_append(str_list, "glsl", attr);
             }
-
+          
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-               {
-                  if (type == DISPLAYLIST_SHADER_PRESET)
-                     string_list_append(str_list, "slangp", attr);
-                  else if (type == DISPLAYLIST_SHADER_PASS)
-                     string_list_append(str_list, "slang", attr);
-               }
+               if (type == DISPLAYLIST_SHADER_PRESET)
+                  string_list_append(str_list, "slangp", attr);
+               else if (type == DISPLAYLIST_SHADER_PASS)
+                  string_list_append(str_list, "slang", attr);
             }
 
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");

@@ -254,7 +254,7 @@ bool command_set_shader(const char *arg)
    enum rarch_shader_type     type = video_shader_get_type_from_ext(
          path_get_extension(arg), &is_preset);
 
-   if (type == RARCH_SHADER_NONE)
+   if (type == RARCH_SHADER_NONE || !video_shader_is_supported(type))
       return false;
 
    snprintf(msg, sizeof(msg),

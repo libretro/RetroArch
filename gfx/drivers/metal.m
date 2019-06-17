@@ -73,7 +73,7 @@ static void *metal_init(const video_info_t *video,
 
    if (shader_path)
    {
-      enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_SLANG);
+      enum rarch_shader_type type = video_shader_parse_type(shader_path);
       metal_set_shader(((__bridge void *)md), type, shader_path);
    }
 

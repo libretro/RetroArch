@@ -462,8 +462,7 @@ unsigned menu_shader_manager_get_type(const void *data)
    for (i = 0; i < shader->passes; i++)
    {
       enum rarch_shader_type pass_type =
-         video_shader_parse_type(shader->pass[i].source.path,
-               RARCH_SHADER_NONE);
+         video_shader_parse_type(shader->pass[i].source.path);
 
       switch (pass_type)
       {

@@ -10026,10 +10026,9 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 
 bool video_context_driver_swap_interval(int *interval)
 {
-   gfx_ctx_flags_t flags;
    int current_interval                   = *interval;
    settings_t *settings                   = configuration_settings;
-   bool adaptive_vsync_enabled            = video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+   bool adaptive_vsync_enabled            = video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!current_video_context.swap_interval)
       return false;
@@ -10172,19 +10171,23 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
+/**
+ * video_driver_test_all_flags:
+ * @testflag          : flag to test
+ *
+ * Poll both the video and context driver's flags and test
+ * whether testflag is set or not.
+ **/
+bool video_driver_test_all_flags(enum display_flags testflag)
 {
-   if (!flags)
-      return false;
+   gfx_ctx_flags_t flags;
 
-   if (video_driver_get_flags(flags))
-      if (BIT32_GET(flags->flags, flag))
+   if (video_driver_get_flags(&flags))
+      if (BIT32_GET(flags.flags, testflag))
          return true;
 
-   flags->flags = 0;
-
-   if (video_context_driver_get_flags(flags))
-      if (BIT32_GET(flags->flags, flag))
+   if (video_context_driver_get_flags(&flags))
+      if (BIT32_GET(flags.flags, testflag))
          return true;
 
    return false;

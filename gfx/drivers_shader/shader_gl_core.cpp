@@ -719,7 +719,7 @@ void Framebuffer::init()
 
    levels = num_miplevels(size.width, size.height);
    if (max_levels < levels)
-	   levels = max_levels;
+      levels = max_levels;
    if (levels == 0)
       levels = 1;
 

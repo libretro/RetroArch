@@ -779,9 +779,9 @@ static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_p
 
 static bool gl_core_init_filter_chain(gl_core_t *gl)
 {
-   const char *shader_path = retroarch_get_shader_preset();
+   const char *shader_path     = retroarch_get_shader_preset();
 
-   enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
+   enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
    if (type == RARCH_SHADER_NONE)
    {

@@ -2026,8 +2026,7 @@ bool video_driver_is_threaded(void);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
-bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
-      enum display_flags flag);
+bool video_driver_test_all_flags(enum display_flags testflag);
 
 void video_driver_set_gpu_device_string(const char *str);
 
