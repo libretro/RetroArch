@@ -1355,7 +1355,6 @@ MENU
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-#include "../input/input_remote.c"
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
