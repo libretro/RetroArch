@@ -329,30 +329,29 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
-static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char *msg,
+static bool menu_widgets_msg_queue_push_internal(
+      retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category,
+      enum message_queue_icon icon,
+      enum message_queue_category category,
       unsigned prio, bool flush)
 {
    menu_widget_msg_t* msg_widget = NULL;
 
-   if (!menu_widgets_inited)
-      return false;
-
-   #ifdef HAVE_THREADS
+#ifdef HAVE_THREADS
    runloop_msg_queue_lock();
-   #endif
+#endif
 
    ui_companion_driver_msg_queue_push(msg,
-      prio, task ? duration : duration * 60 / 1000, flush);
+         prio, task ? duration : duration * 60 / 1000, flush);
 
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
       {
-         msg_widget = (menu_widget_msg_t*) task->frontend_userdata;
+         msg_widget           = (menu_widget_msg_t*) task->frontend_userdata;
          msg_widget->task_ptr = task; /* msg_widgets can be passed between tasks */
       }
 
@@ -363,7 +362,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          msg_widget                             = (menu_widget_msg_t*)calloc(1, sizeof(*msg_widget));
 
-		 if (task)
+         if (task)
             title                               = task->title;
 
          msg_widget->duration                   = duration;
@@ -511,9 +510,9 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
       }
    }
 
-   #ifdef HAVE_THREADS
+#ifdef HAVE_THREADS
    runloop_msg_queue_unlock();
-   #endif
+#endif
 
    return true;
 }
@@ -524,7 +523,9 @@ bool menu_widgets_msg_queue_push(const char *msg,
       enum message_queue_icon icon, enum message_queue_category category,
       unsigned prio, bool flush)
 {
-   return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category, prio, flush);
+   if (menu_widgets_inited)
+      return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category, prio, flush);
+   return false;
 }
 
 static void menu_widgets_unfold_end(void *userdata)
