@@ -321,6 +321,13 @@ static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 
 static char launch_arguments[4096];
 
+static struct retro_system_av_info video_driver_av_info;
+
+struct retro_system_av_info *video_viewport_get_system_av_info(void)
+{
+   return &video_driver_av_info;
+}
+
 /* Configuration global state */
 
 static settings_t *configuration_settings = NULL;
@@ -1134,7 +1141,7 @@ bool recording_init(void)
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
    struct record_params params          = {0};
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = &video_driver_av_info;
    settings_t *settings                 = configuration_settings;
    global_t *global                     = &g_extern;
 
@@ -5826,7 +5833,7 @@ void audio_driver_sample(int16_t left, int16_t right)
 static void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
-   struct retro_system_av_info *av_info   = video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info   = &video_driver_av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
@@ -5995,7 +6002,7 @@ static void audio_driver_monitor_adjust_system_rates(void)
    settings_t *settings                   = configuration_settings;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
-   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info   = &video_driver_av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
 
@@ -6892,8 +6899,6 @@ static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32      = false;
 static bool                video_driver_crt_switching_active = false;
 static bool                video_driver_crt_dynamic_super_width = false;
-
-static struct retro_system_av_info video_driver_av_info;
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
@@ -9016,11 +9021,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    vp->height = height;
    vp->x      = padding_x / 2;
    vp->y      = padding_y / 2;
-}
-
-struct retro_system_av_info *video_viewport_get_system_av_info(void)
-{
-   return &video_driver_av_info;
 }
 
 struct video_viewport *video_viewport_get_custom(void)
@@ -11212,9 +11212,8 @@ void driver_set_nonblock_state(void)
 static bool driver_update_system_av_info(
       const struct retro_system_av_info *info)
 {
-   struct retro_system_av_info 
-      *av_info          = video_viewport_get_system_av_info();
-   settings_t *settings = configuration_settings;
+   struct retro_system_av_info *av_info  = &video_driver_av_info;
+   settings_t *settings                  = configuration_settings;
 
    memcpy(av_info, info, sizeof(*av_info));
    command_event(CMD_EVENT_REINIT, NULL);
@@ -11566,7 +11565,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 void rarch_core_runtime_tick(void)
 {
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = &video_driver_av_info;
 
    if (av_info && av_info->timing.fps)
    {
@@ -13159,8 +13158,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_FRAME_LIMIT:
          {
             settings_t                 *settings = configuration_settings;
-            struct retro_system_av_info *av_info =
-               video_viewport_get_system_av_info();
+            struct retro_system_av_info *av_info = &video_driver_av_info;
             float fastforward_ratio              =
                (settings->floats.fastforward_ratio == 0.0f)
                ? 1.0f : settings->floats.fastforward_ratio;
@@ -15098,8 +15096,7 @@ int runloop_iterate(unsigned *sleep_ms)
 end:
    if (vrr_runloop_enable)
    {
-      struct retro_system_av_info *av_info =
-         video_viewport_get_system_av_info();
+      struct retro_system_av_info *av_info = &video_driver_av_info;
 
       /* Sync on video only, block audio later. */
       if (fastforward_after_frames && settings->bools.audio_sync)
