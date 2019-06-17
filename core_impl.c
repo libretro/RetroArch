@@ -42,7 +42,7 @@
 #include "managers/state_manager.h"
 #include "verbosity.h"
 #include "gfx/video_driver.h"
-#include "audio/audio_driver.h"
+#include "retroarch.h"
 #include "tasks/tasks_internal.h"
 
 #ifdef HAVE_RUNAHEAD

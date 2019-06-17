@@ -26,6 +26,9 @@
 
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
+#include <audio/audio_mixer.h>
+
+#include "audio/audio_defines.h"
 
 #include "core_type.h"
 #include "core.h"
@@ -444,6 +447,265 @@ void rarch_log_file_init(void);
 void rarch_log_file_deinit(void);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);
+
+/* Audio */
+
+typedef struct audio_mixer_stream
+{
+   audio_mixer_sound_t *handle;
+   audio_mixer_voice_t *voice;
+   audio_mixer_stop_cb_t stop_cb;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type type;
+   enum audio_mixer_state state;
+   float volume;
+   void *buf;
+   char *name;
+   size_t bufsize;
+} audio_mixer_stream_t;
+
+typedef struct audio_mixer_stream_params
+{
+   float volume;
+   enum audio_mixer_slot_selection_type slot_selection_type;
+   unsigned slot_selection_idx;
+   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_type  type;
+   enum audio_mixer_state state;
+   void *buf;
+   char *basename;
+   size_t bufsize;
+   audio_mixer_stop_cb_t cb;
+} audio_mixer_stream_params_t;
+
+typedef struct audio_driver
+{
+   /* Creates and initializes handle to audio driver.
+    *
+    * Returns: audio driver handle on success, otherwise NULL.
+    **/
+   void *(*init)(const char *device, unsigned rate,
+         unsigned latency, unsigned block_frames, unsigned *new_rate);
+
+   /*
+    * @data         : Pointer to audio data handle.
+    * @buf          : Audio buffer data.
+    * @size         : Size of audio buffer.
+    *
+    * Write samples to audio driver.
+    *
+    * Write data in buffer to audio driver.
+    * A frame here is defined as one combined sample of left and right
+    * channels. (I.e. 44.1kHz, 16-bit stereo has 88.2k samples/s, and
+    * 44.1k frames/s.)
+    *
+    * Samples are interleaved in format LRLRLRLRLR ...
+    * If the driver returns true in use_float(), a floating point
+    * format will be used, with range [-1.0, 1.0].
+    * If not, signed 16-bit samples in native byte ordering will be used.
+    *
+    * This function returns the number of frames successfully written.
+    * If an error occurs, -1 should be returned.
+    * Note that non-blocking behavior that cannot write at this time
+    * should return 0 as returning -1 will terminate the driver.
+    *
+    * Unless said otherwise with set_nonblock_state(), all writes
+    * are blocking, and it should block till it has written all frames.
+    */
+   ssize_t (*write)(void *data, const void *buf, size_t size);
+
+   /* Temporarily pauses the audio driver. */
+   bool (*stop)(void *data);
+
+   /* Resumes audio driver from the paused state. */
+   bool (*start)(void *data, bool is_shutdown);
+
+   /* Is the audio driver currently running? */
+   bool (*alive)(void *data);
+
+   /* Should we care about blocking in audio thread? Fast forwarding.
+    *
+    * If state is true, nonblocking operation is assumed.
+    * This is typically used for fast-forwarding. If driver cannot
+    * implement nonblocking writes, this can be disregarded, but should
+    * log a message to stderr.
+    * */
+   void (*set_nonblock_state)(void *data, bool toggle);
+
+   /* Stops and frees driver data. */
+   void (*free)(void *data);
+
+   /* Defines if driver will take standard floating point samples,
+    * or int16_t samples.
+    *
+    * If true is returned, the audio driver is capable of using
+    * floating point data. This will likely increase performance as the
+    * resampler unit uses floating point. The sample range is
+    * [-1.0, 1.0].
+    * */
+   bool (*use_float)(void *data);
+
+   /* Human-readable identifier. */
+   const char *ident;
+
+   /* Optional. Get audio device list (allocates, caller has to free this) */
+   void *(*device_list_new)(void *data);
+
+   /* Optional. Frees audio device list */
+   void (*device_list_free)(void *data, void *data2);
+
+   /* Optional. */
+   size_t (*write_avail)(void *data);
+
+   size_t (*buffer_size)(void *data);
+} audio_driver_t;
+
+void audio_driver_suspend(void);
+
+bool audio_driver_is_suspended(void);
+
+void audio_driver_resume(void);
+
+void audio_driver_set_active(void);
+
+bool audio_driver_is_active(void);
+
+bool audio_driver_enable_callback(void);
+
+bool audio_driver_disable_callback(void);
+
+/**
+ * audio_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to audio driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *audio_driver_find_handle(int index);
+
+/**
+ * audio_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of audio driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *audio_driver_find_ident(int index);
+
+void audio_driver_set_nonblocking_state(bool enable);
+
+/**
+ * config_get_audio_driver_options:
+ *
+ * Get an enumerated list of all audio driver names, separated by '|'.
+ *
+ * Returns: string listing of all audio driver names, separated by '|'.
+ **/
+const char* config_get_audio_driver_options(void);
+
+void audio_driver_sample(int16_t left, int16_t right);
+
+size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
+
+void audio_driver_sample_rewind(int16_t left, int16_t right);
+
+size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames);
+
+bool audio_driver_mixer_extension_supported(const char *ext);
+
+void audio_driver_dsp_filter_free(void);
+
+void audio_driver_dsp_filter_init(const char *device);
+
+void audio_driver_set_buffer_size(size_t bufsize);
+
+bool audio_driver_get_devices_list(void **ptr);
+
+void audio_driver_setup_rewind(void);
+
+bool audio_driver_set_callback(const void *data);
+
+bool audio_driver_callback(void);
+
+bool audio_driver_has_callback(void);
+
+bool audio_driver_toggle_mute(void);
+
+bool audio_driver_start(bool is_shutdown);
+
+bool audio_driver_stop(void);
+
+void audio_driver_frame_is_reverse(void);
+
+void audio_set_float(enum audio_action action, float val);
+
+void audio_set_bool(enum audio_action action, bool val);
+
+void audio_unset_bool(enum audio_action action, bool val);
+
+float *audio_get_float_ptr(enum audio_action action);
+
+bool *audio_get_bool_ptr(enum audio_action action);
+
+audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
+
+bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
+
+void audio_driver_mixer_play_stream(unsigned i);
+
+void audio_driver_mixer_play_menu_sound(unsigned i);
+
+void audio_driver_mixer_play_menu_sound_looped(unsigned i);
+
+void audio_driver_mixer_play_stream_sequential(unsigned i);
+
+void audio_driver_mixer_play_stream_looped(unsigned i);
+
+void audio_driver_mixer_stop_stream(unsigned i);
+
+float audio_driver_mixer_get_stream_volume(unsigned i);
+
+void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
+
+void audio_driver_mixer_remove_stream(unsigned i);
+
+enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
+
+const char *audio_driver_mixer_get_stream_name(unsigned i);
+
+bool compute_audio_buffer_statistics(audio_statistics_t *stats);
+
+void audio_driver_load_menu_sounds(void);
+
+extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
+extern audio_driver_t audio_oss;
+extern audio_driver_t audio_alsa;
+extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_tinyalsa;
+extern audio_driver_t audio_roar;
+extern audio_driver_t audio_openal;
+extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_jack;
+extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_xa;
+extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
+extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_coreaudio3;
+extern audio_driver_t audio_xenon360;
+extern audio_driver_t audio_ps3;
+extern audio_driver_t audio_gx;
+extern audio_driver_t audio_ax;
+extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ps2;
+extern audio_driver_t audio_ctr_csnd;
+extern audio_driver_t audio_ctr_dsp;
+extern audio_driver_t audio_switch;
+extern audio_driver_t audio_switch_thread;
+extern audio_driver_t audio_rwebaudio;
+extern audio_driver_t audio_null;
 
 /* BSV Movie */
 

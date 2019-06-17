@@ -52,7 +52,6 @@
 #include "dynamic.h"
 #include "command.h"
 
-#include "audio/audio_driver.h"
 #include "record/record_driver.h"
 #include "driver.h"
 #include "performance_counters.h"

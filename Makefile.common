@@ -205,7 +205,6 @@ OBJ += frontend/frontend.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
-       audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/common/input_hid_common.o \
        input/input_driver.o \

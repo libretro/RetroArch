@@ -890,7 +890,6 @@ DRIVERS
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
-#include "../audio/audio_driver.c"
 #include "../libretro-common/audio/audio_mixer.c"
 
 /*============================================================

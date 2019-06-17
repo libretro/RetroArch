@@ -46,7 +46,6 @@
 #include "../../paths.h"
 #include "retroarch.h"
 #include "file_path_special.h"
-#include "audio/audio_driver.h"
 
 #include "ctr/ctr_debug.h"
 #include "ctr/exec-3dsx/exec_3dsx.h"

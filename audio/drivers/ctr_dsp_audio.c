@@ -17,7 +17,7 @@
 #include <string.h>
 #include <malloc.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../ctr/ctr_debug.h"
 
 typedef struct

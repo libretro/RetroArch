@@ -30,14 +30,14 @@
 #include <lists/file_list.h>
 #endif
 
+#include <string/stdstring.h>
+
 #include "../frontend_driver.h"
 #include "../../verbosity.h"
 #include "../../defaults.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../file_path_special.h"
-#include "../../audio/audio_driver.h"
-#include <string/stdstring.h>
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU

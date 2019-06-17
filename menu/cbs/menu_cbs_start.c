@@ -28,7 +28,6 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
-#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"

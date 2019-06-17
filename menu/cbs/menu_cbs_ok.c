@@ -49,7 +49,6 @@
 #include "../menu_content.h"
 #include "../menu_shader.h"
 
-#include "../../audio/audio_driver.h"
 #include "../../core.h"
 #include "../../configuration.h"
 #include "../../core_info.h"

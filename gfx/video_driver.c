@@ -32,7 +32,6 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 
-#include "../audio/audio_driver.h"
 #include "../menu/menu_shader.h"
 
 #ifdef HAVE_CONFIG_H

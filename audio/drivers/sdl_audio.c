@@ -14,19 +14,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 #include <retro_inline.h>
 #include <retro_math.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
-
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "SDL.h"
 #include "SDL_audio.h"

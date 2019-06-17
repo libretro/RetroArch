@@ -15,19 +15,20 @@
 
 #include <compat/strl.h>
 
-#include "../../audio/audio_driver.h"
+#include <string.h>
+#include <string/stdstring.h>
+#include <file/file_path.h>
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+
+#include "../../retroarch.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos-new/cheevos.h"
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"
-
-#include <string.h>
-#include <string/stdstring.h>
-#include <file/file_path.h>
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \

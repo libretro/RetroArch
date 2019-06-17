@@ -28,7 +28,7 @@
 #include "../config.h"
 #endif
 
-#include "../audio/audio_driver.h"
+#include "../retroarch.h"
 
 RETRO_BEGIN_DECLS
 

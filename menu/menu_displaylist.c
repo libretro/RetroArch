@@ -69,7 +69,6 @@
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_filebrowser.h"
 
-#include "../audio/audio_driver.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../defaults.h"

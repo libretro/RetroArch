@@ -19,10 +19,10 @@
 
 #include <compat/strl.h>
 
-#include "../../audio/audio_driver.h"
-
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+
+#include "../../retroarch.h"
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) \
