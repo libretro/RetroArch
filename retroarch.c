@@ -871,132 +871,81 @@ const char* config_get_camera_driver_options(void)
    return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
 }
 
-void driver_camera_stop(void)
-{
-   camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
-}
-
 bool driver_camera_start(void)
 {
-   return camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
+   if (camera_driver && camera_data && camera_driver->start)
+   {
+      settings_t        *settings = config_get_ptr();
+      if (settings->bools.camera_allow)
+         return camera_driver->start(camera_data);
+
+      runloop_msg_queue_push(
+            "Camera is explicitly disabled.\n", 1, 180, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+   return true;
+}
+
+void driver_camera_stop(void)
+{
+   if (     camera_driver
+         && camera_driver->stop
+         && camera_data)
+      camera_driver->stop(camera_data);
+}
+
+static void camera_driver_find_driver(void)
+{
+   int i;
+   driver_ctx_info_t drv;
+   settings_t *settings = config_get_ptr();
+
+   drv.label = "camera_driver";
+   drv.s     = settings->arrays.camera_driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i         = (int)drv.len;
+
+   if (i >= 0)
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
+   else
+   {
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+               settings->arrays.camera_driver);
+         RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+         for (d = 0; camera_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
+
+         RARCH_WARN("Going to default to first camera driver...\n");
+      }
+
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
+
+      if (!camera_driver)
+         retroarch_fail(1, "find_camera_driver()");
+   }
 }
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 {
-   settings_t        *settings = config_get_ptr();
-
    switch (state)
    {
-      case RARCH_CAMERA_CTL_DESTROY:
-         camera_driver_active   = false;
-         camera_driver          = NULL;
-         camera_data            = NULL;
-         break;
       case RARCH_CAMERA_CTL_SET_ACTIVE:
          camera_driver_active = true;
-         break;
-      case RARCH_CAMERA_CTL_FIND_DRIVER:
-         {
-            int i;
-            driver_ctx_info_t drv;
-
-            drv.label = "camera_driver";
-            drv.s     = settings->arrays.camera_driver;
-
-            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
-
-            i         = (int)drv.len;
-
-            if (i >= 0)
-               camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
-            else
-            {
-               if (verbosity_is_enabled())
-               {
-                  unsigned d;
-                  RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-                        settings->arrays.camera_driver);
-                  RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-                  for (d = 0; camera_driver_find_handle(d); d++)
-                     RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
-
-                  RARCH_WARN("Going to default to first camera driver...\n");
-               }
-
-               camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
-
-               if (!camera_driver)
-                  retroarch_fail(1, "find_camera_driver()");
-            }
-         }
          break;
       case RARCH_CAMERA_CTL_UNSET_ACTIVE:
          camera_driver_active = false;
          break;
-      case RARCH_CAMERA_CTL_IS_ACTIVE:
-        return camera_driver_active;
-      case RARCH_CAMERA_CTL_DEINIT:
-        if (camera_data && camera_driver)
-        {
-           if (camera_cb.deinitialized)
-              camera_cb.deinitialized();
-
-           if (camera_driver->free)
-              camera_driver->free(camera_data);
-        }
-
-        camera_data = NULL;
-        break;
-      case RARCH_CAMERA_CTL_STOP:
-        if (     camera_driver
-              && camera_driver->stop
-              && camera_data)
-           camera_driver->stop(camera_data);
-        break;
-      case RARCH_CAMERA_CTL_START:
-        if (camera_driver && camera_data && camera_driver->start)
-        {
-           if (settings->bools.camera_allow)
-              return camera_driver->start(camera_data);
-
-           runloop_msg_queue_push(
-                 "Camera is explicitly disabled.\n", 1, 180, false,
-                 NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-        }
-        break;
       case RARCH_CAMERA_CTL_SET_CB:
         {
            struct retro_camera_callback *cb =
               (struct retro_camera_callback*)data;
            camera_cb          = *cb;
         }
-        break;
-      case RARCH_CAMERA_CTL_INIT:
-        /* Resource leaks will follow if camera is initialized twice. */
-        if (camera_data)
-           return false;
-
-        camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
-
-        if (!camera_driver)
-           return false;
-
-        camera_data = camera_driver->init(
-              *settings->arrays.camera_device ? settings->arrays.camera_device : NULL,
-              camera_cb.caps,
-              settings->uints.camera_width ?
-              settings->uints.camera_width : camera_cb.width,
-              settings->uints.camera_height ?
-              settings->uints.camera_height : camera_cb.height);
-
-        if (!camera_data)
-        {
-           RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-           camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
-        }
-
-        if (camera_cb.initialized)
-           camera_cb.initialized();
         break;
       default:
          break;
@@ -1328,8 +1277,35 @@ void drivers_init(int flags)
    if (flags & DRIVER_CAMERA_MASK)
    {
       /* Only initialize camera driver if we're ever going to use it. */
-      if (camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
-         camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
+      if (camera_driver_active)
+      {
+         /* Resource leaks will follow if camera is initialized twice. */
+         if (!camera_data)
+         {
+            camera_driver_find_driver();
+
+            if (camera_driver)
+            {
+               camera_data = camera_driver->init(
+                     *settings->arrays.camera_device ? 
+                     settings->arrays.camera_device : NULL,
+                     camera_cb.caps,
+                     settings->uints.camera_width ?
+                     settings->uints.camera_width : camera_cb.width,
+                     settings->uints.camera_height ?
+                     settings->uints.camera_height : camera_cb.height);
+
+               if (!camera_data)
+               {
+                  RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
+                  camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+               }
+
+               if (camera_cb.initialized)
+                  camera_cb.initialized();
+            }
+         }
+      }
    }
 
    if (flags & DRIVER_LOCATION_MASK)
@@ -1427,7 +1403,18 @@ void driver_uninit(int flags)
       location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
 
    if ((flags & DRIVER_CAMERA_MASK))
-      camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
+   {
+      if (camera_data && camera_driver)
+      {
+         if (camera_cb.deinitialized)
+            camera_cb.deinitialized();
+
+         if (camera_driver->free)
+            camera_driver->free(camera_data);
+      }
+
+      camera_data = NULL;
+   }
 
    if ((flags & DRIVER_WIFI_MASK))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
@@ -1475,7 +1462,12 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          menu_driver_destroy();
 #endif
          location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
-         camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
+
+         /* Camera */
+         camera_driver_active   = false;
+         camera_driver          = NULL;
+         camera_data            = NULL;
+
          wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
          core_uninit_libretro_callbacks();
          break;
@@ -2753,7 +2745,7 @@ bool retroarch_main_init(int argc, char *argv[])
    audio_driver_find_driver();
    video_driver_find_driver();
    input_driver_find_driver();
-   camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
+   camera_driver_find_driver();
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
    find_location_driver();
 #ifdef HAVE_MENU
