@@ -468,7 +468,7 @@ bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
-   settings_t        *settings = config_get_ptr();
+   settings_t        *settings = configuration_settings;
 
    switch (state)
    {
