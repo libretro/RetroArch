@@ -7862,7 +7862,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_driver_get_viewport_info(custom_vp);
    }
 
-   system              = runloop_get_system_info();
+   system              = &runloop_system;
 
    video_driver_set_rotation(
             (settings->uints.video_rotation + system->rotation) % 4);
@@ -8198,7 +8198,7 @@ bool video_driver_cached_frame(void)
    return true;
 }
 
-void video_driver_monitor_adjust_system_rates(void)
+static void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew                      = 0.0f;
    settings_t *settings                   = configuration_settings;

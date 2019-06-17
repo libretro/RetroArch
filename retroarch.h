@@ -1710,7 +1710,6 @@ bool video_driver_get_hw_render_interface(const struct
       retro_hw_render_interface **iface);
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 void video_driver_set_title_buf(void);
-void video_driver_monitor_adjust_system_rates(void);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
 bool video_driver_has_widgets(void);
