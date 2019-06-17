@@ -1997,11 +1997,6 @@ bool bsv_movie_check(void);
 
 /* Location */
 
-enum rarch_location_ctl_state
-{
-   RARCH_LOCATION_CTL_NONE = 0,
-};
-
 typedef struct location_driver
 {
    void *(*init)(void);
