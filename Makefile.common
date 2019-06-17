@@ -212,7 +212,6 @@ OBJ += frontend/frontend.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \
-       wifi/wifi_driver.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        dynamic.o \

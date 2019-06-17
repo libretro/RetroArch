@@ -1104,8 +1104,6 @@ RETROARCH
 /*============================================================
 WIFI
 ============================================================ */
-#include "../wifi/wifi_driver.c"
-
 #include "../wifi/drivers/nullwifi.c"
 
 #ifdef HAVE_LAKKA
