@@ -1108,7 +1108,7 @@ static void command_event_init_cheats(void)
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
-   allow_cheats &= !bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL);
+   allow_cheats &= !rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL);
 
    if (!allow_cheats)
       return;
@@ -1873,7 +1873,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+         if (rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
             return false;
 
 #ifdef HAVE_CHEEVOS

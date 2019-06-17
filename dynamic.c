@@ -662,7 +662,7 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
    rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
-   camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
@@ -1417,12 +1417,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
-         camera_driver_ctl(RARCH_CAMERA_CTL_SET_CB, cb);
+         rarch_ctl(RARCH_CTL_CAMERA_SET_CB, cb);
 
          if (cb->caps != 0)
-            camera_driver_ctl(RARCH_CAMERA_CTL_SET_ACTIVE, NULL);
+            rarch_ctl(RARCH_CTL_CAMERA_SET_ACTIVE, NULL);
          else
-            camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+            rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
          break;
       }
 

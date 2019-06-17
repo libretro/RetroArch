@@ -695,20 +695,6 @@ void bsv_movie_set_input(int16_t *bsv_data)
    }
 }
 
-bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
-{
-   switch (state)
-   {
-      case BSV_MOVIE_CTL_IS_INITED:
-         return (bsv_movie_state_handle != NULL);
-      case BSV_MOVIE_CTL_NONE:
-      default:
-         return false;
-   }
-
-   return true;
-}
-
 void bsv_movie_set_path(const char *path)
 {
    strlcpy(bsv_movie_state.movie_path,
@@ -928,30 +914,6 @@ static void camera_driver_find_driver(void)
       if (!camera_driver)
          retroarch_fail(1, "find_camera_driver()");
    }
-}
-
-bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
-{
-   switch (state)
-   {
-      case RARCH_CAMERA_CTL_SET_ACTIVE:
-         camera_driver_active = true;
-         break;
-      case RARCH_CAMERA_CTL_UNSET_ACTIVE:
-         camera_driver_active = false;
-         break;
-      case RARCH_CAMERA_CTL_SET_CB:
-        {
-           struct retro_camera_callback *cb =
-              (struct retro_camera_callback*)data;
-           camera_cb          = *cb;
-        }
-        break;
-      default:
-         break;
-   }
-
-   return true;
 }
 
 /* Drivers */
@@ -1298,7 +1260,7 @@ void drivers_init(int flags)
                if (!camera_data)
                {
                   RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-                  camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+                  rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
                }
 
                if (camera_cb.initialized)
@@ -2925,6 +2887,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_BSV_MOVIE_IS_INITED:
+         return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
          return rarch_patch_blocked;
       case RARCH_CTL_SET_PATCH_BLOCKED:
@@ -3504,6 +3468,19 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          httpserver_destroy();
 #endif
          break;
+      case RARCH_CTL_CAMERA_SET_ACTIVE:
+         camera_driver_active = true;
+         break;
+      case RARCH_CTL_CAMERA_UNSET_ACTIVE:
+         camera_driver_active = false;
+         break;
+      case RARCH_CTL_CAMERA_SET_CB:
+        {
+           struct retro_camera_callback *cb =
+              (struct retro_camera_callback*)data;
+           camera_cb          = *cb;
+        }
+        break;
       case RARCH_CTL_NONE:
       default:
          return false;

@@ -184,7 +184,15 @@ enum rarch_ctl_state
    RARCH_CTL_HTTPSERVER_DESTROY,
 
    RARCH_CTL_CONTENT_RUNTIME_LOG_INIT,
-   RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
+   RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT,
+
+   /* Camera */
+   RARCH_CTL_CAMERA_SET_ACTIVE,
+   RARCH_CTL_CAMERA_UNSET_ACTIVE,
+   RARCH_CTL_CAMERA_SET_CB,
+
+   /* BSV Movie */
+   RARCH_CTL_BSV_MOVIE_IS_INITED
 };
 
 enum rarch_capabilities
@@ -441,13 +449,6 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
-enum bsv_ctl_state
-{
-   BSV_MOVIE_CTL_NONE = 0,
-   BSV_MOVIE_CTL_IS_INITED
-};
-
-
 void bsv_movie_deinit(void);
 
 bool bsv_movie_init(void);
@@ -460,19 +461,9 @@ bool bsv_movie_get_input(int16_t *bsv_data);
 
 void bsv_movie_set_input(int16_t *bsv_data);
 
-bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
-
 bool bsv_movie_check(void);
 
 /* Camera */
-
-enum rarch_camera_ctl_state
-{
-   RARCH_CAMERA_CTL_NONE = 0,
-   RARCH_CAMERA_CTL_SET_ACTIVE,
-   RARCH_CAMERA_CTL_UNSET_ACTIVE,
-   RARCH_CAMERA_CTL_SET_CB,
-};
 
 typedef struct camera_driver
 {
@@ -534,8 +525,6 @@ const char *camera_driver_find_ident(int index);
 void driver_camera_stop(void);
 
 bool driver_camera_start(void);
-
-bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 
 RETRO_END_DECLS
 
