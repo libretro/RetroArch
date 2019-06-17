@@ -6804,7 +6804,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
+            if (video_shader_is_supported(RARCH_SHADER_CG))
             {
                if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
@@ -6814,7 +6814,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
             }
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
                if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
@@ -6824,7 +6824,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
             }
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
                if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
@@ -7464,7 +7464,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             else if (type == DISPLAYLIST_SHADER_PASS)
                info->type_default = FILE_TYPE_SHADER;
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
+            if (video_shader_is_supported(RARCH_SHADER_CG))
             {
                if (type == DISPLAYLIST_SHADER_PRESET)
                   string_list_append(str_list, "cgp", attr);
@@ -7472,7 +7472,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   string_list_append(str_list, "cg", attr);
             }
           
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
                if (type == DISPLAYLIST_SHADER_PRESET)
                   string_list_append(str_list, "glslp", attr);
@@ -7480,7 +7480,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   string_list_append(str_list, "glsl", attr);
             }
           
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
                if (type == DISPLAYLIST_SHADER_PRESET)
                   string_list_append(str_list, "slangp", attr);

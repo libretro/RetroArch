@@ -36,6 +36,7 @@
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
+#include "../file_path_special.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1150,30 +1151,56 @@ const char *video_shader_to_str(enum rarch_shader_type type)
    return "???";
 }
 
+/**
+ * video_shader_is_supported:
+ * Tests if a shader type is supported.
+ * This is only accurate once the context driver was initialized.
+ **/
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
-   enum display_flags flag = GFX_CTX_FLAGS_NONE;
+   gfx_ctx_flags_t flags;
+   enum display_flags testflag;
 
    switch (type)
    {
       case RARCH_SHADER_SLANG:
-         flag = GFX_CTX_FLAGS_SHADERS_SLANG;
+         testflag = GFX_CTX_FLAGS_SHADERS_SLANG;
          break;
       case RARCH_SHADER_GLSL:
-         flag = GFX_CTX_FLAGS_SHADERS_GLSL;
+         testflag = GFX_CTX_FLAGS_SHADERS_GLSL;
          break;
       case RARCH_SHADER_CG:
-         flag = GFX_CTX_FLAGS_SHADERS_CG;
+         testflag = GFX_CTX_FLAGS_SHADERS_CG;
          break;
       case RARCH_SHADER_HLSL:
-         flag = GFX_CTX_FLAGS_SHADERS_HLSL;
+         testflag = GFX_CTX_FLAGS_SHADERS_HLSL;
          break;
       case RARCH_SHADER_NONE:
       default:
          return false;
    }
 
-   return video_driver_test_all_flags(flag);
+   video_context_driver_get_flags(&flags);
+
+   return BIT32_GET(flags.flags, testflag);
+}
+
+const char *video_shader_get_preset_extension(enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_GLSL:
+         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+      case RARCH_SHADER_SLANG:
+         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_CG:
+         return file_path_str(FILE_PATH_CGP_EXTENSION);
+      default:
+         break;
+   }
+
+   return NULL;
 }
 
 bool video_shader_any_supported(void)

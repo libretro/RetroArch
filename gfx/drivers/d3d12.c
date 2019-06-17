@@ -996,9 +996,11 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
 
-   const char *shader_preset   = retroarch_get_shader_preset();
-   enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-   d3d12_gfx_set_shader(d3d12, type, shader_preset);
+   {
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      d3d12_gfx_set_shader(d3d12, type, shader_preset);
+   }
 
    return d3d12;
 
@@ -1781,12 +1783,9 @@ static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
 
 static uint32_t d3d12_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
 
    return flags;
 }

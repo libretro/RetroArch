@@ -1965,11 +1965,7 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (wl->core_hw_context_enable)
-   {
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   }
-   else
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
    switch (wl_api)
    {
@@ -1977,7 +1973,7 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
       case GFX_CTX_OPENGL_ES_API:
          if (string_is_equal(video_driver_get_ident(), "glcore"))
          {
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
             BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          }
@@ -1989,7 +1985,7 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
          }
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          break;

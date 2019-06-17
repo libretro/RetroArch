@@ -2016,9 +2016,6 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    unsigned i;
-   gfx_ctx_flags_t flags;
-   flags.flags = 0;
-   video_context_driver_get_flags(&flags);
 
    if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
    {
@@ -2034,16 +2031,16 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
       {
          case RARCH_SHADER_CG:
 #ifdef HAVE_CG
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-               return RARCH_SHADER_CG;
+            if (video_shader_is_supported(type))
+               return type;
 #endif
             type = RARCH_SHADER_GLSL;
             break;
 
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               return RARCH_SHADER_GLSL;
+            if (video_shader_is_supported(type))
+               return type;
 #endif
             type = RARCH_SHADER_CG;
             break;

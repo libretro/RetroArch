@@ -484,13 +484,13 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    filter = "Shader Preset (";
 
    /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
+   if (video_shader_is_supported(RARCH_SHADER_CG))
       filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_CGP_EXTENSION);
 
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
+   if (video_shader_is_supported(RARCH_SHADER_GLSL))
       filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
 
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+   if (video_shader_is_supported(RARCH_SHADER_SLANG))
       filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
 
    filter += ")";
@@ -617,13 +617,13 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    filter = "Shader (";
 
    /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
+   if (video_shader_is_supported(RARCH_SHADER_CG))
       filter += QLatin1Literal(" *.cg");
 
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
+   if (video_shader_is_supported(RARCH_SHADER_GLSL))
       filter += QLatin1Literal(" *.glsl");
 
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+   if (video_shader_is_supported(RARCH_SHADER_SLANG))
       filter += QLatin1Literal(" *.slang");
 
    filter += ")";

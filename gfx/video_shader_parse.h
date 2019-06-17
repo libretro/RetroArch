@@ -250,6 +250,8 @@ bool video_shader_check_for_changes(void);
 
 const char *video_shader_to_str(enum rarch_shader_type type);
 
+const char *video_shader_get_preset_extension(enum rarch_shader_type type);
+
 RETRO_END_DECLS
 
 #endif

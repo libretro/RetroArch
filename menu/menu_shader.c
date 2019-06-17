@@ -195,22 +195,6 @@ bool menu_shader_manager_set_preset(void *data,
    return true;
 }
 
-static const char *shader_get_preset_extension(unsigned type)
-{
-   switch (type)
-   {
-      case RARCH_SHADER_GLSL:
-         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
-      case RARCH_SHADER_SLANG:
-         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_CG:
-         return file_path_str(FILE_PATH_CGP_EXTENSION);
-   }
-
-   return NULL;
-}
-
 /**
  * menu_shader_manager_save_preset:
  * @basename                 : basename of preset
@@ -255,7 +239,7 @@ bool menu_shader_manager_save_preset(
             && !strstr(basename,
                file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
-         const char *preset_ext = shader_get_preset_extension(type);
+         const char *preset_ext = video_shader_get_preset_extension(type);
          if (!string_is_empty(preset_ext))
             strlcat(buffer, preset_ext, sizeof(buffer));
       }
@@ -271,7 +255,7 @@ bool menu_shader_manager_save_preset(
          const char *config_path     = path_get(RARCH_PATH_CONFIG);
          /* In a multi-config setting, we can't have
           * conflicts on menu.cgp/menu.glslp. */
-         const char *preset_ext      = shader_get_preset_extension(type);
+         const char *preset_ext      = video_shader_get_preset_extension(type);
 
          if (!string_is_empty(preset_ext))
          {

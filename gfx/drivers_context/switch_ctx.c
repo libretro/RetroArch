@@ -267,10 +267,19 @@ static void switch_ctx_bind_hw_render(void *data, bool enable)
 static uint32_t switch_ctx_get_flags(void *data)
 {
     uint32_t flags = 0;
-    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-#ifdef HAVE_GLSL
-    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
+   if (string_is_equal(video_driver_get_ident(), "glcore"))
+   {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
+   }
+   else
+   {
+#ifdef HAVE_GLSL
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+   }
 
     return flags;
 }

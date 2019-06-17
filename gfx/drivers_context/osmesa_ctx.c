@@ -379,8 +379,9 @@ static void osmesa_ctx_show_mouse(void *data, bool state)
 static uint32_t osmesa_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
    return flags;
 }
 

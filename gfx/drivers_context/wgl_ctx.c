@@ -798,28 +798,22 @@ static void *gfx_ctx_wgl_get_context_data(void *data)
 
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
-   uint32_t          flags = 0;
-
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   uint32_t flags = 0;
 
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
          if (wgl_adaptive_vsync)
-         {
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
-         }
 
          if (win32_core_hw_context_enable)
-         {
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-         }
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
          else if (string_is_equal(video_driver_get_ident(), "glcore"))
          {
-#ifdef HAVE_SLANG
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          }
          else
@@ -835,7 +829,7 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          break;

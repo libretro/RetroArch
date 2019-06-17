@@ -948,9 +948,11 @@ d3d10_gfx_init(const video_info_t* video,
 
    font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
 
-   const char *shader_preset   = retroarch_get_shader_preset();
-   enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-   d3d10_gfx_set_shader(d3d10, type, shader_preset);
+   {
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      d3d10_gfx_set_shader(d3d10, type, shader_preset);
+   }
 
 #if 0
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
@@ -1667,12 +1669,9 @@ d3d10_get_hw_render_interface(void* data, const struct retro_hw_render_interface
 
 static uint32_t d3d10_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
 
    return flags;
 }

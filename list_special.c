@@ -98,19 +98,19 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             attr.i = 0;
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_CG))
+            if (video_shader_is_supported(RARCH_SHADER_CG))
             {
                string_list_append(str_list, "cgp", attr);
                string_list_append(str_list, "cg", attr);
             }
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_GLSL))
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
                string_list_append(str_list, "glslp", attr);
                string_list_append(str_list, "glsl", attr);
             }
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
                string_list_append(str_list, "slangp", attr);
                string_list_append(str_list, "slang", attr);

@@ -1302,9 +1302,8 @@ static bool command_event_init_core(enum rarch_core_type *data)
          rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
-   /* Auto-shaders: apply shader preset files */
-   if(settings->bools.auto_shaders_enable)
-      config_load_shader_preset();
+   /* Load auto-shaders on the next occasion */
+   retroarch_shader_presets_set_need_reload();
 
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);

@@ -357,6 +357,8 @@ void retroarch_unset_shader_preset(void);
 
 char* retroarch_get_shader_preset(void);
 
+void retroarch_shader_presets_set_need_reload(void);
+
 bool retroarch_is_switching_display_mode(void);
 
 void retroarch_set_switching_display_mode(void);
@@ -949,8 +951,7 @@ enum display_metric_types
 
 enum display_flags
 {
-   GFX_CTX_FLAGS_NONE = 0,
-   GFX_CTX_FLAGS_GL_CORE_CONTEXT,
+   GFX_CTX_FLAGS_GL_CORE_CONTEXT = 0,
    GFX_CTX_FLAGS_MULTISAMPLING,
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
    GFX_CTX_FLAGS_HARD_SYNC,

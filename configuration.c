@@ -3520,119 +3520,6 @@ success:
    return true;
 }
 
-static bool config_load_shader_preset_internal(
-      const char *shader_directory,
-      const char *core_name,
-      const char *special_name)
-{
-   unsigned idx;
-   size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
-   char *shader_path       = (char*)malloc(path_size);
-   
-   shader_path[0]          = '\0';
-
-   for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
-   {
-      /* Concatenate strings into full paths */
-      fill_pathname_join_special_ext(shader_path,
-            shader_directory, core_name,
-            special_name,
-            file_path_str((enum file_path_enum)(idx)),
-            path_size);
-
-      if (!config_file_exists(shader_path))
-         continue;
-
-      /* Shader preset exists, load it. */
-      RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-            shader_path);
-      retroarch_set_shader_preset(shader_path);
-      free(shader_path);
-      return true;
-   }
-
-   free(shader_path);
-
-   return false;
-}
-
-/**
- * config_load_shader_preset:
- *
- * Tries to append game-specific and core-specific shader presets.
- *
- * This function only has an effect if a game-specific or core-specific
- * configuration file exists at respective locations.
- *
- * core-specific: $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.cfg
- * game-specific: $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.cfg
- *
- * Returns: false if there was an error or no action was performed.
- */
-bool config_load_shader_preset(void)
-{
-   size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system
-      ? system->info.library_name : NULL;
-   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                  = path_basename(rarch_path_basename);
-   const char *video_shader_directory     = settings->paths.directory_video_shader;
-   char *shader_directory                 = NULL;
-
-   if (     string_is_empty(core_name) 
-         || string_is_empty(game_name)
-         || string_is_empty(video_shader_directory)
-         )
-      return false;
-
-   shader_directory                       = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   shader_directory[0]                    =   '\0';
-
-   fill_pathname_join (shader_directory,
-         video_shader_directory,
-         "presets", path_size);
-
-   RARCH_LOG("[Shaders]: preset directory: %s\n", shader_directory);
-
-   if (config_load_shader_preset_internal(shader_directory, core_name,
-            game_name))
-   {
-      RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
-      goto success;
-   }
-
-   {
-      char content_dir_name[PATH_MAX_LENGTH];
-      if (!string_is_empty(rarch_path_basename))
-         fill_pathname_parent_dir_name(content_dir_name,
-               rarch_path_basename, sizeof(content_dir_name));
-
-      if (config_load_shader_preset_internal(shader_directory, core_name,
-               content_dir_name))
-      {
-         RARCH_LOG("[Shaders]: content dir-specific shader preset found.\n");
-         goto success;
-      }
-   }
-
-   if (config_load_shader_preset_internal(shader_directory, core_name,
-            core_name))
-   {
-      RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
-      goto success;
-   }
-
-   free(shader_directory);
-   return false;
-
-success:
-   free(shader_directory);
-   return true;
-}
-
 static void parse_config_file(void)
 {
    const char *config_path = path_get(RARCH_PATH_CONFIG);
@@ -4056,12 +3943,12 @@ bool config_save_overrides(int override_type)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   settings                                    = (settings_t*)calloc(1, sizeof(settings_t));
-   config_directory                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   override_directory                          = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   core_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   game_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   content_path                                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   settings           = (settings_t*)calloc(1, sizeof(settings_t));
+   config_directory   = (char*)malloc(PATH_MAX_LENGTH);
+   override_directory = (char*)malloc(PATH_MAX_LENGTH);
+   core_path          = (char*)malloc(PATH_MAX_LENGTH);
+   game_path          = (char*)malloc(PATH_MAX_LENGTH);
+   content_path       = (char*)malloc(PATH_MAX_LENGTH);
 
    config_directory[0] = override_directory[0] = core_path[0] = game_path[0] = '\0';
 
