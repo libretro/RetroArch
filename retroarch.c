@@ -538,8 +538,13 @@ error:
    return NULL;
 }
 
-static void bsv_movie_frame_rewind(bsv_movie_t *handle)
+void bsv_movie_frame_rewind(void)
 {
+   bsv_movie_t *handle = bsv_movie_state_handle;
+
+   if (!handle)
+      return;
+
    handle->did_rewind = true;
 
    if (     (handle->frame_ptr <= 1)
@@ -662,24 +667,31 @@ bool bsv_movie_init(void)
    return true;
 }
 
+#define bsv_movie_is_playback_on() (bsv_movie_state_handle && bsv_movie_state.movie_playback)
+#define bsv_movie_is_playback_off() (bsv_movie_state_handle && !bsv_movie_state.movie_playback)
+
 bool bsv_movie_get_input(int16_t *bsv_data)
 {
-   if (intfstream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
+   if (!bsv_movie_is_playback_on())
       return false;
+   if (intfstream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
+   {
+      bsv_movie_state.movie_end = true;
+      return false;
+   }
 
    *bsv_data = swap_if_big16(*bsv_data);
 
    return true;
 }
 
-bool bsv_movie_is_playback_on(void)
+void bsv_movie_set_input(int16_t *bsv_data)
 {
-   return bsv_movie_state_handle && bsv_movie_state.movie_playback;
-}
-
-bool bsv_movie_is_playback_off(void)
-{
-   return bsv_movie_state_handle && !bsv_movie_state.movie_playback;
+   if (bsv_data && bsv_movie_is_playback_off())
+   {
+      *bsv_data = swap_if_big16(*bsv_data);
+      intfstream_write(bsv_movie_state_handle->file, bsv_data, 1);
+   }
 }
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
@@ -688,23 +700,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    {
       case BSV_MOVIE_CTL_IS_INITED:
          return (bsv_movie_state_handle != NULL);
-      case BSV_MOVIE_CTL_SET_END:
-         bsv_movie_state.movie_end = true;
-         break;
-      case BSV_MOVIE_CTL_UNSET_END:
-         bsv_movie_state.movie_end = false;
-         break;
-      case BSV_MOVIE_CTL_FRAME_REWIND:
-         bsv_movie_frame_rewind(bsv_movie_state_handle);
-         break;
-      case BSV_MOVIE_CTL_SET_INPUT:
-         {
-            int16_t *bsv_data = (int16_t*)data;
-
-            *bsv_data = swap_if_big16(*bsv_data);
-            intfstream_write(bsv_movie_state_handle->file, bsv_data, 1);
-         }
-         break;
       case BSV_MOVIE_CTL_NONE:
       default:
          return false;

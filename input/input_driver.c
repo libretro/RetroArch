@@ -661,25 +661,19 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   int16_t bsv_result;
    int16_t res         = 0;
 #ifdef HAVE_OVERLAY
    int16_t res_overlay = 0;
 #endif
-
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
    bool reset_state    = false;
 
    device &= RETRO_DEVICE_MASK;
 
-   if (bsv_movie_is_playback_on())
-   {
-      int16_t bsv_result;
-      if (bsv_movie_get_input(&bsv_result))
-         return bsv_result;
-
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_END, NULL);
-   }
+   if (bsv_movie_get_input(&bsv_result))
+      return bsv_result;
 
    if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
@@ -775,8 +769,7 @@ int16_t input_state(unsigned port, unsigned device,
       }
    }
 
-   if (bsv_movie_is_playback_off())
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_INPUT, &res);
+   bsv_movie_set_input(&res);
 
    return res;
 }
