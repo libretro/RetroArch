@@ -27,10 +27,10 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/input_x11_common.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct x11_input

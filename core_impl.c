@@ -41,8 +41,7 @@
 #include "msg_hash.h"
 #include "managers/state_manager.h"
 #include "verbosity.h"
-#include "gfx/video_driver.h"
-#include "audio/audio_driver.h"
+#include "retroarch.h"
 #include "tasks/tasks_internal.h"
 
 #ifdef HAVE_RUNAHEAD
@@ -529,4 +528,19 @@ bool core_is_symbols_inited(void)
 bool core_is_game_loaded(void)
 {
   return current_core.game_loaded;
+}
+
+void core_free_retro_game_info(struct retro_game_info *dest)
+{
+   if (!dest)
+      return;
+   if (dest->path)
+      free((void*)dest->path);
+   if (dest->data)
+      free((void*)dest->data);
+   if (dest->meta)
+      free((void*)dest->meta);
+   dest->path = NULL;
+   dest->data = NULL;
+   dest->meta = NULL;
 }

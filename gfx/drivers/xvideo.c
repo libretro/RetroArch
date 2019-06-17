@@ -920,20 +920,6 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
    *vp = xv->vp;
 }
 
-static void xv_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static uint32_t xv_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -994,9 +980,9 @@ video_driver_t video_xvideo = {
    xv_free,
    "xvideo",
    NULL, /* set_viewport */
-   xv_set_rotation,
+   NULL, /* set_rotation */
    xv_viewport_info,
-   xv_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */

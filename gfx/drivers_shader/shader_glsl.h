@@ -18,7 +18,8 @@
 #define __RARCH_GLSL_H
 
 #include <boolean.h>
-#include "../video_driver.h"
+
+#include "../../retroarch.h"
 
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
 

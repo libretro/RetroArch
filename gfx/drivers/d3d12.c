@@ -20,7 +20,6 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
-#include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"
@@ -32,6 +31,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -361,7 +361,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d12->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d12->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, d3d12->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d12->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d12->shader_preset, path);
@@ -398,10 +398,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d12->luts[0].size_data, sizeof(*d3d12->luts)},
          },
          {
-            &d3d12->mvp,                  /* MVP */
-            &d3d12->pass[i].rt.size_data, /* OutputSize */
-            &d3d12->frame.output_size,    /* FinalViewportSize */
-            &d3d12->pass[i].frame_count,  /* FrameCount */
+            &d3d12->mvp,                     /* MVP */
+            &d3d12->pass[i].rt.size_data,    /* OutputSize */
+            &d3d12->frame.output_size,       /* FinalViewportSize */
+            &d3d12->pass[i].frame_count,     /* FrameCount */
+            &d3d12->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -1294,6 +1295,8 @@ static bool d3d12_gfx_frame(
          else
             d3d12->pass[i].frame_count = frame_count;
 
+         d3d12->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             cbuffer_sem_t* buffer_sem = &d3d12->pass[i].semantics.cbuffers[j];
@@ -1632,14 +1635,6 @@ static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d12->vp;
 }
 
-static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
@@ -1858,7 +1853,7 @@ video_driver_t video_d3d12 = {
    NULL, /* set_viewport */
    d3d12_gfx_set_rotation,
    d3d12_gfx_viewport_info,
-   d3d12_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

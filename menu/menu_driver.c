@@ -43,8 +43,6 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-#include "../gfx/video_driver.h"
-
 #include "menu_animation.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -504,7 +502,40 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    if (menu_disp && menu_disp->scissor_begin)
+   {
+      if (y < 0)
+      {
+         if (height < (unsigned)(-y))
+            height = 0;
+         else
+            height += y;
+         y = 0;
+      }
+      if (x < 0)
+      {
+         if (width < (unsigned)(-x))
+            width = 0;
+         else
+            width += x;
+         x = 0;
+      }
+      if (y >= (int)video_info->height)
+      {
+         height = 0;
+         y = 0;
+      }
+      if (x >= (int)video_info->width)
+      {
+         width = 0;
+         x = 0;
+      }
+      if ((y + height) > video_info->height)
+         height = video_info->height - y;
+      if ((x + width) > video_info->width)
+         width = video_info->width - x;
+
       menu_disp->scissor_begin(video_info, x, y, width, height);
+   }
 }
 
 /* End scissoring operation */
@@ -790,9 +821,10 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
    if (!menu_disp || !draw || !menu_disp->draw)
       return;
 
-   /* TODO - edge case */
    if (draw->height <= 0)
-      draw->height = 1;
+      return;
+   if (draw->width <= 0)
+      return;
 
    menu_disp->draw(draw, video_info);
 }
@@ -1683,10 +1715,12 @@ bool menu_display_reset_textures_list(
    ti.pixels                     = NULL;
    ti.supports_rgba              = video_driver_supports_rgba();
 
-   if (!string_is_empty(texture_path))
-      fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+   if (string_is_empty(texture_path))
+      return false;
 
-   if (string_is_empty(texpath) || !filestream_exists(texpath))
+   fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+
+   if (!path_is_valid(texpath))
       return false;
 
    if (!image_texture_load(&ti, texpath))

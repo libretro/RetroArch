@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <boolean.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 
 /* forward declarations */
 unsigned RWebAudioSampleRate(void);

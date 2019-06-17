@@ -63,12 +63,18 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
 #ifdef HAVE_MENU
 bool task_push_pl_thumbnail_download(const char *system, const char *playlist_path);
-bool task_push_pl_entry_thumbnail_download(const char *system, playlist_t *playlist, unsigned idx);
+bool task_push_pl_entry_thumbnail_download(
+      const char *system,
+      playlist_t *playlist,
+      unsigned idx,
+      bool overwrite,
+      bool mute);
 #endif
 
 #endif
 
 bool task_push_image_load(const char *fullpath,
+      bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
@@ -82,7 +88,13 @@ bool task_push_dbscan(
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
-        retro_task_callback_t cb, void *user_data);
+      retro_task_callback_t cb,
+      const char *overlay_path,
+      bool overlay_hide_in_menu,
+      bool input_overlay_enable,
+      float input_overlay_opacity,
+      float input_overlay_scale,
+      void *user_data);
 #endif
 
 bool task_check_decompress(const char *source_file);
@@ -99,7 +111,9 @@ bool task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
-bool take_screenshot(const char *path, bool silence,
+bool take_screenshot(
+      const char *screenshot_dir,
+      const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
 bool event_load_save_files(void);

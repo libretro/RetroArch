@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 #include <ctype.h>
 
 #include <ft2build.h>

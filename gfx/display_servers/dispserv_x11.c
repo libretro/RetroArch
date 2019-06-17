@@ -23,7 +23,9 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 
+#ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
@@ -34,7 +36,7 @@
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../configuration.h"
-#include "../video_driver.h" /* needed to set refresh rate in set resolution */
+#include "../../retroarch.h"
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
 #ifdef HAVE_XRANDR

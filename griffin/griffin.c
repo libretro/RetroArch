@@ -157,12 +157,8 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
-#include "../cheevos/cond.c"
-#include "../cheevos/var.c"
-
 #include "../cheevos-new/cheevos.c"
+#include "../cheevos-new/badges.c"
 #include "../cheevos-new/fixup.c"
 #include "../cheevos-new/hash.c"
 #include "../cheevos-new/parser.c"
@@ -276,6 +272,7 @@ VIDEO CONTEXT
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
 #include "../gfx/common/xinerama_common.c"
+#include "../gfx/display_servers/dispserv_x11.c"
 
 #ifdef HAVE_DBUS
 #include "../gfx/common/dbus_common.c"
@@ -588,7 +585,7 @@ INPUT
 #endif
 
 #ifdef HAVE_X11
-#include "../input/common/x11_input_common.c"
+#include "../input/common/input_x11_common.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
@@ -619,8 +616,17 @@ INPUT
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
 #elif defined(__wiiu__)
+#include "../input/common/hid/hid_device_driver.c"
+#include "../input/common/hid/device_wiiu_gca.c"
+#include "../input/common/hid/device_ds3.c"
+#include "../input/common/hid/device_ds4.c"
+#include "../input/common/hid/device_null.c"
 #include "../input/drivers/wiiu_input.c"
 #include "../input/drivers_joypad/wiiu_joypad.c"
+#include "../input/drivers_joypad/wiiu/hidpad_driver.c"
+#include "../input/drivers_joypad/wiiu/kpad_driver.c"
+#include "../input/drivers_joypad/wiiu/wpad_driver.c"
+#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers_joypad/xdk_joypad.c"
@@ -679,6 +685,7 @@ INPUT
 INPUT (HID)
 ============================================================ */
 #ifdef HAVE_HID
+#include "../input/common/input_hid_common.c"
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_hid/null_hid.c"
 
@@ -850,6 +857,10 @@ AUDIO
 #include "../audio/drivers/tinyalsa.c"
 #endif
 
+#ifdef HAVE_PULSE
+#include "../audio/drivers/pulse.c"
+#endif
+
 #ifdef HAVE_AL
 #include "../audio/drivers/openal.c"
 #endif
@@ -874,15 +885,11 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-#include "../gfx/video_driver.c"
 #include "../gfx/video_crt_switch.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
-#include "../audio/audio_driver.c"
 #include "../libretro-common/audio/audio_mixer.c"
-#include "../camera/camera_driver.c"
-#include "../location/location_driver.c"
 
 /*============================================================
 SCALERS
@@ -908,6 +915,7 @@ FILTERS
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
 #include "../gfx/video_filters/normal2x.c"
+#include "../gfx/video_filters/scanline2x.c"
 
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
@@ -1112,8 +1120,6 @@ WIFI
 /*============================================================
 RECORDING
 ============================================================ */
-#include "../movie.c"
-#include "../record/record_driver.c"
 #include "../record/drivers/record_null.c"
 
 #ifdef HAVE_FFMPEG
@@ -1176,7 +1182,7 @@ NETPLAY
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
+#if !defined(HAVE_SOCKET_LEGACY)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
@@ -1453,6 +1459,25 @@ DEPENDENCIES
 #include "../deps/7zip/Lzma2Dec.c"
 #include "../deps/7zip/LzFind.c"
 #include "../deps/7zip/7zBuf.c"
+#endif
+
+#ifdef WANT_LIBFAT
+#include "../deps/libfat/cache.c"
+#include "../deps/libfat/directory.c"
+#include "../deps/libfat/disc.c"
+#include "../deps/libfat/fatdir.c"
+#include "../deps/libfat/fatfile.c"
+#include "../deps/libfat/file_allocation_table.c"
+#include "../deps/libfat/filetime.c"
+#include "../deps/libfat/libfat.c"
+#include "../deps/libfat/lock.c"
+#include "../deps/libfat/partition.c"
+#endif
+
+#ifdef WANT_IOSUHAX
+#include "../deps/libiosuhax/iosuhax.c"
+#include "../deps/libiosuhax/iosuhax_devoptab.c"
+#include "../deps/libiosuhax/iosuhax_disc_interface.c"
 #endif
 
 /*============================================================

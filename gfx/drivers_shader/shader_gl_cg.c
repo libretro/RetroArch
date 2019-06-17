@@ -45,9 +45,9 @@
 
 #include "../include/Cg/cg.h"
 
-#include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../managers/state_manager.h"
 
@@ -787,7 +787,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
    }
 
-   if (!video_shader_read_conf_cgp(conf, cg->shader))
+   if (!video_shader_read_conf_preset(conf, cg->shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
       config_file_free(conf);

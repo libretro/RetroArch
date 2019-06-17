@@ -39,8 +39,7 @@
 #define MBEDTLS_ERR_CAMELLIA_INVALID_INPUT_LENGTH         -0x0026  /**< Invalid data input length. */
 
 #if !defined(MBEDTLS_CAMELLIA_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

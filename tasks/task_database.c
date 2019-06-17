@@ -38,9 +38,10 @@
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
 #include "../retroarch.h"
+#include "../ui/ui_companion_driver.h"
+#include "../gfx/video_display_server.h"
 #endif
 #include "../verbosity.h"
-#include "../ui/ui_companion_driver.h"
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE                99999
 #endif
@@ -139,7 +140,7 @@ static int task_database_iterate_start(retro_task_t *task,
       const char *name)
 {
    char msg[256];
-   const char *basename_path = !string_is_empty(name) ? 
+   const char *basename_path = !string_is_empty(name) ?
       path_basename(name) : "";
 
    msg[0] = '\0';
@@ -157,7 +158,7 @@ static int task_database_iterate_start(retro_task_t *task,
       task_free_title(task);
       task_set_title(task, strdup(msg));
       if (db->list->size != 0)
-         task_set_progress(task, roundf((float)db->list_ptr / (float)db->list->size * 100.0f));
+         task_set_progress(task, roundf((float)db->list_ptr / ((float)db->list->size / 100.0f)));
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif
@@ -947,13 +948,18 @@ static int task_database_iterate_crc_lookup(
          /* don't scan files that can't be in this database.
           *
           * Could be because of:
-          * A matching core missing */
-         if (!(path_contains_compressed_file(name) &&
-                  core_info_database_match_archive_member(
-                     db_state->list->elems[db_state->list_index].data)) &&
-               !core_info_database_supports_content_path(
-                  db_state->list->elems[db_state->list_index].data, name))
+          * - A matching core missing
+          * - Incompatible file extension */
+         if (!core_info_database_supports_content_path(
+               db_state->list->elems[db_state->list_index].data, name))
             return database_info_list_iterate_next(db_state);
+
+         if (!path_contains_compressed_file(name))
+         {
+            if (core_info_database_match_archive_member(
+                  db_state->list->elems[db_state->list_index].data))
+               return database_info_list_iterate_next(db_state);
+         }
       }
 
       snprintf(query, sizeof(query),
@@ -1314,10 +1320,10 @@ static void task_database_handler(retro_task_t *task)
             task_free_title(task);
             task_set_title(task, strdup(msg));
             task_set_progress(task, 100);
+            ui_companion_driver_notify_refresh();
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
-            ui_companion_driver_notify_refresh();
             goto task_finished;
          }
          break;
@@ -1358,6 +1364,15 @@ task_finished:
       free(dbinfo);
 }
 
+#ifdef RARCH_INTERNAL
+static void task_database_progress_cb(retro_task_t *task)
+{
+   if (!task)
+      return;
+   video_display_server_set_window_progress(task->progress, task->finished);
+}
+#endif
+
 bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
@@ -1382,6 +1397,7 @@ bool task_push_dbscan(
    t->alternative_look       = true;
 
 #ifdef RARCH_INTERNAL
+   t->progress_cb            = task_database_progress_cb;
    db->scan_without_core_match = settings->bools.scan_without_core_match;
 #endif
    db->show_hidden_files     = db_dir_show_hidden_files;

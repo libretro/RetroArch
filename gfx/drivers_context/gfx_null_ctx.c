@@ -16,7 +16,7 @@
 
 /* Null context. */
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 static void gfx_ctx_null_swap_interval(void *data, int interval)
 {

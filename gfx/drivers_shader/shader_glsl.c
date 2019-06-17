@@ -460,9 +460,8 @@ static bool gl_glsl_compile_programs(
       if (!pass)
          continue;
 
-      /* If we load from GLSLP (CGP),
-       * load the file here, and pretend
-       * we were really using XML all along.
+      /* If we load from GLSLP (preset),
+       * load the file here.
        */
       if (     !string_is_empty(pass->source.path)
             && !gl_glsl_load_source_path(pass, pass->source.path))
@@ -899,7 +898,7 @@ static void *gl_glsl_init(void *data, const char *path)
          conf = config_file_new(path);
          if (conf)
          {
-            ret = video_shader_read_conf_cgp(conf, glsl->shader);
+            ret = video_shader_read_conf_preset(conf, glsl->shader);
             glsl->shader->modern = true;
          }
       }

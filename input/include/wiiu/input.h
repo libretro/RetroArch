@@ -42,7 +42,6 @@
 #include "../../../config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "../../../gfx/video_driver.h"
 #include "../../../tasks/tasks_internal.h"
 
 #define WIIMOTE_TYPE_WIIPLUS 0x00

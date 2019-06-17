@@ -1085,20 +1085,6 @@ static bool omap_gfx_set_shader(void *data,
    return false;
 }
 
-static void omap_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool omap_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
@@ -1179,9 +1165,9 @@ video_driver_t video_omap = {
    omap_gfx_free,
    "omap",
    NULL, /* set_viewport */
-   omap_gfx_set_rotation,
+   NULL, /* set_rotation */
    omap_gfx_viewport_info,
-   omap_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

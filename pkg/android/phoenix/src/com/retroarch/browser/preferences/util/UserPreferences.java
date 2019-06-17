@@ -127,23 +127,23 @@ public final class UserPreferences
 		final String coreDir = dataDir + "/cores/";
 
 		final SharedPreferences prefs = getPreferences(ctx);
-		
+
 		config.setString("libretro_directory", coreDir);
 		config.setInt("audio_out_rate", getOptimalSamplingRate(ctx));
 
 		try
 		{
-			int version                  = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
-         final String dst_path        = dataDir;
-         final String dst_path_subdir = "assets";
+			int version							= ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+			final String dst_path			= dataDir;
+			final String dst_path_subdir	= "assets";
 
-         Log.i(TAG, "dst dir is: " + dst_path);
-         Log.i(TAG, "dst subdir is: " + dst_path_subdir);
+			Log.i(TAG, "dst dir is: " + dst_path);
+			Log.i(TAG, "dst subdir is: " + dst_path_subdir);
 
-         config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
-         config.setString("bundle_assets_dst_path", dst_path);
-         config.setString("bundle_assets_dst_path_subdir", dst_path_subdir);
-         config.setInt("bundle_assets_extract_version_current", version);
+			config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
+			config.setString("bundle_assets_dst_path", dst_path);
+			config.setString("bundle_assets_dst_path_subdir", dst_path_subdir);
+			config.setInt("bundle_assets_extract_version_current", version);
 		}
 		catch (NameNotFoundException ignored)
 		{

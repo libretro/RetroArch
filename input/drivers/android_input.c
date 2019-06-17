@@ -37,12 +37,12 @@
 
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
-#include "../../gfx/video_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
@@ -1469,6 +1469,8 @@ static int16_t android_input_state(void *data,
                return (idx < android->pointer_count) &&
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
+            case RETRO_DEVICE_ID_POINTER_COUNT:
+               return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
                const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
@@ -1488,6 +1490,8 @@ static int16_t android_input_state(void *data,
                return (idx < android->pointer_count) &&
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
+            case RETRO_DEVICE_ID_POINTER_COUNT:
+               return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
                {
                   const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];

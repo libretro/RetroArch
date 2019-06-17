@@ -22,7 +22,6 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <net/net_http.h>
 
 #include "tasks_internal.h"
@@ -31,9 +30,14 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../playlist.h"
+
+#ifdef RARCH_INTERNAL
+#ifdef HAVE_MENU
 #include "../menu/menu_thumbnail_path.h"
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"
+#endif
+#endif
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
@@ -51,14 +55,24 @@ typedef struct pl_thumb_handle
 {
    char *system;
    char *playlist_path;
+   char *dir_thumbnails;
    playlist_t *playlist;
    menu_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
    size_t list_size;
    size_t list_index;
    unsigned type_idx;
+   bool overwrite;
+   bool right_thumbnail_exists;
+   bool left_thumbnail_exists;
    enum pl_thumb_status status;
 } pl_thumb_handle_t;
+
+typedef struct pl_entry_id
+{
+   char *playlist_path;
+   size_t idx;
+} pl_entry_id_t;
 
 /*********************/
 /* Utility Functions */
@@ -71,7 +85,6 @@ static bool get_thumbnail_paths(
    char *path, size_t path_size,
    char *url, size_t url_size)
 {
-   settings_t *settings    = config_get_ptr();
    const char *system      = NULL;
    const char *db_name     = NULL;
    const char *img_name    = NULL;
@@ -85,14 +98,10 @@ static bool get_thumbnail_paths(
    raw_url[0]     = '\0';
    tmp_buf[0]     = '\0';
    
-   /* Sanity check */
-   if (!pl_thumb || !settings)
-      return false;
-   
    if (!pl_thumb->thumbnail_path_data)
       return false;
    
-   if (string_is_empty(settings->paths.directory_thumbnails))
+   if (string_is_empty(pl_thumb->dir_thumbnails))
       return false;
    
    /* Extract required strings */
@@ -129,7 +138,7 @@ static bool get_thumbnail_paths(
       system_name = db_name;
    
    /* Generate local path */
-   fill_pathname_join(path, settings->paths.directory_thumbnails,
+   fill_pathname_join(path, pl_thumb->dir_thumbnails,
          system_name, path_size);
    fill_pathname_join(tmp_buf, path, sub_dir, sizeof(tmp_buf));
    fill_pathname_join(path, tmp_buf, img_name, path_size);
@@ -159,7 +168,7 @@ static bool get_thumbnail_paths(
 
 /* Download thumbnail of the current type for the current
  * playlist entry */
-static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb, bool overwrite)
+static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
 {
    char path[PATH_MAX_LENGTH];
    char url[2048];
@@ -167,15 +176,11 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb, bool overwrite)
    path[0] = '\0';
    url[0] = '\0';
    
-   /* Sanity check */
-   if (!pl_thumb)
-      return;
-   
    /* Check if paths are valid */
    if (get_thumbnail_paths(pl_thumb, path, sizeof(path), url, sizeof(url)))
    {
       /* Only download missing thumbnails */
-      if (!filestream_exists(path) || overwrite)
+      if (!path_is_valid(path) || pl_thumb->overwrite)
       {
          file_transfer_t *transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
          if (!transf)
@@ -195,44 +200,41 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb, bool overwrite)
 
 static void free_pl_thumb_handle(pl_thumb_handle_t *pl_thumb, bool free_playlist)
 {
-   if (pl_thumb)
-   {
-      if (!string_is_empty(pl_thumb->system))
-      {
-         free(pl_thumb->system);
-         pl_thumb->system = NULL;
-      }
-      
-      if (!string_is_empty(pl_thumb->playlist_path))
-      {
-         free(pl_thumb->playlist_path);
-         pl_thumb->playlist_path = NULL;
-      }
-      
-      if (pl_thumb->playlist && free_playlist)
-      {
-         playlist_free(pl_thumb->playlist);
-         pl_thumb->playlist = NULL;
-      }
-      
-      if (pl_thumb->thumbnail_path_data)
-      {
-         free(pl_thumb->thumbnail_path_data);
-         pl_thumb->thumbnail_path_data = NULL;
-      }
-      
-      free(pl_thumb);
-      pl_thumb = NULL;
-   }
-}
+   if (!pl_thumb)
+      return;
 
-/* Callback: Refresh menu thumbnail display once
- * download is complete */
-static void cb_task_pl_thumbnail_refresh_menu(
-      retro_task_t *task, void *task_data,
-      void *user_data, const char *err)
-{
-   menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
+   if (!string_is_empty(pl_thumb->system))
+   {
+      free(pl_thumb->system);
+      pl_thumb->system = NULL;
+   }
+
+   if (!string_is_empty(pl_thumb->playlist_path))
+   {
+      free(pl_thumb->playlist_path);
+      pl_thumb->playlist_path = NULL;
+   }
+
+   if (!string_is_empty(pl_thumb->dir_thumbnails))
+   {
+      free(pl_thumb->dir_thumbnails);
+      pl_thumb->dir_thumbnails = NULL;
+   }
+
+   if (pl_thumb->playlist && free_playlist)
+   {
+      playlist_free(pl_thumb->playlist);
+      pl_thumb->playlist = NULL;
+   }
+
+   if (pl_thumb->thumbnail_path_data)
+   {
+      free(pl_thumb->thumbnail_path_data);
+      pl_thumb->thumbnail_path_data = NULL;
+   }
+
+   free(pl_thumb);
+   pl_thumb = NULL;
 }
 
 /*******************************/
@@ -259,7 +261,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
       case PL_THUMB_BEGIN:
          {
             /* Load playlist */
-            if (!filestream_exists(pl_thumb->playlist_path))
+            if (!path_is_valid(pl_thumb->playlist_path))
                goto task_finished;
             
             pl_thumb->playlist = playlist_init(pl_thumb->playlist_path, COLLECTION_SIZE);
@@ -340,7 +342,8 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             }
             
             /* Download current thumbnail */
-            download_pl_thumbnail(pl_thumb, false);
+            if (pl_thumb)
+               download_pl_thumbnail(pl_thumb);
             
             /* Increment thumbnail type */
             pl_thumb->type_idx++;
@@ -363,18 +366,40 @@ task_finished:
    free_pl_thumb_handle(pl_thumb, true);
 }
 
+static bool task_pl_thumbnail_finder(retro_task_t *task, void *user_data)
+{
+   pl_thumb_handle_t *pl_thumb = NULL;
+   
+   if (!task || !user_data)
+      return false;
+   
+   if (task->handler != task_pl_thumbnail_download_handler)
+      return false;
+   
+   pl_thumb = (pl_thumb_handle_t*)task->state;
+   if (!pl_thumb)
+      return false;
+   
+   return string_is_equal((const char*)user_data, pl_thumb->playlist_path);
+}
+
 bool task_push_pl_thumbnail_download(
       const char *system, const char *playlist_path)
 {
+   task_finder_data_t find_data;
+   settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
    const char *playlist_file     = path_basename(playlist_path);
    
    /* Sanity check */
-   if (!task || !pl_thumb ||
-       string_is_empty(system) ||
+   if (!settings || !task || !pl_thumb)
+      goto error;
+   
+   if (string_is_empty(system) ||
        string_is_empty(playlist_path) ||
-       string_is_empty(playlist_file))
+       string_is_empty(playlist_file) ||
+       string_is_empty(settings->paths.directory_thumbnails))
       goto error;
    
    /* Only parse supported playlist types */
@@ -388,6 +413,14 @@ bool task_push_pl_thumbnail_download(
        string_is_equal(system, "images_history"))
       goto error;
    
+   /* Concurrent download of thumbnails for the same
+    * playlist is not allowed */
+   find_data.func                = task_pl_thumbnail_finder;
+   find_data.userdata            = (void*)playlist_path;
+   
+   if (task_queue_find(&find_data))
+      goto error;
+   
    /* Configure task */
    task->handler                 = task_pl_thumbnail_download_handler;
    task->state                   = pl_thumb;
@@ -398,12 +431,14 @@ bool task_push_pl_thumbnail_download(
    /* Configure handle */
    pl_thumb->system              = strdup(system);
    pl_thumb->playlist_path       = strdup(playlist_path);
+   pl_thumb->dir_thumbnails      = strdup(settings->paths.directory_thumbnails);
    pl_thumb->playlist            = NULL;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
    pl_thumb->list_size           = 0;
    pl_thumb->list_index          = 0;
    pl_thumb->type_idx            = 1;
+   pl_thumb->overwrite           = false;
    pl_thumb->status              = PL_THUMB_BEGIN;
    
    task_queue_push(task);
@@ -431,12 +466,90 @@ error:
 /* Playlist Entry Thumbnail Download */
 /*************************************/
 
+static void cb_task_pl_entry_thumbnail_refresh_menu(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   
+   pl_thumb_handle_t *pl_thumb     = NULL;
+   const char *thumbnail_path      = NULL;
+   const char *left_thumbnail_path = NULL;
+   playlist_t *current_playlist    = playlist_get_cached();
+   menu_handle_t *menu             = NULL;
+   bool do_refresh                 = false;
+   
+   if (!task)
+      return;
+   
+   pl_thumb = (pl_thumb_handle_t*)task->state;
+   if (!pl_thumb)
+      return;
+   
+   if (!pl_thumb->thumbnail_path_data)
+      return;
+   
+   /* Only refresh if current playlist hasn't changed,
+    * and menu selection pointer is on the same entry
+    * (Note: this is crude, but it's sufficient to prevent
+    * 'refresh' from getting spammed when switching
+    * playlists or scrolling through one playlist at
+    * maximum speed with on demand downloads enabled) */
+   
+   if (!current_playlist)
+      return;
+   
+   if (string_is_empty(playlist_get_conf_path(current_playlist)))
+      return;
+   
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return;
+   
+   if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
+        (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
+       !string_is_equal(pl_thumb->playlist_path, playlist_get_conf_path(current_playlist)))
+      return;
+   
+   /* Only refresh if left/right thumbnails did not exist
+    * when the task began, but do exist now
+    * (with the caveat that we must also refresh if existing
+    * files have been overwritten) */
+   
+   if (!pl_thumb->right_thumbnail_exists || pl_thumb->overwrite)
+      if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+         if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &thumbnail_path))
+            do_refresh = path_is_valid(thumbnail_path);
+   
+   if (!do_refresh)
+      if (!pl_thumb->left_thumbnail_exists || pl_thumb->overwrite)
+         if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+            if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
+               do_refresh = path_is_valid(left_thumbnail_path);
+   
+   if (do_refresh)
+      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
+   
+#endif
+}
+
+static void task_pl_entry_thumbnail_free(retro_task_t *task)
+{
+   pl_thumb_handle_t *pl_thumb = NULL;
+   
+   if (!task)
+      return;
+   
+   pl_thumb = (pl_thumb_handle_t*)task->state;
+   
+   free_pl_thumb_handle(pl_thumb, false);
+}
+
 static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
 {
    pl_thumb_handle_t *pl_thumb = NULL;
    
    if (!task)
-      goto task_finished;
+      return;
    
    pl_thumb = (pl_thumb_handle_t*)task->state;
    
@@ -450,7 +563,9 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
    {
       case PL_THUMB_BEGIN:
          {
-            const char *label = NULL;
+            const char *label                = NULL;
+            const char *right_thumbnail_path = NULL;
+            const char *left_thumbnail_path  = NULL;
             
             /* Initialise thumbnail path data */
             pl_thumb->thumbnail_path_data = menu_thumbnail_path_init();
@@ -464,6 +579,18 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             if (!menu_thumbnail_set_content_playlist(
                   pl_thumb->thumbnail_path_data, pl_thumb->playlist, pl_thumb->list_index))
                goto task_finished;
+            
+            /* Check whether current right/left thumbnails
+             * already exist (required for menu refresh callback) */
+            pl_thumb->right_thumbnail_exists = false;
+            if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+               if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
+                  pl_thumb->right_thumbnail_exists = path_is_valid(right_thumbnail_path);
+            
+            pl_thumb->left_thumbnail_exists = false;
+            if (menu_thumbnail_update_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+               if (menu_thumbnail_get_path(pl_thumb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
+                  pl_thumb->left_thumbnail_exists = path_is_valid(left_thumbnail_path);
             
             /* Set task title */
             task_free_title(task);
@@ -500,7 +627,8 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 3);
             
             /* Download current thumbnail */
-            download_pl_thumbnail(pl_thumb, true);
+            if (pl_thumb)
+               download_pl_thumbnail(pl_thumb);
             
             /* Increment thumbnail type */
             pl_thumb->type_idx++;
@@ -519,18 +647,52 @@ task_finished:
    
    if (task)
       task_set_finished(task, true);
+}
+
+static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
+{
+   pl_entry_id_t *entry_id     = NULL;
+   pl_thumb_handle_t *pl_thumb = NULL;
    
-   free_pl_thumb_handle(pl_thumb, false);
+   if (!task || !user_data)
+      return false;
+   
+   if (task->handler != task_pl_entry_thumbnail_download_handler)
+      return false;
+   
+   entry_id = (pl_entry_id_t*)user_data;
+   if (!entry_id)
+      return false;
+   
+   pl_thumb = (pl_thumb_handle_t*)task->state;
+   if (!pl_thumb)
+      return false;
+   
+   return (entry_id->idx == pl_thumb->list_index) &&
+          string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
 }
 
 bool task_push_pl_entry_thumbnail_download(
-      const char *system, playlist_t *playlist, unsigned idx)
+      const char *system, 
+      playlist_t *playlist,
+      unsigned idx,
+      bool overwrite,
+      bool mute)
 {
+   task_finder_data_t find_data;
+   settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
+   pl_entry_id_t *entry_id       = (pl_entry_id_t*)calloc(1, sizeof(pl_entry_id_t));
+   char *playlist_path           = NULL;
    
    /* Sanity check */
-   if (!task || !pl_thumb || !playlist || string_is_empty(system))
+   if (!settings || !task || !pl_thumb || !playlist || !entry_id)
+      goto error;
+   
+   if (string_is_empty(system) ||
+       string_is_empty(settings->paths.directory_thumbnails) ||
+       string_is_empty(playlist_get_conf_path(playlist)))
       goto error;
    
    if (idx >= playlist_size(playlist))
@@ -542,23 +704,45 @@ bool task_push_pl_entry_thumbnail_download(
        string_is_equal(system, "video_history"))
       goto error;
    
+   /* Copy playlist path
+    * (required for task finder and menu refresh functionality) */
+   playlist_path = strdup(playlist_get_conf_path(playlist));
+   
+   /* Concurrent download of thumbnails for the same
+    * playlist entry is not allowed */
+   entry_id->playlist_path       = playlist_path;
+   entry_id->idx                 = idx;
+   
+   find_data.func                = task_pl_entry_thumbnail_finder;
+   find_data.userdata            = (void*)entry_id;
+   
+   if (task_queue_find(&find_data))
+      goto error;
+   
+   free(entry_id);
+   entry_id = NULL;
+   
    /* Configure task */
    task->handler                 = task_pl_entry_thumbnail_download_handler;
    task->state                   = pl_thumb;
    task->title                   = strdup(system);
    task->alternative_look        = true;
+   task->mute                    = mute;
    task->progress                = 0;
-   task->callback                = cb_task_pl_thumbnail_refresh_menu;
+   task->callback                = cb_task_pl_entry_thumbnail_refresh_menu;
+   task->cleanup                 = task_pl_entry_thumbnail_free;
    
    /* Configure handle */
    pl_thumb->system              = strdup(system);
-   pl_thumb->playlist_path       = NULL;
+   pl_thumb->playlist_path       = playlist_path;
+   pl_thumb->dir_thumbnails      = strdup(settings->paths.directory_thumbnails);
    pl_thumb->playlist            = playlist;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
    pl_thumb->list_size           = playlist_size(playlist);
    pl_thumb->list_index          = idx;
    pl_thumb->type_idx            = 1;
+   pl_thumb->overwrite           = overwrite;
    pl_thumb->status              = PL_THUMB_BEGIN;
    
    task_queue_push(task);
@@ -577,6 +761,18 @@ error:
    {
       free(pl_thumb);
       pl_thumb = NULL;
+   }
+   
+   if (entry_id)
+   {
+      free(entry_id);
+      entry_id = NULL;
+   }
+   
+   if (!string_is_empty(playlist_path))
+   {
+      free(playlist_path);
+      playlist_path = NULL;
    }
    
    return false;

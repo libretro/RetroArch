@@ -44,7 +44,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "../cheevos/badges.h" /* RCHEEVOS TODO: fix path */
+#include "badges.h"
 #include "cheevos.h"
 #include "fixup.h"
 #include "parser.h"
@@ -529,8 +529,9 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       cheevo->info->id);
       shotname[sizeof(shotname) - 1] = '\0';
 
-      if (take_screenshot(shotname, true,
-            video_driver_cached_frame_has_valid_framebuffer(), false, true))
+      if (take_screenshot(settings->paths.directory_screenshot,
+               shotname, true,
+               video_driver_cached_frame_has_valid_framebuffer(), false, true))
          CHEEVOS_LOG(RCHEEVOS_TAG "got a screenshot for cheevo %u\n", cheevo->info->id);
       else
          CHEEVOS_LOG(RCHEEVOS_TAG "failed to get screenshot for cheevo %u\n", cheevo->info->id);
@@ -1489,7 +1490,7 @@ found:
 
       /* Checks for the existence of a headered Lynx file.
          Unheadered files fall back to RCHEEVOS_GENERIC_MD5. */
-      if (coro->len <= lynx_header_len ||
+      if (coro->len <= (unsigned)lynx_header_len ||
         memcmp("LYNX", (void *)coro->data, 5) != 0)
       {
          coro->gameid = 0;

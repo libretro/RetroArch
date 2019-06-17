@@ -15,20 +15,20 @@
 
 #include <compat/strl.h>
 
-#include "../../audio/audio_driver.h"
-#include "../menu_driver.h"
-#include "../menu_cbs.h"
-
-#ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
-#include "../../cheevos-new/cheevos.h" /* RCHEEVOS TODO: remove line */
-#endif
-#include "../../core_info.h"
-#include "../../verbosity.h"
-
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+
+#include "../menu_driver.h"
+#include "../menu_cbs.h"
+
+#include "../../retroarch.h"
+
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos-new/cheevos.h"
+#endif
+#include "../../core_info.h"
+#include "../../verbosity.h"
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
@@ -129,6 +129,7 @@ default_sublabel_macro(action_bind_sublabel_midi_settings_list,            MENU_
 default_sublabel_macro(action_bind_sublabel_directory_settings_list,       MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_playlist_settings_list,        MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_network_on_demand_thumbnails,  MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_user_settings_list,            MENU_ENUM_SUBLABEL_USER_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_frame_throttle_settings_list,  MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS)
@@ -142,7 +143,6 @@ default_sublabel_macro(action_bind_sublabel_cheevos_leaderboards_enable,   MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_badges_enable,         MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_verbose_enable,        MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_auto_screenshot,       MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT)
-default_sublabel_macro(action_bind_sublabel_cheevos_old_enable,            MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
@@ -251,6 +251,7 @@ default_sublabel_macro(action_bind_sublabel_video_message_pos_x,           MENU_
 default_sublabel_macro(action_bind_sublabel_video_message_pos_y,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y)
 default_sublabel_macro(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
 default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
+default_sublabel_macro(action_bind_sublabel_input_overlay_show_mouse_cursor,       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR)
 default_sublabel_macro(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 default_sublabel_macro(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
@@ -357,6 +358,7 @@ default_sublabel_macro(action_bind_sublabel_thumbnails_rgui,               MENU_
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_rgui,          MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
+default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
@@ -439,6 +441,7 @@ default_sublabel_macro(action_bind_sublabel_xmb_layout,                         
 default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
 default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
+default_sublabel_macro(action_bind_sublabel_menu_xmb_thumbnail_scale_factor,       MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR)
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
@@ -480,10 +483,14 @@ default_sublabel_macro(action_bind_sublabel_menu_show_information,              
 default_sublabel_macro(action_bind_sublabel_menu_show_configurations,              MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS)
 default_sublabel_macro(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
 default_sublabel_macro(action_bind_sublabel_menu_show_quit_retroarch,              MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH)
+#ifndef HAVE_LAKKA
+default_sublabel_macro(action_bind_sublabel_menu_show_restart_retroarch,           MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH)
+#endif
 default_sublabel_macro(action_bind_sublabel_menu_show_reboot,                      MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT)
 default_sublabel_macro(action_bind_sublabel_menu_show_shutdown,                    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN)
 default_sublabel_macro(action_bind_sublabel_menu_show_online_updater,              MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_show_core_updater,                MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER)
+default_sublabel_macro(action_bind_sublabel_menu_show_legacy_thumbnail_updater,    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_music_tab,                        MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC)
 default_sublabel_macro(action_bind_sublabel_menu_video_tab,                        MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO)
 default_sublabel_macro(action_bind_sublabel_menu_netplay_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY)
@@ -577,6 +584,11 @@ default_sublabel_macro(action_bind_sublabel_video_3ds_lcd_bottom,           MENU
 default_sublabel_macro(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
 #endif
 
+#if defined(GEKKO)
+default_sublabel_macro(action_bind_sublabel_video_overscan_correction_top,    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP)
+default_sublabel_macro(action_bind_sublabel_video_overscan_correction_bottom, MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM)
+#endif
+
 default_sublabel_macro(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
@@ -607,6 +619,7 @@ default_sublabel_macro(action_bind_sublabel_menu_rgui_extended_ascii,           
 default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,                       MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_pl_thumbnails_updater_list,                    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
+default_sublabel_macro(action_bind_sublabel_rdb_entry_detail,                              MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -646,14 +659,12 @@ static int action_bind_sublabel_cheevos_entry(
       char *s, size_t len)
 {
 #ifdef HAVE_CHEEVOS
-   settings_t *settings = config_get_ptr(); /* RCHEEVOS TODO: remove line */
-   cheevos_ctx_desc_t desc_info;
+   rcheevos_ctx_desc_t desc_info;
    unsigned new_id = type - MENU_SETTINGS_CHEEVOS_START;
    desc_info.idx   = new_id;
    desc_info.s     = s;
    desc_info.len   = len;
-   /* RCHEEVOS TODO: remove test */
-   !settings->bools.cheevos_old_enable ? rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info) : cheevos_get_description(&desc_info);
+   rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
 
    strlcpy(s, desc_info.s, len);
 #endif
@@ -1398,6 +1409,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_quit_retroarch);
             break;
+#ifndef HAVE_LAKKA
+         case MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_restart_retroarch);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_SHOW_REBOOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_reboot);
             break;
@@ -1409,6 +1425,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_core_updater);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_legacy_thumbnail_updater);
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_netplay_tab);
@@ -1449,6 +1468,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_vertical_thumbnails);
+            break;
+         case MENU_ENUM_LABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_thumbnail_scale_factor);
             break;
          case MENU_ENUM_LABEL_XMB_LAYOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_layout);
@@ -1703,6 +1725,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
             }
+            break;
+         case MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_thumbnail_upscale_threshold);
             break;
          case MENU_ENUM_LABEL_MOUSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable);
@@ -2009,6 +2034,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_show_physical_inputs_port);
             break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_show_mouse_cursor);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);
             break;
@@ -2205,9 +2233,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_auto_screenshot);
             break;
-         case MENU_ENUM_LABEL_CHEEVOS_OLD_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_old_enable);
-            break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
             break;
@@ -2382,6 +2407,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETWORK_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_network_settings_list);
             break;
+         case MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_network_on_demand_thumbnails);
+            break;
          case MENU_ENUM_LABEL_USER_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_settings_list);
             break;
@@ -2494,6 +2522,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
             break;
 #endif
+#if defined(GEKKO)
+         case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_top);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_bottom);
+            break;
+#endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_load);
             break;
@@ -2592,6 +2628,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_help_send_debug_info);
+            break;
+         case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rdb_entry_detail);
             break;
          default:
          case MSG_UNKNOWN:

@@ -1,6 +1,9 @@
 # Use 'generic' to be able to override CC/CXX for clang
 language: generic
 
+# Use a release with a longer normal LTS
+dist: xenial
+
 matrix:
   include:
     - compiler: mingw-x86
@@ -40,6 +43,8 @@ matrix:
     - compiler: clang
       env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
+      env: CC=clang CXX=clang++
+    - os: osx
       osx_image: xcode8
       script:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
@@ -62,20 +67,17 @@ before_install:
        sudo apt-get install -y g++-8
      elif [ "$CC" = clang-6.0 ]; then
        # Install a more recent clang than the default
-       sudo apt-get install -y libstdc++-7-dev
        sudo apt-get install -y clang-6.0
      elif [ "$CROSS_COMPILE" = i686-w64-mingw32- ]; then
-       sudo apt-get install -y g++-mingw-w64-i686
-       sudo apt-get install -y mingw-w64-i686-dev
+       sudo update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
      elif [ "$CROSS_COMPILE" = x86_64-w64-mingw32- ]; then
-       sudo apt-get install -y g++-mingw-w64-x86-64
-       sudo apt-get install -y mingw-w64-x86-64-dev
+       sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
      fi
 
 script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
-       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 --enable-builtinzlib"
+       ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
      fi
   - |
      if [ -n "$DISABLE_MENU" ]; then
@@ -113,7 +115,7 @@ addons:
       - qtdeclarative5-dev
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-6.0
+      - llvm-toolchain-xenial
   coverity_scan:
     project:
       name: "RetroArch"

@@ -186,9 +186,11 @@ ifeq ($(MAKECMDGOALS),clean)
 config.mk:
 else
 -include $(RARCH_OBJ:.o=.d)
+ifeq ($(HAVE_CONFIG_MK),)
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
+endif
 endif
 
 retroarch: $(RARCH_OBJ)

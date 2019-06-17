@@ -60,7 +60,6 @@
 #include "../file_path_special.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include "../movie.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 #include "../tasks/tasks_internal.h"
@@ -374,6 +373,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
+      DECLARE_META_BIND(2, streaming_toggle,      RARCH_AI_SERVICE,      MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
 typedef struct turbo_buttons turbo_buttons_t;
@@ -661,25 +661,19 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   int16_t bsv_result;
    int16_t res         = 0;
 #ifdef HAVE_OVERLAY
    int16_t res_overlay = 0;
 #endif
-
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
    bool reset_state    = false;
 
    device &= RETRO_DEVICE_MASK;
 
-   if (bsv_movie_is_playback_on())
-   {
-      int16_t bsv_result;
-      if (bsv_movie_get_input(&bsv_result))
-         return bsv_result;
-
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_END, NULL);
-   }
+   if (bsv_movie_get_input(&bsv_result))
+      return bsv_result;
 
    if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
@@ -775,8 +769,7 @@ int16_t input_state(unsigned port, unsigned device,
       }
    }
 
-   if (bsv_movie_is_playback_off())
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_INPUT, &res);
+   bsv_movie_set_input(&res);
 
    return res;
 }

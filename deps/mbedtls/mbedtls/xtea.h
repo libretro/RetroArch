@@ -38,8 +38,7 @@
 #define MBEDTLS_ERR_XTEA_INVALID_INPUT_LENGTH             -0x0028  /**< The data input has an invalid length. */
 
 #if !defined(MBEDTLS_XTEA_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

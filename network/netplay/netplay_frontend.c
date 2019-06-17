@@ -1514,7 +1514,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          settings->bools.netplay_stateless_mode,
          settings->ints.netplay_check_frames,
          &cbs,
-         settings->bools.netplay_nat_traversal,
+         settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
 #ifdef HAVE_DISCORD
          discord_get_own_username() ? discord_get_own_username() :
 #endif

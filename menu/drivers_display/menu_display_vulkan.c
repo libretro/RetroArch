@@ -23,7 +23,7 @@
 #include "../menu_driver.h"
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../gfx/common/vulkan_common.h"
 
 /* Will do Y-flip later, but try to make it similar to GL. */

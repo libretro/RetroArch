@@ -27,7 +27,7 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 

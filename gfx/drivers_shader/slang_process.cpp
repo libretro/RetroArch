@@ -72,6 +72,7 @@ get_semantic_name(slang_reflection& reflection,
       "OutputSize",
       "FinalViewportSize",
       "FrameCount",
+      "FrameDirection",
    };
    if ((int)semantic < sizeof(names) / sizeof(*names))
       return std::string(names[semantic]);

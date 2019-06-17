@@ -22,8 +22,9 @@
 #include <net/net_compat.h>
 #include <retro_timers.h>
 
-#include "../verbosity.h"
+#ifdef RARCH_INTERNAL
 #include "../gfx/video_display_server.h"
+#endif
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
@@ -97,7 +98,6 @@ static int cb_http_conn_default(void *data_, size_t len)
 
    if (!http->handle)
    {
-      RARCH_ERR("[http] Could not create new HTTP session handle.\n");
       http->error = true;
       return -1;
    }
@@ -238,9 +238,10 @@ static bool task_http_retriever(retro_task_t *task, void *data)
 
 static void http_transfer_progress_cb(retro_task_t *task)
 {
-   if (!task)
-      return;
-   video_display_server_set_window_progress(task->progress, task->finished);
+#ifdef RARCH_INTERNAL
+   if (task)
+      video_display_server_set_window_progress(task->progress, task->finished);
+#endif
 }
 
 static void* task_push_http_transfer_generic(
@@ -250,24 +251,18 @@ static void* task_push_http_transfer_generic(
 {
    task_finder_data_t find_data;
    char tmp[255];
-   const char* s = NULL;
-   retro_task_t  *t               = NULL;
-   http_handle_t *http            = NULL;
+   const char* s           = NULL;
+   retro_task_t  *t        = NULL;
+   http_handle_t *http     = NULL;
 
-   if (string_is_empty(url))
-      return NULL;
+   tmp[0]                  = '\0';
 
-   tmp[0]             = '\0';
-
-   find_data.func     = task_http_finder;
-   find_data.userdata = (void*)url;
+   find_data.func          = task_http_finder;
+   find_data.userdata      = (void*)url;
 
    /* Concurrent download of the same file is not allowed */
    if (task_queue_find(&find_data))
-   {
-      RARCH_LOG("[http] '%s' is already being downloaded.\n", url);
       return NULL;
-   }
 
    if (!conn)
       return NULL;
@@ -305,13 +300,11 @@ static void* task_push_http_transfer_generic(
       s = url;
 
    if (strstr(s, ".index"))
-   {
       snprintf(tmp, sizeof(tmp), "%s %s",
             msg_hash_to_str(MSG_DOWNLOADING), msg_hash_to_str(MSG_INDEX_FILE));
-   }
    else
-   snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_DOWNLOADING), s);
+      snprintf(tmp, sizeof(tmp), "%s '%s'",
+            msg_hash_to_str(MSG_DOWNLOADING), s);
 
    t->title                = strdup(tmp);
 
@@ -332,22 +325,18 @@ void* task_push_http_transfer(const char *url, bool mute,
       const char *type,
       retro_task_callback_t cb, void *user_data)
 {
-   struct http_connection_t *conn;
-
-   conn = net_http_connection_new(url, "GET", NULL);
-
-   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+   if (string_is_empty(url))
+      return NULL;
+   return task_push_http_transfer_generic(net_http_connection_new(url, "GET", NULL), url, mute, type, cb, user_data);
 }
 
 void* task_push_http_post_transfer(const char *url,
       const char *post_data, bool mute,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
-   struct http_connection_t *conn;
-
-   conn = net_http_connection_new(url, "POST", post_data);
-
-   return task_push_http_transfer_generic(conn,
+   if (string_is_empty(url))
+      return NULL;
+   return task_push_http_transfer_generic(net_http_connection_new(url, "POST", post_data),
          url, mute, type, cb, user_data);
 }
 

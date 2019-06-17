@@ -38,8 +38,8 @@
 
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../video_driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"

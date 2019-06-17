@@ -79,6 +79,34 @@ check_enabled()
 	die 1 "Error: $4 disabled and forced to build with $3 support."
 }
 
+# check_platform:
+# $1 = OS
+# $2 = HAVE_$2
+# $3 = feature
+# $4 = enable feature when true [checked only if non-empty]
+check_platform()
+{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	[ "$tmpval" = 'no' ] && return 0
+
+	setval="$(eval "printf %s \"\$USER_$2\"")"
+
+	if [ "$setval" = 'yes' ]; then
+		if { [ "$1" != "$OS" ] && [ "${4:-}" = 'true' ]; } ||
+				{ [ "$1" = "$OS" ] &&
+				[ "${4:-}" != 'true' ]; }; then
+			die 1 "Error: $3 not supported for $OS."
+		fi
+	elif [ "$1" = "$OS" ]; then
+		if [ "${4:-}" = 'true' ]; then
+			eval "HAVE_$2=yes"
+		else
+			eval "HAVE_$2=no"
+		fi
+	elif [ "${4:-}" = 'true' ]; then
+		eval "HAVE_$2="
+	fi
+}
+
 # check_lib:
 # Compiles a simple test program to check if a library is available.
 # $1 = language

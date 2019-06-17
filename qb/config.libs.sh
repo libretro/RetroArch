@@ -98,13 +98,15 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
-if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
-   # some systems have EGL libs, but no pkgconfig
-   # https://github.com/linux-sunxi/sunxi-mali/pull/8
-   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
-   if [ "$HAVE_EGL" = "yes" ]; then
-      EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
-   fi
+check_platform Win32 EGL 'EGL is' false
+
+check_header EGL EGL/egl.h EGL/eglext.h
+# some systems have EGL libs, but no pkgconfig
+# https://github.com/linux-sunxi/sunxi-mali/pull/8
+check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+
+if [ "$HAVE_EGL" = 'yes' ]; then
+   EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
 check_lib '' SSA -lass ass_library_init
@@ -128,10 +130,8 @@ add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
 add_define MAKEFILE DOC_DIR "${DOC_DIR:-${SHARE_DIR}/doc/retroarch}"
 add_define MAKEFILE MAN_DIR "${MAN_DIR:-${SHARE_DIR}/man}"
 
-if [ "$OS" = 'DOS' ]; then
-   HAVE_SHADERPIPELINE=no
-   HAVE_LANGEXTRA=no
-fi
+check_platform DOS SHADERPIPELINE 'Shader-based pipelines are' false
+check_platform DOS LANGEXTRA 'Extra languages are' false
 
 check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
@@ -145,7 +145,7 @@ fi
 
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
-if [ "$HAVE_NETWORKING" = 'yes' ]; then
+if [ "$HAVE_NETWORKING" != 'no' ]; then
    HAVE_GETADDRINFO=auto
    HAVE_SOCKET_LEGACY=no
 
@@ -159,24 +159,22 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
          die : 'Notice: RetroArch will use legacy socket support'
       fi
    fi
+
    HAVE_NETWORK_CMD=yes
-   HAVE_NETWORKGAMEPAD=yes
-
-   if [ "$HAVE_MINIUPNPC" = 'no' ]; then
-      HAVE_BUILTINMINIUPNPC=no
-   fi
-
-   check_lib '' MINIUPNPC '-lminiupnpc'
 else
-   die : 'Warning: All networking features have been disabled.'
-   HAVE_NETWORK_CMD='no'
-   HAVE_NETWORKGAMEPAD='no'
-   HAVE_CHEEVOS='no'
-   HAVE_DISCORD='no'
-   HAVE_TRANSLATE='no'
-   HAVE_SSL='no'
+   HAVE_NETWORK_CMD=no
 fi
 
+check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
+check_enabled NETWORKING DISCORD discord 'Networking is' false
+check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
+check_enabled NETWORKING SSL ssl 'Networking is' false
+check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
+
+check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
+check_enabled MINIUPNPC BUILTINMINIUPNPC 'builtin miniupnpc' 'miniupnpc is' true
+
+check_lib '' MINIUPNPC '-lminiupnpc'
 check_lib '' STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
@@ -203,10 +201,8 @@ if [ "$HAVE_OSS" != 'no' ]; then
    check_lib '' OSS_LIB -lossaudio
 fi
 
-if [ "$OS" = 'Linux' ]; then
-   HAVE_TINYALSA=yes
-   HAVE_RPILED=yes
-fi
+check_platform Linux TINYALSA 'Tinyalsa is' true
+check_platform Linux RPILED 'The RPI led driver is' true
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
@@ -234,6 +230,7 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
+check_platform Haiku DISCORD 'Discord is' false
 check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
@@ -247,29 +244,25 @@ if [ "$HAVE_QT" != 'no' ]; then
 
    # pkg-config is needed to reliably find Qt5 libraries.
 
-   if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
-      die : 'Notice: Not building Qt support, required libraries were not found.'
-      HAVE_QT=no
-   else
-      HAVE_QT=yes
+   check_enabled QT5CORE QT Qt 'Qt5Core is' true
+   check_enabled QT5GUI QT Qt 'Qt5GUI is' true
+   check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
+   check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
+   check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
+   #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+
+   if [ "$HAVE_QT" != yes ]; then
+      die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
    check_pkgconf OPENSSL openssl 1.0.0
-
-   #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
-   #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
-   #fi
 fi
 
-if [ "$HAVE_FLAC" = 'no' ]; then
-   HAVE_BUILTINFLAC=no
-fi
+check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
-if [ "$HAVE_SSL" = 'no' ]; then
-   HAVE_BUILTINMBEDTLS=no
-fi
+check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' true
 
 if [ "$HAVE_SSL" != 'no' ]; then
    check_header MBEDTLS \
@@ -303,8 +296,14 @@ check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
+   check_lib '' D3D8 -ld3d8
    check_lib '' D3D9 -ld3d9
    check_lib '' DSOUND -ldsound
+
+   if [ "$HAVE_D3DX" != 'no' ]; then
+      check_lib '' D3DX8 -ld3dx8
+      check_lib '' D3DX9 -ld3dx9
+   fi
 
    if [ "$HAVE_DINPUT" != 'no' ]; then
       HAVE_XINPUT=yes
@@ -313,12 +312,14 @@ if [ "$OS" = 'Win32' ]; then
    HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
    HAVE_WINMM=yes
-else
-   HAVE_D3D9=no
-   HAVE_D3D10=no
-   HAVE_D3D11=no
-   HAVE_D3D12=no
 fi
+
+check_platform Win32 D3D8 'Direct3D 8 is' true
+check_platform Win32 D3D9 'Direct3D 9 is' true
+check_platform Win32 D3D10 'Direct3D 10 is' true
+check_platform Win32 D3D11 'Direct3D 11 is' true
+check_platform Win32 D3D12 'Direct3D 12 is' true
+check_platform Win32 D3DX 'Direct3DX is' true
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
@@ -348,6 +349,9 @@ else
    HAVE_OPENGL='no'
 fi
 
+check_enabled EGL OPENGLES OpenGLES 'EGL is' false
+check_enabled EGL OPENGLES3 OpenGLES3 'EGL is' false
+check_enabled EGL VG OpenVG 'EGL is' false
 check_enabled OPENGL CG Cg 'OpenGL is' false
 check_enabled OPENGL OSMESA osmesa 'OpenGL is' false
 check_enabled OPENGL OPENGL1 OpenGL1 'OpenGL is' false
@@ -360,14 +364,9 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    HAVE_OPENGL_CORE='no'
 fi
 
-if [ "$HAVE_ZLIB" = 'no' ]; then
-   HAVE_BUILTINZLIB=no
-elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
-   HAVE_ZLIB=yes
-else
-   check_val '' ZLIB '-lz' '' zlib '' '' false
-fi
+check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
+check_val '' ZLIB '-lz' '' zlib '' '' false
 check_val '' MPV -lmpv '' mpv '' '' false
 
 check_header DRMINGW exchndl.h
@@ -419,23 +418,38 @@ if [ "$HAVE_EGL" = "yes" ]; then
       fi
    fi
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
-else
-   HAVE_VG=no
-   HAVE_OPENGLES=no
 fi
 
+check_pkgconf DBUS dbus-1
+check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
 check_val '' X11 -lX11 '' x11 '' '' false
 check_val '' XCB -lxcb '' xcb '' '' false
+
+if [ "$HAVE_X11" != 'no' ]; then
+   check_val '' XEXT -lXext '' xext '' '' false
+   check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
+else
+   die : 'Notice: X11 not present. Skipping X11 code paths.'
+fi
+
+check_enabled X11 XINERAMA Xinerama 'X11 is' false
+check_enabled X11 XSHM XShm 'X11 is' false
+check_enabled X11 XRANDR Xrandr 'X11 is' false
+check_enabled X11 XVIDEO XVideo 'X11 is' false
+check_enabled XEXT XVIDEO XVideo 'Xext is' false
+check_enabled XF86VM XVIDEO XVideo 'XF86vm is' false
+
+check_val '' XVIDEO -lXv '' xv '' '' false
+check_val '' XINERAMA -lXinerama '' xinerama '' '' false
+check_lib '' XRANDR -lXrandr
+check_header XSHM X11/Xlib.h X11/extensions/XShm.h
+check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.15
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
-check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
-check_pkgconf DBUS dbus-1
-check_val '' XEXT -lXext '' xext '' '' false
-check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
@@ -450,24 +464,6 @@ else
     HAVE_WAYLAND='no'
 fi
 
-if [ "$HAVE_X11" = 'no' ]; then
-	HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no; HAVE_XRANDR=no
-fi
-
-check_lib '' XRANDR -lXrandr
-check_val '' XINERAMA -lXinerama '' xinerama '' '' false
-
-if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
-   check_val '' XVIDEO -lXv '' xv '' '' false
-else
-   die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
-   HAVE_X11='no'
-   HAVE_XVIDEO='no'
-fi
-
-check_val '' UDEV "-ludev" '' libudev '' '' false
-
-check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 

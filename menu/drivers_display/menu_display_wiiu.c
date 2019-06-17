@@ -20,14 +20,13 @@
 #include "config.h"
 #endif
 
-#include "menu/menu_driver.h"
+#include "../menu_driver.h"
 
-#include "retroarch.h"
-#include "gfx/font_driver.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/gx2_common.h"
-#include "wiiu/system/memory.h"
-#include "wiiu/wiiu_dbg.h"
+#include "../../retroarch.h"
+#include "../../gfx/font_driver.h"
+#include "../../gfx/common/gx2_common.h"
+#include "../../wiiu/system/memory.h"
+#include "../../wiiu/wiiu_dbg.h"
 
 static const float *menu_display_wiiu_get_default_vertices(void)
 {

@@ -18,9 +18,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#if defined(HAVE_IOSUHAX) && defined(HAVE_LIBFAT)
 #include <fat.h>
 #include <iosuhax.h>
 #include <sys/iosupport.h>
+#endif
 
 #include "hbl.h"
 
@@ -129,6 +132,7 @@ void someFunc(void *arg)
    (void)arg;
 }
 
+#ifdef HAVE_IOSUHAX
 int MCPHookOpen(void)
 {
    //take over mcp thread
@@ -163,27 +167,34 @@ void MCPHookClose(void)
    IOS_Close(mcp_hook_fd);
    mcp_hook_fd = -1;
 }
+#endif //HAVE_IOSUHAX
 
 static bool try_init_iosuhax(void)
 {
+#ifdef HAVE_IOSUHAX
    int result = IOSUHAX_Open(NULL);
    if(result < 0)
       result = MCPHookOpen();
 
    return (result < 0) ? false : true;
+#else //don't HAVE_IOSUHAX
+   return false;
+#endif
 }
 
 static void try_shutdown_iosuhax(void)
 {
-  if(!iosuhaxMount)
+#ifdef HAVE_IOSUHAX
+   if(!iosuhaxMount)
     return;
 
-  if (mcp_hook_fd >= 0)
+   if (mcp_hook_fd >= 0)
     MCPHookClose();
-  else
+   else
     IOSUHAX_Close();
+#endif //HAVE_IOSUHAX
 
-  iosuhaxMount = false;
+   iosuhaxMount = false;
 }
 
 /**
@@ -196,10 +207,14 @@ static void try_shutdown_iosuhax(void)
 __attribute__((weak))
 void __mount_filesystems(void)
 {
+#ifdef HAVE_LIBFAT
    if(iosuhaxMount)
       fatInitDefault();
    else
       mount_sd_fat("sd");
+#else
+   mount_sd_fat("sd");
+#endif
 }
 
 /**
@@ -209,13 +224,17 @@ void __mount_filesystems(void)
 __attribute__((weak))
 void __unmount_filesystems(void)
 {
-  if (iosuhaxMount)
-  {
-    fatUnmount("sd:");
-    fatUnmount("usb:");
-  }
-  else
-    unmount_sd_fat("sd");
+#ifdef HAVE_LIBFAT
+   if (iosuhaxMount)
+   {
+      fatUnmount("sd:");
+      fatUnmount("usb:");
+   }
+   else
+      unmount_sd_fat("sd");
+#else
+   unmount_sd_fat("sd");
+#endif
 }
 
 static void fsdev_init(void)

@@ -31,7 +31,7 @@
 #include <encodings/crc32.h>
 
 /* Only for MAX_WBITS */
-#include <compat/zlib.h>
+#include <zlib.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50

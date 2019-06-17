@@ -80,7 +80,7 @@
    * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
    */
 
-#include <compat/zutil.h>
+#include <zutil.h>
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"

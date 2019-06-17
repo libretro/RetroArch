@@ -27,7 +27,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 RETRO_BEGIN_DECLS
 

@@ -33,7 +33,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../record/record_driver.h"
+#include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1030,6 +1030,29 @@ static void *gl_core_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
+   {
+      char device_str[128];
+
+      device_str[0] = '\0';
+
+      strlcpy(device_str, vendor, sizeof(device_str));
+      strlcat(device_str, " ", sizeof(device_str));
+      strlcat(device_str, renderer, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+      video_driver_set_gpu_api_version_string(version);
+   }
+
+#ifdef _WIN32
+   if (string_is_equal(vendor, "Microsoft Corporation"))
+      if (string_is_equal(renderer, "GDI Generic"))
+#ifdef HAVE_OPENGL1
+         rarch_force_video_driver_fallback("gl1");
+#else
+         rarch_force_video_driver_fallback("gdi");
+#endif
+#endif
+
    gl->vsync       = video->vsync;
    gl->fullscreen  = video->fullscreen;
    gl->keep_aspect = video->force_aspect;
@@ -1395,7 +1418,7 @@ static void gl_core_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
-   gl->rotation = 270 * rotation;
+   gl->rotation = video_driver_is_hw_context() && gl->hw_render_bottom_left ? 90 * rotation : 270 * rotation;
    gl_core_set_projection(gl, &gl_core_default_ortho, true);
 }
 
@@ -1631,6 +1654,7 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+   gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 

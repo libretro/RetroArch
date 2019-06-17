@@ -48,7 +48,6 @@
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
-#include "../gfx/video_driver.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -220,19 +219,26 @@ static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
       unsigned interval)
 {
+   void       *buf               = NULL;
    autosave_t *handle            = (autosave_t*)malloc(sizeof(*handle));
    if (!handle)
-      goto error;
+      return NULL;
 
    handle->quit                  = false;
    handle->bufsize               = size;
    handle->interval              = interval;
-   handle->buffer                = malloc(size);
    handle->retro_buffer          = data;
    handle->path                  = path;
 
-   if (!handle->buffer)
-      goto error;
+   buf                           = malloc(size);
+
+   if (!buf)
+   {
+      free(handle);
+      return NULL;
+   }
+
+   handle->buffer                = buf;
 
    memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
@@ -242,11 +248,6 @@ static autosave_t *autosave_new(const char *path,
    handle->thread                = sthread_create(autosave_thread, handle);
 
    return handle;
-
-error:
-   if (handle)
-      free(handle);
-   return NULL;
 }
 
 /**
@@ -624,11 +625,11 @@ static void task_save_handler(retro_task_t *task)
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
 
-   if ( state->data )
-      written         = (int)intfstream_write(state->file,
+   if (state->data)
+      written      = (int)intfstream_write(state->file,
          (uint8_t*)state->data + state->written, remaining);
    else
-      written = 0;
+      written      = 0;
 
    state->written += written;
 
@@ -1060,11 +1061,13 @@ static void save_state_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
+   settings_t     *settings = config_get_ptr();
    save_task_state_t *state = (save_task_state_t*)task_data;
    char               *path = strdup(state->path);
 
    if (state->thumbnail_enable)
-      take_screenshot(path, true, state->has_valid_framebuffer, false, true);
+      take_screenshot(settings->paths.directory_screenshot,
+            path, true, state->has_valid_framebuffer, false, true);
 
    free(path);
    free(state);
@@ -1165,23 +1168,36 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = task_init();
-   save_task_state_t *state    = (save_task_state_t*)calloc(1, sizeof(*state));
-   settings_t        *settings = config_get_ptr();
+   retro_task_t      *task     = NULL;
+   settings_t        *settings = NULL;
+   save_task_state_t *state    = (save_task_state_t*)
+      calloc(1, sizeof(*state));
 
-   if (!task || !state)
-      goto error;
+   if (!state)
+      return;
+
+   task                        = task_init();
+
+   if (!task)
+   {
+      free(state);
+      return;
+   }
+
+   settings                    = config_get_ptr();
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->undo_size  = size;
    state->undo_data  = data;
    state->autosave   = autosave;
-   state->mute       = autosave; /* don't show OSD messages if we are auto-saving */
-   if(load_to_backup_buffer)
-      state->mute       = true;
-   state->state_slot = settings->ints.state_slot;
-   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
+   state->mute       = autosave; /* don't show OSD messages if we 
+                                    are auto-saving */
+   if (load_to_backup_buffer)
+      state->mute                = true;
+   state->state_slot             = settings->ints.state_slot;
+   state->has_valid_framebuffer  = 
+      video_driver_cached_frame_has_valid_framebuffer();
 
    task->state       = state;
    task->type        = TASK_TYPE_BLOCKING;
@@ -1200,16 +1216,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
       free(task);
       free(state);
    }
-
-   return;
-
-error:
-   if (data)
-      free(data);
-   if (state)
-      free(state);
-   if (task)
-      free(task);
 }
 
 /**
@@ -1254,7 +1260,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
    if (save_to_disk)
    {
-      if (filestream_exists(path) && !autosave)
+      if (path_is_valid(path) && !autosave)
       {
          /* Before overwritting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
@@ -1329,7 +1335,8 @@ bool content_load_state(const char *path,
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload              = autoload;
    state->state_slot            = settings->ints.state_slot;
-   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
+   state->has_valid_framebuffer = 
+      video_driver_cached_frame_has_valid_framebuffer();
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
@@ -1367,8 +1374,8 @@ bool content_rename_state(const char *origin, const char *dest)
 /*
 *
 * TODO/FIXME: Figure out when and where this should be called.
-* As it is, when e.g. closing Gambatte, we get the same printf message 4 times.
-*
+* As it is, when e.g. closing Gambatte, we get the 
+* same printf message 4 times.
 */
 bool content_reset_savestate_backups(void)
 {
@@ -1497,12 +1504,9 @@ static bool dump_to_file_desperate(const void *data,
    path[0] = '\0';
    snprintf(path,
          PATH_MAX_LENGTH * sizeof(char),
-         "%s/RetroArch-recovery-%u",
-         application_data, type);
-
-   strlcat(path, timebuf,
-         PATH_MAX_LENGTH * sizeof(char)
-         );
+         "%s/RetroArch-recovery-%u%s",
+         application_data, type,
+         timebuf);
 
    free(application_data);
    free(timebuf);

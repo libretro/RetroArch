@@ -60,6 +60,20 @@ HAVE_CHEEVOS             := 1
 HAVE_SHADERPIPELINE      := 1
 HAVE_IMAGEVIEWER         := 1
 
+ifeq ($(HAVE_D3D8), 1)
+   D3D8_LIBS := -ld3d8
+   ifeq ($(HAVE_D3DX), 1)
+      D3DX8_LIBS := -ld3dx8
+   endif
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+   D3D9_LIBS := -ld3d9
+   ifeq ($(HAVE_D3DX), 1)
+      D3DX9_LIBS := -ld3dx9
+   endif
+endif
+
 include Makefile.common
 INCLUDE_DIRS := $(patsubst  -isystem%,-I%,$(INCLUDE_DIRS))
 CFLAGS       := $(filter-out  -Wno-unknown-pragmas,$(DEF_FLAGS))
@@ -123,7 +137,7 @@ endif
 FLAGS  += -nologo -MP
 FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 #FLAGS  += -Zc:wchar_t -Zp16 -Z7
-#FLAGS += -utf-8
+FLAGS += -utf-8
 #FLAGS += -source-charset:utf-8
 
 CXXFLAGS += $(CFLAGS) -TP -EHsc

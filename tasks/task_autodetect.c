@@ -154,7 +154,6 @@ void input_autoconfigure_joypad_reindex_devices(void)
          {
             /*Mark the first device of the set*/
             input_device_name_index[i] = 1;
-
             /*count this additional device, from two up*/
             input_device_name_index[j] = k++;
          }
@@ -248,7 +247,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       snprintf(msg, sizeof(msg), "%s configured.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
       if (!remote_is_bound)
       {
@@ -264,7 +263,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name))
+            !string_is_empty(params->name))
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
@@ -324,7 +323,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
-   config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
 
    path[0]                    = '\0';
@@ -356,7 +354,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    for (i = 0; i < list->size; i++)
    {
-      conf = config_file_new(list->elems[i].data);
+      config_file_t *conf = config_file_new(list->elems[i].data);
 
       if (conf)
          ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
@@ -371,7 +369,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0)
    {
-      conf = config_file_new(list->elems[index].data);
+      config_file_t *conf = config_file_new(list->elems[index].data);
 
       if (conf)
       {
@@ -824,12 +822,9 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
 
             blissbox_pads[index] = pad;
          }
+         /* use NULL entry to mark as an unconnected port */
          else
-         {
-            int count = sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]);
-            /* use NULL entry to mark as an unconnected port */
-            blissbox_pads[index] = &blissbox_pad_types[count - 1];
-         }
+            blissbox_pads[index] = &blissbox_pad_types[ARRAY_SIZE(blissbox_pad_types) - 1];
       }
    }
 }

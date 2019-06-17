@@ -27,7 +27,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../frontend/frontend_driver.h"
 #include "win32_common.h"
 
@@ -305,12 +305,12 @@ void dxgi_copy(
 
 void dxgi_update_title(video_frame_info_t* video_info)
 {
+#ifndef __WINRT__
    const ui_window_t* window = ui_companion_driver_get_window_ptr();
    const settings_t *settings = config_get_ptr();
 
    if (settings->bools.video_memory_show)
    {
-#ifndef __WINRT__
       char         mem[128];
       uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
       uint64_t mem_bytes_total = frontend_driver_get_total_memory();
@@ -321,7 +321,6 @@ void dxgi_update_title(video_frame_info_t* video_info)
             mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
             mem_bytes_total / (1024.0f * 1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-#endif
    }
 
    if (window)
@@ -332,11 +331,10 @@ void dxgi_update_title(video_frame_info_t* video_info)
 
       video_driver_get_window_title(title, sizeof(title));
 
-#ifndef __WINRT__
       if (title[0])
          window->set_title(&main_window, title);
-#endif
    }
+#endif
 }
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)

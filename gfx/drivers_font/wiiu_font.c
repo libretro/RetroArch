@@ -21,13 +21,13 @@
 #include <encodings/utf.h>
 #include <wiiu/gx2.h>
 
-#include "gfx/font_driver.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/gx2_common.h"
-#include "system/memory.h"
-#include "wiiu/wiiu_dbg.h"
+#include "../font_driver.h"
+#include "../common/gx2_common.h"
+#include "../../wiiu/system/memory.h"
+#include "../../wiiu/wiiu_dbg.h"
 
-#include "verbosity.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

@@ -40,7 +40,7 @@
 #define SceUID uint32_t
 #endif
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 
 typedef struct psp_audio
 {

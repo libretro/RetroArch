@@ -1,13 +1,13 @@
-#include "video_layout.h"
-#include "video_layout/view.h"
-#include "video_driver.h"
-#include <stdlib.h>
-#include <string.h>
 #include <formats/rxml.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <compat/strl.h>
 #include <verbosity.h>
+
+#include "video_layout.h"
+#include "video_layout/view.h"
+
+#include "../retroarch.h"
 
 bool load(view_array_t *view_array, rxml_document_t *doc);
 

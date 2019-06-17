@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>

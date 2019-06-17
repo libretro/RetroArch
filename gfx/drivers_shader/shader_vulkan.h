@@ -143,6 +143,9 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
+      int32_t direction);
+
 void vulkan_filter_chain_set_pass_name(vulkan_filter_chain_t *chain,
       unsigned pass,
       const char *name);

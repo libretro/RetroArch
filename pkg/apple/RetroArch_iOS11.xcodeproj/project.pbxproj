@@ -418,6 +418,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -893,6 +894,7 @@
 					../../,
 					"../../libretro-common/include",
 					../../deps/stb,
+					../../deps/rcheevos/include,
 					../../deps/libz,
 					../../deps,
 				);

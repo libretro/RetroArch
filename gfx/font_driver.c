@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -24,6 +25,7 @@
 #include "video_thread_wrapper.h"
 
 #include "../configuration.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 static const font_renderer_driver_t *font_backends[] = {

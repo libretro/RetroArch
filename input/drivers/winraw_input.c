@@ -19,7 +19,7 @@
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct

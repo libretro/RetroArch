@@ -21,10 +21,10 @@
 #include <wiiu/os.h>
 #include <wiiu/ax.h>
 
-#include "wiiu/wiiu_dbg.h"
-#include "wiiu/system/memory.h"
+#include "../../wiiu/wiiu_dbg.h"
+#include "../../wiiu/system/memory.h"
 
-#include "audio/audio_driver.h"
+#include "../../retroarch.h"
 
 typedef struct
 {

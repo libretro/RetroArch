@@ -23,9 +23,9 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
-#include "../video_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"

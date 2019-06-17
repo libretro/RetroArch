@@ -1303,7 +1303,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "This option is the equivalent of forcing x1 speed\n"
                              "while still allowing fast forward.\n"
                              "No deviation from the core requested refresh rate,\n"
-                             "no sound Dynamic Rate Control).");
+                             "no sound Dynamic Rate Control.");
             break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             snprintf(s, len,

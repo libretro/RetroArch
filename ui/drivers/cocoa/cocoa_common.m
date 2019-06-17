@@ -24,8 +24,7 @@
 #include "../../../verbosity.h"
 
 #include "../../../input/drivers/cocoa_input.h"
-#include "../../../location/location_driver.h"
-#include "../../../camera/camera_driver.h"
+#include "../../../retroarch.h"
 
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"

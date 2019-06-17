@@ -34,7 +34,7 @@
 #include <retro_common_api.h>
 #include <retro_environment.h>
 #include "../../driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"

@@ -630,7 +630,7 @@ static bool try_ips_patch(bool allow_ips,
  * Apply patch to the content file in-memory.
  *
  **/
-static void patch_content(
+static bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
@@ -651,7 +651,7 @@ static void patch_content(
    {
       RARCH_WARN("%s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));
-      return;
+      return false;
    }
 
    if (     !try_ips_patch(allow_ips, name_ips, buf, size)
@@ -660,5 +660,8 @@ static void patch_content(
    {
       RARCH_LOG("%s\n",
             msg_hash_to_str(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH));
+      return false;
    }
+
+   return true;
 }

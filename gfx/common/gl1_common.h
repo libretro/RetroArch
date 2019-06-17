@@ -20,6 +20,7 @@
 
 #include <retro_environment.h>
 #include <retro_inline.h>
+#include <gfx/math/matrix_4x4.h>
 
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
@@ -33,7 +34,7 @@
 #include <GL/glext.h>
 #endif
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL1_TEXTURE_TYPE32 GL_BGRA_EXT

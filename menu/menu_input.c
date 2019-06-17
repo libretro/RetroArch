@@ -35,6 +35,7 @@
 
 #include "../configuration.h"
 #include "../retroarch.h"
+#include "../verbosity.h"
 #include "../performance_counters.h"
 #include "../tasks/tasks_internal.h"
 
@@ -881,12 +882,17 @@ void menu_input_post_iterate(int *ret, unsigned action)
       : NULL;
 
    menu_entry_init(&entry);
+   /* Note: If menu_input_mouse_frame() or
+    * menu_input_pointer_post_iterate() are
+    * modified, will have to verify that these
+    * parameters remain unused... */
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
 
    if (settings->bools.menu_pointer_enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
-
-   menu_entry_free(&entry);
 }

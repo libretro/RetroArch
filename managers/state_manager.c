@@ -29,10 +29,9 @@
 
 #include "state_manager.h"
 #include "../msg_hash.h"
-#include "../movie.h"
 #include "../core.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
-#include "../audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay.h"
@@ -737,8 +736,7 @@ bool state_manager_check_rewind(bool pressed,
 
          core_unserialize(&serial_info);
 
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
+         bsv_movie_frame_rewind();
       }
       else
       {
@@ -774,7 +772,7 @@ bool state_manager_check_rewind(bool pressed,
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      if ((cnt == 0) || rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
       {
          retro_ctx_serialize_info_t serial_info;
          void *state = NULL;

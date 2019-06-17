@@ -174,7 +174,8 @@ bool fatInit (uint32_t cacheSize, bool setAsDefaultDevice)
       char filePath[PATH_MAX];
       strcpy (filePath, _FAT_disc_interfaces[defaultDevice].name);
       strcat (filePath, ":/");
-#ifdef ARGV_MAGIC
+//ARGV_MAGIC means something else on wiiu
+#if defined(ARGV_MAGIC) && !defined(WIIU)
       if ( __system_argv->argvMagic == ARGV_MAGIC && __system_argv->argc >= 1 && strrchr( __system_argv->argv[0], '/' )!=NULL )
       {
          /* Check the app's path against each of our mounted devices, to see

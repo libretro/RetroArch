@@ -35,7 +35,6 @@
 #include "command.h"
 #include "content.h"
 #include "dynamic.h"
-#include "movie.h"
 #include "file_path_special.h"
 
 #include "core.h"

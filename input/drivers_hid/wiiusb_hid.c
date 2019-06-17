@@ -167,7 +167,7 @@ static void wiiusb_get_description(usb_device_entry *device,
       {
          const usb_interfacedesc *inter = &config->interfaces[i];
 
-         for(k = 0; k < (int)inter->bNumEndpoints; k++)
+         for (k = 0; k < (int)inter->bNumEndpoints; k++)
          {
             const usb_endpointdesc *epdesc = &inter->endpoints[k];
             bool is_int = (epdesc->bmAttributes & 0x03)     == USB_ENDPOINT_INTERRUPT;
@@ -368,7 +368,7 @@ static bool wiiusb_hid_new_device(wiiusb_hid_t *hid, int32_t id)
 {
    struct wiiusb_adapter *temp;
 
-   if(!hid)
+   if (!hid)
       return false; /* false, so we do not proceed to add it */
 
    temp = hid->adapters_head;
@@ -536,7 +536,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
       if (val >= 0)
          val = 0;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       val = pad_connection_get_axis(&hid->connections[port],
             port, AXIS_POS_GET(joyaxis));

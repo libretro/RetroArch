@@ -78,11 +78,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(ORBIS)
-#include <orbisFile.h>
-#include <sys/fcntl.h>
-#include <sys/dirent.h>
-#endif
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
@@ -137,9 +132,14 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_mkdir_cb          = vfs_iface->mkdir;
 }
 
-#define path_stat(path, size) ((path_stat_cb != NULL) ? path_stat_cb((path), (size)) : retro_vfs_stat_impl((path), (size)))
+#define path_stat_internal(path, size) ((path_stat_cb != NULL) ? path_stat_cb((path), (size)) : retro_vfs_stat_impl((path), (size)))
 
 #define path_mkdir_norecurse(dir) ((path_mkdir_cb != NULL) ? path_mkdir_cb((dir)) : retro_vfs_mkdir_impl((dir)))
+
+int path_stat(const char *path)
+{
+   return path_stat_internal(path, NULL);
+}
 
 /**
  * path_is_directory:
@@ -151,35 +151,23 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
  */
 bool path_is_directory(const char *path)
 {
-#ifdef ORBIS
-   /* TODO: This should be moved to the VFS module */
-   int dfd;
-   if (!path)
-      return false;
-   dfd = orbisDopen(path);
-   if (dfd < 0)
-      return false;
-   orbisDclose(dfd);
-   return true;
-#else
-   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
-#endif
+   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
 }
 
 bool path_is_character_special(const char *path)
 {
-   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
+   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
 }
 
 bool path_is_valid(const char *path)
 {
-   return (path_stat(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
+   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
 int32_t path_get_size(const char *path)
 {
    int32_t filesize = 0;
-   if (path_stat(path, &filesize) != 0)
+   if (path_stat_internal(path, &filesize) != 0)
       return filesize;
 
    return -1;
@@ -216,6 +204,20 @@ bool path_mkdir(const char *dir)
       free(basedir);
       return false;
    }
+
+#if defined(GEKKO)
+   {
+      size_t len = strlen(basedir);
+
+      /* path_parent_dir() keeps the trailing slash.
+       * On Wii, mkdir() fails if the path has a
+       * trailing slash...
+       * We must therefore remove it. */
+      if (len > 0)
+         if (basedir[len - 1] == '/')
+            basedir[len - 1] = '\0';
+   }
+#endif
 
    if (path_is_directory(basedir))
       norecurse = true;
@@ -400,17 +402,14 @@ void fill_pathname_noext(char *out_path, const char *in_path,
 
 char *find_last_slash(const char *str)
 {
-#ifdef _WIN32
    const char *slash     = strrchr(str, '/');
+#ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
 
-   if (backslash && ((slash && backslash > slash) || !slash))
+   if (!slash || (backslash > slash))
       return (char*)backslash;
-
-   return (char*)slash;
-#else
-   return (char*)strrchr(str, '/');
 #endif
+   return (char*)slash;
 }
 
 /**
@@ -548,11 +547,18 @@ bool fill_pathname_parent_dir_name(char *out_dir,
    char *temp   = strdup(in_dir);
    char *last   = find_last_slash(temp);
 
-   *last        = '\0';
+   if (last && last[1] == 0)
+   {
+      *last     = '\0';
+      last      = find_last_slash(temp);
+   }
+
+   if (last)
+      *last     = '\0';
 
    in_dir       = find_last_slash(temp);
 
-   success      = in_dir && in_dir + 1;
+   success      = in_dir && in_dir[1];
 
    if (success)
       strlcpy(out_dir, in_dir + 1, size);
@@ -744,7 +750,8 @@ bool path_is_absolute(const char *path)
  * @buf                : buffer for path
  * @size               : size of buffer
  *
- * Turns relative paths into absolute path.
+ * Turns relative paths into absolute paths and
+ * resolves use of "." and ".." in absolute paths.
  * If relative, rebases on current working dir.
  **/
 void path_resolve_realpath(char *buf, size_t size)
@@ -772,6 +779,51 @@ void path_resolve_realpath(char *buf, size_t size)
 }
 
 /**
+ * path_relative_to:
+ * @out                : buffer to write the relative path to
+ * @path               : path to be expressed relatively
+ * @base               : base directory to start out on
+ * @size               : size of output buffer
+ *
+ * Turns @path into a path relative to @base and writes it to @out.
+ *
+ * @base is assumed to be a base directory, i.e. a path ending with '/' or '\'.
+ * Both @path and @base are assumed to be absolute paths without "." or "..".
+ *
+ * E.g. path /a/b/e/f.cg with base /a/b/c/d/ turns into ../../e/f.cg
+ **/
+void path_relative_to(char *out,
+      const char *path, const char *base, size_t size)
+{
+   unsigned i;
+   const char *trimmed_path, *trimmed_base;
+
+#ifdef _WIN32
+   /* For different drives, return absolute path */
+   if (strlen(path) >= 2 && strlen(base) >= 2
+         && path[1] == ':' && base[1] == ':'
+         && path[0] != base[0])
+   {
+      out[0] = '\0';
+      strlcat(out, path, size);
+   }
+#endif
+
+   /* Trim common beginning */
+   for (i = 0; path[i] && base[i] && path[i] == base[i]; )
+      i++;
+   trimmed_path = path+i;
+   trimmed_base = base+i;
+
+   /* Each segment of base turns into ".." */
+   out[0] = '\0';
+   for (i = 0; trimmed_base[i]; i++)
+      if (trimmed_base[i] == '/' || trimmed_base[i] == '\\')
+         strlcat(out, "../", size); /* Use '/' as universal separator */
+   strlcat(out, trimmed_path, size);
+}
+
+/**
  * fill_pathname_resolve_relative:
  * @out_path           : output path
  * @in_refpath         : input reference path
@@ -794,6 +846,7 @@ void fill_pathname_resolve_relative(char *out_path,
 
    fill_pathname_basedir(out_path, in_refpath, size);
    strlcat(out_path, in_path, size);
+   path_resolve_realpath(out_path, size);
 }
 
 /**
@@ -1133,7 +1186,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #elif defined(__APPLE__)
    if (bundle)
    {
-      CFURLRef bundle_url = CFBundleCopyBundleURL(bundle);
+      CFURLRef bundle_url     = CFBundleCopyBundleURL(bundle);
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
       CFRelease(bundle_path);
@@ -1154,7 +1207,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #elif defined(__QNX__)
    char *buff = malloc(len);
 
-   if(_cmdname(buff))
+   if (_cmdname(buff))
       strlcpy(s, buff, len);
 
    free(buff);
@@ -1214,7 +1267,7 @@ bool is_path_accessible_using_standard_io(const char *path)
 {
 #ifdef __WINRT__
    bool result;
-   size_t path_sizeof = PATH_MAX_LENGTH * sizeof(char);
+   size_t         path_sizeof = PATH_MAX_LENGTH * sizeof(char);
    char *relative_path_abbrev = (char*)malloc(path_sizeof);
    fill_pathname_abbreviate_special(relative_path_abbrev, path, path_sizeof);
 

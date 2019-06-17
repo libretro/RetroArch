@@ -1060,7 +1060,7 @@ static INLINE HRESULT D3D10CreateTexture2DShaderResourceView(
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 typedef struct d3d10_vertex_t
 {
@@ -1208,6 +1208,7 @@ typedef struct
       D3D10_VIEWPORT             viewport;
       pass_semantics_t           semantics;
       uint32_t                   frame_count;
+      int32_t                    frame_direction;
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;

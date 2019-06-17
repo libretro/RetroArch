@@ -43,7 +43,7 @@ static int (func)(file_list_t *list, unsigned type, unsigned i, const char *labe
    return 0; \
 }
 
-fill_label_macro(action_bind_label_information,              MENU_ENUM_LABEL_VALUE_INFORMATION)
+fill_label_macro(action_bind_label_rdb_entry_detail,         MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL)
 fill_label_macro(action_bind_label_internal_memory,          MSG_INTERNAL_STORAGE)
 fill_label_macro(action_bind_label_removable_storage,        MSG_REMOVABLE_STORAGE)
 fill_label_macro(action_bind_label_external_application_dir, MSG_EXTERNAL_APPLICATION_DIR)
@@ -108,8 +108,8 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
          case MSG_EXTERNAL_APPLICATION_DIR:
             BIND_ACTION_LABEL(cbs, action_bind_label_external_application_dir);
             break;
-         case MENU_ENUM_LABEL_INFORMATION:
-            BIND_ACTION_LABEL(cbs, action_bind_label_information);
+         case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
+            BIND_ACTION_LABEL(cbs, action_bind_label_rdb_entry_detail);
             break;
          default:
             break;

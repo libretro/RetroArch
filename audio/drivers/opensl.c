@@ -21,7 +21,7 @@
 
 #include <rthreads/rthreads.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 
 /* Helper macros, COM-style. */
 #define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))

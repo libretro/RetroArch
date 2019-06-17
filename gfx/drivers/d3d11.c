@@ -36,13 +36,13 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/win32_common.h"
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_preprocess.h"
+#include "../../managers/state_manager.h"
 
 #include "../common/d3d_common.h"
 #include "../common/d3d11_common.h"
@@ -371,7 +371,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, d3d11->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d11->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d11->shader_preset, path);
@@ -408,10 +408,11 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
-            &d3d11->mvp,                  /* MVP */
-            &d3d11->pass[i].rt.size_data, /* OutputSize */
-            &d3d11->frame.output_size,    /* FinalViewportSize */
-            &d3d11->pass[i].frame_count,  /* FrameCount */
+            &d3d11->mvp,                     /* MVP */
+            &d3d11->pass[i].rt.size_data,    /* OutputSize */
+            &d3d11->frame.output_size,       /* FinalViewportSize */
+            &d3d11->pass[i].frame_count,     /* FrameCount */
+            &d3d11->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -1356,6 +1357,8 @@ static bool d3d11_gfx_frame(
          else
             d3d11->pass[i].frame_count = frame_count;
 
+         d3d11->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             D3D11Buffer    buffer     = d3d11->pass[i].buffers[j];
@@ -1598,14 +1601,6 @@ static void d3d11_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d11->vp;
 }
 
-static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
@@ -1810,7 +1805,7 @@ video_driver_t video_d3d11 = {
    NULL, /* set_viewport */
    d3d11_gfx_set_rotation,
    d3d11_gfx_viewport_info,
-   d3d11_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY

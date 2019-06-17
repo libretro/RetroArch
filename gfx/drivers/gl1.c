@@ -442,7 +442,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
-   GLint internalFormat = GL_RGBA8;
+   GLint internalFormat = GL_RGB8;
    GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
    GLenum type = GL_UNSIGNED_BYTE;
 

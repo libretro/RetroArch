@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
@@ -28,6 +28,14 @@
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
+#endif
 
 int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
 {

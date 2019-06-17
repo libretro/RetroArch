@@ -327,14 +327,6 @@ static void switch_viewport_info(void *data, struct video_viewport *vp)
    *vp = sw->vp;
 }
 
-static bool switch_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void) data;
-   (void) buffer;
-
-   return true;
-}
-
 static void switch_set_texture_frame(
       void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
@@ -449,7 +441,7 @@ video_driver_t video_switch = {
 	NULL, /* set_viewport */
 	switch_set_rotation,
 	switch_viewport_info,
-	switch_read_viewport,
+	NULL, /* read_viewport  */
 	NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
 	NULL, /* overlay_interface */

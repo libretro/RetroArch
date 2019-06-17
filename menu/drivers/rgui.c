@@ -59,21 +59,15 @@
 
 /* Thumbnail additions */
 #include "../menu_thumbnail_path.h"
-#include <streams/file_stream.h>
 #include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
 
 #if defined(GEKKO)
-#define RGUI_TERM_START_X(fb_width)        (fb_width / 21)
-#define RGUI_TERM_START_Y(fb_height)       (fb_height / 9)
-#define RGUI_TERM_WIDTH(fb_width)          (((fb_width - RGUI_TERM_START_X(fb_width) - RGUI_TERM_START_X(fb_width)) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT(fb_height)        (((fb_height - RGUI_TERM_START_Y(fb_height) - RGUI_TERM_START_Y(fb_height)) / (FONT_HEIGHT_STRIDE)))
-#else
-#define RGUI_TERM_START_X(fb_width)        rgui_term_layout.start_x
-#define RGUI_TERM_START_Y(fb_height)       rgui_term_layout.start_y
-#define RGUI_TERM_WIDTH(fb_width)          rgui_term_layout.width
-#define RGUI_TERM_HEIGHT(fb_height)        rgui_term_layout.height
+/* Required for the Wii build, since we have
+ * to query the hardware for the actual display
+ * aspect ratio... */
+#include "../../wii/libogc/include/ogc/conf.h"
 #endif
 
 #define MAX_FB_WIDTH 426
@@ -534,7 +528,7 @@ typedef struct
    unsigned particle_effect;
    bool extended_ascii_enable;
    float scroll_y;
-   char *msgbox;
+   char msgbox[1024];
    unsigned color_theme;
    rgui_colors_t colors;
    bool is_playlist;
@@ -762,7 +756,7 @@ typedef struct
    unsigned width;
    unsigned height;
    bool is_valid;
-   char *path;
+   char path[PATH_MAX_LENGTH];
    uint16_t *data;
 } thumbnail_t;
 
@@ -772,7 +766,7 @@ static thumbnail_t fs_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -782,7 +776,7 @@ static thumbnail_t mini_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -792,7 +786,7 @@ static thumbnail_t mini_left_thumbnail = {
    0,
    0,
    false,
-   NULL,
+   {0},
    NULL
 };
 
@@ -936,27 +930,27 @@ static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgb
 
 static void rgui_set_pixel_format_function(void)
 {
-	const char *driver_ident = video_driver_get_ident();
-	
-	/* Default fallback... */
-	if (string_is_empty(driver_ident))
-	{
-		argb32_to_pixel_platform_format = argb32_to_rgba4444;
-		return;
-	}
-	
-	if (     string_is_equal(driver_ident, "ps2"))     /* PS2 */
-		argb32_to_pixel_platform_format = argb32_to_abgr1555;
-	else if (string_is_equal(driver_ident, "gx"))      /* GEKKO */
-		argb32_to_pixel_platform_format = argb32_to_rgb5a3;
-	else if (string_is_equal(driver_ident, "psp1"))    /* PSP */
-		argb32_to_pixel_platform_format = argb32_to_abgr4444;
-	else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
-				string_is_equal(driver_ident, "d3d11") ||
-				string_is_equal(driver_ident, "d3d12"))
-		argb32_to_pixel_platform_format = argb32_to_bgra4444;
-	else
-		argb32_to_pixel_platform_format = argb32_to_rgba4444;
+   const char *driver_ident = video_driver_get_ident();
+   
+   /* Default fallback... */
+   if (string_is_empty(driver_ident))
+   {
+      argb32_to_pixel_platform_format = argb32_to_rgba4444;
+      return;
+   }
+   
+   if (     string_is_equal(driver_ident, "ps2"))     /* PS2 */
+      argb32_to_pixel_platform_format = argb32_to_abgr1555;
+   else if (string_is_equal(driver_ident, "gx"))      /* GEKKO */
+      argb32_to_pixel_platform_format = argb32_to_rgb5a3;
+   else if (string_is_equal(driver_ident, "psp1"))    /* PSP */
+      argb32_to_pixel_platform_format = argb32_to_abgr4444;
+   else if (string_is_equal(driver_ident, "d3d10") || /* D3D10/11/12 */
+            string_is_equal(driver_ident, "d3d11") ||
+            string_is_equal(driver_ident, "d3d12"))
+      argb32_to_pixel_platform_format = argb32_to_bgra4444;
+   else
+      argb32_to_pixel_platform_format = argb32_to_rgba4444;
 }
 
 /* ==============================
@@ -1561,28 +1555,22 @@ static void rgui_render_particle_effect(rgui_t *rgui)
       rgui_render_border(rgui, rgui_frame_buf.data, fb_width, fb_height);
 }
 
-static void request_wallpaper(const char *path)
-{
-   /* Ensure that path is valid... */
-   if (!string_is_empty(path))
-   {
-      if (filestream_exists(path))
-      {
-         /* Unlike thumbnails, we don't worry about queued images
-          * here - in general, wallpaper is loaded once per session
-          * and then forgotten, so performance issues are not a concern */
-         task_push_image_load(path, menu_display_handle_wallpaper_upload, NULL);
-      }
-   }
-}
-
 static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
 
+   /* Note: Ugly hacks required for the Wii, since GEKKO
+    * platforms only support a 16:9 framebuffer width of
+    * 424 instead of the usual 426... */
+
    /* Sanity check */
    if (!image->pixels ||
+#if defined(GEKKO)
+       (image->width != ((rgui_background_buf.width == 424) ?
+            (rgui_background_buf.width + 2) : rgui_background_buf.width)) ||
+#else
        (image->width != rgui_background_buf.width) ||
+#endif
        (image->height != rgui_background_buf.height) ||
        !rgui_background_buf.data)
       return;
@@ -1593,7 +1581,13 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
       for (y = 0; y < rgui_background_buf.height; y++)
       {
          rgui_background_buf.data[x + (y * rgui_background_buf.width)] =
+#if defined(GEKKO)
+            argb32_to_pixel_platform_format(image->pixels[
+                  x + ((rgui_background_buf.width == 424) ? 1 : 0) +
+                  (y * image->width)]);
+#else
             argb32_to_pixel_platform_format(image->pixels[x + (y * rgui_background_buf.width)]);
+#endif
       }
    }
 
@@ -1603,39 +1597,45 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
    rgui->force_redraw = true;
 }
 
-static bool request_thumbnail(thumbnail_t *thumbnail, enum menu_thumbnail_id thumbnail_id, uint32_t *queue_size, const char *path)
+static bool request_thumbnail(
+      thumbnail_t *thumbnail,
+      enum menu_thumbnail_id thumbnail_id,
+      uint32_t *queue_size,
+      const char *path,
+      bool *file_missing)
 {
    /* Do nothing if current thumbnail path hasn't changed */
    if (!string_is_empty(path) && !string_is_empty(thumbnail->path))
-   {
       if (string_is_equal(thumbnail->path, path))
          return true;
-   }
 
    /* 'Reset' current thumbnail */
    thumbnail->width = 0;
    thumbnail->height = 0;
    thumbnail->is_valid = false;
-   free(thumbnail->path);
-   thumbnail->path = NULL;
+   thumbnail->path[0] = '\0';
 
    /* Ensure that new path is valid... */
    if (!string_is_empty(path))
    {
-      thumbnail->path = strdup(path);
-      if (filestream_exists(path))
+      strlcpy(thumbnail->path, path, sizeof(thumbnail->path));
+      if (path_is_valid(path))
       {
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
-         if(task_push_image_load(thumbnail->path, (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
+         if(task_push_image_load(thumbnail->path,
+                  video_driver_supports_rgba(), 0,
+                  (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
             menu_display_handle_left_thumbnail_upload : menu_display_handle_thumbnail_upload, NULL))
          {
             *queue_size = *queue_size + 1;
             return true;
          }
       }
+      else
+         *file_missing = true;
    }
-   
+
    return false;
 }
 
@@ -2001,25 +2001,25 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
 
       menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-      term_width = RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE;
-      term_height = RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE;
+      term_width = rgui_term_layout.width * FONT_WIDTH_STRIDE;
+      term_height = rgui_term_layout.height * FONT_HEIGHT_STRIDE;
 
       /* Sanity check (this can never, ever happen, so just return
        * instead of trying to crop the thumbnail image...) */
       if ((thumbnail_fullwidth > term_width) || (thumbnail->height > term_height))
          return;
 
-      fb_x_offset = (RGUI_TERM_START_X(fb_width) + term_width) -
+      fb_x_offset = (rgui_term_layout.start_x + term_width) -
             (thumbnail->width + ((thumbnail_fullwidth - thumbnail->width) >> 1));
       
       if (((thumbnail_id == MENU_THUMBNAIL_RIGHT) && !settings->bools.menu_rgui_swap_thumbnails) ||
           ((thumbnail_id == MENU_THUMBNAIL_LEFT)  && settings->bools.menu_rgui_swap_thumbnails))
       {
-         fb_y_offset = RGUI_TERM_START_Y(fb_height) + ((thumbnail->max_height - thumbnail->height) >> 1);
+         fb_y_offset = rgui_term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
       }
       else
       {
-         fb_y_offset = (RGUI_TERM_START_Y(fb_height) + term_height) -
+         fb_y_offset = (rgui_term_layout.start_y + term_height) -
                (thumbnail->height + ((thumbnail->max_height - thumbnail->height) >> 1));
       }
 
@@ -2152,7 +2152,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    /* Sanity check */
    if (string_is_empty(theme_path))
       goto end;
-   if (!filestream_exists(theme_path))
+   if (!path_is_valid(theme_path))
       goto end;
 
    /* Open config file */
@@ -2220,7 +2220,14 @@ end:
          wallpaper_path[0] = '\0';
 
          fill_pathname_resolve_relative(wallpaper_path, theme_path, wallpaper_file, sizeof(wallpaper_path));
-         request_wallpaper(wallpaper_path);
+         /* Ensure that path is valid... */
+         if (path_is_valid(wallpaper_path))
+            /* Unlike thumbnails, we don't worry about queued images
+             * here - in general, wallpaper is loaded once per session
+             * and then forgotten, so performance issues are not a concern */
+            task_push_image_load(wallpaper_path,
+                  video_driver_supports_rgba(), 0,
+                  menu_display_handle_wallpaper_upload, NULL);
       }
    }
    else
@@ -2322,10 +2329,9 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 
 /* blit_line() */
 
-static void blit_line_regular(int x, int y,
+static void blit_line_regular(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width        = rgui_frame_buf.width;
    uint16_t *frame_buf_data = rgui_frame_buf.data;
 
    while (!string_is_empty(message))
@@ -2354,10 +2360,9 @@ static void blit_line_regular(int x, int y,
    }
 }
 
-static void blit_line_regular_shadow(int x, int y,
+static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width         = rgui_frame_buf.width;
    uint16_t *frame_buf_data  = rgui_frame_buf.data;
    uint32_t shadow_colour_32 = shadow_color;
 
@@ -2402,10 +2407,9 @@ static void blit_line_regular_shadow(int x, int y,
    }
 }
 
-static void blit_line_extended(int x, int y,
+static void blit_line_extended(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width        = rgui_frame_buf.width;
    uint16_t *frame_buf_data = rgui_frame_buf.data;
 
    while (!string_is_empty(message))
@@ -2447,10 +2451,9 @@ static void blit_line_extended(int x, int y,
    }
 }
 
-static void blit_line_extended_shadow(int x, int y,
+static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   unsigned fb_width         = rgui_frame_buf.width;
    uint16_t *frame_buf_data  = rgui_frame_buf.data;
    uint32_t shadow_colour_32 = shadow_color;
 
@@ -2508,7 +2511,7 @@ static void blit_line_extended_shadow(int x, int y,
    }
 }
 
-static void (*blit_line)(int x, int y,
+static void (*blit_line)(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
 
 /* blit_symbol() */
@@ -2548,11 +2551,10 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
    return NULL;
 }
 
-static void blit_symbol_regular(int x, int y,
+static void blit_symbol_regular(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   unsigned fb_width          = rgui_frame_buf.width;
    uint16_t *frame_buf_data   = rgui_frame_buf.data;
    const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
 
@@ -2571,11 +2573,10 @@ static void blit_symbol_regular(int x, int y,
    }
 }
 
-static void blit_symbol_shadow(int x, int y,
+static void blit_symbol_shadow(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   unsigned fb_width          = rgui_frame_buf.width;
    uint16_t *frame_buf_data   = rgui_frame_buf.data;
    uint32_t shadow_colour_32  = shadow_color;
    const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
@@ -2610,7 +2611,7 @@ static void blit_symbol_shadow(int x, int y,
    }
 }
 
-static void (*blit_symbol)(int x, int y,
+static void (*blit_symbol)(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color) = blit_symbol_regular;
 
 static void rgui_set_blit_functions(bool draw_shadow, bool extended_ascii)
@@ -2664,12 +2665,14 @@ static void rgui_set_message(void *data, const char *message)
 {
    rgui_t           *rgui = (rgui_t*)data;
 
-   if (!rgui || !message || !*message)
+   if (!rgui || !message)
       return;
 
-   if (!string_is_empty(rgui->msgbox))
-      free(rgui->msgbox);
-   rgui->msgbox       = strdup(message);
+   rgui->msgbox[0] = '\0';
+
+   if (!string_is_empty(message))
+      strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+
    rgui->force_redraw = true;
 }
 
@@ -2702,13 +2705,13 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       char     *msg   = list->elems[i].data;
       unsigned msglen = (unsigned)utf8len(msg);
 
-      if (msglen > RGUI_TERM_WIDTH(fb_width))
+      if (msglen > rgui_term_layout.width)
       {
-         msg[RGUI_TERM_WIDTH(fb_width) - 2] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) - 1] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) - 0] = '.';
-         msg[RGUI_TERM_WIDTH(fb_width) + 1] = '\0';
-         msglen = RGUI_TERM_WIDTH(fb_width);
+         msg[rgui_term_layout.width - 2] = '.';
+         msg[rgui_term_layout.width - 1] = '.';
+         msg[rgui_term_layout.width - 0] = '.';
+         msg[rgui_term_layout.width + 1] = '\0';
+         msglen = rgui_term_layout.width;
       }
 
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
@@ -2771,7 +2774,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       if (rgui_frame_buf.data)
-         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg,
+         blit_line(fb_width, x + 8 + offset_x, y + 8 + offset_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
    }
 
@@ -2934,7 +2937,7 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       input_label_x      = osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
       input_label_y      = osk_y + input_offset_y;
       
-      blit_line(input_label_x, input_label_y, input_label_buf,
+      blit_line(fb_width, input_label_x, input_label_y, input_label_buf,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -2958,13 +2961,13 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       input_str_y = osk_y + input_offset_y + FONT_HEIGHT_STRIDE;
       
       if (!string_is_empty(input_str + input_str_char_offset))
-         blit_line(input_str_x, input_str_y, input_str + input_str_char_offset,
+         blit_line(fb_width, input_str_x, input_str_y, input_str + input_str_char_offset,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       
       /* Draw text cursor */
       text_cursor_x = osk_x + input_offset_x + (input_str_length * FONT_WIDTH_STRIDE);
       
-      blit_symbol(text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
+      blit_symbol(fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -2985,39 +2988,39 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
        * using blit_line(). */
 #ifdef HAVE_LANGEXTRA
       if (     string_is_equal(key_text, "\xe2\x87\xa6")) /* backspace character */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8f\x8e")) /* return character */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa7")) /* up arrow */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa9")) /* down arrow */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8a\x95")) /* plus sign (next button) */
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #else
       if (     string_is_equal(key_text, "Bksp"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Enter"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Upper"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Lower"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Next"))
-         blit_symbol(key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         blit_symbol(fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #endif
       else
-         blit_line(key_text_x, key_text_y, key_text,
+         blit_line(fb_width, key_text_x, key_text_y, key_text,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       
       /* Draw selection pointer */
@@ -3051,6 +3054,13 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       }
    }
 }
+
+#if defined(GEKKO)
+/* Need to forward declare this for the Wii build
+ * (I'm not going to reorder the functions and mess
+ * up the git diff for a single platform...) */
+static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update);
+#endif
 
 static void rgui_render(void *data, bool is_idle)
 {
@@ -3102,6 +3112,16 @@ static void rgui_render(void *data, bool is_idle)
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
    fb_size_changed = (rgui->last_width != fb_width) || (rgui->last_height != fb_height);
+
+#if defined(GEKKO)
+   /* Wii gfx driver changes menu framebuffer size at
+    * will... If a change is detected, all texture buffers
+    * must be regenerated - easiest way is to just call
+    * rgui_set_aspect_ratio() */
+   if (fb_size_changed)
+      rgui_set_aspect_ratio(rgui, false);
+#endif
+
    if (rgui->bg_modified || fb_size_changed)
    {
       rgui_cache_background(rgui);
@@ -3161,13 +3181,13 @@ static void rgui_render(void *data, bool is_idle)
    }
 
    /* Do not scroll if all items are visible. */
-   if (menu_entries_get_size() <= RGUI_TERM_HEIGHT(fb_height))
+   if (menu_entries_get_size() <= rgui_term_layout.height)
    {
       size_t start = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
 
-   bottom    = (int)(menu_entries_get_size() - RGUI_TERM_HEIGHT(fb_height));
+   bottom    = (int)(menu_entries_get_size() - rgui_term_layout.height);
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
@@ -3177,8 +3197,8 @@ static void rgui_render(void *data, bool is_idle)
 
    entries_end = menu_entries_get_size();
 
-   end         = ((old_start + RGUI_TERM_HEIGHT(fb_height)) <= (entries_end)) ?
-      old_start + RGUI_TERM_HEIGHT(fb_height) : entries_end;
+   end         = ((old_start + rgui_term_layout.height) <= (entries_end)) ?
+      old_start + rgui_term_layout.height : entries_end;
 
    /* Render background */
    rgui_render_background();
@@ -3219,13 +3239,13 @@ static void rgui_render(void *data, bool is_idle)
       {
          /* Format thumbnail title */
          ticker.s        = thumbnail_title_buf;
-         ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+         ticker.len      = rgui_term_layout.width - 10;
          ticker.str      = thumbnail_title;
          ticker.selected = true;
          menu_animation_ticker(&ticker);
 
          title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
-         title_x         = RGUI_TERM_START_X(fb_width) + ((RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE) - title_width) / 2;
+         title_x         = rgui_term_layout.start_x + ((rgui_term_layout.width * FONT_WIDTH_STRIDE) - title_width) / 2;
 
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
@@ -3233,7 +3253,7 @@ static void rgui_render(void *data, bool is_idle)
                rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
          /* Draw thumbnail title */
-         blit_line((int)title_x, 0, thumbnail_title_buf,
+         blit_line(fb_width, (int)title_x, 0, thumbnail_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3245,10 +3265,10 @@ static void rgui_render(void *data, bool is_idle)
       size_t title_max_len;
       size_t title_len;
       unsigned title_x;
-      unsigned title_y = RGUI_TERM_START_Y(fb_height) - FONT_HEIGHT_STRIDE;
-      unsigned term_end_x = RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE);
+      unsigned title_y = rgui_term_layout.start_y - FONT_HEIGHT_STRIDE;
+      unsigned term_end_x = rgui_term_layout.start_x + (rgui_term_layout.width * FONT_WIDTH_STRIDE);
       unsigned timedate_x = term_end_x - (5 * FONT_WIDTH_STRIDE);
-      unsigned core_name_len = ((timedate_x - RGUI_TERM_START_X(fb_width)) / FONT_WIDTH_STRIDE) - 3;
+      unsigned core_name_len = ((timedate_x - rgui_term_layout.start_x) / FONT_WIDTH_STRIDE) - 3;
       bool show_mini_thumbnails = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
       bool show_thumbnail = false;
       bool show_left_thumbnail = false;
@@ -3277,7 +3297,7 @@ static void rgui_render(void *data, bool is_idle)
           * the vertical centre of RGUI's 'terminal'
           * (required to determine whether a particular entry
           * is adjacent to the 'right' or 'left' thumbnail) */
-         term_mid_point = (unsigned)((RGUI_TERM_HEIGHT(fb_height) * 0.5f) + 0.5f) - 1;
+         term_mid_point = (unsigned)((rgui_term_layout.height * 0.5f) + 0.5f) - 1;
       }
 
       /* Show battery indicator, if required */
@@ -3330,11 +3350,11 @@ static void rgui_render(void *data, bool is_idle)
                powerstate_x = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
 
                /* Draw symbol */
-               blit_symbol(powerstate_x, title_y, powerstate_symbol,
+               blit_symbol(fb_width, powerstate_x, title_y, powerstate_symbol,
                            powerstate_color, rgui->colors.shadow_color);
 
                /* Print text */
-               blit_line(powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
+               blit_line(fb_width, powerstate_x + (2 * FONT_WIDTH_STRIDE), title_y,
                          percent_str, powerstate_color, rgui->colors.shadow_color);
 
                /* Final length of battery indicator is 'powerstate_len' + a
@@ -3345,7 +3365,7 @@ static void rgui_render(void *data, bool is_idle)
       }
 
       /* Print title */
-      title_max_len = RGUI_TERM_WIDTH(fb_width) - 5 - (powerstate_len > 5 ? powerstate_len : 5);
+      title_max_len = rgui_term_layout.width - 5 - (powerstate_len > 5 ? powerstate_len : 5);
       title_buf[0] = '\0';
 
       ticker.s        = title_buf;
@@ -3358,8 +3378,8 @@ static void rgui_render(void *data, bool is_idle)
       string_to_upper(title_buf);
 
       title_len = utf8len(title_buf);
-      title_x = RGUI_TERM_START_X(fb_width) +
-                (RGUI_TERM_WIDTH(fb_width) - title_len) * FONT_WIDTH_STRIDE / 2;
+      title_x = rgui_term_layout.start_x +
+                (rgui_term_layout.width - title_len) * FONT_WIDTH_STRIDE / 2;
 
       /* Title is always centred, unless it is long enough
        * to infringe upon the battery indicator, in which case
@@ -3368,21 +3388,22 @@ static void rgui_render(void *data, bool is_idle)
          if (title_len > title_max_len - (powerstate_len - 5))
             title_x -= (powerstate_len - 5) * FONT_WIDTH_STRIDE / 2;
 
-      blit_line(title_x, title_y,
+      blit_line(fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
-      x = RGUI_TERM_START_X(fb_width);
-      y = RGUI_TERM_START_Y(fb_height);
+      x = rgui_term_layout.start_x;
+      y = rgui_term_layout.start_y;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &new_start);
 
       for (i = new_start; i < end; i++, y += FONT_HEIGHT_STRIDE)
       {
-         char entry_value[255];
          char entry_title_buf[255];
          char type_str_buf[255];
          menu_entry_t entry;
+         const char *entry_label               = NULL;
+         const char *entry_value               = NULL;
          size_t entry_title_max_len            = 0;
          unsigned entry_value_len              = 0;
          bool entry_selected                   = (i == selection);
@@ -3392,28 +3413,28 @@ static void rgui_render(void *data, bool is_idle)
          if (i > (selection + 100))
             continue;
 
-         entry_value[0]     = '\0';
          entry_title_buf[0] = '\0';
          type_str_buf[0]    = '\0';
 
          /* Get current entry */
          menu_entry_init(&entry);
+         entry.path_enabled     = false;
+         entry.label_enabled    = false;
+         entry.sublabel_enabled = false;
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
-         /* Read entry parameters
-          * Note: can use entry.path/entry.rich_label directly,
-          * but have to use menu_entry_get_value() for the value
-          * since this function handles password entries... */
-         menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+         /* Read entry parameters */
+         menu_entry_get_rich_label(&entry, &entry_label);
+         menu_entry_get_value(&entry, &entry_value);
 
          /* Get base length of entry title field */
-         entry_title_max_len = RGUI_TERM_WIDTH(fb_width) - (1 + 2);
+         entry_title_max_len = rgui_term_layout.width - (1 + 2);
 
          /* If showing mini thumbnails, reduce title field length accordingly */
          if (show_mini_thumbnails)
          {
             unsigned term_offset = settings->bools.menu_rgui_swap_thumbnails ?
-                  (RGUI_TERM_HEIGHT(fb_height) - (i - new_start) - 1) : (i - new_start);
+                  (rgui_term_layout.height - (i - new_start) - 1) : (i - new_start);
             unsigned thumbnail_width = 0;
 
             /* Note:
@@ -3426,7 +3447,7 @@ static void rgui_render(void *data, bool is_idle)
              * standard layout (even though it always will...),
              * so have to check whether there are an odd or even
              * number of entries... */
-            if((RGUI_TERM_HEIGHT(fb_height) & 1) == 0)
+            if((rgui_term_layout.height & 1) == 0)
             {
                /* Even number of entries */
                if ((show_thumbnail      && (term_offset <= term_mid_point)) ||
@@ -3468,13 +3489,13 @@ static void rgui_render(void *data, bool is_idle)
          /* Format entry title string */
          ticker.s        = entry_title_buf;
          ticker.len      = entry_title_max_len;
-         ticker.str      = string_is_empty(entry.rich_label) ? entry.path : entry.rich_label;
+         ticker.str      = entry_label;
          ticker.selected = entry_selected;
 
          menu_animation_ticker(&ticker);
 
          /* Print entry title */
-         blit_line(x + (2 * FONT_WIDTH_STRIDE), y,
+         blit_line(fb_width, x + (2 * FONT_WIDTH_STRIDE), y,
                entry_title_buf,
                entry_color, rgui->colors.shadow_color);
 
@@ -3489,17 +3510,15 @@ static void rgui_render(void *data, bool is_idle)
             menu_animation_ticker(&ticker);
 
             /* Print entry value */
-            blit_line(term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+            blit_line(fb_width, term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
                   type_str_buf,
                   entry_color, rgui->colors.shadow_color);
          }
 
          /* Print selection marker, if required */
          if (entry_selected)
-            blit_line(x, y, ">",
+            blit_line(fb_width, x, y, ">",
                   entry_color, rgui->colors.shadow_color);
-
-         menu_entry_free(&entry);
       }
 
       /* Draw mini thumbnails, if required */
@@ -3526,9 +3545,10 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          blit_line(
-               RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, sublabel_buf,
+               fb_width,
+               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, sublabel_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
       else if (settings->bools.menu_core_enable)
@@ -3547,9 +3567,10 @@ static void rgui_render(void *data, bool is_idle)
          menu_animation_ticker(&ticker);
 
          blit_line(
-               RGUI_TERM_START_X(fb_width) + FONT_WIDTH_STRIDE,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, core_title_buf,
+               fb_width,
+               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, core_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
 
@@ -3568,9 +3589,10 @@ static void rgui_render(void *data, bool is_idle)
          menu_display_timedate(&datetime);
 
          blit_line(
+               fb_width,
                timedate_x,
-               (RGUI_TERM_HEIGHT(fb_height) * FONT_HEIGHT_STRIDE) +
-               RGUI_TERM_START_Y(fb_height) + 2, timedate,
+               (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
+               rgui_term_layout.start_y + 2, timedate,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3578,8 +3600,7 @@ static void rgui_render(void *data, bool is_idle)
    if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui, rgui->msgbox);
-      free(rgui->msgbox);
-      rgui->msgbox       = NULL;
+      rgui->msgbox[0]    = '\0';
       rgui->force_redraw = true;
    }
 
@@ -3623,10 +3644,7 @@ static void rgui_thumbnail_free(thumbnail_t *thumbnail)
    thumbnail->width = 0;
    thumbnail->height = 0;
    thumbnail->is_valid = false;
-   
-   if (!string_is_empty(thumbnail->path))
-      free(thumbnail->path);
-   thumbnail->path = NULL;
+   thumbnail->path[0] = '\0';
    
    if (thumbnail->data)
       free(thumbnail->data);
@@ -3709,6 +3727,32 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    /* Determine custom viewport layout */
    if (fb_width > 0 && fb_height > 0 && vp.full_width > 0 && vp.full_height > 0)
    {
+#if defined(GEKKO)
+      /* The Wii is a special case, since it uses anamorphic
+       * widescreen. The display aspect ratio cannot therefore
+       * be determined simply by dividing viewport width by height */
+#ifdef HW_RVL
+      float device_aspect  = (CONF_GetAspectRatio() == CONF_ASPECT_4_3) ?
+            (4.0f / 3.0f) : (16.0f / 9.0f);
+#else
+      float device_aspect  = (4.0f / 3.0f);
+#endif
+      float desired_aspect = (float)fb_width / (float)fb_height;
+      float delta;
+      
+      if (device_aspect > desired_aspect)
+      {
+         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         rgui->menu_video_settings.viewport.width  = (unsigned)(2.0f * (float)vp.full_width * delta);
+         rgui->menu_video_settings.viewport.height = vp.full_height;
+      }
+      else
+      {
+         delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         rgui->menu_video_settings.viewport.height = (unsigned)(2.0 * vp.full_height * delta);
+         rgui->menu_video_settings.viewport.width  = vp.full_width;
+      }
+#else
       /* Check whether we need to perform integer scaling */
       bool do_integer_scaling = (settings->uints.menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_INTEGER);
       
@@ -3743,6 +3787,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
             rgui->menu_video_settings.viewport.width = fb_width * vp.full_height / fb_height;
          }
       }
+#endif
       
       /* Sanity check */
       rgui->menu_video_settings.viewport.width = (rgui->menu_video_settings.viewport.width < 1) ?
@@ -3775,22 +3820,71 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    rgui->menu_aspect_ratio = settings->uints.menu_rgui_aspect_ratio;
    
 #if defined(GEKKO)
-   /* Set frame buffer dimensions
-    * and update menu aspect index */
-   rgui_frame_buf.height = 240;
-   rgui_frame_buf.width  = 320;
-   base_term_width       = rgui_frame_buf.width;
-   
-   /* Allocate frame buffer */
-   rgui_frame_buf.data = (uint16_t*)calloc(
-         400 * rgui_frame_buf.height, sizeof(uint16_t));
-   
+   {
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+      
+      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      
+      /* Set frame buffer dimensions */
+      rgui_frame_buf.height = fb_height;
+      switch (rgui->menu_aspect_ratio)
+      {
+         /* Note: Maximum Wii framebuffer width is 424, not
+          * the usual 426, since the last two bits of the
+          * width value must be zero... */
+         case RGUI_ASPECT_RATIO_16_9:
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 424;
+            else
+               rgui_frame_buf.width = (unsigned)((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            if (rgui_frame_buf.height == 240)
+            {
+               rgui_frame_buf.width = 424;
+               base_term_width      = 320;
+            }
+            else
+            {
+               rgui_frame_buf.width = (unsigned)((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
+               base_term_width      = (unsigned)(( 4.0f / 3.0f) * (float)rgui_frame_buf.height) & ~3;
+            }
+            break;
+         case RGUI_ASPECT_RATIO_16_10:
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 384;
+            else
+               rgui_frame_buf.width = (unsigned)((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            if (rgui_frame_buf.height == 240)
+            {
+               rgui_frame_buf.width = 384;
+               base_term_width      = 320;
+            }
+            else
+            {
+               rgui_frame_buf.width = (unsigned)((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
+               base_term_width      = (unsigned)(( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
+            }
+            break;
+         default:
+            /* 4:3 */
+            if (rgui_frame_buf.height == 240)
+               rgui_frame_buf.width = 320;
+            else
+               rgui_frame_buf.width = (unsigned)(( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
+            base_term_width = rgui_frame_buf.width;
+            break;
+      }
+   }
 #else
-   
-   /* Set frame buffer dimensions
-    * and update menu aspect index */
+   /* Set frame buffer dimensions */
    rgui_frame_buf.height = 240;
-   switch (settings->uints.menu_rgui_aspect_ratio)
+   switch (rgui->menu_aspect_ratio)
    {
       case RGUI_ASPECT_RATIO_16_9:
          rgui_frame_buf.width = 426;
@@ -3814,12 +3908,11 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
          base_term_width = rgui_frame_buf.width;
          break;
    }
+#endif
    
    /* Allocate frame buffer */
    rgui_frame_buf.data = (uint16_t*)calloc(
          rgui_frame_buf.width * rgui_frame_buf.height, sizeof(uint16_t));
-   
-#endif
    
    if (!rgui_frame_buf.data)
       return false;
@@ -3931,8 +4024,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->menu_title[0] = '\0';
    rgui->menu_sublabel[0] = '\0';
 
-	/* Set pixel format conversion function */
-	rgui_set_pixel_format_function();
+   /* Set pixel format conversion function */
+   rgui_set_pixel_format_function();
 
    /* Cache initial video settings */
    rgui_get_video_config(&rgui->content_video_settings);
@@ -4153,10 +4246,11 @@ static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
       strlcpy(s, system, len);
 }
 
-static void rgui_load_current_thumbnails(rgui_t *rgui)
+static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
 {
    const char *thumbnail_path      = NULL;
    const char *left_thumbnail_path = NULL;
+   bool thumbnails_missing         = false;
    
    /* Right (or fullscreen) thumbnail */
    if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
@@ -4164,7 +4258,10 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
    {
       rgui->entry_has_thumbnail = request_thumbnail(
             rgui->show_fs_thumbnail ? &fs_thumbnail : &mini_thumbnail,
-            MENU_THUMBNAIL_RIGHT, &rgui->thumbnail_queue_size, thumbnail_path);
+            MENU_THUMBNAIL_RIGHT,
+            &rgui->thumbnail_queue_size,
+            thumbnail_path,
+            &thumbnails_missing);
    }
    
    /* Left thumbnail
@@ -4176,7 +4273,11 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
             MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
       {
          rgui->entry_has_left_thumbnail = request_thumbnail(
-               &mini_left_thumbnail, MENU_THUMBNAIL_LEFT, &rgui->left_thumbnail_queue_size, left_thumbnail_path);
+               &mini_left_thumbnail,
+               MENU_THUMBNAIL_LEFT,
+               &rgui->left_thumbnail_queue_size,
+               left_thumbnail_path,
+               &thumbnails_missing);
       }
    }
    
@@ -4186,6 +4287,19 @@ static void rgui_load_current_thumbnails(rgui_t *rgui)
    /* Force a redraw (so 'entry_has_thumbnail' values are
     * applied immediately) */
    rgui->force_redraw = true;
+   
+#ifdef HAVE_NETWORKING
+   /* On demand thumbnail downloads */
+   if (thumbnails_missing && download_missing)
+   {
+      const char *system = NULL;
+
+      if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+         task_push_pl_entry_thumbnail_download(system,
+               playlist_get_cached(), menu_navigation_get_selection(),
+               false, true);
+   }
+#endif
 }
 
 static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
@@ -4220,7 +4334,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    {
       /* Check whether thumbnails should be loaded immediately */
       if ((settings->uints.menu_rgui_thumbnail_delay == 0) || force_load)
-         rgui_load_current_thumbnails(rgui);
+         rgui_load_current_thumbnails(rgui, settings->bools.network_on_demand_thumbnails);
       else
       {
          /* Schedule a delayed load */
@@ -4251,16 +4365,14 @@ static void rgui_update_thumbnail_image(void *userdata)
          mini_thumbnail.width = 0;
          mini_thumbnail.height = 0;
          mini_thumbnail.is_valid = false;
-         free(mini_thumbnail.path);
-         mini_thumbnail.path = NULL;
+         mini_thumbnail.path[0] = '\0';
       }
       else
       {
          fs_thumbnail.width = 0;
          fs_thumbnail.height = 0;
          fs_thumbnail.is_valid = false;
-         free(fs_thumbnail.path);
-         fs_thumbnail.path = NULL;
+         fs_thumbnail.path[0] = '\0';
       }
    }
 
@@ -4286,20 +4398,17 @@ static void rgui_refresh_thumbnail_image(void *userdata)
       fs_thumbnail.width = 0;
       fs_thumbnail.height = 0;
       fs_thumbnail.is_valid = false;
-      free(fs_thumbnail.path);
-      fs_thumbnail.path = NULL;
+      fs_thumbnail.path[0] = '\0';
 
       mini_thumbnail.width = 0;
       mini_thumbnail.height = 0;
       mini_thumbnail.is_valid = false;
-      free(mini_thumbnail.path);
-      mini_thumbnail.path = NULL;
+      mini_thumbnail.path[0] = '\0';
 
       mini_left_thumbnail.width = 0;
       mini_left_thumbnail.height = 0;
       mini_left_thumbnail.is_valid = false;
-      free(mini_left_thumbnail.path);
-      mini_left_thumbnail.path = NULL;
+      mini_left_thumbnail.path[0] = '\0';
 
       /* Only load thumbnails if currently viewing a
        * playlist (note that thumbnails are loaded
@@ -4319,10 +4428,18 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
    if (settings->bools.menu_show_sublabels && selection < menu_entries_get_size())
    {
       menu_entry_t entry;
+      const char *sublabel = NULL;
+      
       menu_entry_init(&entry);
+      entry.path_enabled       = false;
+      entry.label_enabled      = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
       menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
       
-      if (!string_is_empty(entry.sublabel))
+      menu_entry_get_sublabel(&entry, &sublabel);
+      
+      if (!string_is_empty(sublabel))
       {
          static const char* const sublabel_spacer = RGUI_TICKER_SPACER;
          struct string_list *list = NULL;
@@ -4332,7 +4449,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
          /* Sanitise sublabel
           * > Replace newline characters with standard delimiter
           * > Remove whitespace surrounding each sublabel line */
-         list = string_split(entry.sublabel, "\n");
+         list = string_split(sublabel, "\n");
          if (list)
          {
             for (line_index = 0; line_index < list->size; line_index++)
@@ -4350,15 +4467,12 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
             string_list_free(list);
          }
       }
-      
-      menu_entry_free(&entry);
    }
 }
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t start, fb_pitch;
-   unsigned fb_width, fb_height;
+   size_t start;
    bool do_set_start              = false;
    size_t end                     = menu_entries_get_size();
    size_t selection               = menu_navigation_get_selection();
@@ -4373,23 +4487,20 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!scroll)
       return;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
-
-   if (selection < RGUI_TERM_HEIGHT(fb_height) /2)
+   if (selection < rgui_term_layout.height /2)
    {
       start        = 0;
       do_set_start = true;
    }
-   else if (selection >= (RGUI_TERM_HEIGHT(fb_height) /2)
-         && selection < (end - RGUI_TERM_HEIGHT(fb_height) /2))
+   else if (selection >= (rgui_term_layout.height /2)
+         && selection < (end - rgui_term_layout.height /2))
    {
-      start        = selection - RGUI_TERM_HEIGHT(fb_height) /2;
+      start        = selection - rgui_term_layout.height /2;
       do_set_start = true;
    }
-   else if (selection >= (end - RGUI_TERM_HEIGHT(fb_height) /2))
+   else if (selection >= (end - rgui_term_layout.height /2))
    {
-      start        = end - RGUI_TERM_HEIGHT(fb_height);
+      start        = end - rgui_term_layout.height;
       do_set_start = true;
    }
 
@@ -4609,7 +4720,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * fullscreen thumbnail view is incredibly jarring...) */
       if ((cpu_features_get_time_usec() - rgui->thumbnail_load_trigger_time) >=
           (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
-         rgui_load_current_thumbnails(rgui);
+         rgui_load_current_thumbnails(rgui, settings->bools.network_on_demand_thumbnails);
    }
 }
 

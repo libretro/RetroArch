@@ -22,7 +22,7 @@
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../menu_driver.h"

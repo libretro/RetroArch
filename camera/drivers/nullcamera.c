@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../camera_driver.h"
+#include "../../retroarch.h"
 
 static void *nullcamera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)

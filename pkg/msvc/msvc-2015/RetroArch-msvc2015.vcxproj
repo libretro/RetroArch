@@ -191,12 +191,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -211,12 +213,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -232,12 +236,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/bigobj</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -252,11 +258,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -274,13 +282,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -299,13 +309,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -325,12 +337,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -349,12 +363,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_GLSLANG;WANT_GLSLANG;HAVE_VULKAN;HAVE_SPIRV_CROSS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <FloatingPointModel>Fast</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

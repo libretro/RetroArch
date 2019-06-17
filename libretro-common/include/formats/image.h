@@ -84,7 +84,8 @@ bool image_transfer_start(void *data, enum image_type_enum type);
 void image_transfer_set_buffer_ptr(
       void *data,
       enum image_type_enum type,
-      void *ptr);
+      void *ptr,
+      size_t len);
 
 int image_transfer_process(
       void *data,

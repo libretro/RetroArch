@@ -23,7 +23,6 @@
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
 #include "../../gfx/common/ctr_common.h"
 #include "../../gfx/drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"

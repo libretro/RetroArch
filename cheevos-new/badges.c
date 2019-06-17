@@ -1,6 +1,5 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -17,7 +16,7 @@ badges_ctx_t badges_ctx;
 
 bool badge_exists(const char* filepath)
 {
-  return filestream_exists(filepath);
+  return path_is_valid(filepath);
 }
 
 void set_badge_menu_texture(badges_ctx_t * badges, int i)

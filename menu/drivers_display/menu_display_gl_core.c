@@ -16,7 +16,6 @@
 
 #include <retro_miscellaneous.h>
 #include <gfx/common/gl_core_common.h>
-#include <menu/menu_driver.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -25,7 +24,7 @@
 #include "../menu_driver.h"
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../gfx/common/gl_core_common.h"
 
 static const float gl_core_vertexes[] = {

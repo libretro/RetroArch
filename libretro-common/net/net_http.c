@@ -115,7 +115,7 @@ void net_http_urlencode(char **dest, const char *source)
    if (!urlencode_lut_inited)
       urlencode_lut_init();
 
-   enc = (char*)calloc(1, len);
+   enc   = (char*)calloc(1, len);
 
    *dest = enc;
 
@@ -147,7 +147,7 @@ void net_http_urlencode_full(char *dest,
    char url_path[PATH_MAX_LENGTH]    = {0};
    int count                         = 0;
 
-   strlcpy (url_path, source, sizeof(url_path));
+   strlcpy(url_path, source, sizeof(url_path));
    tmp = url_path;
 
    while (count < 3 && tmp[0] != '\0')
@@ -246,15 +246,14 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
+   char new_domain[2048];
    bool error                     = false;
    char **domain                  = NULL;
    char *uri                      = NULL;
-   char s[2]                      = "/";
    char *url_dup                  = NULL;
    char *domain_port              = NULL;
    char *domain_port2             = NULL;
    char *url_port                 = NULL;
-   char new_domain[2048];
 
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(*conn));
@@ -263,24 +262,27 @@ struct http_connection_t *net_http_connection_new(const char *url,
       return NULL;
 
    if (!url)
-      goto error;
+   {
+      free(conn);
+      return NULL;
+   }
 
-   conn->urlcopy         = strdup(url);
+   conn->urlcopy           = strdup(url);
 
    if (method)
-      conn->methodcopy   = strdup(method);
+      conn->methodcopy     = strdup(method);
 
    if (data)
-      conn->postdatacopy = strdup(data);
+      conn->postdatacopy   = strdup(data);
 
    if (!conn->urlcopy)
       goto error;
 
    if (!strncmp(url, "http://", STRLEN_CONST("http://")))
-      conn->scan    = conn->urlcopy + STRLEN_CONST("http://");
+      conn->scan           = conn->urlcopy + STRLEN_CONST("http://");
    else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
    {
-      conn->scan    = conn->urlcopy + STRLEN_CONST("https://");
+      conn->scan           = conn->urlcopy + STRLEN_CONST("https://");
       conn->sock_state.ssl = true;
    }
    else
@@ -298,12 +300,12 @@ struct http_connection_t *net_http_connection_new(const char *url,
    
    if (strchr(conn->scan, (char) ':') != NULL)
    {
-      url_dup = strdup(conn->scan);
-      domain_port = strtok(url_dup, ":");
+      url_dup      = strdup(conn->scan);
+      domain_port  = strtok(url_dup, ":");
       domain_port2 = strtok(NULL, ":");
-      url_port = domain_port2;
+      url_port     = domain_port2;
       if (strchr(domain_port2, (char) '/') != NULL)
-         url_port = strtok(domain_port2, "/");
+         url_port  = strtok(domain_port2, "/");
 
       if (url_port != NULL)
          conn->port = atoi(url_port);
@@ -319,7 +321,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
             strlcat(new_domain, "/", sizeof(new_domain));
             strlcat(new_domain, strchr(uri, (char) '/')+sizeof(char), sizeof(new_domain));
          }
-         strlcpy(conn->scan,new_domain, sizeof(new_domain));
+         strlcpy(conn->scan, new_domain, sizeof(new_domain));
       }
    }
    /* end of port-fetching from url  */
@@ -410,10 +412,10 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->postdatacopy)
       free(conn->postdatacopy);
 
-   conn->urlcopy = NULL;
-   conn->methodcopy = NULL;
+   conn->urlcopy         = NULL;
+   conn->methodcopy      = NULL;
    conn->contenttypecopy = NULL;
-   conn->postdatacopy = NULL;
+   conn->postdatacopy    = NULL;
 
    free(conn);
 }
@@ -492,11 +494,11 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       post_len = strlen(conn->postdatacopy);
 #ifdef _WIN32
-      len = snprintf(NULL, 0, "%" PRIuPTR, post_len);
+      len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
       snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
 #else
-      len = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
+      len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
       len_str = (char*)malloc(len + 1);
       snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
 #endif
@@ -519,17 +521,17 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (error)
       goto error;
 
-   state          = (struct http_t*)malloc(sizeof(struct http_t));
+   state             = (struct http_t*)malloc(sizeof(struct http_t));
    state->sock_state = conn->sock_state;
-   state->status  = -1;
-   state->data    = NULL;
-   state->part    = P_HEADER_TOP;
-   state->bodytype= T_FULL;
-   state->error   = false;
-   state->pos     = 0;
-   state->len     = 0;
-   state->buflen  = 512;
-   state->data    = (char*)malloc(state->buflen);
+   state->status     = -1;
+   state->data       = NULL;
+   state->part       = P_HEADER_TOP;
+   state->bodytype   = T_FULL;
+   state->error      = false;
+   state->pos        = 0;
+   state->len        = 0;
+   state->buflen     = 512;
+   state->data       = (char*)malloc(state->buflen);
 
    if (!state->data)
       goto error;

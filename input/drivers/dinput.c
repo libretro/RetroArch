@@ -48,9 +48,8 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
-
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* Keep track of which pad indexes are 360 controllers.

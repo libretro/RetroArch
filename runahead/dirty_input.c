@@ -45,25 +45,28 @@ static void* InputListElementConstructor(void)
    return ptr;
 }
 
-static void InputListElementRealloc(InputListElement *element, unsigned int newSize)
+static void InputListElementRealloc(InputListElement *element,
+      unsigned int new_size)
 {
-   if (newSize > element->state_size)
+   if (new_size > element->state_size)
    {
-      element->state = (int16_t*)realloc(element->state, newSize * sizeof(int16_t));
-      memset(&element->state[element->state_size], 0, (newSize - element->state_size) * sizeof(int16_t));
-      element->state_size = newSize;
+      element->state = (int16_t*)realloc(element->state,
+            new_size * sizeof(int16_t));
+      memset(&element->state[element->state_size], 0,
+            (new_size - element->state_size) * sizeof(int16_t));
+      element->state_size = new_size;
    }
 }
 
-static void InputListElementExpand(InputListElement *element, unsigned int newIndex)
+static void InputListElementExpand(
+      InputListElement *element, unsigned int newIndex)
 {
-   unsigned int newSize = element->state_size;
-   if (newSize == 0) newSize = 32;
-   while (newIndex >= newSize)
-   {
-      newSize *= 2;
-   }
-   InputListElementRealloc(element, newSize);
+   unsigned int new_size = element->state_size;
+   if (new_size == 0)
+      new_size = 32;
+   while (newIndex >= new_size)
+      new_size *= 2;
+   InputListElementRealloc(element, new_size);
 }
 
 static void InputListElementDestructor(void* element_ptr)
@@ -83,7 +86,9 @@ static void input_state_set_last(unsigned port, unsigned device,
 {
    unsigned i;
    InputListElement *element = NULL;
-   if (id >= 65536) return; /*arbitrary limit of up to 65536 elements in state array*/
+   if (id >= 65536)
+      return;
+   /*arbitrary limit of up to 65536 elements in state array*/
 
    if (!input_state_list)
       mylist_create(&input_state_list, 16,
@@ -111,9 +116,7 @@ static void input_state_set_last(unsigned port, unsigned device,
    element->device    = device;
    element->index     = index;
    if (id >= element->state_size)
-   {
       InputListElementExpand(element, id);
-   }
    element->state[id] = value;
 }
 

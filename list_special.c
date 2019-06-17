@@ -31,23 +31,17 @@
 #include "menu/menu_driver.h"
 #endif
 
-#include "camera/camera_driver.h"
-
 #ifdef HAVE_WIFI
 #include "wifi/wifi_driver.h"
 #endif
 
-#include "location/location_driver.h"
-
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
 #include "core_info.h"
-#include "gfx/video_driver.h"
 #include "input/input_driver.h"
-#include "audio/audio_driver.h"
-#include "record/record_driver.h"
 #include "midi/midi_driver.h"
 #include "configuration.h"
+#include "retroarch.h"
 
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)

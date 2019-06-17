@@ -158,7 +158,7 @@ int mbedtls_pk_can_do( const mbedtls_pk_context *ctx, mbedtls_pk_type_t type )
 /*
  * Helper for mbedtls_pk_sign and mbedtls_pk_verify
  */
-static inline int pk_hashlen_helper( mbedtls_md_type_t md_alg, size_t *hash_len )
+static int pk_hashlen_helper( mbedtls_md_type_t md_alg, size_t *hash_len )
 {
     const mbedtls_md_info_t *md_info;
 

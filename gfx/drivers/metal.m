@@ -48,7 +48,6 @@
 
 #import "../../driver.h"
 #import "../../configuration.h"
-#import "../../record/record_driver.h"
 
 #import "../../retroarch.h"
 #import "../../verbosity.h"

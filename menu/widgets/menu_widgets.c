@@ -52,8 +52,8 @@ static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
 
 /* TODO: Colors for warning, error and success */
 
-static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x55AE99, 1.0f); /* Color of first progress bar in a task message */
-static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x388BBD, 1.0f); /* Color of second progress bar in a task message (for multiple tasks with same message) */
+static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x397869, 1.0f); /* Color of first progress bar in a task message */
+static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f); /* Color of second progress bar in a task message (for multiple tasks with same message) */
 
 static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
 
