@@ -626,23 +626,6 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
    tmp[count-1].override = override_setting
 
 struct defaults g_defaults;
-static settings_t *configuration_settings = NULL;
-
-settings_t *config_get_ptr(void)
-{
-   return configuration_settings;
-}
-
-void config_free(void)
-{
-   free(configuration_settings);
-   configuration_settings = NULL;
-}
-
-void rarch_config_init(void)
-{
-   configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
-}
 
 /**
  * config_get_default_audio:

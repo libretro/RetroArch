@@ -823,13 +823,9 @@ bool config_save_overrides(int override_type);
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
 
-void rarch_config_init(void);
-
 bool config_overlay_enable_default(void);
 
 void config_set_defaults(void);
-
-void config_free(void);
 
 settings_t *config_get_ptr(void);
 

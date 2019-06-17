@@ -312,6 +312,15 @@ extern bool input_driver_flushing_input;
 
 static char launch_arguments[4096];
 
+/* Configuration global state */
+
+static settings_t *configuration_settings = NULL;
+
+settings_t *config_get_ptr(void)
+{
+   return configuration_settings;
+}
+
 /* Message queue */
 
 #ifdef HAVE_THREADS
@@ -430,7 +439,7 @@ static void find_record_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    drv.label = "record_driver";
    drv.s     = settings->arrays.record_driver;
@@ -644,7 +653,7 @@ bool recording_init(void)
    char buf[PATH_MAX_LENGTH];
    struct record_params params          = {0};
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   settings_t *settings                 = config_get_ptr();
+   settings_t *settings                 = configuration_settings;
    global_t *global                     = &g_extern;
 
    if (!recording_enable)
@@ -843,7 +852,7 @@ void *recording_driver_get_data_ptr(void)
 
 void recording_driver_update_streaming_url(void)
 {
-   settings_t *settings    = config_get_ptr();
+   settings_t *settings    = configuration_settings;
    const char* youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
    const char* twitch_url  = "rtmp://live.twitch.tv/app/";
 
@@ -1049,7 +1058,7 @@ static void audio_mixer_menu_stop_cb(
 
 static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = configuration_settings;
 
    if (!settings)
       return RESAMPLER_QUALITY_DONTCARE;
@@ -1213,7 +1222,7 @@ static void audio_driver_deinit_resampler(void)
 
 static bool audio_driver_deinit_internal(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = configuration_settings;
 
    if (current_audio && current_audio->free)
    {
@@ -1303,7 +1312,7 @@ static bool audio_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = configuration_settings;
 
    drv.label = "audio_driver";
    drv.s     = settings->arrays.audio_driver;
@@ -1345,7 +1354,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    int16_t *conv_buf     = NULL;
    int16_t *rewind_buf   = NULL;
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   settings_t *settings  = config_get_ptr();
+   settings_t *settings  = configuration_settings;
    /* Accomodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO *
       settings->floats.slowmotion_ratio;
@@ -1522,7 +1531,7 @@ error:
 
 void audio_driver_set_nonblocking_state(bool enable)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings  = configuration_settings;
    if (
          audio_driver_active
          && audio_driver_context_audio_data
@@ -1616,7 +1625,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 
    if (is_slowmotion)
    {
-      settings_t *settings  = config_get_ptr();
+      settings_t *settings  = configuration_settings;
       src_data.ratio       *= settings->floats.slowmotion_ratio;
    }
 
@@ -1860,7 +1869,7 @@ void audio_driver_set_buffer_size(size_t bufsize)
 static void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   settings_t                   *settings = config_get_ptr();
+   settings_t *settings                   = configuration_settings;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
@@ -2230,19 +2239,19 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 
 void audio_driver_load_menu_sounds(void)
 {
-   settings_t *settings = config_get_ptr();
-   char *sounds_path = NULL;
-   char *sounds_fallback_path = NULL;
-   const char *path_ok = NULL;
-   const char *path_cancel = NULL;
-   const char *path_notice = NULL;
-   const char *path_bgm = NULL;
-   struct string_list *list = NULL;
+   settings_t *settings              = configuration_settings;
+   const char *path_ok               = NULL;
+   const char *path_cancel           = NULL;
+   const char *path_notice           = NULL;
+   const char *path_bgm              = NULL;
+   struct string_list *list          = NULL;
    struct string_list *list_fallback = NULL;
-   unsigned i = 0;
+   unsigned i                        = 0;
+   char *sounds_path                 = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *sounds_fallback_path        = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   sounds_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    sounds_path[0] = sounds_fallback_path[0] = '\0';
 
    fill_pathname_join(
@@ -2252,7 +2261,10 @@ void audio_driver_load_menu_sounds(void)
          PATH_MAX_LENGTH * sizeof(char)
    );
 
-   fill_pathname_application_special(sounds_path, PATH_MAX_LENGTH * sizeof(char), APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
+   fill_pathname_application_special(
+         sounds_path,
+         PATH_MAX_LENGTH * sizeof(char),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
 
    list = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
    list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
@@ -2476,7 +2488,7 @@ bool audio_driver_disable_callback(void)
 /* Sets audio monitor rate to new value. */
 static void audio_driver_monitor_set_rate(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    double new_src_ratio = (double)settings->uints.audio_out_rate /
       audio_driver_input;
 
@@ -3320,7 +3332,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 {
    unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
-   settings_t *settings                 = config_get_ptr();
+   settings_t *settings                 = configuration_settings;
    struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
    unsigned width                       = geom->max_width;
    unsigned height                      = geom->max_height;
@@ -3493,10 +3505,17 @@ static void video_driver_free_internal(void)
    video_driver_monitor_compute_fps_statistics();
 }
 
+#define video_driver_get_hw_context_internal() (&hw_render)
+
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   return video_driver_get_hw_context_internal();
+}
+
 static bool video_driver_pixel_converter_init(unsigned size)
 {
    struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
+      video_driver_get_hw_context_internal();
    void *scalr_out                      = NULL;
    video_pixel_scaler_t          *scalr = NULL;
    struct scaler_ctx        *scalr_ctx  = NULL;
@@ -3560,7 +3579,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    const input_driver_t *tmp              = NULL;
    rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
@@ -3922,7 +3941,7 @@ void video_driver_set_size(unsigned *width, unsigned *height)
 void video_monitor_set_refresh_rate(float hz)
 {
    char msg[128];
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    snprintf(msg, sizeof(msg),
          "Setting refresh rate to: %.3f Hz.", hz);
@@ -4050,7 +4069,7 @@ bool video_driver_cached_frame(void)
 void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew                      = 0.0f;
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings                   = configuration_settings;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float timing_skew_hz                   = video_refresh_rate;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
@@ -4144,7 +4163,7 @@ bool video_driver_is_stub_frame(void)
 
 bool video_driver_supports_recording(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    return settings->bools.video_gpu_record
       && current_video->read_viewport;
 }
@@ -4156,7 +4175,7 @@ bool video_driver_supports_viewport_read(void)
 
 bool video_driver_prefer_viewport_read(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    return settings->bools.video_gpu_screenshot ||
       (video_driver_is_hw_context() && !current_video->read_frame_raw);
 }
@@ -4170,7 +4189,7 @@ bool video_driver_supports_read_frame_raw(void)
 
 void video_driver_set_viewport_config(void)
 {
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    if (settings->floats.video_aspect_ratio < 0.0f)
    {
@@ -4327,7 +4346,7 @@ void video_driver_monitor_reset(void)
 
 void video_driver_set_aspect_ratio(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    switch (settings->uints.video_aspect_ratio_idx)
    {
@@ -4360,7 +4379,7 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
 {
    gfx_ctx_aspect_t aspect_data;
    float            device_aspect = (float)vp->full_width / vp->full_height;
-   settings_t*      settings      = config_get_ptr();
+   settings_t *settings           = configuration_settings;
 
    aspect_data.aspect = &device_aspect;
    aspect_data.width  = vp->full_width;
@@ -4454,11 +4473,11 @@ bool video_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    if (video_driver_is_hw_context())
    {
-      struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+      struct retro_hw_render_callback *hwr = video_driver_get_hw_context_internal();
 
       current_video                        = NULL;
 
@@ -4644,7 +4663,7 @@ void video_driver_save_settings(config_file_t *conf)
 void video_driver_reinit(void)
 {
    struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
+      video_driver_get_hw_context_internal();
 
    if (hwr->cache_context)
       video_driver_cache_context    = true;
@@ -4679,11 +4698,6 @@ void video_driver_free_hw_context(void)
    video_driver_context_unlock();
 
    hw_render_context_negotiation = NULL;
-}
-
-struct retro_hw_render_callback *video_driver_get_hw_context(void)
-{
-   return &hw_render;
 }
 
 const struct retro_hw_render_context_negotiation_interface *
@@ -4815,7 +4829,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 {
    int padding_x        = 0;
    int padding_y        = 0;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -4884,7 +4898,7 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
 
 struct video_viewport *video_viewport_get_custom(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    return &settings->video_viewport_custom;
 }
 
@@ -5252,15 +5266,14 @@ void video_driver_build_info(video_frame_info_t *video_info)
    bool is_paused                    = false;
    bool is_idle                      = false;
    bool is_slowmotion                = false;
-   settings_t *settings              = NULL;
    video_viewport_t *custom_vp       = NULL;
    struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
+      video_driver_get_hw_context_internal();
+   settings_t *settings              = configuration_settings;
 #ifdef HAVE_THREADS
    bool is_threaded                  = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
-   settings                          = config_get_ptr();
    custom_vp                         = &settings->video_viewport_custom;
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution = settings->uints.crt_switch_resolution;
@@ -5472,7 +5485,7 @@ static int find_video_context_driver_index(const char *ident)
  **/
 bool video_context_driver_find_prev_driver(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    int                i = find_video_context_driver_index(
          settings->arrays.video_context_driver);
 
@@ -5495,7 +5508,7 @@ bool video_context_driver_find_prev_driver(void)
  **/
 bool video_context_driver_find_next_driver(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    int                i = find_video_context_driver_index(
          settings->arrays.video_context_driver);
 
@@ -5682,7 +5695,7 @@ bool video_context_driver_swap_interval(int *interval)
 {
    gfx_ctx_flags_t flags;
    int current_interval                   = *interval;
-   settings_t *settings                   = config_get_ptr();
+   settings_t *settings                   = configuration_settings;
    bool adaptive_vsync_enabled            = video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!current_video_context.swap_interval)
@@ -5741,9 +5754,8 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
-   settings_t *settings    = config_get_ptr();
-   const char *joypad_name = settings ?
-      settings->arrays.input_joypad_driver : NULL;
+   settings_t *settings    = configuration_settings;
+   const char *joypad_name = settings->arrays.input_joypad_driver;
 
    if (!current_video_context.input_driver)
       return false;
@@ -6351,7 +6363,7 @@ bool bsv_movie_init(void)
 
    if (set_granularity)
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings    = configuration_settings;
       configuration_set_uint(settings,
             settings->uints.rewind_granularity, 1);
    }
@@ -6404,7 +6416,7 @@ void bsv_movie_deinit(void)
 static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
-   settings_t *settings       = config_get_ptr();
+   settings_t *settings       = configuration_settings;
 
    msg[0] = path[0]           = '\0';
 
@@ -6546,7 +6558,7 @@ static void find_location_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    drv.label = "location_driver";
    drv.s     = settings->arrays.location_driver;
@@ -6589,7 +6601,7 @@ static void find_location_driver(void)
  **/
 bool driver_location_start(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    if (location_driver && location_data && location_driver->start)
    {
@@ -6767,7 +6779,7 @@ bool driver_camera_start(void)
 {
    if (camera_driver && camera_data && camera_driver->start)
    {
-      settings_t        *settings = config_get_ptr();
+      settings_t *settings = configuration_settings;
       if (settings->bools.camera_allow)
          return camera_driver->start(camera_data);
 
@@ -6790,7 +6802,7 @@ static void camera_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    drv.label = "camera_driver";
    drv.s     = settings->arrays.camera_driver;
@@ -7049,7 +7061,7 @@ void driver_set_nonblock_state(void)
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_is_active() && video_driver_get_ptr(false))
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings = configuration_settings;
       bool video_nonblock  = enable;
 
       if (!settings->bools.video_vsync || runloop_force_nonblock)
@@ -7070,10 +7082,12 @@ void driver_set_nonblock_state(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool driver_update_system_av_info(const struct retro_system_av_info *info)
+static bool driver_update_system_av_info(
+      const struct retro_system_av_info *info)
 {
-   struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
-   settings_t *settings = config_get_ptr();
+   struct retro_system_av_info 
+      *av_info          = video_viewport_get_system_av_info();
+   settings_t *settings = configuration_settings;
 
    memcpy(av_info, info, sizeof(*av_info));
    command_event(CMD_EVENT_REINIT, NULL);
@@ -7121,7 +7135,7 @@ bool audio_driver_new_devices_list(void)
 void drivers_init(int flags)
 {
    bool video_is_threaded = false;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings   = configuration_settings;
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -7135,7 +7149,7 @@ void drivers_init(int flags)
    if (flags & DRIVER_VIDEO_MASK)
    {
       struct retro_hw_render_callback *hwr =
-         video_driver_get_hw_context();
+         video_driver_get_hw_context_internal();
 
       video_driver_monitor_reset();
       video_driver_init(&video_is_threaded);
@@ -7423,9 +7437,9 @@ void rarch_core_runtime_tick(void)
       /* Account for slow motion */
       if (runloop_slowmotion)
       {
-         settings_t *settings = config_get_ptr();
-         if (settings)
-            frame_time = (retro_time_t)((double)frame_time * settings->floats.slowmotion_ratio);
+         settings_t *settings = configuration_settings;
+         frame_time           = (retro_time_t)((double)
+               frame_time * settings->floats.slowmotion_ratio);
       }
       /* Account for fast forward */
       else if (runloop_fastmotion)
@@ -8062,7 +8076,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
                   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
                   {
-                     settings_t *settings  = config_get_ptr();
+                     settings_t *settings = configuration_settings;
 
                      path_clear(RARCH_PATH_CORE);
                      strlcpy(settings->paths.directory_libretro, optarg,
@@ -8133,7 +8147,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case 'C':
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
                   retroarch_override_setting_set(
@@ -8146,7 +8160,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case RA_OPT_STATELESS:
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
 
                   configuration_set_bool(settings,
                         settings->bools.netplay_stateless_mode, true);
@@ -8158,7 +8172,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case RA_OPT_CHECK_FRAMES:
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 
@@ -8170,7 +8184,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case RA_OPT_PORT:
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
                   configuration_set_uint(settings,
@@ -8227,7 +8241,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case RA_OPT_NICK:
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
 
                   rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
 
@@ -8282,7 +8296,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
             case RA_OPT_LOG_FILE:
                {
-                  settings_t *settings  = config_get_ptr();
+                  settings_t *settings = configuration_settings;
 
                   /* Enable 'log to file' */
                   configuration_set_bool(settings,
@@ -8547,7 +8561,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
       if (!string_is_empty(fullpath))
       {
-         settings_t     *settings          = config_get_ptr();
+         settings_t *settings              = configuration_settings;
          bool builtin_imageviewer          = false;
          bool builtin_mediaplayer          = false;
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
@@ -8641,7 +8655,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_MENU
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings = configuration_settings;
 
       if (settings->bools.audio_enable_menu)
          audio_driver_load_menu_sounds();
@@ -8669,7 +8683,7 @@ bool retroarch_is_on_main_thread(void)
 void rarch_menu_running(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings                    = config_get_ptr();
+   settings_t *settings = configuration_settings;
 #endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
@@ -8689,7 +8703,7 @@ void rarch_menu_running(void)
 void rarch_menu_running_finished(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings                    = config_get_ptr();
+   settings_t *settings = configuration_settings;
 #endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
@@ -8806,13 +8820,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
          global_free();
          rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
-         config_free();
+         free(configuration_settings);
+         configuration_settings = NULL;
          break;
       case RARCH_CTL_PREINIT:
          libretro_free_system_info(&runloop_system.info);
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-         rarch_config_init();
+         configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
          driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
          rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -9005,7 +9020,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return runloop_game_options_active;
       case RARCH_CTL_SET_FRAME_LIMIT:
          {
-            settings_t *settings       = config_get_ptr();
+            settings_t                 *settings = configuration_settings;
             struct retro_system_av_info *av_info =
                video_viewport_get_system_av_info();
             float fastforward_ratio              =
@@ -9049,14 +9064,15 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       }
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
       {
-         settings_t *settings = config_get_ptr();
-         unsigned hours = 0;
-         unsigned minutes = 0;
-         unsigned seconds = 0;
+         settings_t      *settings = configuration_settings;
+         unsigned hours            = 0;
+         unsigned minutes          = 0;
+         unsigned seconds          = 0;
          char log[PATH_MAX_LENGTH] = {0};
-         int n = 0;
+         int n                     = 0;
 
-         runtime_log_convert_usec2hms(libretro_core_runtime_usec, &hours, &minutes, &seconds);
+         runtime_log_convert_usec2hms(
+               libretro_core_runtime_usec, &hours, &minutes, &seconds);
 
          n = snprintf(log, sizeof(log),
                "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
@@ -9176,7 +9192,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_TASK_INIT:
          {
 #ifdef HAVE_THREADS
-            settings_t *settings = config_get_ptr();
+            settings_t *settings = configuration_settings;
             bool threaded_enable = settings->bools.threaded_data_runloop_enable;
 #else
             bool threaded_enable = false;
@@ -9221,7 +9237,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_OPTIONS_GET:
          {
-            settings_t *settings = config_get_ptr();
+            settings_t *settings = configuration_settings;
             unsigned log_level   = settings->uints.libretro_log_level;
 
             struct retro_variable *var = (struct retro_variable*)data;
@@ -9241,7 +9257,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_OPTIONS_INIT:
          {
-            settings_t *settings              = config_get_ptr();
+            settings_t *settings              = configuration_settings;
             char *game_options_path           = NULL;
             bool ret                          = false;
             const struct retro_variable *vars =
@@ -9402,7 +9418,7 @@ void retroarch_unset_shader_preset(void)
 /* get the name of the current shader preset */
 char* retroarch_get_shader_preset(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings = configuration_settings;
    if (!settings->bools.video_shader_enable)
       return NULL;
 
@@ -10771,7 +10787,7 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    bool runloop_is_paused                       = runloop_paused;
    bool input_nonblock_state                    = input_driver_is_nonblock_state();
-   settings_t *settings                         = config_get_ptr();
+   settings_t *settings                         = configuration_settings;
    float fastforward_ratio                      = settings->floats.fastforward_ratio;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
@@ -11009,7 +11025,7 @@ char *get_retroarch_launch_arguments(void)
 
 void rarch_force_video_driver_fallback(const char *driver)
 {
-   settings_t        *settings = config_get_ptr();
+   settings_t *settings        = configuration_settings;
    ui_msg_window_t *msg_window = NULL;
 
    strlcpy(settings->arrays.video_driver,
@@ -11095,7 +11111,7 @@ bool rarch_write_debug_info(void)
    char str[PATH_MAX_LENGTH];
    char debug_filepath[PATH_MAX_LENGTH];
    gfx_ctx_mode_t mode_info              = {0};
-   settings_t                  *settings = config_get_ptr();
+   settings_t *settings                  = configuration_settings;
    RFILE *file                           = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const char *cpu_model                 = NULL;
@@ -11716,7 +11732,7 @@ void rarch_log_file_init(void)
    char log_directory[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    FILE             *fp       = NULL;
-   settings_t *settings       = config_get_ptr();
+   settings_t *settings       = configuration_settings;
    bool log_to_file           = settings->bools.log_to_file;
    bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
