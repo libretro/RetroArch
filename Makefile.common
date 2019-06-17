@@ -207,7 +207,6 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/common/input_hid_common.o \
-       input/input_driver.o \
        input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
