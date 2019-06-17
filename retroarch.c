@@ -222,6 +222,8 @@ typedef struct runloop_ctx_msg_info
    bool flush;
 } runloop_ctx_msg_info_t;
 
+static struct global g_extern;
+
 static jmp_buf error_sjlj_context;
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
@@ -4006,7 +4008,7 @@ bool video_driver_frame_filter_is_32bit(void)
 
 void video_driver_default_settings(void)
 {
-   global_t *global    = global_get_ptr();
+   global_t *global    = &g_extern;
 
    if (!global)
       return;
@@ -4021,7 +4023,7 @@ void video_driver_default_settings(void)
 void video_driver_load_settings(config_file_t *conf)
 {
    bool tmp_bool    = false;
-   global_t *global = global_get_ptr();
+   global_t *global = &g_extern;
 
    if (!conf)
       return;
@@ -4055,7 +4057,7 @@ void video_driver_load_settings(config_file_t *conf)
 
 void video_driver_save_settings(config_file_t *conf)
 {
-   global_t *global = global_get_ptr();
+   global_t *global = &g_extern;
    if (!conf)
       return;
 
@@ -6955,7 +6957,7 @@ static void global_free(void)
 
    core_unset_input_descriptors();
 
-   global = global_get_ptr();
+   global = &g_extern;
    path_clear_all();
    dir_clear_all();
    if (global)
@@ -7222,7 +7224,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    const char *optstring = NULL;
    bool explicit_menu    = false;
    unsigned i;
-   global_t  *global     = global_get_ptr();
+   global_t  *global     = &g_extern;
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -7937,7 +7939,7 @@ static void retroarch_main_init_media(enum rarch_content_type cont_type,
 bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed  = false;
-   global_t  *global = global_get_ptr();
+   global_t  *global = &g_extern;
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
@@ -9185,7 +9187,6 @@ bool retroarch_main_quit(void)
 
 global_t *global_get_ptr(void)
 {
-   static struct global g_extern;
    return &g_extern;
 }
 
@@ -9615,7 +9616,7 @@ static enum runloop_state runloop_check_state(
          old_action              = MENU_ACTION_CANCEL;
       bool focused               = false;
       input_bits_t trigger_input = current_input;
-      global_t *global           = global_get_ptr();
+      global_t *global           = &g_extern;
 
       menu_ctx_iterate_t iter;
 
