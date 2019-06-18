@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -870,6 +871,15 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->factory);
    Release(d3d12->device);
    Release(d3d12->adapter);
+
+   for (i = 0; i < D3D12_MAX_GPU_COUNT; i++)
+   {
+      if (d3d12->adapters[i])
+      {
+         Release(d3d12->adapters[i]);
+         d3d12->adapters[i] = NULL;
+      }
+   }
 
 #ifdef HAVE_MONITOR
    win32_monitor_from_window();

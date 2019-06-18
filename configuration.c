@@ -1867,6 +1867,15 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",              &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_D3D10
+   SETTING_INT("d3d10_gpu_index",              &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);
+#endif
+#ifdef HAVE_D3D11
+   SETTING_INT("d3d11_gpu_index",              &settings->ints.d3d11_gpu_index, true, DEFAULT_D3D11_GPU_INDEX, false);
+#endif
+#ifdef HAVE_D3D12
+   SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
+#endif
 
    *size = count;
 

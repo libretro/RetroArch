@@ -7390,7 +7390,10 @@ typedef struct {
 } gfx_api_gpu_map;
 
 static gfx_api_gpu_map gpu_map[] = {
-   { GFX_CTX_VULKAN_API, NULL }
+   { GFX_CTX_VULKAN_API, NULL },
+   { GFX_CTX_DIRECT3D10_API, NULL },
+   { GFX_CTX_DIRECT3D11_API, NULL },
+   { GFX_CTX_DIRECT3D12_API, NULL }
 };
 
 bool video_driver_started_fullscreen(void)
