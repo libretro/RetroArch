@@ -432,12 +432,6 @@ rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
 
-#ifdef HAVE_THREADS
-void runloop_msg_queue_lock(void);
-
-void runloop_msg_queue_unlock(void);
-#endif
-
 void rarch_force_video_driver_fallback(const char *driver);
 
 void rarch_core_runtime_tick(void);

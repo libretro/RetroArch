@@ -346,32 +346,24 @@ settings_t *config_get_ptr(void)
 #ifdef HAVE_THREADS
 static slock_t *_runloop_msg_queue_lock                         = NULL;
 
-#define runloop_msg_queue_lock_internal() slock_lock(_runloop_msg_queue_lock)
-#define runloop_msg_queue_unlock_internal() slock_unlock(_runloop_msg_queue_lock)
-void runloop_msg_queue_lock(void)
-{
-   runloop_msg_queue_lock_internal();
-}
-
-void runloop_msg_queue_unlock(void)
-{
-   runloop_msg_queue_unlock_internal();
-}
+#define runloop_msg_queue_lock() slock_lock(_runloop_msg_queue_lock)
+#define runloop_msg_queue_unlock() slock_unlock(_runloop_msg_queue_lock)
+#else
+#define runloop_msg_queue_lock()
+#define runloop_msg_queue_unlock()
 #endif
 
 static void retroarch_msg_queue_deinit(void)
 {
-#ifdef HAVE_THREADS
-   runloop_msg_queue_lock_internal();
-#endif
+   runloop_msg_queue_lock();
 
    if (!runloop_msg_queue)
       return;
 
    msg_queue_free(runloop_msg_queue);
 
+   runloop_msg_queue_unlock();
 #ifdef HAVE_THREADS
-   runloop_msg_queue_unlock_internal();
    slock_free(_runloop_msg_queue_lock);
    _runloop_msg_queue_lock = NULL;
 #endif
@@ -382,7 +374,7 @@ static void retroarch_msg_queue_deinit(void)
 static void retroarch_msg_queue_init(void)
 {
    retroarch_msg_queue_deinit();
-   runloop_msg_queue = msg_queue_new(8);
+   runloop_msg_queue       = msg_queue_new(8);
 
 #ifdef HAVE_THREADS
    _runloop_msg_queue_lock = slock_new();
@@ -9409,15 +9401,11 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_info.font_enable)
    {
       const char *msg = NULL;
-#ifdef HAVE_THREADS
-      runloop_msg_queue_lock_internal();
-#endif
+      runloop_msg_queue_lock();
       msg = msg_queue_pull(runloop_msg_queue);
       if (msg)
          strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-#ifdef HAVE_THREADS
-      runloop_msg_queue_unlock_internal();
-#endif
+      runloop_msg_queue_unlock();
    }
 
    if (video_info.statistics_show)
@@ -14239,13 +14227,9 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
    bool ready = menu_widgets_ready();
    if (ready && task->title && !task->mute)
    {
-#ifdef HAVE_THREADS
-      runloop_msg_queue_lock_internal();
-#endif
+      runloop_msg_queue_lock();
       menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
-#ifdef HAVE_THREADS
-      runloop_msg_queue_unlock_internal();
-#endif
+      runloop_msg_queue_unlock();
    }
    else
 #endif
@@ -14260,18 +14244,14 @@ void runloop_msg_queue_push(const char *msg,
 {
    runloop_ctx_msg_info_t msg_info;
 
-#ifdef HAVE_THREADS
-   runloop_msg_queue_lock_internal();
-#endif
+   runloop_msg_queue_lock();
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_ready())
    {
       menu_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush);
-#ifdef HAVE_THREADS
-      runloop_msg_queue_unlock_internal();
-#endif
+      runloop_msg_queue_unlock();
       return;
    }
 #endif
@@ -14294,9 +14274,7 @@ void runloop_msg_queue_push(const char *msg,
             msg_info.prio, msg_info.duration, msg_info.flush);
    }
 
-#ifdef HAVE_THREADS
-   runloop_msg_queue_unlock_internal();
-#endif
+   runloop_msg_queue_unlock();
 }
 
 void runloop_get_status(bool *is_paused, bool *is_idle,
@@ -14663,7 +14641,12 @@ static enum runloop_state runloop_check_state(
    menu_animation_update();
 
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_iterate();
+   if (menu_widgets_ready())
+   {
+      runloop_msg_queue_lock();
+      menu_widgets_iterate();
+      runloop_msg_queue_unlock();
+   }
 #endif
 
    if (menu_is_alive)

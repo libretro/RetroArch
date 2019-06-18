@@ -815,9 +815,6 @@ void menu_widgets_iterate(void)
       return;
 
    /* Messages queue */
-#ifdef HAVE_THREADS
-   runloop_msg_queue_lock();
-#endif
 
    /* Consume one message if available */
    if (fifo_read_avail(msg_queue) > 0 && !widgets_moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
@@ -869,10 +866,6 @@ void menu_widgets_iterate(void)
 
       menu_widgets_msg_queue_move();
    }
-
-#ifdef HAVE_THREADS
-   runloop_msg_queue_unlock();
-#endif
 
    /* Kill first expired message */
    /* Start expiration timer of dead tasks */
