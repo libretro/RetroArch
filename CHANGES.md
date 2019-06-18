@@ -7,6 +7,7 @@
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
 - D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though.
+- D3D10/11/12: Add option to select which GPU to render with.
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - IOS: Correctly centers screen on iPhone X landscape.
 - LOCALIZATION: Update Korean translation.
