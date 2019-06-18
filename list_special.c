@@ -98,31 +98,22 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             attr.i = 0;
 
+            if (video_shader_is_supported(RARCH_SHADER_CG))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-               {
-                  string_list_append(str_list, "cgp", attr);
-                  string_list_append(str_list, "cg", attr);
-               }
+               string_list_append(str_list, "cgp", attr);
+               string_list_append(str_list, "cg", attr);
             }
 
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               {
-                  string_list_append(str_list, "glslp", attr);
-                  string_list_append(str_list, "glsl", attr);
-               }
+               string_list_append(str_list, "glslp", attr);
+               string_list_append(str_list, "glsl", attr);
             }
 
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
-               gfx_ctx_flags_t flags;
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-               {
-                  string_list_append(str_list, "slangp", attr);
-                  string_list_append(str_list, "slang", attr);
-               }
+               string_list_append(str_list, "slangp", attr);
+               string_list_append(str_list, "slang", attr);
             }
 
             string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");

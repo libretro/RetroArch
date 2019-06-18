@@ -20,6 +20,7 @@
 #include <retro_common_api.h>
 
 #include "../retroarch.h"
+#include "../gfx/video_shader_parse.h"
 
 RETRO_BEGIN_DECLS
 
@@ -43,7 +44,7 @@ bool menu_shader_manager_init(void);
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(
-      void *data, unsigned type, const char *preset_path);
+      void *data, enum rarch_shader_type type, const char *preset_path);
 
 /**
  * menu_shader_manager_save_preset:
@@ -63,7 +64,7 @@ bool menu_shader_manager_save_preset(
  *
  * Returns: type of shader.
  **/
-unsigned menu_shader_manager_get_type(const void *data);
+enum rarch_shader_type menu_shader_manager_get_type(const void *data);
 
 /**
  * menu_shader_manager_apply_changes:

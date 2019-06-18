@@ -888,44 +888,55 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!glsl->shader)
       goto error;
 
-   if (!string_is_empty(path))
    {
-      bool ret             = false;
-      const char *path_ext = path_get_extension(path);
+      bool is_preset;
+      enum rarch_shader_type type =
+         video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (string_is_equal(path_ext, "glslp"))
+      if (!string_is_empty(path) && type != RARCH_SHADER_GLSL)
       {
-         conf = config_file_new(path);
-         if (conf)
+         RARCH_ERR("[GL]: Invalid shader type, falling back to stock.\n");
+         path = NULL;
+      }
+
+      if (!string_is_empty(path))
+      {
+         bool ret = false;
+
+         if (is_preset)
          {
-            ret = video_shader_read_conf_preset(conf, glsl->shader);
+            conf = config_file_new(path);
+            if (conf)
+            {
+               ret = video_shader_read_conf_preset(conf, glsl->shader);
+               glsl->shader->modern = true;
+            }
+         }
+         else
+         {
+            strlcpy(glsl->shader->pass[0].source.path, path,
+                  sizeof(glsl->shader->pass[0].source.path));
+            glsl->shader->passes = 1;
             glsl->shader->modern = true;
+            ret = true;
+         }
+
+         if (!ret)
+         {
+            RARCH_ERR("[GL]: Failed to parse GLSL shader.\n");
+            goto error;
          }
       }
-      else if (string_is_equal(path_ext, "glsl"))
+      else
       {
-         strlcpy(glsl->shader->pass[0].source.path, path,
-               sizeof(glsl->shader->pass[0].source.path));
+         RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
          glsl->shader->passes = 1;
+         glsl->shader->pass[0].source.string.vertex   =
+            strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
+         glsl->shader->pass[0].source.string.fragment =
+            strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
          glsl->shader->modern = true;
-         ret = true;
       }
-
-      if (!ret)
-      {
-         RARCH_ERR("[GL]: Failed to parse GLSL shader.\n");
-         goto error;
-      }
-   }
-   else
-   {
-      RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
-      glsl->shader->passes = 1;
-      glsl->shader->pass[0].source.string.vertex   =
-         strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
-      glsl->shader->pass[0].source.string.fragment =
-         strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
-      glsl->shader->modern = true;
    }
 
    if (!string_is_empty(path))

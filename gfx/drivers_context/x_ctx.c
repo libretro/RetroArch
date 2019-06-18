@@ -1150,32 +1150,26 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
    uint32_t      flags = 0;
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-
    switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (x_adaptive_vsync)
-         {
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
-         }
 
          if (x->core_hw_context_enable || x->g_core_es)
-         {
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-         }
+
          if (x_enable_msaa)
-         {
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
-         }
+
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
          else if (string_is_equal(video_driver_get_ident(), "glcore"))
-		 {
-#ifdef HAVE_SLANG
-			 BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+         {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-		 }
+         }
          else
          {
 #ifdef HAVE_CG
@@ -1188,7 +1182,7 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
          }
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          break;

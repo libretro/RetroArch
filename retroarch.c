@@ -242,6 +242,7 @@ static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAI
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 static char error_string[255]                                   = {0};
 static char runtime_shader_preset[255]                          = {0};
+static bool shader_presets_need_reload                          = true;
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -10026,10 +10027,9 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 
 bool video_context_driver_swap_interval(int *interval)
 {
-   gfx_ctx_flags_t flags;
    int current_interval                   = *interval;
    settings_t *settings                   = configuration_settings;
-   bool adaptive_vsync_enabled            = video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+   bool adaptive_vsync_enabled            = video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!current_video_context.swap_interval)
       return false;
@@ -10172,19 +10172,23 @@ static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
+/**
+ * video_driver_test_all_flags:
+ * @testflag          : flag to test
+ *
+ * Poll both the video and context driver's flags and test
+ * whether @testflag is set or not.
+ **/
+bool video_driver_test_all_flags(enum display_flags testflag)
 {
-   if (!flags)
-      return false;
+   gfx_ctx_flags_t flags;
 
-   if (video_driver_get_flags(flags))
-      if (BIT32_GET(flags->flags, flag))
+   if (video_driver_get_flags(&flags))
+      if (BIT32_GET(flags.flags, testflag))
          return true;
 
-   flags->flags = 0;
-
-   if (video_context_driver_get_flags(flags))
-      if (BIT32_GET(flags->flags, flag))
+   if (video_context_driver_get_flags(&flags))
+      if (BIT32_GET(flags.flags, testflag))
          return true;
 
    return false;
@@ -13757,6 +13761,131 @@ void retroarch_unset_shader_preset(void)
    runtime_shader_preset[0] = '\0';
 }
 
+static bool retroarch_load_shader_preset_internal(
+      const char *shader_directory,
+      const char *core_name,
+      const char *special_name)
+{
+   unsigned i;
+   char *shader_path = (char*)malloc(PATH_MAX_LENGTH);
+
+   static enum rarch_shader_type types[] =
+   {
+      /* Shader preset priority, highest to lowest
+       * only important for video drivers with multiple shader backends */
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
+   };
+
+   for (i = 0; i < ARRAY_SIZE(types); i++)
+   {
+      if (!video_shader_is_supported(types[i]))
+         continue;
+
+      /* Concatenate strings into full paths */
+      fill_pathname_join_special_ext(shader_path,
+            shader_directory, core_name,
+            special_name,
+            video_shader_get_preset_extension(types[i]),
+            PATH_MAX_LENGTH);
+
+      if (!config_file_exists(shader_path))
+         continue;
+
+      /* Shader preset exists, load it. */
+      RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+            shader_path);
+      retroarch_set_shader_preset(shader_path);
+      free(shader_path);
+      return true;
+   }
+
+   free(shader_path);
+   return false;
+}
+
+/**
+ * retroarch_load_shader_preset:
+ *
+ * Tries to load a supported core-, game- or folder-specific shader preset
+ * from its respective location:
+ *
+ * core-specific:   $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.$PRESET_EXT
+ * folder-specific: $SHADER_DIR/presets/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
+ * game-specific:   $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.$PRESET_EXT
+ *
+ * Note: Uses video_shader_is_supported() which only works after
+ *       context driver initialization.
+ *
+ * Returns: false if there was an error or no action was performed.
+ */
+static bool retroarch_load_shader_preset(void)
+{
+   const settings_t *settings         = config_get_ptr();
+   const rarch_system_info_t *system  = runloop_get_system_info();
+   const char *video_shader_directory = settings->paths.directory_video_shader;
+   const char *core_name              = system ? system->info.library_name : NULL;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+
+   const char *game_name              = path_basename(rarch_path_basename);
+   char *shader_directory;
+
+   if (!settings->bools.auto_shaders_enable)
+      return false;
+
+   if (string_is_empty(video_shader_directory) ||
+         string_is_empty(core_name) ||
+         string_is_empty(game_name))
+      return false;
+
+   shader_directory = (char*)malloc(PATH_MAX_LENGTH);
+
+   fill_pathname_join(shader_directory,
+         video_shader_directory,
+         "presets", PATH_MAX_LENGTH);
+
+   RARCH_LOG("[Shaders]: preset directory: %s\n", shader_directory);
+
+   if (retroarch_load_shader_preset_internal(shader_directory, core_name,
+            game_name))
+   {
+      RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
+      goto success;
+   }
+
+   {
+      char content_dir_name[PATH_MAX_LENGTH];
+      if (!string_is_empty(rarch_path_basename))
+         fill_pathname_parent_dir_name(content_dir_name,
+               rarch_path_basename, sizeof(content_dir_name));
+
+      if (retroarch_load_shader_preset_internal(shader_directory, core_name,
+               content_dir_name))
+      {
+         RARCH_LOG("[Shaders]: folder-specific shader preset found.\n");
+         goto success;
+      }
+   }
+
+   if (retroarch_load_shader_preset_internal(shader_directory, core_name,
+            core_name))
+   {
+      RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
+      goto success;
+   }
+
+   free(shader_directory);
+   return false;
+
+success:
+   free(shader_directory);
+   return true;
+}
+
+void retroarch_shader_presets_set_need_reload()
+{
+   shader_presets_need_reload = true;
+}
+
 /* get the name of the current shader preset */
 char* retroarch_get_shader_preset(void)
 {
@@ -13764,10 +13893,18 @@ char* retroarch_get_shader_preset(void)
    if (!settings->bools.video_shader_enable)
       return NULL;
 
+   if (shader_presets_need_reload)
+   {
+      retroarch_load_shader_preset();
+      shader_presets_need_reload = false;
+   }
+
    if (!string_is_empty(runtime_shader_preset))
       return runtime_shader_preset;
-   else if (!string_is_empty(settings->paths.path_shader))
+
+   if (!string_is_empty(settings->paths.path_shader))
       return settings->paths.path_shader;
+
    return NULL;
 }
 

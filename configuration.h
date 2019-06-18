@@ -781,16 +781,6 @@ bool config_unload_override(void);
 bool config_load_remap(void);
 
 /**
- * config_load_shader_preset:
- *
- * Tries to append game-specific and core-specific shader presets.
- *
- * Returns: false if there was an error or no action was performed.
- *
- */
-bool config_load_shader_preset(void);
-
-/**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
  * @user              : Controller number to save

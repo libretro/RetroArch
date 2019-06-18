@@ -588,7 +588,6 @@ static void *android_gfx_ctx_get_context_data(void *data)
 static uint32_t android_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
    switch (android_api)
    {
@@ -599,7 +598,7 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          break;
