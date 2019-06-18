@@ -1462,9 +1462,8 @@ error:
 
 static void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
-   unsigned user;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-
+   unsigned user;
    for(user = 0; user < max_users; user ++)
       socket_close(handle->net_fd[user]);
 #endif
@@ -1475,8 +1474,8 @@ static void input_remote_free(input_remote_t *handle, unsigned max_users)
 
 static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
 {
-   unsigned user;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   unsigned user;
    settings_t   *settings = configuration_settings;
 #endif
    input_remote_t *handle = (input_remote_t*)
@@ -1485,25 +1484,20 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
    if (!handle)
       return NULL;
 
-   (void)port;
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    for(user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
       if(settings->bools.network_remote_enable_user[user])
          if (!input_remote_init_network(handle, port, user))
-            goto error;
+         {
+            input_remote_free(handle, max_users);
+            return NULL;
+         }
    }
 #endif
 
    return handle;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-error:
-   input_remote_free(handle, max_users);
-   return NULL;
-#endif
 }
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
