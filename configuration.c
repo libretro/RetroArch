@@ -2638,7 +2638,6 @@ static bool config_load_file(const char *path, settings_t *settings)
    char *override_username                         = NULL;
    const char *path_core                           = NULL;
    const char *path_config                         = NULL;
-   const char *shader_ext                          = NULL;
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
