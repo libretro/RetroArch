@@ -339,9 +339,6 @@ bool menu_widgets_msg_queue_push(
 {
    menu_widget_msg_t* msg_widget = NULL;
 
-   ui_companion_driver_msg_queue_push(msg,
-         prio, task ? duration : duration * 60 / 1000, flush);
-
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */

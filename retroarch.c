@@ -811,7 +811,8 @@ const ui_application_t *ui_companion_driver_get_application_ptr(void)
    return ui->application;
 }
 
-void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush)
+static void ui_companion_driver_msg_queue_push(
+      const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
@@ -14228,6 +14229,8 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
    if (ready && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
+      ui_companion_driver_msg_queue_push(msg,
+            prio, task ? duration : duration * 60 / 1000, flush);
       menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
       runloop_msg_queue_unlock();
    }
@@ -14249,6 +14252,8 @@ void runloop_msg_queue_push(const char *msg,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_ready())
    {
+      ui_companion_driver_msg_queue_push(msg,
+            prio, duration * 60 / 1000, flush);
       menu_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush);
       runloop_msg_queue_unlock();
@@ -14269,7 +14274,6 @@ void runloop_msg_queue_push(const char *msg,
       msg_queue_push(runloop_msg_queue, msg_info.msg,
             msg_info.prio, msg_info.duration,
             title, icon, category);
-
       ui_companion_driver_msg_queue_push(msg_info.msg,
             msg_info.prio, msg_info.duration, msg_info.flush);
    }

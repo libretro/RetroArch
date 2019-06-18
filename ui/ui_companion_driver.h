@@ -226,8 +226,6 @@ const ui_application_t *ui_companion_driver_get_qt_application_ptr(void);
 
 void ui_companion_driver_log_msg(const char *msg);
 
-void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush);
-
 void *ui_companion_driver_get_main_window(void);
 
 const char *ui_companion_driver_get_ident(void);
