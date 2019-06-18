@@ -1,4 +1,5 @@
 # 1.7.8 (future)
+- BLISS-BOX: Add 4 new pad types from firmware 3.0.
 - COMMON: Add optional 'on demand' thumbnail downloads.
 - COMMON: Add new playlist-based thumbnail downloader. Hide the legacy thumbnail pack version by default.
 - COMMON: Show license per core (if available) inside 'Load Core'.
@@ -29,6 +30,7 @@
 - SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport).
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
 - VULKAN/SLANG: Added "FrameDirection" slang semantic.
+- VULKAN: Add option to select which GPU to render with.
 - WII: Add default video/audio filter directories.
 - WII: Fix RGUI display corruption.
 - WIIU/SLANG: Added "FrameDirection" slang semantic.
