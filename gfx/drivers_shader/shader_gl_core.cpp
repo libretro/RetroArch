@@ -94,15 +94,39 @@ static uint32_t gl_core_get_cross_compiler_target_version()
 
 #ifdef HAVE_OPENGLES3
    if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      return 300u;
+      return 300;
+   
+   if (major == 2 && minor == 0)
+      return 100;
 #else
    if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
-      return 150u;
-#endif
-   if (major == 3u && minor == 2u)
-      return 150u;
+      return 150;
 
-   return 100u * major + 10u * minor;
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
 }
 
 GLuint gl_core_cross_compile_program(

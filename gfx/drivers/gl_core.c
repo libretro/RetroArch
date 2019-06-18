@@ -1027,7 +1027,7 @@ static void *gl_core_init(const video_info_t *video,
    }
 
    if (!string_is_empty(version))
-      sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+      sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
 
    {
       char device_str[128];
