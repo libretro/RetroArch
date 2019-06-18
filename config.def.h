@@ -874,6 +874,18 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_VULKAN_GPU_INDEX 0
 #endif
 
+#ifdef HAVE_D3D10
+#define DEFAULT_D3D10_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_D3D11
+#define DEFAULT_D3D11_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_D3D12
+#define DEFAULT_D3D12_GPU_INDEX 0
+#endif
+
 #if defined(HAKCHI)
 static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
 #elif defined(ANDROID)

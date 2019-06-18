@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1646,7 +1647,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan]: Found GPU: %s\n", gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan]: Found GPU at index %d: %s\n", i, gpu_properties.deviceName);
 
       string_list_append(vulkan_gpu_list, gpu_properties.deviceName, attr);
    }

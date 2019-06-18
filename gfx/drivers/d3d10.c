@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,6 +22,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
+#include <lists/string_list.h>
 #include <dxgi.h>
 
 #include "../../driver.h"
@@ -45,6 +47,12 @@
 #ifdef __WINRT__
 #error "UWP does not support D3D10"
 #endif
+
+#define D3D10_MAX_GPU_COUNT 16
+
+static struct string_list *d3d10_gpu_list = NULL;
+static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
+static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
@@ -577,6 +585,15 @@ static void d3d10_gfx_free(void* data)
       Release(d3d10->device);
    }
 
+   for (i = 0; i < D3D10_MAX_GPU_COUNT; i++)
+   {
+      if (d3d10_adapters[i])
+      {
+         Release(d3d10_adapters[i]);
+         d3d10_adapters[i] = NULL;
+      }
+   }
+
 #ifdef HAVE_MONITOR
    win32_monitor_from_window();
 #endif
@@ -665,7 +682,7 @@ d3d10_gfx_init(const video_info_t* video,
 #endif
 
       if (FAILED(D3D10CreateDeviceAndSwapChain(
-                  NULL, D3D10_DRIVER_TYPE_HARDWARE,
+                  (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
                   NULL, flags, D3D10_SDK_VERSION, &desc,
                   (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
          goto error;
@@ -977,18 +994,25 @@ d3d10_gfx_init(const video_info_t* video,
 
    {
       int i = 0;
-      DXGI_ADAPTER_DESC desc = {0};
-      char str[128];
 
-      str[0] = '\0';
+      if (d3d10_gpu_list)
+         string_list_free(d3d10_gpu_list);
+
+      d3d10_gpu_list = string_list_new();
 
       while (true)
       {
+         DXGI_ADAPTER_DESC desc = {0};
+         union string_list_elem_attr attr = {0};
+         char str[128];
+
+         str[0] = '\0';
+
 #ifdef __WINRT__
-         if (FAILED(DXGIEnumAdapters2(d3d10->factory, i++, &d3d10->adapter)))
+         if (FAILED(DXGIEnumAdapters2(d3d10->factory, i, &d3d10->adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d10->factory, i++, &d3d10->adapter)))
+         if (FAILED(DXGIEnumAdapters(d3d10->factory, i, &d3d10->adapter)))
             break;
 #endif
 
@@ -997,14 +1021,30 @@ d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10]: Using GPU: %s\n", str);
+         RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
 
-         video_driver_set_gpu_device_string(str);
+         string_list_append(d3d10_gpu_list, str, attr);
 
-         Release(d3d10->adapter);
+         if (i < D3D10_MAX_GPU_COUNT)
+            d3d10_adapters[i] = d3d10->adapter;
 
-         /* We only care about the first adapter for now */
-         break;
+         i++;
+      }
+
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
+
+      if (0 <= settings->ints.d3d10_gpu_index && settings->ints.d3d10_gpu_index <= i && settings->ints.d3d10_gpu_index < D3D10_MAX_GPU_COUNT)
+      {
+         d3d10_current_adapter = d3d10_adapters[settings->ints.d3d10_gpu_index];
+         d3d10->adapter = d3d10_current_adapter;
+         RARCH_LOG("[D3D10]: Using GPU index %d.\n", settings->ints.d3d10_gpu_index);
+         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[settings->ints.d3d10_gpu_index].data);
+      }
+      else
+      {
+         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d10_gpu_index);
+         d3d10_current_adapter = d3d10_adapters[0];
+         d3d10->adapter = d3d10_current_adapter;
       }
    }
 
