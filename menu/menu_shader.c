@@ -457,14 +457,14 @@ enum rarch_shader_type menu_shader_manager_get_type(const void *data)
          case RARCH_SHADER_GLSL:
          case RARCH_SHADER_SLANG:
             if (type != pass_type)
-               return RARCH_SHADER_NONE;
+               return (enum rarch_shader_type)RARCH_SHADER_NONE;
             break;
          default:
             break;
       }
    }
 
-   return type;
+   return (enum rarch_shader_type)type;
 }
 
 /**

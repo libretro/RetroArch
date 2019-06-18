@@ -13809,10 +13809,10 @@ static bool retroarch_load_shader_preset_internal(
  */
 static bool retroarch_load_shader_preset(void)
 {
-   const settings_t *settings         = config_get_ptr();
-   const rarch_system_info_t *system  = runloop_get_system_info();
+   const settings_t *settings         = configuration_settings;
+   const rarch_system_info_t *system  = &runloop_system;
    const char *video_shader_directory = settings->paths.directory_video_shader;
-   const char *core_name              = system ? system->info.library_name : NULL;
+   const char *core_name              = system->info.library_name;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
