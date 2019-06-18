@@ -439,7 +439,37 @@ const char* config_get_wifi_driver_options(void)
    return char_list_new_special(STRING_LIST_WIFI_DRIVERS, NULL);
 }
 
-static bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
+void driver_wifi_stop(void)
+{
+   wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
+}
+
+bool driver_wifi_start(void)
+{
+   return wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
+}
+
+void driver_wifi_scan()
+{
+   wifi_driver->scan();
+}
+
+void driver_wifi_get_ssids(struct string_list* ssids)
+{
+   wifi_driver->get_ssids(ssids);
+}
+
+bool driver_wifi_ssid_is_online(unsigned i)
+{
+   return wifi_driver->ssid_is_online(i);
+}
+
+bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
+{
+   return wifi_driver->connect_ssid(i, passphrase);
+}
+
+bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
    settings_t        *settings = configuration_settings;
 
@@ -545,37 +575,6 @@ static bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
    }
 
    return false;
-}
-
-
-void driver_wifi_stop(void)
-{
-   wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
-}
-
-bool driver_wifi_start(void)
-{
-   return wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
-}
-
-void driver_wifi_scan()
-{
-   wifi_driver->scan();
-}
-
-void driver_wifi_get_ssids(struct string_list* ssids)
-{
-   wifi_driver->get_ssids(ssids);
-}
-
-bool driver_wifi_ssid_is_online(unsigned i)
-{
-   return wifi_driver->ssid_is_online(i);
-}
-
-bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
-{
-   return wifi_driver->connect_ssid(i, passphrase);
 }
 
 /* UI Companion */
