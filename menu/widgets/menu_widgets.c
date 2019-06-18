@@ -329,7 +329,7 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
-static bool menu_widgets_msg_queue_push_internal(
+bool menu_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -338,10 +338,6 @@ static bool menu_widgets_msg_queue_push_internal(
       unsigned prio, bool flush)
 {
    menu_widget_msg_t* msg_widget = NULL;
-
-#ifdef HAVE_THREADS
-   runloop_msg_queue_lock();
-#endif
 
    ui_companion_driver_msg_queue_push(msg,
          prio, task ? duration : duration * 60 / 1000, flush);
@@ -510,22 +506,7 @@ static bool menu_widgets_msg_queue_push_internal(
       }
    }
 
-#ifdef HAVE_THREADS
-   runloop_msg_queue_unlock();
-#endif
-
    return true;
-}
-
-bool menu_widgets_msg_queue_push(const char *msg,
-      unsigned duration,
-      char *title,
-      enum message_queue_icon icon, enum message_queue_category category,
-      unsigned prio, bool flush)
-{
-   if (menu_widgets_inited)
-      return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category, prio, flush);
-   return false;
 }
 
 static void menu_widgets_unfold_end(void *userdata)
@@ -2151,20 +2132,6 @@ void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
    menu_widgets_play_screenshot_flash();
    strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
-}
-
-bool menu_widgets_task_msg_queue_push(retro_task_t *task,
-      const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   if (!menu_widgets_inited)
-      return false;
-
-   if (task->title != NULL && !task->mute)
-      menu_widgets_msg_queue_push_internal(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
-
-   return true;
 }
 
 static void menu_widgets_end_load_content_animation(void *userdata)

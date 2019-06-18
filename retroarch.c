@@ -14236,7 +14236,18 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
       bool flush)
 {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_task_msg_queue_push(task, msg, prio, duration, flush))
+   bool ready = menu_widgets_ready();
+   if (ready && task->title && !task->mute)
+   {
+#ifdef HAVE_THREADS
+      runloop_msg_queue_lock_internal();
+#endif
+      menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
+#ifdef HAVE_THREADS
+      runloop_msg_queue_unlock_internal();
+#endif
+   }
+   else
 #endif
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
@@ -14248,14 +14259,21 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_icon icon, enum message_queue_category category)
 {
    runloop_ctx_msg_info_t msg_info;
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (menu_widgets_msg_queue_push(msg,
-            roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush))
-      return;
-#endif
 
 #ifdef HAVE_THREADS
    runloop_msg_queue_lock_internal();
+#endif
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (menu_widgets_ready())
+   {
+      menu_widgets_msg_queue_push(NULL, msg,
+            roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush);
+#ifdef HAVE_THREADS
+      runloop_msg_queue_unlock_internal();
+#endif
+      return;
+   }
 #endif
 
    if (flush)

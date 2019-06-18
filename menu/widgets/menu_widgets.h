@@ -41,10 +41,12 @@ void menu_widgets_init(bool video_is_threaded);
 void menu_widgets_free(void);
 bool menu_widgets_ready(void);
 
-bool menu_widgets_msg_queue_push(const char *msg,
+bool menu_widgets_msg_queue_push(
+      retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category,
+      enum message_queue_icon icon,
+      enum message_queue_category category,
       unsigned prio, bool flush);
 
 bool menu_widgets_volume_update_and_show(void);
