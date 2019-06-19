@@ -12987,12 +12987,12 @@ void rarch_menu_running_finished(void)
    input_driver_flushing_input = true;
 
    /* Stop menu background music before we exit the menu */
-   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   if (settings->bools.input_overlay_hide_in_menu)
+   if (settings && settings->bools.input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
