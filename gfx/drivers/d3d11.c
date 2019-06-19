@@ -58,10 +58,13 @@
 #include "../../uwp/uwp_func.h"
 #endif
 
+/* Temporary workaround for d3d11 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d11_fake_context;
+static uint32_t d3d11_get_flags(void *data);
+
 static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
-
 #define D3D11_MAX_GPU_COUNT 16
 
 static struct string_list *d3d11_gpu_list = NULL;
@@ -1042,6 +1045,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
 
    {
+      d3d11_fake_context.get_flags = d3d11_get_flags;
+      video_context_driver_set(&d3d11_fake_context); 
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d11_gfx_set_shader(d3d11, type, shader_preset);

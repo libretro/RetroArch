@@ -43,6 +43,10 @@
 
 #include "wiiu/wiiu_dbg.h"
 
+/* Temporary workaround for d3d12 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d12_fake_context;
+static uint32_t d3d12_get_flags(void *data);
+
 static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 {
    if (D3D12GetCompletedValue(d3d12->queue.fence) < d3d12->queue.fenceValue)
@@ -1007,6 +1011,8 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
 
    {
+      d3d12_fake_context.get_flags = d3d12_get_flags;
+      video_context_driver_set(&d3d12_fake_context); 
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d12_gfx_set_shader(d3d12, type, shader_preset);
