@@ -439,17 +439,7 @@ const char* config_get_wifi_driver_options(void)
    return char_list_new_special(STRING_LIST_WIFI_DRIVERS, NULL);
 }
 
-void driver_wifi_stop(void)
-{
-   wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
-}
-
-bool driver_wifi_start(void)
-{
-   return wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
-}
-
-void driver_wifi_scan()
+void driver_wifi_scan(void)
 {
    wifi_driver->scan();
 }
