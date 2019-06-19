@@ -697,7 +697,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
             "メニューを操作するには \n"
-            "以下のゲームパッドまたはキーボードを使用します: \n"
+            "ゲームパッドまたはキーボードで以下の入力を使用できます: \n"
             " \n"
                );
          break;
