@@ -11,6 +11,7 @@
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - IOS: Correctly centers screen on iPhone X landscape.
 - LOCALIZATION: Update Korean translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
 - LOCALIZATION: Update Polish translation.
 - MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content.
