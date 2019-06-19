@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <string/stdstring.h>
+
 #include <ApplicationServices/ApplicationServices.h>
 
 #include <OpenGL/CGLTypes.h>
