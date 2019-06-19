@@ -164,7 +164,6 @@ OBJ += frontend/frontend.o \
        ui/drivers/null/ui_null_browser_window.o \
        ui/drivers/null/ui_null_msg_window.o \
        ui/drivers/null/ui_null_application.o \
-       core_impl.o \
        retroarch.o \
        dirs.o \
        paths.o \

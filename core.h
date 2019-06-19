@@ -203,14 +203,6 @@ bool core_reset_cheat(void);
 
 bool core_api_version(retro_ctx_api_info_t *api);
 
-/* Compare libretro core API version against API version
- * used by RetroArch.
- *
- * TODO - when libretro v2 gets added, allow for switching
- * between libretro version backend dynamically.
- */
-bool core_verify_api_version(void);
-
 bool core_get_region(retro_ctx_region_info_t *info);
 
 bool core_get_memory(retro_ctx_memory_info_t *info);

@@ -1649,7 +1649,6 @@ bool video_driver_has_windowed(void);
 
 bool video_driver_cached_frame_has_valid_framebuffer(void);
 
-void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
@@ -1667,10 +1666,6 @@ void video_driver_unset_rgba(void);
 bool video_driver_supports_rgba(void);
 bool video_driver_get_next_video_out(void);
 bool video_driver_get_prev_video_out(void);
-bool video_driver_init(bool *video_is_threaded);
-void video_driver_destroy_data(void);
-void video_driver_free(void);
-void video_driver_free_hw_context(void);
 void video_driver_monitor_reset(void);
 void video_driver_set_aspect_ratio(void);
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
