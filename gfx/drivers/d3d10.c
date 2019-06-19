@@ -50,6 +50,10 @@
 
 #define D3D10_MAX_GPU_COUNT 16
 
+/* Temporary workaround for d3d10 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d10_fake_context;
+static uint32_t d3d10_get_flags(void *data);
+
 static struct string_list *d3d10_gpu_list = NULL;
 static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d10_current_adapter = NULL;
@@ -966,6 +970,8 @@ d3d10_gfx_init(const video_info_t* video,
    font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
 
    {
+      d3d10_fake_context.get_flags = d3d10_get_flags;
+      video_context_driver_set(&d3d10_fake_context); 
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d10_gfx_set_shader(d3d10, type, shader_preset);
