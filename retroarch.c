@@ -7446,6 +7446,12 @@ void video_driver_set_threaded(bool val)
    video_driver_threaded = val;
 }
 
+#ifdef HAVE_THREADS
+#define video_driver_get_ptr_internal(force) ((video_driver_is_threaded_internal() && !force) ? video_thread_get_ptr(NULL) : video_driver_data)
+#else
+#define video_driver_get_ptr_internal(force) (video_driver_data)
+#endif
+
 /**
  * video_driver_get_ptr:
  *
@@ -7456,12 +7462,7 @@ void video_driver_set_threaded(bool val)
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
-#ifdef HAVE_THREADS
-   if (video_driver_is_threaded_internal() && !force_nonthreaded_data)
-      return video_thread_get_ptr(NULL);
-#endif
-
-   return video_driver_data;
+   return video_driver_get_ptr_internal(force_nonthreaded_data);
 }
 
 const char *video_driver_get_ident(void)
@@ -9637,7 +9638,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
 
-   video_info->userdata               = video_driver_get_ptr(false);
+   video_info->userdata               = video_driver_get_ptr_internal(false);
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
@@ -10200,7 +10201,7 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
-   void *video_driver                       = video_driver_get_ptr(true);
+   void *video_driver                       = video_driver_get_ptr_internal(true);
    const video_poke_interface_t *video_poke = video_driver_get_poke();
 
    shader->data = NULL;
@@ -11307,7 +11308,7 @@ static void driver_adjust_system_rates(void)
    audio_driver_monitor_adjust_system_rates();
    video_driver_monitor_adjust_system_rates();
 
-   if (!video_driver_get_ptr(false))
+   if (!video_driver_get_ptr_internal(false))
       return;
 
    if (runloop_force_nonblock)
@@ -11329,7 +11330,7 @@ void driver_set_nonblock_state(void)
    bool                 enable = input_driver_nonblock_state;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_is_active() && video_driver_get_ptr(false))
+   if (video_driver_is_active() && video_driver_get_ptr_internal(false))
    {
       settings_t *settings = configuration_settings;
       bool video_nonblock  = enable;
