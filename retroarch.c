@@ -13816,7 +13816,7 @@ success:
    return true;
 }
 
-void retroarch_shader_presets_set_need_reload()
+void retroarch_shader_presets_set_need_reload(void)
 {
    shader_presets_need_reload = true;
 }
