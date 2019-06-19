@@ -27,6 +27,7 @@
 - NETBSD: Audioio is now the default audio driver.
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment.
 - OSD: OSD is now drawn above the overlay with Vulkan.
+- OSX: Fix regression with Cocoa GL - shader / preset loading was getting stuck in an infinite loop.
 - RECORD: Fix Twitch streaming.
 - SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport).
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not.
