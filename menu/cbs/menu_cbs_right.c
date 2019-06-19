@@ -417,9 +417,9 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
-            if (settings->ints.d3d11_gpu_index < list->size - 1)
+            if (settings->ints.d3d11_gpu_index < (int)(list->size - 1))
                settings->ints.d3d11_gpu_index++;
-            else if (settings->ints.d3d11_gpu_index == list->size - 1)
+            else if (settings->ints.d3d11_gpu_index == (int)(list->size - 1))
                settings->ints.d3d11_gpu_index = 0;
          }
 
@@ -433,9 +433,9 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
-            if (settings->ints.d3d12_gpu_index < list->size - 1)
+            if (settings->ints.d3d12_gpu_index < (int)(list->size - 1))
                settings->ints.d3d12_gpu_index++;
-            else if (settings->ints.d3d12_gpu_index == list->size - 1)
+            else if (settings->ints.d3d12_gpu_index == (int)(list->size - 1))
                settings->ints.d3d12_gpu_index = 0;
          }
 
