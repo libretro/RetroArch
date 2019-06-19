@@ -839,7 +839,7 @@ void ui_companion_driver_log_msg(const char *msg)
 #ifdef HAVE_QT
    settings_t *settings = configuration_settings;
 
-   if (settings && settings->bools.desktop_menu_enable)
+   if (settings->bools.desktop_menu_enable)
       if (ui_companion_qt_data && qt_is_inited)
          ui_companion_qt.log_msg(ui_companion_qt_data, msg);
 #endif
@@ -1478,7 +1478,7 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
    for(user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
-      if(settings->bools.network_remote_enable_user[user])
+      if (settings->bools.network_remote_enable_user[user])
          if (!input_remote_init_network(handle, port, user))
          {
             input_remote_free(handle, max_users);
@@ -5514,7 +5514,7 @@ static bool audio_driver_deinit_internal(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (settings && !settings->bools.audio_enable)
+   if (!settings->bools.audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -12972,14 +12972,14 @@ void rarch_menu_running(void)
    /* Prevent stray input */
    input_driver_flushing_input = true;
 
-   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+   if (settings->bools.audio_enable_menu 
+         && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 #ifdef HAVE_OVERLAY
-   if (settings && settings->bools.input_overlay_hide_in_menu)
+   if (settings->bools.input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
-}
 
 void rarch_menu_running_finished(void)
 {
@@ -12993,12 +12993,12 @@ void rarch_menu_running_finished(void)
    input_driver_flushing_input = true;
 
    /* Stop menu background music before we exit the menu */
-   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   if (settings && settings->bools.input_overlay_hide_in_menu)
+   if (settings->bools.input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
@@ -13543,7 +13543,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (settings && settings->bools.game_specific_options)
+            if (settings->bools.game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
 
             if (ret)
