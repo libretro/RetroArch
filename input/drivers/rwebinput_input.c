@@ -506,7 +506,7 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if (rwebinput_is_pressed(rwebinput, joypad_info, binds, idx, id_minus))
       pressed_minus = -0x7fff;

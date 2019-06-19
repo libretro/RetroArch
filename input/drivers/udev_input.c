@@ -922,7 +922,7 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
    int16_t pressed_minus = 0;
    int16_t pressed_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if (     binds[id_minus].valid
          && BIT_GET(udev_key_state,

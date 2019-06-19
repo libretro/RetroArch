@@ -3228,7 +3228,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       const struct retro_keybind *bind_minus = NULL;
       const struct retro_keybind *bind_plus  = NULL;
 
-      input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
+      input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus);
 
       bind_minus                             = &binds[ident_minus];
       bind_plus                              = &binds[ident_plus];
@@ -3316,49 +3316,6 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
    if (!input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
           port, 0, 0))
       input_config_set_device_name(port, driver->name(port));
-}
-
-/**
- * input_conv_analog_id_to_bind_id:
- * @idx                     : Analog key index.
- *                            E.g.:
- *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
- *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
- * @ident                   : Analog key identifier.
- *                            E.g.:
- *                            - RETRO_DEVICE_ID_ANALOG_X
- *                            - RETRO_DEVICE_ID_ANALOG_Y
- * @ident_minus             : Bind ID minus, will be set by function.
- * @ident_plus              : Bind ID plus,  will be set by function.
- *
- * Takes as input analog key identifiers and converts
- * them to corresponding bind IDs @ident_minus and @ident_plus.
- **/
-void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
-      unsigned *ident_minus, unsigned *ident_plus)
-{
-   switch ((idx << 1) | ident)
-   {
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *ident_minus = RARCH_ANALOG_LEFT_X_MINUS;
-         *ident_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *ident_minus = RARCH_ANALOG_LEFT_Y_MINUS;
-         *ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *ident_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-         *ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-         *ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
-         break;
-   }
 }
 
 #ifdef HAVE_HID

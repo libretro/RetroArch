@@ -432,8 +432,26 @@ const input_device_driver_t *input_joypad_init_driver(
  * Takes as input analog key identifiers and converts
  * them to corresponding bind IDs @ident_minus and @ident_plus.
  **/
-void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
-      unsigned *ident_minus, unsigned *ident_plus);
+#define input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus) \
+   switch ((idx << 1) | ident) \
+   { \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_LEFT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_LEFT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_RIGHT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
+         break; \
+   }
 
 /**
  * input_joypad_pressed:

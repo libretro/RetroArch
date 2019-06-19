@@ -157,7 +157,7 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    int id_plus_key       = 0;
    unsigned keycode      = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;

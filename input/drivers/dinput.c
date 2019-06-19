@@ -345,7 +345,7 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0, id_plus = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    bind_minus = &binds[id_minus];
    bind_plus  = &binds[id_plus];
