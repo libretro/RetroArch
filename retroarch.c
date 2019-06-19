@@ -12980,6 +12980,7 @@ void rarch_menu_running(void)
    if (settings->bools.input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
+}
 
 void rarch_menu_running_finished(void)
 {
