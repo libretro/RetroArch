@@ -1179,7 +1179,7 @@ bool video_shader_is_supported(enum rarch_shader_type type)
       default:
          return false;
    }
-
+   video_driver_get_flags(&flags);
    video_context_driver_get_flags(&flags);
 
    return BIT32_GET(flags.flags, testflag);

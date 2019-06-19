@@ -10150,7 +10150,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
-static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
+bool video_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    if (!video_driver_poke || !video_driver_poke->get_flags)
       return false;
