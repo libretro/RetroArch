@@ -234,8 +234,6 @@ bool core_is_game_loaded(void);
 
 void core_free_retro_game_info(struct retro_game_info *dest);
 
-extern struct retro_callbacks retro_ctx;
-
 RETRO_END_DECLS
 
 #endif

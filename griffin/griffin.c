@@ -1369,7 +1369,6 @@ MENU
 #include "../runahead/mem_util.c"
 #include "../runahead/secondary_core.c"
 #include "../runahead/copy_load_info.c"
-#include "../runahead/dirty_input.c"
 #include "../runahead/mylist.c"
 #endif
 
