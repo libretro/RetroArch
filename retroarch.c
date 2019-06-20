@@ -3061,6 +3061,16 @@ int16_t input_driver_input_state(
    return 0;
 }
 
+#define INPUT_KEYS_CHECK(cond1, cond2, cond3) \
+   for (i = cond1; i < cond2; i++) \
+   { \
+      bool bit_pressed = !cond3 && binds[i].valid && current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, i); \
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state)) \
+      { \
+         BIT256_SET_PTR(p_new_state, i); \
+      } \
+   }
+
 /**
  * input_keys_pressed:
  *
@@ -3121,42 +3131,12 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    }
 
    /* Check the libretro input first */
-   if (!input_driver_block_libretro_input)
-   {
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         bool bit_pressed = 
-            binds[i].valid && current_input->input_state(current_input_data,
-                  joypad_info, &binds,
-                  0, RETRO_DEVICE_JOYPAD, 0, i);
-
-         if (
-               bit_pressed || 
-               input_keys_pressed_iterate(i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
+   INPUT_KEYS_CHECK(0, RARCH_FIRST_META_KEY,
+         input_driver_block_libretro_input);
 
    /* Check the hotkeys */
-   if (!input_driver_block_hotkey)
-   {
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-      {
-         bool bit_pressed = 
-            binds[i].valid && current_input->input_state(current_input_data,
-                  joypad_info, &binds,
-                  0, RETRO_DEVICE_JOYPAD, 0, i);
-
-         if (
-               bit_pressed || 
-               input_keys_pressed_iterate(i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
+   INPUT_KEYS_CHECK(RARCH_FIRST_META_KEY, RARCH_BIND_LIST_END,
+         input_driver_block_hotkey);
 }
 
 void input_get_state_for_port(void *data, unsigned port,
