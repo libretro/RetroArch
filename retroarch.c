@@ -13005,6 +13005,27 @@ error:
    return false;
 }
 
+static void runloop_task_msg_queue_push(
+      retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush)
+{
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   bool ready = menu_widgets_ready();
+   if (ready && task->title && !task->mute)
+   {
+      runloop_msg_queue_lock();
+      ui_companion_driver_msg_queue_push(msg,
+            prio, task ? duration : duration * 60 / 1000, flush);
+      menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
+      runloop_msg_queue_unlock();
+   }
+   else
+#endif
+      runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    static bool has_set_username        = false;
@@ -14133,25 +14154,6 @@ bool retroarch_main_quit(void)
 global_t *global_get_ptr(void)
 {
    return &g_extern;
-}
-
-void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   bool ready = menu_widgets_ready();
-   if (ready && task->title && !task->mute)
-   {
-      runloop_msg_queue_lock();
-      ui_companion_driver_msg_queue_push(msg,
-            prio, task ? duration : duration * 60 / 1000, flush);
-      menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
-      runloop_msg_queue_unlock();
-   }
-   else
-#endif
-      runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
 void runloop_msg_queue_push(const char *msg,
