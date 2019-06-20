@@ -49,7 +49,6 @@
 
 /* Temporary workaround for gx2 not being able to poll flags during init */
 static gfx_ctx_driver_t wiiu_fake_context;
-uint32_t wiiu_gfx_get_flags(void *data);
 
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
 {
@@ -455,10 +454,15 @@ static void *wiiu_gfx_init(const video_info_t *video,
                         FONT_DRIVER_RENDER_WIIU);
 
    {
-      wiiu_fake_context.get_flags = wiiu_get_flags;
+      enum rarch_shader_type type;
+      const char *shader_preset   = NULL;
+
+      wiiu_fake_context.get_flags = wiiu_gfx_get_flags;
+
       video_context_driver_set(&wiiu_fake_context); 
-      const char *shader_preset   = retroarch_get_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+
+      shader_preset               = retroarch_get_shader_preset();
+      type                        = video_shader_parse_type(shader_preset);
       wiiu_gfx_set_shader(wiiu, type, shader_preset);
    }
 
