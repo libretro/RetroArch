@@ -3968,7 +3968,8 @@ const char **input_keyboard_start_line(void *userdata,
    g_keyboard_line->userdata = userdata;
 
    /* While reading keyboard line input, we have to block all hotkeys. */
-   input_driver_keyboard_mapping_set_block(true);
+   if (current_input->keyboard_mapping_set_block)
+      current_input->keyboard_mapping_set_block(current_input_data, true);
 
    return (const char**)&g_keyboard_line->buffer;
 }
@@ -3995,7 +3996,8 @@ void input_keyboard_event(bool down, unsigned code,
 
       g_keyboard_press_cb   = NULL;
       g_keyboard_press_data = NULL;
-      input_driver_keyboard_mapping_set_block(false);
+      if (current_input->keyboard_mapping_set_block)
+         current_input->keyboard_mapping_set_block(current_input_data, false);
       deferred_wait_keys    = false;
    }
    else if (g_keyboard_press_cb)
@@ -4027,14 +4029,14 @@ void input_keyboard_event(bool down, unsigned code,
       input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
       /* Unblock all hotkeys. */
-      input_driver_keyboard_mapping_set_block(false);
+      if (current_input->keyboard_mapping_set_block)
+         current_input->keyboard_mapping_set_block(current_input_data, false);
    }
    else
    {
-      retro_keyboard_event_t *key_event = NULL;
-      rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
+      retro_keyboard_event_t *key_event = &runloop_key_event;
 
-      if (key_event && *key_event)
+      if (*key_event)
          (*key_event)(down, code, character, mod);
    }
 }
@@ -4063,12 +4065,14 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
          }
 
          /* While waiting for input, we have to block all hotkeys. */
-         input_driver_keyboard_mapping_set_block(true);
+         if (current_input->keyboard_mapping_set_block)
+            current_input->keyboard_mapping_set_block(current_input_data, true);
          break;
       case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
          g_keyboard_press_cb   = NULL;
          g_keyboard_press_data = NULL;
-         input_driver_keyboard_mapping_set_block(false);
+         if (current_input->keyboard_mapping_set_block)
+            current_input->keyboard_mapping_set_block(current_input_data, false);
          break;
       case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
          input_driver_keyboard_linefeed_enable = true;
@@ -13840,11 +13844,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          if (runloop_system.mmaps.descriptors)
             free((void *)runloop_system.mmaps.descriptors);
-         runloop_system.mmaps.descriptors     = NULL;
-         runloop_system.mmaps.num_descriptors = 0;
+         runloop_system.mmaps.descriptors          = NULL;
+         runloop_system.mmaps.num_descriptors      = 0;
 
-         rarch_ctl(RARCH_CTL_UNSET_KEY_EVENT, NULL);
-         runloop_frontend_key_event = NULL;
+         runloop_key_event                         = NULL;
+         runloop_frontend_key_event                = NULL;
 
          audio_driver_unset_callback();
 
@@ -14213,9 +14217,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                return false;
             *key_event = &runloop_key_event;
          }
-         break;
-      case RARCH_CTL_UNSET_KEY_EVENT:
-         runloop_key_event          = NULL;
          break;
       case RARCH_CTL_FRONTEND_KEY_EVENT_GET:
          {
