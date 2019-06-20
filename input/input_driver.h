@@ -295,13 +295,6 @@ float input_sensor_get_input(unsigned port, unsigned id);
 }
 
 /**
- * input_poll:
- *
- * Input polling callback function.
- **/
-void input_poll(void);
-
-/**
  * input_state:
  * @port                 : user number.
  * @device               : device identifier of user.

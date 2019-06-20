@@ -172,9 +172,6 @@ bool core_set_poll_type(unsigned *type);
 /* Runs the core for one frame. */
 bool core_run(void);
 
-/* Runs the core for one frame, but does not trigger any input polling */
-bool core_run_no_input_polling(void);
-
 bool core_init(void);
 
 bool core_deinit(void *data);

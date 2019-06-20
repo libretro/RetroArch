@@ -556,13 +556,7 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-void audio_driver_suspend(void);
-
 bool audio_driver_is_suspended(void);
-
-void audio_driver_resume(void);
-
-void audio_driver_set_active(void);
 
 bool audio_driver_is_active(void);
 
@@ -1669,23 +1663,33 @@ void video_driver_load_settings(config_file_t *conf);
 void video_driver_save_settings(config_file_t *conf);
 bool video_driver_is_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
+
 const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
+
 void video_driver_set_context_negotiation_interface(const struct
       retro_hw_render_context_negotiation_interface *iface);
-bool video_driver_is_video_cache_context(void);
-void video_driver_set_video_cache_context_ack(void);
-bool video_driver_is_video_cache_context_ack(void);
-void video_driver_set_active(void);
-void video_driver_unset_active(void);
-bool video_driver_is_active(void);
+
 bool video_driver_gpu_record_init(unsigned size);
+
 void video_driver_gpu_record_deinit(void);
+
+bool video_driver_is_video_cache_context(void);
+
+void video_driver_set_video_cache_context_ack(void);
+
+bool video_driver_is_video_cache_context_ack(void);
+
+bool video_driver_is_active(void);
+
 bool video_driver_get_current_software_framebuffer(struct
       retro_framebuffer *fb);
+
 bool video_driver_get_hw_render_interface(const struct
       retro_hw_render_interface **iface);
+
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
+
 void video_driver_set_title_buf(void);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
@@ -1916,9 +1920,6 @@ void video_driver_get_window_title(char *buf, unsigned len);
 bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
-
-void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
-      bool *is_focused);
 
 /**
  * video_context_driver_init_first:
