@@ -1,5 +1,5 @@
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500)
-#if (_MSC_VER >= 1700)
+#if (_MSC_VER >= 1700 && _MSC_VER < 1910)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
