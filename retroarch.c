@@ -5356,12 +5356,12 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 }
 
 /**
- * compute_audio_buffer_statistics:
+ * audio_compute_buffer_statistics:
  *
  * Computes audio buffer statistics.
  *
  **/
-bool compute_audio_buffer_statistics(audio_statistics_t *stats)
+static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
    uint64_t accum                = 0;
@@ -5427,7 +5427,7 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
 static void report_audio_buffer_statistics(void)
 {
    audio_statistics_t audio_stats = {0.0f};
-   if (!compute_audio_buffer_statistics(&audio_stats))
+   if (!audio_compute_buffer_statistics(&audio_stats))
       return;
 
 #ifdef DEBUG
@@ -5942,7 +5942,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
  *
  * Audio sample render callback function.
  **/
-void audio_driver_sample(int16_t left, int16_t right)
+static void audio_driver_sample(int16_t left, int16_t right)
 {
    if (audio_suspended)
       return;
@@ -6024,7 +6024,7 @@ static void audio_driver_menu_sample(void)
  * Returns: amount of frames sampled. Will be equal to @frames
  * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
  **/
-size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
+static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
@@ -6061,7 +6061,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  * This callback function will be used instead of
  * audio_driver_sample when rewinding is activated.
  **/
-void audio_driver_sample_rewind(int16_t left, int16_t right)
+static void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
    if (audio_driver_rewind_ptr == 0)
       return;
@@ -6083,7 +6083,7 @@ void audio_driver_sample_rewind(int16_t left, int16_t right)
  * Returns: amount of frames sampled. Will be equal to @frames
  * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
  **/
-size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
+static size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
 {
    size_t i;
    size_t samples   = frames << 1;
@@ -9359,7 +9359,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.color       = COLOR_ABGR(
             red, green, blue, alpha);
 
-      compute_audio_buffer_statistics(&audio_stats);
+      audio_compute_buffer_statistics(&audio_stats);
 
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),

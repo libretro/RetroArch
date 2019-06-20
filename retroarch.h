@@ -604,14 +604,6 @@ void audio_driver_set_nonblocking_state(bool enable);
  **/
 const char* config_get_audio_driver_options(void);
 
-void audio_driver_sample(int16_t left, int16_t right);
-
-size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
-
-void audio_driver_sample_rewind(int16_t left, int16_t right);
-
-size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames);
-
 bool audio_driver_mixer_extension_supported(const char *ext);
 
 void audio_driver_dsp_filter_free(void);
@@ -673,8 +665,6 @@ void audio_driver_mixer_remove_stream(unsigned i);
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
-
-bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
 void audio_driver_load_menu_sounds(void);
 
