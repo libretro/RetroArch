@@ -9650,15 +9650,6 @@ void video_driver_get_window_title(char *buf, unsigned len)
    }
 }
 
-void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
-      bool *is_focused)
-{
-   *frame_count = video_driver_frame_count;
-   *is_alive    = current_video ?
-      current_video->alive(video_driver_data) : true;
-   *is_focused  = video_has_focus();
-}
-
 /**
  * find_video_context_driver_driver_index:
  * @ident                      : Identifier of resampler driver to find.
