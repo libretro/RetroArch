@@ -1999,8 +1999,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
-extern bool (*video_driver_cb_has_focus)(void);
-
 bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);

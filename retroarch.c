@@ -7026,8 +7026,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-bool (*video_driver_cb_has_focus)(void);
-
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
@@ -7477,21 +7475,6 @@ const video_poke_interface_t *video_driver_get_poke(void)
    return video_driver_poke;
 }
 
-static bool video_context_has_focus(void)
-{
-   return current_video_context.has_focus && current_video_context.has_focus(video_context_data);
-}
-
-static bool video_driver_has_focus(void)
-{
-   return current_video && current_video->focus && current_video->focus(video_driver_data);
-}
-
-static bool null_driver_has_focus(void)
-{
-   return true;
-}
-
 static void video_context_driver_reset(void)
 {
    if (!current_video_context.get_metrics)
@@ -7505,10 +7488,6 @@ static void video_context_driver_reset(void)
 
    if (!current_video_context.swap_buffers)
       current_video_context.swap_buffers        = swap_buffers_null;
-
-   if (current_video_context.has_focus)
-      video_driver_cb_has_focus                 = video_context_has_focus;
-
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -7535,7 +7514,6 @@ void video_context_driver_destroy(void)
    current_video_context.update_window_title        = update_window_title_null;
    current_video_context.check_window               = NULL;
    current_video_context.set_resize                 = set_resize_null;
-   current_video_context.has_focus                  = NULL;
    current_video_context.suppress_screensaver       = NULL;
    current_video_context.has_windowed               = NULL;
    current_video_context.swap_buffers               = swap_buffers_null;
@@ -8005,9 +7983,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       goto error;
    }
 
-   if (current_video->focus)
-      video_driver_cb_has_focus = video_driver_has_focus;
-
    video_driver_poke = NULL;
    if (current_video->poke_interface)
       current_video->poke_interface(video_driver_data, &video_driver_poke);
@@ -8419,7 +8394,6 @@ static void video_driver_destroy(void)
    video_display_server_destroy();
    crt_video_restore();
 
-   video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_active            = false;
    video_driver_cache_context     = false;
@@ -9692,6 +9666,8 @@ bool video_driver_translate_coord_viewport(
    return true;
 }
 
+#define video_has_focus() ((current_video_context.has_focus) ? (current_video_context.has_focus && current_video_context.has_focus(video_context_data)) : (current_video->focus) ? (current_video && current_video->focus && current_video->focus(video_driver_data)) : true)
+
 void video_driver_get_window_title(char *buf, unsigned len)
 {
    if (buf && video_driver_window_title_update)
@@ -9707,7 +9683,7 @@ void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
    *frame_count = video_driver_frame_count;
    *is_alive    = current_video ?
       current_video->alive(video_driver_data) : true;
-   *is_focused  = video_driver_cb_has_focus();
+   *is_focused  = video_has_focus();
 }
 
 /**
@@ -14382,7 +14358,7 @@ static enum runloop_state runloop_check_state(
    static input_bits_t last_input      = {{0}};
 #endif
    static bool old_focus               = true;
-   bool is_focused                     = video_driver_cb_has_focus();
+   bool is_focused                     = video_has_focus();
    bool is_alive                       = current_video ?
       current_video->alive(video_driver_data) : true;
    uint64_t frame_count                = video_driver_frame_count;
