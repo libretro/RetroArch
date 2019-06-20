@@ -11643,6 +11643,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    return true;
 }
 
+#ifdef HAVE_RUNAHEAD
 /* Runahead */
 
 static size_t runahead_save_state_size     = 0;
@@ -12008,7 +12009,6 @@ static void runahead_error(void)
    runahead_save_state_size_known = true;
 }
 
-
 static bool runahead_create(void)
 {
    /* get savestate size and allocate buffer */
@@ -12286,6 +12286,7 @@ bool get_hard_disable_audio(void)
 {
    return hard_disable_audio;
 }
+#endif
 
 void rarch_core_runtime_tick(void)
 {
