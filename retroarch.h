@@ -1638,7 +1638,6 @@ void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
 bool video_driver_is_stub_frame(void);
-bool video_driver_supports_recording(void);
 bool video_driver_supports_viewport_read(void);
 bool video_driver_prefer_viewport_read(void);
 bool video_driver_supports_read_frame_raw(void);
@@ -1849,8 +1848,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
 unsigned video_pixel_get_alignment(unsigned pitch);
-
-const video_poke_interface_t *video_driver_get_poke(void);
 
 /**
  * video_driver_frame:

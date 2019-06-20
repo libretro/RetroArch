@@ -327,6 +327,377 @@ static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 
 static char launch_arguments[4096];
 
+/* Video */
+
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
+
+#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
+
+#define FPS_UPDATE_INTERVAL 256
+
+#ifdef HAVE_THREADS
+#define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
+#else
+#define video_driver_is_threaded_internal() (false)
+#endif
+
+#ifdef HAVE_THREADS
+#define video_driver_lock() \
+   if (display_lock) \
+      slock_lock(display_lock)
+
+#define video_driver_unlock() \
+   if (display_lock) \
+      slock_unlock(display_lock)
+
+#define video_driver_context_lock() \
+   if (context_lock) \
+      slock_lock(context_lock)
+
+#define video_driver_context_unlock() \
+   if (context_lock) \
+      slock_unlock(context_lock)
+
+#define video_driver_lock_free() \
+   slock_free(display_lock); \
+   slock_free(context_lock); \
+   display_lock = NULL; \
+   context_lock = NULL
+
+#define video_driver_threaded_lock(is_threaded) \
+   if (is_threaded) \
+      video_driver_lock()
+
+#define video_driver_threaded_unlock(is_threaded) \
+   if (is_threaded) \
+      video_driver_unlock()
+#else
+#define video_driver_lock()            ((void)0)
+#define video_driver_unlock()          ((void)0)
+#define video_driver_lock_free()       ((void)0)
+#define video_driver_threaded_lock(is_threaded)   ((void)0)
+#define video_driver_threaded_unlock(is_threaded) ((void)0)
+#define video_driver_context_lock()    ((void)0)
+#define video_driver_context_unlock()  ((void)0)
+#endif
+
+typedef struct video_pixel_scaler
+{
+   struct scaler_ctx *scaler;
+   void *scaler_out;
+} video_pixel_scaler_t;
+
+/* Opaque handles to currently running window.
+ * Used by e.g. input drivers which bind to a window.
+ * Drivers are responsible for setting these if an input driver
+ * could potentially make use of this. */
+static uintptr_t video_driver_display                    = 0;
+static uintptr_t video_driver_window                     = 0;
+
+static rarch_softfilter_t *video_driver_state_filter     = NULL;
+static void               *video_driver_state_buffer     = NULL;
+static unsigned            video_driver_state_scale      = 0;
+static unsigned            video_driver_state_out_bpp    = 0;
+static bool                video_driver_state_out_rgb32      = false;
+static bool                video_driver_crt_switching_active = false;
+static bool                video_driver_crt_dynamic_super_width = false;
+
+static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
+
+static const void *frame_cache_data                      = NULL;
+static unsigned frame_cache_width                        = 0;
+static unsigned frame_cache_height                       = 0;
+static size_t frame_cache_pitch                          = 0;
+static bool   video_driver_threaded                      = false;
+
+static float video_driver_core_hz                        = 0.0f;
+static float video_driver_aspect_ratio                   = 0.0f;
+static unsigned video_driver_width                       = 0;
+static unsigned video_driver_height                      = 0;
+
+static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
+static char video_driver_title_buf[64]                   = {0};
+static char video_driver_window_title[512]               = {0};
+static bool video_driver_window_title_update             = true;
+
+static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+static uint64_t video_driver_frame_time_count            = 0;
+static uint64_t video_driver_frame_count                 = 0;
+
+static void *video_driver_data                           = NULL;
+static video_driver_t *current_video                     = NULL;
+
+/* Interface for "poking". */
+static const video_poke_interface_t *video_driver_poke   = NULL;
+
+/* Used for 15-bit -> 16-bit conversions that take place before
+ * being passed to video driver. */
+static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
+
+static struct retro_hw_render_callback hw_render;
+
+static const struct
+retro_hw_render_context_negotiation_interface *
+hw_render_context_negotiation                            = NULL;
+
+/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+ * for 32-bit.
+ * This takes effect for overlay and shader cores that wants to load
+ * data into graphics driver. Kinda hackish to place it here, it is only
+ * used for GLES.
+ * TODO: Refactor this better. */
+static bool video_driver_use_rgba                        = false;
+static bool video_driver_active                          = false;
+
+static video_driver_frame_t frame_bak                    = NULL;
+
+/* If set during context deinit, the driver should keep
+ * graphics context alive to avoid having to reset all
+ * context state. */
+static bool video_driver_cache_context                   = false;
+
+/* Set to true by driver if context caching succeeded. */
+static bool video_driver_cache_context_ack               = false;
+
+#ifdef HAVE_THREADS
+static slock_t *display_lock                             = NULL;
+static slock_t *context_lock                             = NULL;
+#endif
+
+static gfx_ctx_driver_t current_video_context;
+
+static void *video_context_data                          = NULL;
+
+/**
+ * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+ * is in the middle of being rebuilt; in these cases we will save flag
+ * data and set this to true.
+ * When the context is reinit, it checks this, reads from
+ * deferred_flag_data and cleans it.
+ *
+ * TODO - Dirty hack, fix it better
+ */
+static bool deferred_video_context_driver_set_flags      = false;
+static gfx_ctx_flags_t deferred_flag_data                = {0};
+
+static bool video_started_fullscreen                     = false;
+
+static char video_driver_gpu_device_string[128] = {0};
+static char video_driver_gpu_api_version_string[128] = {0};
+
+struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
+   { "4:3",           1.3333f },
+   { "16:9",          1.7778f },
+   { "16:10",         1.6f },
+   { "16:15",         16.0f / 15.0f },
+   { "21:9",          21.0f / 9.0f },
+   { "1:1",           1.0f },
+   { "2:1",           2.0f },
+   { "3:2",           1.5f },
+   { "3:4",           0.75f },
+   { "4:1",           4.0f },
+   { "9:16",          0.5625f },
+   { "5:4",           1.25f },
+   { "6:5",           1.2f },
+   { "7:9",           0.7777f },
+   { "8:3",           2.6666f },
+   { "8:7",           1.1428f },
+   { "19:12",         1.5833f },
+   { "19:14",         1.3571f },
+   { "30:17",         1.7647f },
+   { "32:9",          3.5555f },
+   { "Config",        0.0f },
+   { "Square pixel",  1.0f },
+   { "Core provided", 1.0f },
+   { "Custom",        0.0f }
+};
+
+static const video_driver_t *video_drivers[] = {
+#ifdef HAVE_OPENGL
+   &video_gl2,
+#endif
+#if defined(HAVE_OPENGL_CORE)
+   &video_gl_core,
+#endif
+#ifdef HAVE_OPENGL1
+   &video_gl1,
+#endif
+#ifdef HAVE_VULKAN
+   &video_vulkan,
+#endif
+#ifdef HAVE_METAL
+   &video_metal,
+#endif
+#ifdef XENON
+   &video_xenon360,
+#endif
+#if defined(HAVE_D3D12)
+   &video_d3d12,
+#endif
+#if defined(HAVE_D3D11)
+   &video_d3d11,
+#endif
+#if defined(HAVE_D3D10)
+   &video_d3d10,
+#endif
+#if defined(HAVE_D3D9)
+   &video_d3d9,
+#endif
+#if defined(HAVE_D3D8)
+   &video_d3d8,
+#endif
+#ifdef HAVE_VITA2D
+   &video_vita2d,
+#endif
+#ifdef PSP
+   &video_psp1,
+#endif
+#ifdef PS2
+   &video_ps2,
+#endif
+#ifdef _3DS
+   &video_ctr,
+#endif
+#ifdef SWITCH
+   &video_switch,
+#endif
+#ifdef HAVE_SDL
+   &video_sdl,
+#endif
+#ifdef HAVE_SDL2
+   &video_sdl2,
+#endif
+#ifdef HAVE_XVIDEO
+   &video_xvideo,
+#endif
+#ifdef GEKKO
+   &video_gx,
+#endif
+#ifdef WIIU
+   &video_wiiu,
+#endif
+#ifdef HAVE_VG
+   &video_vg,
+#endif
+#ifdef HAVE_OMAP
+   &video_omap,
+#endif
+#ifdef HAVE_EXYNOS
+   &video_exynos,
+#endif
+#ifdef HAVE_DISPMANX
+   &video_dispmanx,
+#endif
+#ifdef HAVE_SUNXI
+   &video_sunxi,
+#endif
+#ifdef HAVE_PLAIN_DRM
+   &video_drm,
+#endif
+#ifdef HAVE_XSHM
+   &video_xshm,
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   &video_gdi,
+#endif
+#ifdef DJGPP
+   &video_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &video_sixel,
+#endif
+#ifdef HAVE_CACA
+   &video_caca,
+#endif
+   &video_null,
+   NULL,
+};
+
+static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
+#if defined(ORBIS)
+   &orbis_ctx,
+#endif
+#if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
+   &switch_ctx,
+#endif
+#if defined(__CELLOS_LV2__)
+   &gfx_ctx_ps3,
+#endif
+#if defined(HAVE_VIDEOCORE)
+   &gfx_ctx_videocore,
+#endif
+#if defined(HAVE_MALI_FBDEV)
+   &gfx_ctx_mali_fbdev,
+#endif
+#if defined(HAVE_VIVANTE_FBDEV)
+   &gfx_ctx_vivante_fbdev,
+#endif
+#if defined(HAVE_OPENDINGUX_FBDEV)
+   &gfx_ctx_opendingux_fbdev,
+#endif
+#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN))
+   &gfx_ctx_wgl,
+#endif
+#if defined(HAVE_WAYLAND)
+   &gfx_ctx_wayland,
+#endif
+#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
+   &gfx_ctx_x,
+#endif
+#endif
+#if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
+   &gfx_ctx_x_egl,
+#endif
+#if defined(HAVE_KMS)
+   &gfx_ctx_drm,
+#endif
+#if defined(ANDROID)
+   &gfx_ctx_android,
+#endif
+#if defined(__QNX__)
+   &gfx_ctx_qnx,
+#endif
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+   &gfx_ctx_cocoagl,
+#endif
+#if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
+   &gfx_ctx_cgl,
+#endif
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+   &gfx_ctx_sdl_gl,
+#endif
+#ifdef HAVE_OSMESA
+   &gfx_ctx_osmesa,
+#endif
+#ifdef EMSCRIPTEN
+   &gfx_ctx_emscripten,
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
+   &gfx_ctx_khr_display,
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   &gfx_ctx_gdi,
+#endif
+#ifdef HAVE_SIXEL
+   &gfx_ctx_sixel,
+#endif
+   &gfx_ctx_null,
+   NULL
+};
+
+typedef struct {
+   enum gfx_ctx_api api;
+   struct string_list *list;
+} gfx_api_gpu_map;
+
+static gfx_api_gpu_map gpu_map[] = {
+   { GFX_CTX_VULKAN_API, NULL },
+   { GFX_CTX_DIRECT3D10_API, NULL },
+   { GFX_CTX_DIRECT3D11_API, NULL },
+   { GFX_CTX_DIRECT3D12_API, NULL }
+};
+
 static struct retro_system_av_info video_driver_av_info;
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
@@ -1229,7 +1600,8 @@ bool recording_init(void)
       }
    }
 
-   if (video_driver_supports_recording())
+   if (settings->bools.video_gpu_record
+      && current_video->read_viewport)
    {
       unsigned gpu_size;
       struct video_viewport vp;
@@ -6968,374 +7340,6 @@ static const char* audio_driver_get_ident(void)
 
 /* Video */
 
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-
-#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
-
-#define FPS_UPDATE_INTERVAL 256
-
-#ifdef HAVE_THREADS
-#define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
-#else
-#define video_driver_is_threaded_internal() (false)
-#endif
-
-#ifdef HAVE_THREADS
-#define video_driver_lock() \
-   if (display_lock) \
-      slock_lock(display_lock)
-
-#define video_driver_unlock() \
-   if (display_lock) \
-      slock_unlock(display_lock)
-
-#define video_driver_context_lock() \
-   if (context_lock) \
-      slock_lock(context_lock)
-
-#define video_driver_context_unlock() \
-   if (context_lock) \
-      slock_unlock(context_lock)
-
-#define video_driver_lock_free() \
-   slock_free(display_lock); \
-   slock_free(context_lock); \
-   display_lock = NULL; \
-   context_lock = NULL
-
-#define video_driver_threaded_lock(is_threaded) \
-   if (is_threaded) \
-      video_driver_lock()
-
-#define video_driver_threaded_unlock(is_threaded) \
-   if (is_threaded) \
-      video_driver_unlock()
-#else
-#define video_driver_lock()            ((void)0)
-#define video_driver_unlock()          ((void)0)
-#define video_driver_lock_free()       ((void)0)
-#define video_driver_threaded_lock(is_threaded)   ((void)0)
-#define video_driver_threaded_unlock(is_threaded) ((void)0)
-#define video_driver_context_lock()    ((void)0)
-#define video_driver_context_unlock()  ((void)0)
-#endif
-
-typedef struct video_pixel_scaler
-{
-   struct scaler_ctx *scaler;
-   void *scaler_out;
-} video_pixel_scaler_t;
-
-/* Opaque handles to currently running window.
- * Used by e.g. input drivers which bind to a window.
- * Drivers are responsible for setting these if an input driver
- * could potentially make use of this. */
-static uintptr_t video_driver_display                    = 0;
-static uintptr_t video_driver_window                     = 0;
-
-static rarch_softfilter_t *video_driver_state_filter     = NULL;
-static void               *video_driver_state_buffer     = NULL;
-static unsigned            video_driver_state_scale      = 0;
-static unsigned            video_driver_state_out_bpp    = 0;
-static bool                video_driver_state_out_rgb32      = false;
-static bool                video_driver_crt_switching_active = false;
-static bool                video_driver_crt_dynamic_super_width = false;
-
-static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
-
-static const void *frame_cache_data                      = NULL;
-static unsigned frame_cache_width                        = 0;
-static unsigned frame_cache_height                       = 0;
-static size_t frame_cache_pitch                          = 0;
-static bool   video_driver_threaded                      = false;
-
-static float video_driver_core_hz                        = 0.0f;
-static float video_driver_aspect_ratio                   = 0.0f;
-static unsigned video_driver_width                       = 0;
-static unsigned video_driver_height                      = 0;
-
-static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
-static char video_driver_title_buf[64]                   = {0};
-static char video_driver_window_title[512]               = {0};
-static bool video_driver_window_title_update             = true;
-
-static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-static uint64_t video_driver_frame_time_count            = 0;
-static uint64_t video_driver_frame_count                 = 0;
-
-static void *video_driver_data                           = NULL;
-static video_driver_t *current_video                     = NULL;
-
-/* Interface for "poking". */
-static const video_poke_interface_t *video_driver_poke   = NULL;
-
-/* Used for 15-bit -> 16-bit conversions that take place before
- * being passed to video driver. */
-static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
-
-static struct retro_hw_render_callback hw_render;
-
-static const struct
-retro_hw_render_context_negotiation_interface *
-hw_render_context_negotiation                            = NULL;
-
-/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
- * for 32-bit.
- * This takes effect for overlay and shader cores that wants to load
- * data into graphics driver. Kinda hackish to place it here, it is only
- * used for GLES.
- * TODO: Refactor this better. */
-static bool video_driver_use_rgba                        = false;
-static bool video_driver_active                          = false;
-
-static video_driver_frame_t frame_bak                    = NULL;
-
-/* If set during context deinit, the driver should keep
- * graphics context alive to avoid having to reset all
- * context state. */
-static bool video_driver_cache_context                   = false;
-
-/* Set to true by driver if context caching succeeded. */
-static bool video_driver_cache_context_ack               = false;
-
-#ifdef HAVE_THREADS
-static slock_t *display_lock                             = NULL;
-static slock_t *context_lock                             = NULL;
-#endif
-
-static gfx_ctx_driver_t current_video_context;
-
-static void *video_context_data                          = NULL;
-
-/**
- * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
- * is in the middle of being rebuilt; in these cases we will save flag
- * data and set this to true.
- * When the context is reinit, it checks this, reads from
- * deferred_flag_data and cleans it.
- *
- * TODO - Dirty hack, fix it better
- */
-static bool deferred_video_context_driver_set_flags      = false;
-static gfx_ctx_flags_t deferred_flag_data                = {0};
-
-static bool video_started_fullscreen                     = false;
-
-static char video_driver_gpu_device_string[128] = {0};
-static char video_driver_gpu_api_version_string[128] = {0};
-
-struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
-   { "4:3",           1.3333f },
-   { "16:9",          1.7778f },
-   { "16:10",         1.6f },
-   { "16:15",         16.0f / 15.0f },
-   { "21:9",          21.0f / 9.0f },
-   { "1:1",           1.0f },
-   { "2:1",           2.0f },
-   { "3:2",           1.5f },
-   { "3:4",           0.75f },
-   { "4:1",           4.0f },
-   { "9:16",          0.5625f },
-   { "5:4",           1.25f },
-   { "6:5",           1.2f },
-   { "7:9",           0.7777f },
-   { "8:3",           2.6666f },
-   { "8:7",           1.1428f },
-   { "19:12",         1.5833f },
-   { "19:14",         1.3571f },
-   { "30:17",         1.7647f },
-   { "32:9",          3.5555f },
-   { "Config",        0.0f },
-   { "Square pixel",  1.0f },
-   { "Core provided", 1.0f },
-   { "Custom",        0.0f }
-};
-
-static const video_driver_t *video_drivers[] = {
-#ifdef HAVE_OPENGL
-   &video_gl2,
-#endif
-#if defined(HAVE_OPENGL_CORE)
-   &video_gl_core,
-#endif
-#ifdef HAVE_OPENGL1
-   &video_gl1,
-#endif
-#ifdef HAVE_VULKAN
-   &video_vulkan,
-#endif
-#ifdef HAVE_METAL
-   &video_metal,
-#endif
-#ifdef XENON
-   &video_xenon360,
-#endif
-#if defined(HAVE_D3D12)
-   &video_d3d12,
-#endif
-#if defined(HAVE_D3D11)
-   &video_d3d11,
-#endif
-#if defined(HAVE_D3D10)
-   &video_d3d10,
-#endif
-#if defined(HAVE_D3D9)
-   &video_d3d9,
-#endif
-#if defined(HAVE_D3D8)
-   &video_d3d8,
-#endif
-#ifdef HAVE_VITA2D
-   &video_vita2d,
-#endif
-#ifdef PSP
-   &video_psp1,
-#endif
-#ifdef PS2
-   &video_ps2,
-#endif
-#ifdef _3DS
-   &video_ctr,
-#endif
-#ifdef SWITCH
-   &video_switch,
-#endif
-#ifdef HAVE_SDL
-   &video_sdl,
-#endif
-#ifdef HAVE_SDL2
-   &video_sdl2,
-#endif
-#ifdef HAVE_XVIDEO
-   &video_xvideo,
-#endif
-#ifdef GEKKO
-   &video_gx,
-#endif
-#ifdef WIIU
-   &video_wiiu,
-#endif
-#ifdef HAVE_VG
-   &video_vg,
-#endif
-#ifdef HAVE_OMAP
-   &video_omap,
-#endif
-#ifdef HAVE_EXYNOS
-   &video_exynos,
-#endif
-#ifdef HAVE_DISPMANX
-   &video_dispmanx,
-#endif
-#ifdef HAVE_SUNXI
-   &video_sunxi,
-#endif
-#ifdef HAVE_PLAIN_DRM
-   &video_drm,
-#endif
-#ifdef HAVE_XSHM
-   &video_xshm,
-#endif
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   &video_gdi,
-#endif
-#ifdef DJGPP
-   &video_vga,
-#endif
-#ifdef HAVE_SIXEL
-   &video_sixel,
-#endif
-#ifdef HAVE_CACA
-   &video_caca,
-#endif
-   &video_null,
-   NULL,
-};
-
-static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
-#if defined(ORBIS)
-   &orbis_ctx,
-#endif
-#if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
-   &switch_ctx,
-#endif
-#if defined(__CELLOS_LV2__)
-   &gfx_ctx_ps3,
-#endif
-#if defined(HAVE_VIDEOCORE)
-   &gfx_ctx_videocore,
-#endif
-#if defined(HAVE_MALI_FBDEV)
-   &gfx_ctx_mali_fbdev,
-#endif
-#if defined(HAVE_VIVANTE_FBDEV)
-   &gfx_ctx_vivante_fbdev,
-#endif
-#if defined(HAVE_OPENDINGUX_FBDEV)
-   &gfx_ctx_opendingux_fbdev,
-#endif
-#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN))
-   &gfx_ctx_wgl,
-#endif
-#if defined(HAVE_WAYLAND)
-   &gfx_ctx_wayland,
-#endif
-#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
-   &gfx_ctx_x,
-#endif
-#endif
-#if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
-   &gfx_ctx_x_egl,
-#endif
-#if defined(HAVE_KMS)
-   &gfx_ctx_drm,
-#endif
-#if defined(ANDROID)
-   &gfx_ctx_android,
-#endif
-#if defined(__QNX__)
-   &gfx_ctx_qnx,
-#endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-   &gfx_ctx_cocoagl,
-#endif
-#if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
-   &gfx_ctx_cgl,
-#endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
-   &gfx_ctx_sdl_gl,
-#endif
-#ifdef HAVE_OSMESA
-   &gfx_ctx_osmesa,
-#endif
-#ifdef EMSCRIPTEN
-   &gfx_ctx_emscripten,
-#endif
-#if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
-   &gfx_ctx_khr_display,
-#endif
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   &gfx_ctx_gdi,
-#endif
-#ifdef HAVE_SIXEL
-   &gfx_ctx_sixel,
-#endif
-   &gfx_ctx_null,
-   NULL
-};
-
-typedef struct {
-   enum gfx_ctx_api api;
-   struct string_list *list;
-} gfx_api_gpu_map;
-
-static gfx_api_gpu_map gpu_map[] = {
-   { GFX_CTX_VULKAN_API, NULL },
-   { GFX_CTX_DIRECT3D10_API, NULL },
-   { GFX_CTX_DIRECT3D11_API, NULL },
-   { GFX_CTX_DIRECT3D12_API, NULL }
-};
 
 bool video_driver_started_fullscreen(void)
 {
@@ -7468,11 +7472,6 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
 const char *video_driver_get_ident(void)
 {
    return (current_video) ? current_video->ident : NULL;
-}
-
-const video_poke_interface_t *video_driver_get_poke(void)
-{
-   return video_driver_poke;
 }
 
 static void video_context_driver_reset(void)
@@ -8426,13 +8425,6 @@ void video_driver_unset_stub_frame(void)
 bool video_driver_is_stub_frame(void)
 {
    return current_video->frame == video_null.frame;
-}
-
-bool video_driver_supports_recording(void)
-{
-   settings_t *settings = configuration_settings;
-   return settings->bools.video_gpu_record
-      && current_video->read_viewport;
 }
 
 bool video_driver_supports_viewport_read(void)
@@ -10160,7 +10152,7 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    void *video_driver                       = video_driver_get_ptr_internal(true);
-   const video_poke_interface_t *video_poke = video_driver_get_poke();
+   const video_poke_interface_t *video_poke = video_driver_poke;
 
    shader->data = NULL;
    if (!video_poke || !video_driver || !video_poke->get_current_shader)
