@@ -200,6 +200,8 @@ static void wiiu_gfx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    wiiu->should_resize = true;
 }
 
+static uint32_t wiiu_gfx_get_flags(void *data);
+
 static void *wiiu_gfx_init(const video_info_t *video,
                            const input_driver_t **input, void **input_data)
 {
