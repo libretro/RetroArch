@@ -1632,6 +1632,8 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 bool video_driver_has_windowed(void);
 
+bool video_driver_has_focus(void);
+
 bool video_driver_cached_frame_has_valid_framebuffer(void);
 
 void video_driver_set_cached_frame_ptr(const void *data);

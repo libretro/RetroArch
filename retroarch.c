@@ -9659,6 +9659,11 @@ bool video_driver_translate_coord_viewport(
 
 #define video_has_focus() ((current_video_context.has_focus) ? (current_video_context.has_focus && current_video_context.has_focus(video_context_data)) : (current_video->focus) ? (current_video && current_video->focus && current_video->focus(video_driver_data)) : true)
 
+bool video_driver_has_focus(void)
+{
+   return video_has_focus();
+}
+
 void video_driver_get_window_title(char *buf, unsigned len)
 {
    if (buf && video_driver_window_title_update)

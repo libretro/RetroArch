@@ -185,7 +185,7 @@ static void udev_handle_keyboard(void *data,
    {
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
-         if (event->value && video_driver_cb_has_focus())
+         if (event->value && video_driver_has_focus())
             BIT_SET(udev_key_state, keysym);
          else
             BIT_CLEAR(udev_key_state, keysym);
@@ -224,7 +224,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS || !video_driver_cb_has_focus())
+   if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
    for (i = 0; i < udev->num_devices; ++i)
