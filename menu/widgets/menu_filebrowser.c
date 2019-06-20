@@ -85,6 +85,10 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    else
       subsystem = subsystem_data + content_get_subsystem();
 
+   if (info && (info->type_default == FILE_TYPE_SHADER_PRESET ||
+                info->type_default == FILE_TYPE_SHADER))
+      filter_ext = true;
+
    if (info && string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
