@@ -15759,7 +15759,7 @@ static bool input_driver_toggle_button_combo(
 #define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
    { \
       static bool old_pressed                   = false; \
-      bool pressed                              = BIT256_GET(current_input, cmd1); \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
       if (pressed && !old_pressed) \
          if (cond) \
             command_event(cmd2, cond2); \
@@ -15771,9 +15771,9 @@ static bool input_driver_toggle_button_combo(
       static bool old_pressed                   = false; \
       static bool old_pressed2                  = false; \
       static bool old_pressed3                  = false; \
-      bool pressed                              = BIT256_GET(current_input, cmd1); \
-      bool pressed2                             = BIT256_GET(current_input, cmd3); \
-      bool pressed3                             = BIT256_GET(current_input, cmd5); \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
+      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
       if (pressed && !old_pressed) \
          command_event(cmd2, (void*)(intptr_t)0); \
       else if (pressed2 && !old_pressed2) \
@@ -15792,7 +15792,7 @@ static enum runloop_state runloop_check_state(
       float fastforward_ratio,
       unsigned *sleep_ms)
 {
-   input_bits_t current_input;
+   input_bits_t current_bits;
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
@@ -15819,32 +15819,32 @@ static enum runloop_state runloop_check_state(
       return RUNLOOP_STATE_QUIT;
 #endif
 
-   BIT256_CLEAR_ALL_PTR(&current_input);
+   BIT256_CLEAR_ALL_PTR(&current_bits);
 
 #ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
-      input_menu_keys_pressed(&current_input);
+      input_menu_keys_pressed(&current_bits);
    else
 #endif
-      input_keys_pressed(&current_input);
+      input_keys_pressed(&current_bits);
 
 #ifdef HAVE_MENU
-   last_input                       = current_input;
+   last_input                       = current_bits;
    if (
          ((menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
              menu_toggle_gamepad_combo, &last_input)))
-      BIT256_SET(current_input, RARCH_MENU_TOGGLE);
+      BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 #endif
 
    if (input_driver_flushing_input)
    {
       input_driver_flushing_input = false;
-      if (bits_any_set(current_input.data, ARRAY_SIZE(current_input.data)))
+      if (bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data)))
       {
-         BIT256_CLEAR_ALL(current_input);
+         BIT256_CLEAR_ALL(current_bits);
          if (runloop_is_paused)
-            BIT256_SET(current_input, RARCH_PAUSE_TOGGLE);
+            BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
          input_driver_flushing_input = true;
       }
    }
@@ -15859,7 +15859,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
-      BIT256_CLEAR_ALL(current_input);
+      BIT256_CLEAR_ALL(current_bits);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -15906,7 +15906,7 @@ static enum runloop_state runloop_check_state(
       static bool old_quit_key = false;
       static bool runloop_exec = false;
       quit_key                 = BIT256_GET(
-            current_input, RARCH_QUIT_KEY);
+            current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       old_quit_key             = quit_key;
 
@@ -16014,7 +16014,7 @@ static enum runloop_state runloop_check_state(
       static enum menu_action
          old_action              = MENU_ACTION_CANCEL;
       bool focused               = false;
-      input_bits_t trigger_input = current_input;
+      input_bits_t trigger_input = current_bits;
       global_t *global           = &g_extern;
 
       menu_ctx_iterate_t iter;
@@ -16024,7 +16024,7 @@ static enum runloop_state runloop_check_state(
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
 
-      action                    = (enum menu_action)menu_event(&current_input, &trigger_input);
+      action                    = (enum menu_action)menu_event(&current_bits, &trigger_input);
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused && !ui_companion_is_on_foreground();
 
@@ -16117,7 +16117,7 @@ static enum runloop_state runloop_check_state(
 #endif
       }
 
-      old_input                 = current_input;
+      old_input                 = current_bits;
       old_action                = action;
 
       if (!focused || runloop_idle)
@@ -16147,7 +16147,7 @@ static enum runloop_state runloop_check_state(
       static bool old_pressed = false;
       char *menu_driver       = settings->arrays.menu_driver;
       bool pressed            = BIT256_GET(
-            current_input, RARCH_MENU_TOGGLE) &&
+            current_bits, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
 
       if (menu_keyboard_key_state[RETROK_F1] == 1)
@@ -16193,11 +16193,11 @@ static enum runloop_state runloop_check_state(
       static bool old_pressed     = false;
       static bool old_any_pressed = false;
       bool any_pressed            = false;
-      bool pressed                = BIT256_GET(current_input, RARCH_SEND_DEBUG_INFO);
+      bool pressed                = BIT256_GET(current_bits, RARCH_SEND_DEBUG_INFO);
 
-      for (any_i = 0; any_i < ARRAY_SIZE(current_input.data); any_i++)
+      for (any_i = 0; any_i < ARRAY_SIZE(current_bits.data); any_i++)
       {
-         if (current_input.data[any_i])
+         if (current_bits.data[any_i])
          {
             any_pressed = true;
             break;
@@ -16275,9 +16275,9 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the streaming toggle button */
    HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL); 
 
-   if (BIT256_GET(current_input, RARCH_VOLUME_UP))
+   if (BIT256_GET(current_bits, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (BIT256_GET(current_input, RARCH_VOLUME_DOWN))
+   else if (BIT256_GET(current_bits, RARCH_VOLUME_DOWN))
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETWORKING
@@ -16290,9 +16290,9 @@ static enum runloop_state runloop_check_state(
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
       bool frameadvance_pressed     = BIT256_GET(
-            current_input, RARCH_FRAMEADVANCE);
+            current_bits, RARCH_FRAMEADVANCE);
       bool pause_pressed            = BIT256_GET(
-            current_input, RARCH_PAUSE_TOGGLE);
+            current_bits, RARCH_PAUSE_TOGGLE);
       bool trig_frameadvance        = frameadvance_pressed && !old_frameadvance;
 
       /* Check if libretro pause key was pressed. If so, pause or
@@ -16320,7 +16320,7 @@ static enum runloop_state runloop_check_state(
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
 
          /* Check if it's not oneshot */
-         if (!(trig_frameadvance || BIT256_GET(current_input, RARCH_REWIND)))
+         if (!(trig_frameadvance || BIT256_GET(current_bits, RARCH_REWIND)))
             focused = false;
       }
    }
@@ -16340,9 +16340,9 @@ static enum runloop_state runloop_check_state(
       static bool old_button_state      = false;
       static bool old_hold_button_state = false;
       bool new_button_state             = BIT256_GET(
-            current_input, RARCH_FAST_FORWARD_KEY);
+            current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state        = BIT256_GET(
-            current_input, RARCH_FAST_FORWARD_HOLD_KEY);
+            current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
 
       if (new_button_state && !old_button_state)
       {
@@ -16398,9 +16398,9 @@ static enum runloop_state runloop_check_state(
       static bool old_should_slot_increase = false;
       static bool old_should_slot_decrease = false;
       bool should_slot_increase            = BIT256_GET(
-            current_input, RARCH_STATE_SLOT_PLUS);
+            current_bits, RARCH_STATE_SLOT_PLUS);
       bool should_slot_decrease            = BIT256_GET(
-            current_input, RARCH_STATE_SLOT_MINUS);
+            current_bits, RARCH_STATE_SLOT_MINUS);
       bool should_set                      = false;
       int cur_state_slot                   = settings->ints.state_slot;
 
@@ -16462,7 +16462,7 @@ static enum runloop_state runloop_check_state(
 
       s[0]           = '\0';
 
-      rewinding      = state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
+      rewinding      = state_manager_check_rewind(BIT256_GET(current_bits, RARCH_REWIND),
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
@@ -16485,9 +16485,9 @@ static enum runloop_state runloop_check_state(
       static bool old_slowmotion_button_state      = false;
       static bool old_slowmotion_hold_button_state = false;
       bool new_slowmotion_button_state             = BIT256_GET(
-            current_input, RARCH_SLOWMOTION_KEY);
+            current_bits, RARCH_SLOWMOTION_KEY);
       bool new_slowmotion_hold_button_state        = BIT256_GET(
-            current_input, RARCH_SLOWMOTION_HOLD_KEY);
+            current_bits, RARCH_SLOWMOTION_HOLD_KEY);
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
          runloop_slowmotion = !runloop_slowmotion;
