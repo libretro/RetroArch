@@ -108,8 +108,6 @@ static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
    uint32_t flags                 = 0;
    cocoa_ctx_data_t    *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-
    if (cocoa_ctx->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
@@ -122,7 +120,12 @@ static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
          break;
       case GFX_CTX_OPENGL_API:
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
-         else if (string_is_equal(video_driver_get_ident(), "glcore")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         }
          else
          {
 #ifdef HAVE_GLSL
@@ -131,6 +134,9 @@ static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
          }
          break;
       case GFX_CTX_VULKAN_API:
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
          break;
       default:
          break;

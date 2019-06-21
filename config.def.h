@@ -817,7 +817,7 @@ static const unsigned input_poll_type_behavior = 2;
 
 static const unsigned input_bind_timeout = 5;
 
-static const unsigned input_bind_hold = 1;
+static const unsigned input_bind_hold = 2;
 
 static const unsigned menu_thumbnails_default = 3;
 
@@ -872,6 +872,18 @@ static const bool enable_device_vibration    = false;
 
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_D3D10
+#define DEFAULT_D3D10_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_D3D11
+#define DEFAULT_D3D11_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_D3D12
+#define DEFAULT_D3D12_GPU_INDEX 0
 #endif
 
 #if defined(HAKCHI)

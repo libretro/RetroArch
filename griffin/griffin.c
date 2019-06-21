@@ -874,8 +874,6 @@ AUDIO
 /*============================================================
 MIDI
 ============================================================ */
-#include "../midi/midi_driver.c"
-
 #include "../midi/drivers/null_midi.c"
 
 #ifdef HAVE_WINMM
@@ -888,7 +886,6 @@ DRIVERS
 #include "../gfx/video_crt_switch.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
-#include "../input/input_driver.c"
 #include "../libretro-common/audio/audio_mixer.c"
 
 /*============================================================
@@ -1044,8 +1041,6 @@ FRONTEND
 /*============================================================
 UI
 ============================================================ */
-#include "../ui/ui_companion_driver.c"
-
 #include "../ui/drivers/ui_null.c"
 #include "../ui/drivers/null/ui_null_window.c"
 #include "../ui/drivers/null/ui_null_browser_window.c"
@@ -1076,7 +1071,6 @@ GIT
 /*============================================================
 RETROARCH
 ============================================================ */
-#include "../core_impl.c"
 #include "../retroarch.c"
 #include "../dirs.c"
 #include "../paths.c"
@@ -1109,8 +1103,6 @@ RETROARCH
 /*============================================================
 WIFI
 ============================================================ */
-#include "../wifi/wifi_driver.c"
-
 #include "../wifi/drivers/nullwifi.c"
 
 #ifdef HAVE_LAKKA
@@ -1228,7 +1220,6 @@ MENU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
-#include "../menu/menu_input.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
@@ -1362,7 +1353,6 @@ MENU
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-#include "../input/input_remote.c"
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
@@ -1377,9 +1367,7 @@ MENU
 #ifdef HAVE_RUNAHEAD
 #include "../runahead/mem_util.c"
 #include "../runahead/secondary_core.c"
-#include "../runahead/run_ahead.c"
 #include "../runahead/copy_load_info.c"
-#include "../runahead/dirty_input.c"
 #include "../runahead/mylist.c"
 #endif
 

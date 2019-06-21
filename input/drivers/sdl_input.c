@@ -82,7 +82,7 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if ((binds[id_minus].key < RETROK_LAST) && sdl_key_pressed(binds[id_minus].key))
       pressed_minus = -0x7fff;

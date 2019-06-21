@@ -385,10 +385,58 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
-            if (settings->ints.vulkan_gpu_index < list->size - 1)
+            if (settings->ints.vulkan_gpu_index <(int)(list->size - 1))
                settings->ints.vulkan_gpu_index++;
-            else if (settings->ints.vulkan_gpu_index == list->size - 1)
+            else if (settings->ints.vulkan_gpu_index == (int)(list->size - 1))
                settings->ints.vulkan_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D10
+      case GFX_CTX_DIRECT3D10_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            if (settings->ints.d3d10_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d10_gpu_index++;
+            else if (settings->ints.d3d10_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d10_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D11
+      case GFX_CTX_DIRECT3D11_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            if (settings->ints.d3d11_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d11_gpu_index++;
+            else if (settings->ints.d3d11_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d11_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D12
+      case GFX_CTX_DIRECT3D12_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            if (settings->ints.d3d12_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d12_gpu_index++;
+            else if (settings->ints.d3d12_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d12_gpu_index = 0;
          }
 
          break;

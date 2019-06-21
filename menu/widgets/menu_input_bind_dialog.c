@@ -391,6 +391,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    return false;
 }
 
+
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
      struct retro_keybind * output,
@@ -584,44 +585,45 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       input_driver_keyboard_mapping_set_block( true );
       menu_input_key_bind_poll_bind_state( &binds, menu_bind_port, timed_out );
 
-	    /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
-	    binds.buffer = *( binds.output );
+#ifdef ANDROID
 
-      if ( settings->uints.input_bind_timeout == 0 )
+	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
+	  binds.buffer = *( binds.output );
+
+      if ( menu_input_key_bind_poll_find_hold( &binds, &binds.buffer ) )
       {
-         if ( ( binds.skip && !menu_input_binds.skip ) ||	
-          menu_input_key_bind_poll_find_trigger( &menu_input_binds, &binds, &( binds.buffer ) ) )	
-         {	
-            complete = true;	
+         /*inhibit timeout*/
+         rarch_timer_begin_new_time( &binds.timer_timeout, settings->uints.input_bind_timeout );
+
+         /*run hold timer*/
+         rarch_timer_tick( &binds.timer_hold );
+
+         snprintf( bind->s, bind->len,
+                "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+                input_config_bind_map_get_desc(
+                   menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN ) );
+
+         /*hold complete?*/
+         if ( rarch_timer_has_expired( &binds.timer_hold ) )
+         {
+            complete = true;
          }
       }
       else
       {
-         if ( menu_input_key_bind_poll_find_hold( &binds, &binds.buffer ) )
-         {
-            /*inhibit timeout*/
-            rarch_timer_begin_new_time( &binds.timer_timeout, settings->uints.input_bind_timeout );
-
-            /*run hold timer*/
-            rarch_timer_tick( &binds.timer_hold );
-
-            snprintf( bind->s, bind->len,
-                   "[%s]\npress keyboard, mouse or joypad\nand hold ...",
-                   input_config_bind_map_get_desc(
-                      menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN ) );
-
-            /*hold complete?*/
-            if ( rarch_timer_has_expired( &binds.timer_hold ) )
-            {
-               complete = true;
-            }
-         }
-         else
-         {
-            /*reset hold countdown*/
-            rarch_timer_begin_new_time( &binds.timer_hold, settings->uints.input_bind_hold );
-         }
+         /*reset hold countdown*/
+         rarch_timer_begin_new_time( &binds.timer_hold, settings->uints.input_bind_hold );
       }
+
+#else
+
+      if ( ( binds.skip && !menu_input_binds.skip ) ||
+         menu_input_key_bind_poll_find_trigger( &menu_input_binds, &binds, &( binds.buffer ) ) )
+      {
+         complete = true;
+      }
+
+#endif
 
       if ( complete )
       {

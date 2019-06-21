@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <string/stdstring.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -603,8 +605,18 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 static uint32_t gfx_ctx_xegl_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
+   if (string_is_equal(video_driver_get_ident(), "glcore"))
+   {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+   }
+   else
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+   }
+
    return flags;
 }
 

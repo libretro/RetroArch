@@ -82,7 +82,7 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if ((id_minus < RARCH_BIND_LIST_END) && binds->valid &&
          linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[id_minus].key]]

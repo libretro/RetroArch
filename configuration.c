@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2015-2017 - Andrés Suárez
+ *  Copyright (C) 2015-2019 - Andrés Suárez
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1867,6 +1867,15 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",              &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_D3D10
+   SETTING_INT("d3d10_gpu_index",              &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);
+#endif
+#ifdef HAVE_D3D11
+   SETTING_INT("d3d11_gpu_index",              &settings->ints.d3d11_gpu_index, true, DEFAULT_D3D11_GPU_INDEX, false);
+#endif
+#ifdef HAVE_D3D12
+   SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
+#endif
 
    *size = count;
 
@@ -2608,35 +2617,6 @@ static bool check_menu_driver_compatibility(void)
 }
 #endif
 
-static bool check_shader_compatibility(enum file_path_enum enum_idx)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (string_is_equal(settings->arrays.video_driver, "vulkan") ||
-       string_is_equal(settings->arrays.video_driver, "metal") ||
-       string_is_equal(settings->arrays.video_driver, "glcore") ||
-       string_is_equal(settings->arrays.video_driver, "d3d11") ||
-       string_is_equal(settings->arrays.video_driver, "d3d12") ||
-       string_is_equal(settings->arrays.video_driver, "gx2"))
-   {
-      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   if (string_is_equal(settings->arrays.video_driver, "gl")   ||
-       string_is_equal(settings->arrays.video_driver, "d3d8") ||
-       string_is_equal(settings->arrays.video_driver, "d3d9")
-      )
-   {
-      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   return false;
-}
-
 /**
  * config_load:
  * @path                : path to be read from.
@@ -2658,7 +2638,6 @@ static bool config_load_file(const char *path, settings_t *settings)
    char *override_username                         = NULL;
    const char *path_core                           = NULL;
    const char *path_config                         = NULL;
-   const char *shader_ext                          = NULL;
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -3125,26 +3104,6 @@ static bool config_load_file(const char *path, settings_t *settings)
 
    config_read_keybinds_conf(conf);
 
-   shader_ext = path_get_extension(settings->paths.path_shader);
-
-   if (!string_is_empty(shader_ext))
-   {
-      for (i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
-      {
-         enum file_path_enum ext = (enum file_path_enum)(i);
-         if (!strstr(file_path_str(ext), shader_ext))
-            continue;
-
-         if (check_shader_compatibility(ext))
-            continue;
-
-         RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
-               settings->arrays.video_driver);
-         settings->paths.path_shader[0] = '\0';
-         break;
-      }
-   }
-
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility())
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
@@ -3566,122 +3525,6 @@ success:
    free(remap_directory);
    free(core_path);
    free(game_path);
-   return true;
-}
-
-static bool config_load_shader_preset_internal(
-      const char *shader_directory,
-      const char *core_name,
-      const char *special_name)
-{
-   unsigned idx;
-   size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
-   char *shader_path       = (char*)malloc(path_size);
-   
-   shader_path[0]          = '\0';
-
-   for (idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
-   {
-      if (!check_shader_compatibility((enum file_path_enum)(idx)))
-         continue;
-
-      /* Concatenate strings into full paths */
-      fill_pathname_join_special_ext(shader_path,
-            shader_directory, core_name,
-            special_name,
-            file_path_str((enum file_path_enum)(idx)),
-            path_size);
-
-      if (!config_file_exists(shader_path))
-         continue;
-
-      /* Shader preset exists, load it. */
-      RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-            shader_path);
-      retroarch_set_shader_preset(shader_path);
-      free(shader_path);
-      return true;
-   }
-
-   free(shader_path);
-
-   return false;
-}
-
-/**
- * config_load_shader_preset:
- *
- * Tries to append game-specific and core-specific shader presets.
- *
- * This function only has an effect if a game-specific or core-specific
- * configuration file exists at respective locations.
- *
- * core-specific: $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.cfg
- * game-specific: $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.cfg
- *
- * Returns: false if there was an error or no action was performed.
- */
-bool config_load_shader_preset(void)
-{
-   size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system
-      ? system->info.library_name : NULL;
-   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                  = path_basename(rarch_path_basename);
-   const char *video_shader_directory     = settings->paths.directory_video_shader;
-   char *shader_directory                 = NULL;
-
-   if (     string_is_empty(core_name) 
-         || string_is_empty(game_name)
-         || string_is_empty(video_shader_directory)
-         )
-      return false;
-
-   shader_directory                       = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   shader_directory[0]                    =   '\0';
-
-   fill_pathname_join (shader_directory,
-         video_shader_directory,
-         "presets", path_size);
-
-   RARCH_LOG("[Shaders]: preset directory: %s\n", shader_directory);
-
-   if (config_load_shader_preset_internal(shader_directory, core_name,
-            game_name))
-   {
-      RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
-      goto success;
-   }
-
-   {
-      char content_dir_name[PATH_MAX_LENGTH];
-      if (!string_is_empty(rarch_path_basename))
-         fill_pathname_parent_dir_name(content_dir_name,
-               rarch_path_basename, sizeof(content_dir_name));
-
-      if (config_load_shader_preset_internal(shader_directory, core_name,
-               content_dir_name))
-      {
-         RARCH_LOG("[Shaders]: content dir-specific shader preset found.\n");
-         goto success;
-      }
-   }
-
-   if (config_load_shader_preset_internal(shader_directory, core_name,
-            core_name))
-   {
-      RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
-      goto success;
-   }
-
-   free(shader_directory);
-   return false;
-
-success:
-   free(shader_directory);
    return true;
 }
 
@@ -4108,12 +3951,12 @@ bool config_save_overrides(int override_type)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   settings                                    = (settings_t*)calloc(1, sizeof(settings_t));
-   config_directory                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   override_directory                          = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   core_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   game_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   content_path                                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   settings           = (settings_t*)calloc(1, sizeof(settings_t));
+   config_directory   = (char*)malloc(PATH_MAX_LENGTH);
+   override_directory = (char*)malloc(PATH_MAX_LENGTH);
+   core_path          = (char*)malloc(PATH_MAX_LENGTH);
+   game_path          = (char*)malloc(PATH_MAX_LENGTH);
+   content_path       = (char*)malloc(PATH_MAX_LENGTH);
 
    config_directory[0] = override_directory[0] = core_path[0] = game_path[0] = '\0';
 
@@ -4398,8 +4241,5 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
    /* Load core in new config. */
    path_clear(RARCH_PATH_CORE);
 
-   if (!task_push_start_dummy_core(&content_info))
-      return false;
-
-   return true;
+   return task_push_start_dummy_core(&content_info);
 }

@@ -438,8 +438,8 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       /* Cursor */
       if (!old_list && ozone->cursor_mode)
       {
-         if (  cursor_x >= border_start_x && cursor_x <= border_start_x + entry_width &&
-               cursor_y >= border_start_y && cursor_y <= border_start_y + button_height)
+         if (  cursor_x >= border_start_x && (cursor_x <= border_start_x + (int)entry_width) &&
+               cursor_y >= border_start_y && (cursor_y <= border_start_y + (int)button_height))
          {
             selection_y = y;
             menu_navigation_set_selection(i);

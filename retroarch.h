@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -169,7 +170,6 @@ enum rarch_ctl_state
 
    /* Key event */
    RARCH_CTL_FRONTEND_KEY_EVENT_GET,
-   RARCH_CTL_UNSET_KEY_EVENT,
    RARCH_CTL_KEY_EVENT_GET,
    RARCH_CTL_DATA_DEINIT,
 
@@ -357,6 +357,8 @@ void retroarch_unset_shader_preset(void);
 
 char* retroarch_get_shader_preset(void);
 
+void retroarch_shader_presets_set_need_reload(void);
+
 bool retroarch_is_switching_display_mode(void);
 
 void retroarch_set_switching_display_mode(void);
@@ -400,11 +402,6 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void runloop_task_msg_queue_push(retro_task_t *task,
-      const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush);
-
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush,
@@ -429,12 +426,6 @@ char *get_retroarch_launch_arguments(void);
 rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
-
-#ifdef HAVE_THREADS
-void runloop_msg_queue_lock(void);
-
-void runloop_msg_queue_unlock(void);
-#endif
 
 void rarch_force_video_driver_fallback(const char *driver);
 
@@ -564,13 +555,7 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-void audio_driver_suspend(void);
-
 bool audio_driver_is_suspended(void);
-
-void audio_driver_resume(void);
-
-void audio_driver_set_active(void);
 
 bool audio_driver_is_active(void);
 
@@ -606,14 +591,6 @@ void audio_driver_set_nonblocking_state(bool enable);
  * Returns: string listing of all audio driver names, separated by '|'.
  **/
 const char* config_get_audio_driver_options(void);
-
-void audio_driver_sample(int16_t left, int16_t right);
-
-size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
-
-void audio_driver_sample_rewind(int16_t left, int16_t right);
-
-size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames);
 
 bool audio_driver_mixer_extension_supported(const char *ext);
 
@@ -676,8 +653,6 @@ void audio_driver_mixer_remove_stream(unsigned i);
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
-
-bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 
 void audio_driver_load_menu_sounds(void);
 
@@ -949,8 +924,7 @@ enum display_metric_types
 
 enum display_flags
 {
-   GFX_CTX_FLAGS_NONE = 0,
-   GFX_CTX_FLAGS_GL_CORE_CONTEXT,
+   GFX_CTX_FLAGS_GL_CORE_CONTEXT = 0,
    GFX_CTX_FLAGS_MULTISAMPLING,
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
    GFX_CTX_FLAGS_HARD_SYNC,
@@ -1651,14 +1625,14 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 bool video_driver_has_windowed(void);
 
+bool video_driver_has_focus(void);
+
 bool video_driver_cached_frame_has_valid_framebuffer(void);
 
-void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
 bool video_driver_is_stub_frame(void);
-bool video_driver_supports_recording(void);
 bool video_driver_supports_viewport_read(void);
 bool video_driver_prefer_viewport_read(void);
 bool video_driver_supports_read_frame_raw(void);
@@ -1671,10 +1645,6 @@ void video_driver_unset_rgba(void);
 bool video_driver_supports_rgba(void);
 bool video_driver_get_next_video_out(void);
 bool video_driver_get_prev_video_out(void);
-bool video_driver_init(bool *video_is_threaded);
-void video_driver_destroy_data(void);
-void video_driver_free(void);
-void video_driver_free_hw_context(void);
 void video_driver_monitor_reset(void);
 void video_driver_set_aspect_ratio(void);
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
@@ -1692,25 +1662,34 @@ void video_driver_load_settings(config_file_t *conf);
 void video_driver_save_settings(config_file_t *conf);
 bool video_driver_is_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
+
 const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
+
 void video_driver_set_context_negotiation_interface(const struct
       retro_hw_render_context_negotiation_interface *iface);
-bool video_driver_is_video_cache_context(void);
-void video_driver_set_video_cache_context_ack(void);
-bool video_driver_is_video_cache_context_ack(void);
-void video_driver_set_active(void);
-void video_driver_unset_active(void);
-bool video_driver_is_active(void);
+
 bool video_driver_gpu_record_init(unsigned size);
+
 void video_driver_gpu_record_deinit(void);
+
+bool video_driver_is_video_cache_context(void);
+
+void video_driver_set_video_cache_context_ack(void);
+
+bool video_driver_is_video_cache_context_ack(void);
+
+bool video_driver_is_active(void);
+
 bool video_driver_get_current_software_framebuffer(struct
       retro_framebuffer *fb);
+
 bool video_driver_get_hw_render_interface(const struct
       retro_hw_render_interface **iface);
+
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
+
 void video_driver_set_title_buf(void);
-void video_driver_monitor_adjust_system_rates(void);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
 bool video_driver_has_widgets(void);
@@ -1875,8 +1854,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 
 unsigned video_pixel_get_alignment(unsigned pitch);
 
-const video_poke_interface_t *video_driver_get_poke(void);
-
 /**
  * video_driver_frame:
  * @data                 : pointer to data of the video frame.
@@ -1942,9 +1919,6 @@ void video_driver_get_window_title(char *buf, unsigned len);
 bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
-
-void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
-      bool *is_focused);
 
 /**
  * video_context_driver_init_first:
@@ -2019,16 +1993,15 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
-extern bool (*video_driver_cb_has_focus)(void);
-
 bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 
+bool video_driver_get_flags(gfx_ctx_flags_t *flags);
+
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
-bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
-      enum display_flags flag);
+bool video_driver_test_all_flags(enum display_flags testflag);
 
 void video_driver_set_gpu_device_string(const char *str);
 

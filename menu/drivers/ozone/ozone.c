@@ -1811,9 +1811,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
    unsigned horizontal_list_size = 0;
 
    if (!ozone)
-   {
       return generic_menu_iterate(menu, userdata, action);
-   }
 
    if (ozone->horizontal_list)
       horizontal_list_size = ozone->horizontal_list->size;
@@ -1835,7 +1833,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          tag           = (uintptr_t)ozone;
          new_selection = (ozone->categories_selection_ptr + 1);
 
-         if (new_selection >= ozone->system_tab_end + horizontal_list_size + 1)
+         if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
             new_selection = 0;
 
          ozone_sidebar_goto(ozone, new_selection);

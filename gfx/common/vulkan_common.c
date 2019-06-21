@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1596,11 +1597,11 @@ end:
 
 static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 {
-   uint32_t gpu_count     = 0;
-   VkPhysicalDevice *gpus = NULL;
-   int i;
+   unsigned i;
+   uint32_t gpu_count               = 0;
+   VkPhysicalDevice *gpus           = NULL;
    union string_list_elem_attr attr = {0};
-   settings_t *settings = config_get_ptr();
+   settings_t *settings             = config_get_ptr();
 
    if (vk->context.gpu != VK_NULL_HANDLE)
       return true;
@@ -1646,14 +1647,14 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan]: Found GPU: %s\n", gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan]: Found GPU at index %d: %s\n", i, gpu_properties.deviceName);
 
       string_list_append(vulkan_gpu_list, gpu_properties.deviceName, attr);
    }
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
 
-   if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < gpu_count)
+   if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < (int)gpu_count)
    {
       RARCH_LOG("[Vulkan]: Using GPU index %d.\n", settings->ints.vulkan_gpu_index);
       vk->context.gpu = gpus[settings->ints.vulkan_gpu_index];

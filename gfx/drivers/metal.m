@@ -69,12 +69,10 @@ static void *metal_init(const video_info_t *video,
       return NULL;
    }
 
-   const char *shader_path = retroarch_get_shader_preset();
-
-   if (shader_path)
    {
-      enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_SLANG);
-      metal_set_shader(((__bridge void *)md), type, shader_path);
+      const char *shader_path = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_path);
+      metal_set_shader((__bridge void *)md, type, shader_path);
    }
 
    return (__bridge_retained void *)md;
@@ -127,15 +125,14 @@ static bool metal_set_shader(void *data,
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    MetalDriver *md = (__bridge MetalDriver *)data;
+
    if (!md)
       return false;
-   if (!path)
-      return true;
 
-   if (type != RARCH_SHADER_SLANG)
+   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[Metal] Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      return false;
+      RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
+      path = NULL;
    }
 
    return [md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]];
@@ -318,9 +315,6 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
    return flags;

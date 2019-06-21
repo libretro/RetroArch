@@ -28,6 +28,7 @@
 
 #include <windows.h>
 #endif /* !defined(_XBOX) */
+#include <math.h>
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -23,6 +24,7 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
+#include <lists/string_list.h>
 #include <dxgi.h>
 
 #ifdef HAVE_MENU
@@ -56,9 +58,18 @@
 #include "../../uwp/uwp_func.h"
 #endif
 
+/* Temporary workaround for d3d11 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d11_fake_context;
+static uint32_t d3d11_get_flags(void *data);
+
 static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
+#define D3D11_MAX_GPU_COUNT 16
+
+static struct string_list *d3d11_gpu_list = NULL;
+static IDXGIAdapter1 *d3d11_adapters[D3D11_MAX_GPU_COUNT] = {NULL};
+static IDXGIAdapter1 *d3d11_current_adapter = NULL;
 
 #ifdef HAVE_OVERLAY
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
@@ -355,12 +366,12 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    D3D11Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
 
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D11] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -593,6 +604,15 @@ static void d3d11_gfx_free(void* data)
       Release(d3d11->device);
    }
 
+   for (i = 0; i < D3D11_MAX_GPU_COUNT; i++)
+   {
+      if (d3d11_adapters[i])
+      {
+         Release(d3d11_adapters[i]);
+         d3d11_adapters[i] = NULL;
+      }
+   }
+
 #ifdef HAVE_MONITOR
    win32_monitor_from_window();
 #endif
@@ -713,7 +733,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       else
       {
          if (FAILED(D3D11CreateDevice(
-                     NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
+                     (IDXGIAdapter*)d3d11->adapter, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                      requested_feature_levels, number_feature_levels,
                      D3D11_SDK_VERSION, &d3d11->device,
                      &d3d11->supportedFeatureLevel, &d3d11->context)))
@@ -1024,12 +1044,12 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
 
-   if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
-
-      if (ext && !strncmp(ext, "slang", 5))
-         d3d11_gfx_set_shader(d3d11, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
+      d3d11_fake_context.get_flags = d3d11_get_flags;
+      video_context_driver_set(&d3d11_fake_context); 
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      d3d11_gfx_set_shader(d3d11, type, shader_preset);
    }
 
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
@@ -1053,18 +1073,25 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    {
       int i = 0;
-      DXGI_ADAPTER_DESC desc = {0};
-      char str[128];
 
-      str[0] = '\0';
+      if (d3d11_gpu_list)
+         string_list_free(d3d11_gpu_list);
+
+      d3d11_gpu_list = string_list_new();
 
       while (true)
       {
+         DXGI_ADAPTER_DESC desc = {0};
+         char str[128];
+         union string_list_elem_attr attr = {0};
+
+         str[0] = '\0';
+
 #ifdef __WINRT__
-         if (FAILED(DXGIEnumAdapters2(d3d11->factory, i++, &d3d11->adapter)))
+         if (FAILED(DXGIEnumAdapters2(d3d11->factory, i, &d3d11->adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d11->factory, i++, &d3d11->adapter)))
+         if (FAILED(DXGIEnumAdapters(d3d11->factory, i, &d3d11->adapter)))
             break;
 #endif
 
@@ -1073,14 +1100,30 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D11]: Using GPU: %s\n", str);
+         RARCH_LOG("[D3D11]: Found GPU at index %d: %s\n", i, str);
 
-         video_driver_set_gpu_device_string(str);
+         string_list_append(d3d11_gpu_list, str, attr);
 
-         Release(d3d11->adapter);
+         if (i < D3D11_MAX_GPU_COUNT)
+            d3d11_adapters[i] = d3d11->adapter;
 
-         /* We only care about the first adapter for now */
-         break;
+         i++;
+      }
+
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, d3d11_gpu_list);
+
+      if (0 <= settings->ints.d3d11_gpu_index && settings->ints.d3d11_gpu_index <= i && settings->ints.d3d11_gpu_index < D3D11_MAX_GPU_COUNT)
+      {
+         d3d11_current_adapter = d3d11_adapters[settings->ints.d3d11_gpu_index];
+         d3d11->adapter = d3d11_current_adapter;
+         RARCH_LOG("[D3D11]: Using GPU index %d.\n", settings->ints.d3d11_gpu_index);
+         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[settings->ints.d3d11_gpu_index].data);
+      }
+      else
+      {
+         RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d11_gpu_index);
+         d3d11_current_adapter = d3d11_adapters[0];
+         d3d11->adapter = d3d11_current_adapter;
       }
    }
 
@@ -1739,7 +1782,7 @@ d3d11_get_hw_render_interface(void* data, const struct retro_hw_render_interface
 
 static uint32_t d3d11_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)

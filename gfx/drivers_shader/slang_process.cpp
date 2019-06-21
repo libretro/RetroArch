@@ -482,7 +482,7 @@ bool slang_process(
       }
       else
 #endif
-         if (dst_type == RARCH_SHADER_METAL)
+      if (dst_type == RARCH_SHADER_METAL)
       {
          CompilerMSL::Options options;
          CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
@@ -502,7 +502,7 @@ bool slang_process(
          vs_code = vs->compile();
          ps_code = ps->compile();
       }
-      else if (shader_info->type == RARCH_SHADER_GLSL)
+      else if (dst_type == RARCH_SHADER_GLSL)
       {
          CompilerGLSL::Options options;
          CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;

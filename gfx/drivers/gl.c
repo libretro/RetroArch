@@ -1998,45 +1998,84 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
 }
 
 /* Shaders */
+
+/**
+ * gl2_get_fallback_shader_type:
+ * @type                      : shader type which should be used if possible
+ *
+ * Returns a supported fallback shader type in case the given one is not supported.
+ * For gl2, shader support is completely defined by the context driver shader flags.
+ *
+ * gl2_get_fallback_shader_type(RARCH_SHADER_NONE) returns a default shader type.
+ * if gl2_get_fallback_shader_type(type) != type, type was not supported.
+ * 
+ * Returns: A supported shader type.
+ *  If RARCH_SHADER_NONE is returned, no shader backend is supported.
+ **/
+static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_type type)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   unsigned i;
+
+   if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
+   {
+      type = DEFAULT_SHADER_TYPE;
+
+      if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
+         type = RARCH_SHADER_GLSL;
+   }
+
+   for (i = 0; i < 2; i++)
+   {
+      switch (type)
+      {
+         case RARCH_SHADER_CG:
+#ifdef HAVE_CG
+            if (video_shader_is_supported(type))
+               return type;
+#endif
+            type = RARCH_SHADER_GLSL;
+            break;
+
+         case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
+            if (video_shader_is_supported(type))
+               return type;
+#endif
+            type = RARCH_SHADER_CG;
+            break;
+
+         default:
+            return RARCH_SHADER_NONE;
+      }
+   }
+#endif
+   return RARCH_SHADER_NONE;
+}
+
 static const shader_backend_t *gl_shader_driver_set_backend(
       enum rarch_shader_type type)
 {
-   switch (type)
+   enum rarch_shader_type fallback = gl2_get_fallback_shader_type(type);
+   if (fallback != type)
+      RARCH_ERR("[Shader driver]: Shader backend %d not supported, falling back to %d.", type, fallback);
+
+   switch (fallback)
    {
-      case RARCH_SHADER_CG:
-         {
 #ifdef HAVE_CG
-            gfx_ctx_flags_t flags;
-            flags.flags = 0;
-            video_context_driver_get_flags(&flags);
-
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-            {
-               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
-                     " GL context. Trying to fall back to GLSL...\n");
-               return gl_shader_driver_set_backend(RARCH_SHADER_GLSL);
-            }
-
-            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
-            return &gl_cg_backend;
-#else
-            break;
+      case RARCH_SHADER_CG:
+         RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+         return &gl_cg_backend;
 #endif
-         }
-      case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
+      case RARCH_SHADER_GLSL:
          RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
          return &gl_glsl_backend;
-#else
-         break;
 #endif
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_NONE:
       default:
-         break;
+         RARCH_LOG("[Shader driver]: No supported shader backend.\n");
+         return NULL;
    }
-
-   return NULL;
 }
 
 static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
@@ -2064,7 +2103,7 @@ static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
       init->shader->init_menu_shaders(tmp);
    }
 
-   init->shader_data      = tmp;
+   init->shader_data = tmp;
 
    return true;
 }
@@ -2074,38 +2113,36 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
-   bool ret                        = false;
-   enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
-   const char *shader_path         = retroarch_get_shader_preset();
+   bool ret                          = false;
+   const char *shader_path           = retroarch_get_shader_preset();
+   enum rarch_shader_type parse_type = video_shader_parse_type(shader_path);
+   enum rarch_shader_type type;
 
-   if (shader_path)
+   type = gl2_get_fallback_shader_type(parse_type);
+
+   if (type == RARCH_SHADER_NONE)
    {
-      type = video_shader_parse_type(shader_path,
-         gl->core_context_in_use
-         ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+      RARCH_ERR("[GL]: Couldn't find any supported shader backend! Continuing without shaders.\n");
+      return true;
    }
 
-   switch (type)
+   if (type != parse_type)
    {
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         if (gl->core_context_in_use)
-            shader_path = NULL;
-         break;
-#endif
+      if (!string_is_empty(shader_path))
+         RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+            shader_path, video_shader_to_str(parse_type), video_shader_to_str(type));
+
+      shader_path = NULL;
+   }
 
 #ifdef HAVE_GLSL
-      case RARCH_SHADER_GLSL:
-         gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
-         gl_glsl_set_context_type(gl->core_context_in_use,
-               hwr->version_major, hwr->version_minor);
-         break;
-#endif
-
-      default:
-         RARCH_ERR("[GL]: Not loading any shader, or couldn't find valid shader backend. Continuing without shaders.\n");
-         return true;
+   if (type == RARCH_SHADER_GLSL)
+   {
+      gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
+      gl_glsl_set_context_type(gl->core_context_in_use,
+                               hwr->version_major, hwr->version_minor);
    }
+#endif
 
    init_data.gl.core_context_enabled = gl->core_context_in_use;
    init_data.shader_type             = type;
@@ -3991,10 +4028,7 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
       smooth             = settings->bools.video_smooth;
 
    mip_level             = 1;
-
-   wrap_type             = gl->shader->wrap_type(
-         gl->shader_data, 1);
-
+   wrap_type             = gl->shader->wrap_type(gl->shader_data, 1);
    wrap_mode             = gl2_wrap_type_to_enum(wrap_type);
    gl->tex_mipmap        = gl->shader->mipmap_input(gl->shader_data, mip_level);
    gl->video_info.smooth = smooth;
@@ -4028,6 +4062,7 @@ static bool gl2_set_shader(void *data,
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    unsigned textures;
    video_shader_ctx_init_t init_data;
+   enum rarch_shader_type fallback;
    gl_t *gl = (gl_t*)data;
 
    if (!gl)
@@ -4035,27 +4070,28 @@ static bool gl2_set_shader(void *data,
 
    gl2_context_bind_hw_render(gl, false);
 
-   if (type == RARCH_SHADER_NONE)
-      return false;
-
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
-   switch (type)
+   if (string_is_empty(path))
    {
-#ifdef HAVE_GLSL
-      case RARCH_SHADER_GLSL:
-         break;
-#endif
+      gl2_context_bind_hw_render(gl, true);
+      return true;
+   }
 
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         break;
-#endif
+   fallback = gl2_get_fallback_shader_type(type);
 
-      default:
-         RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
-         goto error;
+   if (fallback == RARCH_SHADER_NONE)
+   {
+      RARCH_ERR("[GL]: No supported shader backend found!\n");
+      goto error;
+   }
+
+   if (type != fallback)
+   {
+      RARCH_ERR("[GL]: %s shader not supported, falling back to stock %s\n",
+            video_shader_to_str(type), video_shader_to_str(fallback));
+      path = NULL;
    }
 
    if (gl->fbo_inited)
@@ -4066,7 +4102,7 @@ static bool gl2_set_shader(void *data,
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 
-   init_data.shader_type = type;
+   init_data.shader_type = fallback;
    init_data.shader      = NULL;
    init_data.data        = gl;
    init_data.path        = path;
@@ -4125,12 +4161,12 @@ static bool gl2_set_shader(void *data,
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl);
    gl2_context_bind_hw_render(gl, true);
-#endif
 
    return true;
 
 error:
    gl2_context_bind_hw_render(gl, true);
+#endif
    return false;
 }
 
@@ -4138,7 +4174,7 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
-   gl_t *gl             = (gl_t*)data;
+   gl_t *gl        = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
 
@@ -4155,10 +4191,11 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    gl_t *gl             = (gl_t*)data;
+
    if (!gl)
       return false;
-   return gl2_renderchain_read_viewport(gl,
-         buffer, is_idle);
+
+   return gl2_renderchain_read_viewport(gl, buffer, is_idle);
 }
 
 #if 0
@@ -4252,7 +4289,7 @@ static bool gl2_overlay_load(void *data,
          || !gl->overlay_color_coord)
       return false;
 
-   gl->overlays             = num_images;
+   gl->overlays = num_images;
    glGenTextures(num_images, gl->overlay_tex);
 
    for (i = 0; i < num_images; i++)
@@ -4280,7 +4317,7 @@ static bool gl2_overlay_load(void *data,
 
 static void gl2_overlay_enable(void *data, bool state)
 {
-   gl_t *gl           = (gl_t*)data;
+   gl_t *gl = (gl_t*)data;
 
    if (!gl)
       return;
@@ -4301,17 +4338,18 @@ static void gl2_overlay_full_screen(void *data, bool enable)
 
 static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
 {
-   GLfloat *color = NULL;
-   gl_t *gl       = (gl_t*)data;
+   GLfloat *color;
+   gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return;
 
-   color          = (GLfloat*)&gl->overlay_color_coord[image * 16];
+   color = (GLfloat*)&gl->overlay_color_coord[image * 16];
 
-   color[ 0 + 3]  = mod;
-   color[ 4 + 3]  = mod;
-   color[ 8 + 3]  = mod;
-   color[12 + 3]  = mod;
+   color[ 0 + 3] = mod;
+   color[ 4 + 3] = mod;
+   color[ 8 + 3] = mod;
+   color[12 + 3] = mod;
 }
 
 static const video_overlay_interface_t gl2_overlay_interface = {
@@ -4345,7 +4383,7 @@ static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
 
 static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gl_t *gl         = (gl_t*)data;
+   gl_t *gl = (gl_t*)data;
 
    switch (aspect_ratio_idx)
    {

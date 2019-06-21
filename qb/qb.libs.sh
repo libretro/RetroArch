@@ -48,21 +48,23 @@ check_compiler()
 }
 
 # check_enabled:
-# $1 = HAVE_$1 [Disabled feature]
+# $1 = HAVE_$1 [Disabled 'feature' or 'feature feature1 feature2', $1 = name]
 # $2 = USER_$2 [Enabled feature]
 # $3 = lib
 # $4 = feature
 # $5 = enable lib when true [checked only if non-empty]
 check_enabled()
-{	tmpvar="$(eval "printf %s \"\$HAVE_$1\"")"
-	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+{	setval="$(eval "printf %s \"\$HAVE_$2\"")"
 
-	if [ "$tmpvar" != 'no' ]; then
-		if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
-			eval "HAVE_$2=yes"
+	for val in $(printf %s "$1"); do
+		tmpvar="$(eval "printf %s \"\$HAVE_$val\"")"
+		if [ "$tmpvar" != 'no' ]; then
+			if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+				eval "HAVE_$2=yes"
+			fi
+			return 0
 		fi
-		return 0
-	fi
+	done
 
 	tmpval="$(eval "printf %s \"\$USER_$2\"")"
 

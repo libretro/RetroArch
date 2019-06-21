@@ -172,9 +172,6 @@ bool core_set_poll_type(unsigned *type);
 /* Runs the core for one frame. */
 bool core_run(void);
 
-/* Runs the core for one frame, but does not trigger any input polling */
-bool core_run_no_input_polling(void);
-
 bool core_init(void);
 
 bool core_deinit(void *data);
@@ -202,14 +199,6 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info);
 bool core_reset_cheat(void);
 
 bool core_api_version(retro_ctx_api_info_t *api);
-
-/* Compare libretro core API version against API version
- * used by RetroArch.
- *
- * TODO - when libretro v2 gets added, allow for switching
- * between libretro version backend dynamically.
- */
-bool core_verify_api_version(void);
 
 bool core_get_region(retro_ctx_region_info_t *info);
 
@@ -244,8 +233,6 @@ bool core_is_inited(void);
 bool core_is_game_loaded(void);
 
 void core_free_retro_game_info(struct retro_game_info *dest);
-
-extern struct retro_callbacks retro_ctx;
 
 RETRO_END_DECLS
 

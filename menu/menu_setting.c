@@ -787,7 +787,7 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
 
-      if (list && *setting->value.target.integer < list->size && !string_is_empty(list->elems[*setting->value.target.integer].data))
+      if (list && (*setting->value.target.integer < (int)list->size) && !string_is_empty(list->elems[*setting->value.target.integer].data))
          snprintf(s, len, "%d - %s", *setting->value.target.integer, list->elems[*setting->value.target.integer].data);
       else
          snprintf(s, len, "%d", *setting->value.target.integer);
@@ -5685,7 +5685,7 @@ void general_write_handler(rarch_setting_t *setting)
                menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
             }
-            else if (!*setting->value.target.boolean)
+            else
             {
                bool refresh                = false;
                settings_t *settings        = config_get_ptr();
@@ -8364,6 +8364,66 @@ static bool setting_append_list(
             }
 #endif
 
+#ifdef HAVE_D3D10
+            if (string_is_equal(video_driver_get_ident(), "d3d10"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.d3d10_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
+
+#ifdef HAVE_D3D11
+            if (string_is_equal(video_driver_get_ident(), "d3d11"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.d3d11_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
+
+#ifdef HAVE_D3D12
+            if (string_is_equal(video_driver_get_ident(), "d3d12"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.d3d12_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
+
             if (video_driver_has_windowed())
             {
                CONFIG_BOOL(
@@ -8940,85 +9000,73 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
             {
-               gfx_ctx_flags_t flags;
-
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-               {
-                  CONFIG_UINT(
-                        list, list_info,
-                        &settings->uints.video_max_swapchain_images,
-                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        DEFAULT_MAX_SWAPCHAIN_IMAGES,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-               }
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_max_swapchain_images,
+                     MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                     DEFAULT_MAX_SWAPCHAIN_IMAGES,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             }
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
             {
-               gfx_ctx_flags_t flags;
-
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_HARD_SYNC))
-               {
-                  CONFIG_BOOL(
-                        list, list_info,
-                        &settings->bools.video_hard_sync,
-                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-                        DEFAULT_HARD_SYNC,
-                        MENU_ENUM_LABEL_VALUE_OFF,
-                        MENU_ENUM_LABEL_VALUE_ON,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler,
-                        SD_FLAG_NONE
-                        );
-
-                  CONFIG_UINT(
-                        list, list_info,
-                        &settings->uints.video_hard_sync_frames,
-                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-                        DEFAULT_HARD_SYNC_FRAMES,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler);
-                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-               }
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_hard_sync,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+                     DEFAULT_HARD_SYNC,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
+        
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_hard_sync_frames,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+                     DEFAULT_HARD_SYNC_FRAMES,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
             }
 
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
-               gfx_ctx_flags_t flags;
-
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-               {
-                  CONFIG_BOOL(
-                        list, list_info,
-                        &settings->bools.video_adaptive_vsync,
-                        MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-                        DEFAULT_ADAPTIVE_VSYNC,
-                        MENU_ENUM_LABEL_VALUE_OFF,
-                        MENU_ENUM_LABEL_VALUE_ON,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler,
-                        SD_FLAG_NONE
-                        );
-               }
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_adaptive_vsync,
+                     MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+                     DEFAULT_ADAPTIVE_VSYNC,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
             }
 
             CONFIG_UINT(
@@ -9037,28 +9085,24 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if !defined(RARCH_MOBILE)
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
             {
-               gfx_ctx_flags_t flags;
-
-               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
-               {
-                  CONFIG_BOOL(
-                        list, list_info,
-                        &settings->bools.video_black_frame_insertion,
-                        MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-                        DEFAULT_BLACK_FRAME_INSERTION,
-                        MENU_ENUM_LABEL_VALUE_OFF,
-                        MENU_ENUM_LABEL_VALUE_ON,
-                        &group_info,
-                        &subgroup_info,
-                        parent_group,
-                        general_write_handler,
-                        general_read_handler,
-                        SD_FLAG_NONE
-                        );
-                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-               }
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_black_frame_insertion,
+                     MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+                     DEFAULT_BLACK_FRAME_INSERTION,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 #endif
             END_SUB_GROUP(list, list_info, parent_group);
@@ -11051,8 +11095,6 @@ static bool setting_append_list(
 
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
-            gfx_ctx_flags_t flags;
-
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_rgui_border_filler_enable,
@@ -11116,7 +11158,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-            if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
             {
                CONFIG_BOOL(
                      list, list_info,

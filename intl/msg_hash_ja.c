@@ -24,8 +24,8 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
+#if defined(_MSC_VER) && !defined(_XBOX)
+#if (_MSC_VER >= 1700 && _MSC_VER < 1910)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
@@ -696,8 +696,8 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
-            "メニューを操作するのに \n"
-            "以下のゲームパッドまたはキーボードを使用できます: \n"
+            "メニューを操作するには \n"
+            "ゲームパッドまたはキーボードで以下の入力を使用できます: \n"
             " \n"
                );
          break;
@@ -742,7 +742,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "コンテンツファイルはデータベースのエントリーと比較されます。\n"
                    "一致した場合、プレイリストに追加されます。\n"
                    "\n"
-                   "毎回ファイルブラウザーを使用するかわりに、\n"
+                   "毎回ファイルブラウザを使用するかわりに、\n"
                    "[%s]→[%s]でこのコンテンツに簡単にアクセスできます。\n"
                    "\n"
                    "NOTE: いくつかのコア向けのコンテンツはまだスキャンできません。\n",
@@ -809,9 +809,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "[%s]で設定してください。 \n"
                "未設定のときは、ルートディレクトリとなります。 \n"
                " \n"
-               "ブラウザーでの参照時には、[%s]で \n"
+               "ブラウザでの参照時には、[%s]で \n"
                "最後に設定したコアに対応する拡張子で \n"
-               "フィルターがかかります。 \n",
+               "絞り込みます。 \n",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST)
                );

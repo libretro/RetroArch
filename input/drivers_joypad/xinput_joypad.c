@@ -139,14 +139,11 @@ static XINPUT_VIBRATION g_xinput_rumble_states[4];
 
 static xinput_joypad_state g_xinput_states[4];
 
-static INLINE int pad_index_to_xuser_index(unsigned pad)
-{
 #ifdef HAVE_DINPUT
-   return g_xinput_pad_indexes[pad];
+#define pad_index_to_xuser_index(pad) g_xinput_pad_indexes[(pad)]
 #else
-   return pad < MAX_PADS && g_xinput_states[pad].connected ? pad : -1;
+#define pad_index_to_xuser_index(pad) ((pad) < MAX_PADS && g_xinput_states[(pad)].connected ? (pad) : -1)
 #endif
-}
 
 /* Generic "XInput" instead of "Xbox 360", because there are
  * some other non-xbox third party PC controllers.
@@ -445,7 +442,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
    return false;
 }
 
-static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
+static int16_t xinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    int xuser;
    int16_t val         = 0;
@@ -504,13 +501,12 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
-
+      return 0;
    /* Clamp to avoid overflow error. */
-   if (val == -32768)
-      val = -32767;
+   else if (val == -32768)
+      return -32767;
 
    return val;
 }
@@ -546,9 +542,7 @@ static void xinput_joypad_poll(void)
             return;
          }
          else
-         {
             g_xinput_states[i].connected = new_connected;
-         }
       }
 #endif
    }

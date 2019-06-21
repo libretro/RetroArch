@@ -157,7 +157,7 @@ static int16_t uwp_pressed_analog(uwp_input_t *uwp,
    unsigned id_minus = 0, id_plus = 0;
 
    /* First, process the keyboard bindings */
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    bind_minus = &binds[id_minus];
    bind_plus = &binds[id_plus];

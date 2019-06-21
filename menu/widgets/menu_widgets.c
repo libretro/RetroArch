@@ -329,30 +329,22 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
-static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char *msg,
+bool menu_widgets_msg_queue_push(
+      retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category,
+      enum message_queue_icon icon,
+      enum message_queue_category category,
       unsigned prio, bool flush)
 {
    menu_widget_msg_t* msg_widget = NULL;
-
-   if (!menu_widgets_inited)
-      return false;
-
-   #ifdef HAVE_THREADS
-   runloop_msg_queue_lock();
-   #endif
-
-   ui_companion_driver_msg_queue_push(msg,
-      prio, task ? duration : duration * 60 / 1000, flush);
 
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
       {
-         msg_widget = (menu_widget_msg_t*) task->frontend_userdata;
+         msg_widget           = (menu_widget_msg_t*) task->frontend_userdata;
          msg_widget->task_ptr = task; /* msg_widgets can be passed between tasks */
       }
 
@@ -363,7 +355,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
 
          msg_widget                             = (menu_widget_msg_t*)calloc(1, sizeof(*msg_widget));
 
-		 if (task)
+         if (task)
             title                               = task->title;
 
          msg_widget->duration                   = duration;
@@ -511,20 +503,7 @@ static bool menu_widgets_msg_queue_push_internal(retro_task_t *task, const char 
       }
    }
 
-   #ifdef HAVE_THREADS
-   runloop_msg_queue_unlock();
-   #endif
-
    return true;
-}
-
-bool menu_widgets_msg_queue_push(const char *msg,
-      unsigned duration,
-      char *title,
-      enum message_queue_icon icon, enum message_queue_category category,
-      unsigned prio, bool flush)
-{
-   return menu_widgets_msg_queue_push_internal(NULL, msg, duration, title, icon, category, prio, flush);
 }
 
 static void menu_widgets_unfold_end(void *userdata)
@@ -833,9 +812,6 @@ void menu_widgets_iterate(void)
       return;
 
    /* Messages queue */
-#ifdef HAVE_THREADS
-   runloop_msg_queue_lock();
-#endif
 
    /* Consume one message if available */
    if (fifo_read_avail(msg_queue) > 0 && !widgets_moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
@@ -887,10 +863,6 @@ void menu_widgets_iterate(void)
 
       menu_widgets_msg_queue_move();
    }
-
-#ifdef HAVE_THREADS
-   runloop_msg_queue_unlock();
-#endif
 
    /* Kill first expired message */
    /* Start expiration timer of dead tasks */
@@ -2150,20 +2122,6 @@ void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
    menu_widgets_play_screenshot_flash();
    strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
-}
-
-bool menu_widgets_task_msg_queue_push(retro_task_t *task,
-      const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   if (!menu_widgets_inited)
-      return false;
-
-   if (task->title != NULL && !task->mute)
-      menu_widgets_msg_queue_push_internal(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
-
-   return true;
 }
 
 static void menu_widgets_end_load_content_animation(void *userdata)

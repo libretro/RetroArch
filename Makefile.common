@@ -159,13 +159,11 @@ DEF_FLAGS += -DHAVE_DR_MP3
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
-       ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
        ui/drivers/null/ui_null_window.o \
        ui/drivers/null/ui_null_browser_window.o \
        ui/drivers/null/ui_null_msg_window.o \
        ui/drivers/null/ui_null_application.o \
-       core_impl.o \
        retroarch.o \
        dirs.o \
        paths.o \
@@ -207,14 +205,12 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/common/input_hid_common.o \
-       input/input_driver.o \
        input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \
-       wifi/wifi_driver.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        dynamic.o \
@@ -264,16 +260,13 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/midi_driver.o \
        midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
    OBJ += runahead/copy_load_info.o \
-          runahead/dirty_input.o \
           runahead/mem_util.o \
           runahead/mylist.o \
-          runahead/run_ahead.o \
           runahead/secondary_core.o
 endif
 
@@ -780,7 +773,6 @@ OBJ += menu/menu_shader.o
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
-          menu/menu_input.o \
           menu/menu_entries.o \
           menu/menu_setting.o \
           menu/menu_networking.o \
@@ -1821,8 +1813,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
-      OBJ += input/input_remote.o \
-             cores/libretro-net-retropad/net_retropad_core.o
+      OBJ += cores/libretro-net-retropad/net_retropad_core.o
    endif
 
    ifeq ($(HAVE_BUILTINMINIUPNPC), 1)

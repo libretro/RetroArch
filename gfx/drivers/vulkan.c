@@ -829,10 +829,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
    const char     *shader_path = retroarch_get_shader_preset();
+   enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
-   enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
-
-   if (type == RARCH_SHADER_NONE)
+   if (string_is_empty(shader_path))
    {
       RARCH_LOG("[Vulkan]: Loading stock shader.\n");
       return vulkan_init_default_filter_chain(vk);
@@ -840,7 +839,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_LOG("[Vulkan]: Only SLANG shaders are supported, falling back to stock.\n");
+      RARCH_LOG("[Vulkan]: Only Slang shaders are supported, falling back to stock.\n");
       return vulkan_init_default_filter_chain(vk);
    }
 
@@ -1359,17 +1358,17 @@ static bool vulkan_set_shader(void *data,
    if (!vk)
       return false;
 
-   if (type != RARCH_SHADER_SLANG && path)
-   {
-      RARCH_WARN("[Vulkan]: Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      path = NULL;
-   }
-
    if (vk->filter_chain)
       vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
    vk->filter_chain = NULL;
 
-   if (!path)
+   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("[Vulkan]: Only Slang shaders are supported. Falling back to stock.\n");
+      path = NULL;
+   }
+
+   if (string_is_empty(path))
    {
       vulkan_init_default_filter_chain(vk);
       return true;
@@ -2397,12 +2396,11 @@ static float vulkan_get_refresh_rate(void *data)
 
 static uint32_t vulkan_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
    return flags;

@@ -182,7 +182,7 @@ void crt_switch_res_core(unsigned width, unsigned height,
       int crt_switch_center_adjust, int monitor_index, bool dynamic)
 {
    /* ra_core_hz float passed from within
-    * void video_driver_monitor_adjust_system_rates(void) */
+    * video_driver_monitor_adjust_system_rates() */
    if (width == 4)
    {
       width = 320;

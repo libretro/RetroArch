@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
- *  Copyright (C) 2015-2017 - Andrés Suárez
+ *  Copyright (C) 2016-2019 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1457,7 +1457,7 @@ static int generic_action_ok(const char *path,
             struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
             menu_shader_manager_set_preset(shader,
-                  video_shader_parse_type(action_path, RARCH_SHADER_NONE),
+                  video_shader_parse_type(action_path),
                   action_path);
          }
          break;

@@ -47,6 +47,9 @@
 
 #include "../font_driver.h"
 
+/* Temporary workaround for gx2 not being able to poll flags during init */
+static gfx_ctx_driver_t wiiu_fake_context;
+
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
 {
    {0},                                         /* GX2_TV_SCAN_MODE_NONE  */
@@ -196,6 +199,8 @@ static void wiiu_gfx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    wiiu->keep_aspect = true;
    wiiu->should_resize = true;
 }
+
+static uint32_t wiiu_gfx_get_flags(void *data);
 
 static void *wiiu_gfx_init(const video_info_t *video,
                            const input_driver_t **input, void **input_data)
@@ -450,13 +455,17 @@ static void *wiiu_gfx_init(const video_info_t *video,
                         video->is_threaded,
                         FONT_DRIVER_RENDER_WIIU);
 
-   if(settings->bools.video_shader_enable &&
-      !string_is_empty(retroarch_get_shader_preset()))
    {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
+      enum rarch_shader_type type;
+      const char *shader_preset   = NULL;
 
-      if(ext && !strncmp(ext, "slang", 5))
-         wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
+      wiiu_fake_context.get_flags = wiiu_gfx_get_flags;
+
+      video_context_driver_set(&wiiu_fake_context); 
+
+      shader_preset               = retroarch_get_shader_preset();
+      type                        = video_shader_parse_type(shader_preset);
+      wiiu_gfx_set_shader(wiiu, type, shader_preset);
    }
 
    return wiiu;
@@ -1435,14 +1444,14 @@ static bool wiiu_gfx_set_shader(void *data,
    GX2DrawDone();
    wiiu_free_shader_preset(wiiu);
 
-   if (type != RARCH_SHADER_SLANG && path)
-   {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      path = NULL;
-   }
-
-   if (!path)
+   if (string_is_empty(path))
       return true;
+
+   if (type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("[GX2] Only Slang shaders are supported. Falling back to stock.\n");
+      return false;
+   }
 
    if (!(conf = config_file_new(path)))
       return false;
@@ -1458,15 +1467,15 @@ static bool wiiu_gfx_set_shader(void *data,
 
    video_shader_resolve_relative(wiiu->shader_preset, path);
 
-   #if 0
-      video_shader_resolve_parameters(conf, wiiu->shader_preset);
-   #else
-      for (int i = 0; i < wiiu->shader_preset->passes; i++)
-          slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
+#if 0
+   video_shader_resolve_parameters(conf, wiiu->shader_preset);
+#else
+   for (int i = 0; i < wiiu->shader_preset->passes; i++)
+       slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
 
-      video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
-   #endif
-          config_file_free(conf);
+   video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
+#endif
+   config_file_free(conf);
 
    for (int i = 0; i < wiiu->shader_preset->passes; i++)
    {
@@ -1546,7 +1555,6 @@ static bool wiiu_gfx_set_shader(void *data,
    }
 
    return true;
-
 }
 
 static struct video_shader *wiiu_gfx_get_current_shader(void *data)
@@ -1720,8 +1728,10 @@ static uint32_t wiiu_gfx_get_flags(void *data)
 {
    uint32_t flags = 0;
 
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
 
    return flags;
 }

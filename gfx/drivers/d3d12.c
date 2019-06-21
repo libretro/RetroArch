@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -41,6 +42,10 @@
 #endif
 
 #include "wiiu/wiiu_dbg.h"
+
+/* Temporary workaround for d3d12 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d12_fake_context;
+static uint32_t d3d12_get_flags(void *data);
 
 static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 {
@@ -334,23 +339,22 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   d3d12_texture_t* source = NULL;
    config_file_t* conf     = NULL;
+   d3d12_texture_t* source = NULL;
    d3d12_video_t*   d3d12  = (d3d12_video_t*)data;
 
    if (!d3d12)
       return false;
 
    d3d12_gfx_sync(d3d12);
-
    d3d12_free_shader_preset(d3d12);
 
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D12] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -408,8 +412,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-                d3d12->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
-                &d3d12->pass[i].semantics))
+               d3d12->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+               &d3d12->pass[i].semantics))
          goto error;
 
       {
@@ -435,7 +439,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char*       slang_path = d3d12->shader_preset->pass[i].source.path;
          const char*       vs_src     = d3d12->shader_preset->pass[i].source.string.vertex;
          const char*       ps_src     = d3d12->shader_preset->pass[i].source.string.fragment;
-         int               base_len   = strlen(slang_path) - STRLEN_CONST(".slang");
 
          strlcpy(vs_path, slang_path, sizeof(vs_path));
          strlcpy(ps_path, slang_path, sizeof(ps_path));
@@ -581,8 +584,8 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       desc.InputLayout.NumElements        = countof(inputElementDesc);
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]))
+               d3d12->device, vs_code, ps_code, NULL, &desc,
+               &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
 
       Release(vs_code);
@@ -873,6 +876,15 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->device);
    Release(d3d12->adapter);
 
+   for (i = 0; i < D3D12_MAX_GPU_COUNT; i++)
+   {
+      if (d3d12->adapters[i])
+      {
+         Release(d3d12->adapters[i]);
+         d3d12->adapters[i] = NULL;
+      }
+   }
+
 #ifdef HAVE_MONITOR
    win32_monitor_from_window();
 #endif
@@ -998,12 +1010,12 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
 
-   if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
-
-      if (ext && string_is_equal(ext, "slangp"))
-         d3d12_gfx_set_shader(d3d12, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
+      d3d12_fake_context.get_flags = d3d12_get_flags;
+      video_context_driver_set(&d3d12_fake_context); 
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      d3d12_gfx_set_shader(d3d12, type, shader_preset);
    }
 
    return d3d12;
@@ -1787,7 +1799,7 @@ static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
 
 static uint32_t d3d12_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
