@@ -202,6 +202,8 @@ extern "C" {
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
+#define RETRO_DEVICE_ID_JOYPAD_MASK    256
+
 /* Index / Id values for ANALOG device. */
 #define RETRO_DEVICE_INDEX_ANALOG_LEFT       0
 #define RETRO_DEVICE_INDEX_ANALOG_RIGHT      1
@@ -1092,10 +1094,22 @@ enum retro_mod
                                             * refresh rate/framerate.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* bool * --
+                                            * Boolean value that indicates whether or not the frontend supports
+                                            * input bitmasks being returned by retro_input_state_t. The advantage
+                                            * of this is that retro_input_state_t has to be only called once to 
+                                            * grab all button states instead of multiple times.
+                                            *
+                                            * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'
+                                            * to retro_input_state_t (make sure 'device' is set to RETRO_DEVICE_JOYPAD).
+                                            * It will return a bitmask of all the digital buttons.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
- * File paths passed as parameters when using this api shall be well formed UNIX-style,
+ * File paths passed as parameters when using this API shall be well formed UNIX-style,
  * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
  * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
  * Other than the directory separator, cores shall not make assumptions about path format:

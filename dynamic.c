@@ -1842,6 +1842,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
+         /* Just falldown, the function will return true */
+         break;
+
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
       {
          /* Try to use the polled refresh rate first.  */
