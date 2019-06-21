@@ -2937,7 +2937,7 @@ static unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
           * for old_input_state. */
 
          first_held  = true;
-         delay_timer = initial_held ? 200 : 100;
+         delay_timer = initial_held ? 300 : 200;
          delay_count = 0;
       }
 
