@@ -3918,21 +3918,14 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
          {0,                RARCH_NETPLAY_HOST_TOGGLE     },
          {0,                RARCH_MENU_TOGGLE             },
       };
-      const struct retro_keybind *quitkey      = &input_config_binds[0][RARCH_QUIT_KEY];
-      const struct retro_keybind *fskey        = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
-      const struct retro_keybind *companionkey = &input_config_binds[0][RARCH_UI_COMPANION_TOGGLE];
-      const struct retro_keybind *fpskey       = &input_config_binds[0][RARCH_FPS_TOGGLE];
-      const struct retro_keybind *debugkey     = &input_config_binds[0][RARCH_SEND_DEBUG_INFO];
-      const struct retro_keybind *netplaykey   = &input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE];
-      const struct retro_keybind *menutoggle   = &input_config_binds[0][RARCH_MENU_TOGGLE];
 
-      ids[9][0]  = quitkey->key;
-      ids[10][0] = fskey->key;
-      ids[14][0] = companionkey->key;
-      ids[15][0] = fpskey->key;
-      ids[16][0] = debugkey->key;
-      ids[17][0] = netplaykey->key;
-      ids[18][0] = menutoggle->key;
+      ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
+      ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+      ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
+      ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
+      ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
+      ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+      ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
 
       if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
