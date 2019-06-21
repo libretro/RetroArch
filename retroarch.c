@@ -2752,14 +2752,9 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
-static INLINE bool input_keys_pressed_iterate(unsigned i,
+static INLINE bool input_keys_pressed_other_sources(unsigned i,
       input_bits_t* p_new_state)
 {
-   if ((i >= RARCH_FIRST_META_KEY) &&
-         BIT64_GET(lifecycle_state, i)
-      )
-      return true;
-
 #ifdef HAVE_OVERLAY
    if (overlay_ptr &&
          input_overlay_key_pressed(overlay_ptr, i))
@@ -3742,7 +3737,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
                } \
             } \
          } \
-         if (bit_pressed || input_keys_pressed_iterate(i, p_new_state)) \
+         if (bit_pressed || ((i >= RARCH_FIRST_META_KEY) && BIT64_GET(lifecycle_state, i)) || input_keys_pressed_other_sources(i, p_new_state)) \
          { \
             BIT256_SET_PTR(p_new_state, i); \
          } \
@@ -3879,7 +3874,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
    for (i = cond1; i < cond2; i++) \
    { \
       bool bit_pressed = !cond3 && binds[i].valid && current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, i); \
-      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state)) \
+      if (bit_pressed || ((i >= RARCH_FIRST_META_KEY) && BIT64_GET(lifecycle_state, i)) || input_keys_pressed_other_sources(i, p_new_state)) \
       { \
          BIT256_SET_PTR(p_new_state, i); \
       } \
