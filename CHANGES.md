@@ -9,6 +9,7 @@
 - D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though.
 - D3D10/11/12: Add option to select which GPU to render with.
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
+- INPUT: Menu toggle hotkey can now be bound to another keyboard key and it will toggle properly.
 - IOS: Correctly centers screen on iPhone X landscape.
 - LOCALIZATION: Update Korean translation.
 - LOCALIZATION: Update Japanese translation.
