@@ -3761,13 +3761,6 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
-   input_driver_block_libretro_input            = false;
-   input_driver_block_hotkey                    = false;
-
-   if (     current_input->keyboard_mapping_is_blocked
-         && current_input->keyboard_mapping_is_blocked(current_input_data))
-      input_driver_block_hotkey = true;
-
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
       const struct retro_keybind *enable_hotkey    =
@@ -3831,13 +3824,6 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
-
-   input_driver_block_libretro_input            = false;
-   input_driver_block_hotkey                    = false;
-
-   if (current_input->keyboard_mapping_is_blocked
-         && current_input->keyboard_mapping_is_blocked(current_input_data))
-      input_driver_block_hotkey = true;
 
    for (i = 0; i < max_users; i++)
    {
@@ -15820,6 +15806,14 @@ static enum runloop_state runloop_check_state(
 #endif
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
+
+   input_driver_block_libretro_input            = false;
+   input_driver_block_hotkey                    = false;
+
+   if (     current_input->keyboard_mapping_is_blocked
+         && current_input->keyboard_mapping_is_blocked(current_input_data))
+      input_driver_block_hotkey = true;
+
 
 #ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
