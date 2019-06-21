@@ -3816,7 +3816,27 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
 
    if (!menu_input_dialog_get_display_kb())
    {
-      unsigned ids[18][2];
+      unsigned ids[][2] =
+      {
+         {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START   },
+         {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X       },
+         {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT  },
+         {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT   },
+         {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT    },
+         {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN    },
+         {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP      },
+         {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L       },
+         {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R       },
+         {0,                RARCH_QUIT_KEY                 },
+         {0,                RARCH_FULLSCREEN_TOGGLE_KEY    },
+         {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
+         {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+         {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
+         {0,                RARCH_UI_COMPANION_TOGGLE     },
+         {0,                RARCH_FPS_TOGGLE              },
+         {0,                RARCH_SEND_DEBUG_INFO         },
+         {0,                RARCH_NETPLAY_HOST_TOGGLE     },
+      };
       const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
       const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
       const struct retro_keybind *companionkey = &input_config_binds[0][RARCH_UI_COMPANION_TOGGLE];
@@ -3824,42 +3844,12 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
       const struct retro_keybind *debugkey = &input_config_binds[0][RARCH_SEND_DEBUG_INFO];
       const struct retro_keybind *netplaykey = &input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE];
 
-      ids[0][0]  = RETROK_SPACE;
-      ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
-      ids[1][0]  = RETROK_SLASH;
-      ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
-      ids[2][0]  = RETROK_RSHIFT;
-      ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
-      ids[3][0]  = RETROK_RIGHT;
-      ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-      ids[4][0]  = RETROK_LEFT;
-      ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
-      ids[5][0]  = RETROK_DOWN;
-      ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
-      ids[6][0]  = RETROK_UP;
-      ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
-      ids[7][0]  = RETROK_PAGEUP;
-      ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
-      ids[8][0]  = RETROK_PAGEDOWN;
-      ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
       ids[9][0]  = quitkey->key;
-      ids[9][1]  = RARCH_QUIT_KEY;
       ids[10][0] = fskey->key;
-      ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
-      ids[11][0] = RETROK_BACKSPACE;
-      ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
-      ids[12][0] = RETROK_RETURN;
-      ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
-      ids[13][0] = RETROK_DELETE;
-      ids[13][1] = RETRO_DEVICE_ID_JOYPAD_Y;
       ids[14][0] = companionkey->key;
-      ids[14][1] = RARCH_UI_COMPANION_TOGGLE;
       ids[15][0] = fpskey->key;
-      ids[15][1] = RARCH_FPS_TOGGLE;
       ids[16][0] = debugkey->key;
-      ids[16][1] = RARCH_SEND_DEBUG_INFO;
       ids[17][0] = netplaykey->key;
-      ids[17][1] = RARCH_NETPLAY_HOST_TOGGLE;
 
       if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
@@ -3867,7 +3857,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
          ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
       }
 
-      for (i = 0; i < 18; i++)
+      for (i = 0; i < ARRAY_SIZE(ids); i++)
       {
          if (current_input->input_state(current_input_data,
                   joypad_info, binds, 0,
