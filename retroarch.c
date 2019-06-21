@@ -2861,72 +2861,7 @@ enum menu_mouse_action
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
-static unsigned mouse_old_x               = 0;
-static unsigned mouse_old_y               = 0;
 static menu_input_t menu_input_state;
-
-static rarch_timer_t mouse_activity_timer = {0};
-
-/* This function gets called for handling pointer events.
- *
- * Pointer events are touchscreen events that are spawned
- * by touchpad/touchscreen. */
-static int menu_event_pointer(unsigned *action)
-{
-   rarch_joypad_info_t joypad_info;
-   int pointer_x, pointer_y;
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
-   const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   menu_input_t *menu_input                     = &menu_input_state;
-   int pointer_device                           = menu_driver_is_texture_set()
-      ?
-      RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
-
-   menu_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
-
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
-   joypad_info.axis_threshold                   = 0.0f;
-
-   pointer_x                                    =
-      current_input->input_state(current_input_data, joypad_info, binds,
-            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
-   pointer_y                                    =
-      current_input->input_state(current_input_data, joypad_info, binds,
-            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
-
-   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data,
-         joypad_info,
-         binds,
-         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.pressed[1]  = current_input->input_state(current_input_data,
-         joypad_info,
-         binds,
-         0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.back        = current_input->input_state(current_input_data,
-         joypad_info,
-         binds,
-         0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
-
-   menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
-   menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
-
-   return 0;
-}
-
-/* Check if a specific keyboard key has been pressed. */
-static unsigned char menu_event_kb_is_set(enum retro_key key)
-{
-   return menu_keyboard_key_state[key];
-}
-
-/* Set a specific keyboard key latch. */
-static void menu_event_kb_set_internal(unsigned idx, unsigned char key)
-{
-   menu_keyboard_key_state[idx] = key;
-}
 
 /* Set a specific keyboard key.
  *
@@ -2941,10 +2876,10 @@ void menu_event_kb_set(bool down, enum retro_key key)
       unsigned i;
 
       for (i = 0; i < RETROK_LAST; i++)
-         menu_event_kb_set_internal(i, (menu_event_kb_is_set((enum retro_key)i) & 1) << 1);
+         menu_keyboard_key_state[i] = (menu_keyboard_key_state[(enum retro_key)i] & 1) << 1;
    }
    else
-      menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
+      menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
 }
 
 /*
@@ -2966,33 +2901,29 @@ void menu_event_kb_set(bool down, enum retro_key key)
  * entire button state either but do a separate event per button
  * state.
  */
-static unsigned menu_event(
-      input_bits_t *p_input,
-      input_bits_t *p_trigger_input)
+static unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
-   static unsigned ok_old                  = 0;
-   unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
+   static unsigned ok_old                  = 0;
+   unsigned ret                            = MENU_ACTION_NOOP;
    bool set_scroll                         = false;
    bool mouse_enabled                      = false;
    size_t new_scroll_accel                 = 0;
-   menu_input_t *menu_input                = NULL;
+   menu_input_t *menu_input                = &menu_input_state;
    settings_t *settings                    = configuration_settings;
    bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool input_swap_override                =
-      input_autoconfigure_get_swap_override();
+   bool input_swap_override                = input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                    = (!input_swap_override &&
       swap_ok_cancel_btns) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                = (!input_swap_override &&
       swap_ok_cancel_btns) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                     = BIT256_GET_PTR(p_input,
-         menu_ok_btn );
+   unsigned ok_current                     = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                     = ok_current & ~ok_old;
    bool is_rgui                            = string_is_equal(settings->arrays.menu_driver, "rgui");
 
@@ -3139,10 +3070,10 @@ static unsigned menu_event(
          ret = MENU_ACTION_TOGGLE;
    }
 
-   if (menu_event_kb_is_set(RETROK_F11))
+   if (menu_keyboard_key_state[RETROK_F11])
    {
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      menu_event_kb_set_internal(RETROK_F11, 0);
+      menu_keyboard_key_state[RETROK_F11] = 0;
    }
 
    mouse_enabled                      = settings->bools.menu_mouse_enable;
@@ -3152,13 +3083,53 @@ static unsigned menu_event(
             && input_overlay_is_alive(overlay_ptr));
 #endif
 
-   menu_input = &menu_input_state;
-
    if (!mouse_enabled)
       menu_input->mouse.ptr = 0;
 
    if (settings->bools.menu_pointer_enable)
-      menu_event_pointer(&ret);
+   {
+      /* This function gets called for handling pointer events.
+       *
+       * Pointer events are touchscreen events that are spawned
+       * by touchpad/touchscreen. */
+      rarch_joypad_info_t joypad_info;
+      int pointer_x, pointer_y;
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+      const struct retro_keybind *binds[MAX_USERS] = {NULL};
+      int pointer_device                           = menu_driver_is_texture_set()
+         ?
+         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+
+      menu_display_get_fb_size(&fb_width, &fb_height,
+            &fb_pitch);
+
+      joypad_info.joy_idx                          = 0;
+      joypad_info.auto_binds                       = NULL;
+      joypad_info.axis_threshold                   = 0.0f;
+
+      pointer_x                                    =
+         current_input->input_state(
+               current_input_data, joypad_info, binds,
+               0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
+      pointer_y                                    =
+         current_input->input_state(
+               current_input_data, joypad_info, binds,
+               0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+
+      menu_input->pointer.pressed[0]  = current_input->input_state(
+            current_input_data, joypad_info, binds,
+            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+      menu_input->pointer.pressed[1]  = current_input->input_state(
+            current_input_data, joypad_info, binds,
+            0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
+      menu_input->pointer.back        = current_input->input_state(
+            current_input_data, joypad_info, binds,
+            0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
+
+      menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+      menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+   }
    else
    {
       menu_input->pointer.x          = 0;
@@ -3329,6 +3300,7 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       unsigned action)
 {
+   static rarch_timer_t mouse_activity_timer = {0};
    bool mouse_activity      = false;
    bool no_mouse_activity   = false;
    uint64_t mouse_state     = MENU_MOUSE_ACTION_NONE;
@@ -3342,7 +3314,10 @@ static int menu_input_mouse_frame(
 
    if ((settings->bools.menu_pointer_enable || mouse_enable))
    {
+      static unsigned mouse_old_x               = 0;
+      static unsigned mouse_old_y               = 0;
       menu_ctx_pointer_t point;
+
       point.x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       point.y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       point.ptr     = 0;
@@ -7227,6 +7202,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
    audio_driver_data_ptr = 0;
 }
 
+#ifdef HAVE_MENU
 static void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
@@ -7267,6 +7243,7 @@ static void audio_driver_menu_sample(void)
    if (check_flush)
       audio_driver_flush(samples_buf, sample_count, runloop_slowmotion);
 }
+#endif
 
 /**
  * audio_driver_sample_batch:
@@ -16185,7 +16162,7 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
 
-      if (menu_event_kb_is_set(RETROK_F1) == 1)
+      if (menu_keyboard_key_state[RETROK_F1] == 1)
       {
          if (menu_driver_is_alive())
          {
@@ -16197,7 +16174,7 @@ static enum runloop_state runloop_check_state(
             }
          }
       }
-      else if ((!menu_event_kb_is_set(RETROK_F1) &&
+      else if ((!menu_keyboard_key_state[RETROK_F1] &&
                (pressed && !old_pressed)) ||
             (current_core_type == CORE_TYPE_DUMMY))
       {
