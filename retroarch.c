@@ -2517,19 +2517,7 @@ static void input_poll(void)
 #endif
 }
 
-/**
- * input_state:
- * @port                 : user number.
- * @device               : device identifier of user.
- * @idx                  : index value of user.
- * @id                   : identifier of key pressed by user.
- *
- * Input state callback function.
- *
- * Returns: Non-zero if the given key (identified by @id)
- * was pressed by the user (assigned to @port).
- **/
-int16_t input_state(unsigned port, unsigned device,
+static int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    int16_t bsv_result;
@@ -2540,17 +2528,6 @@ int16_t input_state(unsigned port, unsigned device,
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
    bool reset_state    = false;
-
-   if (  (device == RETRO_DEVICE_JOYPAD) &&
-         (id == RETRO_DEVICE_ID_JOYPAD_MASK))
-   {
-      unsigned i;
-
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-         if (input_state(port, device, idx, i))
-            res |= (1 << i);
-      return res;
-   }
 
    device &= RETRO_DEVICE_MASK;
 
@@ -2678,6 +2655,36 @@ int16_t input_state(unsigned port, unsigned device,
    bsv_movie_set_input(&res);
 
    return res;
+}
+
+/**
+ * input_state:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id)
+ * was pressed by the user (assigned to @port).
+ **/
+int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   if (  (device == RETRO_DEVICE_JOYPAD) &&
+         (id == RETRO_DEVICE_ID_JOYPAD_MASK))
+   {
+      unsigned i;
+      int16_t res = 0;
+
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+         if (input_state_internal(port, device, idx, i))
+            res |= (1 << i);
+      return res;
+   }
+
+   return input_state_internal(port, device, idx, id);
 }
 
 /**
