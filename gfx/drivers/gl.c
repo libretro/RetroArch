@@ -4070,15 +4070,6 @@ static bool gl2_set_shader(void *data,
 
    gl2_context_bind_hw_render(gl, false);
 
-   gl->shader->deinit(gl->shader_data);
-   gl->shader_data = NULL;
-
-   if (string_is_empty(path))
-   {
-      gl2_context_bind_hw_render(gl, true);
-      return true;
-   }
-
    fallback = gl2_get_fallback_shader_type(type);
 
    if (fallback == RARCH_SHADER_NONE)
@@ -4086,6 +4077,9 @@ static bool gl2_set_shader(void *data,
       RARCH_ERR("[GL]: No supported shader backend found!\n");
       goto error;
    }
+
+   gl->shader->deinit(gl->shader_data);
+   gl->shader_data = NULL;
 
    if (type != fallback)
    {

@@ -1816,9 +1816,6 @@ static bool d3d9_set_shader(void *data,
       free(d3d->shader_path);
    d3d->shader_path = NULL;
 
-   if (string_is_empty(path))
-      return true;
-
    switch (type)
    {
       case RARCH_SHADER_CG:
@@ -1828,7 +1825,6 @@ static bool d3d9_set_shader(void *data,
          break;
       default:
          RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
-         return false;
    }
 
    if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
