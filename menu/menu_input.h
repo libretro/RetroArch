@@ -58,27 +58,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-/*
- * This function gets called in order to process all input events
- * for the current frame.
- *
- * Sends input code to menu for one frame.
- *
- * It uses as input the local variables' input' and 'trigger_input'.
- *
- * Mouse and touch input events get processed inside this function.
- *
- * NOTE: 'input' and 'trigger_input' is sourced from the keyboard and/or
- * the gamepad. It does not contain input state derived from the mouse
- * and/or touch - this gets dealt with separately within this function.
- *
- * TODO/FIXME - maybe needs to be overhauled so we can send multiple
- * events per frame if we want to, and we shouldn't send the
- * entire button state either but do a separate event per button
- * state.
- */
-unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_state);
-
 /* Set a specific keyboard key.
  *
  * 'down' sets the latch (true would
@@ -86,9 +65,6 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_state);
  * the key has been released).
  **/
 void menu_event_kb_set(bool down, enum retro_key key);
-
-/* Check if a specific keyboard key has been pressed. */
-unsigned char menu_event_kb_is_set(enum retro_key key);
 
 void menu_input_post_iterate(int *ret, unsigned action);
 
