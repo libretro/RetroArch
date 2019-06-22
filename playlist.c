@@ -148,7 +148,7 @@ static bool playlist_path_equal(const char *real_path, const char *entry_path)
       if (delim)
       {
          char compressed_path_b[PATH_MAX_LENGTH] = {0};
-         unsigned len = 1 + delim - full_path;
+         unsigned len = (unsigned)(1 + delim - full_path);
 
          strlcpy(compressed_path_b, full_path,
                (len < PATH_MAX_LENGTH ? len : PATH_MAX_LENGTH) * sizeof(char));

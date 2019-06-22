@@ -770,7 +770,7 @@ retro_subsystem_info *content_file_init_subsystem(
    char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, subsystem_current_count,
+            subsystem_data, (unsigned)subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    msg[0] = '\0';

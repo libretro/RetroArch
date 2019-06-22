@@ -390,7 +390,7 @@ bool menu_widgets_msg_queue_push(
          if (task)
          {
             msg_widget->msg                  = strdup(title);
-            msg_widget->msg_len              = strlen(title);
+            msg_widget->msg_len              = (unsigned)strlen(title);
 
             msg_widget->task_error           = task->error;
             msg_widget->task_cancelled       = task->cancelled;
@@ -412,7 +412,7 @@ bool menu_widgets_msg_queue_push(
          {
             /* Compute rect width, wrap if necessary */
             /* Single line text > two lines text > two lines text with expanded width */
-            unsigned title_length   = strlen(title);
+            unsigned title_length   = (unsigned)strlen(title);
             char *msg               = strdup(title);
             unsigned width          = msg_queue_default_rect_width;
             unsigned text_width     = font_driver_get_message_width(font_regular, title, title_length, msg_queue_text_scale_factor);
@@ -440,7 +440,7 @@ bool menu_widgets_msg_queue_push(
             }
 
             msg_widget->msg         = msg;
-            msg_widget->msg_len     = strlen(msg);
+            msg_widget->msg_len     = (unsigned)strlen(msg);
             msg_widget->width       = width + simple_widget_padding/2;
          }
 
@@ -457,7 +457,7 @@ bool menu_widgets_msg_queue_push(
 
          if (task->title != msg_widget->task_title_ptr)
          {
-            unsigned len         = strlen(task->title);
+            unsigned len         = (unsigned)strlen(task->title);
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
 
             if (msg_widget->msg_new)
@@ -836,7 +836,7 @@ void menu_widgets_iterate(void)
       /* Regular messages are always above tasks */
       else
       {
-         unsigned idx = current_msgs->size - msg_queue_tasks_count;
+        unsigned idx = current_msgs->size - msg_queue_tasks_count;
          file_list_insert(current_msgs,
             NULL,
             NULL,
@@ -956,7 +956,7 @@ static int menu_widgets_draw_indicator(video_frame_info_t *video_info,
    {
       unsigned height = simple_widget_height;
       const char *txt = msg_hash_to_str(msg);
-      width = font_driver_get_message_width(font_regular, txt, strlen(txt), 1) + simple_widget_padding*2;
+      width = font_driver_get_message_width(font_regular, txt, (unsigned)strlen(txt), 1) + simple_widget_padding*2;
 
       menu_display_draw_quad(video_info,
          top_right_x_advance - width, y,

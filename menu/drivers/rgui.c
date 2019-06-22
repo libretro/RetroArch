@@ -2943,12 +2943,11 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
    
    /* Draw input buffer text */
    {
-      unsigned input_str_length;
       unsigned input_str_char_offset;
       int input_str_x, input_str_y;
       int text_cursor_x;
+      unsigned input_str_length = (unsigned)strlen(input_str);
       
-      input_str_length = strlen(input_str);
       if (input_str_length > input_str_max_length)
       {
          input_str_char_offset = input_str_length - input_str_max_length;
@@ -3347,7 +3346,7 @@ static void rgui_render(void *data, bool is_idle)
                percent_str[powerstate_len] = '\0';
 
                powerstate_len += 2;
-               powerstate_x = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
+               powerstate_x    = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
 
                /* Draw symbol */
                blit_symbol(fb_width, powerstate_x, title_y, powerstate_symbol,
@@ -3378,7 +3377,7 @@ static void rgui_render(void *data, bool is_idle)
       string_to_upper(title_buf);
 
       title_len = utf8len(title_buf);
-      title_x = rgui_term_layout.start_x +
+      title_x   = rgui_term_layout.start_x +
                 (rgui_term_layout.width - title_len) * FONT_WIDTH_STRIDE / 2;
 
       /* Title is always centred, unless it is long enough
@@ -3472,7 +3471,7 @@ static void rgui_render(void *data, bool is_idle)
             if (settings->bools.menu_rgui_full_width_layout)
             {
                /* Resize fields according to actual length of value string */
-               entry_value_len = strlen(entry_value);
+               entry_value_len = (unsigned)strlen(entry_value);
                entry_value_len = entry_value_len > rgui_term_layout.value_maxlen ?
                      rgui_term_layout.value_maxlen : entry_value_len;
             }

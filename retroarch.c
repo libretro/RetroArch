@@ -17550,7 +17550,7 @@ void rarch_send_debug_info(void)
          2, 180, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   param_buf_pos = strlcpy(param_buf, "info=", param_buf_size);
+   param_buf_pos = (int)strlcpy(param_buf, "info=", param_buf_size);
    param_buf_tmp = param_buf + param_buf_pos;
 
    net_http_urlencode(&param_buf_tmp, info_buf);
