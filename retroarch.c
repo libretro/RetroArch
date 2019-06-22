@@ -9146,11 +9146,12 @@ bool video_driver_cached_frame(void)
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
-   retro_ctx.frame_cb(
-         (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-         ? frame_cache_data : NULL,
-         frame_cache_width,
-         frame_cache_height, frame_cache_pitch);
+   if (current_core.inited)
+      video_driver_frame(
+             (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
+             ? frame_cache_data : NULL,
+             frame_cache_width,
+             frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
 
