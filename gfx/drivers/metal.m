@@ -129,11 +129,16 @@ static bool metal_set_shader(void *data,
    if (!md)
       return false;
 
-   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
+      if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+         RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
       path = NULL;
    }
+
+   /* TODO actually return to stock */
+   if (string_is_empty(path))
+      return true;
 
    return [md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]];
 #else

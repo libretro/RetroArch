@@ -1134,10 +1134,6 @@ typedef struct MTLALIGN(16)
 
 - (BOOL)setShaderFromPath:(NSString *)path
 {
-   /* TODO use stock shader if string_is_empty(path.UTF8String), this is just a safety guard: */
-   if (string_is_empty(path.UTF8String))
-      return YES;
-
    [self _freeVideoShader:_shader];
    _shader = nil;
 
