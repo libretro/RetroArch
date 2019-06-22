@@ -73,6 +73,38 @@ enum {
 /* Use this to enable/disable using the touch screen as mouse */
 #define ENABLE_TOUCH_SCREEN_MOUSE 1
 
+#define AKEYCODE_ASSIST 219
+
+#define LAST_KEYCODE AKEYCODE_ASSIST
+
+#define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
+
+/* First ports are used to keep track of gamepad states. 
+ * Last port is used for keyboard state */
+static uint8_t android_key_state[MAX_PADS+1][MAX_KEYS];
+
+static bool android_keyboard_port_input_pressed(
+      const struct retro_keybind *binds, unsigned id)
+{
+   return BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[binds[id].key]);
+}
+
+#define android_keyboard_input_pressed(key) (BIT_GET(android_key_state[0], (key)))
+
+uint8_t *android_keyboard_state_get(unsigned port)
+{
+   return android_key_state[port];
+}
+
+static void android_keyboard_free(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < MAX_PADS; i++)
+      for (j = 0; j < MAX_KEYS; j++)
+         android_key_state[i][j] = 0;
+}
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -853,8 +885,8 @@ static INLINE void android_input_poll_event_type_key(
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
-   uint8_t *buf = android_keyboard_state_get(port);
-   int action  = AKeyEvent_getAction(event);
+   uint8_t *buf = android_key_state[port];
+   int action   = AKeyEvent_getAction(event);
 
    /* some controllers send both the up and down events at once
     * when the button is released for "special" buttons, like menu buttons
@@ -1343,6 +1375,7 @@ static bool android_input_key_pressed(void *data, int key)
       &input_config_binds[0][key];
 
    if(       keyptr->valid
+         && (key < RARCH_BIND_LIST_END)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
@@ -1441,11 +1474,11 @@ static int16_t android_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && BIT_GET(android_keyboard_state_get(ANDROID_KEYBOARD_PORT), rarch_keysym_lut[id]);
+         return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_JOYPAD:
          ret = input_joypad_pressed(android->joypad, joypad_info,
                port, binds[port], id);
-         if (!ret)
+         if (!ret && (id < RARCH_BIND_LIST_END))
             ret = android_keyboard_port_input_pressed(binds[port],id);
          return ret;
       case RETRO_DEVICE_ANALOG:
