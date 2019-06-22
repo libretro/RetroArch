@@ -1690,7 +1690,7 @@ bool recording_init(void)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(
-               video_driver_frame_filter_get_ptr(),
+               video_driver_state_filter,
                &max_width, &max_height);
          params.fb_width  = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);
@@ -9122,11 +9122,6 @@ float video_driver_get_aspect_ratio(void)
 void video_driver_set_aspect_ratio_value(float value)
 {
    video_driver_aspect_ratio = value;
-}
-
-rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
-{
-   return video_driver_state_filter;
 }
 
 enum retro_pixel_format video_driver_get_pixel_format(void)
@@ -18119,8 +18114,13 @@ bool core_unload_game(void)
 
 bool core_run(void)
 {
+   bool early_polling    = current_core.poll_type == POLL_TYPE_EARLY;
+   bool late_polling     = current_core.poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
-   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
+   bool netplay_preframe = netplay_driver_ctl(
+         RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
+
+   if (!netplay_preframe)
    {
       /* Paused due to netplay. We must poll and display something so that a
        * netplay peer pausing doesn't just hang. */
@@ -18130,21 +18130,14 @@ bool core_run(void)
    }
 #endif
 
-   switch (current_core.poll_type)
-   {
-      case POLL_TYPE_EARLY:
-         input_poll();
-         break;
-      case POLL_TYPE_LATE:
-         current_core.input_polled = false;
-         break;
-      default:
-         break;
-   }
+   if (early_polling)
+      input_poll();
+   else if (late_polling)
+      current_core.input_polled = false;
 
    current_core.retro_run();
 
-   if (current_core.poll_type == POLL_TYPE_LATE && !current_core.input_polled)
+   if (late_polling && !current_core.input_polled)
       input_poll();
 
 #ifdef HAVE_NETWORKING
