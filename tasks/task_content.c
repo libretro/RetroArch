@@ -1104,7 +1104,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
             entry.core_name       = (char*)core_name;
             entry.crc32           = (char*)crc32;
             entry.db_name         = (char*)db_name;
-            entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM),
+            entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM);
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
 
