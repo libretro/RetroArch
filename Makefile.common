@@ -1333,7 +1333,6 @@ ifeq ($(HAVE_D3D9), 1)
       HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += $(D3D9_LIBS)
       ifeq ($(HAVE_D3DX9), 1)
          LIBS += $(D3DX9_LIBS)
       endif
@@ -1401,7 +1400,6 @@ ifeq ($(HAVE_D3D8), 1)
       HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += $(D3D8_LIBS)
       ifeq ($(HAVE_D3DX8), 1)
          LIBS += $(D3DX8_LIBS)
       endif

@@ -296,8 +296,6 @@ check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
-   check_lib '' D3D8 -ld3d8
-   check_lib '' D3D9 -ld3d9
    check_lib '' DSOUND -ldsound
 
    if [ "$HAVE_D3DX" != 'no' ]; then
