@@ -1068,7 +1068,7 @@ static void xmb_update_thumbnail_image(void *data)
 
          if (menu_thumbnail_get_system(xmb->thumbnail_path_data, &system))
             task_push_pl_entry_thumbnail_download(system,
-                  playlist_get_cached(), menu_navigation_get_selection(),
+                  playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
                   false, true);
       }
    }

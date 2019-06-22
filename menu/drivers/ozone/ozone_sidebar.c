@@ -126,7 +126,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       return;
 
    if (ozone->horizontal_list)
-      horizontal_list_size = ozone->horizontal_list->size;
+      horizontal_list_size = (unsigned)ozone->horizontal_list->size;
 
    menu_display_scissor_begin(video_info, 0, ozone->dimensions.header_height, (unsigned) ozone->dimensions.sidebar_width, video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
 

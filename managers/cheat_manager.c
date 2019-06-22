@@ -774,7 +774,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             }
 
             cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers - 1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
-            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers - 1] = system->mmaps.descriptors[i].core.len;
+            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers - 1] = (unsigned)system->mmaps.descriptors[i].core.len;
             cheat_manager_state.total_memory_size += system->mmaps.descriptors[i].core.len;
 
             if (!cheat_manager_state.curr_memory_buf)

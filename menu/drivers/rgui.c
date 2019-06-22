@@ -3346,7 +3346,7 @@ static void rgui_render(void *data, bool is_idle)
                percent_str[powerstate_len] = '\0';
 
                powerstate_len += 2;
-               powerstate_x    = term_end_x - (powerstate_len * FONT_WIDTH_STRIDE);
+               powerstate_x    = (unsigned)(term_end_x - (powerstate_len * FONT_WIDTH_STRIDE));
 
                /* Draw symbol */
                blit_symbol(fb_width, powerstate_x, title_y, powerstate_symbol,
@@ -4295,7 +4295,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
 
       if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
          task_push_pl_entry_thumbnail_download(system,
-               playlist_get_cached(), menu_navigation_get_selection(),
+               playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
                false, true);
    }
 #endif

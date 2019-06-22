@@ -208,9 +208,9 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
       }
 
       if (number[0] == '0' && number[1] == 'x')
-        key = strtoul(&number[2], 0, 16);
+        key = (unsigned)strtoul(&number[2], 0, 16);
       else
-        key = strtoul(&number[0], 0, 10);
+        key = (unsigned)strtoul(&number[0], 0, 10);
 
       item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
       item->value = key;

@@ -332,15 +332,15 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
       frame_offset = stream->offset % stream->frame_size;
       amount = stream->frame_size - frame_offset;
       if (amount > end - stream->offset)
-         amount = end - stream->offset;
+         amount = (uint32_t)(end - stream->offset);
 
       /* In pregap */
       if (stream->offset < stream->track_start)
          memset(out + data_offset, 0, amount);
       else
       {
-         chd_frame = stream->track_frame +
-            (stream->offset - stream->track_start) / stream->frame_size;
+         chd_frame = (uint32_t)(stream->track_frame +
+            (stream->offset - stream->track_start) / stream->frame_size);
          hunk = chd_frame / stream->frames_per_hunk;
          hunk_offset = (chd_frame % stream->frames_per_hunk) * hd->unitbytes;
 

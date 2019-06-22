@@ -836,7 +836,7 @@ void menu_widgets_iterate(void)
       /* Regular messages are always above tasks */
       else
       {
-        unsigned idx = current_msgs->size - msg_queue_tasks_count;
+        unsigned idx = (unsigned)(current_msgs->size - msg_queue_tasks_count);
          file_list_insert(current_msgs,
             NULL,
             NULL,
@@ -879,7 +879,7 @@ void menu_widgets_iterate(void)
 
       if (msg->expired && !widgets_moving)
       {
-         menu_widgets_msg_queue_kill(i);
+         menu_widgets_msg_queue_kill((unsigned)i);
          break;
       }
    }
@@ -1650,7 +1650,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    {
       const char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
 
-      int text_width  = font_driver_get_message_width(font_regular, text, strlen(text), 1.0f);
+      int text_width  = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
       int total_width = text_width + simple_widget_padding * 2;
 
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
@@ -2441,7 +2441,7 @@ bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
    menu_timer_start(&libretro_message_timer, &timer);
 
    /* Compute text width */
-   libretro_message_width = font_driver_get_message_width(font_regular, msg, strlen(msg), 1) + simple_widget_padding * 2;
+   libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
 
    return true;
 }
