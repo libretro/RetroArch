@@ -321,7 +321,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
             strlcat(new_domain, "/", sizeof(new_domain));
             strlcat(new_domain, strchr(uri, (char) '/')+sizeof(char), sizeof(new_domain));
          }
-         strlcpy(conn->scan, new_domain, sizeof(new_domain));
+         strlcpy(conn->scan, new_domain, strlen(conn->scan) + 1);
       }
    }
    /* end of port-fetching from url  */
