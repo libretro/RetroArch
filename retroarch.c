@@ -9148,6 +9148,7 @@ bool video_driver_cached_frame(void)
 
    if (current_core.inited)
    {
+#ifdef HAVE_NETWORKING
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
          video_frame_net(
                (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
@@ -9155,6 +9156,7 @@ bool video_driver_cached_frame(void)
                frame_cache_width,
                frame_cache_height, frame_cache_pitch);
       else
+#endif
          video_driver_frame(
                (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
                ? frame_cache_data : NULL,

@@ -1768,8 +1768,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
       {
-         settings_t *settings      = config_get_ptr();
 #ifdef HAVE_TRANSLATE
+         settings_t *settings      = config_get_ptr();
          if (settings->uints.ai_service_mode == 0)
          {
             /* Default mode - pause on call, unpause on second press. */
@@ -1779,15 +1779,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
             }
             else
-            {
                command_event(CMD_EVENT_UNPAUSE, NULL);
-            }
          }
+         /* Text-to-Speech mode - don't pause */
          else if (settings->uints.ai_service_mode == 1)
-         {
-            /* Text-to-Speech mode - don't pause */
             command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
-         }
          else
          {
             RARCH_LOG("Invalid AI Service Mode.\n");
@@ -2817,6 +2813,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
       case CMD_EVENT_NETPLAY_DISCONNECT:
       case CMD_EVENT_NETPLAY_ENABLE_HOST:
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
          return false;
 #endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
