@@ -278,7 +278,7 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
       if (parse->buffer && strncmp(line, "FormatType=", 11) == 0) {
         line += 11;
 
-        chars = endline - line;
+        chars = (int)(endline - line);
         if (chars > 63)
           chars = 63;
         memcpy(format, line, chars);
