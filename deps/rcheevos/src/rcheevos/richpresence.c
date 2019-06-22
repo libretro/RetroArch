@@ -78,7 +78,7 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
 
       /* handle string part */
       part->display_type = RC_FORMAT_STRING;
-      part->text = rc_alloc_str(parse, line, ptr - line);
+      part->text = rc_alloc_str(parse, line, (int)(ptr - line));
       if (part->text) {
         /* remove backslashes used for escaping */
         in = part->text;
@@ -203,7 +203,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
       line += chars + 1;
 
       if (chars == 1 && number[0] == '*') {
-        defaultlabel = rc_alloc_str(parse, line, endline - line);
+        defaultlabel = rc_alloc_str(parse, line, (int)(endline - line));
         continue;
       }
 
@@ -214,7 +214,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
 
       item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
       item->value = key;
-      item->label = rc_alloc_str(parse, line, endline - line);
+      item->label = rc_alloc_str(parse, line, (int)(endline - line));
       *next = item;
       next = &item->next_item;
     }
@@ -257,7 +257,7 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
       line += 7;
 
       lookup = RC_ALLOC(rc_richpresence_lookup_t, parse);
-      lookup->name = rc_alloc_str(parse, line, endline - line);
+      lookup->name = rc_alloc_str(parse, line, (int)(endline - line));
       lookup->format = RC_FORMAT_LOOKUP;
       *nextlookup = lookup;
       nextlookup = &lookup->next;
@@ -268,7 +268,7 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
       line += 7;
 
       lookup = RC_ALLOC(rc_richpresence_lookup_t, parse);
-      lookup->name = rc_alloc_str(parse, line, endline - line);
+      lookup->name = rc_alloc_str(parse, line, (int)(endline - line));
       lookup->first_item = 0;
       *nextlookup = lookup;
       nextlookup = &lookup->next;
@@ -419,7 +419,7 @@ int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsi
         part = part->next;
       }
 
-      return (ptr - buffer);
+      return (int)(ptr - buffer);
     }
 
     display = display->next;
