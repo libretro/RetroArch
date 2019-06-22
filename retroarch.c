@@ -16076,14 +16076,13 @@ static enum runloop_state runloop_check_state(
 
       if (focused || !runloop_idle)
       {
-         bool libretro_running = menu_display_libretro_running(
+         bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
+         bool libretro_running   = menu_display_libretro_running(
                rarch_is_initialized,
-               (current_core_type == CORE_TYPE_DUMMY));
+               core_type_is_dummy);
 
          menu_driver_render(runloop_idle, rarch_is_initialized,
-               (current_core_type == CORE_TYPE_DUMMY)
-               )
-            ;
+              core_type_is_dummy);
          if (settings->bools.audio_enable_menu &&
                !libretro_running)
             audio_driver_menu_sample();
@@ -16149,13 +16148,13 @@ static enum runloop_state runloop_check_state(
       bool pressed            = BIT256_GET(
             current_bits, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
+      bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
 
       if (menu_keyboard_key_state[RETROK_F1] == 1)
       {
          if (menu_driver_is_alive())
          {
-            if (rarch_is_initialized &&
-                  (current_core_type != CORE_TYPE_DUMMY))
+            if (rarch_is_initialized && !core_type_is_dummy)
             {
                rarch_menu_running_finished();
                menu_event_kb_set(false, RETROK_F1);
@@ -16164,12 +16163,11 @@ static enum runloop_state runloop_check_state(
       }
       else if ((!menu_keyboard_key_state[RETROK_F1] &&
                (pressed && !old_pressed)) ||
-            (current_core_type == CORE_TYPE_DUMMY))
+            core_type_is_dummy)
       {
          if (menu_driver_is_alive())
          {
-            if (rarch_is_initialized &&
-                  (current_core_type != CORE_TYPE_DUMMY))
+            if (rarch_is_initialized && !core_type_is_dummy)
                rarch_menu_running_finished();
          }
          else
