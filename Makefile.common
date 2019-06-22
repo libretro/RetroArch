@@ -1326,20 +1326,35 @@ ifeq ($(HAVE_CG), 1)
    LIBS += $(CG_LIBS)
 endif
 
-ifeq ($(HAVE_D3D9), 1)
+ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
-   DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX9), 1)
+   HAVE_DX_COMMON  = 1
+   DEFINES += -DHAVE_D3D8
+
+   ifeq ($(HAVE_D3DX), 1)
       HAVE_D3DX_COMMON = 1
    endif
-   ifneq ($(HAVE_DYLIB), 1)
-      LIBS += $(D3D9_LIBS)
-      ifeq ($(HAVE_D3DX9), 1)
-         LIBS += $(D3DX9_LIBS)
-      endif
+
+   OBJ += gfx/drivers/d3d8.o gfx/common/d3d8_common.o
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d8.o
    endif
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+   HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
-   OBJ  += gfx/drivers_font/d3d_w32_font.o
+   DEFINES += -DHAVE_D3D9
+
+   ifeq ($(HAVE_D3DX), 1)
+      HAVE_D3DX_COMMON = 1
+   endif
+
+   OBJ += gfx/drivers_font/d3d_w32_font.o \
+          gfx/drivers/d3d9.o \
+          gfx/common/d3d9_common.o
+
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
@@ -1347,6 +1362,10 @@ ifeq ($(HAVE_D3D9), 1)
 
    ifeq ($(HAVE_HLSL), 1)
       OBJ  += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
+   endif
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d9.o
    endif
 endif
 
@@ -1393,47 +1412,12 @@ ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    DEF_FLAGS += -Wno-unknown-pragmas
 endif
 
-ifeq ($(HAVE_D3D8), 1)
-   HAVE_D3D_COMMON = 1
-   HAVE_DX_COMMON  = 1
-   DEFINES += -DHAVE_D3D8
-   ifeq ($(HAVE_D3DX8), 1)
-      HAVE_D3DX_COMMON = 1
-   endif
-   ifneq ($(HAVE_DYLIB), 1)
-      LIBS += $(D3D8_LIBS)
-      ifeq ($(HAVE_D3DX8), 1)
-         LIBS += $(D3DX8_LIBS)
-      endif
-   endif
-endif
-
 ifeq ($(HAVE_D3DX_COMMON), 1)
    DEFINES += -DHAVE_D3DX
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
    LIBS += -ldxguid
-endif
-
-ifeq ($(HAVE_D3D8), 1)
-   DEFINES += -DHAVE_D3D8
-   OBJ += gfx/drivers/d3d8.o
-   OBJ += gfx/common/d3d8_common.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d8.o
-   endif
-endif
-
-ifeq ($(HAVE_D3D9), 1)
-   DEFINES += -DHAVE_D3D9
-   OBJ += gfx/drivers/d3d9.o
-   OBJ += gfx/common/d3d9_common.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d9.o
-   endif
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
