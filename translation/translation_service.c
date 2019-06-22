@@ -332,6 +332,13 @@ void handle_translation_cb(retro_task_t *task, void *task_data, void *user_data,
    void* raw_sound_data              = NULL;  
    settings_t *settings              = config_get_ptr();
 
+   int i                             = 0;
+   int start                         = -1;
+   char* found_string                = NULL;
+   int curr_state                    = 0;
+   char curr;
+
+
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
        &is_perfcnt_enable);
 
@@ -350,11 +357,6 @@ void handle_translation_cb(retro_task_t *task, void *task_data, void *user_data,
    /* Parse JSON body for the image and sound data */
 
    body_copy = strdup(data->data);
-   int i = 0;
-   int start = -1;
-   char* found_string = NULL;
-   int curr_state = 0;
-   char curr;
 
    while (true)
    {
@@ -491,30 +493,30 @@ void handle_translation_cb(retro_task_t *task, void *task_data, void *user_data,
       task_data->bufsize = new_sound_size;
       task_data->path=NULL;
       
-   audio_mixer_stream_params_t params;
-   nbio_buf_t *img = (nbio_buf_t*)task_data;
+      audio_mixer_stream_params_t params;
+      nbio_buf_t *img = (nbio_buf_t*)task_data;
   
-   if (!img)
-      return;
+      if (!img)
+         return;
    
-   params.volume               = 1.0f;
-   params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;//user->slot_selection_type;
-   params.slot_selection_idx   = 10;
-   params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM;//user->stream_type;
-   params.type                 = AUDIO_MIXER_TYPE_WAV;
-   params.state                = AUDIO_STREAM_STATE_PLAYING;
-   params.buf                  = img->buf;
-   params.bufsize              = img->bufsize;
-   params.cb                   = NULL;
-   params.basename             = NULL;
+      params.volume               = 1.0f;
+      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;//user->slot_selection_type;
+      params.slot_selection_idx   = 10;
+      params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM;//user->stream_type;
+      params.type                 = AUDIO_MIXER_TYPE_WAV;
+      params.state                = AUDIO_STREAM_STATE_PLAYING;
+      params.buf                  = img->buf;
+      params.bufsize              = img->bufsize;
+      params.cb                   = NULL;
+      params.basename             = NULL;
 
-   audio_driver_mixer_add_stream(&params);
+      audio_driver_mixer_add_stream(&params);
 
-   if (img->path)
-      free(img->path);
-   if (params.basename != NULL)
-      free(params.basename);
-   free(img);
+      if (img->path)
+         free(img->path);
+      if (params.basename != NULL)
+         free(params.basename);
+      free(img);
 
       RARCH_LOG("Loaded Sound Size: %i\n", new_sound_size);
    }
