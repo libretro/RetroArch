@@ -457,8 +457,6 @@ static bool menu_swap_ok_cancel_buttons = false;
 
 static bool quit_press_twice = false;
 
-static bool default_translation_service_enable = false;
-
 static bool default_log_to_file = false;
 static bool log_to_file_timestamp = false;
 
@@ -982,6 +980,6 @@ static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/
 
 static char default_discord_app_id[] = "475456035851599874";
 
-static char default_translation_service_url[] = "http://localhost:4404/";
+static char default_ai_service_url[] = "http://localhost:4404/";
 
 #endif

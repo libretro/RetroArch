@@ -5,7 +5,9 @@
 
 void call_translation_server(const char* body);
 
+/*
 bool g_translation_service_status;
+*/
 
 bool run_translation_service(void);
 

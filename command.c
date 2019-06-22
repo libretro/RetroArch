@@ -242,7 +242,7 @@ static const struct cmd_map map[] = {
    { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
    { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
-   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
+   { "AI_SERVICE",             RARCH_AI_SERVICE },
 };
 #endif
 
@@ -1767,8 +1767,34 @@ bool command_event(enum event_command cmd, void *data)
          bsv_movie_check();
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
-         /* TODO/FIXME - implement */
+      {
+         settings_t *settings      = config_get_ptr();
+#ifdef HAVE_TRANSLATE
+         if (settings->uints.ai_service_mode == 0)
+         {
+            /* Default mode - pause on call, unpause on second press. */
+            if (!rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+            {
+               command_event(CMD_EVENT_PAUSE, NULL);
+               command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+            }
+            else
+            {
+               command_event(CMD_EVENT_UNPAUSE, NULL);
+            }
+         }
+         else if (settings->uints.ai_service_mode == 1)
+         {
+            /* Text-to-Speech mode - don't pause */
+            command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+         }
+         else
+         {
+            RARCH_LOG("Invalid AI Service Mode.\n");
+         }
+#endif
          break;
+      }
       case CMD_EVENT_STREAMING_TOGGLE:
          if (streaming_is_enabled())
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -2524,7 +2550,6 @@ TODO: Add a setting for these tweaks */
             bool is_idle              = false;
             bool is_slowmotion        = false;
             bool is_perfcnt_enable    = false;
-            settings_t *settings      = config_get_ptr();
 
 #ifdef HAVE_DISCORD
             discord_userdata_t userdata;
@@ -2548,22 +2573,6 @@ TODO: Add a setting for these tweaks */
                if (!is_idle)
                   video_driver_cached_frame();
 
-               /* If OCR enabled, translate the screen while paused */
-               if (settings->bools.translation_service_enable)
-               {
-#ifdef HAVE_TRANSLATE
-                  if (!g_translation_service_status)
-                  {
-                     RARCH_LOG("OCR START\n");
-                     run_translation_service();
-                     g_translation_service_status = true;
-                  }
-#else
-                  RARCH_LOG("OCR Translation not enabled in build.  Include HAVE_TRANSLATE define.\n");
-#endif
-               }
-
-
 #ifdef HAVE_DISCORD
                userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
@@ -2573,9 +2582,6 @@ TODO: Add a setting for these tweaks */
             {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
                menu_widgets_set_paused(is_paused);
-#endif
-#ifdef HAVE_TRANSLATE
-               g_translation_service_status = false;
 #endif
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -3094,6 +3100,14 @@ TODO: Add a setting for these tweaks */
          }
 #endif
          break;
+
+      case CMD_EVENT_AI_SERVICE_CALL:
+         {
+#ifdef HAVE_TRANSLATE
+            RARCH_LOG("AI Service Called...\n");
+            run_translation_service();
+#endif
+         }
       case CMD_EVENT_NONE:
          return false;
    }

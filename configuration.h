@@ -334,9 +334,6 @@ typedef struct settings
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
 
-
-      bool translation_service_enable;
-
       bool log_to_file;
       bool log_to_file_timestamp;
 
