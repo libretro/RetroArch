@@ -155,7 +155,7 @@
 #define DEFAULT_DISABLE_COMPOSITION false
 
 /* Video VSYNC (recommended) */
-#define DEFAULT_VSYNC false
+#define DEFAULT_VSYNC true
 
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
