@@ -257,6 +257,7 @@ static int16_t switch_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   int16_t ret        = 0;
    switch_input_t *sw = (switch_input_t*) data;
 
    if (port > MAX_PADS-1)
@@ -265,9 +266,22 @@ static int16_t switch_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(sw->joypad,
-               joypad_info, port, binds[port], id);
-         break;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (input_joypad_pressed(
+                        sw->joypad, joypad_info, port, binds[port], i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            ret = input_joypad_pressed(sw->joypad,
+                  joypad_info, port, binds[port], id);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(sw->joypad,

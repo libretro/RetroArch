@@ -1473,19 +1473,35 @@ static int16_t android_input_state(void *data,
 
    switch (device)
    {
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_JOYPAD:
-         ret = input_joypad_pressed(android->joypad, joypad_info,
-               port, binds[port], id);
-         if (!ret && (id < RARCH_BIND_LIST_END))
-            ret = android_keyboard_port_input_pressed(binds[port],id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = input_joypad_pressed(android->joypad, joypad_info,
+                     port, binds[port], i);
+               if (!res)
+                  res = android_keyboard_port_input_pressed(binds[port], i);
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            ret = input_joypad_pressed(android->joypad, joypad_info,
+                  port, binds[port], id);
+            if (!ret && (id < RARCH_BIND_LIST_END))
+               ret = android_keyboard_port_input_pressed(binds[port],id);
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(android->joypad, joypad_info,
                   port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
          ret = android_mouse_state(android, id);
          return ret;

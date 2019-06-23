@@ -786,12 +786,25 @@ static int16_t qnx_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   qnx_input_t *qnx     = (qnx_input_t*)data;
+   int16_t ret                = 0;
+   qnx_input_t *qnx           = (qnx_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return qnx_is_pressed(qnx, joypad_info, binds[port], port, id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (qnx_is_pressed(
+                        qnx, joypad_info, port, binds[port], i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+            ret = qnx_is_pressed(qnx, joypad_info, port, binds[port], id);
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:

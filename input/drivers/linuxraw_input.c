@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2019 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -107,12 +107,31 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
-               linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
-               );
-         if (!ret)
-            ret = input_joypad_pressed(linuxraw->joypad,
-                  joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = (binds[port]->valid &&
+                     linuxraw->state[rarch_keysym_lut[
+                     (enum retro_key)binds[port][i].key]]
+                     );
+               if (!res)
+                  res = input_joypad_pressed(linuxraw->joypad,
+                        joypad_info, port, binds[port], i);
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
+                  linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+                  );
+            if (!ret)
+               ret = input_joypad_pressed(linuxraw->joypad,
+                     joypad_info, port, binds[port], id);
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
          ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);

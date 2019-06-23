@@ -73,7 +73,8 @@ static int16_t dos_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   dos_input_t *dos = (dos_input_t*)data;
+   int16_t ret                        = 0;
+   dos_input_t *dos                   = (dos_input_t*)data;
 
    if (port > 0)
       return 0;
@@ -81,8 +82,24 @@ static int16_t dos_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(dos->joypad, joypad_info, port, binds[port], id) ||
-               dos_keyboard_port_input_pressed(binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = input_joypad_pressed(ctr->joypad,
+                        joypad_info, port, binds[port], i);
+               if (!res)
+                  res = dos_keyboard_port_input_pressed(binds[port], i);
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+            ret = input_joypad_pressed(
+                  dos->joypad, joypad_info, port, binds[port], id) ||
+                  dos_keyboard_port_input_pressed(binds[port], id);
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return dos_keyboard_port_input_pressed(binds[port], id);
    }

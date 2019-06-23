@@ -292,10 +292,21 @@ static int16_t input_wl_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            ret = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
-         if (!ret && binds[port])
-            ret = input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            bool res = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][i].key]) ;
+            if (!res && binds[port])
+               res = input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], i);
+            if (res)
+               ret |= (1 << i);
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
+            if (!ret && binds[port])
+               ret = input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);

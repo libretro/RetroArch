@@ -590,15 +590,28 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret                = 0;
    struct dinput_input *di    = (struct dinput_input*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return dinput_is_pressed(di, joypad_info, binds[port], port, id);
-         break;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (dinput_is_pressed(di, joypad_info, binds[port], port,
+                     i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = dinput_is_pressed(di, joypad_info, binds[port], port, id);
+         }
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && di->state[
             rarch_keysym_lut[(enum retro_key)id]] & 0x80;

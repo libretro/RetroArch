@@ -309,11 +309,22 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return x_is_pressed(x11, joypad_info, binds[port], port, id);
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (x_is_pressed(
+                        x11, joypad_info, binds[port], port, i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = x_is_pressed(x11, joypad_info, binds[port], port, id);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret && binds[port])
@@ -321,6 +332,8 @@ static int16_t x_input_state(void *data,
                   port, idx,
                   id, binds[port]);
          return ret;
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
       case RARCH_DEVICE_MOUSE_SCREEN:

@@ -64,16 +64,27 @@ static int16_t xenon360_input_state(void *data,
       bool port, unsigned device,
       unsigned idx, unsigned id)
 {
-   unsigned user   = port;
-   uint64_t button = binds[user][id].joykey;
+   int16_t ret                = 0;
+   uint64_t button            = binds[port][id].joykey;
 
-   if (user >= MAX_PADS)
+   if (port >= MAX_PADS)
       return 0;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (state[user] & button) ? 1 : 0;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (state[port] & binds[port][i].joykey)
+                  ret |= (1 << i);
+            }
+         }
+         else
+            ret = (state[port] & binds[port][id].joykey) ? 1 : 0;
+         return ret;
       default:
          break;
    }

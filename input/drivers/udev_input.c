@@ -965,10 +965,22 @@ static int16_t udev_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return udev_is_pressed(udev, joypad_info, binds[port], port, id);
-         break;
-
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (udev_is_pressed(
+                        udev, joypad_info, binds[port], port, i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = udev_is_pressed(udev, joypad_info, binds[port], port, id);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret && binds[port])

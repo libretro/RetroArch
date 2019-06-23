@@ -2517,8 +2517,11 @@ static void input_poll(void)
 #endif
 }
 
-static int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+static int16_t input_state_internal(
+      int16_t ret,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      bool button_mask)
 {
    int16_t bsv_result;
    int16_t res         = 0;
@@ -2601,15 +2604,24 @@ static int16_t input_state_internal(unsigned port, unsigned device,
 
          if (bind_valid || device == RETRO_DEVICE_KEYBOARD)
          {
-            rarch_joypad_info_t joypad_info;
-            joypad_info.axis_threshold = input_driver_axis_threshold;
-            joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
-            joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
             if (!reset_state)
             {
-               res = current_input->input_state(
-                     current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+               if (button_mask)
+               {
+                  res = 0;
+                  if (ret & (1 << id))
+                     res |= (1 << id);
+               }
+               else
+               {
+                  rarch_joypad_info_t joypad_info;
+                  joypad_info.axis_threshold = input_driver_axis_threshold;
+                  joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
+                  joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+                  res                        = current_input->input_state(
+                        current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+               }
 
 #ifdef HAVE_OVERLAY
                if (input_overlay_is_alive(overlay_ptr) && port == 0)
@@ -2677,14 +2689,21 @@ int16_t input_state(unsigned port, unsigned device,
    {
       unsigned i;
       int16_t res = 0;
+      int16_t ret = 0;
+      rarch_joypad_info_t joypad_info;
+      joypad_info.axis_threshold = input_driver_axis_threshold;
+      joypad_info.joy_idx        = configuration_settings->uints.input_joypad_map[port];
+      joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+      ret                        = current_input->input_state(
+            current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
 
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-         if (input_state_internal(port, device, idx, i))
+         if (input_state_internal(ret, port, device, idx, i, true))
             res |= (1 << i);
       return res;
    }
 
-   return input_state_internal(port, device, idx, id);
+   return input_state_internal(0, port, device, idx, id, false);
 }
 
 /**

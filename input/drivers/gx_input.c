@@ -54,6 +54,19 @@ static int16_t gx_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (input_joypad_pressed(gx->joypad, joypad_info,
+                     port, binds[port], i))
+                  ret |= (1 << i);
+            }
+            return ret;
+         }
          return input_joypad_pressed(gx->joypad,
                joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:

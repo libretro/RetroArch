@@ -695,13 +695,32 @@ static int16_t winraw_input_state(void *d,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
+   int16_t ret        = 0;
    winraw_input_t *wr = (winraw_input_t*)d;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return winraw_is_pressed(wr, joypad_info, binds[port], port, id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (winraw_is_pressed(
+                        wr, joypad_info, binds[port], port, i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = winraw_is_pressed(wr, joypad_info, binds[port], port, id);
+         }
+         return ret;
+      case RETRO_DEVICE_ANALOG:
+         if (binds[port])
+            return input_joypad_analog(wr->joypad, joypad_info,
+                  port, index, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && winraw_keyboard_pressed(wr, id);
@@ -709,11 +728,6 @@ static int16_t winraw_input_state(void *d,
          return winraw_mouse_state(wr, port, false, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
          return winraw_mouse_state(wr, port, true, id);
-      case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            return input_joypad_analog(wr->joypad, joypad_info,
-                  port, index, id, binds[port]);
-         break;
       case RETRO_DEVICE_LIGHTGUN:
 			switch ( id )
 			{

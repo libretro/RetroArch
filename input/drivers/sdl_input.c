@@ -211,16 +211,30 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
+   int16_t ret                 = 0;
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl_input_t            *sdl = (sdl_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return sdl_joypad_device_state(sdl,
-                  joypad_info, binds[port], port, id, &type);
-         break;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (sdl_joypad_device_state(
+                        sdl, joypad_info, binds[port], port, i, &type))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = sdl_joypad_device_state(sdl,
+                     joypad_info, binds[port], port, id, &type);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
