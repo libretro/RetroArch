@@ -1493,6 +1493,7 @@ static int16_t android_input_state(void *data,
          }
          else
          {
+            bool res               = false;
             /* Auto-binds are per joypad, not per user. */
             const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
                ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
