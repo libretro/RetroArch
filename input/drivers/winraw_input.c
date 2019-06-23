@@ -246,60 +246,58 @@ static bool winraw_set_mouse_input(HWND window, bool grab)
 static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
       unsigned port, unsigned id)
 {
-	const int edge_detect = 32700;
-	struct video_viewport vp;
-	bool inside = false;
-	unsigned i;
-	settings_t *settings  = config_get_ptr();
-	winraw_mouse_t *mouse = NULL;
-	int16_t res_x = 0;
-	int16_t res_y = 0;
-	int16_t res_screen_x = 0;
-	int16_t res_screen_y = 0;
+   const int edge_detect = 32700;
+   struct video_viewport vp;
+   bool inside = false;
+   unsigned i;
+   settings_t *settings  = config_get_ptr();
+   winraw_mouse_t *mouse = NULL;
+   int16_t res_x = 0;
+   int16_t res_y = 0;
+   int16_t res_screen_x = 0;
+   int16_t res_screen_y = 0;
 
-	if (port >= MAX_USERS)
-		return 0;
+   if (port >= MAX_USERS)
+      return 0;
 
-	for (i = 0; i < g_mouse_cnt; ++i)
-	{
-		if (i == settings->uints.input_mouse_index[port])
-		{
-			mouse = &wr->mice[i];
-			break;
-		}
-	}
+   for (i = 0; i < g_mouse_cnt; ++i)
+   {
+      if (i == settings->uints.input_mouse_index[port])
+      {
+         mouse = &wr->mice[i];
+         break;
+      }
+   }
 
-	if (!mouse)
-		return 0;
+   if (!mouse)
+      return 0;
 
-	vp.x = 0;
-	vp.y = 0;
-	vp.width = 0;
-	vp.height = 0;
-	vp.full_width = 0;
-	vp.full_height = 0;
+   vp.x = 0;
+   vp.y = 0;
+   vp.width = 0;
+   vp.height = 0;
+   vp.full_width = 0;
+   vp.full_height = 0;
 
-	if ( !( video_driver_translate_coord_viewport_wrap(
-		&vp, mouse->x, mouse->y, &res_x, &res_y, &res_screen_x, &res_screen_y ) ) )
-	{
-		return 0;
-	}
+   if ( !( video_driver_translate_coord_viewport_wrap(
+               &vp, mouse->x, mouse->y, &res_x, &res_y, &res_screen_x, &res_screen_y ) ) )
+      return 0;
 
-	inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
+   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
 
-	switch ( id )
-	{
-	case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-		return inside ? res_x : 0;
-	case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-		return inside ? res_y : 0;
-	case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-		return !inside;
-	default:
-		break;
-	}
+   switch ( id )
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         return inside ? res_x : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         return inside ? res_y : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
+      default:
+         break;
+   }
 
-	return 0;
+   return 0;
 }
 
 static int16_t winraw_mouse_state(winraw_input_t *wr,
@@ -349,13 +347,10 @@ static int16_t winraw_mouse_state(winraw_input_t *wr,
    return 0;
 }
 
-static bool winraw_keyboard_pressed(winraw_input_t *wr, unsigned key)
-{
-   unsigned k = rarch_keysym_lut[(enum retro_key)key];
-   return wr->keyboard.keys[k];
-}
+#define winraw_keyboard_pressed(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
-static bool winraw_mbutton_pressed(winraw_input_t *wr, unsigned port, unsigned key)
+static bool winraw_mouse_button_pressed(
+      winraw_input_t *wr, unsigned port, unsigned key)
 {
 	unsigned i;
 	winraw_mouse_t *mouse = NULL;
@@ -410,7 +405,7 @@ static bool winraw_is_pressed(winraw_input_t *wr,
          return true;
    if (binds && binds[id].valid)
    {
-     if (winraw_mbutton_pressed(wr, port, bind->mbutton))
+     if (winraw_mouse_button_pressed(wr, port, bind->mbutton))
         return true;
      if (input_joypad_pressed(wr->joypad, joypad_info, port, binds, id))
         return true;

@@ -127,19 +127,6 @@ static void wiiu_input_poll(void *data)
      wiiu->joypad->poll();
 }
 
-static bool wiiu_key_pressed(int key)
-{
-   bool ret = false;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   if (keyboardState[key] && (keyboardChannel > 0))
-      ret = true;
-
-   return ret;
-}
-
 static int16_t wiiu_input_state(void *data,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
@@ -157,7 +144,9 @@ static int16_t wiiu_input_state(void *data,
          return input_joypad_pressed(wiiu->joypad,
                joypad_info, port, binds[port], id);
       case RETRO_DEVICE_KEYBOARD:
-         return wiiu_key_pressed(id);
+         if (id < RETROK_LAST && keyboardState[id] && (keyboardChannel > 0))
+            return true;
+         return false;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wiiu->joypad,

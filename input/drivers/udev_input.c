@@ -856,10 +856,9 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
    return BIT_GET(udev_key_state,bit);
 }
 
-static bool udev_mbutton_pressed(udev_input_t *udev, unsigned port, unsigned key)
+static bool udev_mouse_button_pressed(
+      udev_input_t *udev, unsigned port, unsigned key)
 {
-   bool result;
-
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
@@ -867,26 +866,24 @@ static bool udev_mbutton_pressed(udev_input_t *udev, unsigned port, unsigned key
 
    switch ( key )
    {
-
-   case RETRO_DEVICE_ID_MOUSE_LEFT:
-      return mouse->l;
-   case RETRO_DEVICE_ID_MOUSE_RIGHT:
-      return mouse->r;
-   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-      return mouse->m;
-   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-      return mouse->b4;
-   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-      return mouse->b5;
-   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-      return mouse->wu;
-   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-      return mouse->wd;
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-      return mouse->whu;
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-      return mouse->whd;
-
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return mouse->l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return mouse->r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return mouse->m;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return mouse->b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return mouse->b5;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return mouse->wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return mouse->wd;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         return mouse->whu;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         return mouse->whd;
    }
 
    return false;
@@ -905,7 +902,7 @@ static bool udev_is_pressed(udev_input_t *udev,
 
    if (binds && binds[id].valid)
    {
-      if (udev_mbutton_pressed(udev, port, bind->mbutton))
+      if (udev_mouse_button_pressed(udev, port, bind->mbutton))
          return true;
       if (input_joypad_pressed(udev->joypad, joypad_info, port, binds, id))
          return true;

@@ -66,21 +66,19 @@ static int16_t xenon360_input_state(void *data,
 {
    unsigned user   = port;
    uint64_t button = binds[user][id].joykey;
-   int16_t retval  = 0;
 
-   if(user < MAX_PADS)
+   if (user >= MAX_PADS)
+      return 0;
+
+   switch (device)
    {
-      switch (device)
-      {
-         case RETRO_DEVICE_JOYPAD:
-            retval = (state[user] & button) ? 1 : 0;
-            break;
-         default:
-            break;
-      }
+      case RETRO_DEVICE_JOYPAD:
+         return (state[user] & button) ? 1 : 0;
+      default:
+         break;
    }
 
-   return retval;
+   return 0;
 }
 
 static void xenon360_input_free_input(void *data)

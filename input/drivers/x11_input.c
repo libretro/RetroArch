@@ -79,7 +79,8 @@ static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
    return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
-static bool x_mbutton_pressed(x11_input_t *x11, unsigned port, unsigned key)
+static bool x_mouse_button_pressed(
+      x11_input_t *x11, unsigned port, unsigned key)
 {
    bool result;
    settings_t *settings = config_get_ptr();
@@ -137,7 +138,7 @@ static bool x_is_pressed(x11_input_t *x11,
 
    if (binds && binds[id].valid)
    {
-      if (x_mbutton_pressed(x11, port, bind->mbutton))
+      if (x_mouse_button_pressed(x11, port, bind->mbutton))
          return true;
       if (input_joypad_pressed(x11->joypad, joypad_info, port, binds, id))
          return true;
