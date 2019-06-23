@@ -1888,8 +1888,7 @@ ifneq ($(findstring DOS,$(OS)),)
           gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
-          frontend/drivers/platform_dos.o \
-          input/drivers_keyboard/keyboard_event_dos.o
+          frontend/drivers/platform_dos.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o

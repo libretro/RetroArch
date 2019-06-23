@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,6 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <retro_miscellaneous.h>
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
@@ -28,6 +31,33 @@ typedef struct dos_input
 {
    const input_device_driver_t *joypad;
 } dos_input_t;
+
+#define MAX_KEYS LAST_KEYCODE + 1
+
+/* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
+static uint16_t dos_key_state[MAX_PADS+1][MAX_KEYS];
+
+static bool dos_keyboard_port_input_pressed(
+      const struct retro_keybind *binds, unsigned id)
+{
+   if (id < RARCH_BIND_LIST_END)
+      return dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[&binds[id].key]];
+   return false;
+}
+
+uint16_t *dos_keyboard_state_get(unsigned port)
+{
+   return dos_key_state[port];
+}
+
+static void dos_keyboard_free(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < MAX_PADS; i++)
+      for (j = 0; j < MAX_KEYS; j++)
+         dos_key_state[i][j] = 0;
+}
 
 static void dos_input_poll(void *data)
 {
