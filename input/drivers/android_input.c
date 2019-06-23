@@ -1392,8 +1392,8 @@ static void android_input_poll(void *data)
    android_input_t *android        = (android_input_t*)data;
 
    while ((ident =
-            ALooper_pollAll(input_config_binds[0][key].valid 
-               && android_input_key_pressed(android, key)
+            ALooper_pollAll((input_config_binds[0][key].valid 
+               && android_input_key_pressed(android, key))
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
