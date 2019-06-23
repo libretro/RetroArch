@@ -83,11 +83,7 @@ enum {
  * Last port is used for keyboard state */
 static uint8_t android_key_state[MAX_PADS+1][MAX_KEYS];
 
-static bool android_keyboard_port_input_pressed(
-      const struct retro_keybind *binds, unsigned id)
-{
-   return BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[binds[id].key]);
-}
+#define android_keyboard_port_input_pressed(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
 
 #define android_keyboard_input_pressed(key) (BIT_GET(android_key_state[0], (key)))
 
@@ -1278,11 +1274,10 @@ static int android_input_get_id(AInputEvent *event)
    return id;
 }
 
-static void android_input_poll_input(void *data)
+static void android_input_poll_input(android_input_t *android)
 {
-   AInputEvent *event = NULL;
+   AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t    *android     = (android_input_t*)data;
 
    /* Read all pending events. */
    while (AInputQueue_hasEvents(android_app->inputQueue))
@@ -1333,10 +1328,9 @@ static void android_input_poll_input(void *data)
    }
 }
 
-static void android_input_poll_user(void *data)
+static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t    *android     = (android_input_t*)data;
 
    if ((android_app->sensor_state_mask & (UINT64_C(1) <<
                RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -1352,10 +1346,9 @@ static void android_input_poll_user(void *data)
    }
 }
 
-static void android_input_poll_memcpy(void *data)
+static void android_input_poll_memcpy(android_input_t *android)
 {
    unsigned i, j;
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
    for (i = 0; i < MAX_PADS; i++)
@@ -1367,15 +1360,11 @@ static void android_input_poll_memcpy(void *data)
    }
 }
 
-static bool android_input_key_pressed(void *data, int key)
+static bool android_input_key_pressed(android_input_t *android, int key)
 {
    rarch_joypad_info_t joypad_info;
-   android_input_t *android           = (android_input_t*)data;
-   const struct retro_keybind *keyptr = (const struct retro_keybind*)
-      &input_config_binds[0][key];
 
-   if(       keyptr->valid
-         && (key < RARCH_BIND_LIST_END)
+   if((key < RARCH_BIND_LIST_END)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
@@ -1384,8 +1373,7 @@ static bool android_input_key_pressed(void *data, int key)
    joypad_info.auto_binds     = input_autoconf_binds[0];
    joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
-   if (keyptr->valid &&
-         input_joypad_pressed(android->joypad, joypad_info,
+   if (input_joypad_pressed(android->joypad, joypad_info,
             0, input_config_binds[0], key))
       return true;
 
@@ -1401,19 +1389,21 @@ static void android_input_poll(void *data)
    int ident;
    unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t *android        = (android_input_t*)data;
 
    while ((ident =
-            ALooper_pollAll((android_input_key_pressed(data, key))
+            ALooper_pollAll(input_config_binds[0][key].valid 
+               && android_input_key_pressed(android, key)
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_poll_input(data);
+            android_input_poll_input(android);
             break;
          case LOOPER_ID_USER:
-            android_input_poll_user(data);
+            android_input_poll_user(android);
             break;
          case LOOPER_ID_MAIN:
             android_input_poll_main_cmd();
@@ -1436,7 +1426,7 @@ static void android_input_poll(void *data)
    }
 
    if (android_app->input_alive)
-      android_input_poll_memcpy(data);
+      android_input_poll_memcpy(android);
 }
 
 bool android_run_events(void *data)
