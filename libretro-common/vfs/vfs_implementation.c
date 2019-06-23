@@ -158,6 +158,12 @@
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
+#if defined(__linux__)
+#include <math.h>
+#include <stropts.h>
+#include <scsi/sg.h>
+#endif
+
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
 #include <unistd.h> /* stat() is defined here */
 #endif
@@ -190,7 +196,17 @@
 #include <compat/fopen_utf8.h>
 #include <file/file_path.h>
 
+#ifdef HAVE_CDROM
+#include <cdrom/cdrom.h>
+#endif
+
 #define RFILE_HINT_UNBUFFERED (1 << 8)
+
+enum vfs_scheme
+{
+   VFS_SCHEME_NONE = 0,
+   VFS_SCHEME_CDROM
+};
 
 #ifdef VFS_FRONTEND
 struct retro_vfs_file_handle
@@ -209,7 +225,17 @@ struct libretro_vfs_implementation_file
    uint64_t mapsize;
    uint8_t *mapped;
 #endif
+   enum vfs_scheme scheme;
+#ifdef HAVE_CDROM
+   char *cdrom_cue_buf;
+   size_t cdrom_cue_len;
+   size_t cdrom_cue_pos;
+   size_t cdrom_byte_pos;
+   char cdrom_drive;
+#endif
 };
+
+static cdrom_toc_t vfs_cdrom_toc = {0};
 
 int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
 {
@@ -235,7 +261,84 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
          return -1;
       return 0;
 #else
-      return fseeko(stream->fp, (off_t)offset, whence);
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+      {
+         const char *ext = path_get_extension(stream->orig_path);
+
+         if (string_is_equal_noncase(ext, "cue"))
+         {
+            switch (whence)
+            {
+               case SEEK_SET:
+                  stream->cdrom_cue_pos = offset;
+                  break;
+               case SEEK_CUR:
+                  stream->cdrom_cue_pos += offset;
+                  break;
+               case SEEK_END:
+                  stream->cdrom_cue_pos = (stream->cdrom_cue_len - 1) + offset;
+                  break;
+            }
+
+#ifdef CDROM_DEBUG
+            printf("CDROM Seek: Path %s Offset %lu is now at %lu\n", stream->orig_path, offset, stream->cdrom_cue_pos);
+#endif
+         }
+         else if (string_is_equal_noncase(ext, "bin"))
+         {
+            unsigned char min = offset / 75 / 60;
+            unsigned char sec = offset / 75;
+            unsigned char frame = offset - ((min * 75 * 60) + (sec * 75));
+
+            switch (whence)
+            {
+               case SEEK_CUR:
+               {
+                  min += vfs_cdrom_toc.cur_min;
+                  sec += vfs_cdrom_toc.cur_sec;
+                  frame += vfs_cdrom_toc.cur_frame;
+
+                  stream->cdrom_byte_pos += offset;
+
+                  break;
+               }
+               case SEEK_END:
+               {
+                  unsigned char end_min = 0;
+                  unsigned char end_sec = 0;
+                  unsigned char end_frame = 0;
+                  size_t end_lba = vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].lba_start + vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].track_size;
+
+                  lba_to_msf(end_lba, &min, &sec, &frame);
+
+                  min += end_min;
+                  sec += end_sec;
+                  frame += end_frame;
+
+                  stream->cdrom_byte_pos = end_lba * 2352;
+
+                  break;
+               }
+               case SEEK_SET:
+               default:
+                  stream->cdrom_byte_pos = offset;
+                  break;
+            }
+
+            vfs_cdrom_toc.cur_min = min;
+            vfs_cdrom_toc.cur_sec = sec;
+            vfs_cdrom_toc.cur_frame = frame;
+
+#ifdef CDROM_DEBUG
+            printf("CDROM Seek: Path %s Offset %lu is now at %lu\n", stream->orig_path, offset, stream->cdrom_byte_pos);
+#endif
+         }
+
+      }
+      else
+#endif
+         return fseeko(stream->fp, (off_t)offset, whence);
 #endif
    }
 #ifdef HAVE_MMAP
@@ -296,6 +399,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 {
    int                                flags = 0;
    const char                     *mode_str = NULL;
+   int                             path_len = (int)strlen(path);
    libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)
       calloc(1, sizeof(*stream));
 
@@ -303,12 +407,28 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    const char                 *dumb_prefix  = "vfsonly://";
    size_t                   dumb_prefix_siz = strlen(dumb_prefix);
    int                      dumb_prefix_len = (int)dumb_prefix_siz;
-   int                             path_len = (int)strlen(path);
 
    if (path_len >= dumb_prefix_len)
    {
       if (!memcmp(path, dumb_prefix, dumb_prefix_len))
          path += dumb_prefix_siz;
+   }
+#endif
+
+#ifdef HAVE_CDROM
+   {
+      const char *cdrom_prefix = "cdrom://";
+      size_t cdrom_prefix_siz = strlen(cdrom_prefix);
+      int cdrom_prefix_len = (int)cdrom_prefix_siz;
+
+      if (path_len >= cdrom_prefix_len)
+      {
+         if (!memcmp(path, cdrom_prefix, cdrom_prefix_len))
+         {
+            path += cdrom_prefix_siz;
+            stream->scheme = VFS_SCHEME_CDROM;
+         }
+      }
    }
 #endif
 
@@ -398,7 +518,78 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
       stream->fd = fd;
 #else
-      FILE   *fp = (FILE*)fopen_utf8(path, mode_str);
+      FILE *fp;
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+      {
+#ifdef __linux__
+         char model[32] = {0};
+         char cdrom_path[] = "/dev/sg1";
+         size_t path_len = strlen(path);
+         const char *ext = path_get_extension(path);
+
+         if (path_len >= strlen("drive1.cue"))
+         {
+            if (!memcmp(path, "drive", strlen("drive")))
+            {
+               if (path[5] >= '0' && path[5] <= '9')
+               {
+                  cdrom_path[7] = path[5];
+                  stream->cdrom_drive = path[5];
+               }
+            }
+         }
+
+#ifdef CDROM_DEBUG
+         printf("CDROM Open: Path %s URI %s\n", cdrom_path, path);
+#endif
+         fp = (FILE*)fopen_utf8(cdrom_path, "r+b");
+
+         if (fp)
+         {
+            int cdrom_fd = fileno(fp);
+
+            if (!cdrom_get_inquiry(cdrom_fd, model, sizeof(model)))
+            {
+               size_t len = 0;
+
+#ifdef CDROM_DEBUG
+               printf("CDROM Model: %s\n", model);
+#endif
+            }
+         }
+         else
+            goto error;
+
+         if (string_is_equal_noncase(ext, "cue"))
+         {
+            if (stream->cdrom_cue_buf)
+            {
+               free(stream->cdrom_cue_buf);
+               stream->cdrom_cue_buf = NULL;
+            }
+
+            cdrom_write_cue(fileno(fp), &stream->cdrom_cue_buf, &stream->cdrom_cue_len, stream->cdrom_drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
+
+            if (vfs_cdrom_toc.num_tracks > 1)
+            {
+               vfs_cdrom_toc.cur_min = vfs_cdrom_toc.track[0].min;
+               vfs_cdrom_toc.cur_sec = vfs_cdrom_toc.track[0].sec;
+               vfs_cdrom_toc.cur_frame = vfs_cdrom_toc.track[0].frame;
+            }
+
+            if (string_is_empty(stream->cdrom_cue_buf))
+               printf("Error writing cue sheet.\n");
+#ifdef CDROM_DEBUG
+            else
+               printf("CDROM CUE Sheet:\n%s\n", stream->cdrom_cue_buf);
+#endif
+         }
+#endif
+      }
+      else
+#endif
+         fp = (FILE*)fopen_utf8(path, mode_str);
 
       if (!fp)
          goto error;
@@ -508,8 +699,21 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
    if (stream->buf)
       free(stream->buf);
+
+#ifdef HAVE_CDROM
+#ifdef CDROM_DEBUG
+   if (stream->scheme == VFS_SCHEME_CDROM)
+      printf("CDROM Close: Path %s\n", stream->orig_path);
+#endif
+#endif
+
    if (stream->orig_path)
       free(stream->orig_path);
+
+#ifdef HAVE_CDROM
+   if (stream->cdrom_cue_buf)
+      free(stream->cdrom_cue_buf);
+#endif
    free(stream);
 
    return 0;
@@ -565,7 +769,35 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef ATLEAST_VC2005
       return _ftelli64(stream->fp);
 #else
-      return ftell(stream->fp);
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+      {
+         const char *ext = path_get_extension(stream->orig_path);
+
+         if (string_is_equal_noncase(ext, "cue"))
+         {
+#ifdef HAVE_CDROM
+#ifdef CDROM_DEBUG
+            printf("CDROM (cue) Tell: Path %s Position %lu\n", stream->orig_path, stream->cdrom_cue_pos);
+#endif
+#endif
+            return stream->cdrom_cue_pos;
+         }
+         else if (string_is_equal_noncase(ext, "bin"))
+         {
+            unsigned lba = msf_to_lba(vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame);
+
+#ifdef HAVE_CDROM
+#ifdef CDROM_DEBUG
+            printf("CDROM (bin) Tell: Path %s Position %u\n", stream->orig_path, lba * 2352);
+#endif
+#endif
+            return lba * 2352;
+         }
+      }
+      else
+#endif
+         return ftell(stream->fp);
 #endif
 #endif
    }
@@ -614,7 +846,56 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
          return -1;
       return 0;
 #else
-      return fread(s, 1, (size_t)len, stream->fp);
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+      {
+         int rv;
+         const char *ext = path_get_extension(stream->orig_path);
+
+         if (string_is_equal_noncase(ext, "cue"))
+         {
+#ifdef CDROM_DEBUG
+            printf("CDROM Read: Reading %lu bytes from cuesheet starting at %lu...\n", len, stream->cdrom_cue_pos);
+#endif
+            strlcpy(s, stream->cdrom_cue_buf + stream->cdrom_cue_pos, len);
+            stream->cdrom_cue_pos += len;
+         }
+         else if (string_is_equal_noncase(ext, "bin"))
+         {
+            unsigned frames = len / 2352;
+            unsigned i;
+
+#ifdef CDROM_DEBUG
+            printf("CDROM Read: Reading %lu bytes from CD starting at byte offset %lu (MSF %02d:%02d:%02d) (LBA %u)...\n", len, stream->cdrom_byte_pos, vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame, msf_to_lba(vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame));
+#endif
+
+            rv = cdrom_read(fileno(stream->fp), vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame, s, (size_t)len);
+
+            if (rv)
+            {
+#ifdef CDROM_DEBUG
+               printf("Failed to read %lu bytes from CD.\n", len);
+#endif
+               return 0;
+            }
+
+            stream->cdrom_byte_pos += len;
+
+            for (i = 0; i < frames; i++)
+            {
+               increment_msf(&vfs_cdrom_toc.cur_min, &vfs_cdrom_toc.cur_sec, &vfs_cdrom_toc.cur_frame);
+            }
+
+#ifdef CDROM_DEBUG
+            printf("CDROM read %lu bytes, position is now: %lu (MSF %02d:%02d:%02d) (LBA %u)\n", len, stream->cdrom_byte_pos, vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame, msf_to_lba(vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame));
+#endif
+         }
+
+         return len;
+      }
+      else
+#endif
+         return fread(s, 1, (size_t)len, stream->fp);
 #endif
    }
 #ifdef HAVE_MMAP

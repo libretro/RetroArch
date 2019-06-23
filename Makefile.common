@@ -1617,6 +1617,15 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
    endif
 endif
 
+ifeq ($(HAVE_CDROM), 1)
+   ifeq ($(CDROM_DEBUG), 1)
+      DEFINES += -DCDROM_DEBUG
+   endif
+
+   DEFINES += -DHAVE_CDROM
+   OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o
+endif
+
 ifeq ($(HAVE_RTGA), 1)
    DEFINES += -DHAVE_RTGA
    OBJ += $(LIBRETRO_COMM_DIR)/formats/tga/rtga.o
