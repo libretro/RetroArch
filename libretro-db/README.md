@@ -11,7 +11,7 @@ Files specified later in the chain **will override** earlier ones if the same ke
 
 # Compiling a single DAT into a single RDB with `c_converter`
 ```
-git clone git@github.com:libretro/libretro-super.git
+git clone https://github.com/libretro/libretro-super.git
 cd libretro-super
 ./libretro-fetch.sh retroarch
 cd retroarch
@@ -23,7 +23,7 @@ c_converter "NAME_OF_RDB_FILE.rdb" "NAME_OF_SOURCE_DAT.dat"
 # Compiling multiple DATs into a single RDB with `c_converter`
 Specify `rom.crc` as the second parameter to use CRC as the unique fingerprint.
 ```
-git clone git@github.com:libretro/libretro-super.git
+git clone https://github.com/libretro/libretro-super.git
 cd libretro-super
 ./libretro-fetch.sh retroarch
 cd retroarch
@@ -36,12 +36,9 @@ c_converter "NAME_OF_RDB_FILE.rdb" "rom.crc" "NAME_OF_SOURCE_DAT_1.dat" "NAME_OF
 **This approach builds and uses the `c_converter` program to compile the databases**
 
 ```
-git clone git@github.com:libretro/libretro-super.git
+git clone https://github.com/libretro/libretro-super.git
 cd libretro-super
 ./libretro-fetch.sh retroarch
-cd retroarch
-./configure
-cd ..
 ./libretro-build-database.sh
 ```
 
