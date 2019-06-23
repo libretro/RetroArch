@@ -167,7 +167,6 @@ static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
 const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
-
 #ifdef HAVE_DINPUT
    /* Use the real controller name for XBOX One controllers since
       they are slightly different  */
@@ -229,7 +228,8 @@ static bool xinput_joypad_init(void *data)
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
     */
-   g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, (const char*)100);
+   g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(
+         g_xinput_dll, (const char*)100);
 #elif defined(__WINRT__)
    /* XInputGetStateEx is not available on WinRT */
    g_XInputGetStateEx = NULL;
@@ -245,7 +245,8 @@ static bool xinput_joypad_init(void *data)
        */
       g_xinput_guide_button_supported = false;
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
-      g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, "XInputGetState");
+      g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(
+            g_xinput_dll, "XInputGetState");
 #else
 	  g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetState;
 #endif
@@ -256,13 +257,15 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
          dylib_close(g_xinput_dll);
 #endif
-         return false; /* DLL was loaded but did not contain the correct function. */
+         /* DLL was loaded but did not contain the correct function. */
+         return false; 
       }
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
-   g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
+   g_XInputSetState = (XInputSetState_t)dylib_proc(
+         g_xinput_dll, "XInputSetState");
 #else
    g_XInputSetState = (XInputSetState_t)XInputSetState;
 #endif
@@ -287,7 +290,7 @@ static bool xinput_joypad_init(void *data)
          RARCH_LOG("[XInput]: Found controller, user #%u\n", i);
    }
 
-   if ((!g_xinput_states[0].connected) &&
+   if (  (!g_xinput_states[0].connected) &&
          (!g_xinput_states[1].connected) &&
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
@@ -297,8 +300,11 @@ static bool xinput_joypad_init(void *data)
       return false;
 #endif
 
-   RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected +
-         g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
+   RARCH_LOG("[XInput]: Pads connected: %d\n",
+         g_xinput_states[0].connected +
+         g_xinput_states[1].connected + 
+         g_xinput_states[2].connected + 
+         g_xinput_states[3].connected);
 
 #ifdef HAVE_DINPUT
    g_xinput_block_pads = true;
@@ -382,7 +388,8 @@ static void xinput_joypad_destroy(void)
 }
 
 /* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to bitwise-& the buttons against.
+ * Map from rarch button index (0..10) to a mask to 
+ * bitwise-& the buttons against.
  * dpad is handled seperately. */
 static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_A,
@@ -530,7 +537,7 @@ static void xinput_joypad_poll(void)
        * since dinput is not available on UWP we have to do it ourselves */
       /* Also note that on UWP, the controllers are not available on startup
        * and are instead 'plugged in' a moment later because Microsoft reasons */
-      // TODO: This may be bad for performance?
+      /* TODO: This may be bad for performance? */
       bool new_connected = g_XInputGetStateEx && g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
