@@ -327,7 +327,7 @@ static int16_t input_wl_state(void *data,
                   ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
                if (joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, joykey))
                   ret = 1;
-               else if (((float)abs(drv->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               else if (((float)abs(wl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
                   ret = 1;
             }
          }
