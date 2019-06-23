@@ -300,14 +300,33 @@ static int16_t cocoa_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            ret = apple_key_state[rarch_keysym_lut[binds[port][id].key]];
-         if (!ret)
-            ret = input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = apple_key_state[rarch_keysym_lut[binds[port][i].key]];
+               if (!res)
+                  res = input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], i);
 #ifdef HAVE_MFI
-         if (!ret)
-            ret = input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id);
+               if (!res)
+                  res = input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], i);
 #endif
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = apple_key_state[rarch_keysym_lut[binds[port][id].key]];
+            if (!ret)
+               ret = input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id);
+#ifdef HAVE_MFI
+            if (!ret)
+               ret = input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id);
+#endif
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
 #ifdef HAVE_MFI
