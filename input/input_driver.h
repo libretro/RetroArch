@@ -447,39 +447,6 @@ const input_device_driver_t *input_joypad_init_driver(
    }
 
 /**
- * input_joypad_pressed:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @binds                   : Binds of user.
- * @key                     : Identifier of key.
- *
- * Checks if key (@key) was being pressed by user
- * with number @port with provided keybinds (@binds).
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-static INLINE bool input_joypad_pressed(
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t joypad_info,
-      unsigned port,
-      const struct retro_keybind *binds,
-      unsigned key)
-{
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey  = (binds[key].joykey != NO_BTN)
-      ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-   const uint32_t joyaxis = (binds[key].joyaxis != AXIS_NONE)
-      ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
-
-   if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))
-      return true;
-
-   return ((float)abs(drv->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold;
-
-}
-
-/**
  * input_joypad_analog:
  * @drv                     : Input device driver handle.
  * @port                    : User number.

@@ -87,8 +87,17 @@ static int16_t dos_input_state(void *data,
             unsigned i;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               bool res = input_joypad_pressed(ctr->joypad,
-                        joypad_info, port, binds[port], i);
+               /* Auto-binds are per joypad, not per user. */
+               const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+               bool res               = false;
+               
+               if (joykey != NO_BTN && dos->joypad->button(joypad_info.joy_idx, joykey))
+                  res                 = true;
+               else if (((float)abs(dos->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  res                 = true;
                if (!res)
                   res = dos_keyboard_port_input_pressed(binds[port], i);
                if (res)
@@ -96,9 +105,21 @@ static int16_t dos_input_state(void *data,
             }
          }
          else
-            ret = input_joypad_pressed(
-                  dos->joypad, joypad_info, port, binds[port], id) ||
-                  dos_keyboard_port_input_pressed(binds[port], id);
+         {
+            /* Auto-binds are per joypad, not per user. */
+            const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+            if (joykey != NO_BTN && dos->joypad->button(joypad_info.joy_idx, joykey))
+               ret = 1;
+            else if (((float)abs(dos->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               ret = 1;
+
+            if (!ret)
+               ret = dos_keyboard_port_input_pressed(binds[port], id);
+         }
          return ret;
       case RETRO_DEVICE_KEYBOARD:
          return dos_keyboard_port_input_pressed(binds[port], id);

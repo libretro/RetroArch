@@ -902,9 +902,17 @@ static bool udev_is_pressed(udev_input_t *udev,
 
    if (binds && binds[id].valid)
    {
+      /* Auto-binds are per joypad, not per user. */
+      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
       if (udev_mouse_button_pressed(udev, port, bind->mbutton))
          return true;
-      if (input_joypad_pressed(udev->joypad, joypad_info, port, binds, id))
+      if (joykey != NO_BTN && udev->joypad->button(joypad_info.joy_idx, joykey))
+         return true;
+      if (((float)abs(udev->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
    }
 

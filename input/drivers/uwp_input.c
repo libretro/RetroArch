@@ -138,9 +138,17 @@ static bool uwp_pressed_joypad(uwp_input_t *uwp,
    /* Then, process the joypad bindings */
    if (binds && binds[id].valid)
    {
+      /* Auto-binds are per joypad, not per user. */
+      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
       if (uwp_mouse_state(port, bind->mbutton, false))
          return true;
-      if (input_joypad_pressed(uwp->joypad, joypad_info, port, binds, id))
+      if (joykey != NO_BTN && uwp->joypad->button(joypad_info.joy_idx, joykey))
+         return true;
+      if (((float)abs(uwp->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
    }
 
