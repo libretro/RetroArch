@@ -55,6 +55,7 @@ struct menu_animation
 {
    tween_array_t list;
    tween_array_t pending;
+   bool initialized;
    bool pending_deletes;
    bool in_update;
 };
@@ -66,7 +67,7 @@ typedef struct menu_animation menu_animation_t;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim;
+static menu_animation_t anim    = {0};
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
@@ -385,18 +386,6 @@ static void menu_animation_ticker_loop(uint64_t idx,
    *width3  = width;
 }
 
-void menu_animation_init(void)
-{
-   da_init(anim.list);
-   da_init(anim.pending);
-}
-
-void menu_animation_free(void)
-{
-   da_free(anim.list);
-   da_free(anim.pending);
-}
-
 static void menu_delayed_animation_cb(void *userdata)
 {
    menu_delayed_animation_t *delayed_animation = (menu_delayed_animation_t*) userdata;
@@ -551,6 +540,13 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    /* ignore born dead tweens */
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
+
+   if (!anim.initialized)
+   {
+      da_init(anim.list);
+      da_init(anim.pending);
+      anim.initialized = true;
+   }
 
    if (anim.in_update)
       da_push(anim.pending, t);
@@ -854,6 +850,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             }
 
             da_free(anim.list);
+            da_free(anim.pending);
 
             memset(&anim, 0, sizeof(menu_animation_t));
          }

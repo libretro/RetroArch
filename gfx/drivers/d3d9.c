@@ -2092,7 +2092,7 @@ static bool d3d9_has_windowed(void *data)
 static bool d3d9_menu_widgets_enabled(void *data)
 {
    (void)data;
-   return true;
+   return false; /* currently disabled due to memory issues */
 }
 #endif
 

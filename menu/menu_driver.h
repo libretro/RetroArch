@@ -525,8 +525,6 @@ bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
 
-void menu_driver_free(void);
-
 void menu_driver_set_thumbnail_system(char *s, size_t len);
 
 void menu_driver_get_thumbnail_system(char *s, size_t len);
