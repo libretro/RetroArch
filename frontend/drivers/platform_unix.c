@@ -571,7 +571,6 @@ static bool device_is_xperia_play(const char *name)
          strstr(name, "R800a") ||
          strstr(name, "R800") ||
          strstr(name, "Xperia Play") ||
-         strstr(name, "Play") ||
          strstr(name, "SO-01D")
       )
       return true;
