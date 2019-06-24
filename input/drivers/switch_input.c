@@ -287,7 +287,7 @@ static int16_t switch_input_state(void *data,
          {
             /* Auto-binds are per joypad, not per user. */
             const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info.auto_binds[i].joykey;
+               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
             if (joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, joykey))
