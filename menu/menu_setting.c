@@ -521,6 +521,7 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    return 0;
 }
 
+#if 0
 static void setting_get_string_representation_hex(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -528,6 +529,7 @@ static void setting_get_string_representation_hex(rarch_setting_t *setting,
       snprintf(s, len, "%08x",
             *setting->value.target.unsigned_integer);
 }
+#endif
 
 void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting,
       char *s, size_t len)
@@ -1512,6 +1514,7 @@ static rarch_setting_t setting_size_setting(const char* name,
  *
  * Returns: setting of type ST_HEX.
  **/
+#if 0
 static rarch_setting_t setting_hex_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value,
@@ -1573,6 +1576,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
 
    return result;
 }
+#endif
 
 /**
  * setting_bind_setting:

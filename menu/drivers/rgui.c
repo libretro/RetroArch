@@ -2973,8 +2973,8 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
    /* Draw keyboard 'keys' */
    for (key_index = 0; key_index < 44; key_index++)
    {
-      unsigned key_row     = key_index / OSK_CHARS_PER_LINE;
-      unsigned key_column  = key_index - (key_row * OSK_CHARS_PER_LINE);
+      unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);
+      unsigned key_column  = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
       
       int key_text_x       = osk_x + keyboard_offset_x + key_text_offset_x + (key_column * key_width);
       int key_text_y       = osk_y + keyboard_offset_y + key_text_offset_y + (key_row    * key_height);
@@ -3259,21 +3259,21 @@ static void rgui_render(void *data, bool is_idle)
    else
    {
       /* Render usual text */
-      size_t selection = menu_navigation_get_selection();
+      size_t selection               = menu_navigation_get_selection();
       char title_buf[255];
       size_t title_max_len;
       size_t title_len;
       unsigned title_x;
-      unsigned title_y = rgui_term_layout.start_y - FONT_HEIGHT_STRIDE;
-      unsigned term_end_x = rgui_term_layout.start_x + (rgui_term_layout.width * FONT_WIDTH_STRIDE);
-      unsigned timedate_x = term_end_x - (5 * FONT_WIDTH_STRIDE);
-      unsigned core_name_len = ((timedate_x - rgui_term_layout.start_x) / FONT_WIDTH_STRIDE) - 3;
-      bool show_mini_thumbnails = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
-      bool show_thumbnail = false;
-      bool show_left_thumbnail = false;
+      unsigned title_y               = rgui_term_layout.start_y - FONT_HEIGHT_STRIDE;
+      unsigned term_end_x            = rgui_term_layout.start_x + (rgui_term_layout.width * FONT_WIDTH_STRIDE);
+      unsigned timedate_x            = term_end_x - (5 * FONT_WIDTH_STRIDE);
+      unsigned core_name_len         = ((timedate_x - rgui_term_layout.start_x) / FONT_WIDTH_STRIDE) - 3;
+      bool show_mini_thumbnails      = rgui->is_playlist && settings->bools.menu_rgui_inline_thumbnails;
+      bool show_thumbnail            = false;
+      bool show_left_thumbnail       = false;
       unsigned thumbnail_panel_width = 0;
-      unsigned term_mid_point = 0;
-      size_t powerstate_len = 0;
+      unsigned term_mid_point        = 0;
+      size_t powerstate_len          = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -3433,7 +3433,7 @@ static void rgui_render(void *data, bool is_idle)
          if (show_mini_thumbnails)
          {
             unsigned term_offset = settings->bools.menu_rgui_swap_thumbnails ?
-                  (rgui_term_layout.height - (i - new_start) - 1) : (i - new_start);
+                  (unsigned)(rgui_term_layout.height - (i - new_start) - 1) : (i - new_start);
             unsigned thumbnail_width = 0;
 
             /* Note:

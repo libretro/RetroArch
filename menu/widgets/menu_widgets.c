@@ -557,7 +557,7 @@ static void menu_widgets_msg_queue_move(void)
    if (current_msgs->size == 0)
       return;
 
-   for (i = current_msgs->size-1; i >= 0; i--)
+   for (i = (int)(current_msgs->size-1); i >= 0; i--)
    {
       menu_widget_msg_t *msg = (menu_widget_msg_t*)
          file_list_get_userdata_at_offset(current_msgs, i);
