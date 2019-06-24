@@ -26,6 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
+#include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -103,66 +104,6 @@ static void app_terminate(void)
 @end
 
 @implementation RApplication
-#endif
-
-#ifndef NSEventModifierFlagCapsLock
-#define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
-#endif
-
-#ifndef NSEventModifierFlagShift
-#define NSEventModifierFlagShift NSShiftKeyMask
-#endif
-
-#ifndef NSEventModifierFlagControl
-#define NSEventModifierFlagControl NSControlKeyMask
-#endif
-
-#ifndef NSEventModifierFlagOption
-#define NSEventModifierFlagOption NSAlternateKeyMask
-#endif
-
-#ifndef NSEventModifierFlagCommand
-#define NSEventModifierFlagCommand NSCommandKeyMask
-#endif
-
-#ifndef NSEventModifierFlagNumericPad
-#define NSEventModifierFlagNumericPad NSNumericPadKeyMask
-#endif
-
-#ifndef NSEventTypeKeyDown
-#define NSEventTypeKeyDown NSKeyDown
-#endif
-
-#ifndef NSEventTypeKeyUp
-#define NSEventTypeKeyUp NSKeyUp
-#endif
-
-#ifndef NSEventTypeLeftMouseDragged
-#define NSEventTypeLeftMouseDragged NSLeftMouseDragged
-#endif
-
-#ifndef NSEventTypeRightMouseDragged
-#define NSEventTypeRightMouseDragged NSRightMouseDragged
-#endif
-
-#ifndef NSEventTypeOtherMouseDragged
-#define NSEventTypeOtherMouseDragged NSOtherMouseDragged
-#endif
-
-#ifndef NSEventTypeMouseMoved
-#define NSEventTypeMouseMoved  NSMouseMoved
-#endif
-
-#ifndef NSEventTypeLeftMouseUp
-#define NSEventTypeLeftMouseUp NSLeftMouseUp
-#endif
-
-#ifndef NSEventTypeRightMouseUp
-#define NSEventTypeRightMouseUp NSRightMouseUp
-#endif
-
-#ifndef NSEventTypeOtherMouseUp
-#define NSEventTypeOtherMouseUp NSOtherMouseUp
 #endif
 
 

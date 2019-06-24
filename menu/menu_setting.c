@@ -2355,6 +2355,7 @@ static void config_string_options(
    SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_VALUES);
 }
 
+#if 0
 static void config_hex(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -2397,6 +2398,7 @@ static void config_bind(
    /* Request name and short description to be freed later */
    SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 }
+#endif
 
 /* Please strdup() NAME and SHORT */
 static void config_bind_alt(
