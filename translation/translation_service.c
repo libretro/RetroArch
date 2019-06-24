@@ -109,203 +109,8 @@ static void form_bmp_header(uint8_t *header, unsigned width, unsigned height,
    header[53] = 0;
 }
 
-
-bool run_translation_service(void)
-{
-   /*
-      This function does all the stuff needed to translate the game screen, 
-      using the url given in the settings.  Once the image from the frame
-      buffer is sent to the server, the callback will write the translated
-      image to the screen.
-
-      Supported client/services (thus far)
-      -VGTranslate client ( www.gitlab.com/spherebeaker/vg_translate )
-      -Ztranslate client/service ( www.ztranslate.net/docs/service )
-      
-      To use a client, download the relevant code/release, configure
-      them, and run them on your local machine, or network.  Set the 
-      retroarch configuration to point to your local client (usually
-      listening on localhost:4404 ) and enable translation service.
-
-      If you don't want to run a client, you can also use a service,
-      which is basically like someone running a client for you.  The
-      downside here is that your retroarch device will have to have
-      an internet connection, and you may have to sign up for it.
-     
-      To make your own server, it must listen for a POST request, which
-      will consist of a json body, with the "image" field as a base64
-      encoded string of a 24bit-BMP that the will be translated.  The server
-      must output the translated image in the form of a json body, with
-      the "image" field also as a base64 encoded, 24bit-BMP.
-   */
-
-   size_t pitch;
-   unsigned width, height;
-   const void *data                      = NULL;
-   uint8_t *bit24_image                  = NULL;
-   uint8_t *bit24_image_prev             = NULL;
-
-   enum retro_pixel_format pixel_format  = video_driver_get_pixel_format();
-   struct scaler_ctx *scaler             = calloc(1, sizeof(struct scaler_ctx));
-   bool error                            = false;
-
-   uint8_t* bmp_buffer                   = NULL;
-   char* bmp64_buffer                    = NULL;
-   char* json_buffer                     = NULL;
-
-   bool retval                           = false;
-   struct video_viewport vp;
-
-   uint8_t header[54];
-   int out_length                        = 0;
-   char* rf1                             = "{\"image\": \"";
-   char* rf2                             = "\"}\0";
-
-
-   
-   if (!scaler)
-      goto finish;
-
-   video_driver_cached_frame_get(&data, &width, &height, &pitch);
-   if (!data)
-      goto finish;
-   if (data == RETRO_HW_FRAME_BUFFER_VALID)
-   {
-      /*
-        The direct frame capture didn't work, so try getting it
-        from the viewport instead.  This isn't as good as the
-        raw frame buffer, since the viewport may us bilinear
-        filtering, or other shaders that will completely trash
-        the OCR, but it's better than nothing.
-      */      
-      vp.x                           = 0;
-      vp.y                           = 0;
-      vp.width                       = 0;
-      vp.height                      = 0;
-      vp.full_width                  = 0;
-      vp.full_height                 = 0;
-
-      video_driver_get_viewport_info(&vp);
-
-      if (!vp.width || !vp.height)
-         goto finish;
-
-      bit24_image_prev = (uint8_t*)malloc(vp.width * vp.height * 3);
-      bit24_image = (uint8_t*)malloc(width * height * 3);
-
-      if (!bit24_image_prev || !bit24_image)
-         goto finish;
-
-      if (!video_driver_read_viewport(bit24_image_prev, false))
-         goto finish;
-
-      /* Rescale down to regular resolution */
-
-
-      /*
-      scaler->in_fmt = SCALER_FMT_BGR24;
-      scaler->in_width = vp.width;
-      scaler->in_height = vp.height;
-
-      scaler->out_width = width;
-      scaler->out_height = height;
-      scaler->out_fmt = SCALER_FMT_BGR24;
-
-      scaler->scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(scaler);
-
-      scaler->in_stride = vp.width*3;
-      scaler->out_stride = width*3;
-
-      scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev)
-      */
-      bit24_image = bit24_image_prev;
-      bit24_image_prev = NULL;
-
-   }
-   else
-   {
-      bit24_image = (uint8_t*) malloc(width*height*3);
-      if (!bit24_image)
-          goto finish;
-
-      if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      {
-         scaler->in_fmt = SCALER_FMT_ARGB8888;
-         RARCH_LOG("IN FORMAT ARGB8888\n");
-      }
-      else
-      {
-         scaler->in_fmt = SCALER_FMT_RGB565;
-         RARCH_LOG("IN FORMAT RGB565\n");
-      }
-      video_frame_convert_to_bgr24(
-         scaler,
-         (uint8_t *) bit24_image,
-         (const uint8_t*)data + ((int)height - 1)*pitch,
-         width, height,
-         -pitch);
-     
-      scaler_ctx_gen_reset(scaler);
-   }  
-
-   if (!bit24_image)
-   {
-      error = true;
-      goto finish;
-   }
-
-   /*
-     at this point, we should have a screenshot in the buffer, so allocate
-     an array to contain the bmp image along with the bmp header as bytes,
-     and then covert that to a b64 encoded array for transport in JSON.
-   */
-   form_bmp_header(header, width, height, false);
-   bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
-   if (!bmp_buffer)
-       goto finish;
-
-   memcpy(bmp_buffer, header, 54*sizeof(uint8_t));
-   memcpy(bmp_buffer+54, bit24_image, width*height*3*sizeof(uint8_t));
-
-   bmp64_buffer = base64((void *) bmp_buffer, (int)(width*height*3+54),
-                               &out_length);
-   if (!bmp64_buffer)
-      goto finish;
-
-   /* Form request... */
-   json_buffer = malloc(11+3+out_length);
-   if (!json_buffer)
-      goto finish;
-
-   memcpy(json_buffer, rf1, 11*sizeof(uint8_t));  
-   memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
-   memcpy(json_buffer+11+out_length, rf2, 3*sizeof(uint8_t));
-  
-   call_translation_server(json_buffer);
-   error = false;
-finish:
-   if (bit24_image_prev)
-      free(bit24_image_prev);
-   if (bit24_image)
-      free(bit24_image);
-
-   if (scaler)
-      free(scaler);
-
-   if (bmp_buffer)
-      free(bmp_buffer);
-
-   if (bmp64_buffer)
-      free(bmp64_buffer);
-
-   if (json_buffer)
-      free(json_buffer);
-   return !error;
-}
-
-
-void handle_translation_cb(retro_task_t *task, void *task_data, void *user_data, const char *error)
+static void handle_translation_cb(
+      retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
    char* body_copy                   = NULL;
    uint8_t* raw_output_data          = NULL;
@@ -548,12 +353,205 @@ finish:
       free(raw_output_data);
 }
 
-
-void call_translation_server(const char* body)
+static void call_translation_server(const char* body)
 {
    settings_t *settings                  = config_get_ptr();
 
    RARCH_LOG("Server url:  %s\n", settings->arrays.ai_service_url);
    task_push_http_post_transfer(settings->arrays.ai_service_url, 
                                 body, true, NULL, handle_translation_cb, NULL);
+}
+
+bool run_translation_service(void)
+{
+   /*
+      This function does all the stuff needed to translate the game screen, 
+      using the url given in the settings.  Once the image from the frame
+      buffer is sent to the server, the callback will write the translated
+      image to the screen.
+
+      Supported client/services (thus far)
+      -VGTranslate client ( www.gitlab.com/spherebeaker/vg_translate )
+      -Ztranslate client/service ( www.ztranslate.net/docs/service )
+      
+      To use a client, download the relevant code/release, configure
+      them, and run them on your local machine, or network.  Set the 
+      retroarch configuration to point to your local client (usually
+      listening on localhost:4404 ) and enable translation service.
+
+      If you don't want to run a client, you can also use a service,
+      which is basically like someone running a client for you.  The
+      downside here is that your retroarch device will have to have
+      an internet connection, and you may have to sign up for it.
+     
+      To make your own server, it must listen for a POST request, which
+      will consist of a json body, with the "image" field as a base64
+      encoded string of a 24bit-BMP that the will be translated.  The server
+      must output the translated image in the form of a json body, with
+      the "image" field also as a base64 encoded, 24bit-BMP.
+   */
+
+   size_t pitch;
+   unsigned width, height;
+   const void *data                      = NULL;
+   uint8_t *bit24_image                  = NULL;
+   uint8_t *bit24_image_prev             = NULL;
+
+   enum retro_pixel_format pixel_format  = video_driver_get_pixel_format();
+   struct scaler_ctx *scaler             = calloc(1, sizeof(struct scaler_ctx));
+   bool error                            = false;
+
+   uint8_t* bmp_buffer                   = NULL;
+   char* bmp64_buffer                    = NULL;
+   char* json_buffer                     = NULL;
+
+   bool retval                           = false;
+   struct video_viewport vp;
+
+   uint8_t header[54];
+   int out_length                        = 0;
+   char* rf1                             = "{\"image\": \"";
+   char* rf2                             = "\"}\0";
+
+
+   
+   if (!scaler)
+      goto finish;
+
+   video_driver_cached_frame_get(&data, &width, &height, &pitch);
+   if (!data)
+      goto finish;
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      /*
+        The direct frame capture didn't work, so try getting it
+        from the viewport instead.  This isn't as good as the
+        raw frame buffer, since the viewport may us bilinear
+        filtering, or other shaders that will completely trash
+        the OCR, but it's better than nothing.
+      */      
+      vp.x                           = 0;
+      vp.y                           = 0;
+      vp.width                       = 0;
+      vp.height                      = 0;
+      vp.full_width                  = 0;
+      vp.full_height                 = 0;
+
+      video_driver_get_viewport_info(&vp);
+
+      if (!vp.width || !vp.height)
+         goto finish;
+
+      bit24_image_prev = (uint8_t*)malloc(vp.width * vp.height * 3);
+      bit24_image = (uint8_t*)malloc(width * height * 3);
+
+      if (!bit24_image_prev || !bit24_image)
+         goto finish;
+
+      if (!video_driver_read_viewport(bit24_image_prev, false))
+         goto finish;
+
+      /* Rescale down to regular resolution */
+
+
+      /*
+      scaler->in_fmt = SCALER_FMT_BGR24;
+      scaler->in_width = vp.width;
+      scaler->in_height = vp.height;
+
+      scaler->out_width = width;
+      scaler->out_height = height;
+      scaler->out_fmt = SCALER_FMT_BGR24;
+
+      scaler->scaler_type = SCALER_TYPE_POINT;
+      scaler_ctx_gen_filter(scaler);
+
+      scaler->in_stride = vp.width*3;
+      scaler->out_stride = width*3;
+
+      scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev)
+      */
+      bit24_image = bit24_image_prev;
+      bit24_image_prev = NULL;
+
+   }
+   else
+   {
+      bit24_image = (uint8_t*) malloc(width*height*3);
+      if (!bit24_image)
+          goto finish;
+
+      if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      {
+         scaler->in_fmt = SCALER_FMT_ARGB8888;
+         RARCH_LOG("IN FORMAT ARGB8888\n");
+      }
+      else
+      {
+         scaler->in_fmt = SCALER_FMT_RGB565;
+         RARCH_LOG("IN FORMAT RGB565\n");
+      }
+      video_frame_convert_to_bgr24(
+         scaler,
+         (uint8_t *) bit24_image,
+         (const uint8_t*)data + ((int)height - 1)*pitch,
+         width, height,
+         -pitch);
+     
+      scaler_ctx_gen_reset(scaler);
+   }  
+
+   if (!bit24_image)
+   {
+      error = true;
+      goto finish;
+   }
+
+   /*
+     at this point, we should have a screenshot in the buffer, so allocate
+     an array to contain the bmp image along with the bmp header as bytes,
+     and then covert that to a b64 encoded array for transport in JSON.
+   */
+   form_bmp_header(header, width, height, false);
+   bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
+   if (!bmp_buffer)
+       goto finish;
+
+   memcpy(bmp_buffer, header, 54*sizeof(uint8_t));
+   memcpy(bmp_buffer+54, bit24_image, width*height*3*sizeof(uint8_t));
+
+   bmp64_buffer = base64((void *) bmp_buffer, (int)(width*height*3+54),
+                               &out_length);
+   if (!bmp64_buffer)
+      goto finish;
+
+   /* Form request... */
+   json_buffer = malloc(11+3+out_length);
+   if (!json_buffer)
+      goto finish;
+
+   memcpy(json_buffer, rf1, 11*sizeof(uint8_t));  
+   memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
+   memcpy(json_buffer+11+out_length, rf2, 3*sizeof(uint8_t));
+  
+   call_translation_server(json_buffer);
+   error = false;
+finish:
+   if (bit24_image_prev)
+      free(bit24_image_prev);
+   if (bit24_image)
+      free(bit24_image);
+
+   if (scaler)
+      free(scaler);
+
+   if (bmp_buffer)
+      free(bmp_buffer);
+
+   if (bmp64_buffer)
+      free(bmp64_buffer);
+
+   if (json_buffer)
+      free(json_buffer);
+   return !error;
 }
