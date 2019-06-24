@@ -2866,9 +2866,9 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
          input_analog_sensitivity;
 
       if (new_val > 0x7fff)
-         new_val = 0x7fff;
+         return 0x7fff;
       else if (new_val < -0x7fff)
-         new_val = -0x7fff;
+         return -0x7fff;
 
       return new_val;
    }
