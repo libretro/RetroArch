@@ -2224,15 +2224,9 @@ static bool menu_driver_context_reset(bool video_is_threaded)
 
 bool menu_driver_init(bool video_is_threaded)
 {
-   menu_animation_init();
    if (menu_driver_init_internal(video_is_threaded))
       return menu_driver_context_reset(video_is_threaded);
    return false;
-}
-
-void menu_driver_free(void)
-{
-   menu_animation_free();
 }
 
 void menu_driver_navigation_set(bool scroll)

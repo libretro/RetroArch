@@ -12340,7 +12340,6 @@ void driver_uninit(int flags)
       menu_widgets_free();
 #endif
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
-      menu_driver_free();
    }
 #endif
 
