@@ -2532,8 +2532,6 @@ static int16_t input_state_internal(
       is in action for that button*/
    bool reset_state    = false;
 
-   device &= RETRO_DEVICE_MASK;
-
    if (bsv_movie_get_input(&bsv_result))
       return bsv_result;
 
@@ -2684,6 +2682,7 @@ static int16_t input_state_internal(
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   device &= RETRO_DEVICE_MASK;
    if (  (device == RETRO_DEVICE_JOYPAD) &&
          (id == RETRO_DEVICE_ID_JOYPAD_MASK))
    {
