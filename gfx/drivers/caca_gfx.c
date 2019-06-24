@@ -286,7 +286,7 @@ static void caca_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {

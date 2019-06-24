@@ -2494,7 +2494,7 @@ static void gl2_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static void gl2_show_mouse(void *data, bool state)
