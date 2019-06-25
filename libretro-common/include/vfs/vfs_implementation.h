@@ -26,6 +26,36 @@
 #include <stdint.h>
 #include <libretro.h>
 
+enum vfs_scheme
+{
+   VFS_SCHEME_NONE = 0,
+   VFS_SCHEME_CDROM
+};
+
+#ifdef VFS_FRONTEND
+struct retro_vfs_file_handle
+#else
+struct libretro_vfs_implementation_file
+#endif
+{
+   int fd;
+   unsigned hints;
+   int64_t size;
+   char *buf;
+   FILE *fp;
+   char* orig_path;
+   uint64_t mappos;
+   uint64_t mapsize;
+   uint8_t *mapped;
+   enum vfs_scheme scheme;
+#ifdef HAVE_CDROM
+   char *cdrom_cue_buf;
+   size_t cdrom_cue_len;
+   size_t cdrom_byte_pos;
+   char cdrom_drive;
+#endif
+};
+
 /* Replace the following symbol with something appropriate
  * to signify the file is being compiled for a front end instead of a core.
  * This allows the same code to act as reference implementation

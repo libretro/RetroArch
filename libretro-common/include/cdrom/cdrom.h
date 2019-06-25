@@ -70,7 +70,7 @@ int cdrom_write_cue(int fd, char **out_buf, size_t *out_len, char cdrom_drive, u
 /* needs 32 bytes for full vendor, product and version */
 int cdrom_get_inquiry(int fd, char *model, int len);
 
-int cdrom_read(int fd, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len);
+int cdrom_read(int fd, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
 RETRO_END_DECLS
 
