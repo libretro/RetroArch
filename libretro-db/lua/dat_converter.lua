@@ -150,17 +150,17 @@ function init(...)
     for _, dat_path in ipairs(args) do
         local dat_file, err = io.open(dat_path, "r")
         if err then
-            error("could not open dat file '" .. dat_path .. "':" .. err)
+            error("  could not open dat file '" .. dat_path .. "':" .. err)
         end
 
-        print("Parsing dat file '" .. dat_path .. "'...")
+        print("  " .. dat_path)
         local objs = dat_parser(dat_lexer(dat_file, dat_path))
         dat_file:close()
         for _, obj in pairs(objs) do
             if match_key then
                 local mk = get_match_key(match_key, obj)
                 if mk == nil then
-                    error("missing match key '" .. match_key .. "' in one of the entries")
+                    error("  missing match key '" .. match_key .. "' in one of the entries")
                 end
                 if dat_hash[mk] == nil then
                     dat_hash[mk] = {}
