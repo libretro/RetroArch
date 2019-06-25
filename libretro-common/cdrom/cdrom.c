@@ -32,8 +32,10 @@
 #include <retro_math.h>
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
+#include <retro_miscellaneous.h>
 
 #include <math.h>
+#include <unistd.h>
 
 #ifdef __linux__
 #include <stropts.h>
@@ -83,7 +85,7 @@ static int cdrom_send_command(int fd, CDROM_CMD_Direction dir, void *buf, size_t
    unsigned char sense[SG_MAX_SENSE] = {0};
    unsigned char *xfer_buf;
    int rv;
-   unsigned char retries_left = 5;
+   unsigned char retries_left = 10;
 
    if (!cmd || cmd_len == 0)
       return 1;
@@ -122,6 +124,20 @@ static int cdrom_send_command(int fd, CDROM_CMD_Direction dir, void *buf, size_t
    sgio.mx_sb_len = sizeof(sense);
    sgio.timeout = 30000;
 retry:
+#ifdef CDROM_DEBUG
+   {
+      unsigned i;
+
+      printf("CDROM Send Command: ");
+
+      for (i = 0; i < cmd_len / sizeof(*cmd); i++)
+      {
+         printf("%02X ", cmd[i]);
+      }
+
+      printf("\n");
+   }
+#endif
    rv = ioctl(fd, SG_IO, &sgio);
 
    if (sgio.info & SG_INFO_CHECK)
@@ -129,22 +145,31 @@ retry:
       unsigned i;
       const char *sense_key_text = NULL;
 
-      if ((sense[2] & 0xF) == 3)
+      switch (sense[2] & 0xF)
       {
-         if (retries_left)
-         {
+         case 0:
+         case 2:
+         case 3:
+         case 4:
+            if (retries_left)
+            {
 #ifdef CDROM_DEBUG
-            printf("CDROM Read Retry...\n");
+               printf("CDROM Read Retry...\n");
 #endif
-            retries_left--;
-            goto retry;
-         }
-         else
-         {
+               retries_left--;
+               usleep(1000 * 1000);
+               goto retry;
+            }
+            else
+            {
 #ifdef CDROM_DEBUG
-            printf("CDROM Read Retries failed, giving up.\n");
+               printf("CDROM Read Retries failed, giving up.\n");
 #endif
-         }
+            }
+
+            break;
+         default:
+            break;
       }
 
 #ifdef CDROM_DEBUG
@@ -400,7 +425,7 @@ int cdrom_write_cue(int fd, char **out_buf, size_t *out_len, char cdrom_drive, u
    {
       /*unsigned char session_num = buf[4 + (i * 11) + 0];*/
       unsigned char adr = (buf[4 + (i * 11) + 1] >> 4) & 0xF;
-      /*unsigned char control = buf[4 + (i * 11) + 1] & 0xF;*/
+      unsigned char control = buf[4 + (i * 11) + 1] & 0xF;
       unsigned char tno = buf[4 + (i * 11) + 2];
       unsigned char point = buf[4 + (i * 11) + 3];
       unsigned char pmin = buf[4 + (i * 11) + 8];
@@ -415,23 +440,15 @@ int cdrom_write_cue(int fd, char **out_buf, size_t *out_len, char cdrom_drive, u
          unsigned char next_pmin = (pframe == 74) ? (psec < 59 ? pmin : pmin + 1) : pmin;
          unsigned char next_psec = (pframe == 74) ? (psec < 59 ? (psec + 1) : 0) : psec;
          unsigned char next_pframe = (pframe < 74) ? (pframe + 1) : 0;
-         /* MMC Command: READ CD MSF */
-         unsigned char q_cdb[] = {0xB9, 0, 0, pmin, psec, pframe, next_pmin, next_psec, next_pframe, 0, 0x2, 0};
-         unsigned char q_buf[3] = {0};
          unsigned char mode = 1;
          bool audio = false;
          const char *track_type = "MODE1/2352";
 
-         rv = cdrom_send_command(fd, DIRECTION_IN, q_buf, sizeof(q_buf), q_cdb, sizeof(q_cdb), 0);
-
-         if (rv)
-            continue;
-
-         mode = q_buf[0] & 0xF;
-         audio = (q_buf[0] & 0x40) == 0;
+         mode = adr;
+         audio = (!(control & 0x4) && !(control & 0x5));
 
 #ifdef CDROM_DEBUG
-         printf("Track %02d CONTROL %02X %02X %02X MODE %d AUDIO? %d\n", point, q_buf[0], q_buf[1], q_buf[2], mode, audio);
+         printf("Track %02d CONTROL %01X ADR %01X MODE %d AUDIO? %d\n", point, control, adr, mode, audio);
 #endif
 
          toc->track[point - 1].track_num = point;

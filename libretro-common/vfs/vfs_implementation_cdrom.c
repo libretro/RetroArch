@@ -78,7 +78,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
             unsigned char end_min = 0;
             unsigned char end_sec = 0;
             unsigned char end_frame = 0;
-            size_t end_lba = vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].lba_start + vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].track_size;
+            size_t end_lba = (vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].lba_start + vfs_cdrom_toc.track[vfs_cdrom_toc.num_tracks - 1].track_size) - 1;
 
             lba_to_msf(end_lba, &min, &sec, &frame);
 
