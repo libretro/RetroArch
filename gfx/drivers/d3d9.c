@@ -69,7 +69,13 @@
 #error "UWP does not support D3D9"
 #endif
 
+/* Temporary workaround for d3d9 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d9_fake_context;
+static uint32_t d3d9_get_flags(void *data);
+static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path);
+
 static LPDIRECT3D9 g_pD3D9;
+static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
 
 void *dinput;
 
@@ -150,7 +156,8 @@ static bool renderchain_d3d_init_first(
    {
       case GFX_CTX_DIRECT3D9_API:
          {
-            static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] = {
+            static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] =
+            {
 #if defined(_WIN32) && defined(HAVE_CG)
                &cg_d3d9_renderchain,
 #endif
@@ -170,6 +177,12 @@ static bool renderchain_d3d_init_first(
 
                *renderchain_driver = renderchain_d3d_drivers[i];
                *renderchain_handle = data;
+
+               if (string_is_equal(renderchain_d3d_drivers[i]->ident, "cg_d3d9"))
+                  supported_shader_type = RARCH_SHADER_CG;
+               else if (string_is_equal(renderchain_d3d_drivers[i]->ident, "hlsl_d3d9"))
+                  supported_shader_type = RARCH_SHADER_HLSL;
+
                return true;
             }
          }
@@ -248,12 +261,12 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
             &d3d->renderchain_driver,
             &d3d->renderchain_data))
    {
-	   RARCH_ERR("[D3D9]: Renderchain could not be initialized.\n");
-	   return false;
+      RARCH_ERR("[D3D9]: Renderchain could not be initialized.\n");
+      return false;
    }
 
    if (!d3d->renderchain_driver || !d3d->renderchain_data)
-	   return false;
+      return false;
 
    if (
          !d3d->renderchain_driver->init(
@@ -376,7 +389,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    if (!video_shader_read_conf_preset(conf, &d3d->shader))
    {
       config_file_free(conf);
-      RARCH_ERR("[D3D9]: Failed to parse CGP file.\n");
+      RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
       return false;
    }
 
@@ -429,8 +442,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 static bool d3d9_process_shader(d3d9_video_t *d3d)
 {
    const char *shader_path = d3d->shader_path;
-   if (d3d && !string_is_empty(shader_path) &&
-         string_is_equal(path_get_extension(shader_path), "cgp"))
+   if (d3d && !string_is_empty(shader_path))
       return d3d9_init_multipass(d3d, shader_path);
 
    return d3d9_init_singlepass(d3d);
@@ -494,14 +506,14 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
       overlay->vert_buf = d3d9_vertex_buffer_new(
       dev, sizeof(vert), D3DUSAGE_WRITEONLY,
 #ifdef _XBOX
-	  0,
+     0,
 #else
       D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
 #endif
       D3DPOOL_MANAGED, NULL);
 
-	  if (!overlay->vert_buf)
-		  return;
+     if (!overlay->vert_buf)
+        return;
    }
 
    for (i = 0; i < 4; i++)
@@ -989,7 +1001,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    video_driver_get_size(&width, &height);
    d3d9_set_viewport(d3d,
-	   width, height, false, true);
+      width, height, false, true);
 
 #ifdef _XBOX
    strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
@@ -1022,7 +1034,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 #ifdef _XBOX
          0,
 #else
-		 D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+         D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
 #endif
          D3DPOOL_DEFAULT,
          NULL);
@@ -1265,37 +1277,26 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
          win_height, info->fullscreen);
 
    win32_set_window(&win_width, &win_height, info->fullscreen,
-	   windowed_full, &rect);
+      windowed_full, &rect);
 #endif
-
-   /* This should only be done once here
-    * to avoid set_shader() to be overridden
-    * later. */
-   if (settings->bools.video_shader_enable)
-   {
-      enum rarch_shader_type type =
-         video_shader_parse_type(retroarch_get_shader_preset());
-
-      switch (type)
-      {
-         case RARCH_SHADER_CG:
-            if (!string_is_empty(d3d->shader_path))
-               free(d3d->shader_path);
-            if (!string_is_empty(retroarch_get_shader_preset()))
-               d3d->shader_path = strdup(retroarch_get_shader_preset());
-            break;
-         default:
-            break;
-      }
-   }
-
-   if (!d3d9_process_shader(d3d))
-      return false;
 
    d3d->video_info = *info;
 
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
+
+   {
+      const char *shader_preset;
+      enum rarch_shader_type type;
+
+      d3d9_fake_context.get_flags = d3d9_get_flags;
+      video_context_driver_set(&d3d9_fake_context); 
+
+      shader_preset = retroarch_get_shader_preset();
+      type = video_shader_parse_type(shader_preset);
+
+      d3d9_set_shader(d3d, type, shader_preset);
+   }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
@@ -1482,7 +1483,7 @@ static bool d3d9_overlay_load(void *data,
       image_data;
 
    if (!d3d)
-	   return false;
+      return false;
 
    d3d9_free_overlays(d3d);
    d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
@@ -1820,8 +1821,19 @@ static bool d3d9_set_shader(void *data,
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
+
+         if (type != supported_shader_type)
+         {
+            RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+               path, video_shader_to_str(type), video_shader_to_str(supported_shader_type));
+            break;
+         }
+      
          if (!string_is_empty(path))
             d3d->shader_path = strdup(path);
+
+         break;
+      case RARCH_SHADER_NONE:
          break;
       default:
          RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
@@ -2017,7 +2029,7 @@ static void d3d9_unload_texture(void *data, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)
-	   return;
+      return;
 
    texid = (LPDIRECT3DTEXTURE9)id;
    d3d9_texture_free(texid);
@@ -2034,10 +2046,15 @@ static void d3d9_set_video_mode(void *data,
 
 static uint32_t d3d9_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   if (supported_shader_type == RARCH_SHADER_CG)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+   else if (supported_shader_type == RARCH_SHADER_HLSL)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 
    return flags;
 }
