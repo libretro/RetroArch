@@ -531,7 +531,7 @@ static dat_converter_list_t* dat_converter_parser(
                   {
                      if (warning_displayed == false)
                      {
-                        printf("  - Missing match key '");
+                        printf("    - Missing match key '");
                         while (match_key->next)
                         {
                            printf("%s.", match_key->value);
@@ -782,7 +782,7 @@ int main(int argc, char** argv)
 
       if (!dat_file)
       {
-         printf("could not open dat file '%s': %s\n",
+         printf("  could not open dat file '%s': %s\n",
                *argv, strerror(errno));
          dat_converter_exit(1);
       }
@@ -795,7 +795,7 @@ int main(int argc, char** argv)
       fclose(dat_file);
       (*dat_buffer)[dat_file_size] = '\0';
 
-      printf("Parsing dat file '%s'...\n", *argv);
+      printf("  %s\n", *argv);
       dat_lexer_list  = dat_converter_lexer(*dat_buffer, *argv);
       dat_parser_list = dat_converter_parser(
             dat_parser_list, dat_lexer_list, match_key);
