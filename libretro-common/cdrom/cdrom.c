@@ -151,6 +151,7 @@ retry:
          case 2:
          case 3:
          case 4:
+         case 6:
             if (retries_left)
             {
 #ifdef CDROM_DEBUG
