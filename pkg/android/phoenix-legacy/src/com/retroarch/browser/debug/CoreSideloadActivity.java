@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import com.retroarch.browser.mainmenu.MainMenuActivity;
 import com.retroarch.browser.preferences.util.UserPreferences;
-import com.retroarch.browser.retroactivity.RetroActivityFuture;
+import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -152,7 +152,7 @@ public class CoreSideloadActivity extends Activity
                 progressTextView.setText("Done!");
 
                 // Run RA with our newly sideloaded core (and content)
-                Intent retro = new Intent(ctx, RetroActivityFuture.class);
+                Intent retro = new Intent(ctx, RetroActivityPast.class);
 
                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 

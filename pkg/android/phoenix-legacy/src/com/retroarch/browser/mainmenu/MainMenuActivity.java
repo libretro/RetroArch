@@ -1,7 +1,7 @@
 package com.retroarch.browser.mainmenu;
 
 import com.retroarch.browser.preferences.util.UserPreferences;
-import com.retroarch.browser.retroactivity.RetroActivityFuture;
+import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -115,7 +115,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	public void finalStartup()
 	{
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		Intent retro = new Intent(this, RetroActivityFuture.class);
+		Intent retro = new Intent(this, RetroActivityPast.class);
 
 		retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
