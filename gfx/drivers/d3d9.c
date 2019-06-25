@@ -75,6 +75,7 @@ static uint32_t d3d9_get_flags(void *data);
 static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path);
 
 static LPDIRECT3D9 g_pD3D9;
+static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
 
 void *dinput;
 
@@ -155,7 +156,8 @@ static bool renderchain_d3d_init_first(
    {
       case GFX_CTX_DIRECT3D9_API:
          {
-            static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] = {
+            static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] =
+            {
 #if defined(_WIN32) && defined(HAVE_CG)
                &cg_d3d9_renderchain,
 #endif
@@ -175,6 +177,12 @@ static bool renderchain_d3d_init_first(
 
                *renderchain_driver = renderchain_d3d_drivers[i];
                *renderchain_handle = data;
+
+               if (string_is_equal(renderchain_d3d_drivers[i]->ident, "cg_d3d9"))
+                  supported_shader_type = RARCH_SHADER_CG;
+               else if (string_is_equal(renderchain_d3d_drivers[i]->ident, "hlsl_d3d9"))
+                  supported_shader_type = RARCH_SHADER_HLSL;
+
                return true;
             }
          }
@@ -381,7 +389,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    if (!video_shader_read_conf_preset(conf, &d3d->shader))
    {
       config_file_free(conf);
-      RARCH_ERR("[D3D9]: Failed to parse CGP file.\n");
+      RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
       return false;
    }
 
@@ -434,8 +442,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 static bool d3d9_process_shader(d3d9_video_t *d3d)
 {
    const char *shader_path = d3d->shader_path;
-   if (d3d && !string_is_empty(shader_path) &&
-         string_is_equal(path_get_extension(shader_path), "cgp"))
+   if (d3d && !string_is_empty(shader_path))
       return d3d9_init_multipass(d3d, shader_path);
 
    return d3d9_init_singlepass(d3d);
@@ -1273,6 +1280,11 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       windowed_full, &rect);
 #endif
 
+   d3d->video_info = *info;
+
+   if (!d3d9_initialize(d3d, &d3d->video_info))
+      return false;
+
    {
       const char *shader_preset;
       enum rarch_shader_type type;
@@ -1285,11 +1297,6 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
 
       d3d9_set_shader(d3d, type, shader_preset);
    }
-
-   d3d->video_info = *info;
-
-   if (!d3d9_initialize(d3d, &d3d->video_info))
-      return false;
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
@@ -1814,8 +1821,17 @@ static bool d3d9_set_shader(void *data,
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
+
+         if (type != supported_shader_type)
+         {
+            RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+               path, video_shader_to_str(type), video_shader_to_str(supported_shader_type));
+            break;
+         }
+      
          if (!string_is_empty(path))
             d3d->shader_path = strdup(path);
+
          break;
       case RARCH_SHADER_NONE:
          break;
@@ -2034,7 +2050,11 @@ static uint32_t d3d9_get_flags(void *data)
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+
+   if (supported_shader_type == RARCH_SHADER_CG)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+   else if (supported_shader_type == RARCH_SHADER_HLSL)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 
    return flags;
 }
