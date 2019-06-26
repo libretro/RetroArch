@@ -6598,7 +6598,7 @@ static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
    uint64_t accum_var            = 0;
    unsigned low_water_count      = 0;
    unsigned high_water_count     = 0;
-   unsigned samples              = MIN(
+   const unsigned samples        = MIN(
          (unsigned)audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
@@ -14092,7 +14092,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char *config_directory                 = NULL;
-   size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
+   const size_t str_size                  = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -14135,7 +14135,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
  * but this will do for now. */
 static void retroarch_validate_cpu_features(void)
 {
-   uint64_t cpu = cpu_features_get();
+   const uint64_t cpu = cpu_features_get();
    (void)cpu;
 
 #ifdef __MMX__
@@ -14157,7 +14157,7 @@ static void retroarch_validate_cpu_features(void)
 }
 
 static void retroarch_main_init_media(enum rarch_content_type cont_type,
-      bool builtin_mediaplayer, bool builtin_imageviewer)
+      const bool builtin_mediaplayer, const bool builtin_imageviewer)
 {
    switch (cont_type)
    {
@@ -14272,8 +14272,8 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          const settings_t *settings        = (const settings_t*)configuration_settings;
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
-         bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
-         bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
+         const bool builtin_imageviewer    = settings->bools.multimedia_builtin_imageviewer_enable;
+         const bool builtin_mediaplayer    = settings->bools.multimedia_builtin_mediaplayer_enable;
 
          retroarch_main_init_media(cont_type, builtin_mediaplayer,
                builtin_imageviewer);
@@ -14435,8 +14435,8 @@ void rarch_menu_running_finished(void)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   size_t game_path_size = 8192 * sizeof(char);
-   char *game_path       = (char*)malloc(game_path_size);
+   const size_t game_path_size = 8192 * sizeof(char);
+   char *game_path             = (char*)malloc(game_path_size);
 
    game_path[0] ='\0';
 
@@ -14464,7 +14464,7 @@ static void runloop_task_msg_queue_push(
       bool flush)
 {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   bool ready = menu_widgets_ready();
+   const bool ready = menu_widgets_ready();
    if (ready && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
@@ -14918,7 +14918,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             const settings_t *settings = (const settings_t*)configuration_settings;
             bool threaded_enable       = settings->bools.threaded_data_runloop_enable;
 #else
-            bool threaded_enable = false;
+            bool threaded_enable       = false;
 #endif
             task_queue_deinit();
             task_queue_init(threaded_enable, runloop_task_msg_queue_push);
@@ -14961,7 +14961,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_CORE_OPTIONS_GET:
          {
             const settings_t *settings = (const settings_t*)configuration_settings;
-            unsigned log_level         = settings->uints.libretro_log_level;
+            const unsigned log_level   = settings->uints.libretro_log_level;
 
             struct retro_variable *var = (struct retro_variable*)data;
 
@@ -15276,7 +15276,8 @@ char* retroarch_get_shader_preset(void)
    return NULL;
 }
 
-bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
+bool retroarch_override_setting_is_set(
+      enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
@@ -15326,7 +15327,8 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
    return false;
 }
 
-void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data)
+void retroarch_override_setting_set(
+      enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
@@ -15388,7 +15390,8 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
    }
 }
 
-void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data)
+void retroarch_override_setting_unset(
+      enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
@@ -15537,7 +15540,8 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    return 0;
 }
 
-void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
+void retroarch_set_current_core_type(
+      enum rarch_core_type type, bool explicitly_set)
 {
    if (explicitly_set && !has_set_core)
    {
@@ -15792,27 +15796,26 @@ static bool input_driver_toggle_button_combo(
    }
 
 static enum runloop_state runloop_check_state(
-      settings_t *settings,
-      bool input_nonblock_state,
-      bool runloop_is_paused,
-      float fastforward_ratio,
-      unsigned *sleep_ms)
+      const bool input_nonblock_state,
+      const bool runloop_is_paused,
+      const float fastforward_ratio)
 {
    input_bits_t current_bits;
+   settings_t *settings                = configuration_settings;
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
    static bool old_focus               = true;
    bool is_focused                     = video_has_focus();
-   bool is_alive                       = current_video ?
+   const bool is_alive                 = current_video ?
       current_video->alive(video_driver_data) : true;
    uint64_t frame_count                = video_driver_frame_count;
    bool focused                        = true;
-   bool pause_nonactive                = settings->bools.pause_nonactive;
-   bool rarch_is_initialized           = rarch_is_inited;
+   const bool pause_nonactive          = settings->bools.pause_nonactive;
+   const bool rarch_is_initialized     = rarch_is_inited;
 #ifdef HAVE_MENU
    bool menu_driver_binding_state      = menu_driver_is_binding_state();
-   bool menu_is_alive                  = menu_driver_is_alive();
+   const bool menu_is_alive            = menu_driver_is_alive();
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
 #ifdef HAVE_EASTEREGG
    static uint64_t seq                 = 0;
@@ -16634,13 +16637,13 @@ void runloop_unset(enum runloop_action action)
 int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
-   bool runloop_is_paused                       = runloop_paused;
-   bool input_nonblock_state                    = input_driver_nonblock_state;
+   const bool runloop_is_paused                 = runloop_paused;
+   const bool input_nonblock_state              = input_driver_nonblock_state;
    settings_t *settings                         = configuration_settings;
-   float fastforward_ratio                      = settings->floats.fastforward_ratio;
+   const float fastforward_ratio                = settings->floats.fastforward_ratio;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
-   bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
-   unsigned max_users                           = input_driver_max_users;
+   const bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
+   const unsigned max_users                     = input_driver_max_users;
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
@@ -16676,11 +16679,9 @@ int runloop_iterate(unsigned *sleep_ms)
 
    switch ((enum runloop_state)
          runloop_check_state(
-            settings,
             input_nonblock_state,
             runloop_is_paused,
-            fastforward_ratio,
-            sleep_ms))
+            fastforward_ratio))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
