@@ -165,7 +165,6 @@ OBJ += frontend/frontend.o \
        ui/drivers/null/ui_null_msg_window.o \
        ui/drivers/null/ui_null_application.o \
        retroarch.o \
-       dirs.o \
        paths.o \
        command.o \
        msg_hash.o \

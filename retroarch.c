@@ -133,7 +133,6 @@
 #include "driver.h"
 #include "input/input_driver.h"
 #include "msg_hash.h"
-#include "dirs.h"
 #include "paths.h"
 #include "file_path_special.h"
 #include "ui/ui_companion_driver.h"

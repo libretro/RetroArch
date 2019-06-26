@@ -70,7 +70,6 @@
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
-#include "../dirs.h"
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"

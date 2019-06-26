@@ -59,7 +59,6 @@
 
 #include "cores/internal_cores.h"
 #include "content.h"
-#include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "configuration.h"

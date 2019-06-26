@@ -81,7 +81,6 @@
 #include "performance_counters.h"
 #include "dynamic.h"
 #include "content.h"
-#include "dirs.h"
 #include "paths.h"
 #include "msg_hash.h"
 #include "retroarch.h"

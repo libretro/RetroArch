@@ -43,7 +43,6 @@
 #include "led/led_defines.h"
 #include "defaults.h"
 #include "core.h"
-#include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"
