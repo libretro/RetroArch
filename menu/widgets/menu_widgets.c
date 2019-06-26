@@ -492,8 +492,7 @@ bool menu_widgets_msg_queue_push(
 
             msg_widget->task_count++;
 
-            if (new_width > msg_widget->width)
-               msg_widget->width = new_width;
+            msg_widget->width = new_width;
          }
 
          msg_widget->task_error        = task->error;
