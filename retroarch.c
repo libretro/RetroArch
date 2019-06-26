@@ -839,7 +839,6 @@ bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
-   settings_t        *settings = configuration_settings;
 
    switch (state)
    {
@@ -855,6 +854,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
          {
             int i;
             driver_ctx_info_t drv;
+            settings_t *settings = configuration_settings;
 
             drv.label = "wifi_driver";
             drv.s     = settings->arrays.wifi_driver;
@@ -909,6 +909,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
       case RARCH_WIFI_CTL_START:
         if (wifi_driver && wifi_data && wifi_driver->start)
         {
+           const settings_t *settings = (const settings_t*)configuration_settings;
            if (settings->bools.wifi_allow)
               return wifi_driver->start(wifi_data);
         }
@@ -1051,9 +1052,9 @@ void ui_companion_driver_deinit(void)
 
 void ui_companion_driver_init_first(void)
 {
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 
-   ui_companion         = (ui_companion_driver_t*)ui_companion_init_first();
+   ui_companion               = (ui_companion_driver_t*)ui_companion_init_first();
 
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
@@ -1078,7 +1079,7 @@ void ui_companion_driver_init_first(void)
 void ui_companion_driver_toggle(bool force)
 {
 #ifdef HAVE_QT
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 #endif
 
    if (ui_companion && ui_companion->toggle)
@@ -1103,7 +1104,7 @@ void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
-   settings_t            *settings = configuration_settings;
+   const settings_t      *settings = (const settings_t*)configuration_settings;
 #endif
 
    if (!ui)
@@ -1215,7 +1216,7 @@ const char *ui_companion_driver_get_ident(void)
 void ui_companion_driver_log_msg(const char *msg)
 {
 #ifdef HAVE_QT
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 
    if (settings->bools.desktop_menu_enable)
       if (ui_companion_qt_data && qt_is_inited)
@@ -1568,13 +1569,15 @@ bool recording_init(void)
                      "mkv", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST 
+               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
          {
             fill_str_dated_filename(buf, game_name,
                      "webm", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF 
+               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
@@ -1731,19 +1734,16 @@ void recording_driver_update_streaming_url(void)
    switch (settings->uints.streaming_mode)
    {
       case STREAMING_MODE_TWITCH:
-      {
          if (!string_is_empty(settings->arrays.twitch_stream_key))
             snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
                "%s%s", twitch_url, settings->arrays.twitch_stream_key);
          else
          {
-            /* To-Do: Show input box for twitch_stream_key*/
+            /* TODO: Show input box for twitch_stream_key*/
             RARCH_LOG("[recording] twitch streaming key empty\n");
          }
          break;
-      }
       case STREAMING_MODE_YOUTUBE:
-      {
          if (!string_is_empty(settings->arrays.youtube_stream_key))
          {
             snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
@@ -1751,13 +1751,12 @@ void recording_driver_update_streaming_url(void)
          }
          else
          {
-            /* To-Do: Show input box for youtube_stream_key*/
+            /* TODO: Show input box for youtube_stream_key*/
             RARCH_LOG("[recording] youtube streaming key empty\n");
          }
          break;
-      }
       case STREAMING_MODE_LOCAL:
-         /* To-Do: figure out default interface and bind to that instead */
+         /* TODO: figure out default interface and bind to that instead */
          snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
             "udp://%s:%u", "127.0.0.1", settings->uints.video_stream_port);
          break;
@@ -2803,7 +2802,7 @@ static INLINE bool input_keys_pressed_other_sources(unsigned i,
 static int16_t input_joypad_axis(const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis)
 {
-   settings_t *settings           = configuration_settings;
+   const settings_t *settings     = (const settings_t*)configuration_settings;
    float input_analog_deadzone    = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
    int16_t val                    = drv->axis(port, joyaxis);
@@ -4129,7 +4128,7 @@ void input_driver_unset_nonblock_state(void)
 bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
-   settings_t *settings          = configuration_settings;
+   const settings_t *settings    = (const settings_t*)configuration_settings;
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
    bool grab_stdin               = current_input->grab_stdin && current_input->grab_stdin(current_input_data);
@@ -4186,7 +4185,7 @@ void input_driver_deinit_mapper(void)
 bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 
    if (!settings->bools.network_remote_enable)
       return false;
@@ -4205,7 +4204,7 @@ bool input_driver_init_remote(void)
 
 bool input_driver_init_mapper(void)
 {
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 
    if (!settings->bools.input_remap_binds_enable)
       return false;
@@ -4378,8 +4377,8 @@ const input_device_driver_t *input_joypad_init_driver(
 bool input_joypad_set_rumble(const input_device_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   settings_t *settings = configuration_settings;
-   unsigned joy_idx     = settings->uints.input_joypad_map[port];
+   const settings_t *settings = (const settings_t*)configuration_settings;
+   unsigned joy_idx           = settings->uints.input_joypad_map[port];
 
    if (!drv || !drv->set_rumble || joy_idx >= MAX_USERS)
       return false;
@@ -5246,8 +5245,8 @@ static void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   settings_t *settings = configuration_settings;
-   bool label_show      = settings->bools.input_descriptor_label_show;
+   const settings_t *settings = (const settings_t*)configuration_settings;
+   bool label_show            = settings->bools.input_descriptor_label_show;
 
    if (GET_HAT_DIR(bind->joykey))
    {
@@ -5294,7 +5293,7 @@ static void input_config_get_bind_string_joykey(
 static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
@@ -6562,7 +6561,7 @@ static void audio_mixer_menu_stop_cb(
 
 static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
-   settings_t *settings    = configuration_settings;
+   const settings_t *settings    = (const settings_t*)configuration_settings;
 
    if (!settings)
       return RESAMPLER_QUALITY_DONTCARE;
@@ -7375,7 +7374,7 @@ void audio_driver_set_buffer_size(size_t bufsize)
 static void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   settings_t *settings                   = configuration_settings;
+   const settings_t *settings             = (const settings_t*)configuration_settings;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    struct retro_system_av_info *av_info   = &video_driver_av_info;
@@ -7994,8 +7993,8 @@ bool audio_driver_disable_callback(void)
 /* Sets audio monitor rate to new value. */
 static void audio_driver_monitor_set_rate(void)
 {
-   settings_t *settings = configuration_settings;
-   double new_src_ratio = (double)settings->uints.audio_out_rate /
+   const settings_t *settings = (const settings_t*)configuration_settings;
+   double new_src_ratio       = (double)settings->uints.audio_out_rate /
       audio_driver_input;
 
    audio_source_ratio_original = new_src_ratio;
@@ -8734,9 +8733,10 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      /* To-Do: remove when the new window resizing core is hooked */
+      /* TODO: remove when the new window resizing core is hooked */
       if (settings->bools.video_window_save_positions &&
-         (settings->uints.window_position_width || settings->uints.window_position_height))
+         (settings->uints.window_position_width || 
+          settings->uints.window_position_height))
       {
          width  = settings->uints.window_position_width;
          height = settings->uints.window_position_height;
@@ -8752,7 +8752,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          }
          else
             width  = roundf(geom->base_width   * settings->floats.video_scale);
-         height = roundf(geom->base_height * settings->floats.video_scale);
+         height    = roundf(geom->base_height  * settings->floats.video_scale);
       }
    }
 
@@ -9189,7 +9189,7 @@ bool video_driver_cached_frame(void)
 static void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew                      = 0.0f;
-   settings_t *settings                   = configuration_settings;
+   const settings_t *settings             = (const settings_t*)configuration_settings;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float timing_skew_hz                   = video_refresh_rate;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
@@ -9287,7 +9287,7 @@ bool video_driver_supports_viewport_read(void)
 
 bool video_driver_prefer_viewport_read(void)
 {
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
    return settings->bools.video_gpu_screenshot ||
       (video_driver_is_hw_context() && !current_video->read_frame_raw);
 }
@@ -9437,9 +9437,10 @@ void video_driver_monitor_reset(void)
 
 void video_driver_set_aspect_ratio(void)
 {
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
+   unsigned aspect_ratio_idx  = settings->uints.video_aspect_ratio_idx;
 
-   switch (settings->uints.video_aspect_ratio_idx)
+   switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_driver_set_viewport_square_pixel();
@@ -9458,12 +9459,12 @@ void video_driver_set_aspect_ratio(void)
    }
 
    video_driver_set_aspect_ratio_value(
-            aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
+            aspectratio_lut[aspect_ratio_idx].value);
 
    if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
       return;
    video_driver_poke->set_aspect_ratio(
-         video_driver_data, settings->uints.video_aspect_ratio_idx);
+         video_driver_data, aspect_ratio_idx);
 }
 
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect)
@@ -9484,10 +9485,8 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
    vp->height = vp->full_height;
 
    if (settings->bools.video_scale_integer && !force_full)
-   {
       video_viewport_get_scaled_integer(
             vp, vp->full_width, vp->full_height, video_driver_get_aspect_ratio(), keep_aspect);
-   }
    else if (keep_aspect && !force_full)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
@@ -10737,7 +10736,7 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 bool video_context_driver_swap_interval(int *interval)
 {
    int current_interval                   = *interval;
-   settings_t *settings                   = configuration_settings;
+   const settings_t *settings             = (const settings_t*)configuration_settings;
    bool adaptive_vsync_enabled            = video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!current_video_context.swap_interval)
@@ -10796,8 +10795,8 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
-   settings_t *settings    = configuration_settings;
-   const char *joypad_name = settings->arrays.input_joypad_driver;
+   const settings_t *settings    = (const settings_t*)configuration_settings;
+   const char *joypad_name       = settings->arrays.input_joypad_driver;
 
    if (!current_video_context.input_driver)
       return false;
@@ -11647,10 +11646,9 @@ static void find_location_driver(void)
  **/
 bool driver_location_start(void)
 {
-   settings_t *settings = configuration_settings;
-
    if (location_driver && location_data && location_driver->start)
    {
+      const settings_t *settings = (const settings_t*)configuration_settings;
       if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
@@ -11825,7 +11823,7 @@ bool driver_camera_start(void)
 {
    if (camera_driver && camera_data && camera_driver->start)
    {
-      settings_t *settings = configuration_settings;
+      const settings_t *settings = (const settings_t*)configuration_settings;
       if (settings->bools.camera_allow)
          return camera_driver->start(camera_data);
 
@@ -12107,8 +12105,8 @@ void driver_set_nonblock_state(void)
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_is_active() && video_driver_get_ptr_internal(false))
    {
-      settings_t *settings = configuration_settings;
-      bool video_nonblock  = enable;
+      const settings_t *settings = (const settings_t*)configuration_settings;
+      bool video_nonblock        = enable;
 
       if (!settings->bools.video_vsync || runloop_force_nonblock)
          video_nonblock = true;
@@ -13011,7 +13009,7 @@ static void run_ahead(int runahead_count, bool useSecondary)
    {
       if (!runahead_create())
       {
-         settings_t *settings = configuration_settings;
+         const settings_t *settings = (const settings_t*)configuration_settings;
          if (!settings->bools.run_ahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          core_run();
@@ -13148,8 +13146,8 @@ void rarch_core_runtime_tick(void)
       /* Account for slow motion */
       if (runloop_slowmotion)
       {
-         settings_t *settings = configuration_settings;
-         frame_time           = (retro_time_t)((double)
+         const settings_t *settings = (const settings_t*)configuration_settings;
+         frame_time                 = (retro_time_t)((double)
                frame_time * settings->floats.slowmotion_ratio);
       }
       /* Account for fast forward */
@@ -14272,16 +14270,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
       if (!string_is_empty(fullpath))
       {
-         settings_t *settings              = configuration_settings;
-         bool builtin_imageviewer          = false;
-         bool builtin_mediaplayer          = false;
+         const settings_t *settings        = (const settings_t*)configuration_settings;
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
-         
-         if (settings)
-         {
-            builtin_imageviewer   = settings->bools.multimedia_builtin_imageviewer_enable;
-            builtin_mediaplayer   = settings->bools.multimedia_builtin_mediaplayer_enable;
-         }
+         bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
+         bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
 
          retroarch_main_init_media(cont_type, builtin_mediaplayer,
                builtin_imageviewer);
@@ -14366,7 +14358,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_MENU
    {
-      settings_t *settings = configuration_settings;
+      const settings_t *settings = (const settings_t*)configuration_settings;
 
       if (settings->bools.audio_enable_menu)
          audio_driver_load_menu_sounds();
@@ -14394,7 +14386,7 @@ bool retroarch_is_on_main_thread(void)
 void rarch_menu_running(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 #endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
@@ -14415,7 +14407,7 @@ void rarch_menu_running(void)
 void rarch_menu_running_finished(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
 #endif
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
@@ -14424,12 +14416,12 @@ void rarch_menu_running_finished(void)
    input_driver_flushing_input = true;
 
    /* Stop menu background music before we exit the menu */
-   if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   if (settings && settings->bools.input_overlay_hide_in_menu)
+   if (settings->bools.input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
@@ -14752,14 +14744,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return runloop_game_options_active;
       case RARCH_CTL_SET_FRAME_LIMIT:
          {
-            settings_t                 *settings = configuration_settings;
+            const settings_t           *settings = (const settings_t*)configuration_settings;
             struct retro_system_av_info *av_info = &video_driver_av_info;
-            float fastforward_ratio              =
-               (settings->floats.fastforward_ratio == 0.0f)
-               ? 1.0f : settings->floats.fastforward_ratio;
+            float fastforward_ratio_orig         = settings->floats.fastforward_ratio;
+            float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) ? 1.0f : fastforward_ratio_orig;
 
-            frame_limit_last_time    = cpu_features_get_time_usec();
-            frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
+            frame_limit_last_time                = cpu_features_get_time_usec();
+            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f
                   / (av_info->timing.fps * fastforward_ratio));
          }
          break;
@@ -14795,7 +14786,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       }
       case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
       {
-         settings_t      *settings = configuration_settings;
          unsigned hours            = 0;
          unsigned minutes          = 0;
          unsigned seconds          = 0;
@@ -14815,6 +14805,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          /* Only write to file if content has run for a non-zero length of time */
          if (libretro_core_runtime_usec > 0)
          {
+            const settings_t *settings = (const settings_t*)configuration_settings;
+
             /* Per core logging */
             if (settings->bools.content_runtime_log)
                update_runtime_log(true);
@@ -14923,8 +14915,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_TASK_INIT:
          {
 #ifdef HAVE_THREADS
-            settings_t *settings = configuration_settings;
-            bool threaded_enable = settings->bools.threaded_data_runloop_enable;
+            const settings_t *settings = (const settings_t*)configuration_settings;
+            bool threaded_enable       = settings->bools.threaded_data_runloop_enable;
 #else
             bool threaded_enable = false;
 #endif
@@ -14968,8 +14960,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_OPTIONS_GET:
          {
-            settings_t *settings = configuration_settings;
-            unsigned log_level   = settings->uints.libretro_log_level;
+            const settings_t *settings = (const settings_t*)configuration_settings;
+            unsigned log_level         = settings->uints.libretro_log_level;
 
             struct retro_variable *var = (struct retro_variable*)data;
 
@@ -14988,16 +14980,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_OPTIONS_INIT:
          {
-            settings_t *settings              = configuration_settings;
+            const settings_t *settings        = (const settings_t*)configuration_settings;
             char *game_options_path           = NULL;
-            bool ret                          = false;
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (settings->bools.game_specific_options)
-               ret = rarch_game_specific_options(&game_options_path);
-
-            if (ret)
+            if (settings->bools.game_specific_options && 
+                  rarch_game_specific_options(&game_options_path))
             {
                runloop_game_options_active = true;
                runloop_core_options        =
@@ -15007,12 +14996,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             else
             {
                char buf[PATH_MAX_LENGTH];
-               const char *options_path          = NULL;
+               const char *options_path       = settings->paths.path_core_options;
 
                buf[0] = '\0';
-
-               if (settings)
-                  options_path = settings->paths.path_core_options;
 
                if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
                {
@@ -15209,7 +15195,7 @@ static bool retroarch_load_shader_preset(void)
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
-   char *shader_directory;
+   char *shader_directory             = NULL;
 
    if (!settings->bools.auto_shaders_enable)
       return false;
@@ -17593,7 +17579,7 @@ void rarch_log_file_init(void)
    char log_directory[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    FILE             *fp       = NULL;
-   settings_t *settings       = configuration_settings;
+   const settings_t *settings = (const settings_t*)configuration_settings;
    bool log_to_file           = settings->bools.log_to_file;
    bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
