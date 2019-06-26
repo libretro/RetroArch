@@ -28,7 +28,8 @@
 
 typedef struct netplay netplay_t;
 
-typedef struct mitm_server {
+typedef struct mitm_server
+{
    const char *name;
    const char *description;
 } mitm_server_t;

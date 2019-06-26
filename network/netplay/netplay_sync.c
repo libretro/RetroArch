@@ -42,41 +42,45 @@ void netplay_update_unread_ptr(netplay_t *netplay)
    if (netplay->is_server && netplay->connected_players<=1)
    {
       /* Nothing at all to read! */
-      netplay->unread_ptr = netplay->self_ptr;
+      netplay->unread_ptr         = netplay->self_ptr;
       netplay->unread_frame_count = netplay->self_frame_count;
 
    }
    else
    {
-      size_t new_unread_ptr = 0;
+      size_t           new_unread_ptr = 0;
       uint32_t new_unread_frame_count = (uint32_t) -1;
       uint32_t client;
 
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client))) continue;
-         if ((netplay->connected_slaves & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client)))
+            continue;
+         if ((netplay->connected_slaves & (1<<client)))
+            continue;
+
          if (netplay->read_frame_count[client] < new_unread_frame_count)
          {
-            new_unread_ptr = netplay->read_ptr[client];
+            new_unread_ptr         = netplay->read_ptr[client];
             new_unread_frame_count = netplay->read_frame_count[client];
          }
       }
 
-      if (!netplay->is_server && netplay->server_frame_count < new_unread_frame_count)
+      if ( !netplay->is_server && 
+            netplay->server_frame_count < new_unread_frame_count)
       {
-         new_unread_ptr = netplay->server_ptr;
-         new_unread_frame_count = netplay->server_frame_count;
+         new_unread_ptr              = netplay->server_ptr;
+         new_unread_frame_count      = netplay->server_frame_count;
       }
 
       if (new_unread_frame_count != (uint32_t) -1)
       {
-         netplay->unread_ptr = new_unread_ptr;
+         netplay->unread_ptr         = new_unread_ptr;
          netplay->unread_frame_count = new_unread_frame_count;
       }
       else
       {
-         netplay->unread_ptr = netplay->self_ptr;
+         netplay->unread_ptr         = netplay->self_ptr;
          netplay->unread_frame_count = netplay->self_frame_count;
       }
    }
@@ -96,11 +100,13 @@ struct vote_count {
 netplay_input_state_t netplay_device_client_state(netplay_t *netplay,
       struct delta_frame *simframe, uint32_t device, uint32_t client)
 {
-   uint32_t dsize = netplay_expected_input_size(netplay, 1 << device);
+   uint32_t                 dsize = 
+      netplay_expected_input_size(netplay, 1 << device);
    netplay_input_state_t simstate =
       netplay_input_state_for(
          &simframe->real_input[device], client,
          dsize, false, true);
+
    if (!simstate)
    {
       if (netplay->read_frame_count[client] > simframe->frame)
@@ -470,13 +476,16 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          /* Most devices have all the digital parts in the first word. */
          static const uint32_t digital_common[3]   = {~0u, 0u, 0u};
          static const uint32_t digital_keyboard[5] = {~0u, ~0u, ~0u, ~0u, ~0u};
-         const uint32_t *digital;
+         const uint32_t *digital                   = NULL;
+
          if (dtype == RETRO_DEVICE_KEYBOARD)
             digital = digital_keyboard;
          else
             digital = digital_common;
+
          oldresstate = netplay_input_state_for(
                &simframe->resolved_input[device], 1, dsize, false, false);
+
          if (!oldresstate)
             continue;
          memcpy(oldresstate->data, resstate->data, dsize * sizeof(uint32_t));
@@ -658,7 +667,8 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          /* Allocate a connection */
          for (connection_num = 0; connection_num < netplay->connections_size; connection_num++)
             if (!netplay->connections[connection_num].active &&
-                netplay->connections[connection_num].mode != NETPLAY_CONNECTION_DELAYED_DISCONNECT) break;
+                  netplay->connections[connection_num].mode != NETPLAY_CONNECTION_DELAYED_DISCONNECT)
+               break;
          if (connection_num == netplay->connections_size)
          {
             if (connection_num == 0)
@@ -696,13 +706,13 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 
             }
          }
-         connection = &netplay->connections[connection_num];
+         connection         = &netplay->connections[connection_num];
 
          /* Set it up */
          memset(connection, 0, sizeof(*connection));
          connection->active = true;
-         connection->fd = new_fd;
-         connection->mode = NETPLAY_CONNECTION_INIT;
+         connection->fd     = new_fd;
+         connection->mode   = NETPLAY_CONNECTION_INIT;
 
          if (!netplay_init_socket_buffer(&connection->send_packet_buffer,
                netplay->packet_buffer_size) ||
@@ -757,11 +767,12 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
    /* Only relevant if we're connected and not in a desynching operation */
    if ((netplay->is_server && (netplay->connected_players<=1)) ||
-       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
+       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED)     ||
        (netplay->desync))
    {
       netplay->other_frame_count = netplay->self_frame_count;
-      netplay->other_ptr = netplay->self_ptr;
+      netplay->other_ptr         = netplay->self_ptr;
+
       /* FIXME: Duplication */
       if (netplay->catch_up)
       {
@@ -860,13 +871,13 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       while (netplay->replay_frame_count < netplay->run_frame_count)
       {
          retro_time_t start, tm;
-
          struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
-         serial_info.data       = ptr->state;
-         serial_info.size       = netplay->state_size;
-         serial_info.data_const = NULL;
 
-         start = cpu_features_get_time_usec();
+         serial_info.data        = ptr->state;
+         serial_info.size        = netplay->state_size;
+         serial_info.data_const  = NULL;
+
+         start                   = cpu_features_get_time_usec();
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
@@ -910,20 +921,20 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       }
 
       /* Average our time */
-      netplay->frame_run_time_avg = netplay->frame_run_time_sum / NETPLAY_FRAME_RUN_TIME_WINDOW;
+      netplay->frame_run_time_avg   = netplay->frame_run_time_sum / NETPLAY_FRAME_RUN_TIME_WINDOW;
 
       if (netplay->unread_frame_count < netplay->run_frame_count)
       {
-         netplay->other_ptr = netplay->unread_ptr;
+         netplay->other_ptr         = netplay->unread_ptr;
          netplay->other_frame_count = netplay->unread_frame_count;
       }
       else
       {
-         netplay->other_ptr = netplay->run_ptr;
+         netplay->other_ptr         = netplay->run_ptr;
          netplay->other_frame_count = netplay->run_frame_count;
       }
-      netplay->is_replay = false;
-      netplay->force_rewind = false;
+      netplay->is_replay            = false;
+      netplay->force_rewind         = false;
    }
 
    if (netplay->is_server)
@@ -935,15 +946,14 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Look for players that are ahead of us */
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client)))
+            continue;
          if (netplay->read_frame_count[client] > hi_frame_count)
             hi_frame_count = netplay->read_frame_count[client];
       }
    }
    else
-   {
       lo_frame_count = hi_frame_count = netplay->server_frame_count;
-   }
 
    /* If we're behind, try to catch up */
    if (netplay->catch_up)

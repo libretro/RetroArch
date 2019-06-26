@@ -353,9 +353,11 @@ static void parse_context_error(Context* pCtx)
 {
    if (JSON_Parser_GetError(pCtx->parser) != JSON_Error_AbortedByHandler)
    {
-      JSON_Error error = JSON_Parser_GetError(pCtx->parser);
+      JSON_Error error            = JSON_Parser_GetError(pCtx->parser);
       JSON_Location errorLocation = {0, 0, 0};
+
       (void)JSON_Parser_GetErrorLocation(pCtx->parser, &errorLocation);
+
       RARCH_ERR("invalid JSON at line %d, column %d (input byte %d) - %s.\n",
             (int)errorLocation.line + 1,
             (int)errorLocation.column + 1,
@@ -375,7 +377,7 @@ static int json_parse(Context* pCtx, const char *buf)
    return 1;
 }
 
-void netplay_rooms_free()
+void netplay_rooms_free(void)
 {
    if (rooms)
    {
@@ -388,15 +390,11 @@ void netplay_rooms_free()
             struct netplay_room *next = room->next;
 
             free(room);
-
             room = next;
          }
-
-         free(rooms);
       }
-      else
-         free(rooms);
 
+      free(rooms);
       rooms = NULL;
    }
 }
@@ -451,7 +449,7 @@ struct netplay_room* netplay_room_get(int index)
    return room;
 }
 
-int netplay_rooms_get_count()
+int netplay_rooms_get_count(void)
 {
    int count = 0;
    struct netplay_room *room;
