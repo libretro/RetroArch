@@ -373,7 +373,6 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 static int action_right_video_gpu_index(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
    enum gfx_ctx_api api = video_context_driver_get_api();
 
    switch (api)
@@ -385,6 +384,7 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
+            settings_t *settings = config_get_ptr();
             if (settings->ints.vulkan_gpu_index <(int)(list->size - 1))
                settings->ints.vulkan_gpu_index++;
             else if (settings->ints.vulkan_gpu_index == (int)(list->size - 1))
@@ -401,6 +401,7 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
+            settings_t *settings = config_get_ptr();
             if (settings->ints.d3d10_gpu_index < (int)(list->size - 1))
                settings->ints.d3d10_gpu_index++;
             else if (settings->ints.d3d10_gpu_index == (int)(list->size - 1))
@@ -417,6 +418,7 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
+            settings_t *settings = config_get_ptr();
             if (settings->ints.d3d11_gpu_index < (int)(list->size - 1))
                settings->ints.d3d11_gpu_index++;
             else if (settings->ints.d3d11_gpu_index == (int)(list->size - 1))
@@ -433,6 +435,7 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
          if (list)
          {
+            settings_t *settings = config_get_ptr();
             if (settings->ints.d3d12_gpu_index < (int)(list->size - 1))
                settings->ints.d3d12_gpu_index++;
             else if (settings->ints.d3d12_gpu_index == (int)(list->size - 1))
