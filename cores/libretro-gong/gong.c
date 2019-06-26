@@ -257,8 +257,7 @@ static void save_state(void *data, size_t size)
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned py = swap_if_little32((unsigned)g_state->player[i].py.u);
-      unsigned dpy = swap_if_little32((unsigned)g_state->player[i].dpy.u);
-
+       
       memcpy(buf, &py, sizeof(unsigned));
       buf += sizeof(uint16_t);
    }
