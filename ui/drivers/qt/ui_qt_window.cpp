@@ -1806,26 +1806,15 @@ QHash<QString, QString> MainWindow::getSelectedCore()
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QVector<QHash<QString, QString> > cores;
-         int i = 0;
+         QString defaultCorePath;
 
          if (contentHash.isEmpty() || contentHash["db_name"].isEmpty())
             break;
 
-         cores = getPlaylistDefaultCores();
+         defaultCorePath = getPlaylistDefaultCore(contentHash["db_name"]);
 
-         for (i = 0; i < cores.count(); i++)
-         {
-            if (cores[i]["playlist_filename"] == contentHash["db_name"])
-            {
-               if (cores[i]["core_path"].isEmpty())
-                  break;
-
-               coreHash["core_path"] = cores[i]["core_path"];
-
-               break;
-            }
-         }
+         if (!defaultCorePath.isEmpty())
+            coreHash["core_path"] = defaultCorePath;
 
          break;
       }
@@ -1923,18 +1912,13 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QVector<QHash<QString, QString> > cores = getPlaylistDefaultCores();
-         int i = 0;
+         QString defaultCorePath = getPlaylistDefaultCore(contentHash["db_name"]);
 
-         for (i = 0; i < cores.count(); i++)
+         if (!defaultCorePath.isEmpty())
          {
-            if (cores[i]["playlist_filename"] == contentHash["db_name"])
-            {
-               corePathArray = cores[i]["core_path"].toUtf8();
-               contentPathArray = contentHash["path"].toUtf8();
-               contentLabelArray = contentHash["label_noext"].toUtf8();
-               break;
-            }
+            corePathArray = defaultCorePath.toUtf8();
+            contentPathArray = contentHash["path"].toUtf8();
+            contentLabelArray = contentHash["label_noext"].toUtf8();
          }
 
          break;
@@ -2097,14 +2081,15 @@ void MainWindow::setCoreActions()
 
    if (!currentPlaylistFileName.isEmpty())
    {
-      QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
-      int i = 0;
+      QString defaultCorePath = getPlaylistDefaultCore(currentPlaylistFileName);
 
-      if (defaultCores.count() > 0)
+      if (!defaultCorePath.isEmpty())
       {
          QString currentPlaylistItemDataString;
-         bool allPlaylists = false;
-         int row = 0;
+         bool allPlaylists              = false;
+         int row                        = 0;
+         core_info_list_t *coreInfoList = NULL;
+         unsigned j                     = 0;
 
          if (currentPlaylistItem)
          {
@@ -2126,53 +2111,39 @@ void MainWindow::setCoreActions()
                   continue;
             }
 
-            for (i = 0; i < defaultCores.count(); i++)
+            core_info_get_list(&coreInfoList);
+
+            if (coreInfoList)
             {
-               QString playlist = defaultCores.at(i)["playlist_filename"];
-               QString core     = defaultCores.at(i)["core_path"];
-
-               playlist.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
-
-               if (currentPlaylistFileName == playlist)
+               for (j = 0; j < coreInfoList->count; j++)
                {
-                  core_info_list_t *coreInfoList = NULL;
-                  unsigned j = 0;
+                  const core_info_t *info = &coreInfoList->list[j];
 
-                  core_info_get_list(&coreInfoList);
-
-                  if (coreInfoList)
+                  if (defaultCorePath == info->path)
                   {
-                     for (j = 0; j < coreInfoList->count; j++)
+                     if (m_launchWithComboBox->findText(info->core_name) == -1)
                      {
-                        const core_info_t *info = &coreInfoList->list[j];
+                        int i = 0;
+                        bool found_existing = false;
 
-                        if (core == info->path)
+                        for (i = 0; i < m_launchWithComboBox->count(); i++)
                         {
-                           if (m_launchWithComboBox->findText(info->core_name) == -1)
+                           QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
+
+                           if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
                            {
-                              int i = 0;
-                              bool found_existing = false;
-
-                              for (i = 0; i < m_launchWithComboBox->count(); i++)
-                              {
-                                 QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
-
-                                 if (map.value("core_path").toString() == info->path || map.value("core_name").toString() == info->core_name)
-                                 {
-                                    found_existing = true;
-                                    break;
-                                 }
-                              }
-
-                              if (!found_existing)
-                              {
-                                 QVariantMap comboBoxMap;
-                                 comboBoxMap["core_name"] = info->core_name;
-                                 comboBoxMap["core_path"] = info->path;
-                                 comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
-                                 m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
-                              }
+                              found_existing = true;
+                              break;
                            }
+                        }
+
+                        if (!found_existing)
+                        {
+                           QVariantMap comboBoxMap;
+                           comboBoxMap["core_name"] = info->core_name;
+                           comboBoxMap["core_path"] = info->path;
+                           comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
+                           m_launchWithComboBox->addItem(info->core_name, QVariant::fromValue(comboBoxMap));
                         }
                      }
                   }

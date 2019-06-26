@@ -175,6 +175,8 @@ generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_
 generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
+generic_deferred_push(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
+generic_deferred_push(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
 generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 generic_deferred_push(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 generic_deferred_push(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
@@ -631,6 +633,7 @@ generic_deferred_push_clear_general(deferred_video_history_list, PUSH_DEFAULT, D
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -654,6 +657,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_resolution);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_playlist_default_core);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST)))
@@ -1058,6 +1066,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
                break;
+            case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
                break;
@@ -1375,6 +1389,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
+               break;
+            case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
                break;
             case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);

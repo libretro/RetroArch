@@ -566,8 +566,6 @@ typedef struct settings
       char audio_device[255];
       char camera_device[255];
 
-      char playlist_names[8192];
-      char playlist_cores[8192];
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];

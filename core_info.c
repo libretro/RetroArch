@@ -929,3 +929,82 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    config_file_free(conf);
    return true;
 }
+
+static int core_info_qsort_func_path(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->path) || string_is_empty(b->path))
+      return 0;
+
+   return strcasecmp(a->path, b->path);
+}
+
+static int core_info_qsort_func_display_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
+      return 0;
+
+   return strcasecmp(a->display_name, b->display_name);
+}
+
+static int core_info_qsort_func_core_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->core_name) || string_is_empty(b->core_name))
+      return 0;
+
+   return strcasecmp(a->core_name, b->core_name);
+}
+
+static int core_info_qsort_func_system_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->systemname) || string_is_empty(b->systemname))
+      return 0;
+
+   return strcasecmp(a->systemname, b->systemname);
+}
+
+void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type)
+{
+   if (!core_info_list)
+      return;
+
+   if (core_info_list->count < 2)
+      return;
+
+   switch (qsort_type)
+   {
+      case CORE_INFO_LIST_SORT_PATH:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_path);
+         break;
+      case CORE_INFO_LIST_SORT_DISPLAY_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_display_name);
+         break;
+      case CORE_INFO_LIST_SORT_CORE_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_core_name);
+         break;
+      case CORE_INFO_LIST_SORT_SYSTEM_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_system_name);
+         break;
+      default:
+         return;
+   }
+}

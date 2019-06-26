@@ -1132,8 +1132,6 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
       return NULL;
 
    /* Arrays */
-   SETTING_ARRAY("playlist_names",           settings->arrays.playlist_names, false, NULL, true);
-   SETTING_ARRAY("playlist_cores",           settings->arrays.playlist_cores, false, NULL, true);
    SETTING_ARRAY("video_driver",             settings->arrays.video_driver,   false, NULL, true);
    SETTING_ARRAY("record_driver",            settings->arrays.record_driver,  false, NULL, true);
    SETTING_ARRAY("camera_driver",            settings->arrays.camera_driver,  false, NULL, true);
@@ -2181,8 +2179,6 @@ void config_set_defaults(void)
    *settings->paths.path_stream_url     = '\0';
    *settings->paths.path_softfilter_plugin = '\0';
 
-   *settings->arrays.playlist_names = '\0';
-   *settings->arrays.playlist_cores = '\0';
    *settings->paths.directory_content_history = '\0';
    *settings->paths.path_audio_dsp_plugin = '\0';
 

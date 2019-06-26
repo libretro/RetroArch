@@ -2149,6 +2149,22 @@ MSG_HASH(
     "Playlists"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+    "Playlist Management"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+    "Perform maintenance tasks on selected playlist (e.g. set/reset default core associations)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+    "Default Core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+    "Specify core to use when launching content via a playlist entry that does not have an existing core association."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
     "Touch Support"
     )

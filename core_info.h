@@ -88,6 +88,14 @@ typedef struct core_info_ctx_find
    const char *path;
 } core_info_ctx_find_t;
 
+enum core_info_list_qsort_type
+{
+   CORE_INFO_LIST_SORT_PATH = 0,
+   CORE_INFO_LIST_SORT_DISPLAY_NAME,
+   CORE_INFO_LIST_SORT_CORE_NAME,
+   CORE_INFO_LIST_SORT_SYSTEM_NAME
+};
+
 size_t core_info_list_num_info_files(core_info_list_t *list);
 
 /* Non-reentrant, does not allocate. Returns pointer to internal state. */
@@ -131,6 +139,8 @@ bool core_info_database_supports_content_path(const char *database_path, const c
 bool core_info_database_match_archive_member(const char *database_path);
 
 bool core_info_unsupported_content_path(const char *path);
+
+void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type);
 
 RETRO_END_DECLS
 
