@@ -1362,7 +1362,7 @@ static bool command_event_save_auto_state(void)
    char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings        = config_get_ptr();
+   const settings_t *settings  = (const settings_t*)config_get_ptr();
    global_t   *global          = global_get_ptr();
 
    if (!global || !settings || !settings->bools.savestate_auto_save)
@@ -1639,7 +1639,7 @@ static bool command_event_main_state(unsigned cmd)
    char msg[128];
    size_t state_path_size     = 16384 * sizeof(char);
    char *state_path           = (char*)malloc(state_path_size);
-   global_t *global           = global_get_ptr();
+   const global_t *global     = (const global_t*)global_get_ptr();
    bool ret                   = false;
    bool push_msg              = true;
 
@@ -1647,17 +1647,18 @@ static bool command_event_main_state(unsigned cmd)
 
    if (global)
    {
-      settings_t *settings    = config_get_ptr();
-      int state_slot          = settings->ints.state_slot;
+      settings_t *settings       = config_get_ptr();
+      int state_slot             = settings->ints.state_slot;
+      const char *name_savestate = global->name.savestate;
 
       if (state_slot > 0)
          snprintf(state_path, state_path_size, "%s%d",
-               global->name.savestate, state_slot);
+               name_savestate, state_slot);
       else if (state_slot < 0)
          fill_pathname_join_delim(state_path,
-               global->name.savestate, "auto", '.', state_path_size);
+               name_savestate, "auto", '.', state_path_size);
       else
-         strlcpy(state_path, global->name.savestate, state_path_size);
+         strlcpy(state_path, name_savestate, state_path_size);
    }
 
    core_serialize_size(&info);
@@ -1843,12 +1844,9 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_MENU
             core_info_ctx_find_t info_find;
-            rarch_system_info_t *system_info = NULL;
-            struct retro_system_info *system = NULL;
-            const char *core_path            = NULL;
-            system_info                      = runloop_get_system_info();
-            system                           = &system_info->info;
-            core_path                        = path_get(RARCH_PATH_CORE);
+            rarch_system_info_t *system_info = runloop_get_system_info();
+            struct retro_system_info *system = &system_info->info;
+            const char *core_path            = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
@@ -2186,26 +2184,28 @@ TODO: Add a setting for these tweaks */
             if(memory_used > (72 * 1024 * 1024))
                break;
 #endif
-            settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-            if (settings->bools.input_overlay_enable)
             {
-               task_push_overlay_load_default(input_overlay_loaded,
-                     settings->paths.path_overlay,
-                     settings->bools.input_overlay_hide_in_menu,
-                     settings->bools.input_overlay_enable,
-                     settings->floats.input_overlay_opacity,
-                     settings->floats.input_overlay_scale,
-                     NULL);
+               const settings_t *settings      = (const settings_t*)config_get_ptr();
+               if (settings->bools.input_overlay_enable)
+               {
+                  task_push_overlay_load_default(input_overlay_loaded,
+                        settings->paths.path_overlay,
+                        settings->bools.input_overlay_hide_in_menu,
+                        settings->bools.input_overlay_enable,
+                        settings->floats.input_overlay_opacity,
+                        settings->floats.input_overlay_scale,
+                        NULL);
+               }
             }
 #endif
          }
          break;
       case CMD_EVENT_OVERLAY_NEXT:
          {
-            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_OVERLAY
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
             input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
@@ -2400,7 +2400,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
          {
 #ifdef HAVE_OVERLAY
-            settings_t *settings      = config_get_ptr();
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
             input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
 #endif
          }
@@ -2408,7 +2408,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
          {
 #ifdef HAVE_OVERLAY
-            settings_t *settings      = config_get_ptr();
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
             input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
@@ -2605,7 +2605,7 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
          {
-            settings_t *settings      = config_get_ptr();
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
             if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
@@ -2613,7 +2613,7 @@ TODO: Add a setting for these tweaks */
          }
          else
          {
-            settings_t *settings      = config_get_ptr();
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
             if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
@@ -2664,15 +2664,15 @@ TODO: Add a setting for these tweaks */
                return false;
             }
 
-            /* Disable rewind & sram autosave if it was enabled
-TODO: Add a setting for these tweaks */
+            /* Disable rewind & SRAM autosave if it was enabled
+             * TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
 #endif
          }
          break;
-         /* init netplay via lobby when content is loaded */
+         /* Initialize netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             /* buf is expected to be address|port */
@@ -2714,7 +2714,7 @@ TODO: Add a setting for these tweaks */
          {
             static struct string_list *hostname = NULL;
             /* buf is expected to be address|port */
-            settings_t *settings                = config_get_ptr();
+            const settings_t *settings          = (const settings_t*)config_get_ptr();
             char *buf                           = (char *)data;
 
             RARCH_LOG("[netplay] buf %s\n", buf);
@@ -2739,7 +2739,7 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-TODO: Add a setting for these tweaks */
+             * TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -2776,17 +2776,19 @@ TODO: Add a setting for these tweaks */
          }
       case CMD_EVENT_NETPLAY_DISCONNECT:
          {
-            settings_t *settings = config_get_ptr();
 
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-            /* Re-enable rewind if it was enabled
-TODO: Add a setting for these tweaks */
-            if (settings->bools.rewind_enable)
-               command_event(CMD_EVENT_REWIND_INIT, NULL);
-            if (settings->uints.autosave_interval != 0)
-               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+            {
+               const settings_t *settings = (const settings_t*)config_get_ptr();
+               /* Re-enable rewind if it was enabled
+                * TODO: Add a setting for these tweaks */
+               if (settings->bools.rewind_enable)
+                  command_event(CMD_EVENT_REWIND_INIT, NULL);
+               if (settings->uints.autosave_interval != 0)
+                  command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+            }
 
             break;
          }
@@ -3066,7 +3068,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {
-            settings_t *settings      = config_get_ptr();
+            const settings_t *settings      = (const settings_t*)config_get_ptr();
 
             if (!settings->bools.discord_enable)
                return false;
@@ -3098,12 +3100,11 @@ TODO: Add a setting for these tweaks */
          break;
 
       case CMD_EVENT_AI_SERVICE_CALL:
-         {
 #ifdef HAVE_TRANSLATE
             RARCH_LOG("AI Service Called...\n");
             run_translation_service();
 #endif
-         }
+         break;
       case CMD_EVENT_NONE:
          return false;
    }
