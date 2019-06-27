@@ -2000,6 +2000,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       vulkan_library = dylib_load("libMoltenVK.dylib");
 #else
       vulkan_library = dylib_load("libvulkan.so");
+      if (!vulkan_library)
+      {
+         vulkan_library = dylib_load("libvulkan.so.1");
+      }
 #endif
    }
 
