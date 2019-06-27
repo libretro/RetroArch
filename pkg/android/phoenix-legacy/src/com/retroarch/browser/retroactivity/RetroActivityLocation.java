@@ -1,10 +1,11 @@
 package com.retroarch.browser.retroactivity;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
+import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import android.app.NativeActivity;
@@ -15,19 +16,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
-import android.content.pm.PackageManager;
-import android.Manifest;
-
 /**
  * Class that implements location-based functionality for
  * the {@link RetroActivityFuture} activity.
  */
 public class RetroActivityLocation extends NativeActivity
-implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener
+implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 {
 	/* LOCATION VARIABLES */
 	private static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 0;
-	private GoogleApiClient mGoogleApiClient = null;
+	private LocationClient mLocationClient = null;
 	private Location mCurrentLocation;
 
 	// Define an object that holds accuracy and frequency parameters
@@ -44,30 +42,23 @@ implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFail
 	@Override
 	public void onConnected(Bundle dataBundle)
 	{
-		if (mGoogleApiClient == null)
+		if (mLocationClient == null)
 			return;
 		
 		// Display the connection status
 		Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
 		location_service_running = true;
 
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-		{
-		if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-		{
 		// If already requested, start periodic updates
 		if (mUpdatesRequested)
 		{
-			LocationServices.FusedLocationApi.requestLocationUpdates(
-				mGoogleApiClient, mLocationRequest, this);
+			mLocationClient.requestLocationUpdates(mLocationRequest, this, null);
 		}
 		else
 		{
 			// Get last known location
-			mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+			mCurrentLocation = mLocationClient.getLastLocation();
 			locationChanged = true;
-		}
-		}
 		}
 	}
 
@@ -76,24 +67,23 @@ implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFail
 	 * location client drops because of an error.
 	 */
 	@Override
-	public void onConnectionSuspended(int i)
+	public void onDisconnected()
 	{
-		if (mGoogleApiClient == null)
+		if (mLocationClient == null)
 			return;
 		
 		// Display the connection status
 		Toast.makeText(this, "Disconnected. Please re-connect.", Toast.LENGTH_SHORT).show();
 
 		// If the client is connected
-		if (mGoogleApiClient.isConnected())
+		if (mLocationClient.isConnected())
 		{
 			/*
 			 * Remove location updates for a listener.
 			 * The current Activity is the listener, so
 			 * the argument is "this".
 			 */
-			LocationServices.FusedLocationApi.removeLocationUpdates(
-				mGoogleApiClient, this);
+			mLocationClient.removeLocationUpdates(this);
 		}
 
 		location_service_running = false;
@@ -165,13 +155,8 @@ implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFail
 		 * Create a new location client, using the enclosing class to
 		 * handle callbacks.
 		 */
-		if (mGoogleApiClient == null) {
-			mGoogleApiClient = new GoogleApiClient.Builder(this)
-				.addApi(LocationServices.API)
-				.addConnectionCallbacks(this)
-				.addOnConnectionFailedListener(this)
-				.build();
-		}
+		if (mLocationClient == null)
+			mLocationClient = new LocationClient(this, this, this);
 
 		// Start with updates turned off
 		mUpdatesRequested = false;
@@ -185,17 +170,17 @@ implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFail
 
 
 	/**
-	 * Executed upon starting the {@link GoogleApiClient}.
+	 * Executed upon starting the {@link LocationClient}.
 	 */
 	public void onLocationStart()
 	{
-		if (mGoogleApiClient == null)
+		if (mLocationClient == null)
 			return;
 		
 		mUpdatesRequested = true;
 
 		// Connect the client.
-        mGoogleApiClient.connect();
+        mLocationClient.connect();
 	}
 
 	/**
@@ -213,8 +198,8 @@ implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFail
 	public void onLocationStop()
 	{
 		// Disconnecting the client invalidates it.
-		if (mGoogleApiClient != null && mUpdatesRequested)
-			mGoogleApiClient.disconnect();
+		if (mLocationClient != null && mUpdatesRequested)
+			mLocationClient.disconnect();
 	}
 
 	/**
