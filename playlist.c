@@ -1149,6 +1149,19 @@ void playlist_write_file(playlist_t *playlist)
                playlist->entries[i].crc32   ? playlist->entries[i].crc32   : "",
                playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
                );
+
+      /* Add default core assignment metadata lines
+       * (we add these at the end of the file to prevent
+       * breakage if the playlist is loaded with an older
+       * version of RetroArch */
+      if (!string_is_empty(playlist->default_core_path) &&
+          !string_is_empty(playlist->default_core_name))
+      {
+         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\n",
+                  playlist->default_core_path,
+                  playlist->default_core_name
+                  );
+      }
    }
    else
 #endif
@@ -1772,6 +1785,27 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
    return JSON_Parser_Continue;
 }
 
+static void get_old_format_metadata_value(
+      const char *metadata_line, char *value, size_t len)
+{
+   char *start = NULL;
+   char *end   = NULL;
+
+   start = strchr(metadata_line, '\"');
+
+   if (!start)
+      return;
+
+   start++;
+   end = strchr(start, '\"');
+
+   if (!end)
+      return;
+
+   *end = '\0';
+   strlcpy(value, start, len);
+}
+
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {
@@ -1901,9 +1935,83 @@ static bool playlist_read_file(
    else
    {
       char buf[PLAYLIST_ENTRIES][1024] = {{0}};
+      char metadata_line[1024];
+      char default_core_path[1024];
+      char default_core_name[1024];
+      char metadata_char;
+      size_t metadata_counter;
 
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
          buf[i][0] = '\0';
+
+      metadata_line[0]     = '\0';
+      default_core_path[0] = '\0';
+      default_core_name[0] = '\0';
+      metadata_char        = 0;
+      metadata_counter     = 0;
+
+      /* Attempt to read metadata lines at end of file */
+      filestream_seek(file, -1, SEEK_END);
+      if (filestream_error(file))
+         goto end;
+
+      /* > Exclude trailing newline */
+      metadata_char = filestream_getc(file);
+
+      while((metadata_char == '\n') ||
+            (metadata_char == '\r'))
+      {
+         filestream_seek(file, -2, SEEK_CUR);
+         if (filestream_error(file))
+            goto end;
+
+         metadata_char = filestream_getc(file);
+      }
+
+      /* Search backwards for the next two newlines */
+      while(metadata_counter < 2)
+      {
+         filestream_seek(file, -2, SEEK_CUR);
+         if (filestream_error(file))
+            goto end;
+
+         metadata_char = filestream_getc(file);
+         if (metadata_char == '\n')
+            metadata_counter++;
+      }
+
+      /* > Get default_core_path */
+      if (!filestream_gets(file, metadata_line, sizeof(metadata_line)))
+         goto end;
+
+      if (strncmp("default_core_path",
+               metadata_line,
+               STRLEN_CONST("default_core_path")) == 0)
+         get_old_format_metadata_value(
+               metadata_line, default_core_path, sizeof(default_core_path));
+
+      /* > Get default_core_name */
+      if (!filestream_gets(file, metadata_line, sizeof(metadata_line)))
+         goto end;
+
+      if (strncmp("default_core_name",
+               metadata_line,
+               STRLEN_CONST("default_core_name")) == 0)
+         get_old_format_metadata_value(
+               metadata_line, default_core_name, sizeof(default_core_name));
+
+      /* > Populate playlist fields, if required */
+      if (!string_is_empty(default_core_path) &&
+          !string_is_empty(default_core_name))
+      {
+         playlist->default_core_path = strdup(default_core_path);
+         playlist->default_core_name = strdup(default_core_name);
+      }
+
+      /* Read playlist entries */
+      filestream_seek(file, 0, SEEK_SET);
+      if (filestream_error(file))
+         goto end;
 
       for (playlist->size = 0; playlist->size < playlist->cap; )
       {
