@@ -34,6 +34,12 @@
 
 #include <boolean.h>
 
+#ifdef VFS_FRONTEND
+typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
+#else
+typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
+#endif
+
 RETRO_BEGIN_DECLS
 
 typedef struct
@@ -63,14 +69,14 @@ unsigned msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame);
 
 void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame);
 
-int cdrom_read_subq(int fd, unsigned char *buf, size_t len);
+int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf, size_t len);
 
-int cdrom_write_cue(int fd, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc);
+int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc);
 
 /* needs 32 bytes for full vendor, product and version */
-int cdrom_get_inquiry(int fd, char *model, int len);
+int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len);
 
-int cdrom_read(int fd, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
+int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
 RETRO_END_DECLS
 

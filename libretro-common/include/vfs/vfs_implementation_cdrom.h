@@ -30,7 +30,7 @@ RETRO_BEGIN_DECLS
 
 int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
-FILE* retro_vfs_file_open_cdrom(
+void retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);
 
@@ -40,6 +40,8 @@ int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream);
 
 int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len);
+
+int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream);
 
 RETRO_END_DECLS
 

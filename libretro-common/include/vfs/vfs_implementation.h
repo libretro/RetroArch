@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <libretro.h>
 
+#ifdef _WIN32
+typedef void* HANDLE;
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
@@ -43,6 +47,9 @@ struct libretro_vfs_implementation_file
    int64_t size;
    char *buf;
    FILE *fp;
+#ifdef _WIN32
+   HANDLE fh;
+#endif
    char* orig_path;
    uint64_t mappos;
    uint64_t mapsize;

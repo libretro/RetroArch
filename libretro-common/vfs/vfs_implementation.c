@@ -409,10 +409,14 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #ifdef HAVE_CDROM
       if (stream->scheme == VFS_SCHEME_CDROM)
       {
-         fp = retro_vfs_file_open_cdrom(stream, path, mode, hints);
-
-         if (!fp)
+         retro_vfs_file_open_cdrom(stream, path, mode, hints);
+#ifdef _WIN32
+         if (!stream->fh)
             goto error;
+#else
+         if (!stream->fp)
+            goto error;
+#endif
       }
       else
 #endif
@@ -551,9 +555,12 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 #ifdef ORBIS
    /* TODO/FIXME - implement this? */
    return 0;
-#else
-   return ferror(stream->fp);
 #endif
+#ifdef HAVE_CDROM
+   if (stream->scheme == VFS_SCHEME_CDROM)
+      return retro_vfs_file_error_cdrom(stream);
+#endif
+   return ferror(stream->fp);
 }
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
