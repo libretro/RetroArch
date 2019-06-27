@@ -667,7 +667,7 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
         #define DRFLAC_NO_CPUID
         #endif
     #else
-        #if (defined(__GNUC__) || defined(__clang__)) && !defined(__ANDROID__)
+        #if defined(__GNUC__) || defined(__clang__)
             static void drflac__cpuid(int info[4], int fid)
             {
                 __asm__ __volatile__ (

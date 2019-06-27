@@ -42,16 +42,13 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	private boolean addPermission(List<String> permissionsList, String permission)
 	{
-      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+		if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
 		{
-         if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
-         {
-            permissionsList.add(permission);
+			permissionsList.add(permission);
 
-            // Check for Rationale Option
-            if (!shouldShowRequestPermissionRationale(permission))
-               return false;
-         }
+			// Check for Rationale Option
+			if (!shouldShowRequestPermissionRationale(permission))
+				return false;
 		}
 
 		return true;
@@ -59,7 +56,7 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
-      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+		if (android.os.Build.VERSION.SDK_INT >= 23)
 		{
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();
@@ -92,13 +89,10 @@ public final class MainMenuActivity extends PreferenceActivity
 							{
 								if (which == AlertDialog.BUTTON_POSITIVE)
 								{
-                           if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-                           {
-                              requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
-                                    REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+									requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
+										REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 
-                              Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
-                           }
+									Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
 								}
 							}
 						});
