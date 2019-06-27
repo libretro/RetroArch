@@ -1,3 +1,5 @@
-.gradle
-.externalNativeBuild
-build
+/gen
+/bin
+/libs/*/*.so
+/obj
+/jni/modules/*.so
