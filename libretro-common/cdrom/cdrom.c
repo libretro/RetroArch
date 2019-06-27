@@ -140,8 +140,6 @@ static int cdrom_send_command_linux(int fd, CDROM_CMD_Direction dir, void *buf, 
    sg_io_hdr_t sgio = {0};
    int rv;
 
-   sgio.interface_id = 'S';
-
    switch (dir)
    {
       case DIRECTION_IN:
@@ -156,15 +154,11 @@ static int cdrom_send_command_linux(int fd, CDROM_CMD_Direction dir, void *buf, 
          break;
    }
 
+   sgio.interface_id = 'S';
    sgio.cmd_len = cmd_len;
    sgio.cmdp = cmd;
-
-   if (xfer_buf)
-      sgio.dxferp = buf;
-
-   if (len)
-      sgio.dxfer_len = len;
-
+   sgio.dxferp = buf;
+   sgio.dxfer_len = len;
    sgio.sbp = sense;
    sgio.mx_sb_len = sense_len;
    sgio.timeout = 30000;

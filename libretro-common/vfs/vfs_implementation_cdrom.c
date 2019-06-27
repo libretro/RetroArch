@@ -173,7 +173,7 @@ void retro_vfs_file_open_cdrom(
          stream->cdrom_cue_buf = NULL;
       }
 
-      cdrom_write_cue(fileno(stream->fp), &stream->cdrom_cue_buf, &stream->cdrom_cue_len, stream->cdrom_drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
+      cdrom_write_cue(stream, &stream->cdrom_cue_buf, &stream->cdrom_cue_len, stream->cdrom_drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
 
       if (vfs_cdrom_toc.num_tracks > 1)
       {
