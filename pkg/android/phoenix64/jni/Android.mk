@@ -99,7 +99,7 @@ LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder 
 # Let ndk-build set the optimization flags but remove -O3 like in cf3c3
 LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
 
-LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl 
+LOCAL_LDLIBS	:= -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl 
 LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/ \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps \
