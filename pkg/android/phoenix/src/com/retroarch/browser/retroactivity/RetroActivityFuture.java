@@ -40,13 +40,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
       // Check for Android UI specific parameters
       Intent retro = getIntent();
-      String refresh = retro.getStringExtra("REFRESH");
 
-      // If REFRESH parameter is provided then try to set refreshrate accordingly
-      if(refresh != null) {
-        WindowManager.LayoutParams params = getWindow().getAttributes();
-        params.preferredRefreshRate = Integer.parseInt(refresh);
-        getWindow().setAttributes(params);
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+         String refresh = retro.getStringExtra("REFRESH");
+
+         // If REFRESH parameter is provided then try to set refreshrate accordingly
+         if(refresh != null) {
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.preferredRefreshRate = Integer.parseInt(refresh);
+            getWindow().setAttributes(params);
+         }
       }
 
       // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
@@ -61,20 +64,21 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   public void hideMouseCursor() {
 
-    // Check for NVIDIA extensions and minimum SDK version
-    Method mInputManager_setCursorVisibility;
-    try { mInputManager_setCursorVisibility =
-      InputManager.class.getMethod("setCursorVisibility", boolean.class);
-    }
-    catch (NoSuchMethodException ex) {
-      return; // Extensions were not available so do nothing
-    }
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+      // Check for NVIDIA extensions and minimum SDK version
+      Method mInputManager_setCursorVisibility;
+      try { mInputManager_setCursorVisibility =
+        InputManager.class.getMethod("setCursorVisibility", boolean.class);
+      }
+      catch (NoSuchMethodException ex) {
+        return; // Extensions were not available so do nothing
+      }
 
-    // Hide the mouse cursor
-    InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
-    try { mInputManager_setCursorVisibility.invoke(inputManager, false); }
-    catch (InvocationTargetException ite) { }
-    catch (IllegalAccessException iae)    { }
+        // Hide the mouse cursor
+      InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
+      try { mInputManager_setCursorVisibility.invoke(inputManager, false); }
+      catch (InvocationTargetException ite) { }
+      catch (IllegalAccessException iae)    { }
   }
 
   @Override

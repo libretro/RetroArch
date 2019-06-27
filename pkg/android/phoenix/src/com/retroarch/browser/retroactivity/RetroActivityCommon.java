@@ -49,14 +49,17 @@ public class RetroActivityCommon extends RetroActivityLocation
     long[] pattern = {16};
     int[] strengths = {strength};
 
-    if (id == -1)
-      vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-    else
+    if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN)
     {
-      InputDevice dev = InputDevice.getDevice(id);
+       if (id == -1)
+          vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+       else
+       {
+          InputDevice dev = InputDevice.getDevice(id);
 
-      if (dev != null)
-        vibrator = dev.getVibrator();
+          if (dev != null)
+             vibrator = dev.getVibrator();
+       }
     }
 
     if (vibrator == null)
@@ -72,7 +75,7 @@ public class RetroActivityCommon extends RetroActivityLocation
     else
       pattern[0] = 1000;
 
-    if (Build.VERSION.SDK_INT >= 26) {
+    if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
       if (id >= 0)
         Log.i("RetroActivity", "Vibrate id " + id + ": strength " + strength);
 
