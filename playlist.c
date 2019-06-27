@@ -1786,7 +1786,7 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
 }
 
 static void get_old_format_metadata_value(
-      const char *metadata_line, char *value, size_t len)
+      char *metadata_line, char *value, size_t len)
 {
    char *start = NULL;
    char *end   = NULL;
