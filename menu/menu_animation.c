@@ -608,9 +608,13 @@ bool menu_animation_update(void)
    anim.in_update       = true;
    anim.pending_deletes = false;
 
-   for(i = 0; i < da_count(anim.list); i++)
+   for (i = 0; i < da_count(anim.list); i++)
    {
       struct tween *tween   = da_getptr(anim.list, i);
+      
+      if (!tween)
+         continue;
+
       tween->running_since += delta_time;
 
       *tween->subject = tween->easing(
@@ -633,9 +637,11 @@ bool menu_animation_update(void)
 
    if (anim.pending_deletes)
    {
-      for(i = 0; i < da_count(anim.list); i++)
+      for (i = 0; i < da_count(anim.list); i++)
       {
          struct tween *tween = da_getptr(anim.list, i);
+         if (!tween)
+            continue;
          if (tween->deleted)
          {
             da_delete(anim.list, i);
@@ -780,7 +786,7 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
    for (i = 0; i < da_count(anim.list); ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
-      if (t->tag != *tag)
+      if (!t || t->tag != *tag)
          continue;
 
       if (anim.in_update)
@@ -806,6 +812,8 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
+      if (!t)
+         continue;
 
       for (j = 0; j < subject->count; ++j)
       {
@@ -845,6 +853,9 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             for (i = 0; i < da_count(anim.list); i++)
             {
                struct tween *t = da_getptr(anim.list, i);
+               if (!t)
+                  continue;
+
                if (t->subject)
                   t->subject = NULL;
             }
