@@ -52,6 +52,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
 
 #ifdef CDROM_DEBUG
       printf("CDROM Seek: Path %s Offset %" PRIu64 " is now at %" PRIu64 "\n", stream->orig_path, offset, stream->cdrom_byte_pos);
+      fflush(stdout);
 #endif
    }
    else if (string_is_equal_noncase(ext, "bin"))
@@ -98,8 +99,6 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
          case SEEK_SET:
          default:
          {
-            unsigned lba = msf_to_lba(min, sec, frame);
-
             seek_type = "SEEK_SET";
             stream->cdrom_byte_pos = offset;
 
@@ -113,6 +112,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
 
 #ifdef CDROM_DEBUG
       printf("CDROM Seek %s: Path %s Offset %" PRIu64 " is now at %" PRIu64 " (MSF %02d:%02d:%02d) (LBA %u)...\n", seek_type, stream->orig_path, offset, stream->cdrom_byte_pos, vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame, msf_to_lba(vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame));
+      fflush(stdout);
 #endif
    }
    else
@@ -148,6 +148,7 @@ void retro_vfs_file_open_cdrom(
 
 #ifdef CDROM_DEBUG
    printf("CDROM Open: Path %s URI %s\n", cdrom_path, path);
+   fflush(stdout);
 #endif
    stream->fp = (FILE*)fopen_utf8(cdrom_path, "r+b");
 
@@ -155,10 +156,9 @@ void retro_vfs_file_open_cdrom(
    {
       if (!cdrom_get_inquiry(stream, model, sizeof(model)))
       {
-         size_t len = 0;
-
 #ifdef CDROM_DEBUG
          printf("CDROM Model: %s\n", model);
+         fflush(stdout);
 #endif
       }
    }
@@ -184,7 +184,10 @@ void retro_vfs_file_open_cdrom(
 
 #ifdef CDROM_DEBUG
       if (string_is_empty(stream->cdrom_cue_buf))
+      {
          printf("Error writing cue sheet.\n");
+         fflush(stdout);
+      }
       else
       {
          printf("CDROM CUE Sheet:\n%s\n", stream->cdrom_cue_buf);
@@ -216,6 +219,7 @@ void retro_vfs_file_open_cdrom(
 
 #ifdef CDROM_DEBUG
    printf("CDROM Open: Path %s URI %s\n", cdrom_path, path);
+   fflush(stdout);
 #endif
    stream->fh = CreateFile(cdrom_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -229,6 +233,7 @@ void retro_vfs_file_open_cdrom(
 
 #ifdef CDROM_DEBUG
          printf("CDROM Model: %s\n", model);
+         fflush(stdout);
 #endif
       }
    }
@@ -252,7 +257,10 @@ void retro_vfs_file_open_cdrom(
 
 #ifdef CDROM_DEBUG
       if (string_is_empty(stream->cdrom_cue_buf))
+      {
          printf("Error writing cue sheet.\n");
+         fflush(stdout);
+      }
       else
       {
          printf("CDROM CUE Sheet:\n%s\n", stream->cdrom_cue_buf);
@@ -266,8 +274,8 @@ void retro_vfs_file_open_cdrom(
 int retro_vfs_file_close_cdrom(libretro_vfs_implementation_file *stream)
 {
 #ifdef CDROM_DEBUG
-   if (stream->scheme == VFS_SCHEME_CDROM)
-      printf("CDROM Close: Path %s\n", stream->orig_path);
+   printf("CDROM Close: Path %s\n", stream->orig_path);
+   fflush(stdout);
 #endif
 
 #ifdef _WIN32
@@ -292,6 +300,7 @@ int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream)
    {
 #ifdef CDROM_DEBUG
       printf("CDROM (cue) Tell: Path %s Position %" PRIu64 "\n", stream->orig_path, stream->cdrom_byte_pos);
+      fflush(stdout);
 #endif
       return stream->cdrom_byte_pos;
    }
@@ -301,6 +310,7 @@ int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream)
 
 #ifdef CDROM_DEBUG
       printf("CDROM (bin) Tell: Path %s Position %u\n", stream->orig_path, lba * 2352);
+      fflush(stdout);
 #endif
       return lba * 2352;
    }
@@ -320,6 +330,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       {
 #ifdef CDROM_DEBUG
          printf("CDROM Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom_byte_pos);
+         fflush(stdout);
 #endif
          memcpy(s, stream->cdrom_cue_buf + stream->cdrom_byte_pos, len);
          stream->cdrom_byte_pos += len;
@@ -330,6 +341,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       {
 #ifdef CDROM_DEBUG
          printf("CDROM Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 " failed.\n", len, stream->cdrom_byte_pos);
+         fflush(stdout);
 #endif
          return 0;
       }
@@ -353,6 +365,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
 #ifdef CDROM_DEBUG
       printf("CDROM Read: Reading %" PRIu64 " bytes from %s starting at byte offset %" PRIu64 " (MSF %02d:%02d:%02d) (LBA %u) skip %" PRIu64 "...\n", len, stream->orig_path, stream->cdrom_byte_pos, min, sec, frame, msf_to_lba(min, sec, frame), skip);
+      fflush(stdout);
 #endif
 
       rv = cdrom_read(stream, min, sec, frame, s, (size_t)len, skip);
@@ -361,6 +374,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       {
 #ifdef CDROM_DEBUG
          printf("Failed to read %" PRIu64 " bytes from CD.\n", len);
+         fflush(stdout);
 #endif
          return 0;
       }
@@ -374,6 +388,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
 #ifdef CDROM_DEBUG
       printf("CDROM read %" PRIu64 " bytes, position is now: %" PRIu64 " (MSF %02d:%02d:%02d) (LBA %u)\n", len, stream->cdrom_byte_pos, vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame, msf_to_lba(vfs_cdrom_toc.cur_min, vfs_cdrom_toc.cur_sec, vfs_cdrom_toc.cur_frame));
+      fflush(stdout);
 #endif
 
       return len;

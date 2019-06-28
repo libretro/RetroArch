@@ -199,6 +199,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       }
 
       printf("\n");
+      fflush(stdout);
    }
 #endif
 
@@ -230,6 +231,7 @@ retry:
             {
 #ifdef CDROM_DEBUG
                printf("CDROM Read Retry...\n");
+               fflush(stdout);
 #endif
                retries_left--;
                usleep(1000 * 1000);
@@ -240,6 +242,7 @@ retry:
                rv = 1;
 #ifdef CDROM_DEBUG
                printf("CDROM Read Retries failed, giving up.\n");
+               fflush(stdout);
 #endif
             }
 
@@ -312,6 +315,8 @@ retry:
       printf("Sense Key: %02X (%s)\n", sense[2] & 0xF, sense_key_text);
       printf("ASC: %02X\n", sense[12]);
       printf("ASCQ: %02X\n", sense[13]);
+
+      fflush(stdout);
 
       rv = 1;
 #endif
@@ -390,6 +395,8 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 
       printf("\n");
    }
+
+   fflush(stdout);
 #endif
    return 0;
 }
@@ -422,6 +429,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    printf("Data Mode: %d ", buf[6] & 0xF);
    printf("LBA Start: %d ", lba);
    printf("Track Size: %d\n", track_size);
+   fflush(stdout);
 #endif
 
    return 0;
@@ -440,6 +448,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
    {
 #ifdef CDROM_DEBUG
       printf("Invalid buffer/length pointer for CDROM cue sheet\n");
+      fflush(stdout);
 #endif
       return 1;
    }
@@ -463,6 +472,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
          *num_tracks = pmin;
 #ifdef CDROM_DEBUG
          printf("Number of CDROM tracks: %d\n", *num_tracks);
+         fflush(stdout);
 #endif
          break;
       }
@@ -472,6 +482,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
    {
 #ifdef CDROM_DEBUG
       printf("Invalid number of CDROM tracks: %d\n", *num_tracks);
+      fflush(stdout);
 #endif
       return 1;
    }
@@ -497,9 +508,6 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
       if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point >= 1 && point <= 99)
       {
-         unsigned char next_pmin = (pframe == 74) ? (psec < 59 ? pmin : pmin + 1) : pmin;
-         unsigned char next_psec = (pframe == 74) ? (psec < 59 ? (psec + 1) : 0) : psec;
-         unsigned char next_pframe = (pframe < 74) ? (pframe + 1) : 0;
          unsigned char mode = 1;
          bool audio = false;
          const char *track_type = "MODE1/2352";
@@ -509,6 +517,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
 #ifdef CDROM_DEBUG
          printf("Track %02d CONTROL %01X ADR %01X MODE %d AUDIO? %d\n", point, control, adr, mode, audio);
+         fflush(stdout);
 #endif
 
          toc->track[point - 1].track_num = point;
@@ -586,6 +595,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
 
 #ifdef CDROM_DEBUG
       printf("single-frame read: from %d %d %d to %d %d %d skip %" PRId64 "\n", cdb[3], cdb[4], cdb[5], cdb[6], cdb[7], cdb[8], skip);
+      fflush(stdout);
 #endif
    }
    else
@@ -596,6 +606,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
 
 #ifdef CDROM_DEBUG
       printf("multi-frame read: from %d %d %d to %d %d %d skip %" PRId64 "\n", cdb[3], cdb[4], cdb[5], cdb[6], cdb[7], cdb[8], skip);
+      fflush(stdout);
 #endif
    }
 
@@ -603,6 +614,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
 
 #ifdef CDROM_DEBUG
    printf("read status code %d\n", rv);
+   fflush(stdout);
 #endif
 
    if (rv)

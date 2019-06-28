@@ -420,11 +420,14 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
       else
 #endif
+      {
          fp = (FILE*)fopen_utf8(path, mode_str);
 
-      if (!fp)
-         goto error;
+         if (!fp)
+            goto error;
 
+         stream->fp  = fp;
+      }
       /* Regarding setvbuf:
        *
        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
@@ -435,10 +438,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
        */
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
-      stream->fp  = fp;
 #if !defined(PS2) && !defined(PSP)
       stream->buf = (char*)calloc(1, 0x4000);
-      setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+      if (stream->fp)
+         setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
 #endif
 #endif
    }
@@ -506,15 +509,18 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    if (!stream)
       return -1;
 
+#ifdef HAVE_CDROM
+   if (stream->scheme == VFS_SCHEME_CDROM)
+   {
+      retro_vfs_file_close_cdrom(stream);
+      goto end;
+   }
+#endif
+
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
       if (stream->fp)
       {
-#ifdef HAVE_CDROM
-         if (stream->scheme == VFS_SCHEME_CDROM)
-            retro_vfs_file_close_cdrom(stream);
-         else
-#endif
             fclose(stream->fp);
       }
    }
@@ -535,6 +541,7 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
 #endif
    }
+end:
    if (stream->buf)
       free(stream->buf);
 
