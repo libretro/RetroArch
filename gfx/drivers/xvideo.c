@@ -920,22 +920,15 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
    *vp = xv->vp;
 }
 
-static void xv_set_rotation(void *data, unsigned rotation)
+static uint32_t xv_get_flags(void *data)
 {
-   (void)data;
-   (void)rotation;
-}
+   uint32_t flags = 0;
 
-static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
+   return flags;
 }
 
 static video_poke_interface_t xv_video_poke_interface = {
-   NULL, /* get_flags */
+   xv_get_flags,
    NULL,
    NULL,
    NULL,
@@ -987,12 +980,15 @@ video_driver_t video_xvideo = {
    xv_free,
    "xvideo",
    NULL, /* set_viewport */
-   xv_set_rotation,
+   NULL, /* set_rotation */
    xv_viewport_info,
-   xv_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   xv_get_poke_interface
 };

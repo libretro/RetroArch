@@ -32,6 +32,7 @@
 
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "libretrodb.h"
 #include "query.h"
@@ -408,13 +409,14 @@ static struct buffer query_expect_eof(struct buffer buff, const char ** error)
 
 static int query_peek(struct buffer buff, const char * data)
 {
-   size_t remain = buff.len - buff.offset;
+   size_t remain    = buff.len - buff.offset;
+   size_t size_data = strlen(data);
 
-   if (remain < strlen(data))
+   if (remain < size_data)
       return 0;
 
    return (strncmp(buff.data + buff.offset,
-            data, strlen(data)) == 0);
+            data, size_data) == 0);
 }
 
 static int query_is_eot(struct buffer buff)
@@ -526,20 +528,20 @@ static struct buffer query_parse_value(struct buffer buff,
 
    if (query_peek(buff, "nil"))
    {
-      buff.offset += strlen("nil");
-      value->type = RDT_NULL;
+      buff.offset += STRLEN_CONST("nil");
+      value->type  = RDT_NULL;
    }
    else if (query_peek(buff, "true"))
    {
-      buff.offset += strlen("true");
-      value->type = RDT_BOOL;
-      value->val.bool_ = 1;
+      buff.offset      += STRLEN_CONST("true");
+      value->type       = RDT_BOOL;
+      value->val.bool_  = 1;
    }
    else if (query_peek(buff, "false"))
    {
-      buff.offset += strlen("false");
-      value->type = RDT_BOOL;
-      value->val.bool_ = 0;
+      buff.offset       += STRLEN_CONST("false");
+      value->type        = RDT_BOOL;
+      value->val.bool_   = 0;
    }
    else if (query_peek(buff, "b") || query_peek(buff, "\"") || query_peek(buff, "'"))
       buff = query_parse_string(buff, value, error);

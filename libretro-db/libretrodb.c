@@ -98,7 +98,7 @@ static int libretrodb_read_metadata(RFILE *fd, libretrodb_metadata_t *md)
 static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 {
    rmsgpack_write_map_header(fd, 1);
-   rmsgpack_write_string(fd, "count", strlen("count"));
+   rmsgpack_write_string(fd, "count", STRLEN_CONST("count"));
    return rmsgpack_write_uint(fd, md->count);
 }
 
@@ -196,11 +196,11 @@ static int libretrodb_read_index_header(RFILE *fd, libretrodb_index_t *idx)
 static void libretrodb_write_index_header(RFILE *fd, libretrodb_index_t *idx)
 {
    rmsgpack_write_map_header(fd, 3);
-   rmsgpack_write_string(fd, "name", strlen("name"));
+   rmsgpack_write_string(fd, "name", STRLEN_CONST("name"));
    rmsgpack_write_string(fd, idx->name, (uint32_t)strlen(idx->name));
-   rmsgpack_write_string(fd, "key_size", (uint32_t)strlen("key_size"));
+   rmsgpack_write_string(fd, "key_size", (uint32_t)STRLEN_CONST("key_size"));
    rmsgpack_write_uint(fd, idx->key_size);
-   rmsgpack_write_string(fd, "next", strlen("next"));
+   rmsgpack_write_string(fd, "next", STRLEN_CONST("next"));
    rmsgpack_write_uint(fd, idx->next);
 }
 

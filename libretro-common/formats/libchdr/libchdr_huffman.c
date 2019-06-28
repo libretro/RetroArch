@@ -273,7 +273,10 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 	/* determine the maximum length of an RLE count */
 	temp = decoder->numcodes - 9;
 	while (temp != 0)
-		temp >>= 1, rlefullbits++;
+    {
+        temp >>= 1;
+        rlefullbits++;
+    }
 
 	/* now process the rest of the data */
 	for (curcode = 0; curcode < decoder->numcodes; )

@@ -21,6 +21,9 @@
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
 #include "../../lakka.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 
 static bool connman_cache[256] = {0};
 static unsigned connman_counter = 0;
@@ -214,7 +217,10 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 
    while (fgets (ln, 512, command_file) != NULL)
    {
-      runloop_msg_queue_push(ln, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#ifdef HAVE_MENU_WIDGETS
+      if (!menu_widgets_ready())
+#endif
+         runloop_msg_queue_push(ln, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    pclose(command_file);
 

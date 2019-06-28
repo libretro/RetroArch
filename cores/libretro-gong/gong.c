@@ -257,8 +257,7 @@ static void save_state(void *data, size_t size)
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned py = swap_if_little32((unsigned)g_state->player[i].py.u);
-      unsigned dpy = swap_if_little32((unsigned)g_state->player[i].dpy.u);
-
+       
       memcpy(buf, &py, sizeof(unsigned));
       buf += sizeof(uint16_t);
    }
@@ -387,7 +386,7 @@ void GONG_CORE_PREFIX(retro_init)(void)
    else
       GONG_CORE_PREFIX(log_cb) = NULL;
 
-   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned char));
+   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned));
 
    game_buffer.width  = WIDTH;
    game_buffer.height = HEIGHT;

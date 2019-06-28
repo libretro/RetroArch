@@ -29,14 +29,14 @@
 #include <rhash.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
-#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../retroarch.h"
+#include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
-#include "video_driver.h"
+#include "../file_path_special.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -145,18 +145,21 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if (!config_get_path(conf, shader_name, tmp_str, path_size))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
-      goto error;
+      if (tmp_str)
+         free(tmp_str);
+      return false;
    }
 
    tmp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    strlcpy(tmp_path, tmp_str, path_size);
    path_resolve_realpath(tmp_path, path_size);
 
-   if (!filestream_exists(tmp_path))
+   if (!path_is_valid(tmp_path))
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
 
+   free(tmp_str);
    free(tmp_path);
 
    /* Smooth */
@@ -210,10 +213,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
    if (!*scale_type && !*scale_type_x && !*scale_type_y)
-   {
-      free(tmp_str);
       return true;
-   }
 
    if (*scale_type)
    {
@@ -238,7 +238,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         goto error;
+         return false;
       }
    }
 
@@ -253,7 +253,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       else
       {
          RARCH_ERR("Invalid attribute.\n");
-         goto error;
+         return false;
       }
    }
 
@@ -307,12 +307,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       }
    }
 
-   free(tmp_str);
    return true;
-
-error:
-   free(tmp_str);
-   return false;
 }
 
 /**
@@ -368,7 +363,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
             path_size);
       path_resolve_realpath(tmp_path, path_size);
 
-      if (filestream_exists(tmp_path))
+      if (path_is_valid(tmp_path))
          strlcpy(shader->lut[shader->luts].path,
             tmp_path, sizeof(shader->lut[shader->luts].path));
       free(tmp_path);
@@ -714,7 +709,7 @@ error:
 }
 
 /**
- * video_shader_read_conf_cgp:
+ * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -723,7 +718,7 @@ error:
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_read_conf_cgp(config_file_t *conf,
+bool video_shader_read_conf_preset(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
@@ -731,11 +726,11 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    unsigned shaders                 = 0;
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
+   bool watch_files                 = settings->bools.video_shader_watch_files;
 
    (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
-   shader->type = RARCH_SHADER_CG;
 
    if (!config_get_uint(conf, "shaders", &shaders))
    {
@@ -758,7 +753,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
    strlcpy(shader->path, conf->path, sizeof(shader->path));
 
-   if (settings->bools.video_shader_watch_files)
+   if (watch_files)
    {
       if (file_change_data)
          frontend_driver_watch_path_for_changes(NULL,
@@ -781,12 +776,12 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
          return false;
       }
 
-      if (settings->bools.video_shader_watch_files && file_list)
+      if (watch_files && file_list)
          string_list_append(file_list,
                shader->pass[i].source.path, attr);
    }
 
-   if (settings->bools.video_shader_watch_files)
+   if (watch_files)
    {
       int flags = PATH_CHANGE_TYPE_MODIFIED          |
                   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
@@ -950,17 +945,28 @@ static void shader_write_variable(config_file_t *conf,
 }
 
 /**
- * video_shader_write_conf_cgp:
- * @conf              : Preset file to read from.
+ * video_shader_write_conf_preset:
+ * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
+ * @preset_path       : Optional path to where the preset will be written.
  *
  * Saves preset and all associated state (passes,
  * textures, imports, etc) to disk.
+ * If @preset_path is not NULL, shader paths are saved
+ * relative to it.
  **/
-void video_shader_write_conf_cgp(config_file_t *conf,
-      struct video_shader *shader)
+void video_shader_write_conf_preset(config_file_t *conf,
+      struct video_shader *shader, const char *preset_path)
 {
    unsigned i;
+   char key[64];
+   size_t tmp_size = PATH_MAX_LENGTH;
+   char *tmp       = (char*)malloc(tmp_size);
+   char *tmp_rel   = (char*)malloc(tmp_size);
+   char *tmp_base  = (char*)malloc(tmp_size);
+
+   if (!tmp || !tmp_rel || !tmp_base)
+      return;
 
    config_set_int(conf, "shaders", shader->passes);
    if (shader->feedback_pass >= 0)
@@ -968,48 +974,51 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char key[64];
-      size_t tmp_size                      = PATH_MAX_LENGTH * sizeof(char);
-      char *tmp                            = (char*)malloc(tmp_size);
       const struct video_shader_pass *pass = &shader->pass[i];
 
-      if (tmp)
+      snprintf(key, sizeof(key), "shader%u", i);
+      strlcpy(tmp, pass->source.path, tmp_size);
+
+      if (preset_path)
       {
-         key[0] = '\0';
+         strlcpy(tmp_base, preset_path, tmp_size);
 
-         snprintf(key, sizeof(key), "shader%u", i);
-         strlcpy(tmp, pass->source.path, tmp_size);
+         path_basedir(tmp_base);
+         path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
 
-         if (!path_is_absolute(tmp))
-            path_resolve_realpath(tmp, tmp_size);
-         config_set_string(conf, key, tmp);
-
-         free(tmp);
-
-         if (pass->filter != RARCH_FILTER_UNSPEC)
-         {
-            snprintf(key, sizeof(key), "filter_linear%u", i);
-            config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
-         }
-
-         snprintf(key, sizeof(key), "wrap_mode%u", i);
-         config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
-
-         if (pass->frame_count_mod)
-         {
-            snprintf(key, sizeof(key), "frame_count_mod%u", i);
-            config_set_int(conf, key, pass->frame_count_mod);
-         }
-
-         snprintf(key, sizeof(key), "mipmap_input%u", i);
-         config_set_bool(conf, key, pass->mipmap);
-
-         snprintf(key, sizeof(key), "alias%u", i);
-         config_set_string(conf, key, pass->alias);
-
-         shader_write_fbo(conf, &pass->fbo, i);
+         config_set_path(conf, key, tmp_rel);
       }
+      else
+         config_set_path(conf, key, tmp);
+
+
+      if (pass->filter != RARCH_FILTER_UNSPEC)
+      {
+         snprintf(key, sizeof(key), "filter_linear%u", i);
+         config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
+      }
+
+      snprintf(key, sizeof(key), "wrap_mode%u", i);
+      config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
+
+      if (pass->frame_count_mod)
+      {
+         snprintf(key, sizeof(key), "frame_count_mod%u", i);
+         config_set_int(conf, key, pass->frame_count_mod);
+      }
+
+      snprintf(key, sizeof(key), "mipmap_input%u", i);
+      config_set_bool(conf, key, pass->mipmap);
+
+      snprintf(key, sizeof(key), "alias%u", i);
+      config_set_string(conf, key, pass->alias);
+
+      shader_write_fbo(conf, &pass->fbo, i);
    }
+
+   free(tmp);
+   free(tmp_rel);
+   free(tmp_base);
 
    if (shader->num_parameters)
    {
@@ -1119,46 +1128,87 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    }
 }
 
+const char *video_shader_to_str(enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+         return "Cg";
+      case RARCH_SHADER_HLSL:
+         return "HLSL";
+      case RARCH_SHADER_GLSL:
+         return "GLSL";
+      case RARCH_SHADER_SLANG:
+         return "Slang";
+      case RARCH_SHADER_METAL:
+         return "Metal";
+      case RARCH_SHADER_NONE:
+         return "none";
+      default:
+         break;
+   }
+
+   return "???";
+}
+
+/**
+ * video_shader_is_supported:
+ * Tests if a shader type is supported.
+ * This is only accurate once the context driver was initialized.
+ **/
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    gfx_ctx_flags_t flags;
-   enum display_flags flag = GFX_CTX_FLAGS_NONE;
+   enum display_flags testflag;
 
    switch (type)
    {
       case RARCH_SHADER_SLANG:
-         flag = GFX_CTX_FLAGS_SHADERS_SLANG;
+         testflag = GFX_CTX_FLAGS_SHADERS_SLANG;
          break;
       case RARCH_SHADER_GLSL:
-         flag = GFX_CTX_FLAGS_SHADERS_GLSL;
+         testflag = GFX_CTX_FLAGS_SHADERS_GLSL;
          break;
       case RARCH_SHADER_CG:
-         flag = GFX_CTX_FLAGS_SHADERS_CG;
+         testflag = GFX_CTX_FLAGS_SHADERS_CG;
          break;
       case RARCH_SHADER_HLSL:
-         flag = GFX_CTX_FLAGS_SHADERS_HLSL;
+         testflag = GFX_CTX_FLAGS_SHADERS_HLSL;
          break;
       case RARCH_SHADER_NONE:
       default:
          return false;
    }
+   video_context_driver_get_flags(&flags);
 
-   if (video_driver_get_all_flags(&flags, flag))
-      return true;
+   return BIT32_GET(flags.flags, testflag);
+}
 
-   return false;
+const char *video_shader_get_preset_extension(enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_GLSL:
+         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+      case RARCH_SHADER_SLANG:
+         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_CG:
+         return file_path_str(FILE_PATH_CGP_EXTENSION);
+      default:
+         break;
+   }
+
+   return NULL;
 }
 
 bool video_shader_any_supported(void)
 {
-   if (
-         video_shader_is_supported(RARCH_SHADER_SLANG) ||
-         video_shader_is_supported(RARCH_SHADER_HLSL)  ||
-         video_shader_is_supported(RARCH_SHADER_GLSL)  ||
-         video_shader_is_supported(RARCH_SHADER_CG)
-      )
-      return true;
-   return false;
+   return
+      video_shader_is_supported(RARCH_SHADER_SLANG) ||
+      video_shader_is_supported(RARCH_SHADER_HLSL)  ||
+      video_shader_is_supported(RARCH_SHADER_GLSL)  ||
+      video_shader_is_supported(RARCH_SHADER_CG);
 }
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
@@ -1170,47 +1220,25 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
    if (strlen(ext) > 1 && ext[0] == '.')
       ext++;
 
-   if (
-         string_is_equal_case_insensitive(ext, "cgp") ||
-         string_is_equal_case_insensitive(ext, "glslp") ||
-         string_is_equal_case_insensitive(ext, "slangp")
+   *is_preset =
+      string_is_equal_case_insensitive(ext, "cgp")   ||
+      string_is_equal_case_insensitive(ext, "glslp") ||
+      string_is_equal_case_insensitive(ext, "slangp");
+
+   if (string_is_equal_case_insensitive(ext, "cgp") ||
+       string_is_equal_case_insensitive(ext, "cg")
       )
-      *is_preset = true;
-   else
-      *is_preset = false;
+      return RARCH_SHADER_CG;
 
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "cgp") ||
-          string_is_equal_case_insensitive(ext, "cg")
-         )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_CG))
-            return RARCH_SHADER_CG;
-      }
-   }
+   if (string_is_equal_case_insensitive(ext, "glslp") ||
+       string_is_equal_case_insensitive(ext, "glsl")
+      )
+      return RARCH_SHADER_GLSL;
 
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "glslp") ||
-          string_is_equal_case_insensitive(ext, "glsl")
-         )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-            return RARCH_SHADER_GLSL;
-      }
-   }
-
-   {
-      gfx_ctx_flags_t flags;
-      if (string_is_equal_case_insensitive(ext, "slangp") ||
-          string_is_equal_case_insensitive(ext, "slang")
-         )
-      {
-         if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-            return RARCH_SHADER_SLANG;
-      }
-   }
+   if (string_is_equal_case_insensitive(ext, "slangp") ||
+       string_is_equal_case_insensitive(ext, "slang")
+      )
+      return RARCH_SHADER_SLANG;
 
    return RARCH_SHADER_NONE;
 }
@@ -1218,22 +1246,18 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
 /**
  * video_shader_parse_type:
  * @path              : Shader path.
- * @fallback          : Fallback shader type in case no
- *                      type could be found.
  *
  * Parses type of shader.
  *
- * Returns: value of shader type on success, otherwise will return
- * user-supplied @fallback value.
+ * Returns: value of shader type if it could be determined,
+ * otherwise RARCH_SHADER_NONE.
  **/
-enum rarch_shader_type video_shader_parse_type(const char *path,
-      enum rarch_shader_type fallback)
+enum rarch_shader_type video_shader_parse_type(const char *path)
 {
    bool is_preset = false;
    if (!path)
-      return fallback;
-   return  video_shader_get_type_from_ext(path_get_extension(path),
-         &is_preset);
+      return RARCH_SHADER_NONE;
+   return video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 }
 
 /**

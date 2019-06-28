@@ -22,7 +22,6 @@
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
 #include "../../gfx/common/gl1_common.h"
 
 #include "../menu_driver.h"
@@ -124,7 +123,7 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-   glLoadMatrixf(mvp.matrix);
+   glLoadMatrixf((const GLfloat*)mvp.matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();

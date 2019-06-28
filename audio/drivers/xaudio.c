@@ -36,7 +36,7 @@
 
 #include "xaudio.h"
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct xaudio2 xaudio2_t;
@@ -315,7 +315,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 
    bufsize = latency * rate / 1000;
 
-   RARCH_LOG("XAudio2: Requesting %u ms latency, using %d ms latency.\n",
+   RARCH_LOG("[XAudio2]: Requesting %u ms latency, using %d ms latency.\n",
          latency, (int)bufsize * 1000 / rate);
 
    xa->bufsize = bufsize * 2 * sizeof(float);

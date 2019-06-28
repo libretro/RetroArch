@@ -1215,8 +1215,15 @@ static void ctr_set_osd_msg(void *data,
       font_driver_render_msg(video_info, font, msg, params);
 }
 
+static uint32_t ctr_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   return flags;
+}
+
 static const video_poke_interface_t ctr_poke_interface = {
-   NULL, /* get_flags */
+   ctr_get_flags,
    ctr_load_texture,
    ctr_unload_texture,
    NULL,
@@ -1246,13 +1253,6 @@ static void ctr_get_poke_interface(void* data,
    *iface = &ctr_poke_interface;
 }
 
-static bool ctr_read_viewport(void* data, uint8_t* buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-   return false;
-}
-
 static bool ctr_set_shader(void* data,
                            enum rarch_shader_type type, const char* path)
 {
@@ -1278,10 +1278,13 @@ video_driver_t video_ctr =
    NULL, /* set_viewport */
    ctr_set_rotation,
    ctr_viewport_info,
-   ctr_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    ctr_get_poke_interface
 };

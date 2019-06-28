@@ -45,9 +45,8 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../paths.h"
-#include "../../verbosity.h"
 #include "../../retroarch.h"
-#include "../../gfx/video_driver.h"
+#include "../../verbosity.h"
 
 #include "hbl.h"
 #include "wiiu_dbg.h"
@@ -311,7 +310,6 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
 
 static void main_setup(void);
 static void get_arguments(int *argc, char ***argv);
-static void do_rarch_main(int argc, char **argv);
 static void main_loop(void);
 static void main_teardown(void);
 
@@ -354,7 +352,7 @@ int main(int argc, char **argv)
    int salamander_main(int argc, char **argv);
    salamander_main(argc, argv);
 #else
-   do_rarch_main(argc, argv);
+   rarch_main(argc, argv, NULL);
    main_loop();
    main_exit(NULL);
 #endif /* IS_SALAMANDER */
@@ -433,19 +431,6 @@ static void main_loop(void)
       if(status == -1)
          break;
    } while(true);
-}
-
-static void do_rarch_main(int argc, char **argv)
-{
-#if 0
-   int argc_ = 2;
-   char *argv_[] = { WIIU_SD_PATH "retroarch/retroarch.elf",
-                     WIIU_SD_PATH "rom.sfc",
-                     NULL };
-   rarch_main(argc_, argv_, NULL);
-#else
-   rarch_main(argc, argv, NULL);
-#endif /* if 0 */
 }
 
 static void SaveCallback(void)

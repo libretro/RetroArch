@@ -102,7 +102,7 @@ static void *lzma_fast_alloc(void *p, size_t size)
 	}
 
 	/* set the low bit of the size so we don't match next time */
-	*addr = size | 1;
+	*addr = (uint32_t)(size | 1);
 	return addr + 1;
 }
 

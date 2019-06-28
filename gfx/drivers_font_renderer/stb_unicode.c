@@ -306,15 +306,15 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
       "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
       "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-#endif
       "osd-font.ttf",
+#endif
       NULL
    };
 
    const char **p;
 
    for (p = paths; *p; ++p)
-      if (filestream_exists(*p))
+      if (path_is_valid(*p))
          return *p;
 
    return NULL;

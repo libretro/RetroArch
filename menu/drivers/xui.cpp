@@ -35,13 +35,10 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../widgets/menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../widgets/menu_input_dialog.h"
-
-#include "../../gfx/video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -167,12 +164,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    {
       char str[PATH_MAX_LENGTH] = {0};
 
-      if (
-            menu_entries_get_core_title(str, sizeof(str)) == 0)
-      {
-         mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
-         XuiTextElementSetText(m_menutitlebottom, strw_buffer);
-      }
+      menu_entries_get_core_title(str, sizeof(str));
+      mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
+      XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    }
 
    return 0;
@@ -579,36 +573,29 @@ static void xui_render(void *data, bool is_idle)
 
    if (XuiHandleIsValid(m_menutitle))
    {
-      if (
-            menu_entries_get_core_title(title, sizeof(title)) == 0)
-      {
-         mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
-         XuiTextElementSetText(m_menutitlebottom, strw_buffer);
-      }
+      menu_entries_get_core_title(title, sizeof(title));
+      mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+      XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    }
 
    end = menu_entries_get_size();
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      char *entry_path                     = NULL;
-      char entry_value[PATH_MAX_LENGTH]    = {0};
+      const char *entry_path               = NULL;
+      const char *entry_value              = NULL;
       wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
       wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
 
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
 
-      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      entry_path = menu_entry_get_path(&entry);
+      menu_entry_get_value(&entry, &entry_value);
+      menu_entry_get_path(&entry, &entry_path);
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       xui_set_list_text(i, msg_left, msg_right);
-
-      menu_entry_free(&entry);
-      if (!string_is_empty(entry_path))
-         free(entry_path);
    }
 
    selection = menu_navigation_get_selection();
@@ -742,7 +729,9 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* pointer_tap */
    NULL,          /* update_thumbnail_path */
    NULL,          /* update_thumbnail_image */
+   NULL,          /* refresh_thumbnail_image */
    NULL,          /* set_thumbnail_system */
+   NULL,          /* get_thumbnail_system */
    NULL,          /* set_thumbnail_content */
    NULL,          /* osk_ptr_at_pos */
    NULL,          /* update_savestate_thumbnail_path */

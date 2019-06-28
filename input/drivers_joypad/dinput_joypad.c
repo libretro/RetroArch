@@ -30,9 +30,9 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../../gfx/video_driver.h"
 #include "../input_driver.h"
 #include "../input_keymaps.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
@@ -526,9 +526,9 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
+      return 0;
 
    return val;
 }

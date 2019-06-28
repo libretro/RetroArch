@@ -698,7 +698,7 @@ int mbedtls_rsa_rsaes_pkcs1_v15_encrypt( mbedtls_rsa_context *ctx,
     if( mode == MBEDTLS_RSA_PRIVATE && ctx->padding != MBEDTLS_RSA_PKCS_V15 )
         return( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
 
-    // We don't check p_rng because it won't be dereferenced here
+    /* We don't check p_rng because it won't be dereferenced here */
     if( f_rng == NULL || input == NULL || output == NULL )
         return( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
 
@@ -816,7 +816,7 @@ int mbedtls_rsa_rsaes_oaep_decrypt( mbedtls_rsa_context *ctx,
 
     hlen = mbedtls_md_get_size( md_info );
 
-    // checking for integer underflow
+    /* checking for integer underflow */
     if( 2 * hlen + 2 > ilen )
         return( MBEDTLS_ERR_RSA_BAD_INPUT_DATA );
 

@@ -33,9 +33,7 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 
-#include "widgets/menu_entry.h"
-
-#include "../audio/audio_driver.h"
+#include "../retroarch.h"
 #include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 #include "../gfx/video_coord_array.h"
@@ -311,6 +309,15 @@ typedef struct menu_display_ctx_datetime
    unsigned time_mode;
 } menu_display_ctx_datetime_t;
 
+typedef struct menu_display_ctx_powerstate
+{
+   char *s;
+   size_t len;
+   unsigned percent;
+   bool battery_enabled;
+   bool charging;
+} menu_display_ctx_powerstate_t;
+
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
@@ -377,7 +384,9 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
+   void (*refresh_thumbnail_image)(void *data);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
+   void (*get_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
@@ -516,9 +525,9 @@ bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
 
-void menu_driver_free(void);
-
 void menu_driver_set_thumbnail_system(char *s, size_t len);
+
+void menu_driver_get_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
 
@@ -621,6 +630,7 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
+void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,

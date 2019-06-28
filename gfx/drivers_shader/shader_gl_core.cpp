@@ -20,6 +20,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
+#include <math.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -30,14 +31,15 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
 using namespace std;
 
 template <typename P>
-static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m, const string &name, const P &p)
+static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m,
+      const string &name, const P &p)
 {
    auto itr = m.find(name);
    if (itr != end(m))
@@ -51,58 +53,110 @@ static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m, const str
    return true;
 }
 
-static GLuint gl_core_compile_shader(GLenum stage, const string &source)
+static GLuint gl_core_compile_shader(GLenum stage, const char *source)
 {
-   GLuint shader = glCreateShader(stage);
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
 
-   const char *ptr = source.c_str();
    glShaderSource(shader, 1, &ptr, nullptr);
    glCompileShader(shader);
 
-   GLint status;
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
    if (!status)
    {
       GLint length;
       glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
       if (length > 0)
       {
-         vector<char> buffer(length + 1);
-         glGetShaderInfoLog(shader, length, &length, buffer.data());
-         RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", buffer.data());
-         glDeleteShader(shader);
-         return 0;
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
       }
    }
 
    return shader;
 }
 
-GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
-                                     const uint32_t *fragment, size_t fragment_size,
-                                     gl_core_buffer_locations *loc, bool flatten)
+static uint32_t gl_core_get_cross_compiler_target_version()
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major = 0;
+   unsigned minor = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      return 300;
+   
+   if (major == 2 && minor == 0)
+      return 100;
+#else
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+      return 150;
+
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
+}
+
+GLuint gl_core_cross_compile_program(
+      const uint32_t *vertex, size_t vertex_size,
+      const uint32_t *fragment, size_t fragment_size,
+      gl_core_buffer_locations *loc, bool flatten)
 {
    GLuint program = 0;
    try
    {
+      spirv_cross::ShaderResources vertex_resources;
+      spirv_cross::ShaderResources fragment_resources;
       spirv_cross::CompilerGLSL vertex_compiler(vertex, vertex_size / 4);
       spirv_cross::CompilerGLSL fragment_compiler(fragment, fragment_size / 4);
       spirv_cross::CompilerGLSL::Options opts;
 #ifdef HAVE_OPENGLES3
-      opts.es = true;
-      opts.version = 300;
+      opts.es                               = true;
 #else
-      opts.es = false;
-      opts.version = 150;
+      opts.es                               = false;
 #endif
+      opts.version                          = gl_core_get_cross_compiler_target_version();
       opts.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
-      opts.fragment.default_int_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
-      opts.enable_420pack_extension = false;
+      opts.fragment.default_int_precision   = spirv_cross::CompilerGLSL::Options::Precision::Highp;
+      opts.enable_420pack_extension         = false;
+
       vertex_compiler.set_common_options(opts);
       fragment_compiler.set_common_options(opts);
 
-      auto vertex_resources = vertex_compiler.get_shader_resources();
-      auto fragment_resources = fragment_compiler.get_shader_resources();
+      vertex_resources                      = vertex_compiler.get_shader_resources();
+      fragment_resources                    = fragment_compiler.get_shader_resources();
 
       for (auto &res : vertex_resources.stage_inputs)
       {
@@ -193,11 +247,13 @@ GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
 
       auto vertex_source = vertex_compiler.compile();
       auto fragment_source = fragment_compiler.compile();
-      GLuint vertex_shader = gl_core_compile_shader(GL_VERTEX_SHADER, vertex_source);
-      GLuint fragment_shader = gl_core_compile_shader(GL_FRAGMENT_SHADER, fragment_source);
+      GLuint vertex_shader = gl_core_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
+      GLuint fragment_shader = gl_core_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
 
-      //RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
-      //RARCH_LOG("[GLCore]: Fragment shader:\n========\n%s\n=======\n", fragment_source.c_str());
+#if 0
+      RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
+      RARCH_LOG("[GLCore]: Fragment shader:\n========\n%s\n=======\n", fragment_source.c_str());
+#endif
 
       if (!vertex_shader || !fragment_shader)
       {
@@ -229,11 +285,16 @@ GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
          glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
          if (length > 0)
          {
-            vector<char> buffer(length + 1);
-            glGetProgramInfoLog(program, length, &length, buffer.data());
-            RARCH_ERR("[GLCore]: Failed to link program: %s\n", buffer.data());
-            glDeleteProgram(program);
-            return 0;
+            char *info_log = (char*)malloc(length);
+
+            if (info_log)
+            {
+               glGetProgramInfoLog(program, length, &length, info_log);
+               RARCH_ERR("[GLCore]: Failed to link program: %s\n", info_log);
+               free(info_log);
+               glDeleteProgram(program);
+               return 0;
+            }
          }
       }
 
@@ -241,28 +302,28 @@ GLuint gl_core_cross_compile_program(const uint32_t *vertex, size_t vertex_size,
 
       if (loc)
       {
-         loc->flat_ubo_fragment = -1;
-         loc->flat_ubo_vertex = -1;
-         loc->flat_push_vertex = -1;
-         loc->flat_push_fragment = -1;
-         loc->buffer_index_ubo_vertex = GL_INVALID_INDEX;
-         loc->buffer_index_ubo_fragment = GL_INVALID_INDEX;
+         loc->flat_ubo_fragment            = -1;
+         loc->flat_ubo_vertex              = -1;
+         loc->flat_push_vertex             = -1;
+         loc->flat_push_fragment           = -1;
+         loc->buffer_index_ubo_vertex      = GL_INVALID_INDEX;
+         loc->buffer_index_ubo_fragment    = GL_INVALID_INDEX;
 
          if (flatten)
          {
-            loc->flat_ubo_vertex = glGetUniformLocation(program, "RARCH_UBO_VERTEX");
-            loc->flat_ubo_fragment = glGetUniformLocation(program, "RARCH_UBO_FRAGMENT");
-            loc->flat_push_vertex = glGetUniformLocation(program, "RARCH_PUSH_VERTEX");
-            loc->flat_push_fragment = glGetUniformLocation(program, "RARCH_PUSH_FRAGMENT");
+            loc->flat_ubo_vertex           = glGetUniformLocation(program, "RARCH_UBO_VERTEX");
+            loc->flat_ubo_fragment         = glGetUniformLocation(program, "RARCH_UBO_FRAGMENT");
+            loc->flat_push_vertex          = glGetUniformLocation(program, "RARCH_PUSH_VERTEX");
+            loc->flat_push_fragment        = glGetUniformLocation(program, "RARCH_PUSH_FRAGMENT");
          }
          else
          {
-            loc->buffer_index_ubo_vertex = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
+            loc->buffer_index_ubo_vertex   = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
             loc->buffer_index_ubo_fragment = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
          }
       }
 
-      // Force proper bindings for textures.
+      /* Force proper bindings for textures. */
       for (auto &binding : texture_binding_fixups)
       {
          GLint location = glGetUniformLocation(program, (string("RARCH_TEXTURE_") + to_string(binding)).c_str());
@@ -306,7 +367,8 @@ static unsigned num_miplevels(unsigned width, unsigned height)
 {
    unsigned size = MAX(width, height);
    unsigned levels = 0;
-   while (size) {
+   while (size)
+   {
       levels++;
       size >>= 1;
    }
@@ -358,44 +420,44 @@ static gl_core_filter_chain_address wrap_to_address(gfx_wrap_type type)
 {
    switch (type)
    {
-      default:
-      case RARCH_WRAP_EDGE:
-         return GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
-
       case RARCH_WRAP_BORDER:
          return GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
-
       case RARCH_WRAP_REPEAT:
          return GL_CORE_FILTER_CHAIN_ADDRESS_REPEAT;
-
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_CORE_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT;
+      case RARCH_WRAP_EDGE:
+      default:
+         break;
    }
+
+   return GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
 }
 
 static GLenum address_to_gl(gl_core_filter_chain_address type)
 {
    switch (type)
    {
-      default:
-      case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
-         return GL_CLAMP_TO_EDGE;
-
 #ifdef HAVE_OPENGLES3
       case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
-         //RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
+#if 0
+         RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
+#endif
          return GL_CLAMP_TO_EDGE;
 #else
       case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
          return GL_CLAMP_TO_BORDER;
 #endif
-
       case GL_CORE_FILTER_CHAIN_ADDRESS_REPEAT:
          return GL_REPEAT;
-
       case GL_CORE_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
+      case GL_CORE_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+      default:
+         break;
    }
+
+   return GL_CLAMP_TO_EDGE;
 }
 
 static GLenum convert_filter_to_mag_gl(gl_core_filter_chain_filter filter)
@@ -404,11 +466,12 @@ static GLenum convert_filter_to_mag_gl(gl_core_filter_chain_filter filter)
    {
       case GL_CORE_FILTER_CHAIN_LINEAR:
          return GL_LINEAR;
-
-      default:
       case GL_CORE_FILTER_CHAIN_NEAREST:
-         return GL_NEAREST;
+      default:
+         break;
    }
+
+   return GL_NEAREST;
 }
 
 static GLenum convert_filter_to_min_gl(gl_core_filter_chain_filter filter, gl_core_filter_chain_filter mipfilter)
@@ -419,8 +482,7 @@ static GLenum convert_filter_to_min_gl(gl_core_filter_chain_filter filter, gl_co
       return GL_LINEAR_MIPMAP_NEAREST;
    else if (mipfilter == GL_CORE_FILTER_CHAIN_LINEAR)
       return GL_NEAREST_MIPMAP_LINEAR;
-   else
-      return GL_NEAREST_MIPMAP_NEAREST;
+   return GL_NEAREST_MIPMAP_NEAREST;
 }
 
 static GLenum convert_glslang_format(glslang_format fmt)
@@ -642,7 +704,7 @@ Framebuffer::Framebuffer(GLenum format_, unsigned max_levels_)
 {
    glGenFramebuffers(1, &framebuffer);
 
-   // Need to bind to create.
+   /* Need to bind to create */
    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -661,10 +723,13 @@ void Framebuffer::set_size(const Size2D &size_, GLenum format_)
 
 void Framebuffer::init()
 {
+   GLenum status;
+
    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
    if (image != 0)
    {
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
       glDeleteTextures(1, &image);
    }
 
@@ -678,7 +743,7 @@ void Framebuffer::init()
 
    levels = num_miplevels(size.width, size.height);
    if (max_levels < levels)
-	   levels = max_levels;
+      levels = max_levels;
    if (levels == 0)
       levels = 1;
 
@@ -686,12 +751,16 @@ void Framebuffer::init()
                   format,
                   size.width, size.height);
 
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
-   auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-   bool fallback = false;
+   glFramebufferTexture2D(GL_FRAMEBUFFER,
+         GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+
+   status   = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   complete = true;
 
    if (status != GL_FRAMEBUFFER_COMPLETE)
    {
+      complete = false;
+
       switch (status)
       {
          case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
@@ -703,32 +772,27 @@ void Framebuffer::init()
             break;
 
          case GL_FRAMEBUFFER_UNSUPPORTED:
-            RARCH_ERR("[GLCore]: Unsupported FBO, falling back to RGBA8.\n");
-            fallback = true;
-            break;
-      }
+            {
+               unsigned levels;
 
-      complete = false;
-   }
-   else
-      complete = true;
+               RARCH_ERR("[GLCore]: Unsupported FBO, falling back to RGBA8.\n");
 
-   if (fallback)
-   {
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-      glDeleteTextures(1, &image);
-      glGenTextures(1, &image);
-      glBindTexture(GL_TEXTURE_2D, image);
+               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+               glDeleteTextures(1, &image);
+               glGenTextures(1, &image);
+               glBindTexture(GL_TEXTURE_2D, image);
 
-      unsigned levels = num_miplevels(size.width, size.height);
-      if (max_levels < levels)
-         levels = max_levels;
-      glTexStorage2D(GL_TEXTURE_2D, levels,
+               levels = num_miplevels(size.width, size.height);
+               if (max_levels < levels)
+                  levels = max_levels;
+               glTexStorage2D(GL_TEXTURE_2D, levels,
                      GL_RGBA8,
                      size.width, size.height);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
-      status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-      complete = status == GL_FRAMEBUFFER_COMPLETE;
+               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+               complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+            }
+            break;
+      }
    }
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -737,14 +801,14 @@ void Framebuffer::init()
 
 void Framebuffer::clear()
 {
-   if (complete)
-   {
-      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   }
+   if (!complete)
+      return;
+
+   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Framebuffer::generate_mips()
@@ -785,6 +849,7 @@ void Framebuffer::copy(const CommonResources &common, GLuint image)
 
 void Framebuffer::copy_partial(const CommonResources &common, GLuint image, float rx, float ry)
 {
+   GLuint vbo;
    if (!complete)
       return;
 
@@ -811,8 +876,7 @@ void Framebuffer::copy_partial(const CommonResources &common, GLuint image, floa
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
 
-   // A bit crude, but heeeey.
-   GLuint vbo;
+   /* A bit crude, but heeeey. */
    glGenBuffers(1, &vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -850,42 +914,22 @@ class UBORing
 {
 public:
    ~UBORing();
-   void init(size_t size, unsigned count);
-   void update_and_bind(unsigned vertex_binding, unsigned fragment_binding, const void *data, size_t size);
-
-private:
    std::vector<GLuint> buffers;
    unsigned buffer_index = 0;
 };
 
-void UBORing::init(size_t size, unsigned count)
+static void ubo_ring_update_and_bind(
+      unsigned vertex_binding,
+      unsigned fragment_binding,
+      const void *data, size_t size, GLuint id)
 {
-   buffers.resize(count);
-   glGenBuffers(count, buffers.data());
-   for (auto &buf : buffers)
-   {
-      glBindBuffer(GL_UNIFORM_BUFFER, buf);
-      glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_STREAM_DRAW);
-   }
-   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-void UBORing::update_and_bind(unsigned vertex_binding, unsigned fragment_binding, const void *data, size_t size)
-{
-   if (vertex_binding == GL_INVALID_INDEX && fragment_binding == GL_INVALID_INDEX)
-      return;
-
-   glBindBuffer(GL_UNIFORM_BUFFER, buffers[buffer_index]);
+   glBindBuffer(GL_UNIFORM_BUFFER, id);
    glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
    glBindBuffer(GL_UNIFORM_BUFFER, 0);
    if (vertex_binding != GL_INVALID_INDEX)
-      glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, buffers[buffer_index]);
+      glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);
    if (fragment_binding != GL_INVALID_INDEX)
-      glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, buffers[buffer_index]);
-
-   buffer_index++;
-   if (buffer_index >= buffers.size())
-      buffer_index = 0;
+      glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 }
 
 UBORing::~UBORing()
@@ -940,6 +984,11 @@ public:
       frame_count_period = period;
    }
 
+   void set_frame_direction(int32_t direction)
+   {
+      frame_direction = direction;
+   }
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -991,8 +1040,8 @@ private:
    Size2D get_output_size(const Size2D &original_size,
                           const Size2D &max_source) const;
 
-   GLuint pipeline = 0;
-   CommonResources *common = nullptr;
+   GLuint pipeline                 = 0;
+   CommonResources *common         = nullptr;
 
    Size2D current_framebuffer_size = {};
    gl_core_viewport current_viewport;
@@ -1009,33 +1058,40 @@ private:
                     const Texture &texture);
 
    void set_semantic_texture(slang_texture_semantic semantic,
-                             const Texture &texture);
-   void set_semantic_texture_array(slang_texture_semantic semantic, unsigned index,
-                                   const Texture &texture);
+         const Texture &texture);
+   void set_semantic_texture_array(slang_texture_semantic semantic,
+         unsigned index,
+         const Texture &texture);
 
    slang_reflection reflection;
 
    std::vector<uint8_t> uniforms;
 
    void build_semantics(uint8_t *buffer,
-                        const float *mvp, const Texture &original, const Texture &source);
+                        const float *mvp,
+                        const Texture &original, const Texture &source);
    void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
                             unsigned width, unsigned height);
-   void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
+   void build_semantic_uint(uint8_t *data,
+         slang_semantic semantic, uint32_t value);
+   void build_semantic_int(uint8_t *data,
+         slang_semantic semantic, int32_t value);
    void build_semantic_parameter(uint8_t *data, unsigned index, float value);
    void build_semantic_texture_vec4(uint8_t *data,
-                                    slang_texture_semantic semantic,
-                                    unsigned width, unsigned height);
+         slang_texture_semantic semantic,
+         unsigned width, unsigned height);
    void build_semantic_texture_array_vec4(uint8_t *data,
-                                          slang_texture_semantic semantic, unsigned index,
-                                          unsigned width, unsigned height);
+         slang_texture_semantic semantic, unsigned index,
+         unsigned width, unsigned height);
    void build_semantic_texture(uint8_t *buffer,
-                               slang_texture_semantic semantic, const Texture &texture);
+         slang_texture_semantic semantic, const Texture &texture);
    void build_semantic_texture_array(uint8_t *buffer,
-                                     slang_texture_semantic semantic, unsigned index, const Texture &texture);
+         slang_texture_semantic semantic,
+         unsigned index, const Texture &texture);
 
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
+   int32_t frame_direction = 1;
    unsigned pass_number = 0;
 
    size_t ubo_offset = 0;
@@ -1069,14 +1125,12 @@ bool Pass::build()
    framebuffer_feedback.reset();
 
    if (!final_pass)
-   {
       framebuffer = unique_ptr<Framebuffer>(
             new Framebuffer(pass_info.rt_format, pass_info.max_levels));
-   }
 
-   for (auto &param : parameters)
+   for (i = 0; i < parameters.size(); i++)
    {
-      if (!gl_core_shader_set_unique_map(semantic_map, param.id,
+      if (!gl_core_shader_set_unique_map(semantic_map, parameters[i].id,
                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
          return false;
       j++;
@@ -1159,53 +1213,75 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
 
 void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_texture_semantic_meta> &meta)
 {
-   for (size_t i = 0; i < meta.size(); i++)
+   size_t i;
+   for (i = 0; i < meta.size(); i++)
    {
-      auto n = name + std::to_string(i);
-      auto &m = meta[i];
+      std::string                  n = name + std::to_string(i);
+      slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
 
-      if (m.uniform)
+      if (m->uniform)
       {
-         int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert = glGetUniformLocation(pipeline,
+               (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
+         int frag = glGetUniformLocation(pipeline,
+               (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
 
          if (vert >= 0)
-            m.location.ubo_vertex = vert;
+            m->location.ubo_vertex = vert;
          if (frag >= 0)
-            m.location.ubo_fragment = frag;
+            m->location.ubo_fragment = frag;
       }
 
-      if (m.push_constant)
+      if (m->push_constant)
       {
-         int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert = glGetUniformLocation(pipeline,
+               (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
+         int frag = glGetUniformLocation(pipeline,
+               (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
 
          if (vert >= 0)
-            m.location.push_vertex = vert;
+            m->location.push_vertex = vert;
          if (frag >= 0)
-            m.location.push_fragment = frag;
+            m->location.push_fragment = frag;
       }
    }
 }
 
 bool Pass::init_pipeline()
 {
-   pipeline = gl_core_cross_compile_program(vertex_shader.data(), vertex_shader.size() * sizeof(uint32_t),
-                                            fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
-                                            &locations, false);
+   pipeline = gl_core_cross_compile_program(
+         vertex_shader.data(),   vertex_shader.size()   * sizeof(uint32_t),
+         fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
+         &locations, false);
 
    if (!pipeline)
       return false;
 
    uniforms.resize(reflection.ubo_size);
    if (reflection.ubo_size)
-      ubo_ring.init(reflection.ubo_size, 16);
+   {
+      unsigned i;
+      size_t    size = reflection.ubo_size;
+      unsigned count = 16;
+
+      ubo_ring.buffers.resize(count);
+      glGenBuffers(count, ubo_ring.buffers.data());
+
+      for (i = 0; i < ubo_ring.buffers.size(); i++)
+      {
+         glBindBuffer(GL_UNIFORM_BUFFER, ubo_ring.buffers[i]);
+         glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+      }
+
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+   }
    push_constant_buffer.resize(reflection.push_constant_size);
 
    reflect_parameter("MVP", reflection.semantics[SLANG_SEMANTIC_MVP]);
    reflect_parameter("OutputSize", reflection.semantics[SLANG_SEMANTIC_OUTPUT]);
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
+   reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1291,78 +1367,78 @@ void Pass::end_frame()
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   auto &refl = reflection.semantics[semantic];
+   slang_semantic_meta *refl = (slang_semantic_meta*)
+      &reflection.semantics[semantic];
 
-   if (data && refl.uniform)
+   if (data && refl->uniform)
    {
-      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
          build_vec4(v4, width, height);
-         if (refl.location.ubo_vertex >= 0)
-            glUniform4fv(refl.location.ubo_vertex, 1, v4);
-         if (refl.location.ubo_fragment >= 0)
-            glUniform4fv(refl.location.ubo_fragment, 1, v4);
+         if (refl->location.ubo_vertex >= 0)
+            glUniform4fv(refl->location.ubo_vertex, 1, v4);
+         if (refl->location.ubo_fragment >= 0)
+            glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
-      {
          build_vec4(
-               reinterpret_cast<float *>(data + refl.ubo_offset),
+               reinterpret_cast<float *>(data + refl->ubo_offset),
                width,
                height);
-      }
    }
 
-   if (refl.push_constant)
+   if (refl->push_constant)
    {
-      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      if (  refl->location.push_vertex   >= 0 || 
+            refl->location.push_fragment >= 0)
       {
          float v4[4];
          build_vec4(v4, width, height);
-         if (refl.location.push_vertex >= 0)
-            glUniform4fv(refl.location.push_vertex, 1, v4);
-         if (refl.location.push_fragment >= 0)
-            glUniform4fv(refl.location.push_fragment, 1, v4);
+         if (refl->location.push_vertex >= 0)
+            glUniform4fv(refl->location.push_vertex, 1, v4);
+         if (refl->location.push_fragment >= 0)
+            glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
-      {
          build_vec4(
-               reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset),
+               reinterpret_cast<float *>
+               (push_constant_buffer.data() + refl->push_constant_offset),
                width,
                height);
-      }
    }
 }
 
 void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
 {
-   auto &refl = reflection.semantic_float_parameters[index];
+   slang_semantic_meta *refl = (slang_semantic_meta*)
+      &reflection.semantic_float_parameters[index];
 
    /* We will have filtered out stale parameters. */
-   if (data && refl.uniform)
+   if (data && refl->uniform)
    {
-      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
-         if (refl.location.ubo_vertex >= 0)
-            glUniform1f(refl.location.ubo_vertex, value);
-         if (refl.location.ubo_fragment >= 0)
-            glUniform1f(refl.location.ubo_fragment, value);
+         if (refl->location.ubo_vertex >= 0)
+            glUniform1f(refl->location.ubo_vertex, value);
+         if (refl->location.ubo_fragment >= 0)
+            glUniform1f(refl->location.ubo_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(data + refl.ubo_offset) = value;
+         *reinterpret_cast<float *>(data + refl->ubo_offset) = value;
    }
 
-   if (refl.push_constant)
+   if (refl->push_constant)
    {
-      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      if (refl->location.push_vertex >= 0 || refl->location.push_fragment >= 0)
       {
-         if (refl.location.push_vertex >= 0)
-            glUniform1f(refl.location.push_vertex, value);
-         if (refl.location.push_fragment >= 0)
-            glUniform1f(refl.location.push_fragment, value);
+         if (refl->location.push_vertex >= 0)
+            glUniform1f(refl->location.push_vertex, value);
+         if (refl->location.push_fragment >= 0)
+            glUniform1f(refl->location.push_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+         *reinterpret_cast<float *>(push_constant_buffer.data() + refl->push_constant_offset) = value;
    }
 }
 
@@ -1395,6 +1471,38 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
       }
       else
          *reinterpret_cast<uint32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+   }
+}
+
+void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
+                              int32_t value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+   {
+      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      {
+         if (refl.location.ubo_vertex >= 0)
+            glUniform1i(refl.location.ubo_vertex, value);
+         if (refl.location.ubo_fragment >= 0)
+            glUniform1i(refl.location.ubo_fragment, value);
+      }
+      else
+         *reinterpret_cast<int32_t *>(data + reflection.semantics[semantic].ubo_offset) = value;
+   }
+
+   if (refl.push_constant)
+   {
+      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      {
+         if (refl.location.push_vertex >= 0)
+            glUniform1i(refl.location.push_vertex, value);
+         if (refl.location.push_fragment >= 0)
+            glUniform1i(refl.location.push_fragment, value);
+      }
+      else
+         *reinterpret_cast<int32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
    }
 }
 
@@ -1434,12 +1542,10 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
             glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
       }
       else
-      {
          build_vec4(
                reinterpret_cast<float *>(data + refl[index].ubo_offset),
                width,
                height);
-      }
    }
 
    if (refl[index].push_constant)
@@ -1454,12 +1560,10 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
             glUniform4fv(refl[index].location.push_fragment, 1, v4);
       }
       else
-      {
          build_vec4(
                reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset),
                width,
                height);
-      }
    }
 }
 
@@ -1533,89 +1637,90 @@ void Pass::build_semantic_texture_array(uint8_t *buffer,
 }
 
 void Pass::build_semantics(uint8_t *buffer,
-                           const float *mvp, const Texture &original, const Texture &source)
+      const float *mvp, const Texture &original, const Texture &source)
 {
+   unsigned i;
+
    /* MVP */
    if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
+      size_t offset = reflection.semantics[
+         SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
-         memcpy(buffer + offset, mvp, sizeof(float) * 16);
+         memcpy(buffer + offset,
+               mvp, sizeof(float) * 16);
       else
-         build_default_matrix(reinterpret_cast<float *>(buffer + offset));
+         build_default_matrix(reinterpret_cast<float *>(
+                  buffer + offset));
    }
 
    if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
    {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
+      size_t offset = reflection.semantics[
+         SLANG_SEMANTIC_MVP].push_constant_offset;
+
       if (mvp)
-         memcpy(push_constant_buffer.data() + offset, mvp, sizeof(float) * 16);
+         memcpy(push_constant_buffer.data() + offset,
+               mvp, sizeof(float) * 16);
       else
-         build_default_matrix(reinterpret_cast<float *>(push_constant_buffer.data() + offset));
+         build_default_matrix(reinterpret_cast<float *>(
+                  push_constant_buffer.data() + offset));
    }
 
    /* Output information */
    build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
-                       current_framebuffer_size.width, current_framebuffer_size.height);
+                       current_framebuffer_size.width,
+                       current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(current_viewport.width), unsigned(current_viewport.height));
+                       unsigned(current_viewport.width),
+                       unsigned(current_viewport.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
+                       frame_count_period 
+                       ? uint32_t(frame_count % frame_count_period) 
+                       : uint32_t(frame_count));
+
+   build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
+                      frame_direction);
 
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   build_semantic_texture_array(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+   build_semantic_texture_array(buffer,
+         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    /* Parameters. */
-   for (auto &param : filtered_parameters)
-   {
-      float value = common->shader_preset->parameters[param.index].current;
-      build_semantic_parameter(buffer, param.semantic_index, value);
-   }
+   for (i = 0; i < filtered_parameters.size(); i++)
+      build_semantic_parameter(buffer,
+            filtered_parameters[i].semantic_index,
+            common->shader_preset->parameters[
+            filtered_parameters[i].index].current);
 
    /* Previous inputs. */
-   unsigned i = 0;
-   for (auto &texture : common->original_history)
-   {
+   for (i = 0; i < common->original_history.size(); i++)
       build_semantic_texture_array(buffer,
-                                   SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-                                   texture);
-      i++;
-   }
+            SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
+            common->original_history[i]);
 
    /* Previous passes. */
-   i = 0;
-   for (auto &texture : common->pass_outputs)
-   {
+   for (i = 0; i < common->pass_outputs.size(); i++)
       build_semantic_texture_array(buffer,
-                                   SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-                                   texture);
-      i++;
-   }
+            SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
+            common->pass_outputs[i]);
 
    /* Feedback FBOs. */
-   i = 0;
-   for (auto &texture : common->framebuffer_feedback)
-   {
+   for (i = 0; i < common->framebuffer_feedback.size(); i++)
       build_semantic_texture_array(buffer,
-                                   SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-                                   texture);
-      i++;
-   }
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
+            common->framebuffer_feedback[i]);
 
    /* LUTs. */
-   i = 0;
-   for (auto &lut : common->luts)
-   {
+   for (i = 0; i < common->luts.size(); i++)
       build_semantic_texture_array(buffer,
-                                   SLANG_TEXTURE_SEMANTIC_USER, i,
-                                   lut->get_texture());
-      i++;
-   }
+            SLANG_TEXTURE_SEMANTIC_USER, i,
+            common->luts[i]->get_texture());
 }
 
 void Pass::build_commands(
@@ -1625,16 +1730,15 @@ void Pass::build_commands(
       const float *mvp)
 {
    current_viewport = vp;
-   auto size = get_output_size(
+   Size2D size      = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
    if (framebuffer &&
        (size.width  != framebuffer->get_size().width ||
         size.height != framebuffer->get_size().height))
-   {
       framebuffer->set_size(size);
-   }
+
    current_framebuffer_size = size;
 
    glUseProgram(pipeline);
@@ -1642,35 +1746,39 @@ void Pass::build_commands(
    build_semantics(uniforms.data(), mvp, original, source);
 
    if (locations.flat_ubo_vertex >= 0)
-   {
       glUniform4fv(locations.flat_ubo_vertex,
                    GLsizei((reflection.ubo_size + 15) / 16),
                    reinterpret_cast<const float *>(uniforms.data()));
-   }
 
    if (locations.flat_ubo_fragment >= 0)
-   {
       glUniform4fv(locations.flat_ubo_fragment,
                    GLsizei((reflection.ubo_size + 15) / 16),
                    reinterpret_cast<const float *>(uniforms.data()));
-   }
 
    if (locations.flat_push_vertex >= 0)
-   {
       glUniform4fv(locations.flat_push_vertex,
                    GLsizei((reflection.push_constant_size + 15) / 16),
                    reinterpret_cast<const float *>(push_constant_buffer.data()));
-   }
 
    if (locations.flat_push_fragment >= 0)
-   {
       glUniform4fv(locations.flat_push_fragment,
                    GLsizei((reflection.push_constant_size + 15) / 16),
                    reinterpret_cast<const float *>(push_constant_buffer.data()));
-   }
 
-   ubo_ring.update_and_bind(locations.buffer_index_ubo_vertex, locations.buffer_index_ubo_fragment,
-                            uniforms.data(), reflection.ubo_size);
+   if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX 
+            && locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
+   {
+      ubo_ring_update_and_bind(
+            locations.buffer_index_ubo_vertex,
+            locations.buffer_index_ubo_fragment,
+            uniforms.data(), reflection.ubo_size,
+            ubo_ring.buffers[ubo_ring.buffer_index]
+            );
+
+      ubo_ring.buffer_index++;
+      if (ubo_ring.buffer_index >= ubo_ring.buffers.size())
+         ubo_ring.buffer_index = 0;
+   }
 
    /* The final pass is always executed inside
     * another render pass since the frontend will
@@ -1685,14 +1793,10 @@ void Pass::build_commands(
    }
 
    if (final_pass)
-   {
       glViewport(current_viewport.x, current_viewport.y,
                  current_viewport.width, current_viewport.height);
-   }
    else
-   {
       glViewport(0, 0, size.width, size.height);
-   }
 
 #ifndef HAVE_OPENGLES3
    if (framebuffer && framebuffer->get_format() == GL_SRGB8_ALPHA8)
@@ -1709,10 +1813,8 @@ void Pass::build_commands(
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
    if (!final_pass)
-   {
       if (framebuffer->get_levels() > 1)
          framebuffer->generate_mips();
-   }
 }
 
 }
@@ -1720,10 +1822,7 @@ void Pass::build_commands(
 struct gl_core_filter_chain
 {
 public:
-   gl_core_filter_chain(unsigned num_passes)
-   {
-      set_num_passes(num_passes);
-   }
+   gl_core_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
 
    inline void set_shader_preset(unique_ptr<video_shader> shader)
    {
@@ -1749,6 +1848,7 @@ public:
 
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
+   void set_frame_direction(int32_t direction);
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(unique_ptr<gl_core::StaticTexture> texture);
@@ -1775,58 +1875,61 @@ private:
    void update_history_info();
 };
 
-void gl_core_filter_chain::clear_history_and_feedback()
-{
-   for (auto &texture : original_history)
-      texture->clear();
-   for (auto &pass : passes)
-   {
-      auto *fb = pass->get_feedback_framebuffer();
-      if (fb)
-         fb->clear();
-   }
-}
 
 void gl_core_filter_chain::update_history_info()
 {
-   unsigned i = 0;
-   for (auto &texture : original_history)
+   unsigned i;
+
+   for (i = 0; i < original_history.size(); i++)
    {
-      auto &source          = common.original_history[i];
-      source.texture.image  = texture->get_image();
-      source.texture.width  = texture->get_size().width;
-      source.texture.height = texture->get_size().height;
-      source.filter         = passes.front()->get_source_filter();
-      source.mip_filter     = passes.front()->get_mip_filter();
-      source.address        = passes.front()->get_address_mode();
-      i++;
+      gl_core::Texture *source = (gl_core::Texture*)
+         &common.original_history[i];
+
+      if (!source)
+         continue;
+
+      source->texture.image  = original_history[i]->get_image();
+      source->texture.width  = original_history[i]->get_size().width;
+      source->texture.height = original_history[i]->get_size().height;
+      source->filter         = passes.front()->get_source_filter();
+      source->mip_filter     = passes.front()->get_mip_filter();
+      source->address        = passes.front()->get_address_mode();
    }
 }
 
 void gl_core_filter_chain::update_feedback_info()
 {
+   unsigned i;
    if (common.framebuffer_feedback.empty())
       return;
 
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
-      auto fb = passes[i]->get_feedback_framebuffer();
+      gl_core::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (!fb)
          continue;
 
-      auto &source          = common.framebuffer_feedback[i];
-      source.texture.image  = fb->get_image();
-      source.texture.width  = fb->get_size().width;
-      source.texture.height = fb->get_size().height;
-      source.filter         = passes[i]->get_source_filter();
-      source.mip_filter     = passes[i]->get_mip_filter();
-      source.address        = passes[i]->get_address_mode();
+      gl_core::Texture *source = (gl_core::Texture*)
+         &common.framebuffer_feedback[i];
+
+      if (!source)
+         continue;
+
+      source->texture.image  = fb->get_image();
+      source->texture.width  = fb->get_size().width;
+      source->texture.height = fb->get_size().height;
+      source->filter         = passes[i]->get_source_filter();
+      source->mip_filter     = passes[i]->get_mip_filter();
+      source->address        = passes[i]->get_address_mode();
    }
 }
 
 void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
 {
-   /* First frame, make sure our history and feedback textures are in a clean state. */
+   unsigned i;
+
+   /* First frame, make sure our history and feedback textures 
+    * are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback();
@@ -1844,19 +1947,20 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    };
    gl_core::Texture source = original;
 
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
-      auto &fb = passes[i]->get_framebuffer();
-      source.texture.image = fb.get_image();
-      source.texture.width    = fb.get_size().width;
-      source.texture.height   = fb.get_size().height;
-      source.filter           = passes[i + 1]->get_source_filter();
-      source.mip_filter       = passes[i + 1]->get_mip_filter();
-      source.address          = passes[i + 1]->get_address_mode();
+      const gl_core::Framebuffer &fb   = passes[i]->get_framebuffer();
 
-      common.pass_outputs[i] = source;
+      source.texture.image             = fb.get_image();
+      source.texture.width             = fb.get_size().width;
+      source.texture.height            = fb.get_size().height;
+      source.filter                    = passes[i + 1]->get_source_filter();
+      source.mip_filter                = passes[i + 1]->get_mip_filter();
+      source.address                   = passes[i + 1]->get_address_mode();
+
+      common.pass_outputs[i]           = source;
    }
 }
 
@@ -1866,12 +1970,11 @@ void gl_core_filter_chain::update_history()
    unique_ptr<gl_core::Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
-   if (input_texture.width != tmp->get_size().width ||
-       input_texture.height != tmp->get_size().height ||
-       (input_texture.format != 0 && input_texture.format != tmp->get_format()))
-   {
+   if (input_texture.width      != tmp->get_size().width  ||
+       input_texture.height     != tmp->get_size().height ||
+       (input_texture.format    != 0 
+        && input_texture.format != tmp->get_format()))
       tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
-   }
 
    tmp->copy(common, input_texture.image);
 
@@ -1887,15 +1990,15 @@ void gl_core_filter_chain::end_frame()
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
    if (!original_history.empty())
-   {
       update_history();
-   }
 }
 
 void gl_core_filter_chain::build_viewport_pass(
       const gl_core_viewport &vp, const float *mvp)
 {
-   /* First frame, make sure our history and feedback textures are in a clean state. */
+   unsigned i;
+   /* First frame, make sure our history and 
+    * feedback textures are in a clean state. */
    if (require_clear)
    {
       clear_history_and_feedback();
@@ -1921,34 +2024,36 @@ void gl_core_filter_chain::build_viewport_pass(
    }
    else
    {
-      auto &fb = passes[passes.size() - 2]->get_framebuffer();
-      source.texture.image = fb.get_image();
-      source.texture.width   = fb.get_size().width;
-      source.texture.height  = fb.get_size().height;
-      source.filter          = passes.back()->get_source_filter();
-      source.mip_filter      = passes.back()->get_mip_filter();
-      source.address         = passes.back()->get_address_mode();
+      const gl_core::Framebuffer &fb = passes[passes.size() - 2]
+         ->get_framebuffer();
+      source.texture.image           = fb.get_image();
+      source.texture.width           = fb.get_size().width;
+      source.texture.height          = fb.get_size().height;
+      source.filter                  = passes.back()->get_source_filter();
+      source.mip_filter              = passes.back()->get_mip_filter();
+      source.address                 = passes.back()->get_address_mode();
    }
 
    passes.back()->build_commands(original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
-   for (auto &pass : passes)
-      pass->end_frame();
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->end_frame();
 }
 
 bool gl_core_filter_chain::init_history()
 {
+   unsigned i;
+   size_t required_images = 0;
+
    original_history.clear();
    common.original_history.clear();
 
-   size_t required_images = 0;
-   for (auto &pass : passes)
-   {
+   for (i = 0; i < passes.size(); i++)
       required_images =
             max(required_images,
-                pass->get_reflection().semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
-   }
+                passes[i]->get_reflection().semantic_textures[
+                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
 
    if (required_images < 2)
    {
@@ -1962,10 +2067,8 @@ bool gl_core_filter_chain::init_history()
    original_history.reserve(required_images);
    common.original_history.resize(required_images);
 
-   for (unsigned i = 0; i < required_images; i++)
-   {
+   for (i = 0; i < required_images; i++)
       original_history.emplace_back(new gl_core::Framebuffer(0, 1));
-   }
 
    RARCH_LOG("[GLCore]: Using history of %u frames.\n", unsigned(required_images));
 
@@ -1979,21 +2082,23 @@ bool gl_core_filter_chain::init_history()
 
 bool gl_core_filter_chain::init_feedback()
 {
-   common.framebuffer_feedback.clear();
-
+   unsigned i;
    bool use_feedbacks = false;
 
+   common.framebuffer_feedback.clear();
+
    /* Final pass cannot have feedback. */
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < passes.size() - 1; i++)
    {
       bool use_feedback = false;
       for (auto &pass : passes)
       {
-         auto &r = pass->get_reflection();
-         auto &feedbacks = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         auto &r          = pass->get_reflection();
+         auto &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+
          if (i < feedbacks.size() && feedbacks[i].texture)
          {
-            use_feedback = true;
+            use_feedback  = true;
             use_feedbacks = true;
             break;
          }
@@ -2019,43 +2124,49 @@ bool gl_core_filter_chain::init_feedback()
 
 bool gl_core_filter_chain::init_alias()
 {
+   unsigned i, j;
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   for (auto &pass : passes)
+   for (i = 0; i < passes.size(); i++)
    {
-      auto &name = pass->get_name();
+      const string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
-      unsigned i = &pass - passes.data();
+      j = &passes[i] - passes.data();
 
       if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               name + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+               name + "Feedback",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               name + "FeedbackSize",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
          return false;
    }
 
-   for (auto &lut : common.luts)
+   for (i = 0; i < common.luts.size(); i++)
    {
-      unsigned i = &lut - common.luts.data();
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_map, lut->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      j = &common.luts[i] - common.luts.data();
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_map,
+               common.luts[i]->get_id(),
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
 
-      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map, lut->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      if (!gl_core_shader_set_unique_map(common.texture_semantic_uniform_map,
+               common.luts[i]->get_id() + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
          return false;
    }
 
@@ -2071,9 +2182,12 @@ void gl_core_filter_chain::set_pass_info(unsigned pass, const gl_core_filter_cha
 
 void gl_core_filter_chain::set_num_passes(unsigned num_passes)
 {
+   unsigned i;
+
    pass_info.resize(num_passes);
    passes.reserve(num_passes);
-   for (unsigned i = 0; i < num_passes; i++)
+
+   for (i = 0; i < num_passes; i++)
    {
       passes.emplace_back(new gl_core::Pass(i + 1 == num_passes));
       passes.back()->set_common_resources(&common);
@@ -2086,26 +2200,28 @@ void gl_core_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_
    passes[pass]->set_shader(stage, spirv, spirv_words);
 }
 
-void gl_core_filter_chain::add_parameter(unsigned pass, unsigned index, const std::string &id)
+void gl_core_filter_chain::add_parameter(unsigned pass,
+      unsigned index, const std::string &id)
 {
    passes[pass]->add_parameter(index, id);
 }
 
 bool gl_core_filter_chain::init()
 {
+   unsigned i;
+
    if (!init_alias())
       return false;
 
-   for (unsigned i = 0; i < passes.size(); i++)
+   for (i = 0; i < passes.size(); i++)
    {
-      auto &pass = passes[i];
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
-            pass->get_name().empty() ?
+            passes[i]->get_name().empty() ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            pass->get_name().c_str());
+            passes[i]->get_name().c_str());
 
-      pass->set_pass_info(pass_info[i]);
-      if (!pass->build())
+      passes[i]->set_pass_info(pass_info[i]);
+      if (!passes[i]->build())
          return false;
    }
 
@@ -2118,29 +2234,43 @@ bool gl_core_filter_chain::init()
    return true;
 }
 
+void gl_core_filter_chain::clear_history_and_feedback()
+{
+   unsigned i;
+   for (i = 0; i < original_history.size(); i++)
+      original_history[i]->clear();
+   for (i = 0; i < passes.size(); i++)
+   {
+      gl_core::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb)
+         fb->clear();
+   }
+}
+
 void gl_core_filter_chain::set_input_texture(
       const gl_core_filter_chain_texture &texture)
 {
    input_texture = texture;
 
-   // Need a copy to remove padding.
-   // GL HW render interface in libretro is kinda garbage now ...
-   if (input_texture.padded_width != input_texture.width ||
+   /* Need a copy to remove padding.
+    * GL HW render interface in libretro is kinda garbage now ... */
+   if (input_texture.padded_width  != input_texture.width ||
        input_texture.padded_height != input_texture.height)
    {
       if (!copy_framebuffer)
          copy_framebuffer.reset(new gl_core::Framebuffer(texture.format, 1));
 
-      if (input_texture.width != copy_framebuffer->get_size().width ||
-          input_texture.height != copy_framebuffer->get_size().height ||
-          (input_texture.format != 0 && input_texture.format != copy_framebuffer->get_format()))
-      {
+      if (input_texture.width   != copy_framebuffer->get_size().width  ||
+          input_texture.height  != copy_framebuffer->get_size().height ||
+          (input_texture.format != 0                                   &&
+           input_texture.format != copy_framebuffer->get_format()))
          copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
-      }
 
       copy_framebuffer->copy_partial(common, input_texture.image,
-                                     float(input_texture.width) / input_texture.padded_width,
-                                     float(input_texture.height) / input_texture.padded_height);
+                                     float(input_texture.width) 
+                                     / input_texture.padded_width,
+                                     float(input_texture.height) 
+                                     / input_texture.padded_height);
       input_texture.image = copy_framebuffer->get_image();
    }
 }
@@ -2152,13 +2282,21 @@ void gl_core_filter_chain::add_static_texture(unique_ptr<gl_core::StaticTexture>
 
 void gl_core_filter_chain::set_frame_count(uint64_t count)
 {
-   for (auto &pass : passes)
-      pass->set_frame_count(count);
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_count(count);
 }
 
 void gl_core_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
 {
    passes[pass]->set_frame_count_period(period);
+}
+
+void gl_core_filter_chain::set_frame_direction(int32_t direction)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_direction(direction);
 }
 
 void gl_core_filter_chain::set_pass_name(unsigned pass, const char *name)
@@ -2170,14 +2308,19 @@ static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
       gl_core_filter_chain *chain,
       const video_shader_lut *shader)
 {
-   texture_image image = {};
-   image.supports_rgba = true;
+   texture_image image;
+   GLuint tex                      = 0;
+
+   image.width                     = 0;
+   image.height                    = 0;
+   image.pixels                    = NULL;
+   image.supports_rgba             = true;
 
    if (!image_texture_load(&image, shader->path))
       return {};
 
    unsigned levels = shader->mipmap ? gl_core::num_miplevels(image.width, image.height) : 1;
-   GLuint tex = 0;
+
    glGenTextures(1, &tex);
    glBindTexture(GL_TEXTURE_2D, tex);
    glTexStorage2D(GL_TEXTURE_2D, levels,
@@ -2198,19 +2341,20 @@ static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
       image_texture_free(&image);
 
    return unique_ptr<gl_core::StaticTexture>(new gl_core::StaticTexture(shader->id,
-                                                                        tex, image.width, image.height,
-                                                                        shader->filter != RARCH_FILTER_NEAREST,
-                                                                        levels > 1,
-                                                                        gl_core::address_to_gl(gl_core::wrap_to_address(shader->wrap))));
+            tex, image.width, image.height,
+            shader->filter != RARCH_FILTER_NEAREST,
+            levels > 1,
+            gl_core::address_to_gl(gl_core::wrap_to_address(shader->wrap))));
 }
 
 static bool gl_core_filter_chain_load_luts(
       gl_core_filter_chain *chain,
       video_shader *shader)
 {
-   for (unsigned i = 0; i < shader->luts; i++)
+   unsigned i;
+   for (i = 0; i < shader->luts; i++)
    {
-      auto image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
+      unique_ptr<gl_core::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
          RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
@@ -2269,7 +2413,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    if (!conf)
       return nullptr;
 
-   if (!video_shader_read_conf_cgp(conf.get(), shader.get()))
+   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
       return nullptr;
 
    video_shader_resolve_relative(shader.get(), path);
@@ -2328,11 +2472,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (meta_param.desc != itr->desc ||
+            if (meta_param.desc    != itr->desc    ||
                 meta_param.initial != itr->initial ||
                 meta_param.minimum != itr->minimum ||
                 meta_param.maximum != itr->maximum ||
-                meta_param.step != itr->step)
+                meta_param.step    != itr->step)
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
@@ -2568,6 +2712,13 @@ void gl_core_filter_chain_set_frame_count(
       uint64_t count)
 {
    chain->set_frame_count(count);
+}
+
+void gl_core_filter_chain_set_frame_direction(
+      gl_core_filter_chain_t *chain,
+      int32_t direction)
+{
+   chain->set_frame_direction(direction);
 }
 
 void gl_core_filter_chain_set_frame_count_period(

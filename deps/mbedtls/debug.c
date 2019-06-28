@@ -43,11 +43,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
-#endif
-
 #define DEBUG_BUF_SIZE      512
 
 static int debug_threshold = 0;
@@ -60,7 +55,7 @@ void mbedtls_debug_set_threshold( int threshold )
 /*
  * All calls to f_dbg must be made via this function
  */
-static inline void debug_send_line( const mbedtls_ssl_context *ssl, int level,
+static void debug_send_line( const mbedtls_ssl_context *ssl, int level,
                                     const char *file, int line,
                                     const char *str )
 {

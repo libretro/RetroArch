@@ -26,7 +26,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_EGL

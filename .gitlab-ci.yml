@@ -1,0 +1,8 @@
+before_script:
+  - apt-get update -qq && apt-get install -y -qq git build-essential
+  - apt-get update -qq && apt-get build-dep -y retroarch
+
+build:
+  script:
+    - ./configure
+    - make -j2

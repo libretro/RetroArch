@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1260,8 +1261,10 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 #include <gfx/math/matrix_4x4.h>
 
 #include "../common/d3dcompiler_common.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../drivers_shader/slang_process.h"
+
+#define D3D12_MAX_GPU_COUNT 16
 
 typedef struct d3d12_vertex_t
 {
@@ -1350,6 +1353,9 @@ typedef struct
 #endif
    DXGIAdapter adapter;
    D3D12Device device;
+
+   IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
+   struct string_list *gpu_list;
 
    struct
    {
@@ -1444,6 +1450,7 @@ typedef struct
       D3D12_RECT                      scissorRect;
       pass_semantics_t                semantics;
       uint32_t                        frame_count;
+      int32_t                         frame_direction;
       D3D12_GPU_DESCRIPTOR_HANDLE     textures;
       D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
    } pass[GFX_MAX_SHADERS];

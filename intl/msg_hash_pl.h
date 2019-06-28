@@ -1,4 +1,12 @@
-﻿MSG_HASH(
+﻿#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
+#endif
+
+MSG_HASH(
       MSG_COMPILER,
       "Kompilator"
       )
@@ -148,7 +156,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-      "Enable horizontal animation for the menu. This will have a performance hit."
+      "Włącz animację poziomą menu. Zwiększy wydajność."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -896,7 +904,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Zapisz stan")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-      "Zrob zrzut ekranu")
+      "Zrób zrzut ekranu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
       "Następny moduł cieniujący")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -930,7 +938,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "Normalny")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-      "Preferuj dotyk")
+      "Preferuj sterowanie dotykiem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
       "Odwzorowanie wejścia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -993,6 +1001,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
       "wietnamski")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
       "arabski")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_GREEK,
+      "grščina")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
+      "turščina")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
       "Lewy analog")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -3798,3 +3810,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
     "Obsługa CoreAudio V3"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+      "Menu widgetów")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+      "Shadery Video")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+      "Skanuj bez dopasowania podstawowego")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+      "Po wyłączeniu zawartość jest dodawana tylko do list odtwarzania, jeśli zainstalowany jest rdzeń, który obsługuje jej rozszerzenie. Włączając to, niezależnie od tego doda do listy odtwarzania. W ten sposób możesz zainstalować rdzeń, którego potrzebujesz później po skanowaniu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+      "Podświetlanie ikony poziomej animacji")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+      "Animacja Przesuń w górę/w dół")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+      "Menu główne animacji Otwiera/Zamyka")

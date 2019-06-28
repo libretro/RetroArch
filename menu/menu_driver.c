@@ -25,6 +25,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>
@@ -41,8 +42,6 @@
 #ifdef HAVE_THREADS
 #include "../gfx/video_thread_wrapper.h"
 #endif
-
-#include "../gfx/video_driver.h"
 
 #include "menu_animation.h"
 #include "menu_driver.h"
@@ -65,10 +64,14 @@
 #include "../tasks/tasks_internal.h"
 #include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
+#include "../tasks/task_powerstate.h"
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
 #define PARTICLES_COUNT            100
+
+#define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#define DATETIME_CHECK_INTERVAL    1000000
 
 typedef struct menu_ctx_load_image
 {
@@ -222,6 +225,15 @@ static unsigned scroll_index_size               = 0;
 static unsigned scroll_acceleration             = 0;
 static size_t menu_driver_selection_ptr         = 0;
 
+/* Timers */
+static retro_time_t menu_driver_current_time_us         = 0;
+static retro_time_t menu_driver_powerstate_last_time_us = 0;
+static retro_time_t menu_driver_datetime_last_time_us   = 0;
+
+/* Storage container for current menu datetime
+ * representation string */
+static char menu_datetime_cache[255]                    = {0};
+
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
@@ -356,65 +368,119 @@ static bool menu_display_check_compatibility(
  * */
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 {
-   time_t time_;
-
    if (!datetime)
       return;
 
-   time(&time_);
-
-   setlocale(LC_TIME, "");
-
-   switch (datetime->time_mode)
+   /* Trigger an update, if required */
+   if (menu_driver_current_time_us - menu_driver_datetime_last_time_us >=
+         DATETIME_CHECK_INTERVAL)
    {
-      case 0: /* Date and time */
-         strftime(datetime->s, datetime->len,
-               "%Y-%m-%d %H:%M:%S", localtime(&time_));
-         break;
-      case 1: /* YY-MM-DD HH:MM */
-         strftime(datetime->s, datetime->len,
-               "%Y-%m-%d %H:%M", localtime(&time_));
-         break;
-      case 2: /* MM-DD-YYYY HH:MM  */
-         strftime(datetime->s, datetime->len,
-               "%m-%d-%Y %H:%M", localtime(&time_));
-         break;
-      case 3: /* Time */
-         strftime(datetime->s, datetime->len,
-               "%H:%M:%S", localtime(&time_));
-         break;
-      case 4: /* Time (hours-minutes) */
-         strftime(datetime->s, datetime->len,
-               "%H:%M", localtime(&time_));
-         break;
-      case 5: /* Date and time, without year and seconds */
-         strftime(datetime->s, datetime->len,
-               "%d/%m %H:%M", localtime(&time_));
-         break;
-      case 6:
-         strftime(datetime->s, datetime->len,
-               "%m/%d %H:%M", localtime(&time_));
-         break;
-      case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
+      time_t time_;
+      const struct tm *tm_;
+
+      menu_driver_datetime_last_time_us = menu_driver_current_time_us;
+
+      /* Get current time */
+      time(&time_);
+
+      setlocale(LC_TIME, "");
+
+      tm_ = localtime(&time_);
+
+      /* Format string representation */
+      switch (datetime->time_mode)
+      {
+         case 0: /* Date and time */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %H:%M:%S", tm_);
+            break;
+         case 1: /* YY-MM-DD HH:MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %H:%M", tm_);
+            break;
+         case 2: /* MM-DD-YYYY HH:MM  */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %H:%M", tm_);
+            break;
+         case 3: /* Time */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%H:%M:%S", tm_);
+            break;
+         case 4: /* Time (hours-minutes) */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%H:%M", tm_);
+            break;
+         case 5: /* Date and time, without year and seconds */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %H:%M", tm_);
+            break;
+         case 6:
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %H:%M", tm_);
+            break;
+         case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
-         strftime(datetime->s, datetime->len,
-            "%I : %M : %S %p", localtime(&time_));
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+               "%I : %M : %S %p", tm_);
 #else
-         {
-            char *local;
-
-            strftime(datetime->s, datetime->len,
-
-               "%I:%M:%S %p", localtime(&time_));
-            local = local_to_utf8_string_alloc(datetime->s);
-
-            if (local)
             {
-               strlcpy(datetime->s, local, datetime->len);
-               free(local);
+               char *local;
+
+               strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+
+                  "%I:%M:%S %p", tm_);
+               local = local_to_utf8_string_alloc(menu_datetime_cache);
+
+               if (local)
+               {
+                  strlcpy(menu_datetime_cache,
+                        local, sizeof(menu_datetime_cache));
+                  free(local);
+               }
             }
-         }
 #endif
+      }
+   }
+
+   /* Copy cached datetime string to input
+    * menu_display_ctx_datetime_t struct */
+   strlcpy(datetime->s, menu_datetime_cache, datetime->len);
+}
+
+/* Display current (battery) power state */
+void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate)
+{
+   int percent                    = 0;
+   enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
+
+   if (!powerstate)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_driver_current_time_us - menu_driver_powerstate_last_time_us >=
+         POWERSTATE_CHECK_INTERVAL)
+   {
+      menu_driver_powerstate_last_time_us = menu_driver_current_time_us;
+      task_push_get_powerstate();
+   }
+
+   /* Get last recorded state */
+   state = get_last_powerstate(&percent);
+
+   /* Populate menu_display_ctx_powerstate_t */
+   powerstate->battery_enabled = (state != FRONTEND_POWERSTATE_NONE) &&
+                                 (state != FRONTEND_POWERSTATE_NO_SOURCE);
+
+   if (powerstate->battery_enabled)
+   {
+      powerstate->charging = (state == FRONTEND_POWERSTATE_CHARGING);
+      powerstate->percent  = percent > 0 ? (unsigned)percent : 0;
+      snprintf(powerstate->s, powerstate->len, "%u%%", powerstate->percent);
+   }
+   else
+   {
+      powerstate->charging = false;
+      powerstate->percent  = 0;
    }
 }
 
@@ -436,7 +502,40 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    if (menu_disp && menu_disp->scissor_begin)
+   {
+      if (y < 0)
+      {
+         if (height < (unsigned)(-y))
+            height = 0;
+         else
+            height += y;
+         y = 0;
+      }
+      if (x < 0)
+      {
+         if (width < (unsigned)(-x))
+            width = 0;
+         else
+            width += x;
+         x = 0;
+      }
+      if (y >= (int)video_info->height)
+      {
+         height = 0;
+         y = 0;
+      }
+      if (x >= (int)video_info->width)
+      {
+         width = 0;
+         x = 0;
+      }
+      if ((y + height) > video_info->height)
+         height = video_info->height - y;
+      if ((x + width) > video_info->width)
+         width = video_info->width - x;
+
       menu_disp->scissor_begin(video_info, x, y, width, height);
+   }
 }
 
 /* End scissoring operation */
@@ -722,9 +821,10 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
    if (!menu_disp || !draw || !menu_disp->draw)
       return;
 
-   /* TODO - edge case */
    if (draw->height <= 0)
-      draw->height = 1;
+      return;
+   if (draw->width <= 0)
+      return;
 
    menu_disp->draw(draw, video_info);
 }
@@ -1615,10 +1715,12 @@ bool menu_display_reset_textures_list(
    ti.pixels                     = NULL;
    ti.supports_rgba              = video_driver_supports_rgba();
 
-   if (!string_is_empty(texture_path))
-      fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+   if (string_is_empty(texture_path))
+      return false;
 
-   if (string_is_empty(texpath) || !filestream_exists(texpath))
+   fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+
+   if (!path_is_valid(texpath))
       return false;
 
    if (!image_texture_load(&ti, texpath))
@@ -1977,6 +2079,9 @@ bool menu_driver_is_texture_set(void)
 /* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
 {
+   /* Get current time */
+   menu_driver_current_time_us = cpu_features_get_time_usec();
+
    /* If the user had requested that the Quick Menu
     * be spawned during the previous frame, do this now
     * and exit the function to go to the next frame.
@@ -2119,15 +2224,9 @@ static bool menu_driver_context_reset(bool video_is_threaded)
 
 bool menu_driver_init(bool video_is_threaded)
 {
-   menu_animation_init();
    if (menu_driver_init_internal(video_is_threaded))
       return menu_driver_context_reset(video_is_threaded);
    return false;
-}
-
-void menu_driver_free(void)
-{
-   menu_animation_free();
 }
 
 void menu_driver_navigation_set(bool scroll)
@@ -2157,6 +2256,12 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
 {
    if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_system)
       menu_driver_ctx->set_thumbnail_system(menu_userdata, s, len);
+}
+
+void menu_driver_get_thumbnail_system(char *s, size_t len)
+{
+   if (menu_driver_ctx && menu_driver_ctx->get_thumbnail_system)
+      menu_driver_ctx->get_thumbnail_system(menu_userdata, s, len);
 }
 
 void menu_driver_set_thumbnail_content(char *s, size_t len)
@@ -2476,6 +2581,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_ctx->update_thumbnail_image(menu_userdata);
          }
          break;
+      case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
+         {
+            if (!menu_driver_ctx || !menu_driver_ctx->refresh_thumbnail_image)
+               return false;
+            menu_driver_ctx->refresh_thumbnail_image(menu_userdata);
+         }
+         break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
          {
             size_t selection = menu_navigation_get_selection();
@@ -2496,13 +2608,21 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             bool *pending_push = (bool*)data;
 
+            /* Always set current selection to first entry */
             menu_navigation_set_selection(0);
-            menu_driver_navigation_set(true);
 
-            if (pending_push)
+            /* menu_driver_navigation_set() will be called
+             * at the next 'push'.
+             * If a push is *not* pending, have to do it here
+             * instead */
+            if (!(*pending_push))
+            {
+               menu_driver_navigation_set(true);
+
                if (menu_driver_ctx->navigation_clear)
                   menu_driver_ctx->navigation_clear(
                         menu_userdata, *pending_push);
+            }
          }
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:

@@ -88,11 +88,13 @@ dylib_t dylib_load(const char *path)
 
    char *relative_path = relative_path_abbrev;
    if (relative_path[0] != ':' || !path_char_is_slash(relative_path[1]))
-      RARCH_WARN("Path to dylib_load is not inside app install directory! Loading will probably fail\n");
+   {
+      /* Path to dylib_load is not inside app install directory.
+       * Loading will probably fail. */
+   }
    else
       relative_path += 2;
 
-   RARCH_LOG("Loading library using a relative path: '%s'\n", relative_path);
 
    wchar_t *pathW = utf8_to_utf16_string_alloc(relative_path);
    dylib_t lib = LoadPackagedLibrary(pathW, 0);
@@ -147,7 +149,8 @@ function_t dylib_proc(dylib_t lib, const char *proc)
    /* GetModuleHandle is not available on UWP */
    if (!mod)
    {
-      RARCH_WARN("FIXME: It's not possible to look up symbols in current executable on UWP!\n");
+      /* It's not possible to lookup symbols in current executable
+       * on UWP. */
       DebugBreak();
       return NULL;
    }

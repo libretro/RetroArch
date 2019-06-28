@@ -61,9 +61,11 @@ int main(int argc, char *argv[])
    fprintf(stderr, "Core info    dir: %s\n", core_info_dir);
    fprintf(stderr, "Input        dir: %s\n", input_dir);
    fprintf(stderr, "Playlist     dir: %s\n", playlist_dir);
-
+#ifdef HAVE_THREADS
+   task_queue_init(true /* threaded enable */, main_msg_queue_push);
+#else
    task_queue_init(false /* threaded enable */, main_msg_queue_push);
-
+#endif
    core_info_init_list(core_info_dir, core_dir, exts, true);
 
    task_push_dbscan(playlist_dir, db_dir, input_dir, true,

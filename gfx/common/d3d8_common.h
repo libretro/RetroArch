@@ -22,7 +22,7 @@
 
 #include <d3d8.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 RETRO_BEGIN_DECLS
@@ -199,13 +199,13 @@ static INLINE void d3d8_set_sampler_address_v(LPDIRECT3DDEVICE8 dev,
 }
 
 static INLINE void d3d8_set_sampler_minfilter(void *_dev,
-      unsigned sampler, unsigned value)
+      unsigned sampler, enum D3DTEXTUREFILTERTYPE value)
 {
    d3d8_set_texture_stage_state(_dev, sampler, D3DTSS_MINFILTER, value);
 }
 
 static INLINE void d3d8_set_sampler_magfilter(void *_dev,
-      unsigned sampler, unsigned value)
+      unsigned sampler, enum D3DTEXTUREFILTERTYPE value)
 {
    d3d8_set_texture_stage_state(_dev, sampler, D3DTSS_MAGFILTER, value);
 }

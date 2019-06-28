@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
@@ -1285,7 +1286,7 @@ static bool video_thread_wrapper_menu_widgets_enabled(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (thr && thr->driver)
+   if (thr && thr->driver && thr->driver->menu_widgets_enabled)
       return thr->driver->menu_widgets_enabled(thr->driver_data);
 
    return false;
@@ -1310,6 +1311,9 @@ static const video_driver_t video_thread = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    video_thread_get_overlay_interface, /* get_overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
 #endif
    video_thread_get_poke_interface,
    NULL,

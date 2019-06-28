@@ -28,9 +28,8 @@
 #include <retro_miscellaneous.h>
 #include <queues/task_queue.h>
 
-#include "../audio/audio_driver.h"
-
 #include "../file_path_special.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 #include "task_file_transfer.h"

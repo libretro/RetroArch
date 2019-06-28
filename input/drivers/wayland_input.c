@@ -40,11 +40,11 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
 
 #include "../../gfx/common/wayland_common.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* TODO/FIXME -
@@ -157,7 +157,7 @@ static int16_t input_wl_analog_pressed(input_ctx_wayland_data_t *wl,
    int16_t pressed_minus = 0;
    int16_t pressed_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if (binds
          && binds[id_minus].valid
@@ -292,10 +292,45 @@ static int16_t input_wl_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            ret = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
-         if (!ret && binds[port])
-            ret = input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][i].key]) ;
+               if (!res && binds[port])
+               {
+                  /* Auto-binds are per joypad, not per user. */
+                  const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+                     ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                     ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+                  if (joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, joykey))
+                     res = true;
+                  else if (((float)abs(wl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                     res = true;
+               }
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
+            if (!ret && binds[port])
+            {
+               /* Auto-binds are per joypad, not per user. */
+               const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+                  ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+               const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+                  ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+               if (joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, joykey))
+                  ret = 1;
+               else if (((float)abs(wl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  ret = 1;
+            }
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);

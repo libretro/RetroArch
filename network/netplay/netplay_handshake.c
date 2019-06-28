@@ -223,7 +223,8 @@ bool netplay_handshake_init_send(netplay_t *netplay,
       if (simple_rand_next == 1)
          simple_srand((unsigned int) time(NULL));
       connection->salt = simple_rand_uint32();
-      if (connection->salt == 0) connection->salt = 1;
+      if (connection->salt == 0)
+         connection->salt = 1;
       header[3] = htonl(connection->salt);
    }
    else
@@ -626,15 +627,17 @@ bool netplay_handshake_sync(netplay_t *netplay,
    else
       nickmangle = nicklen;
    matchct = 1;
-   do {
+   do
+   {
       nick_matched = false;
       for (i = 0; i < netplay->connections_size; i++)
       {
          struct netplay_connection *sc = &netplay->connections[i];
-         if (sc == connection) continue;
+         if (sc == connection)
+            continue;
          if (sc->active &&
-             sc->mode >= NETPLAY_CONNECTION_CONNECTED &&
-             !strncmp(connection->nick, sc->nick, NETPLAY_NICK_LEN))
+               sc->mode >= NETPLAY_CONNECTION_CONNECTED &&
+               !strncmp(connection->nick, sc->nick, NETPLAY_NICK_LEN))
          {
             nick_matched = true;
             break;
@@ -718,12 +721,10 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
    {
       settings_t *settings = config_get_ptr();
 
+      /* There's a password, so just put them in PRE_PASSWORD mode */
       if (  settings->paths.netplay_password[0] ||
             settings->paths.netplay_spectate_password[0])
-      {
-         /* There's a password, so just put them in PRE_PASSWORD mode */
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
-      }
       else
       {
          connection->can_play = true;
@@ -733,12 +734,9 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
       }
 
    }
+   /* Client needs to wait for INFO */
    else
-   {
-      /* Client needs to wait for INFO */
       connection->mode = NETPLAY_CONNECTION_PRE_INFO;
-
-   }
 
    *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);

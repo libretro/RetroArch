@@ -5,7 +5,7 @@
 Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
 */
 
-/* Use at the beginning of the coroutine, you must have declared a variable coro_t* coro */
+/* Use at the beginning of the coroutine, you must have declared a variable rcheevos_coro_t* coro */
 #define CORO_ENTER() \
   { \
   CORO_again: ; \
@@ -67,7 +67,7 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
     return 0; \
   } while ( 0 )
 
-/* Add this macro to your coro_t structure containing the variables for the coroutine */
+/* Add this macro to your rcheevos_coro_t structure containing the variables for the coroutine */
 #define CORO_FIELDS \
   int step, sp; \
   int stack[ 8 ];

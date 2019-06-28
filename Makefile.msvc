@@ -20,6 +20,7 @@ HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
 HAVE_OPENGL1             := 1
+HAVE_MENU_WIDGETS			 := 1
 HAVE_VULKAN              := 1
 HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
@@ -53,10 +54,25 @@ HAVE_7ZIP                := 1
 HAVE_NETWORKING          := 1
 HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
+HAVE_VIDEO_LAYOUT        := 0
 HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_SHADERPIPELINE      := 1
 HAVE_IMAGEVIEWER         := 1
+
+ifeq ($(HAVE_D3D8), 1)
+   D3D8_LIBS := -ld3d8
+   ifeq ($(HAVE_D3DX), 1)
+      D3DX8_LIBS := -ld3dx8
+   endif
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+   D3D9_LIBS := -ld3d9
+   ifeq ($(HAVE_D3DX), 1)
+      D3DX9_LIBS := -ld3dx9
+   endif
+endif
 
 include Makefile.common
 INCLUDE_DIRS := $(patsubst  -isystem%,-I%,$(INCLUDE_DIRS))
@@ -121,7 +137,7 @@ endif
 FLAGS  += -nologo -MP
 FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 #FLAGS  += -Zc:wchar_t -Zp16 -Z7
-#FLAGS += -utf-8
+FLAGS += -utf-8
 #FLAGS += -source-charset:utf-8
 
 CXXFLAGS += $(CFLAGS) -TP -EHsc

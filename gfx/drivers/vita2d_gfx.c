@@ -565,14 +565,6 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void vita_set_filtering(void *data, unsigned index, bool smooth)
 {
    vita_video_t *vita = (vita_video_t *)data;
@@ -788,8 +780,17 @@ static bool vita_get_current_sw_framebuffer(void *data,
    return true;
 }
 
+static uint32_t vita_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t vita_poke_interface = {
-   NULL, /* get_flags */
+   vita_get_flags,
    vita_load_texture,
    vita_unload_texture,
    NULL,
@@ -970,10 +971,13 @@ video_driver_t video_vita2d = {
    vita2d_gfx_set_viewport,
    vita2d_gfx_set_rotation,
    vita2d_gfx_viewport_info,
-   vita2d_gfx_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    vita2d_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    vita2d_gfx_get_poke_interface,
 };

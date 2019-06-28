@@ -50,7 +50,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../record/record_driver.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -351,9 +350,9 @@ static void gl2_load_texture_image(GLenum target,
 {
 #if !defined(HAVE_PSGL) && !defined(ORBIS)
 #ifdef HAVE_OPENGLES2
-   unsigned cap = GL_CAPS_TEX_STORAGE_EXT;
+   enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
-   unsigned cap = GL_CAPS_TEX_STORAGE;
+   enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE;
 #endif
 
    if (gl_check_capability(cap) && internalFormat != GL_BGRA_EXT)
@@ -979,7 +978,7 @@ static void gl2_create_fbo_textures(gl_t *gl,
    glGenTextures(chain->fbo_pass, chain->fbo_texture);
 
    for (i = 0; i < chain->fbo_pass; i++)
-      gl2_create_fbo_texture(gl, 
+      gl2_create_fbo_texture(gl,
             (gl2_renderchain_data_t*)gl->renderchain_data,
             i, chain->fbo_texture[i]);
 
@@ -1999,45 +1998,84 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
 }
 
 /* Shaders */
+
+/**
+ * gl2_get_fallback_shader_type:
+ * @type                      : shader type which should be used if possible
+ *
+ * Returns a supported fallback shader type in case the given one is not supported.
+ * For gl2, shader support is completely defined by the context driver shader flags.
+ *
+ * gl2_get_fallback_shader_type(RARCH_SHADER_NONE) returns a default shader type.
+ * if gl2_get_fallback_shader_type(type) != type, type was not supported.
+ * 
+ * Returns: A supported shader type.
+ *  If RARCH_SHADER_NONE is returned, no shader backend is supported.
+ **/
+static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_type type)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   unsigned i;
+
+   if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
+   {
+      type = DEFAULT_SHADER_TYPE;
+
+      if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
+         type = RARCH_SHADER_GLSL;
+   }
+
+   for (i = 0; i < 2; i++)
+   {
+      switch (type)
+      {
+         case RARCH_SHADER_CG:
+#ifdef HAVE_CG
+            if (video_shader_is_supported(type))
+               return type;
+#endif
+            type = RARCH_SHADER_GLSL;
+            break;
+
+         case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
+            if (video_shader_is_supported(type))
+               return type;
+#endif
+            type = RARCH_SHADER_CG;
+            break;
+
+         default:
+            return RARCH_SHADER_NONE;
+      }
+   }
+#endif
+   return RARCH_SHADER_NONE;
+}
+
 static const shader_backend_t *gl_shader_driver_set_backend(
       enum rarch_shader_type type)
 {
-   switch (type)
+   enum rarch_shader_type fallback = gl2_get_fallback_shader_type(type);
+   if (fallback != type)
+      RARCH_ERR("[Shader driver]: Shader backend %d not supported, falling back to %d.", type, fallback);
+
+   switch (fallback)
    {
-      case RARCH_SHADER_CG:
-         {
 #ifdef HAVE_CG
-            gfx_ctx_flags_t flags;
-            flags.flags = 0;
-            video_context_driver_get_flags(&flags);
-
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-            {
-               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
-                     " GL context. Trying to fall back to GLSL...\n");
-               return gl_shader_driver_set_backend(RARCH_SHADER_GLSL);
-            }
-
-            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
-            return &gl_cg_backend;
-#else
-            break;
+      case RARCH_SHADER_CG:
+         RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+         return &gl_cg_backend;
 #endif
-         }
-      case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
+      case RARCH_SHADER_GLSL:
          RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
          return &gl_glsl_backend;
-#else
-         break;
 #endif
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_NONE:
       default:
-         break;
+         RARCH_LOG("[Shader driver]: No supported shader backend.\n");
+         return NULL;
    }
-
-   return NULL;
 }
 
 static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
@@ -2065,7 +2103,7 @@ static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
       init->shader->init_menu_shaders(tmp);
    }
 
-   init->shader_data      = tmp;
+   init->shader_data = tmp;
 
    return true;
 }
@@ -2075,38 +2113,36 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
-   bool ret                        = false;
-   enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
-   const char *shader_path         = retroarch_get_shader_preset();
+   bool ret                          = false;
+   const char *shader_path           = retroarch_get_shader_preset();
+   enum rarch_shader_type parse_type = video_shader_parse_type(shader_path);
+   enum rarch_shader_type type;
 
-   if (shader_path)
+   type = gl2_get_fallback_shader_type(parse_type);
+
+   if (type == RARCH_SHADER_NONE)
    {
-      type = video_shader_parse_type(shader_path,
-         gl->core_context_in_use
-         ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+      RARCH_ERR("[GL]: Couldn't find any supported shader backend! Continuing without shaders.\n");
+      return true;
    }
 
-   switch (type)
+   if (type != parse_type)
    {
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         if (gl->core_context_in_use)
-            shader_path = NULL;
-         break;
-#endif
+      if (!string_is_empty(shader_path))
+         RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+            shader_path, video_shader_to_str(parse_type), video_shader_to_str(type));
+
+      shader_path = NULL;
+   }
 
 #ifdef HAVE_GLSL
-      case RARCH_SHADER_GLSL:
-         gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
-         gl_glsl_set_context_type(gl->core_context_in_use,
-               hwr->version_major, hwr->version_minor);
-         break;
-#endif
-
-      default:
-         RARCH_ERR("[GL]: Not loading any shader, or couldn't find valid shader backend. Continuing without shaders.\n");
-         return true;
+   if (type == RARCH_SHADER_GLSL)
+   {
+      gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
+      gl_glsl_set_context_type(gl->core_context_in_use,
+                               hwr->version_major, hwr->version_minor);
    }
+#endif
 
    init_data.gl.core_context_enabled = gl->core_context_in_use;
    init_data.shader_type             = type;
@@ -2458,7 +2494,7 @@ static void gl2_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static void gl2_show_mouse(void *data, bool state)
@@ -2556,6 +2592,319 @@ static void gl2_pbo_async_readback(gl_t *gl)
    gl2_renderchain_unbind_pbo();
 }
 
+#ifdef HAVE_VIDEO_LAYOUT
+
+static float video_layout_layer_tex_coord[] = {
+   0.0f, 1.0f,
+   1.0f, 1.0f,
+   0.0f, 0.0f,
+   1.0f, 0.0f,
+};
+
+static void gl2_video_layout_fbo_init(gl_t *gl, unsigned width, unsigned height)
+{
+   glGenTextures(1, &gl->video_layout_fbo_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
+
+   gl2_load_texture_image(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
+      width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+   gl2_gen_fb(1, &gl->video_layout_fbo);
+   gl2_bind_fb(gl->video_layout_fbo);
+
+   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+      GL_TEXTURE_2D, gl->video_layout_fbo_texture, 0);
+
+   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != 
+         RARCH_GL_FRAMEBUFFER_COMPLETE)
+      RARCH_LOG("Unable to create FBO for video_layout\n");
+
+   gl2_bind_fb(0);
+}
+
+static void gl2_video_layout_fbo_free(gl_t *gl)
+{
+   if (gl->video_layout_fbo)
+   {
+      gl2_delete_fb(1, &gl->video_layout_fbo);
+      gl->video_layout_fbo = 0;
+   }
+
+   if (gl->video_layout_fbo_texture)
+   {
+      glDeleteTextures(1, &gl->video_layout_fbo_texture);
+      gl->video_layout_fbo_texture = 0;
+   }
+}
+
+static void gl2_video_layout_viewport(gl_t *gl, video_frame_info_t *video_info)
+{
+   if (!video_layout_valid())
+      return;
+
+   if (gl->video_layout_resize)
+   {
+      if (gl->video_layout_fbo)
+         gl2_video_layout_fbo_free(gl);
+
+      gl2_video_layout_fbo_init(gl, video_info->width, video_info->height);
+
+      video_layout_view_change();
+
+      gl->video_layout_resize = false;
+   }
+
+   if (video_layout_view_on_change())
+   {
+      video_layout_bounds_t b;
+      b.x = 0.0f;
+      b.y = 0.0f;
+      b.w = (float)video_info->width;
+      b.h = (float)video_info->height;
+      video_layout_view_fit_bounds(b);
+   }
+
+   if (video_layout_screen_count())
+   {
+      const video_layout_bounds_t *bounds;
+      bounds = video_layout_screen(0);
+
+      glViewport(
+         bounds->x, video_info->height - bounds->y - bounds->h,
+         bounds->w, bounds->h
+      );
+   }
+}
+
+static void gl2_video_layout_render(gl_t *gl, video_frame_info_t *video_info)
+{
+   int i;
+
+   if (!video_layout_valid())
+      return;
+
+   glViewport(0, 0, video_info->width, video_info->height);
+   glEnable(GL_BLEND);
+
+   for (i = 0; i < video_layout_layer_count(); ++i)
+      video_layout_layer_render(video_info, i);
+
+   glDisable(GL_BLEND);
+}
+
+static void gl2_video_layout_init(gl_t *gl)
+{
+   uint32_t px;
+
+   gl->video_layout_resize = true;
+
+   /* white 1px texture for drawing solid colors */
+   px = 0xFFFFFFFF;
+
+   glGenTextures(1, &gl->video_layout_white_texture);
+   gl_load_texture_data(gl->video_layout_white_texture,
+      RARCH_WRAP_EDGE, TEXTURE_FILTER_NEAREST,
+      sizeof(uint32_t), 1, 1, &px, sizeof(uint32_t));
+}
+
+static void gl2_video_layout_free(gl_t *gl)
+{
+   gl2_video_layout_fbo_free(gl);
+
+   if (gl->video_layout_white_texture)
+   {
+      glDeleteTextures(1, &gl->video_layout_white_texture);
+      gl->video_layout_white_texture = 0;
+   }
+}
+
+static void *gl2_video_layout_take_image(void *video_driver_data, struct texture_image image)
+{
+   unsigned alignment;
+   GLuint tex;
+
+   tex = 0;
+   alignment = video_pixel_get_alignment(image.width * sizeof(uint32_t));
+
+   glGenTextures(1, &tex);
+
+   gl_load_texture_data(tex,
+      RARCH_WRAP_EDGE, TEXTURE_FILTER_MIPMAP_LINEAR,
+      alignment, image.width, image.height, image.pixels, sizeof(uint32_t));
+
+   free(image.pixels);
+
+   return (void*)(uintptr_t)tex;
+}
+
+static void gl2_video_layout_free_image(void *video_driver_data, void *image)
+{
+   GLuint tex;
+   tex = (GLuint)(uintptr_t)image;
+   glDeleteTextures(1, &tex);
+}
+
+static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
+{
+   gl_t *gl;
+   gl = (gl_t*)info->video_driver_data;
+
+   gl2_bind_fb(gl->video_layout_fbo);
+
+   glClearColor(0, 0, 0, 0);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   gl->shader->use(gl, gl->shader_data,
+      VIDEO_SHADER_STOCK_BLEND, true);
+
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+static void gl2_video_layout_image(const video_layout_render_info_t *info, void *image_handle, void *alpha_handle)
+{
+   /* TODO alpha_handle */
+
+   gl_t *gl;
+   video_frame_info_t *video_info;
+   video_layout_bounds_t b;
+   float coord[8];
+   float color[16];
+   int i;
+
+   gl = (gl_t*)info->video_driver_data;
+   video_info = (video_frame_info_t*)info->video_driver_frame_data;
+
+   b = info->bounds;
+   b.x /= video_info->width;
+   b.y /= video_info->height;
+   b.w /= video_info->width;
+   b.h /= video_info->height;
+
+   coord[0] = b.x;
+   coord[1] = 1.f - b.y;
+   coord[2] = b.x + b.w;
+   coord[3] = 1.f - b.y;
+   coord[4] = b.x;
+   coord[5] = 1.f - (b.y + b.h);
+   coord[6] = b.x + b.w;
+   coord[7] = 1.f - (b.y + b.h);
+
+   i = 0;
+   while(i < 16)
+   {
+      color[i++] = info->color.r;
+      color[i++] = info->color.g;
+      color[i++] = info->color.b;
+      color[i++] = info->color.a;
+   }
+
+   gl->coords.vertex = coord;
+   gl->coords.tex_coord = tex_coords;
+   gl->coords.color = color;
+   gl->coords.vertices = 4;
+
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+
+   glBindTexture(GL_TEXTURE_2D, (GLuint)(uintptr_t)image_handle);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+static void gl2_video_layout_text(const video_layout_render_info_t *info, const char *str)
+{
+   /* TODO */
+}
+
+static void gl2_video_layout_counter(const video_layout_render_info_t *info, int value)
+{
+   /* TODO */
+}
+
+static void gl2_video_layout_rect(const video_layout_render_info_t *info)
+{
+   gl_t *gl;
+   gl = (gl_t*)info->video_driver_data;
+
+   gl2_video_layout_image(info, (void*)(uintptr_t)gl->video_layout_white_texture, NULL);
+}
+
+static void gl2_video_layout_screen(const video_layout_render_info_t *info, int screen_index)
+{
+   gl2_video_layout_rect(info);
+}
+
+static void gl2_video_layout_ellipse(const video_layout_render_info_t *info)
+{
+   /* TODO */
+}
+
+static void gl2_video_layout_led_dot(const video_layout_render_info_t *info, int dot_count, int dot_mask)
+{
+   /* TODO */
+}
+
+static void gl2_video_layout_led_seg(const video_layout_render_info_t *info, video_layout_led_t seg_layout, int seg_mask)
+{
+   /* TODO */
+}
+
+static void gl2_video_layout_layer_end(const video_layout_render_info_t *info, video_layout_blend_t blend_type)
+{
+   gl_t *gl;
+   gl = (gl_t*)info->video_driver_data;
+
+   switch (blend_type)
+   {
+   case VIDEO_LAYOUT_BLEND_ALPHA:
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      break;
+   case VIDEO_LAYOUT_BLEND_ADD:
+      glBlendFunc(GL_ONE, GL_ONE);
+      break;
+   case VIDEO_LAYOUT_BLEND_MOD:
+      glBlendFunc(GL_DST_COLOR, GL_ZERO);
+      break;
+   }
+
+   gl2_bind_fb(0);
+
+   gl->coords.vertex = gl->vertex_ptr;
+   gl->coords.tex_coord = video_layout_layer_tex_coord;
+   gl->coords.color = gl->white_color_ptr;
+   gl->coords.vertices = 4;
+
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+
+   glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   gl->coords.tex_coord = gl->tex_info.coord;
+}
+
+static video_layout_render_interface_t gl2_video_layout_render_interface =
+{
+   gl2_video_layout_take_image,
+   gl2_video_layout_free_image,
+   gl2_video_layout_layer_begin,
+   gl2_video_layout_screen,
+   gl2_video_layout_image,
+   gl2_video_layout_text,
+   gl2_video_layout_counter,
+   gl2_video_layout_rect,
+   gl2_video_layout_ellipse,
+   gl2_video_layout_led_dot,
+   gl2_video_layout_led_seg,
+   gl2_video_layout_layer_end
+};
+
+static const video_layout_render_interface_t *gl2_get_video_layout_render_interface(void *data)
+{
+   return &gl2_video_layout_render_interface;
+}
+
+#endif /* HAVE_VIDEO_LAYOUT */
+
 static bool gl2_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -2617,7 +2966,15 @@ static bool gl2_frame(void *data, const void *frame,
       }
       else
          gl2_set_viewport(gl, video_info, width, height, false, true);
+
+#ifdef HAVE_VIDEO_LAYOUT
+      gl->video_layout_resize = true;
+#endif
    }
+
+#ifdef HAVE_VIDEO_LAYOUT
+   gl2_video_layout_viewport(gl, video_info);
+#endif
 
    if (frame)
       gl->tex_index = ((gl->tex_index + 1) % gl->textures);
@@ -2711,7 +3068,7 @@ static bool gl2_frame(void *data, const void *frame,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    if (gl->fbo_inited)
-      gl2_renderchain_render(gl, 
+      gl2_renderchain_render(gl,
             chain,
             video_info,
             frame_count, &gl->tex_info, &feedback_info);
@@ -2719,6 +3076,10 @@ static bool gl2_frame(void *data, const void *frame,
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
+
+#ifdef HAVE_VIDEO_LAYOUT
+   gl2_video_layout_render(gl, video_info);
+#endif
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
@@ -2746,15 +3107,15 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
       }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
       gl2_render_overlay(gl, video_info);
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -2858,10 +3219,14 @@ static void gl2_free(void *data)
    if (!gl)
       return;
 
+#ifdef HAVE_VIDEO_LAYOUT
+   gl2_video_layout_free(gl);
+#endif
+
    gl2_context_bind_hw_render(gl, false);
 
    if (gl->have_sync)
-      gl2_renderchain_fence_free(gl, 
+      gl2_renderchain_fence_free(gl,
             (gl2_renderchain_data_t*)
             gl->renderchain_data);
 
@@ -3598,6 +3963,10 @@ static void *gl2_init(const video_info_t *video,
       goto error;
    }
 
+#ifdef HAVE_VIDEO_LAYOUT
+   gl2_video_layout_init(gl);
+#endif
+
    gl2_context_bind_hw_render(gl, true);
 
    return gl;
@@ -3659,10 +4028,7 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
       smooth             = settings->bools.video_smooth;
 
    mip_level             = 1;
-
-   wrap_type             = gl->shader->wrap_type(
-         gl->shader_data, 1);
-
+   wrap_type             = gl->shader->wrap_type(gl->shader_data, 1);
    wrap_mode             = gl2_wrap_type_to_enum(wrap_type);
    gl->tex_mipmap        = gl->shader->mipmap_input(gl->shader_data, mip_level);
    gl->video_info.smooth = smooth;
@@ -3696,6 +4062,7 @@ static bool gl2_set_shader(void *data,
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    unsigned textures;
    video_shader_ctx_init_t init_data;
+   enum rarch_shader_type fallback;
    gl_t *gl = (gl_t*)data;
 
    if (!gl)
@@ -3703,27 +4070,22 @@ static bool gl2_set_shader(void *data,
 
    gl2_context_bind_hw_render(gl, false);
 
-   if (type == RARCH_SHADER_NONE)
-      return false;
+   fallback = gl2_get_fallback_shader_type(type);
+
+   if (fallback == RARCH_SHADER_NONE)
+   {
+      RARCH_ERR("[GL]: No supported shader backend found!\n");
+      goto error;
+   }
 
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
-   switch (type)
+   if (type != fallback)
    {
-#ifdef HAVE_GLSL
-      case RARCH_SHADER_GLSL:
-         break;
-#endif
-
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         break;
-#endif
-
-      default:
-         RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
-         goto error;
+      RARCH_ERR("[GL]: %s shader not supported, falling back to stock %s\n",
+            video_shader_to_str(type), video_shader_to_str(fallback));
+      path = NULL;
    }
 
    if (gl->fbo_inited)
@@ -3734,7 +4096,7 @@ static bool gl2_set_shader(void *data,
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 
-   init_data.shader_type = type;
+   init_data.shader_type = fallback;
    init_data.shader      = NULL;
    init_data.data        = gl;
    init_data.path        = path;
@@ -3781,7 +4143,7 @@ static bool gl2_set_shader(void *data,
       gl2_init_textures_data(gl);
 
       if (gl->hw_render_use)
-         gl2_renderchain_init_hw_render(gl, 
+         gl2_renderchain_init_hw_render(gl,
                (gl2_renderchain_data_t*)gl->renderchain_data,
                gl->tex_w, gl->tex_h);
    }
@@ -3793,12 +4155,12 @@ static bool gl2_set_shader(void *data,
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl);
    gl2_context_bind_hw_render(gl, true);
-#endif
 
    return true;
 
 error:
    gl2_context_bind_hw_render(gl, true);
+#endif
    return false;
 }
 
@@ -3806,7 +4168,7 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
-   gl_t *gl             = (gl_t*)data;
+   gl_t *gl        = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
 
@@ -3823,10 +4185,11 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    gl_t *gl             = (gl_t*)data;
+
    if (!gl)
       return false;
-   return gl2_renderchain_read_viewport(gl,
-         buffer, is_idle);
+
+   return gl2_renderchain_read_viewport(gl, buffer, is_idle);
 }
 
 #if 0
@@ -3920,7 +4283,7 @@ static bool gl2_overlay_load(void *data,
          || !gl->overlay_color_coord)
       return false;
 
-   gl->overlays             = num_images;
+   gl->overlays = num_images;
    glGenTextures(num_images, gl->overlay_tex);
 
    for (i = 0; i < num_images; i++)
@@ -3948,7 +4311,7 @@ static bool gl2_overlay_load(void *data,
 
 static void gl2_overlay_enable(void *data, bool state)
 {
-   gl_t *gl           = (gl_t*)data;
+   gl_t *gl = (gl_t*)data;
 
    if (!gl)
       return;
@@ -3969,17 +4332,18 @@ static void gl2_overlay_full_screen(void *data, bool enable)
 
 static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
 {
-   GLfloat *color = NULL;
-   gl_t *gl       = (gl_t*)data;
+   GLfloat *color;
+   gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return;
 
-   color          = (GLfloat*)&gl->overlay_color_coord[image * 16];
+   color = (GLfloat*)&gl->overlay_color_coord[image * 16];
 
-   color[ 0 + 3]  = mod;
-   color[ 4 + 3]  = mod;
-   color[ 8 + 3]  = mod;
-   color[12 + 3]  = mod;
+   color[ 0 + 3] = mod;
+   color[ 4 + 3] = mod;
+   color[ 8 + 3] = mod;
+   color[12 + 3] = mod;
 }
 
 static const video_overlay_interface_t gl2_overlay_interface = {
@@ -4013,7 +4377,7 @@ static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
 
 static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gl_t *gl         = (gl_t*)data;
+   gl_t *gl = (gl_t*)data;
 
    switch (aspect_ratio_idx)
    {
@@ -4161,6 +4525,7 @@ static uint32_t gl2_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
    return flags;
 }
@@ -4232,6 +4597,9 @@ video_driver_t video_gl2 = {
 
 #ifdef HAVE_OVERLAY
    gl2_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   gl2_get_video_layout_render_interface,
 #endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,

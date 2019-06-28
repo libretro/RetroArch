@@ -33,7 +33,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../record/record_driver.h"
+#include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -779,11 +779,10 @@ static bool gl_core_init_filter_chain_preset(gl_core_t *gl, const char *shader_p
 
 static bool gl_core_init_filter_chain(gl_core_t *gl)
 {
-   const char *shader_path = retroarch_get_shader_preset();
+   const char *shader_path     = retroarch_get_shader_preset();
+   enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
-   enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
-
-   if (type == RARCH_SHADER_NONE)
+   if (string_is_empty(shader_path))
    {
       RARCH_LOG("[GLCore]: Loading stock shader.\n");
       return gl_core_init_default_filter_chain(gl);
@@ -791,11 +790,11 @@ static bool gl_core_init_filter_chain(gl_core_t *gl)
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_LOG("[GLCore]: Only SLANG shaders are supported, falling back to stock.\n");
+      RARCH_WARN("[GLCore]: Only Slang shaders are supported, falling back to stock.\n");
       return gl_core_init_default_filter_chain(gl);
    }
 
-   if (!shader_path || !gl_core_init_filter_chain_preset(gl, shader_path))
+   if (!gl_core_init_filter_chain_preset(gl, shader_path))
       gl_core_init_default_filter_chain(gl);
 
    return true;
@@ -1028,7 +1027,30 @@ static void *gl_core_init(const video_info_t *video,
    }
 
    if (!string_is_empty(version))
-      sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+      sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+
+   {
+      char device_str[128];
+
+      device_str[0] = '\0';
+
+      strlcpy(device_str, vendor, sizeof(device_str));
+      strlcat(device_str, " ", sizeof(device_str));
+      strlcat(device_str, renderer, sizeof(device_str));
+
+      video_driver_set_gpu_device_string(device_str);
+      video_driver_set_gpu_api_version_string(version);
+   }
+
+#ifdef _WIN32
+   if (string_is_equal(vendor, "Microsoft Corporation"))
+      if (string_is_equal(renderer, "GDI Generic"))
+#ifdef HAVE_OPENGL1
+         rarch_force_video_driver_fallback("gl1");
+#else
+         rarch_force_video_driver_fallback("gdi");
+#endif
+#endif
 
    gl->vsync       = video->vsync;
    gl->fullscreen  = video->fullscreen;
@@ -1211,9 +1233,6 @@ static bool gl_core_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      unsigned alignment = video_pixel_get_alignment(images[i].width
-            * sizeof(uint32_t));
-
       video_texture_load_gl_core(&images[i], TEXTURE_FILTER_LINEAR, &id);
       gl->overlay_tex[i] = id;
 
@@ -1354,18 +1373,18 @@ static bool gl_core_set_shader(void *data,
       return false;
 
    gl_core_context_bind_hw_render(gl, false);
-   if (type != RARCH_SHADER_SLANG && path)
-   {
-      RARCH_WARN("[GLCore]: Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      gl_core_context_bind_hw_render(gl, true);
-      path = NULL;
-   }
 
    if (gl->filter_chain)
       gl_core_filter_chain_free(gl->filter_chain);
    gl->filter_chain = NULL;
 
-   if (!path)
+   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("[GLCore]: Only Slang shaders are supported. Falling back to stock.\n");
+      path = NULL;
+   }
+
+   if (string_is_empty(path))
    {
       gl_core_init_default_filter_chain(gl);
       gl_core_context_bind_hw_render(gl, true);
@@ -1398,7 +1417,7 @@ static void gl_core_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
-   gl->rotation = 270 * rotation;
+   gl->rotation = video_driver_is_hw_context() && gl->hw_render_bottom_left ? 90 * rotation : 270 * rotation;
    gl_core_set_projection(gl, &gl_core_default_ortho, true);
 }
 
@@ -1529,6 +1548,7 @@ static void gl_core_update_cpu_texture(gl_core_t *gl,
    }
 }
 
+#if defined(HAVE_MENU)
 static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_info)
 {
    const float vbo_data[] = {
@@ -1569,6 +1589,7 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
 
    glDisable(GL_BLEND);
 }
+#endif
 
 static bool gl_core_frame(void *data, const void *frame,
                           unsigned frame_width, unsigned frame_height,
@@ -1632,6 +1653,7 @@ static bool gl_core_frame(void *data, const void *frame,
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+   gl_core_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
    gl_core_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl_core_filter_chain_build_offscreen_passes(gl->filter_chain, &gl->filter_chain_vp);
 
@@ -1730,7 +1752,7 @@ static uint32_t gl_core_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
    return flags;
 }
@@ -2057,6 +2079,9 @@ video_driver_t video_gl_core = {
 
 #ifdef HAVE_OVERLAY
    gl_core_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
 #endif
    gl_core_get_poke_interface,
    gl_core_wrap_type_to_enum,

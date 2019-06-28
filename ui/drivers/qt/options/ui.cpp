@@ -18,7 +18,6 @@ UserInterfaceCategory::UserInterfaceCategory(MainWindow *mainwindow, QWidget *pa
 
    m_pages << new UserInterfacePage(this);
    m_pages << new ViewsPage(this);
-   /* pages << new QuickMenuPage(parent); */
    m_pages << new AppearancePage(this);
    m_pages << new DesktopMenuPage(m_mainwindow, this);
 }
@@ -44,6 +43,7 @@ QWidget *UserInterfacePage::widget()
    rarch_setting_t           *kioskMode = menu_setting_find_enum(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
 
    menuGroup->add(MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS);
+   menuGroup->add(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE);
 
    /* only on XMB and Ozone*/
    if (kioskMode)
@@ -111,6 +111,7 @@ QWidget *ViewsPage::widget()
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_INFORMATION);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_HELP);
+   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_REBOOT);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN);
@@ -139,6 +140,7 @@ QWidget *ViewsPage::widget()
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(tabs);
    leftLayout->addRow(startScreen);
+   leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
 
    rightLayout->addWidget(quickMenu);
    rightLayout->addWidget(status);
@@ -160,27 +162,7 @@ QuickMenuPage::QuickMenuPage(QObject *parent) :
 
 QWidget *QuickMenuPage::widget()
 {
-   unsigned i;
-   QWidget            * widget = new QWidget;
-   FormLayout          *layout = new FormLayout;
-   file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
-
-   menu_displaylist_build_list(
-         list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST);
-
-   for (i = 0; i < list->size; i++)
-   {
-      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-         file_list_get_actiondata_at_offset(list, i);
-
-      layout->add(cbs->enum_idx);
-   }
-
-   file_list_free(list);
-
-   widget->setLayout(layout);
-
-   return widget;
+   return create_widget(DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST);
 }
 
 AppearancePage::AppearancePage(QObject *parent) :

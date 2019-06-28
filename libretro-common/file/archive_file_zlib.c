@@ -31,7 +31,7 @@
 #include <encodings/crc32.h>
 
 /* Only for MAX_WBITS */
-#include <compat/zlib.h>
+#include <zlib.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
@@ -182,8 +182,9 @@ static int zip_file_decompressed(
       uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
+   char last_char = name[strlen(name) - 1];
    /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+   if (last_char == '/' || last_char == '\\')
       return 1;
 
    if (strstr(name, userdata->decomp_state.needle))

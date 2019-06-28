@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,12 +25,14 @@
 #include "d3dcompiler_common.h"
 
 #include "../verbosity.h"
+#include "../../configuration.h"
 
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 #endif
 
 #include <encodings/utf.h>
+#include <lists/string_list.h>
 #include <dxgi.h>
 
 #ifdef __MINGW32__
@@ -172,35 +175,59 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
    {
       int i = 0;
+      settings_t *settings = config_get_ptr();
+
+      if (d3d12->gpu_list)
+         string_list_free(d3d12->gpu_list);
+
+      d3d12->gpu_list = string_list_new();
 
       while (true)
       {
+         char str[128];
+         union string_list_elem_attr attr = {0};
+         DXGI_ADAPTER_DESC desc = {0};
+
+         str[0] = '\0';
+
 #ifdef __WINRT__
-         if (FAILED(DXGIEnumAdapters2(d3d12->factory, i++, &d3d12->adapter)))
+         if (FAILED(DXGIEnumAdapters2(d3d12->factory, i, &d3d12->adapter)))
             return false;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d12->factory, i++, &d3d12->adapter)))
+         if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &d3d12->adapter)))
             return false;
 #endif
 
-         if (SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))
-         {
-            char str[128];
-            DXGI_ADAPTER_DESC desc = {0};
+         IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
 
-            IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
+         utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-            utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
+         RARCH_LOG("[D3D12]: Found GPU at index %d: %s\n", i, str);
 
-            RARCH_LOG("[D3D12]: Using GPU: %s\n", str);
+         string_list_append(d3d12->gpu_list, str, attr);
 
-            video_driver_set_gpu_device_string(str);
+         if (i < D3D12_MAX_GPU_COUNT)
+            d3d12->adapters[i] = d3d12->adapter;
 
-            break;
-         }
-
-         Release(d3d12->adapter);
+         i++;
       }
+
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D12_API, d3d12->gpu_list);
+
+      if (0 <= settings->ints.d3d12_gpu_index && settings->ints.d3d12_gpu_index <= i && settings->ints.d3d12_gpu_index < D3D12_MAX_GPU_COUNT)
+      {
+         d3d12->adapter = d3d12->adapters[settings->ints.d3d12_gpu_index];
+         RARCH_LOG("[D3D12]: Using GPU index %d.\n", settings->ints.d3d12_gpu_index);
+         video_driver_set_gpu_device_string(d3d12->gpu_list->elems[settings->ints.d3d12_gpu_index].data);
+      }
+      else
+      {
+         RARCH_WARN("[D3D12]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d12_gpu_index);
+         d3d12->adapter = d3d12->adapters[0];
+      }
+
+      if (!SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))
+         RARCH_WARN("[D3D12]: Could not create D3D12 device.\n");
    }
 
    return true;

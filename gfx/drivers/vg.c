@@ -473,27 +473,6 @@ static bool vg_set_shader(void *data,
    return false;
 }
 
-static void vg_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void vg_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool vg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void vg_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
@@ -513,12 +492,15 @@ video_driver_t video_vg = {
    vg_free,
    "vg",
    NULL,                      /* set_viewport */
-   vg_set_rotation,
-   vg_viewport_info,
-   vg_read_viewport,
+   NULL,                      /* set_rotation */
+   NULL,                      /* viewport_info */
+   NULL,                      /* read_viewport */
    NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL,                       /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   vg_get_poke_interface
 };

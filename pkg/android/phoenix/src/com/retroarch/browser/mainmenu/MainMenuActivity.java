@@ -2,7 +2,6 @@ package com.retroarch.browser.mainmenu;
 
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
-import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -42,13 +41,16 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	private boolean addPermission(List<String> permissionsList, String permission)
 	{
-		if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
-			permissionsList.add(permission);
+			if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+			{
+				permissionsList.add(permission);
 
-			// Check for Rationale Option
-			if (!shouldShowRequestPermissionRationale(permission))
-				return false;
+				// Check for Rationale Option
+				if (!shouldShowRequestPermissionRationale(permission))
+					return false;
+			}
 		}
 
 		return true;
@@ -56,7 +58,7 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
-		if (android.os.Build.VERSION.SDK_INT >= 23)
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();
@@ -66,6 +68,8 @@ public final class MainMenuActivity extends PreferenceActivity
 				permissionsNeeded.add("Read External Storage");
 			if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
 				permissionsNeeded.add("Write External Storage");
+			if (!addPermission(permissionsList, Manifest.permission.ACCESS_FINE_LOCATION))
+				permissionsNeeded.add("Access fine location");
 
 			if (permissionsList.size() > 0)
 			{
@@ -89,10 +93,13 @@ public final class MainMenuActivity extends PreferenceActivity
 							{
 								if (which == AlertDialog.BUTTON_POSITIVE)
 								{
-									requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
-										REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+									if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+									{
+										requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
+											REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 
-									Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
+										Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
+									}
 								}
 							}
 						});
@@ -116,16 +123,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	public void finalStartup()
 	{
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		Intent retro;
-
-		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
-		{
-			retro = new Intent(this, RetroActivityFuture.class);
-		}
-		else
-		{
-			retro = new Intent(this, RetroActivityPast.class);
-		}
+		Intent retro = new Intent(this, RetroActivityFuture.class);
 
 		retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
@@ -180,8 +178,6 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
-		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
-		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
 		retro.putExtra("EXTERNAL", external);
 	}

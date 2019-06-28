@@ -127,6 +127,7 @@ struct rpng
    struct idat_buffer idat_buf;
    struct png_ihdr ihdr;
    uint8_t *buff_data;
+   uint8_t *buff_end;
    uint32_t palette[256];
 };
 
@@ -773,8 +774,7 @@ static int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, rpng->process);
 }
 
-static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height)
+static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng, uint32_t **data)
 {
    bool zstatus;
    enum trans_stream_error terror;
@@ -802,8 +802,6 @@ end:
    process->stream_backend->stream_free(process->stream);
    process->stream = NULL;
 
-   *width  = rpng->ihdr.width;
-   *height = rpng->ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
    *data = (uint32_t*)memalign(32, rpng->ihdr.width *
@@ -853,9 +851,7 @@ static bool png_read_trns(uint8_t *buf, uint32_t *palette, unsigned entries)
    unsigned i;
 
    for (i = 0; i < entries; i++, buf++, palette++)
-   {
-      *palette = (*palette & 0x00ffffff) | *buf << 24;
-   }
+      *palette = (*palette & 0x00ffffff) | (unsigned)*buf << 24;
 
    return true;
 }
@@ -871,7 +867,7 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
    return true;
 }
 
-static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, unsigned *height)
+static struct rpng_process *rpng_process_init(rpng_t *rpng)
 {
    uint8_t *inflate_buf         = NULL;
    struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
@@ -923,20 +919,38 @@ error:
    return NULL;
 }
 
-static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
+static bool read_chunk_header(uint8_t *buf, uint8_t *buf_end, struct png_chunk *chunk)
 {
    unsigned i;
    uint8_t dword[4];
 
    dword[0] = '\0';
 
+   /* Check whether reading the header will overflow
+    * the data buffer */
+   if (buf_end - buf < 8)
+      return false;
+
    for (i = 0; i < 4; i++)
       dword[i] = buf[i];
 
    chunk->size = dword_be(dword);
 
+   /* Check whether chunk will overflow the data buffer */
+   if (buf + 8 + chunk->size > buf_end)
+      return false;
+
    for (i = 0; i < 4; i++)
-      chunk->type[i] = buf[i + 4];
+   {
+      uint8_t byte = buf[i + 4];
+
+      /* All four bytes of the chunk type must be
+       * ASCII letters (codes 65-90 and 97-122) */
+      if ((byte < 65) || ((byte > 90) && (byte < 97)) || (byte > 122))
+         return false;
+
+      chunk->type[i] = byte;
+   }
 
    return true;
 }
@@ -970,8 +984,12 @@ bool rpng_iterate_image(rpng_t *rpng)
    chunk.type[0]          = 0;
    chunk.data             = NULL;
 
-   if (!read_chunk_header(buf, &chunk))
-      return false;
+   /* Check whether data buffer pointer is valid */
+   if (buf > rpng->buff_end)
+      goto error;
+
+   if (!read_chunk_header(buf, rpng->buff_end, &chunk))
+      goto error;
 
 #if 0
    for (i = 0; i < 4; i++)
@@ -1074,6 +1092,10 @@ bool rpng_iterate_image(rpng_t *rpng)
 
    rpng->buff_data += chunk.size + 12;
 
+   /* Check whether data buffer pointer is valid */
+   if (rpng->buff_data > rpng->buff_end)
+      goto error;
+
    return true;
 
 error:
@@ -1089,8 +1111,7 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process)
    {
-      struct rpng_process *process = rpng_process_init(
-            rpng, width, height);
+      struct rpng_process *process = rpng_process_init(rpng);
 
       if (!process)
          goto error;
@@ -1101,11 +1122,13 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process->inflate_initialized)
    {
-      if (rpng_load_image_argb_process_inflate_init(rpng, data,
-               width, height) == -1)
+      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
          goto error;
       return IMAGE_PROCESS_NEXT;
    }
+
+   *width  = rpng->ihdr.width;
+   *height = rpng->ihdr.height;
 
    return png_reverse_filter_iterate(rpng, data);
 
@@ -1153,6 +1176,11 @@ bool rpng_start(rpng_t *rpng)
    if (!rpng)
       return false;
 
+   /* Check whether reading the header will overflow
+    * the data buffer */
+   if (rpng->buff_end - rpng->buff_data < 8)
+      return false;
+
    header[0] = '\0';
 
    for (i = 0; i < 8; i++)
@@ -1171,21 +1199,21 @@ bool rpng_is_valid(rpng_t *rpng)
    if (!rpng)
       return false;
 
-   if (rpng->has_ihdr)
+   /* A valid PNG image must contain an IHDR chunk,
+    * one or more IDAT chunks, and an IEND chunk */
+   if (rpng->has_ihdr && rpng->has_idat && rpng->has_iend)
       return true;
-   if (rpng->has_idat)
-      return true;
-   if (rpng->has_iend)
-      return true;
+
    return false;
 }
 
-bool rpng_set_buf_ptr(rpng_t *rpng, void *data)
+bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
 {
-   if (!rpng)
+   if (!rpng || (len < 1))
       return false;
 
    rpng->buff_data = (uint8_t*)data;
+   rpng->buff_end  = rpng->buff_data + (len - 1);
 
    return true;
 }

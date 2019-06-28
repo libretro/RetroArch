@@ -119,7 +119,7 @@ void menu_setting_get_string_representation(rarch_setting_t *setting, char *s, s
  **/
 void menu_setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type,
-      const char *menu_label, const char *label, unsigned idx);
+      const char *menu_label, unsigned idx);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
@@ -127,48 +127,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
 
-void *setting_get_ptr(rarch_setting_t *setting);
-
 void general_write_handler(rarch_setting_t *setting);
 
 void general_read_handler(rarch_setting_t *setting);
 
-void menu_settings_list_current_add_cmd(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum event_command values);
-
-void menu_settings_list_current_add_range(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      float min, float max, float step,
-      bool enforce_minrange_enable,
-      bool enforce_maxrange_enable);
-
-void settings_data_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void settings_data_list_current_add_free_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values);
-
-void menu_settings_list_current_add_enum_idx(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum msg_hash_enums enum_idx);
-
-void menu_settings_list_current_add_enum_value_idx(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      enum msg_hash_enums enum_idx);
-
 void menu_setting_free(rarch_setting_t *setting);
-
-bool settings_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info);
 
 bool menu_setting_ctl(
       enum menu_setting_ctl_state state, void *data);

@@ -123,7 +123,7 @@ bool menu_shader_manager_init(void)
 
    if (
          !string_is_empty(new_path) && conf &&
-         video_shader_read_conf_cgp(conf, menu_driver_shader)
+         video_shader_read_conf_preset(conf, menu_driver_shader)
       )
    {
       video_shader_resolve_relative(menu_driver_shader, new_path);
@@ -147,21 +147,21 @@ bool menu_shader_manager_init(void)
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(void *data,
-      unsigned type, const char *preset_path)
+      enum rarch_shader_type type, const char *preset_path)
 {
    struct video_shader *shader   = (struct video_shader*)data;
    config_file_t *conf           = NULL;
    bool refresh                  = false;
    settings_t *settings          = config_get_ptr();
 
-   if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
+   if (!video_driver_set_shader(type, preset_path))
    {
       configuration_set_bool(settings, settings->bools.video_shader_enable, false);
       return false;
    }
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
-    * Only do this when the cgp actually works to avoid potential errors. */
+    * Only do this when the preset actually works to avoid potential errors. */
    strlcpy(settings->paths.path_shader,
          preset_path ? preset_path : "",
          sizeof(settings->paths.path_shader));
@@ -181,7 +181,7 @@ bool menu_shader_manager_set_preset(void *data,
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
-   if (video_shader_read_conf_cgp(conf, shader))
+   if (video_shader_read_conf_preset(conf, shader))
    {
       video_shader_resolve_relative(shader, preset_path);
       video_shader_resolve_parameters(conf, shader);
@@ -193,22 +193,6 @@ bool menu_shader_manager_set_preset(void *data,
 #endif
 
    return true;
-}
-
-static const char *shader_get_preset_extension(unsigned type)
-{
-   switch (type)
-   {
-      case RARCH_SHADER_GLSL:
-         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
-      case RARCH_SHADER_SLANG:
-         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
-      case RARCH_SHADER_HLSL:
-      case RARCH_SHADER_CG:
-         return file_path_str(FILE_PATH_CGP_EXTENSION);
-   }
-
-   return NULL;
 }
 
 /**
@@ -225,7 +209,8 @@ bool menu_shader_manager_save_preset(
    char preset_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
    bool ret                               = false;
-   unsigned d, type                       = RARCH_SHADER_NONE;
+   unsigned d;
+   enum rarch_shader_type type            = RARCH_SHADER_NONE;
    const char *dirs[3]                    = {0};
    config_file_t *conf                    = NULL;
    struct video_shader *shader            = menu_shader_get();
@@ -254,7 +239,7 @@ bool menu_shader_manager_save_preset(
             && !strstr(basename,
                file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
-         const char *preset_ext = shader_get_preset_extension(type);
+         const char *preset_ext = video_shader_get_preset_extension(type);
          if (!string_is_empty(preset_ext))
             strlcat(buffer, preset_ext, sizeof(buffer));
       }
@@ -265,12 +250,12 @@ bool menu_shader_manager_save_preset(
 
       default_preset[0] = '\0';
 
-      if (video_shader_is_supported((enum rarch_shader_type)type))
+      if (video_shader_is_supported(type))
       {
          const char *config_path     = path_get(RARCH_PATH_CONFIG);
          /* In a multi-config setting, we can't have
           * conflicts on menu.cgp/menu.glslp. */
-         const char *preset_ext      = shader_get_preset_extension(type);
+         const char *preset_ext      = video_shader_get_preset_extension(type);
 
          if (!string_is_empty(preset_ext))
          {
@@ -316,12 +301,12 @@ bool menu_shader_manager_save_preset(
    if (!conf)
       return false;
 
-   video_shader_write_conf_cgp(conf, shader);
-
    if (fullpath)
    {
       if (!string_is_empty(basename))
          strlcpy(preset_path, buffer, sizeof(preset_path));
+
+      video_shader_write_conf_preset(conf, shader, preset_path);
 
       if (config_file_write(conf, preset_path, false))
       {
@@ -342,6 +327,8 @@ bool menu_shader_manager_save_preset(
 
          fill_pathname_join(preset_path, dirs[d],
                buffer, sizeof(preset_path));
+
+         video_shader_write_conf_preset(conf, shader, preset_path);
 
          if (config_file_write(conf, preset_path, false))
          {
@@ -447,38 +434,37 @@ void menu_shader_manager_clear_pass_path(unsigned i)
  *
  * Returns: type of shader.
  **/
-unsigned menu_shader_manager_get_type(const void *data)
+enum rarch_shader_type menu_shader_manager_get_type(const void *data)
 {
    unsigned type                     = RARCH_SHADER_NONE;
    const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
-   uint8_t i                         = 0;
+   unsigned i                        = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;
 
+   type = video_shader_parse_type(shader->path);
+
    for (i = 0; i < shader->passes; i++)
    {
       enum rarch_shader_type pass_type =
-         video_shader_parse_type(shader->pass[i].source.path,
-               RARCH_SHADER_NONE);
+         video_shader_parse_type(shader->pass[i].source.path);
 
       switch (pass_type)
       {
          case RARCH_SHADER_CG:
          case RARCH_SHADER_GLSL:
          case RARCH_SHADER_SLANG:
-            if (type == RARCH_SHADER_NONE)
-               type = pass_type;
-            else if (type != pass_type)
-               return RARCH_SHADER_NONE;
+            if (type != pass_type)
+               return (enum rarch_shader_type)RARCH_SHADER_NONE;
             break;
          default:
             break;
       }
    }
 
-   return type;
+   return (enum rarch_shader_type)type;
 }
 
 /**
@@ -488,7 +474,7 @@ unsigned menu_shader_manager_get_type(const void *data)
  **/
 void menu_shader_manager_apply_changes(void)
 {
-   unsigned shader_type;
+   enum rarch_shader_type shader_type;
    struct video_shader *shader = menu_shader_get();
 
    if (!shader)

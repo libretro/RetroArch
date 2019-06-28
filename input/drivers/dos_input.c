@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,6 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <retro_miscellaneous.h>
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
@@ -28,6 +31,33 @@ typedef struct dos_input
 {
    const input_device_driver_t *joypad;
 } dos_input_t;
+
+#define MAX_KEYS LAST_KEYCODE + 1
+
+/* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
+static uint16_t dos_key_state[MAX_PADS+1][MAX_KEYS];
+
+static bool dos_keyboard_port_input_pressed(
+      const struct retro_keybind *binds, unsigned id)
+{
+   if (id < RARCH_BIND_LIST_END)
+      return dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[&binds[id].key]];
+   return false;
+}
+
+uint16_t *dos_keyboard_state_get(unsigned port)
+{
+   return dos_key_state[port];
+}
+
+static void dos_keyboard_free(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < MAX_PADS; i++)
+      for (j = 0; j < MAX_KEYS; j++)
+         dos_key_state[i][j] = 0;
+}
 
 static void dos_input_poll(void *data)
 {
@@ -43,7 +73,8 @@ static int16_t dos_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   dos_input_t *dos = (dos_input_t*)data;
+   int16_t ret                        = 0;
+   dos_input_t *dos                   = (dos_input_t*)data;
 
    if (port > 0)
       return 0;
@@ -51,8 +82,45 @@ static int16_t dos_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(dos->joypad, joypad_info, port, binds[port], id) ||
-               dos_keyboard_port_input_pressed(binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               /* Auto-binds are per joypad, not per user. */
+               const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+               bool res               = false;
+               
+               if (joykey != NO_BTN && dos->joypad->button(joypad_info.joy_idx, joykey))
+                  res                 = true;
+               else if (((float)abs(dos->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  res                 = true;
+               if (!res)
+                  res = dos_keyboard_port_input_pressed(binds[port], i);
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            /* Auto-binds are per joypad, not per user. */
+            const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+            if (joykey != NO_BTN && dos->joypad->button(joypad_info.joy_idx, joykey))
+               ret = 1;
+            else if (((float)abs(dos->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               ret = 1;
+
+            if (!ret)
+               ret = dos_keyboard_port_input_pressed(binds[port], id);
+         }
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return dos_keyboard_port_input_pressed(binds[port], id);
    }

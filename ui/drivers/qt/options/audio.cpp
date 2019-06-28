@@ -76,17 +76,5 @@ MenuSoundsPage::MenuSoundsPage(QObject *parent) :
 
 QWidget *MenuSoundsPage::widget()
 {
-   QWidget *widget = new QWidget();
-
-   FormLayout *layout = new FormLayout;
-
-   layout->add(MENU_ENUM_LABEL_AUDIO_ENABLE_MENU);
-   layout->add(MENU_ENUM_LABEL_MENU_SOUND_OK);
-   layout->add(MENU_ENUM_LABEL_MENU_SOUND_CANCEL);
-   layout->add(MENU_ENUM_LABEL_MENU_SOUND_NOTICE);
-   layout->add(MENU_ENUM_LABEL_MENU_SOUND_BGM);
-
-   widget->setLayout(layout);
-
-   return widget;
+   return create_widget(DISPLAYLIST_MENU_SOUNDS_LIST);
 }

@@ -11,21 +11,6 @@
 retro_ctx_load_content_info_t *load_content_info;
 enum rarch_core_type last_core_type;
 
-static void free_retro_game_info(struct retro_game_info *dest)
-{
-   if (!dest)
-      return;
-   if (dest->path)
-      free((void*)dest->path);
-   if (dest->data)
-      free((void*)dest->data);
-   if (dest->meta)
-      free((void*)dest->meta);
-   dest->path = NULL;
-   dest->data = NULL;
-   dest->meta = NULL;
-}
-
 static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
@@ -56,61 +41,6 @@ static struct retro_game_info* clone_retro_game_info(const
 
    dest->size    = src->size;
    dest->meta    = strcpy_alloc(src->meta);
-
-   return dest;
-}
-
-static void free_string_list(struct string_list *dest)
-{
-   unsigned i;
-   if (!dest)
-      return;
-   for (i = 0; i < dest->size; i++)
-   {
-      if (dest->elems[i].data)
-         free(dest->elems[i].data);
-      dest->elems[i].data = NULL;
-   }
-
-   if (dest->elems)
-      free(dest->elems);
-   dest->elems = NULL;
-}
-
-static struct string_list *string_list_clone(
-      const struct string_list *src)
-{
-   unsigned i;
-   struct string_list_elem *elems = NULL;
-   struct string_list *dest       = (struct string_list*)
-      calloc(1, sizeof(struct string_list));
-
-   if (!dest)
-      return NULL;
-
-   dest->size      = src->size;
-   dest->cap       = src->cap;
-   if (dest->cap < dest->size)
-   {
-      dest->cap = dest->size;
-   }
-
-   elems           = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem));
-
-   if (!elems)
-   {
-      free(dest);
-      return NULL;
-   }
-
-   dest->elems     = elems;
-
-   for (i = 0; i < src->size; i++)
-   {
-      dest->elems[i].data = strcpy_alloc(src->elems[i].data);
-      dest->elems[i].attr = src->elems[i].attr;
-   }
 
    return dest;
 }
@@ -237,12 +167,10 @@ static void free_retro_ctx_load_content_info(struct
    if (!dest)
       return;
 
-   free_retro_game_info(dest->info);
-   free_string_list((struct string_list*)dest->content);
+   core_free_retro_game_info(dest->info);
+   string_list_free((struct string_list*)dest->content);
    if (dest->info)
       free(dest->info);
-   if (dest->content)
-      free((void*)dest->content);
 
    dest->info    = NULL;
    dest->content = NULL;

@@ -19,7 +19,7 @@
 #include <sys/asoundlib.h>
 #include <retro_math.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000
@@ -41,7 +41,7 @@ typedef struct alsa
    bool is_paused;
    unsigned buf_size;
    unsigned buf_count;
-} alsa_t;
+} alsa_qsa_t;
 
 typedef long snd_pcm_sframes_t;
 
@@ -53,7 +53,7 @@ static void *alsa_qsa_init(const char *device,
    snd_pcm_channel_info_t pi;
    snd_pcm_channel_params_t params = {0};
    snd_pcm_channel_setup_t setup   = {0};
-   alsa_t *alsa                    = (alsa_t*)calloc(1, sizeof(alsa_t));
+   alsa_qsa_t *alsa                = (alsa_qsa_t*)calloc(1, sizeof(alsa_qsa_t));
    if (!alsa)
       return NULL;
 
@@ -165,8 +165,8 @@ error:
 static int check_pcm_status(void *data, int channel_type)
 {
    snd_pcm_channel_status_t status;
-   alsa_t *alsa = (alsa_t*)data;
-   int ret      = EOK;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
+   int ret          = EOK;
 
    memset(&status, 0, sizeof (status));
    status.channel = channel_type;
@@ -221,7 +221,7 @@ static int check_pcm_status(void *data, int channel_type)
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   alsa_t              *alsa = (alsa_t*)data;
+   alsa_qsa_t          *alsa = (alsa_qsa_t*)data;
    snd_pcm_sframes_t written = 0;
 
    while (size)
@@ -268,7 +268,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
 static bool alsa_qsa_stop(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
 
    if (alsa->can_pause && !alsa->is_paused)
    {
@@ -284,7 +284,7 @@ static bool alsa_qsa_stop(void *data)
 
 static bool alsa_qsa_alive(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
    if (alsa)
       return !alsa->is_paused;
    return false;
@@ -292,7 +292,7 @@ static bool alsa_qsa_alive(void *data)
 
 static bool alsa_qsa_start(void *data, bool is_shutdown)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
 
    if (alsa->can_pause && alsa->is_paused)
    {
@@ -313,7 +313,7 @@ static bool alsa_qsa_start(void *data, bool is_shutdown)
 
 static void alsa_qsa_set_nonblock_state(void *data, bool state)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
 
    int err;
 
@@ -329,13 +329,13 @@ static void alsa_qsa_set_nonblock_state(void *data, bool state)
 
 static bool alsa_qsa_use_float(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
    return alsa->has_float;
 }
 
 static void alsa_qsa_free(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
 
    if (alsa)
    {
@@ -352,7 +352,7 @@ static void alsa_qsa_free(void *data)
 
 static size_t alsa_qsa_write_avail(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
    size_t avail = (alsa->buf_count -
          (int)alsa->buffered_blocks - 1) * alsa->buf_size +
       (alsa->buf_size - (int)alsa->buffer_ptr);
@@ -361,7 +361,7 @@ static size_t alsa_qsa_write_avail(void *data)
 
 static size_t alsa_qsa_buffer_size(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
    return alsa->buf_size * alsa->buf_count;
 }
 

@@ -55,8 +55,6 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
-#include "../gfx/video_driver.h"
-
 #include "tasks_internal.h"
 
 typedef struct screenshot_task_state screenshot_task_state_t;
@@ -129,11 +127,6 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    }
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!state->silence)
-      menu_widgets_screenshot_taken(state->shotname, state->filename);
-#endif
-
    return ret;
 }
 
@@ -158,7 +151,13 @@ static void task_screenshot_handler(retro_task_t *task)
       if (state->userbuf)
          free(state->userbuf);
 
-      free(state);
+#ifdef HAVE_MENU_WIDGETS
+      /* If menu widgets are enabled, state is freed
+         in the callback after the notification
+         is displayed */
+      if (!menu_widgets_ready())
+#endif
+         free(state);
       return;
    }
 
@@ -194,43 +193,51 @@ static void task_screenshot_handler(retro_task_t *task)
       task_free_title(task);
 }
 
+#ifdef HAVE_MENU_WIDGETS
+static void task_screenshot_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+
+   if (!menu_widgets_ready())
+      return;
+
+   if (state && !state->silence)
+      menu_widgets_screenshot_taken(state->shotname, state->filename);
+
+   free(state);
+}
+#endif
+
 /* Take frame bottom-up. */
 static bool screenshot_dump(
+      const char *screenshot_dir,
       const char *name_base,
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24,
-      void *userbuf, bool savestate,
+      int pitch,
+      bool bgr24,
+      void *userbuf,
+      bool savestate,
       bool is_idle,
       bool is_paused,
       bool fullpath,
-      bool use_thread)
+      bool use_thread,
+      unsigned pixel_format_type)
 {
    struct retro_system_info system_info;
-   char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   const char *screenshot_dir     = settings->paths.directory_screenshot;
-   retro_task_t *task             = task_init();
    screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
-   screenshot_path[0]             = '\0';
 
    /* If fullpath is true, name_base already contains a 
     * static path + filename to save the screenshot to. */
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
-   else
-   {
-      if (string_is_empty(screenshot_dir) || settings->bools.screenshots_in_content_dir)
-      {
-         fill_pathname_basedir(screenshot_path, name_base,
-               sizeof(screenshot_path));
-         screenshot_dir = screenshot_path;
-      }
-   }
 
    state->is_idle             = is_idle;
    state->is_paused           = is_paused;
@@ -242,7 +249,7 @@ static bool screenshot_dump(
    state->userbuf             = userbuf;
    state->silence             = savestate;
    state->history_list_enable = settings->bools.history_list_enable;
-   state->pixel_format_type   = video_driver_get_pixel_format();
+   state->pixel_format_type   = pixel_format_type;
 
    if (!fullpath)
    {
@@ -275,8 +282,19 @@ static bool screenshot_dump(
             snprintf(state->shotname, sizeof(state->shotname),
                   "%s.png", path_basename(name_base));
 
-         fill_pathname_join(state->filename, screenshot_dir,
-               state->shotname, sizeof(state->filename));
+         if (  string_is_empty(screenshot_dir) || 
+               settings->bools.screenshots_in_content_dir)
+         {
+            char screenshot_path[PATH_MAX_LENGTH];
+            screenshot_path[0]             = '\0';
+            fill_pathname_basedir(screenshot_path, name_base,
+                  sizeof(screenshot_path));
+            fill_pathname_join(state->filename, screenshot_path,
+                  state->shotname, sizeof(state->filename));
+         }
+         else
+            fill_pathname_join(state->filename, screenshot_dir,
+                  state->shotname, sizeof(state->filename));
       }
    }
 
@@ -284,27 +302,31 @@ static bool screenshot_dump(
    buf = (uint8_t*)malloc(width * height * 3);
    if (!buf)
    {
-      if (task)
-         free(task);
       free(state);
       return false;
    }
    state->out_buffer = buf;
 #endif
 
-   task->type        = TASK_TYPE_BLOCKING;
-   task->state       = state;
-   task->handler     = task_screenshot_handler;
-
    if (use_thread)
    {
+      retro_task_t *task= task_init();
+
+      task->type        = TASK_TYPE_BLOCKING;
+      task->state       = state;
+      task->handler     = task_screenshot_handler;
+#ifdef HAVE_MENU_WIDGETS
+      task->callback    = task_screenshot_callback;
+#endif
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (video_driver_has_widgets())
+      if (menu_widgets_ready() && !savestate)
          task_free_title(task);
       else
 #endif
+      {
          if (!savestate)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      }
 
       if (task_queue_push(task))
          return true;
@@ -323,14 +345,18 @@ static bool screenshot_dump(
       return false;
    }
 
-   if (task)
-      free(task);
    return screenshot_dump_direct(state);
 }
 
-#if !defined(VITA)
-static bool take_screenshot_viewport(const char *name_base, bool savestate,
-      bool is_idle, bool is_paused, bool fullpath, bool use_thread)
+static bool take_screenshot_viewport(
+      const char *screenshot_dir,
+      const char *name_base,
+      bool savestate,
+      bool is_idle,
+      bool is_paused,
+      bool fullpath,
+      bool use_thread,
+      unsigned pixel_format_type)
 {
    struct video_viewport vp;
    uint8_t *buffer                       = NULL;
@@ -353,25 +379,29 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate,
       return false;
 
    if (!video_driver_read_viewport(buffer, is_idle))
-      goto error;
+   {
+      free(buffer);
+      return false;
+   }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(name_base,
+   if (!screenshot_dump(screenshot_dir,
+            name_base,
             buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer, savestate, is_idle, is_paused, fullpath, use_thread))
-      goto error;
+            vp.width * 3, true, buffer, savestate, is_idle, is_paused, fullpath, use_thread,
+            pixel_format_type))
+   {
+      free(buffer);
+      return false;
+   }
 
    return true;
-
-error:
-   if (buffer)
-      free(buffer);
-   return false;
 }
-#endif
 
-static bool take_screenshot_raw(const char *name_base, void *userbuf,
-      bool savestate, bool is_idle, bool is_paused, bool fullpath, bool use_thread)
+static bool take_screenshot_raw(const char *screenshot_dir,
+      const char *name_base, void *userbuf,
+      bool savestate, bool is_idle, bool is_paused, bool fullpath, bool use_thread,
+      unsigned pixel_format_type)
 {
    size_t pitch;
    unsigned width, height;
@@ -382,47 +412,61 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   if (!screenshot_dump(name_base,
-         (const uint8_t*)data + (height - 1) * pitch,
-         width, height, (int)(-pitch), false, userbuf, savestate,
-         is_idle, is_paused, fullpath, use_thread))
+   if (!screenshot_dump(screenshot_dir,
+            name_base,
+            (const uint8_t*)data + (height - 1) * pitch,
+            width,
+            height,
+            (int)(-pitch),
+            false,
+            userbuf,
+            savestate,
+            is_idle,
+            is_paused,
+            fullpath,
+            use_thread,
+            pixel_format_type))
       return false;
 
    return true;
 }
 
-static bool take_screenshot_choice(const char *name_base, bool savestate,
-      bool is_paused, bool is_idle, bool has_valid_framebuffer, bool fullpath, bool use_thread)
+static bool take_screenshot_choice(
+      const char *screenshot_dir,
+      const char *name_base,
+      bool savestate,
+      bool is_paused,
+      bool is_idle,
+      bool has_valid_framebuffer,
+      bool fullpath,
+      bool use_thread,
+      bool supports_viewport_read,
+      bool supports_read_frame_raw,
+      unsigned pixel_format_type
+      )
 {
    size_t old_pitch;
    unsigned old_width, old_height;
    void *frame_data            = NULL;
    const void* old_data        = NULL;
-   settings_t *settings        = config_get_ptr();
-   const char *screenshot_dir  = settings->paths.directory_screenshot;
 
-   /* No way to infer screenshot directory. */
-   if (     string_is_empty(screenshot_dir)
-         && string_is_empty(name_base))
-      return false;
-
-   if (video_driver_supports_viewport_read())
+   if (supports_viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
       if (!is_idle)
          video_driver_cached_frame();
-#if defined(VITA)
-      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread);
-#else
-      return take_screenshot_viewport(name_base, savestate, is_idle, is_paused, fullpath, use_thread);
-#endif
+      return take_screenshot_viewport(screenshot_dir,
+            name_base, savestate, is_idle, is_paused, fullpath, use_thread,
+            pixel_format_type);
    }
 
    if (!has_valid_framebuffer)
-      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread);
+      return take_screenshot_raw(screenshot_dir,
+            name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread,
+            pixel_format_type);
 
-   if (!video_driver_supports_read_frame_raw())
+   if (!supports_read_frame_raw)
       return false;
 
    video_driver_cached_frame_get(&old_data, &old_width, &old_height,
@@ -437,27 +481,43 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    if (frame_data)
    {
       video_driver_set_cached_frame_ptr(frame_data);
-      if (take_screenshot_raw(name_base, frame_data, savestate, is_idle, is_paused, fullpath, use_thread))
+      if (take_screenshot_raw(screenshot_dir,
+               name_base, frame_data, savestate, is_idle, is_paused, fullpath, use_thread,
+               pixel_format_type))
          return true;
    }
 
    return false;
 }
 
-bool take_screenshot(const char *name_base,
+bool take_screenshot(
+      const char *screenshot_dir,
+      const char *name_base,
       bool silence, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   bool is_paused         = false;
-   bool is_idle           = false;
-   bool is_slowmotion     = false;
-   bool is_perfcnt_enable = false;
-   bool ret               = false;
+   bool is_paused              = false;
+   bool is_idle                = false;
+   bool is_slowmotion          = false;
+   bool is_perfcnt_enable      = false;
+   bool ret                    = false;
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 
-   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle,
-         has_valid_framebuffer, fullpath, use_thread);
+   /* No way to infer screenshot directory. */
+   if (     string_is_empty(screenshot_dir)
+         && string_is_empty(name_base))
+      return false;
+
+   ret       = take_screenshot_choice(
+         screenshot_dir,
+         name_base, silence, is_paused, is_idle,
+         has_valid_framebuffer, fullpath, use_thread,
+         video_driver_supports_viewport_read() &&
+         video_driver_prefer_viewport_read(),
+         video_driver_supports_read_frame_raw(),
+         video_driver_get_pixel_format()
+         );
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();

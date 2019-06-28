@@ -16,7 +16,6 @@
 
 #include <retro_miscellaneous.h>
 #include <gfx/common/gl_core_common.h>
-#include <menu/menu_driver.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -25,7 +24,7 @@
 #include "../menu_driver.h"
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../gfx/common/gl_core_common.h"
 
 static const float gl_core_vertexes[] = {
@@ -157,7 +156,6 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    const float *vertex       = NULL;
    const float *tex_coord    = NULL;
    const float *color        = NULL;
-   struct gl_core_vertex *pv = NULL;
    GLuint            texture = 0;
    gl_core_t *gl             = (gl_core_t*)video_info->userdata;
    const struct gl_core_buffer_locations *loc = NULL;

@@ -56,6 +56,13 @@ static void android_display_server_set_screen_orientation(enum rotation rotation
             g_android->setScreenOrientation, rotation);
 }
 
+static uint32_t android_display_server_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   return flags;
+}
+
 const video_display_server_t dispserv_android = {
    android_display_server_init,
    android_display_server_destroy,
@@ -67,5 +74,6 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */
+   android_display_server_get_flags,
    "android"
 };

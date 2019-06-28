@@ -19,10 +19,10 @@
 
 #include <compat/strl.h>
 
-#include "../../audio/audio_driver.h"
-
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+
+#include "../../retroarch.h"
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) \
@@ -30,30 +30,20 @@
    cbs->action_get_title_ident = #name;
 #endif
 
-static void sanitize_to_string(char *s, const char *label, size_t len)
-{
-   char *pos = NULL;
-
-   strlcpy(s, label, len);
-
-   /* replace characters */
-   while((pos = strchr(s, '_')))
-      *pos = ' ';
-}
-
-static int fill_title(char *s, const char *title, const char *path, size_t len)
-{
-   if (!string_is_empty(path) && !string_is_empty(title))
-      fill_pathname_join_delim(s, title, path, ' ', len);
-   return 0;
-}
+#define sanitize_to_string(s, label, len) \
+   char *pos = NULL; \
+   strlcpy(s, label, len); \
+   while((pos = strchr(s, '_'))) \
+      *pos = ' '
 
 static int action_get_title_action_generic(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    if (s && !string_is_empty(label))
+   {
       sanitize_to_string(s, label, len);
-   return 0;
+   }
+   return 1;
 }
 
 #define default_title_macro(func_name, lbl) \
@@ -61,21 +51,26 @@ static int action_get_title_action_generic(const char *path, const char *label,
 { \
    const char *str = msg_hash_to_str(lbl); \
    if (s && !string_is_empty(str)) \
+   { \
       sanitize_to_string(s, str, len); \
-   return 0; \
+   } \
+   return 1; \
 }
 
 #define default_fill_title_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
-   return fill_title(s, msg_hash_to_str(lbl), path, len); \
+   const char *title = msg_hash_to_str(lbl); \
+   if (!string_is_empty(path) && !string_is_empty(title)) \
+      fill_pathname_join_delim(s, title, path, ' ', len); \
+   return 1; \
 }
 
 #define default_title_copy_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
-   return 0; \
+   return 1; \
 }
 
 static int action_get_title_dropdown_item(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
@@ -110,6 +105,7 @@ default_title_macro(action_get_sideload_core_list,              MENU_ENUM_LABEL_
 default_title_macro(action_get_online_updater_list,             MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER)
 default_title_macro(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
 default_title_macro(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
+default_title_macro(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
 default_title_macro(action_get_core_updater_list,               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 default_title_macro(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 default_title_macro(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
@@ -138,6 +134,9 @@ default_title_macro(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_
 default_title_macro(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
 default_title_macro(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
 default_title_macro(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
+#ifdef HAVE_VIDEO_LAYOUT
+default_title_macro(action_get_onscreen_video_layout_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS)
+#endif
 default_title_macro(action_get_menu_views_settings_list,        MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS)
 default_title_macro(action_get_quick_menu_views_settings_list,  MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS)
 default_title_macro(action_get_menu_settings_list,              MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
@@ -168,6 +167,7 @@ default_title_macro(action_get_system_information_list,         MENU_ENUM_LABEL_
 default_title_macro(action_get_network_information_list,        MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION)
 default_title_macro(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 default_title_macro(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
+default_title_macro(action_get_title_information,               MENU_ENUM_LABEL_VALUE_INFORMATION)
 default_title_macro(action_get_title_goto_favorites,            MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)
 default_title_macro(action_get_title_goto_image,                MENU_ENUM_LABEL_VALUE_GOTO_IMAGES)
 default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
@@ -208,6 +208,9 @@ default_fill_title_macro(action_get_title_audio_filter_directory, MENU_ENUM_LABE
 default_fill_title_macro(action_get_title_video_filter_directory, MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR)
 default_fill_title_macro(action_get_title_savefile_directory,     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY)
 default_fill_title_macro(action_get_title_overlay_directory,      MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY)
+#ifdef HAVE_VIDEO_LAYOUT
+default_fill_title_macro(action_get_title_video_layout_directory, MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY)
+#endif
 default_fill_title_macro(action_get_title_system_directory,       MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY)
 default_fill_title_macro(action_get_title_assets_directory,       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY)
 default_fill_title_macro(action_get_title_extraction_directory,   MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY)
@@ -421,6 +424,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_overlay_settings_list);
       return 0;
    }
+#ifdef HAVE_VIDEO_LAYOUT
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_video_layout_settings_list);
+      return 0;
+   }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_menu_views_settings_list);
@@ -662,6 +672,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay_directory);
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+         case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_layout_directory);
+            break;
+#endif
          case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_browser_directory);
             break;
@@ -722,6 +737,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
             break;
+         case MENU_ENUM_LABEL_INFORMATION:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_information);
+            break;
          case MENU_ENUM_LABEL_SETTINGS:
             BIND_ACTION_GET_TITLE(cbs, action_get_settings_list);
             break;
@@ -754,6 +772,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_online_pl_thumbnails_updater_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
@@ -827,6 +848,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_overlay_settings_list);
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+         case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_video_layout_settings_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
             break;
@@ -997,6 +1023,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_OVERLAY_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay_directory);
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+         case MENU_LABEL_VIDEO_LAYOUT_DIRECTORY:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_layout_directory);
+            break;
+#endif
          case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_browser_directory);
             break;
@@ -1057,6 +1088,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
             break;
+         case MENU_LABEL_INFORMATION:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_information);
+            break;
          case MENU_LABEL_SETTINGS:
             BIND_ACTION_GET_TITLE(cbs, action_get_settings_list);
             break;
@@ -1089,6 +1123,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
+            break;
+         case MENU_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_online_pl_thumbnails_updater_list);
             break;
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);

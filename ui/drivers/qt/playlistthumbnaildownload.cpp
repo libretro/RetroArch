@@ -293,9 +293,7 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
 void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 {
    QFile playlistFile(playlistPath);
-   QString system;
-   QString title;
-   QString type;
+   QString system, title, type;
    settings_t *settings = config_get_ptr();
    int i;
    int count;
@@ -304,8 +302,8 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       return;
 
    m_pendingPlaylistThumbnails.clear();
-   m_downloadedThumbnails = 0;
-   m_failedThumbnails = 0;
+   m_downloadedThumbnails                 = 0;
+   m_failedThumbnails                     = 0;
    m_playlistThumbnailDownloadWasCanceled = false;
 
    count = m_playlistModel->rowCount();
@@ -320,15 +318,15 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       QHash<QString, QString> hash2;
       QHash<QString, QString> hash3;
 
-      hash["db_name"] = itemHash.value("db_name");
+      hash["db_name"]     = itemHash.value("db_name");
       hash["label_noext"] = itemHash.value("label_noext");
-      hash["type"] = THUMBNAIL_BOXART;
+      hash["type"]        = THUMBNAIL_BOXART;
 
-      hash2 = hash;
-      hash3 = hash;
+      hash2               = hash;
+      hash3               = hash;
 
-      hash2["type"] = THUMBNAIL_SCREENSHOT;
-      hash3["type"] = THUMBNAIL_TITLE;
+      hash2["type"]       = THUMBNAIL_SCREENSHOT;
+      hash3["type"]       = THUMBNAIL_TITLE;
 
       m_pendingPlaylistThumbnails.append(hash);
       m_pendingPlaylistThumbnails.append(hash2);

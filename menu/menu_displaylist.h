@@ -32,24 +32,26 @@
 
 RETRO_BEGIN_DECLS
 
+/* NOTE: Order matters - only add new entries at
+ * the bottom */
 enum menu_displaylist_parse_type
 {
-   PARSE_NONE                = (1 << 0),
-   PARSE_GROUP               = (1 << 1),
-   PARSE_ACTION              = (1 << 2),
-   PARSE_ONLY_INT            = (1 << 3),
-   PARSE_ONLY_UINT           = (1 << 4),
-   PARSE_ONLY_BOOL           = (1 << 5),
-   PARSE_ONLY_FLOAT          = (1 << 6),
-   PARSE_ONLY_BIND           = (1 << 7),
-   PARSE_ONLY_GROUP          = (1 << 8),
-   PARSE_ONLY_STRING         = (1 << 9),
-   PARSE_ONLY_PATH           = (1 << 10),
-   PARSE_ONLY_STRING_OPTIONS = (1 << 11),
-   PARSE_ONLY_HEX            = (1 << 12),
-   PARSE_ONLY_DIR            = (1 << 13),
-   PARSE_SUB_GROUP           = (1 << 14),
-   PARSE_ONLY_SIZE           = (1 << 15)
+   PARSE_NONE = 0,
+   PARSE_GROUP,
+   PARSE_ACTION,
+   PARSE_ONLY_INT,
+   PARSE_ONLY_UINT,
+   PARSE_ONLY_BOOL,
+   PARSE_ONLY_FLOAT,
+   PARSE_ONLY_BIND,
+   PARSE_ONLY_GROUP,
+   PARSE_ONLY_STRING,
+   PARSE_ONLY_PATH,
+   PARSE_ONLY_STRING_OPTIONS,
+   PARSE_ONLY_HEX,
+   PARSE_ONLY_DIR,
+   PARSE_SUB_GROUP,
+   PARSE_ONLY_SIZE
 };
 
 enum menu_displaylist_ctl_state
@@ -86,6 +88,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CORES_COLLECTION_SUPPORTED,
    DISPLAYLIST_CORES_UPDATER,
    DISPLAYLIST_THUMBNAILS_UPDATER,
+   DISPLAYLIST_PL_THUMBNAILS_UPDATER,
    DISPLAYLIST_LAKKA,
    DISPLAYLIST_CORES_DETECTED,
    DISPLAYLIST_CORE_OPTIONS,
@@ -112,6 +115,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_IMAGES,
    DISPLAYLIST_FONTS,
    DISPLAYLIST_OVERLAYS,
+#ifdef HAVE_VIDEO_LAYOUT
+   DISPLAYLIST_VIDEO_LAYOUT_PATH,
+#endif
    DISPLAYLIST_SHADER_PARAMETERS,
    DISPLAYLIST_SHADER_PARAMETERS_PRESET,
    DISPLAYLIST_NETWORK_INFO,
@@ -137,6 +143,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_LATENCY_SETTINGS_LIST,
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
    DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST,
+#ifdef HAVE_VIDEO_LAYOUT
+   DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
+#endif
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST,
@@ -166,6 +175,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_LOAD_CONTENT_LIST,
    DISPLAYLIST_LOAD_CONTENT_SPECIAL,
    DISPLAYLIST_INFORMATION_LIST,
+   DISPLAYLIST_INFORMATION,
    DISPLAYLIST_CONTENT_SETTINGS,
    DISPLAYLIST_OPTIONS,
    DISPLAYLIST_OPTIONS_CHEATS,
@@ -263,18 +273,6 @@ bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);
 #endif
-
-int menu_displaylist_parse_settings_internal_enum(
-      file_list_t *list,
-      enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry,
-      rarch_setting_t *setting,
-      enum msg_hash_enums enum_idx
-      );
-
-#define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
-
-#define menu_displaylist_parse_settings(info_list, info_label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal(info_list, parse_type, add_empty_entry, entry_type, menu_setting_find(info_label))
 
 RETRO_END_DECLS
 

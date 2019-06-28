@@ -54,5 +54,6 @@ const video_display_server_t dispserv_null = {
    NULL, /* get_output_options */
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
+   NULL, /* get_flags */
    "null"
 };

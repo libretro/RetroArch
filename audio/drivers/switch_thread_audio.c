@@ -28,7 +28,7 @@
 #endif
 
 #include <queues/fifo_queue.h>
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../../tasks/tasks_internal.h"

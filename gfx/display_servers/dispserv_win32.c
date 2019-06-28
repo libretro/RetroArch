@@ -37,8 +37,8 @@
 
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../video_driver.h" /* needed to set refresh rate in set resolution */
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
@@ -449,6 +449,15 @@ void win32_display_server_set_screen_orientation(enum rotation rotation)
 }
 #endif
 
+static uint32_t win32_display_server_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+
+   return flags;
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -465,5 +474,6 @@ const video_display_server_t dispserv_win32 = {
    NULL,
    NULL,
 #endif
+   win32_display_server_get_flags,
    "win32"
 };

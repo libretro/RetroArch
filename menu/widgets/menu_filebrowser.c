@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2017-2019 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -83,6 +84,10 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
    /* Core not loaded completely, use the data we peeked on load core */
    else
       subsystem = subsystem_data + content_get_subsystem();
+
+   if (info && (info->type_default == FILE_TYPE_SHADER_PRESET ||
+                info->type_default == FILE_TYPE_SHADER))
+      filter_ext = true;
 
    if (info && string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))

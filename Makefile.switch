@@ -46,7 +46,7 @@ endif
 
 include $(LIBTRANSISTOR_HOME)/libtransistor.mk
 
-INCDIRS := -I. -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBTRANSISTOR_HOME)/build/sdl2_install/include/SDL2/
+INCDIRS := -I. -Ideps -Ideps/libz -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb -I$(LIBTRANSISTOR_HOME)/build/sdl2_install/include/SDL2/
 LIBDIRS := -L.
 
 TARGETS := $(TARGET).nro

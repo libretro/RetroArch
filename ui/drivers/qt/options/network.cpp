@@ -57,6 +57,7 @@ QWidget *NetplayPage::widget()
 
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
    checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
+   checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
 
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
    serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
@@ -164,14 +165,5 @@ UpdaterPage::UpdaterPage(QObject *parent) :
 
 QWidget *UpdaterPage::widget()
 {
-   QWidget    *widget = new QWidget;
-   FormLayout *layout = new FormLayout;
-
-   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
-   layout->add(MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL);
-   layout->add(MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
-
-   widget->setLayout(layout);
-
-   return widget;
+   return create_widget(DISPLAYLIST_UPDATER_SETTINGS_LIST);
 }

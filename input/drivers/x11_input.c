@@ -27,10 +27,10 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/input_x11_common.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct x11_input
@@ -79,7 +79,8 @@ static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
    return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
-static bool x_mbutton_pressed(x11_input_t *x11, unsigned port, unsigned key)
+static bool x_mouse_button_pressed(
+      x11_input_t *x11, unsigned port, unsigned key)
 {
    bool result;
    settings_t *settings = config_get_ptr();
@@ -137,9 +138,18 @@ static bool x_is_pressed(x11_input_t *x11,
 
    if (binds && binds[id].valid)
    {
-      if (x_mbutton_pressed(x11, port, bind->mbutton))
+      /* Auto-binds are per joypad, not per user. */
+      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+      if (x_mouse_button_pressed(x11, port, bind->mbutton))
          return true;
-      if (input_joypad_pressed(x11->joypad, joypad_info, port, binds, id))
+      if (joykey != NO_BTN 
+            && x11->joypad->button(joypad_info.joy_idx, joykey))
+         return true;
+      if (((float)abs(x11->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
    }
 
@@ -157,7 +167,7 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    int id_plus_key       = 0;
    unsigned keycode      = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    id_minus_key          = binds[id_minus].key;
    id_plus_key           = binds[id_plus].key;
@@ -308,11 +318,22 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return x_is_pressed(x11, joypad_info, binds[port], port, id);
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (x_is_pressed(
+                        x11, joypad_info, binds[port], port, i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = x_is_pressed(x11, joypad_info, binds[port], port, id);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret && binds[port])
@@ -320,6 +341,8 @@ static int16_t x_input_state(void *data,
                   port, idx,
                   id, binds[port]);
          return ret;
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
@@ -419,7 +442,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
       x11->mouse_r  = mask & Button3Mask;
 
       /* Somewhat hacky, but seem to do the job. */
-      if (x11->grab_mouse && video_driver_cb_has_focus())
+      if (x11->grab_mouse && video_driver_has_focus())
       {
          int mid_w, mid_h;
          struct video_viewport vp;
@@ -453,7 +476,7 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   if (video_driver_cb_has_focus())
+   if (video_driver_has_focus())
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));

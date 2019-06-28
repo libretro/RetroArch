@@ -430,8 +430,10 @@ QString GridView::getLayout() const
          return "anchored";
       case Centered:
       default:
-         return "centered";
+         break;
    }
+
+   return "centered";
 }
 
 void GridView::setLayout(QString layout)
@@ -474,14 +476,16 @@ QString GridItem::getThumbnailVerticalAlign() const
 {
    switch (thumbnailVerticalAlignmentFlag)
    {
-   case Qt::AlignTop:
-      return "top";
-   case Qt::AlignVCenter:
-      return "center";
-   case Qt::AlignBottom:
-   default:
-      return "bottom";
+      case Qt::AlignTop:
+         return "top";
+      case Qt::AlignVCenter:
+         return "center";
+      case Qt::AlignBottom:
+      default:
+         break;
    }
+
+   return "bottom";
 }
 
 void GridItem::setThumbnailVerticalAlign(const QString valign)

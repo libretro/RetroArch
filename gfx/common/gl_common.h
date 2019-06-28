@@ -33,7 +33,7 @@
 #include <formats/image.h>
 
 #include "../video_coord_array.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 RETRO_BEGIN_DECLS
 
@@ -204,6 +204,13 @@ struct gl
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
 
+#ifdef HAVE_VIDEO_LAYOUT
+   bool   video_layout_resize;
+   GLuint video_layout_fbo;
+   GLuint video_layout_fbo_texture;
+   GLuint video_layout_white_texture;
+#endif
+
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned fbo_feedback_pass;
@@ -254,23 +261,6 @@ static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-}
-
-static INLINE bool gl_set_core_context(enum retro_hw_context_type ctx_type)
-{
-   gfx_ctx_flags_t flags;
-   if (ctx_type != RETRO_HW_CONTEXT_OPENGL_CORE)
-      return false;
-
-   /**
-    * Ensure that the rest of the frontend knows we have a core context
-    */
-   flags.flags = 0;
-   BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-   video_context_driver_set_flags(&flags);
-
-   return true;
 }
 
 bool gl_query_core_context_in_use(void);

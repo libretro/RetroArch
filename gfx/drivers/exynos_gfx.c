@@ -1528,14 +1528,6 @@ static bool exynos_gfx_set_shader(void *data,
    return false;
 }
 
-static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 video_driver_t video_exynos = {
   exynos_gfx_init,
   exynos_gfx_frame,
@@ -1550,11 +1542,14 @@ video_driver_t video_exynos = {
   NULL, /* set_viewport */
   exynos_gfx_set_rotation,
   exynos_gfx_viewport_info,
-  exynos_gfx_read_viewport,
+  NULL, /* read_viewport */
   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   exynos_gfx_get_poke_interface
 };

@@ -28,6 +28,13 @@ RETRO_BEGIN_DECLS
 
 typedef struct content_playlist playlist_t;
 
+enum playlist_runtime_status
+{
+   PLAYLIST_RUNTIME_UNKNOWN = 0,
+   PLAYLIST_RUNTIME_MISSING,
+   PLAYLIST_RUNTIME_VALID
+};
+
 struct playlist_entry
 {
    char *path;
@@ -39,6 +46,7 @@ struct playlist_entry
    char *subsystem_ident;
    char *subsystem_name;
    struct string_list *subsystem_roms;
+   enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -100,13 +108,6 @@ void playlist_get_index(playlist_t *playlist,
       size_t idx,
       const struct playlist_entry **entry);
 
-void playlist_get_runtime_index(playlist_t *playlist,
-      size_t idx,
-      const char **path, const char **core_path,
-      unsigned *runtime_hours, unsigned *runtime_minutes, unsigned *runtime_seconds,
-      unsigned *last_played_year, unsigned *last_played_month, unsigned *last_played_day,
-      unsigned *last_played_hour, unsigned *last_played_minute, unsigned *last_played_second);
-
 /**
  * playlist_delete_index:
  * @playlist               : Playlist handle.
@@ -130,10 +131,7 @@ bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry);
 
 bool playlist_push_runtime(playlist_t *playlist,
-      const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
-      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
-      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second);
+      const struct playlist_entry *entry);
 
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry);
@@ -144,10 +142,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
  * display purposes), we do not always want this function
  * to trigger a re-write of the playlist file. */
 void playlist_update_runtime(playlist_t *playlist, size_t idx,
-      const char *path, const char *core_path,
-      unsigned runtime_hours, unsigned runtime_minutes, unsigned runtime_seconds,
-      unsigned last_played_year, unsigned last_played_month, unsigned last_played_day,
-      unsigned last_played_hour, unsigned last_played_minute, unsigned last_played_second,
+      const struct playlist_entry *update_entry,
       bool register_update);
 
 void playlist_get_index_by_path(playlist_t *playlist,

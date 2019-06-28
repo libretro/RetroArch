@@ -225,8 +225,8 @@ DECL_AXIS_EX(l_y_plus,  +1, "Circle Pad Down") \
 DECL_AXIS_EX(l_y_minus, -1, "Circle Pad Up") \
 DECL_AXIS_EX(r_x_plus,  +2, "C Stick Right") \
 DECL_AXIS_EX(r_x_minus, -2, "C Stick Left") \
-DECL_AXIS_EX(r_y_plus,  -3, "C Stick Down") \
-DECL_AXIS_EX(r_y_minus, +3, "C Stick Up")
+DECL_AXIS_EX(r_y_plus,  +3, "C Stick Down") \
+DECL_AXIS_EX(r_y_minus, -3, "C Stick Up")
 
 #define DOSINPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \

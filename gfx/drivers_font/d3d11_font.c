@@ -22,9 +22,9 @@
 #include <encodings/utf.h>
 
 #include "../font_driver.h"
-#include "../video_driver.h"
 #include "../common/d3d11_common.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct

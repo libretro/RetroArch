@@ -33,11 +33,11 @@
 #include <compat/strl.h>
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../defines/ps3_defines.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
-#include "../video_driver.h"
 
 typedef struct gfx_ctx_ps3_data
 {
@@ -405,10 +405,11 @@ static void gfx_ctx_ps3_get_video_output_next(void *data)
 static uint32_t gfx_ctx_ps3_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
 #ifdef HAVE_CG
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
 #endif
+
    return flags;
 }
 

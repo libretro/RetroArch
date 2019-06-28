@@ -95,6 +95,8 @@ typedef struct gx_video
    bool menu_texture_enable;
    video_viewport_t vp;
    unsigned scale;
+   unsigned overscan_correction_top;
+   unsigned overscan_correction_bottom;
 #ifdef HAVE_OVERLAY
    struct gx_overlay_data *overlay;
    unsigned overlays;
@@ -114,7 +116,7 @@ static struct
 
 static struct
 {
-   uint32_t data[240 * 200];
+   uint32_t data[240 * 212];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -461,14 +463,44 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
-   /* calculate menu dimensions */
+   /* Calculate menu dimensions
+    * > Height is set as large as possible, limited to
+    *   maximum of 240 (standard RGUI framebuffer height) */
    new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
-
    if (new_fb_height > 240)
       new_fb_height = 240;
-   new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
-   if (new_fb_width > 400)
-      new_fb_width = 400;
+   /* > Width is dertermined by current RGUI aspect ratio
+    *   (note that width is in principal limited by hardware
+    *    constraints to 640, but we impose a lower limit of
+    *    424 since this is the nearest to the RGUI 'standard'
+    *    for 16:9 aspect ratios which is supported by the Wii
+    *    - i.e. last two bits of value must be zero, so 426->424) */
+   switch (settings->uints.menu_rgui_aspect_ratio)
+   {
+      case RGUI_ASPECT_RATIO_16_9:
+      case RGUI_ASPECT_RATIO_16_9_CENTRE:
+         if (new_fb_height == 240)
+            new_fb_width = 424;
+         else
+            new_fb_width = (unsigned)((16.0f / 9.0f) * (float)new_fb_height) & ~3;
+         break;
+      case RGUI_ASPECT_RATIO_16_10:
+      case RGUI_ASPECT_RATIO_16_10_CENTRE:
+         if (new_fb_height == 240)
+            new_fb_width = 384;
+         else
+            new_fb_width = (unsigned)((16.0f / 10.0f) * (float)new_fb_height) & ~3;
+         break;
+      default:
+         /* 4:3 */
+         if (new_fb_height == 240)
+            new_fb_width = 320;
+         else
+            new_fb_width = (unsigned)((4.0f / 3.0f) * (float)new_fb_height) & ~3;
+         break;
+   }
+   if (new_fb_width > 424)
+      new_fb_width = 424;
 
    new_fb_pitch = new_fb_width * 2;
 
@@ -909,7 +941,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
-static void gx_resize(void *data)
+static void gx_resize(void *data, settings_t *settings)
 {
    int gamma;
    unsigned degrees;
@@ -918,10 +950,9 @@ static void gx_resize(void *data)
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    gx_video_t                   *gx = (gx_video_t*)data;
-   settings_t             *settings = config_get_ptr();
    const global_t           *global = global_get_ptr();
 
-   if (!gx)
+   if (!gx || !settings)
       return;
 
    width  = gx->vp.full_width;
@@ -991,6 +1022,24 @@ static void gx_resize(void *data)
             y      = (unsigned)(height * (0.5 - delta));
             height = (unsigned)(2.0 * height * delta);
          }
+      }
+   }
+
+   /* Overscan correction */
+   if ((settings->uints.video_overscan_correction_top > 0) ||
+       (settings->uints.video_overscan_correction_bottom > 0))
+   {
+      float current_aspect = (float)width / (float)height;
+      int new_height       = height - (settings->uints.video_overscan_correction_top +
+                                       settings->uints.video_overscan_correction_bottom);
+      int new_width        = (int)((new_height * current_aspect) + 0.5f);
+
+      if ((new_height > 0) && (new_width > 0))
+      {
+         x += (int)((float)(width - new_width) * 0.5f);
+         y += (int)settings->uints.video_overscan_correction_top;
+         width = (unsigned)new_width;
+         height = (unsigned)new_height;
       }
    }
 
@@ -1230,13 +1279,6 @@ static void gx_viewport_info(void *data, struct video_viewport *vp)
    *vp = gx->vp;
 }
 
-static bool gx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-   return true;
-}
-
 static void gx_get_video_output_prev(void *data)
 {
    global_t *global = global_get_ptr();
@@ -1263,8 +1305,17 @@ static void gx_get_video_output_next(void *data)
    global->console.screen.resolutions.current.id++;
 }
 
+static uint32_t gx_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
-   NULL, /* get_flags */
+   gx_get_flags,
    NULL,
    NULL,
    gx_set_video_mode,
@@ -1504,21 +1555,30 @@ static bool gx_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    char fps_text_buf[128];
+   settings_t               *settings = config_get_ptr();
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    uint32_t level                     = 0;
 
    fps_text_buf[0]                    = '\0';
 
-   if(!gx || (!frame && !gx->menu_texture_enable))
+   if(!gx || (!frame && !gx->menu_texture_enable) || !settings)
       return true;
 
    if (!frame)
       width = height = 4; /* draw a black square in the background */
 
+   if ((gx->overscan_correction_top != settings->uints.video_overscan_correction_top) ||
+       (gx->overscan_correction_bottom != settings->uints.video_overscan_correction_bottom))
+   {
+      gx->overscan_correction_top = settings->uints.video_overscan_correction_top;
+      gx->overscan_correction_bottom = settings->uints.video_overscan_correction_bottom;
+      gx->should_resize = true;
+   }
+
    if(gx->should_resize)
    {
-      gx_resize(gx);
+      gx_resize(gx, settings);
       clear_efb = GX_TRUE;
    }
 
@@ -1670,10 +1730,13 @@ video_driver_t video_gx = {
    NULL, /* set_viewport */
    gx_set_rotation,
    gx_viewport_info,
-   gx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    gx_get_poke_interface,
 };

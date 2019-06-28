@@ -46,7 +46,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
-#include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
 

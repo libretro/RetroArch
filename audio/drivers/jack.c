@@ -25,7 +25,7 @@
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 

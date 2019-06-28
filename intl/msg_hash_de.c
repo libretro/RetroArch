@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for Libretro.
+﻿/*  RetroArch - A frontend for Libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Translation currently maintained by Lothar Serra Mari [rootfather]
@@ -25,6 +25,14 @@
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../verbosity.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#if (_MSC_VER >= 1700)
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
+#endif
 
 int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
 {

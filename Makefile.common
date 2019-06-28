@@ -159,15 +159,12 @@ DEF_FLAGS += -DHAVE_DR_MP3
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
-       ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
        ui/drivers/null/ui_null_window.o \
        ui/drivers/null/ui_null_browser_window.o \
        ui/drivers/null/ui_null_msg_window.o \
        ui/drivers/null/ui_null_application.o \
-       core_impl.o \
        retroarch.o \
-       dirs.o \
        paths.o \
        command.o \
        msg_hash.o \
@@ -180,6 +177,7 @@ OBJ += frontend/frontend.o \
        tasks/task_audio_mixer.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
        $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.o \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
@@ -193,7 +191,6 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       setting_list.o \
        list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
@@ -205,26 +202,19 @@ OBJ += frontend/frontend.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
-       audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
-       input/common/input_common.o \
-       input/input_driver.o \
+       input/common/input_hid_common.o \
        input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
-       gfx/video_driver.o \
        gfx/video_crt_switch.o \
-       camera/camera_driver.o \
-       wifi/wifi_driver.o \
-       location/location_driver.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
-       managers/core_manager.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
@@ -265,22 +255,17 @@ OBJ += frontend/frontend.o \
        input/drivers_hid/null_hid.o \
        input/drivers_joypad/null_joypad.o \
        playlist.o \
-       movie.o \
-       record/record_driver.o \
        record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/midi_driver.o \
        midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
    OBJ += runahead/copy_load_info.o \
-          runahead/dirty_input.o \
           runahead/mem_util.o \
           runahead/mylist.o \
-          runahead/run_ahead.o \
           runahead/secondary_core.o
 endif
 
@@ -787,7 +772,6 @@ OBJ += menu/menu_shader.o
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
-          menu/menu_input.o \
           menu/menu_entries.o \
           menu/menu_setting.o \
           menu/menu_networking.o \
@@ -795,7 +779,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
-          menu/widgets/menu_entry.o \
           menu/widgets/menu_osk.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
@@ -837,6 +820,17 @@ ifeq ($(HAVE_OVERLAY), 1)
      led/drivers/led_overlay.o
 endif
 
+ifeq ($(HAVE_VIDEO_LAYOUT), 1)
+   DEFINES += -DHAVE_VIDEO_LAYOUT
+   OBJ += gfx/video_layout.o \
+      gfx/video_layout/view.o \
+      gfx/video_layout/element.o \
+      gfx/video_layout/component.o \
+      gfx/video_layout/internal.o \
+      gfx/video_layout/scope.o \
+      gfx/video_layout/load.o
+endif
+
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
    OBJ += gfx/drivers_font_renderer/stb_unicode.o
@@ -851,6 +845,7 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+			 $(LIBRETRO_COMM_DIR)/rthreads/rsemaphore.o \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
@@ -900,9 +895,6 @@ ifeq ($(TARGET), retroarch_switch)
              gfx/drivers/switch_nx_gfx.o
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
-      endif
-      ifeq ($(HAVE_THREADS), 1)
-         OBJ += $(LIBRETRO_COMM_DIR)/rthreads/switch_pthread.o
       endif
    else
       OBJ += gfx/drivers/switch_gfx.o
@@ -1335,15 +1327,14 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_D3DX = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX), 1)
-      DEFINES += -DHAVE_D3DX
+   ifeq ($(HAVE_D3DX9), 1)
+      HAVE_D3DX_COMMON = 1
    endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d9
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx9
+      LIBS += $(D3D9_LIBS)
+      ifeq ($(HAVE_D3DX9), 1)
+         LIBS += $(D3DX9_LIBS)
       endif
    endif
    HAVE_DX_COMMON  = 1
@@ -1405,12 +1396,19 @@ ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
+   ifeq ($(HAVE_D3DX8), 1)
+      HAVE_D3DX_COMMON = 1
+   endif
    ifneq ($(HAVE_DYLIB), 1)
-      LIBS += -ld3d8
-      ifeq ($(HAVE_D3DX), 1)
-         LIBS += -ld3dx8
+      LIBS += $(D3D8_LIBS)
+      ifeq ($(HAVE_D3DX8), 1)
+         LIBS += $(D3DX8_LIBS)
       endif
    endif
+endif
+
+ifeq ($(HAVE_D3DX_COMMON), 1)
+   DEFINES += -DHAVE_D3DX
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
@@ -1493,6 +1491,8 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
 endif
 
 ifeq ($(WANT_WGL), 1)
@@ -1567,49 +1567,54 @@ else ifeq ($(HAVE_FLAC),1)
    LIBS    += $(FLAC_LIBS)
 endif
 
-ifeq ($(HAVE_ZLIB), 1)
+ifeq ($(HAVE_BUILTINZLIB), 1)
+   HAVE_ZLIB_COMMON = 1
+   OBJ += $(DEPS_DIR)/libz/adler32.o \
+          $(DEPS_DIR)/libz/compress.o \
+          $(DEPS_DIR)/libz/libz-crc32.o \
+          $(DEPS_DIR)/libz/deflate.o \
+          $(DEPS_DIR)/libz/gzclose.o \
+          $(DEPS_DIR)/libz/gzlib.o \
+          $(DEPS_DIR)/libz/gzread.o \
+          $(DEPS_DIR)/libz/gzwrite.o \
+          $(DEPS_DIR)/libz/inffast.o \
+          $(DEPS_DIR)/libz/inflate.o \
+          $(DEPS_DIR)/libz/inftrees.o \
+          $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
+          $(DEPS_DIR)/libz/zutil.o
+   INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
+   DEFINES += -DWANT_ZLIB
+else
+   HAVE_ZLIB_COMMON = 1
+   LIBS += $(ZLIB_LIBS)
+endif
+
+ifeq ($(HAVE_ZLIB_COMMON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
           $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
-   ifeq ($(HAVE_BUILTINZLIB), 1)
-      OBJ += $(DEPS_DIR)/libz/adler32.o \
-             $(DEPS_DIR)/libz/compress.o \
-             $(DEPS_DIR)/libz/libz-crc32.o \
-             $(DEPS_DIR)/libz/deflate.o \
-             $(DEPS_DIR)/libz/gzclose.o \
-             $(DEPS_DIR)/libz/gzlib.o \
-             $(DEPS_DIR)/libz/gzread.o \
-             $(DEPS_DIR)/libz/gzwrite.o \
-             $(DEPS_DIR)/libz/inffast.o \
-             $(DEPS_DIR)/libz/inflate.o \
-             $(DEPS_DIR)/libz/inftrees.o \
-             $(DEPS_DIR)/libz/trees.o \
-             $(DEPS_DIR)/libz/uncompr.o \
-             $(DEPS_DIR)/libz/zutil.o
-      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat
-      DEFINES += -DWANT_ZLIB
-   else
-      LIBS += $(ZLIB_LIBS)
-   endif
-ifeq ($(HAVE_CHD), 1)
-   DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
-   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
-              $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
 
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
-   ifeq ($(HAVE_FLAC),1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
-             $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+   ifeq ($(HAVE_CHD), 1)
+      DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
+                 $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+
+      ifeq ($(HAVE_FLAC),1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
+                $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+      endif
+
+      ifeq ($(HAVE_7ZIP), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      endif
    endif
-   ifeq ($(HAVE_7ZIP), 1)
-      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
-   endif
-endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)
@@ -1638,10 +1643,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
-
-ifdef HAVE_COMPRESSION
-   DEFINES += -DHAVE_COMPRESSION
-endif
 
 # Easter Egg
 ifeq ($(HAVE_EASTEREGG),1)
@@ -1677,6 +1678,10 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_wifi.o \
           tasks/task_netplay_find_content.o
 
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += tasks/task_pl_thumbnail_download.o
+   endif
+
    ifeq ($(HAVE_SSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
    endif
@@ -1709,76 +1714,69 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS \
+                 -Ideps/rcheevos/include
 
-      ifeq ($(HAVE_NEW_CHEEVOS), 1)
-         DEFINES += -DHAVE_NEW_CHEEVOS \
-            -Ideps/rcheevos/include
-         OBJ += cheevos-new/cheevos.o \
-            cheevos-new/badges.o \
-            cheevos-new/fixup.o \
-            cheevos-new/parser.o \
-            cheevos-new/hash.o \
-            deps/rcheevos/src/rcheevos/trigger.o \
-            deps/rcheevos/src/rcheevos/condset.o \
-            deps/rcheevos/src/rcheevos/condition.o \
-            deps/rcheevos/src/rcheevos/operand.o \
-            deps/rcheevos/src/rcheevos/term.o \
-            deps/rcheevos/src/rcheevos/expression.o \
-            deps/rcheevos/src/rcheevos/value.o \
-            deps/rcheevos/src/rcheevos/lboard.o \
-            deps/rcheevos/src/rcheevos/alloc.o \
-            deps/rcheevos/src/rcheevos/format.o \
-            deps/rcheevos/src/rurl/url.o
+      OBJ += cheevos-new/cheevos.o \
+             cheevos-new/badges.o \
+             cheevos-new/fixup.o \
+             cheevos-new/parser.o \
+             cheevos-new/hash.o \
+             deps/rcheevos/src/rcheevos/trigger.o \
+             deps/rcheevos/src/rcheevos/condset.o \
+             deps/rcheevos/src/rcheevos/condition.o \
+             deps/rcheevos/src/rcheevos/operand.o \
+             deps/rcheevos/src/rcheevos/term.o \
+             deps/rcheevos/src/rcheevos/expression.o \
+             deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rcheevos/lboard.o \
+             deps/rcheevos/src/rcheevos/alloc.o \
+             deps/rcheevos/src/rcheevos/format.o \
+             deps/rcheevos/src/rcheevos/memref.o \
+             deps/rcheevos/src/rcheevos/richpresence.o \
+             deps/rcheevos/src/rurl/url.o
 
-         ifeq ($(HAVE_LUA), 1)
-            DEFINES += -DHAVE_LUA \
-                       -DLUA_32BITS \
-                       -Ideps/lua/src
-            OBJ += deps/lua/src/lapi.o \
-                   deps/lua/src/lcode.o \
-                   deps/lua/src/lctype.o \
-                   deps/lua/src/ldebug.o \
-                   deps/lua/src/ldo.o \
-                   deps/lua/src/ldump.o \
-                   deps/lua/src/lfunc.o \
-                   deps/lua/src/lgc.o \
-                   deps/lua/src/llex.o \
-                   deps/lua/src/lmem.o \
-                   deps/lua/src/lobject.o \
-                   deps/lua/src/lopcodes.o \
-                   deps/lua/src/lparser.o \
-                   deps/lua/src/lstate.o \
-                   deps/lua/src/lstring.o \
-                   deps/lua/src/ltable.o \
-                   deps/lua/src/ltm.o \
-                   deps/lua/src/lundump.o \
-                   deps/lua/src/lvm.o \
-                   deps/lua/src/lzio.o \
-                   deps/lua/src/lauxlib.o \
-                   deps/lua/src/lbaselib.o \
-                   deps/lua/src/lbitlib.o \
-                   deps/lua/src/lcorolib.o \
-                   deps/lua/src/ldblib.o \
-                   deps/lua/src/liolib.o \
-                   deps/lua/src/lmathlib.o \
-                   deps/lua/src/loslib.o \
-                   deps/lua/src/lstrlib.o \
-                   deps/lua/src/ltablib.o \
-                   deps/lua/src/lutf8lib.o \
-                   deps/lua/src/loadlib.o \
-                   deps/lua/src/linit.o
-         else
-            DEFINES += -DRC_DISABLE_LUA
-         endif
-
-      # if not HAVE_NEW_CHEEVOS
+      ifeq ($(HAVE_LUA), 1)
+         DEFINES += -DHAVE_LUA \
+                    -DLUA_32BITS \
+                    -Ideps/lua/src
+         OBJ += deps/lua/src/lapi.o \
+                deps/lua/src/lcode.o \
+                deps/lua/src/lctype.o \
+                deps/lua/src/ldebug.o \
+                deps/lua/src/ldo.o \
+                deps/lua/src/ldump.o \
+                deps/lua/src/lfunc.o \
+                deps/lua/src/lgc.o \
+                deps/lua/src/llex.o \
+                deps/lua/src/lmem.o \
+                deps/lua/src/lobject.o \
+                deps/lua/src/lopcodes.o \
+                deps/lua/src/lparser.o \
+                deps/lua/src/lstate.o \
+                deps/lua/src/lstring.o \
+                deps/lua/src/ltable.o \
+                deps/lua/src/ltm.o \
+                deps/lua/src/lundump.o \
+                deps/lua/src/lvm.o \
+                deps/lua/src/lzio.o \
+                deps/lua/src/lauxlib.o \
+                deps/lua/src/lbaselib.o \
+                deps/lua/src/lbitlib.o \
+                deps/lua/src/lcorolib.o \
+                deps/lua/src/ldblib.o \
+                deps/lua/src/liolib.o \
+                deps/lua/src/lmathlib.o \
+                deps/lua/src/loslib.o \
+                deps/lua/src/lstrlib.o \
+                deps/lua/src/ltablib.o \
+                deps/lua/src/lutf8lib.o \
+                deps/lua/src/loadlib.o \
+                deps/lua/src/linit.o
       else
-         OBJ += cheevos/cheevos.o \
-                cheevos/badges.o \
-                cheevos/var.o \
-                cheevos/cond.o
+         DEFINES += -DRC_DISABLE_LUA
       endif
+
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
@@ -1810,9 +1808,13 @@ ifeq ($(HAVE_NETWORKING), 1)
       endif
    endif
 
+   ifeq ($(HAVE_TRANSLATE), 1)
+      DEFINES += -DHAVE_TRANSLATE
+      OBJ += translation/translation_service.o
+   endif
+
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
-      OBJ += input/input_remote.o \
-             cores/libretro-net-retropad/net_retropad_core.o
+      OBJ += cores/libretro-net-retropad/net_retropad_core.o
    endif
 
    ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
@@ -1887,8 +1889,7 @@ ifneq ($(findstring DOS,$(OS)),)
           gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
-          frontend/drivers/platform_dos.o \
-          input/drivers_keyboard/keyboard_event_dos.o
+          frontend/drivers/platform_dos.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
@@ -1906,11 +1907,12 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/blargg_ntsc_snes.o \
           gfx/video_filters/lq2x.o \
           gfx/video_filters/phosphor2x.o \
-          gfx/video_filters/normal2x.o
+          gfx/video_filters/normal2x.o \
+          gfx/video_filters/scanline2x.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
-   DEFINES += -I$(DEPS_DIR)/libiosuhax
+   DEFINES += -DHAVE_IOSUHAX
    DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
@@ -1918,7 +1920,7 @@ ifeq ($(WANT_IOSUHAX), 1)
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
-   DEFINES += -I$(DEPS_DIR)/libfat/include
+   DEFINES += -DHAVE_LIBFAT
    DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \

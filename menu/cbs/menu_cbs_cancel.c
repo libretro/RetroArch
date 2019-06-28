@@ -36,7 +36,6 @@ int action_cancel_pop_default(const char *path,
 {
    size_t new_selection_ptr;
    const char *menu_label       = NULL;
-   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    settings_t *settings         = config_get_ptr();
 
    (void)path;
@@ -47,7 +46,7 @@ int action_cancel_pop_default(const char *path,
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_cancel)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (!string_is_empty(menu_label))
    {
@@ -118,7 +117,7 @@ static int menu_cbs_init_bind_cancel_compare_type(
          return 0;
    }
 
-   switch ( cbs->enum_idx )
+   switch (cbs->enum_idx)
    {
 
       case MENU_ENUM_LABEL_CHEAT_IDX:

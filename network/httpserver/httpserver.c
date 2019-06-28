@@ -27,9 +27,8 @@
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../core.h"
-#include "../../gfx/video_driver.h"
 #include "../../managers/core_option_manager.h"
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #include "../../content.h"
 
 #define BASIC_INFO "info"

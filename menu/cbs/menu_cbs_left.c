@@ -36,8 +36,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../driver.h"
-#include "../../audio/audio_driver.h"
-#include "../../gfx/video_driver.h"
 #include "../../retroarch.h"
 #include "../../network/netplay/netplay.h"
 
@@ -242,9 +240,9 @@ static int action_left_mainmenu(unsigned type, const char *label,
             file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
             size_t selection           = menu_navigation_get_selection();
-            menu_file_list_cbs_t *cbs  = selection_buf ?
-               (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf,
-                     selection) : NULL;
+            menu_file_list_cbs_t *cbs  = selection_buf ? 
+               (menu_file_list_cbs_t*)
+               selection_buf->list[selection].actiondata : NULL;
 
             list_info.type             = MENU_LIST_HORIZONTAL;
             list_info.action           = MENU_ACTION_LEFT;
@@ -368,16 +366,15 @@ static int action_left_video_resolution(unsigned type, const char *label,
 static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned i;
-   char core_path[PATH_MAX_LENGTH];
-   char new_playlist_cores[PATH_MAX_LENGTH];
-   int next, found, current         = 0;
+   size_t i, next, found, current   = 0;
    core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
+   char core_path[PATH_MAX_LENGTH];
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
 
    core_info_get_list(&list);
 
@@ -414,7 +411,7 @@ static int playlist_association_left(unsigned type, const char *label,
    info  = core_info_get(list, next);
    found = string_list_find_elem(stnames, path);
    if (found && info)
-      string_list_set(stcores, found-1, info->path);
+      string_list_set(stcores, (unsigned)(found-1), info->path);
 
    string_list_join_concat(new_playlist_cores,
          sizeof(new_playlist_cores), stcores, ";");
@@ -442,6 +439,88 @@ static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
    command_event(CMD_EVENT_DISK_PREV, NULL);
+   return 0;
+}
+
+static int action_left_video_gpu_index(unsigned type, const char *label,
+      bool wraparound)
+{
+   enum gfx_ctx_api api = video_context_driver_get_api();
+
+   switch (api)
+   {
+#ifdef HAVE_VULKAN
+      case GFX_CTX_VULKAN_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.vulkan_gpu_index > 0)
+               settings->ints.vulkan_gpu_index--;
+            else
+               settings->ints.vulkan_gpu_index = list->size - 1;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D10
+      case GFX_CTX_DIRECT3D10_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d10_gpu_index > 0)
+               settings->ints.d3d10_gpu_index--;
+            else
+               settings->ints.d3d10_gpu_index = list->size - 1;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D11
+      case GFX_CTX_DIRECT3D11_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d11_gpu_index > 0)
+               settings->ints.d3d11_gpu_index--;
+            else
+               settings->ints.d3d11_gpu_index = list->size - 1;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D12
+      case GFX_CTX_DIRECT3D12_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d12_gpu_index > 0)
+               settings->ints.d3d12_gpu_index--;
+            else
+               settings->ints.d3d12_gpu_index = list->size - 1;
+         }
+
+         break;
+      }
+#endif
+      default:
+         break;
+   }
+
    return 0;
 }
 
@@ -494,7 +573,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry"))
+   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
    {
       BIND_ACTION_LEFT(cbs, action_left_scroll);
    }
@@ -572,6 +651,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                   break;
                }
+            case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
+               BIND_ACTION_LEFT(cbs, action_left_video_gpu_index);
+               break;
             default:
                return -1;
          }
@@ -647,6 +729,9 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_SHADER_PRESET:
          case FILE_TYPE_IMAGE:
          case FILE_TYPE_OVERLAY:
+#ifdef HAVE_VIDEO_LAYOUT
+         case FILE_TYPE_VIDEO_LAYOUT:
+#endif
          case FILE_TYPE_VIDEOFILTER:
          case FILE_TYPE_AUDIOFILTER:
          case FILE_TYPE_CONFIG:

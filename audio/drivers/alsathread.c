@@ -24,7 +24,7 @@
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #define TRY_ALSA(x) if (x < 0) \
@@ -345,7 +345,7 @@ static size_t alsa_thread_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
-static void *alsa_device_list_new(void *data)
+static void *alsa_thread_device_list_new(void *data)
 {
    void **hints, **n;
    union string_list_elem_attr attr;
@@ -393,7 +393,7 @@ error:
    return NULL;
 }
 
-static void alsa_device_list_free(void *data, void *array_list_data)
+static void alsa_thread_device_list_free(void *data, void *array_list_data)
 {
    struct string_list *s = (struct string_list*)array_list_data;
 
@@ -413,8 +413,8 @@ audio_driver_t audio_alsathread = {
    alsa_thread_free,
    alsa_thread_use_float,
    "alsathread",
-   alsa_device_list_new,
-   alsa_device_list_free,
+   alsa_thread_device_list_new,
+   alsa_thread_device_list_free,
    alsa_thread_write_avail,
    alsa_thread_buffer_size,
 };

@@ -30,7 +30,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_driver.h"
 
-#include "../../audio/audio_driver.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../configuration.h"
@@ -61,7 +60,6 @@ static void menu_action_setting_audio_mixer_stream_name(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -81,7 +79,6 @@ static void menu_action_setting_audio_mixer_stream_volume(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -101,7 +98,6 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -115,7 +111,6 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -130,7 +125,6 @@ static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -145,7 +139,6 @@ static void menu_action_setting_disp_set_label_cheevos_unlocked_entry_hardcore(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -160,7 +153,6 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -178,7 +170,6 @@ static void menu_action_setting_disp_set_label_configurations(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -197,7 +188,6 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -234,7 +224,6 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -265,7 +254,6 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -289,7 +277,6 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -307,7 +294,6 @@ static void menu_action_setting_disp_set_label_shader_pass(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -332,7 +318,6 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -355,7 +340,6 @@ static void menu_action_setting_disp_set_label_shader_parameter(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -386,7 +370,6 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -409,7 +392,6 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -441,7 +423,6 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -461,7 +442,6 @@ static void menu_action_setting_disp_set_label_input_desc(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -510,7 +490,6 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    unsigned *w, unsigned type, unsigned i,
    const char *label,
    char *s, size_t len,
-   const char *entry_label,
    const char *path,
    char *s2, size_t len2)
 {
@@ -552,7 +531,6 @@ static void menu_action_setting_disp_set_label_cheat(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -586,7 +564,6 @@ static void menu_action_setting_disp_set_label_cheat_match(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -640,7 +617,6 @@ static void menu_action_setting_disp_set_label_perf_counters(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -655,7 +631,6 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -670,7 +645,6 @@ static void menu_action_setting_disp_set_label_menu_more(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -685,7 +659,6 @@ static void menu_action_setting_disp_set_label_db_entry(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -700,14 +673,14 @@ static void menu_action_setting_disp_set_label_entry_url(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
-   const char *representation_label = NULL;
+   const char *representation_label = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
    *s = '\0';
    *w = 8;
-   file_list_get_alt_at_offset(list, i, &representation_label);
 
    if (!string_is_empty(representation_label))
       strlcpy(s2, representation_label, len2);
@@ -720,7 +693,6 @@ static void menu_action_setting_disp_set_label_entry(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -734,7 +706,6 @@ static void menu_action_setting_disp_set_label_wifi_is_online(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -750,7 +721,6 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -789,7 +759,6 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -832,7 +801,6 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -845,7 +813,6 @@ static void menu_action_setting_disp_set_label_menu_file_imageviewer(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -858,7 +825,6 @@ static void menu_action_setting_disp_set_label_movie(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -871,7 +837,6 @@ static void menu_action_setting_disp_set_label_music(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -884,7 +849,6 @@ static void menu_action_setting_disp_set_label_menu_file_use_directory(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -897,7 +861,6 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -910,7 +873,6 @@ static void menu_action_setting_disp_set_label_menu_file_parent_directory(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -923,7 +885,6 @@ static void menu_action_setting_disp_set_label_menu_file_carchive(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -936,7 +897,6 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -949,7 +909,6 @@ static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -962,7 +921,6 @@ static void menu_action_setting_disp_set_label_menu_file_in_carchive(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -975,7 +933,6 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -983,12 +940,25 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
          path, "(OVERLAY)", s2, len2);
 }
 
+#ifdef HAVE_VIDEO_LAYOUT
+static void menu_action_setting_disp_set_label_menu_file_video_layout(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_action_setting_generic_disp_set_label(w, s, len,
+         path, "(Video Layout)", s2, len2);
+}
+#endif
+
 static void menu_action_setting_disp_set_label_menu_file_config(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1001,7 +971,6 @@ static void menu_action_setting_disp_set_label_menu_file_font(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1014,7 +983,6 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1027,7 +995,6 @@ static void menu_action_setting_disp_set_label_menu_file_url_core(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1047,7 +1014,6 @@ static void menu_action_setting_disp_set_label_menu_file_rdb(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1060,7 +1026,6 @@ static void menu_action_setting_disp_set_label_menu_file_cursor(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1073,7 +1038,6 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1086,7 +1050,6 @@ static void menu_action_setting_disp_set_label_core_option_create(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1105,7 +1068,6 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1163,7 +1125,6 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1192,7 +1153,6 @@ static void menu_action_setting_disp_set_label_achievement_information(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1200,7 +1160,7 @@ static void menu_action_setting_disp_set_label_achievement_information(
    *w = 2;
 
    menu_setting_get_label(list, s,
-         len, w, type, label, entry_label, i);
+         len, w, type, label, i);
 
    strlcpy(s2, path, len2);
 }
@@ -1210,7 +1170,6 @@ static void menu_action_setting_disp_set_label_no_items(
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1224,7 +1183,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1232,7 +1190,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    *w = 19;
 
    menu_setting_get_label(list, s,
-         len, w, type, label, entry_label, i);
+         len, w, type, label, i);
 
    strlcpy(s2, path, len2);
 }
@@ -1241,7 +1199,6 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1265,7 +1222,6 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1283,7 +1239,6 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
-      const char *entry_label,
       const char *path,
       char *s2, size_t len2)
 {
@@ -1499,6 +1454,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
             break;
+#ifdef HAVE_VIDEO_LAYOUT
+         case FILE_TYPE_VIDEO_LAYOUT:
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_video_layout);
+            break;
+#endif
          case FILE_TYPE_FONT:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_font);

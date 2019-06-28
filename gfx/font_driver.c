@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -24,6 +25,7 @@
 #include "video_thread_wrapper.h"
 
 #include "../configuration.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 static const font_renderer_driver_t *font_backends[] = {
@@ -34,7 +36,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -151,7 +153,38 @@ static bool d3d9_font_init_first(
 }
 #endif
 
-#ifdef HAVE_OPENGL
+#ifdef HAVE_OPENGL1
+static const font_renderer_t *gl1_font_backends[] = {
+   &gl1_raster_font,
+   NULL,
+};
+
+static bool gl1_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; gl1_font_backends[i]; i++)
+   {
+      void *data = gl1_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = gl1_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#if defined(HAVE_OPENGL)
 static const font_renderer_t *gl_font_backends[] = {
    &gl_raster_font,
 #if defined(HAVE_LIBDBGFONT)
@@ -177,36 +210,6 @@ static bool gl_font_init_first(
          continue;
 
       *font_driver = gl_font_backends[i];
-      *font_handle = data;
-      return true;
-   }
-
-   return false;
-}
-
-#ifdef HAVE_OPENGL1
-static const font_renderer_t *gl1_font_backends[] = {
-   &gl1_raster_font,
-   NULL,
-};
-
-static bool gl1_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path,
-      float font_size, bool is_threaded)
-{
-   unsigned i;
-
-   for (i = 0; gl1_font_backends[i]; i++)
-   {
-      void *data = gl1_font_backends[i]->init(
-            video_data, font_path, font_size,
-            is_threaded);
-
-      if (!data)
-         continue;
-
-      *font_driver = gl1_font_backends[i];
       *font_handle = data;
       return true;
    }
@@ -244,7 +247,6 @@ static bool gl_core_font_init_first(
 
    return false;
 }
-#endif
 #endif
 
 #ifdef HAVE_CACA
@@ -688,20 +690,20 @@ static bool font_init_first(
 
    switch (api)
    {
-#ifdef HAVE_OPENGL
-      case FONT_DRIVER_RENDER_OPENGL_API:
-         return gl_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size, is_threaded);
 #ifdef HAVE_OPENGL1
       case FONT_DRIVER_RENDER_OPENGL1_API:
          return gl1_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_OPENGL
+      case FONT_DRIVER_RENDER_OPENGL_API:
+         return gl_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_OPENGL_CORE
       case FONT_DRIVER_RENDER_OPENGL_CORE_API:
          return gl_core_font_init_first(font_driver, font_handle,
                                         video_data, font_path, font_size, is_threaded);
-#endif
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:

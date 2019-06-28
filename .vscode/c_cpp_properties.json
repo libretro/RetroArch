@@ -1,131 +1,155 @@
 {
-    "configurations": [
-        {
-            "name": "Mac",
-            "includePath": [
-                "/usr/include",
-                "/usr/local/include",
-                "${workspaceRoot}",
-                "${workspaceRoot}/libretro-common/include"
+   "configurations": [
+      {
+         "name": "Mac",
+         "includePath": [
+            "/usr/include",
+            "/usr/local/include",
+            "${workspaceRoot}",
+            "${workspaceRoot}/libretro-common/include"
+         ],
+         "defines": [],
+         "intelliSenseMode": "clang-x64",
+         "browse": {
+            "path": [
+               "/usr/include",
+               "/usr/local/include",
+               "${workspaceRoot}"
             ],
-            "defines": [],
-            "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "/usr/include",
-                    "/usr/local/include",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "macFrameworkPath": [
-                "/System/Library/Frameworks",
-                "/Library/Frameworks"
-            ]
-        },
-        {
-            "name": "Linux",
-            "includePath": [
-                "/usr/include",
-                "/usr/local/include",
-                "${workspaceRoot}",
-                "${workspaceFolder}/libretro-common/include",
-                "${workspaceRoot}/libretro-common/include"
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+         },
+         "macFrameworkPath": [
+            "/System/Library/Frameworks",
+            "/Library/Frameworks"
+         ]
+      },
+      {
+         "name": "Linux",
+         "includePath": [
+            "/usr/include",
+            "/usr/local/include",
+            "${workspaceRoot}",
+            "${workspaceFolder}/libretro-common/include",
+            "${workspaceRoot}/libretro-common/include"
+         ],
+         "defines": [],
+         "intelliSenseMode": "clang-x64",
+         "browse": {
+            "path": [
+               "/usr/include",
+               "/usr/local/include",
+               "${workspaceRoot}"
             ],
-            "defines": [],
-            "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "/usr/include",
-                    "/usr/local/include",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            }
-        },
-        {
-            "name": "Win32",
-            "includePath": [
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
-                "${workspaceRoot}",
-                "${workspaceFolder}/libretro-common/include"
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+         }
+      },
+      {
+         "name": "Win32",
+         "includePath": [
+            "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
+            "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
+            "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
+            "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
+            "${workspaceRoot}",
+            "${workspaceFolder}/libretro-common/include"
+         ],
+         "defines": [
+            "_DEBUG",
+            "UNICODE"
+         ],
+         "intelliSenseMode": "msvc-x64",
+         "browse": {
+            "path": [
+               "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
+               "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
+               "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
+               "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
+               "${workspaceRoot}"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE"
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+         },
+         "cStandard": "c11",
+         "cppStandard": "c++17"
+      },
+      {
+         "name": "msys2-mingw32",
+         "includePath": [
+            "C:/msys64/mingw32/include",
+            "C:/msys64/mingw32/i686-w64-mingw32/include",
+            "${workspaceRoot}/libretro-common/include",
+            "${workspaceRoot}/include",
+            "${workspaceRoot}"
+         ],
+         "defines": [
+            "_DEBUG",
+            "UNICODE"
+         ],
+         "intelliSenseMode": "msvc-x64",
+         "browse": {
+            "path": [
+               "C:/msys64/mingw32/include",
+               "C:/msys64/mingw32/i686-w64-mingw32/include",
+               "${workspaceRoot}/libretro-common/include",
+               "${workspaceRoot}/include",
+               "${workspaceRoot}"
             ],
-            "intelliSenseMode": "msvc-x64",
-            "browse": {
-                "path": [
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "cStandard": "c11",
-            "cppStandard": "c++17"
-        },
-        {
-            "name": "msys2-mingw32",
-            "includePath": [
-                "C:/msys64/mingw32/include",
-                "C:/msys64/mingw32/i686-w64-mingw32/include",
-                "${workspaceRoot}/libretro-common/include",
-                "${workspaceRoot}/include",
-                "${workspaceRoot}"
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+         }
+      },
+      {
+         "name": "msys2-mingw64",
+         "includePath": [
+            "C:/msys64/mingw64/include",
+            "C:/msys64/mingw64/x86_64-w64-mingw32/include",
+            "${workspaceRoot}/libretro-common/include",
+            "${workspaceRoot}/include",
+            "${workspaceRoot}"
+         ],
+         "defines": [
+            "_DEBUG",
+            "UNICODE"
+         ],
+         "intelliSenseMode": "msvc-x64",
+         "browse": {
+            "path": [
+               "C:/msys64/mingw64/include",
+               "C:/msys64/mingw64/x86_64-w64-mingw32/include",
+               "${workspaceRoot}/libretro-common/include",
+               "${workspaceRoot}/include",
+               "${workspaceRoot}"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE"
-            ],
-            "intelliSenseMode": "msvc-x64",
-            "browse": {
-                "path": [
-                    "C:/msys64/mingw32/include",
-                    "C:/msys64/mingw32/i686-w64-mingw32/include",
-                    "${workspaceRoot}/libretro-common/include",
-                    "${workspaceRoot}/include",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            }
-        },
-        {
-            "name": "msys2-mingw64",
-            "includePath": [
-                "C:/msys64/mingw64/include",
-                "C:/msys64/mingw64/x86_64-w64-mingw32/include",
-                "${workspaceRoot}/libretro-common/include",
-                "${workspaceRoot}/include",
-                "${workspaceRoot}"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE"
-            ],
-            "intelliSenseMode": "msvc-x64",
-            "browse": {
-                "path": [
-                    "C:/msys64/mingw64/include",
-                    "C:/msys64/mingw64/x86_64-w64-mingw32/include",
-                    "${workspaceRoot}/libretro-common/include",
-                    "${workspaceRoot}/include",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            }
-        }
-    ],
-    "version": 4
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+         }
+      },
+      {
+         "name": "Switch",
+         "includePath": [
+            "/opt/devkitpro/devkitA64/aarch64-none-elf/include",
+            "/opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/8.3.0/include",
+            "/opt/devkitpro/libnx/include",
+            "/opt/devkitpro/portlibs/switch/include",
+            "/opt/devkitpro/portlibs/switch/include/freetype2",
+            "${workspaceFolder}/**"
+         ],
+         "defines": [
+            "_DEBUG",
+            "UNICODE",
+            "_UNICODE",
+            "__aarch64__",
+            "__SWITCH__",
+            "HAVE_LIBNX"
+         ],
+         "windowsSdkVersion": "10.0.17763.0",
+         "compilerPath": "/opt/devkitpro/devkitA64/bin/aarch64-none-elf-gcc",
+         "cStandard": "c11",
+         "cppStandard": "c++11",
+         "intelliSenseMode": "gcc-x64"
+      }
+   ],
+   "version": 4
 }

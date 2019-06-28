@@ -36,11 +36,13 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
+#include "cheevos-new/cheevos.h"
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL)
 #include "gfx/common/gl_common.h"
+#elif defined(HAVE_OPENGL_CORE)
+#include "gfx/common/gl_core_common.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -50,24 +52,22 @@
 #include "dynamic.h"
 #include "command.h"
 
-#include "audio/audio_driver.h"
-#include "camera/camera_driver.h"
-#include "location/location_driver.h"
-#include "record/record_driver.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
 
 #include "cores/internal_cores.h"
 #include "content.h"
-#include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "configuration.h"
 #include "verbosity.h"
 #include "tasks/tasks_internal.h"
+
+#ifdef HAVE_MENU_WIDGETS
+#include "menu/widgets/menu_widgets.h"
+#endif
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
@@ -111,6 +111,33 @@ static dylib_t lib_handle;
 #ifdef HAVE_EASTEREGG
 #define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
 #endif
+
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
 
 static bool ignore_environment_cb   = false;
 static bool core_set_shared_context = false;
@@ -194,11 +221,18 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          unsigned i, j, size;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
+         settings_t *settings    = config_get_ptr();
+         unsigned log_level      = settings->uints.libretro_log_level;
+
          subsystem_current_count = 0;
+
          RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Subsystem ID: %d\n", i);
             RARCH_LOG("Special game type: %s\n", info[i].desc);
             RARCH_LOG("  Ident: %s\n", info[i].ident);
@@ -212,11 +246,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
             }
          }
 
-         RARCH_LOG("Subsystems: %d\n", i);
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Subsystems: %d\n", i);
          size = i;
 
-         if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
-            RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+         if (log_level == RETRO_LOG_DEBUG)
+            if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
+               RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
 
          if (system)
          {
@@ -234,8 +270,9 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                subsystem_data[i].id = info[i].id;
                subsystem_data[i].num_roms = info[i].num_roms;
 
-               if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
-                  RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
+               if (log_level == RETRO_LOG_DEBUG)
+                  if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
+                     RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
 
                for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
                {
@@ -255,26 +292,10 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                subsystem_data[i].roms = subsystem_data_roms[i];
             }
 
-            subsystem_current_count = size <= SUBSYSTEM_MAX_SUBSYSTEMS ? size : SUBSYSTEM_MAX_SUBSYSTEMS;
-#if 0
-            RARCH_LOG("Subsystems: %d\n", subsystem_current_count);
-
-            for (i = 0; i < subsystem_current_count; i++)
-            {
-               RARCH_LOG("Subsystem ID: %d\n", i);
-               RARCH_LOG("Special game type: %s\n", subsystem_data[i].desc);
-               RARCH_LOG("  Ident: %s\n", subsystem_data[i].ident);
-               RARCH_LOG("  ID: %u\n", subsystem_data[i].id);
-               RARCH_LOG("  Content:\n");
-
-               for (j = 0; j < subsystem_data[i].num_roms; j++)
-               {
-                  RARCH_LOG("    %s (%s)\n",
-                        subsystem_data[i].roms[j].desc, subsystem_data[i].roms[j].required ?
-                        "required" : "optional");
-               }
-            }
-#endif
+            subsystem_current_count = 
+               size <= SUBSYSTEM_MAX_SUBSYSTEMS 
+               ? size 
+               : SUBSYSTEM_MAX_SUBSYSTEMS;
          }
          break;
       }
@@ -322,14 +343,11 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
    ignore_environment_cb = false;
 }
 
-static bool load_dynamic_core(void)
+static bool load_dynamic_core(const char *path, char *buf, size_t size)
 {
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* Can't lookup symbols in itself on UWP */
-#else
-   function_t sym       = dylib_proc(NULL, "retro_init");
-
-   if (sym)
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   if (dylib_proc(NULL, "retro_init"))
    {
       /* Try to verify that -lretro was not linked in from other modules
        * since loading it dynamically and with -l will fail hard. */
@@ -342,33 +360,12 @@ static bool load_dynamic_core(void)
    }
 #endif
 
-   if (string_is_empty(path_get(RARCH_PATH_CORE)))
-   {
-      RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
-            "libretro_path is not set. Cannot continue.\n");
-      retroarch_fail(1, "init_libretro_sym()");
-   }
-
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(
-         path_get_ptr(RARCH_PATH_CORE),
-         path_get_realsize(RARCH_PATH_CORE));
-
-   RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-         path_get(RARCH_PATH_CORE));
-   lib_handle = dylib_load(path_get(RARCH_PATH_CORE));
-
-   if (lib_handle)
+   path_resolve_realpath(buf, size);
+   if ((lib_handle = dylib_load(path)))
       return true;
-
-   RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-         path_get(RARCH_PATH_CORE));
-   RARCH_ERR("Error(s): %s\n", dylib_error());
-
-   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
    return false;
 }
 
@@ -379,13 +376,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
    void (*proc)(struct retro_system_info*);
 
    if (!lib)
-   {
-      RARCH_ERR("%s: \"%s\"\n",
-            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
-            path);
-      RARCH_ERR("Error(s): %s\n", dylib_error());
       return NULL;
-   }
 
    proc = (void (*)(struct retro_system_info*))
       dylib_proc(lib, "retro_get_system_info");
@@ -405,10 +396,8 @@ static dylib_t libretro_get_system_info_lib(const char *path,
       set_environ = (void (*)(retro_environment_t))
          dylib_proc(lib, "retro_set_environment");
 
-      if (!set_environ)
-         return lib;
-
-      libretro_get_environment_info(set_environ, load_no_content);
+      if (set_environ)
+         libretro_get_environment_info(set_environ, load_no_content);
    }
 
    return lib;
@@ -450,7 +439,13 @@ bool libretro_get_system_info(const char *path,
          path, &dummy_info, load_no_content);
 
    if (!lib)
+   {
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+            path);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
       return false;
+   }
 #else
    if (load_no_content)
    {
@@ -508,7 +503,8 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
+bool init_libretro_sym_custom(enum rarch_core_type type,
+      struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
 {
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
@@ -525,8 +521,30 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
             if (!lib_path || !lib_handle_p)
 #endif
             {
-               if (!load_dynamic_core())
+               const char *path = path_get(RARCH_PATH_CORE);
+
+               if (string_is_empty(path))
+               {
+                  RARCH_ERR("Frontend is built for dynamic libretro cores, but "
+                        "path is not set. Cannot continue.\n");
+                  retroarch_fail(1, "init_libretro_sym()");
+               }
+
+               RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+                     path);
+
+               if (!load_dynamic_core(
+                        path,
+                        path_get_ptr(RARCH_PATH_CORE),
+                        path_get_realsize(RARCH_PATH_CORE)
+                        ))
+               {
+                  RARCH_ERR("Failed to open libretro core: \"%s\"\n", path);
+                  RARCH_ERR("Error(s): %s\n", dylib_error());
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                        1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
+               }
                lib_handle_local = lib_handle;
             }
 #ifdef HAVE_RUNAHEAD
@@ -545,306 +563,45 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
 #endif
 #endif
 
-            SYMBOL(retro_init);
-            SYMBOL(retro_deinit);
-
-            SYMBOL(retro_api_version);
-            SYMBOL(retro_get_system_info);
-            SYMBOL(retro_get_system_av_info);
-
-            SYMBOL(retro_set_environment);
-            SYMBOL(retro_set_video_refresh);
-            SYMBOL(retro_set_audio_sample);
-            SYMBOL(retro_set_audio_sample_batch);
-            SYMBOL(retro_set_input_poll);
-            SYMBOL(retro_set_input_state);
-
-            SYMBOL(retro_set_controller_port_device);
-
-            SYMBOL(retro_reset);
-            SYMBOL(retro_run);
-
-            SYMBOL(retro_serialize_size);
-            SYMBOL(retro_serialize);
-            SYMBOL(retro_unserialize);
-
-            SYMBOL(retro_cheat_reset);
-            SYMBOL(retro_cheat_set);
-
-            SYMBOL(retro_load_game);
-            SYMBOL(retro_load_game_special);
-
-            SYMBOL(retro_unload_game);
-            SYMBOL(retro_get_region);
-            SYMBOL(retro_get_memory_data);
-            SYMBOL(retro_get_memory_size);
+            CORE_SYMBOLS(SYMBOL);
          }
          break;
       case CORE_TYPE_DUMMY:
-         SYMBOL_DUMMY(retro_init);
-         SYMBOL_DUMMY(retro_deinit);
-
-         SYMBOL_DUMMY(retro_api_version);
-         SYMBOL_DUMMY(retro_get_system_info);
-         SYMBOL_DUMMY(retro_get_system_av_info);
-
-         SYMBOL_DUMMY(retro_set_environment);
-         SYMBOL_DUMMY(retro_set_video_refresh);
-         SYMBOL_DUMMY(retro_set_audio_sample);
-         SYMBOL_DUMMY(retro_set_audio_sample_batch);
-         SYMBOL_DUMMY(retro_set_input_poll);
-         SYMBOL_DUMMY(retro_set_input_state);
-
-         SYMBOL_DUMMY(retro_set_controller_port_device);
-
-         SYMBOL_DUMMY(retro_reset);
-         SYMBOL_DUMMY(retro_run);
-
-         SYMBOL_DUMMY(retro_serialize_size);
-         SYMBOL_DUMMY(retro_serialize);
-         SYMBOL_DUMMY(retro_unserialize);
-
-         SYMBOL_DUMMY(retro_cheat_reset);
-         SYMBOL_DUMMY(retro_cheat_set);
-
-         SYMBOL_DUMMY(retro_load_game);
-         SYMBOL_DUMMY(retro_load_game_special);
-
-         SYMBOL_DUMMY(retro_unload_game);
-         SYMBOL_DUMMY(retro_get_region);
-         SYMBOL_DUMMY(retro_get_memory_data);
-         SYMBOL_DUMMY(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_DUMMY);
          break;
       case CORE_TYPE_FFMPEG:
 #ifdef HAVE_FFMPEG
-         SYMBOL_FFMPEG(retro_init);
-         SYMBOL_FFMPEG(retro_deinit);
-
-         SYMBOL_FFMPEG(retro_api_version);
-         SYMBOL_FFMPEG(retro_get_system_info);
-         SYMBOL_FFMPEG(retro_get_system_av_info);
-
-         SYMBOL_FFMPEG(retro_set_environment);
-         SYMBOL_FFMPEG(retro_set_video_refresh);
-         SYMBOL_FFMPEG(retro_set_audio_sample);
-         SYMBOL_FFMPEG(retro_set_audio_sample_batch);
-         SYMBOL_FFMPEG(retro_set_input_poll);
-         SYMBOL_FFMPEG(retro_set_input_state);
-
-         SYMBOL_FFMPEG(retro_set_controller_port_device);
-
-         SYMBOL_FFMPEG(retro_reset);
-         SYMBOL_FFMPEG(retro_run);
-
-         SYMBOL_FFMPEG(retro_serialize_size);
-         SYMBOL_FFMPEG(retro_serialize);
-         SYMBOL_FFMPEG(retro_unserialize);
-
-         SYMBOL_FFMPEG(retro_cheat_reset);
-         SYMBOL_FFMPEG(retro_cheat_set);
-
-         SYMBOL_FFMPEG(retro_load_game);
-         SYMBOL_FFMPEG(retro_load_game_special);
-
-         SYMBOL_FFMPEG(retro_unload_game);
-         SYMBOL_FFMPEG(retro_get_region);
-         SYMBOL_FFMPEG(retro_get_memory_data);
-         SYMBOL_FFMPEG(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_FFMPEG);
 #endif
          break;
       case CORE_TYPE_MPV:
 #ifdef HAVE_MPV
-         SYMBOL_MPV(retro_init);
-         SYMBOL_MPV(retro_deinit);
-
-         SYMBOL_MPV(retro_api_version);
-         SYMBOL_MPV(retro_get_system_info);
-         SYMBOL_MPV(retro_get_system_av_info);
-
-         SYMBOL_MPV(retro_set_environment);
-         SYMBOL_MPV(retro_set_video_refresh);
-         SYMBOL_MPV(retro_set_audio_sample);
-         SYMBOL_MPV(retro_set_audio_sample_batch);
-         SYMBOL_MPV(retro_set_input_poll);
-         SYMBOL_MPV(retro_set_input_state);
-
-         SYMBOL_MPV(retro_set_controller_port_device);
-
-         SYMBOL_MPV(retro_reset);
-         SYMBOL_MPV(retro_run);
-
-         SYMBOL_MPV(retro_serialize_size);
-         SYMBOL_MPV(retro_serialize);
-         SYMBOL_MPV(retro_unserialize);
-
-         SYMBOL_MPV(retro_cheat_reset);
-         SYMBOL_MPV(retro_cheat_set);
-
-         SYMBOL_MPV(retro_load_game);
-         SYMBOL_MPV(retro_load_game_special);
-
-         SYMBOL_MPV(retro_unload_game);
-         SYMBOL_MPV(retro_get_region);
-         SYMBOL_MPV(retro_get_memory_data);
-         SYMBOL_MPV(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_MPV);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
-         SYMBOL_IMAGEVIEWER(retro_init);
-         SYMBOL_IMAGEVIEWER(retro_deinit);
-
-         SYMBOL_IMAGEVIEWER(retro_api_version);
-         SYMBOL_IMAGEVIEWER(retro_get_system_info);
-         SYMBOL_IMAGEVIEWER(retro_get_system_av_info);
-
-         SYMBOL_IMAGEVIEWER(retro_set_environment);
-         SYMBOL_IMAGEVIEWER(retro_set_video_refresh);
-         SYMBOL_IMAGEVIEWER(retro_set_audio_sample);
-         SYMBOL_IMAGEVIEWER(retro_set_audio_sample_batch);
-         SYMBOL_IMAGEVIEWER(retro_set_input_poll);
-         SYMBOL_IMAGEVIEWER(retro_set_input_state);
-
-         SYMBOL_IMAGEVIEWER(retro_set_controller_port_device);
-
-         SYMBOL_IMAGEVIEWER(retro_reset);
-         SYMBOL_IMAGEVIEWER(retro_run);
-
-         SYMBOL_IMAGEVIEWER(retro_serialize_size);
-         SYMBOL_IMAGEVIEWER(retro_serialize);
-         SYMBOL_IMAGEVIEWER(retro_unserialize);
-
-         SYMBOL_IMAGEVIEWER(retro_cheat_reset);
-         SYMBOL_IMAGEVIEWER(retro_cheat_set);
-
-         SYMBOL_IMAGEVIEWER(retro_load_game);
-         SYMBOL_IMAGEVIEWER(retro_load_game_special);
-
-         SYMBOL_IMAGEVIEWER(retro_unload_game);
-         SYMBOL_IMAGEVIEWER(retro_get_region);
-         SYMBOL_IMAGEVIEWER(retro_get_memory_data);
-         SYMBOL_IMAGEVIEWER(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_IMAGEVIEWER);
 #endif
          break;
       case CORE_TYPE_NETRETROPAD:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-         SYMBOL_NETRETROPAD(retro_init);
-         SYMBOL_NETRETROPAD(retro_deinit);
-
-         SYMBOL_NETRETROPAD(retro_api_version);
-         SYMBOL_NETRETROPAD(retro_get_system_info);
-         SYMBOL_NETRETROPAD(retro_get_system_av_info);
-
-         SYMBOL_NETRETROPAD(retro_set_environment);
-         SYMBOL_NETRETROPAD(retro_set_video_refresh);
-         SYMBOL_NETRETROPAD(retro_set_audio_sample);
-         SYMBOL_NETRETROPAD(retro_set_audio_sample_batch);
-         SYMBOL_NETRETROPAD(retro_set_input_poll);
-         SYMBOL_NETRETROPAD(retro_set_input_state);
-
-         SYMBOL_NETRETROPAD(retro_set_controller_port_device);
-
-         SYMBOL_NETRETROPAD(retro_reset);
-         SYMBOL_NETRETROPAD(retro_run);
-
-         SYMBOL_NETRETROPAD(retro_serialize_size);
-         SYMBOL_NETRETROPAD(retro_serialize);
-         SYMBOL_NETRETROPAD(retro_unserialize);
-
-         SYMBOL_NETRETROPAD(retro_cheat_reset);
-         SYMBOL_NETRETROPAD(retro_cheat_set);
-
-         SYMBOL_NETRETROPAD(retro_load_game);
-         SYMBOL_NETRETROPAD(retro_load_game_special);
-
-         SYMBOL_NETRETROPAD(retro_unload_game);
-         SYMBOL_NETRETROPAD(retro_get_region);
-         SYMBOL_NETRETROPAD(retro_get_memory_data);
-         SYMBOL_NETRETROPAD(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_NETRETROPAD);
 #endif
          break;
       case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEOPROCESSOR)
-         SYMBOL_VIDEOPROCESSOR(retro_init);
-         SYMBOL_VIDEOPROCESSOR(retro_deinit);
-
-         SYMBOL_VIDEOPROCESSOR(retro_api_version);
-         SYMBOL_VIDEOPROCESSOR(retro_get_system_info);
-         SYMBOL_VIDEOPROCESSOR(retro_get_system_av_info);
-
-         SYMBOL_VIDEOPROCESSOR(retro_set_environment);
-         SYMBOL_VIDEOPROCESSOR(retro_set_video_refresh);
-         SYMBOL_VIDEOPROCESSOR(retro_set_audio_sample);
-         SYMBOL_VIDEOPROCESSOR(retro_set_audio_sample_batch);
-         SYMBOL_VIDEOPROCESSOR(retro_set_input_poll);
-         SYMBOL_VIDEOPROCESSOR(retro_set_input_state);
-
-         SYMBOL_VIDEOPROCESSOR(retro_set_controller_port_device);
-
-         SYMBOL_VIDEOPROCESSOR(retro_reset);
-         SYMBOL_VIDEOPROCESSOR(retro_run);
-
-         SYMBOL_VIDEOPROCESSOR(retro_serialize_size);
-         SYMBOL_VIDEOPROCESSOR(retro_serialize);
-         SYMBOL_VIDEOPROCESSOR(retro_unserialize);
-
-         SYMBOL_VIDEOPROCESSOR(retro_cheat_reset);
-         SYMBOL_VIDEOPROCESSOR(retro_cheat_set);
-
-         SYMBOL_VIDEOPROCESSOR(retro_load_game);
-         SYMBOL_VIDEOPROCESSOR(retro_load_game_special);
-
-         SYMBOL_VIDEOPROCESSOR(retro_unload_game);
-         SYMBOL_VIDEOPROCESSOR(retro_get_region);
-         SYMBOL_VIDEOPROCESSOR(retro_get_memory_data);
-         SYMBOL_VIDEOPROCESSOR(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
 #endif
          break;
       case CORE_TYPE_GONG:
 #ifdef HAVE_EASTEREGG
-         SYMBOL_GONG(retro_init);
-         SYMBOL_GONG(retro_deinit);
-
-         SYMBOL_GONG(retro_api_version);
-         SYMBOL_GONG(retro_get_system_info);
-         SYMBOL_GONG(retro_get_system_av_info);
-
-         SYMBOL_GONG(retro_set_environment);
-         SYMBOL_GONG(retro_set_video_refresh);
-         SYMBOL_GONG(retro_set_audio_sample);
-         SYMBOL_GONG(retro_set_audio_sample_batch);
-         SYMBOL_GONG(retro_set_input_poll);
-         SYMBOL_GONG(retro_set_input_state);
-
-         SYMBOL_GONG(retro_set_controller_port_device);
-
-         SYMBOL_GONG(retro_reset);
-         SYMBOL_GONG(retro_run);
-
-         SYMBOL_GONG(retro_serialize_size);
-         SYMBOL_GONG(retro_serialize);
-         SYMBOL_GONG(retro_unserialize);
-
-         SYMBOL_GONG(retro_cheat_reset);
-         SYMBOL_GONG(retro_cheat_set);
-
-         SYMBOL_GONG(retro_load_game);
-         SYMBOL_GONG(retro_load_game_special);
-
-         SYMBOL_GONG(retro_unload_game);
-         SYMBOL_GONG(retro_get_region);
-         SYMBOL_GONG(retro_get_memory_data);
-         SYMBOL_GONG(retro_get_memory_size);
+         CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
    }
 
    return true;
-}
-
-static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
-{
-   return init_libretro_sym_custom(type, current_core, NULL, NULL);
 }
 
 /**
@@ -859,7 +616,8 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
  **/
 bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
-   if (!load_symbols(type, current_core))
+   /* Load symbols */
+   if (!init_libretro_sym_custom(type, current_core, NULL, NULL))
       return false;
 
 #ifdef HAVE_RUNAHEAD
@@ -899,8 +657,8 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
    rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
-   camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
-   location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
    performance_counters_clear();
@@ -1086,7 +844,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
                "is compiled against OpenGLES. Cannot use HW context.\n");
          return false;
 
-#elif defined(HAVE_OPENGL)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
          RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
@@ -1261,7 +1019,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
-         runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#ifdef HAVE_MENU_WIDGETS
+         if (!menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f)))
+#endif
+            runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
       }
 
@@ -1464,19 +1225,25 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
 
             {
-               unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-               for (p = 0; p < max_users; p++)
+               settings_t *settings    = config_get_ptr();
+               unsigned log_level      = settings->uints.libretro_log_level;
+               
+               if (log_level == RETRO_LOG_DEBUG)
                {
-                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+                  for (p = 0; p < max_users; p++)
                   {
-                     const char *description = system->input_desc_btn[p][retro_id];
+                     for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                     {
+                        const char *description = system->input_desc_btn[p][retro_id];
 
-                     if (!description)
-                        continue;
+                        if (!description)
+                           continue;
 
-                     RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                           p + 1, libretro_btn_desc[retro_id], description);
+                        RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                              p + 1, libretro_btn_desc[retro_id], description);
+                     }
                   }
                }
             }
@@ -1529,7 +1296,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (!dynamic_verify_hw_context(cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
          if (!gl_set_core_context(cb->context_type)) { }
 #endif
 
@@ -1645,12 +1412,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
-         camera_driver_ctl(RARCH_CAMERA_CTL_SET_CB, cb);
+         rarch_ctl(RARCH_CTL_CAMERA_SET_CB, cb);
 
          if (cb->caps != 0)
-            camera_driver_ctl(RARCH_CAMERA_CTL_SET_ACTIVE, NULL);
+            rarch_ctl(RARCH_CTL_CAMERA_SET_ACTIVE, NULL);
          else
-            camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+            rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
          break;
       }
 
@@ -1668,7 +1435,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (system)
             system->location_cb    = *cb;
 
-         location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
+         rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
          break;
       }
 
@@ -1717,14 +1484,21 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i, j;
+         unsigned i;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
+         settings_t *settings = config_get_ptr();
+         unsigned log_level   = settings->uints.libretro_log_level;
 
-         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
+            unsigned j;
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Special game type: %s\n", info[i].desc);
             RARCH_LOG("  Ident: %s\n", info[i].ident);
             RARCH_LOG("  ID: %u\n", info[i].id);
@@ -1764,11 +1538,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned i, j;
          const struct retro_controller_info *info =
             (const struct retro_controller_info*)data;
+         settings_t *settings    = config_get_ptr();
+         unsigned log_level      = settings->uints.libretro_log_level;
 
          RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
 
          for (i = 0; info[i].types; i++)
          {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
             RARCH_LOG("Controller port: %u\n", i + 1);
             for (j = 0; j < info[i].num_types; j++)
                RARCH_LOG("   %s (ID: %u)\n", info[i].types[j].desc,
@@ -1924,7 +1703,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             bool state = *(const bool*)data;
             RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
-            cheevos_set_support_cheevos(state);
+            rcheevos_set_support_cheevos(state);
          }
 #endif
          break;
@@ -2061,6 +1840,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          *(retro_environment_t *)data = rarch_clear_all_thread_waits;
          break;
       }
+
+      case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
+         /* Just falldown, the function will return true */
+         break;
 
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
       {

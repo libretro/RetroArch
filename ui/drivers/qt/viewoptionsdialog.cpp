@@ -41,7 +41,7 @@ static const int MAX_MIN_HEIGHT = 250;
 QPixmap getColorizedPixmap(const QPixmap& oldPixmap, const QColor& color)
 {
    QPixmap pixmap = oldPixmap;
-   QBitmap mask = pixmap.createMaskFromColor(Qt::transparent, Qt::MaskInColor);
+   QBitmap   mask = pixmap.createMaskFromColor(Qt::transparent, Qt::MaskInColor);
    pixmap.fill(color);
    pixmap.setMask(mask);
    return pixmap;
@@ -70,14 +70,16 @@ private:
    void resizeEvent(QResizeEvent *event) final
    {
       QWidget *inner = widget();
+
       if (inner)
       {
-         int fw = frameWidth() * 2;
-         QSize innerSize = event->size() - QSize(fw, fw);
+         int              fw = frameWidth() * 2;
+         QSize     innerSize = event->size() - QSize(fw, fw);
          QSize innerSizeHint = inner->minimumSizeHint();
 
+         /* Widget wants to be bigger than available space */
          if (innerSizeHint.height() > innerSize.height())
-         { /* Widget wants to be bigger than available space */
+         { 
             innerSize.setWidth(innerSize.width() - scrollBarWidth());
             innerSize.setHeight(innerSizeHint.height());
          }
@@ -89,10 +91,12 @@ private:
    QSize minimumSizeHint() const final
    {
       QWidget *inner = widget();
-      if (inner) {
-         int fw = frameWidth() * 2;
 
+      if (inner)
+      {
+         int        fw = frameWidth() * 2;
          QSize minSize = inner->minimumSizeHint();
+
          minSize += QSize(fw, fw);
          minSize += QSize(scrollBarWidth(), 0);
          minSize.setWidth(qMin(minSize.width(), MAX_MIN_WIDTH));
@@ -124,20 +128,21 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
 {
-   QGridLayout *layout = new QGridLayout(this);
-   QLabel *m_headerLabel = new QLabel(this);
-   // Header label with large font and a bit of spacing (align with group boxes)
-   QFont headerLabelFont = m_headerLabel->font();
-   const int pointSize = headerLabelFont.pointSize();
-   QHBoxLayout *headerHLayout = new QHBoxLayout;
-   const int leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
    int width;
+   QGridLayout        *layout = new QGridLayout(this);
+   QLabel      *m_headerLabel = new QLabel(this);
+   /* Header label with large font and a bit of spacing 
+    * (align with group boxes) */
+   QFont      headerLabelFont = m_headerLabel->font();
+   const int        pointSize = headerLabelFont.pointSize();
+   QHBoxLayout *headerHLayout = new QHBoxLayout;
+   const int       leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
 
    m_optionsStack->setMargin(0);
 
    headerLabelFont.setBold(true);
 
-   // Paranoia: Should a font be set in pixels...
+   /* Paranoia: Should a font be set in pixels... */
    if (pointSize > 0)
       headerLabelFont.setPointSize(pointSize + 2);
 
@@ -216,12 +221,10 @@ void ViewOptionsDialog::addCategory(OptionsCategory *category)
 
 void ViewOptionsDialog::repaintIcons()
 {
-   int i;
+   unsigned i;
 
    for (i = 0; i < m_categoryList.size(); i++)
-   {
       m_optionsList->item(i)->setIcon(getIcon(m_categoryList.at(i)));
-   }
 }
 
 #else
@@ -230,7 +233,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(mainwindow)
    , m_viewOptionsWidget(new ViewOptionsWidget(mainwindow))
 {
-   QVBoxLayout *layout = new QVBoxLayout;
+   QVBoxLayout         *layout = new QVBoxLayout;
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
    connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
@@ -256,11 +259,9 @@ void ViewOptionsDialog::showDialog()
 #ifndef HAVE_MENU
    m_viewOptionsWidget->loadViewOptions();
 #else
-   int i;
+   unsigned i;
    for (i = 0; i < m_categoryList.size(); i++)
-   {
       m_categoryList.at(i)->load();
-   }
 #endif
    show();
    activateWindow();
@@ -277,9 +278,7 @@ void ViewOptionsDialog::onRejected()
    int i;
 
    for (i = 0; i < m_categoryList.size(); i++)
-   {
       m_categoryList.at(i)->apply();
-   }
 #endif
 }
 
@@ -395,13 +394,13 @@ void ViewOptionsWidget::onHighlightColorChoose()
 
 void ViewOptionsWidget::loadViewOptions()
 {
+   int i;
+   int themeIndex    = 0;
+   int playlistIndex = 0;
    QColor highlightColor = m_settings->value("highlight_color", QApplication::palette().highlight().color()).value<QColor>();
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
    QString initialPlaylist = m_settings->value("initial_playlist", m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
-   int themeIndex = 0;
-   int playlistIndex = 0;
-   int i;
 
    m_saveGeometryCheckBox->setChecked(m_settings->value("save_geometry", false).toBool());
    m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());

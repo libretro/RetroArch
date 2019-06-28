@@ -13,14 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../video_driver.h"
-
-#include "../../driver.h"
-#include "../../verbosity.h"
-
 #include <kernel.h>
 #include <gsKit.h>
 #include <gsInline.h>
+
+#include "../../driver.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
+
 #include "../../libretro-common/include/libretro_gskit_ps2.h"
 
 #define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
@@ -384,28 +384,6 @@ static bool ps2_gfx_set_shader(void *data,
    return false;
 }
 
-static void ps2_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void ps2_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool ps2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void ps2_set_filtering(void *data, unsigned index, bool smooth)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
@@ -511,13 +489,16 @@ video_driver_t video_ps2 = {
    ps2_gfx_free,
    "ps2",
    NULL, /* set_viewport */
-   ps2_gfx_set_rotation,
-   ps2_gfx_viewport_info,
-   ps2_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   ps2_gfx_get_poke_interface,
 };

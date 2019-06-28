@@ -452,8 +452,9 @@ static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
 static uint32_t gfx_ctx_qnx_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
    return flags;
 }
 

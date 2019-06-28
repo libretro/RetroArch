@@ -20,12 +20,12 @@
 #include "../retroarch.h"
 #include "../core.h"
 
-#include <rcheevos.h>
+#include "../deps/rcheevos/include/rcheevos.h"
 
-static int cheevos_cmpaddr(const void* e1, const void* e2)
+static int rcheevos_cmpaddr(const void* e1, const void* e2)
 {
-   const cheevos_fixup_t* f1 = (const cheevos_fixup_t*)e1;
-   const cheevos_fixup_t* f2 = (const cheevos_fixup_t*)e2;
+   const rcheevos_fixup_t* f1 = (const rcheevos_fixup_t*)e1;
+   const rcheevos_fixup_t* f2 = (const rcheevos_fixup_t*)e2;
 
    if (f1->address < f2->address)
    {
@@ -41,7 +41,7 @@ static int cheevos_cmpaddr(const void* e1, const void* e2)
    }
 }
 
-static size_t cheevos_var_reduce(size_t addr, size_t mask)
+static size_t rcheevos_var_reduce(size_t addr, size_t mask)
 {
    while (mask)
    {
@@ -53,7 +53,7 @@ static size_t cheevos_var_reduce(size_t addr, size_t mask)
    return addr;
 }
 
-static size_t cheevos_var_highest_bit(size_t n)
+static size_t rcheevos_var_highest_bit(size_t n)
 {
    n |= n >>  1;
    n |= n >>  2;
@@ -64,33 +64,33 @@ static size_t cheevos_var_highest_bit(size_t n)
    return n ^ (n >> 1);
 }
 
-void cheevos_fixup_init(cheevos_fixups_t* fixups)
+void rcheevos_fixup_init(rcheevos_fixups_t* fixups)
 {
    fixups->elements = NULL;
    fixups->capacity = fixups->count = 0;
    fixups->dirty = false;
 }
 
-void cheevos_fixup_destroy(cheevos_fixups_t* fixups)
+void rcheevos_fixup_destroy(rcheevos_fixups_t* fixups)
 {
    CHEEVOS_FREE(fixups->elements);
-   cheevos_fixup_init(fixups);
+   rcheevos_fixup_init(fixups);
 }
 
-const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, int console)
+const uint8_t* rcheevos_fixup_find(rcheevos_fixups_t* fixups, unsigned address, int console)
 {
-   cheevos_fixup_t key;
-   cheevos_fixup_t* found;
+   rcheevos_fixup_t key;
+   rcheevos_fixup_t* found;
    const uint8_t* location;
 
    if (fixups->dirty)
    {
-      qsort(fixups->elements, fixups->count, sizeof(cheevos_fixup_t), cheevos_cmpaddr);
+      qsort(fixups->elements, fixups->count, sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
       fixups->dirty = false;
    }
 
    key.address = address;
-   found = (cheevos_fixup_t*)bsearch(&key, fixups->elements, fixups->count, sizeof(cheevos_fixup_t), cheevos_cmpaddr);
+   found = (rcheevos_fixup_t*)bsearch(&key, fixups->elements, fixups->count, sizeof(rcheevos_fixup_t), rcheevos_cmpaddr);
 
    if (found != NULL)
    {
@@ -100,8 +100,8 @@ const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, in
    if (fixups->count == fixups->capacity)
    {
       unsigned new_capacity = fixups->capacity == 0 ? 16 : fixups->capacity * 2;
-      cheevos_fixup_t* new_elements = (cheevos_fixup_t*)
-         realloc(fixups->elements, new_capacity * sizeof(cheevos_fixup_t));
+      rcheevos_fixup_t* new_elements = (rcheevos_fixup_t*)
+         realloc(fixups->elements, new_capacity * sizeof(rcheevos_fixup_t));
 
       if (new_elements == NULL)
       {
@@ -114,13 +114,13 @@ const uint8_t* cheevos_fixup_find(cheevos_fixups_t* fixups, unsigned address, in
 
    fixups->elements[fixups->count].address = address;
    fixups->elements[fixups->count++].location = location =
-      cheevos_patch_address(address, console);
+      rcheevos_patch_address(address, console);
    fixups->dirty = true;
 
    return location;
 }
 
-const uint8_t* cheevos_patch_address(unsigned address, int console)
+const uint8_t* rcheevos_patch_address(unsigned address, int console)
 {
    rarch_system_info_t* system = runloop_get_system_info();
    const void* pointer = NULL;
@@ -130,7 +130,7 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
       if (address >= 0x0800 && address < 0x2000)
       {
          /* Address in the mirrorred RAM, adjust to real RAM. */
-         CHEEVOS_LOG(CHEEVOS_TAG "NES memory address in mirrorred RAM %X, adjusted to %X\n", address, address & 0x07ff);
+         CHEEVOS_LOG(RCHEEVOS_TAG "NES memory address in mirrorred RAM %X, adjusted to %X\n", address, address & 0x07ff);
          address &= 0x07ff;
       }
    }
@@ -139,7 +139,7 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
       if (address >= 0xe000 && address <= 0xfdff)
       {
          /* Address in the echo RAM, adjust to real RAM. */
-         CHEEVOS_LOG(CHEEVOS_TAG "GBC memory address in echo RAM %X, adjusted to %X\n", address, address - 0x2000);
+         CHEEVOS_LOG(RCHEEVOS_TAG "GBC memory address in echo RAM %X, adjusted to %X\n", address, address - 0x2000);
          address -= 0x2000;
       }
    }
@@ -156,20 +156,20 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
          if (address < 0x8000)
          {
             /* Internal RAM. */
-            CHEEVOS_LOG(CHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x3000000);
+            CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x3000000);
             address += 0x3000000;
          }
          else
          {
             /* Work RAM. */
-            CHEEVOS_LOG(CHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x2000000 - 0x8000);
+            CHEEVOS_LOG(RCHEEVOS_TAG "GBA memory address %X adjusted to %X\n", address, address + 0x2000000 - 0x8000);
             address += 0x2000000 - 0x8000;
          }
       }
       else if (console == RC_CONSOLE_PC_ENGINE)
       {
          /* RAM. */
-         CHEEVOS_LOG(CHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
+         CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
          address += 0x1f0000;
       }
       else if (console == RC_CONSOLE_SUPER_NINTENDO)
@@ -177,13 +177,13 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
          if (address < 0x020000)
          {
             /* Work RAM. */
-            CHEEVOS_LOG(CHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x7e0000);
+            CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x7e0000);
             address += 0x7e0000;
          }
          else
          {
             /* Save RAM. */
-            CHEEVOS_LOG(CHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x006000 - 0x020000);
+            CHEEVOS_LOG(RCHEEVOS_TAG "SNES memory address %X adjusted to %X\n", address, address + 0x006000 - 0x020000);
             address += 0x006000 - 0x020000;
          }
       }
@@ -198,16 +198,16 @@ const uint8_t* cheevos_patch_address(unsigned address, int console)
             unsigned addr = address;
             pointer       = desc->core.ptr;
 
-            address       = (unsigned)cheevos_var_reduce(
+            address       = (unsigned)rcheevos_var_reduce(
                (addr - desc->core.start) & desc->disconnect_mask,
                desc->core.disconnect);
 
             if (address >= desc->core.len)
-               address -= cheevos_var_highest_bit(address);
+               address -= rcheevos_var_highest_bit(address);
 
             address += desc->core.offset;
 
-            CHEEVOS_LOG(CHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", addr, (int)((desc - system->mmaps.descriptors) + 1), address);
+            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", addr, (int)((desc - system->mmaps.descriptors) + 1), address);
             break;
          }
       }

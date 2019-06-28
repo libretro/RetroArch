@@ -22,7 +22,7 @@
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../menu_driver.h"
@@ -49,8 +49,8 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    struct gdi_texture *texture = NULL;
-   gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
-   BITMAPINFO info = {{0}};
+   gdi_t *gdi                  = (gdi_t*)video_info->userdata;
+   BITMAPINFO info             = {{0}};
 
    if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
       return;

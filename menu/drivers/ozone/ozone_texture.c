@@ -25,7 +25,7 @@
 
 #include "../../menu_driver.h"
 
-#include "../../../cheevos/badges.h"
+#include "../../../cheevos-new/badges.h"
 #include "../../../verbosity.h"
 
 menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
@@ -121,9 +121,14 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+#ifdef HAVE_VIDEO_LAYOUT
+      case MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS:
+#endif
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY];
       case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
       case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
@@ -228,6 +233,7 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
+      case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NETWORK];
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST];
@@ -531,6 +537,14 @@ switch (id)
          return "battery-full.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING:
          return "battery-charging.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_80:
+         return "battery-80.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_60:
+         return "battery-60.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_40:
+         return "battery-40.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_20:
+         return "battery-20.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_POINTER:
          return "pointer.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE:

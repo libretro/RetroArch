@@ -72,6 +72,7 @@ get_semantic_name(slang_reflection& reflection,
       "OutputSize",
       "FinalViewportSize",
       "FrameCount",
+      "FrameDirection",
    };
    if ((int)semantic < sizeof(names) / sizeof(*names))
       return std::string(names[semantic]);
@@ -449,39 +450,12 @@ bool slang_process(
          options.shader_model     = version;
          vs->set_hlsl_options(options);
          ps->set_hlsl_options(options);
-
-#if 0
-         CompilerGLSL::Options glsl_options;
-         glsl_options.vertex.flip_vert_y = true;
-         ((CompilerGLSL*)vs)->set_options(glsl_options);
-         ((CompilerGLSL*)ps)->set_options(glsl_options);
-#endif
-
-         /* not exactly a vertex attribute but this remaps
-          * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
-         std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
-
-         VariableTypeRemapCallback ps_var_remap_cb =
-               [&](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
-                  if (var_name == "FragCoord")
-                     name_of_type = "float4";
-               };
-         for (Resource& resource : ps_resources.stage_inputs)
-         {
-            if (ps->get_name(resource.id) == "FragCoord")
-            {
-               uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
-               ps_attrib_remap.push_back({ location, "SV_Position" });
-               ps->set_variable_type_remap_callback(ps_var_remap_cb);
-            }
-         }
-
          vs_code = vs->compile();
-         ps_code = ps->compile(ps_attrib_remap);
+         ps_code = ps->compile();
       }
       else
 #endif
-         if (dst_type == RARCH_SHADER_METAL)
+      if (dst_type == RARCH_SHADER_METAL)
       {
          CompilerMSL::Options options;
          CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
@@ -490,18 +464,51 @@ bool slang_process(
          vs->set_msl_options(options);
          ps->set_msl_options(options);
 
-         std::vector<MSLVertexAttr> vs_attrib_remap;
-         std::vector<MSLResourceBinding> vs_res;
+         const auto remap_push_constant = [](CompilerMSL *comp,
+                                             const ShaderResources &resources) {
+            for (const Resource& resource : resources.push_constant_buffers)
+            {
+               // Explicit 1:1 mapping for bindings.
+               MSLResourceBinding binding = {};
+               binding.stage = comp->get_execution_model();
+               binding.desc_set = kPushConstDescSet;
+               binding.binding = kPushConstBinding;
+               // Use earlier decoration override.
+               binding.msl_buffer = comp->get_decoration(resource.id, spv::DecorationBinding);
+               comp->add_msl_resource_binding(binding);
+            }
+         };
 
-         for (Resource& resource : vs_resources.stage_inputs)
-         {
-            std::string name = vs->get_name(resource.id);
-         }
+         const auto remap_generic_resource = [](CompilerMSL *comp,
+                                                const SmallVector<Resource> &resources) {
+            for (const Resource& resource : resources)
+            {
+               // Explicit 1:1 mapping for bindings.
+               MSLResourceBinding binding = {};
+               binding.stage = comp->get_execution_model();
+               binding.desc_set = comp->get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+               // Use existing decoration override.
+               uint32_t msl_binding = comp->get_decoration(resource.id, spv::DecorationBinding);
+               binding.binding      = msl_binding;
+               binding.msl_buffer   = msl_binding;
+               binding.msl_texture  = msl_binding;
+               binding.msl_sampler  = msl_binding;
+               comp->add_msl_resource_binding(binding);
+            }
+         };
+
+         remap_push_constant(vs, vs_resources);
+         remap_push_constant(ps, ps_resources);
+         remap_generic_resource(vs, vs_resources.uniform_buffers);
+         remap_generic_resource(ps, ps_resources.uniform_buffers);
+         remap_generic_resource(vs, vs_resources.sampled_images);
+         remap_generic_resource(ps, ps_resources.sampled_images);
 
          vs_code = vs->compile();
          ps_code = ps->compile();
       }
-      else if (shader_info->type == RARCH_SHADER_GLSL)
+      else if (dst_type == RARCH_SHADER_GLSL)
       {
          CompilerGLSL::Options options;
          CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;

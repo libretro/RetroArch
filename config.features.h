@@ -9,345 +9,345 @@
 #endif
 
 #ifdef HAVE_OVERLAY
-static const bool _overlay_supp = true;
+#define SUPPORTS_OVERLAY true
 #else
-static const bool _overlay_supp = false;
+#define SUPPORTS_OVERLAY false
 #endif
 
 #ifdef HAVE_V4L2
-static const bool _v4l2_supp = true;
+#define SUPPORTS_V4L2 true
 #else
-static const bool _v4l2_supp = false;
+#define SUPPORTS_V4L2 false
 #endif
 
 #ifdef HAVE_COMMAND
-static const bool _command_supp = true;
+#define SUPPORTS_COMMAND true
 #else
-static const bool _command_supp = false;
+#define SUPPORTS_COMMAND false
 #endif
 
 #ifdef HAVE_NETWORK_CMD
-static const bool _network_command_supp = true;
+#define SUPPORTS_NETWORK_COMMAND true
 #else
-static const bool _network_command_supp = false;
+#define SUPPORTS_NETWORK_COMMAND false
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-static const bool _network_gamepad_supp = true;
+#define SUPPORTS_NETWORK_GAMEPAD true
 #else
-static const bool _network_gamepad_supp = false;
+#define SUPPORTS_NETWORK_GAMEPAD false
 #endif
 
 #ifdef HAVE_FILTERS_BUILTIN
-static const bool _cpu_filters = true;
+#define SUPPORTS_CPU_FILTERS true
 #else
-static const bool _cpu_filters = false;
+#define SUPPORTS_CPU_FILTERS false
 #endif
 
 #ifdef HAVE_LIBUSB
-static const bool _libusb_supp = true;
+#define SUPPORTS_LIBUSB true
 #else
-static const bool _libusb_supp = false;
+#define SUPPORTS_LIBUSB false
 #endif
 
 #ifdef HAVE_SDL
-static const bool _sdl_supp = true;
+#define SUPPORTS_SDL true
 #else
-static const bool _sdl_supp = false;
+#define SUPPORTS_SDL false
 #endif
 
 #ifdef HAVE_SDL2
-static const bool _sdl2_supp = true;
+#define SUPPORTS_SDL2 true
 #else
-static const bool _sdl2_supp = false;
+#define SUPPORTS_SDL2 false
 #endif
 
 #ifdef HAVE_THREADS
-static const bool _thread_supp = true;
+#define SUPPORTS_THREAD true
 #else
-static const bool _thread_supp = false;
+#define SUPPORTS_THREAD false
 #endif
 
 #ifdef HAVE_OPENGL
-static const bool _opengl_supp = true;
+#define SUPPORTS_OPENGL true
 #else
-static const bool _opengl_supp = false;
+#define SUPPORTS_OPENGL false
 #endif
 
 #ifdef HAVE_VULKAN
-static const bool _vulkan_supp = true;
+#define SUPPORTS_VULKAN true
 #else
-static const bool _vulkan_supp = false;
+#define SUPPORTS_VULKAN false
 #endif
 
 #ifdef HAVE_METAL
-static const bool _metal_supp = true;
+#define SUPPORTS_METAL true
 #else
-static const bool _metal_supp = false;
+#define SUPPORTS_METAL false
 #endif
 
 #if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
-static const bool _opengles_supp = true;
+#define SUPPORTS_OPENGLES true
 #else
-static const bool _opengles_supp = false;
+#define SUPPORTS_OPENGLES false
 #endif
 
 #ifdef HAVE_KMS
-static const bool _kms_supp = true;
+#define SUPPORTS_KMS true
 #else
-static const bool _kms_supp = false;
+#define SUPPORTS_KMS false
 #endif
 
 #ifdef HAVE_UDEV
-static const bool _udev_supp = true;
+#define SUPPORTS_UDEV true
 #else
-static const bool _udev_supp = false;
+#define SUPPORTS_UDEV false
 #endif
 
 #ifdef HAVE_VG
-static const bool _vg_supp = true;
+#define SUPPORTS_VG true
 #else
-static const bool _vg_supp = false;
+#define SUPPORTS_VG false
 #endif
 
 #ifdef HAVE_EGL
-static const bool _egl_supp = true;
+#define SUPPORTS_EGL true
 #else
-static const bool _egl_supp = false;
+#define SUPPORTS_EGL false
 #endif
 
 #ifdef HAVE_X11
-static const bool _x11_supp = true;
+#define SUPPORTS_X11 true
 #else
-static const bool _x11_supp = false;
+#define SUPPORTS_X11 false
 #endif
 
 #ifdef HAVE_WAYLAND
-static const bool _wayland_supp = true;
+#define SUPPORTS_WAYLAND true
 #else
-static const bool _wayland_supp = false;
+#define SUPPORTS_WAYLAND false
 #endif
 
 #ifdef HAVE_XVIDEO
-static const bool _xvideo_supp = true;
+#define SUPPORTS_XVIDEO true
 #else
-static const bool _xvideo_supp = false;
+#define SUPPORTS_XVIDEO false
 #endif
 
 #ifdef HAVE_ALSA
-static const bool _alsa_supp = true;
+#define SUPPORTS_ALSA true
 #else
-static const bool _alsa_supp = false;
+#define SUPPORTS_ALSA false
 #endif
 
 #ifdef HAVE_TINYALSA
-static const bool _tinyalsa_supp = true;
+#define SUPPORTS_TINYALSA true
 #else
-static const bool _tinyalsa_supp = false;
+#define SUPPORTS_TINYALSA false
 #endif
 
 #ifdef HAVE_COREAUDIO
-static const bool _coreaudio_supp = true;
+#define SUPPORTS_COREAUDIO true
 #else
-static const bool _coreaudio_supp = false;
+#define SUPPORTS_COREAUDIO false
 #endif
 
 #ifdef HAVE_COREAUDIO3
-static const bool _coreaudio3_supp = true;
+#define SUPPORTS_COREAUDIO3 true
 #else
-static const bool _coreaudio3_supp = false;
+#define SUPPORTS_COREAUDIO3 false
 #endif
 
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
-static const bool _oss_supp = true;
+#define SUPPORTS_OSS true
 #else
-static const bool _oss_supp = false;
+#define SUPPORTS_OSS false
 #endif
 
 #ifdef HAVE_AL
-static const bool _al_supp = true;
+#define SUPPORTS_AL true
 #else
-static const bool _al_supp = false;
+#define SUPPORTS_AL false
 #endif
 
 #ifdef HAVE_SL
-static const bool _sl_supp = true;
+#define SUPPORTS_SL true
 #else
-static const bool _sl_supp = false;
+#define SUPPORTS_SL false
 #endif
 
 #ifdef HAVE_LIBRETRODB
-static const bool _libretrodb_supp = true;
+#define SUPPORTS_LIBRETRODB true
 #else
-static const bool _libretrodb_supp = false;
+#define SUPPORTS_LIBRETRODB false
 #endif
 
 #ifdef HAVE_RSOUND
-static const bool _rsound_supp = true;
+#define SUPPORTS_RSOUND true
 #else
-static const bool _rsound_supp = false;
+#define SUPPORTS_RSOUND false
 #endif
 
 #ifdef HAVE_ROAR
-static const bool _roar_supp = true;
+#define SUPPORTS_ROAR true
 #else
-static const bool _roar_supp = false;
+#define SUPPORTS_ROAR false
 #endif
 
 #ifdef HAVE_JACK
-static const bool _jack_supp = true;
+#define SUPPORTS_JACK true
 #else
-static const bool _jack_supp = false;
+#define SUPPORTS_JACK false
 #endif
 
 #ifdef HAVE_PULSE
-static const bool _pulse_supp = true;
+#define SUPPORTS_PULSE true
 #else
-static const bool _pulse_supp = false;
+#define SUPPORTS_PULSE false
 #endif
 
 #ifdef HAVE_DSOUND
-static const bool _dsound_supp = true;
+#define SUPPORTS_DSOUND true
 #else
-static const bool _dsound_supp = false;
+#define SUPPORTS_DSOUND false
 #endif
 
 #ifdef HAVE_WASAPI
-static const bool _wasapi_supp = true;
+#define SUPPORTS_WASAPI true
 #else
-static const bool _wasapi_supp = false;
+#define SUPPORTS_WASAPI false
 #endif
 
 #ifdef HAVE_XAUDIO
-static const bool _xaudio_supp = true;
+#define SUPPORTS_XAUDIO true
 #else
-static const bool _xaudio_supp = false;
+#define SUPPORTS_XAUDIO false
 #endif
 
 #ifdef HAVE_ZLIB
-static const bool _zlib_supp = true;
+#define SUPPORTS_ZLIB true
 #else
-static const bool _zlib_supp = false;
+#define SUPPORTS_ZLIB false
 #endif
 
 #ifdef HAVE_7ZIP
-static const bool _7zip_supp = true;
+#define SUPPORTS_7ZIP true
 #else
-static const bool _7zip_supp = false;
+#define SUPPORTS_7ZIP false
 #endif
 
 #ifdef HAVE_DYLIB
-static const bool _dylib_supp = true;
+#define SUPPORTS_DYLIB true
 #else
-static const bool _dylib_supp = false;
+#define SUPPORTS_DYLIB false
 #endif
 
 #ifdef HAVE_CG
-static const bool _cg_supp = true;
+#define SUPPORTS_CG true
 #else
-static const bool _cg_supp = false;
+#define SUPPORTS_CG false
 #endif
 
 #ifdef HAVE_GLSL
-static const bool _glsl_supp = true;
+#define SUPPORTS_GLSL true
 #else
-static const bool _glsl_supp = false;
+#define SUPPORTS_GLSL false
 #endif
 
 #ifdef HAVE_HLSL
-static const bool _hlsl_supp = true;
+#define SUPPORTS_HLSL true
 #else
-static const bool _hlsl_supp = false;
+#define SUPPORTS_HLSL false
 #endif
 
 #ifdef HAVE_SDL_IMAGE
-static const bool _sdl_image_supp = true;
+#define SUPPORTS_SDL_IMAGE true
 #else
-static const bool _sdl_image_supp = false;
+#define SUPPORTS_SDL_IMAGE false
 #endif
 
 #ifdef HAVE_DYNAMIC
-static const bool _dynamic_supp = true;
+#define SUPPORTS_DYNAMIC true
 #else
-static const bool _dynamic_supp = false;
+#define SUPPORTS_DYNAMIC false
 #endif
 
 #ifdef HAVE_FFMPEG
-static const bool _ffmpeg_supp = true;
+#define SUPPORTS_FFMPEG true
 #else
-static const bool _ffmpeg_supp = false;
+#define SUPPORTS_FFMPEG false
 #endif
 
 #ifdef HAVE_MPV
-static const bool _mpv_supp = true;
+#define SUPPORTS_MPV true
 #else
-static const bool _mpv_supp = false;
+#define SUPPORTS_MPV false
 #endif
 
 #ifdef HAVE_FREETYPE
-static const bool _freetype_supp = true;
+#define SUPPORTS_FREETYPE true
 #else
-static const bool _freetype_supp = false;
+#define SUPPORTS_FREETYPE false
 #endif
 
 #ifdef HAVE_STB_FONT
-static const bool _stbfont_supp = true;
+#define SUPPORTS_STBFONT true
 #else
-static const bool _stbfont_supp = false;
+#define SUPPORTS_STBFONT false
 #endif
 
 #ifdef HAVE_NETWORKING
-static const bool _netplay_supp = true;
+#define SUPPORTS_NETPLAY true
 #else
-static const bool _netplay_supp = false;
+#define SUPPORTS_NETPLAY false
 #endif
 
 #ifdef HAVE_PYTHON
-static const bool _python_supp = true;
+#define SUPPORTS_PYTHON true
 #else
-static const bool _python_supp = false;
+#define SUPPORTS_PYTHON false
 #endif
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-static const bool _cocoa_supp = true;
+#define SUPPORTS_COCOA true
 #else
-static const bool _cocoa_supp = false;
+#define SUPPORTS_COCOA false
 #endif
 
 #ifdef HAVE_QT
-static const bool _qt_supp = true;
+#define SUPPORTS_QT true
 #else
-static const bool _qt_supp = false;
+#define SUPPORTS_QT false
 #endif
 
 #ifdef HAVE_RPNG
-static const bool _rpng_supp = true;
+#define SUPPORTS_RPNG true
 #else
-static const bool _rpng_supp = false;
+#define SUPPORTS_RPNG false
 #endif
 
 #ifdef HAVE_RJPEG
-static const bool _rjpeg_supp = true;
+#define SUPPORTS_RJPEG true
 #else
-static const bool _rjpeg_supp = false;
+#define SUPPORTS_RJPEG false
 #endif
 
 #ifdef HAVE_RBMP
-static const bool _rbmp_supp = true;
+#define SUPPORTS_RBMP true
 #else
-static const bool _rbmp_supp = false;
+#define SUPPORTS_RBMP false
 #endif
 
 #ifdef HAVE_RTGA
-static const bool _rtga_supp = true;
+#define SUPPORTS_RTGA true
 #else
-static const bool _rtga_supp = false;
+#define SUPPORTS_RTGA false
 #endif
 
 #ifdef HAVE_CORETEXT
-static const bool _coretext_supp = true;
+#define SUPPORTS_CORETEXT true
 #else
-static const bool _coretext_supp = false;
+#define SUPPORTS_CORETEXT false
 #endif
 
 #if !defined(_WIN32) && !defined(GLOBAL_CONFIG_DIR)

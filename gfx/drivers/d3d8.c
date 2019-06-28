@@ -36,9 +36,9 @@
 #include "../common/d3d_common.h"
 #include "../video_coord_array.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
-#include "../video_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -429,13 +429,13 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
       overlay_t *overlay, bool force_linear)
 {
    D3DVIEWPORT8 vp_full;
-   D3DTEXTUREFILTERTYPE filter_type;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-   unsigned width      = video_info->width;
-   unsigned height     = video_info->height;
+   enum D3DTEXTUREFILTERTYPE filter_type = D3DTEXF_LINEAR;
+   unsigned width                        = video_info->width;
+   unsigned height                       = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;
@@ -1631,11 +1631,6 @@ static bool d3d8_frame(void *data, const void *frame,
    return true;
 }
 
-static bool d3d8_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   return false;
-}
-
 static bool d3d8_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -1900,10 +1895,13 @@ video_driver_t video_d3d8 = {
    d3d8_set_viewport,
    d3d8_set_rotation,
    d3d8_viewport_info,
-   d3d8_read_viewport,
+   NULL,                      /* read_viewport  */
    NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d8_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    d3d8_get_poke_interface
 };

@@ -6,9 +6,6 @@
 
 RETRO_BEGIN_DECLS
 
-extern bool input_is_dirty;
-void add_input_state_hook(void);
-void remove_input_state_hook(void);
 int16_t input_state_get_last(unsigned port,
    unsigned device, unsigned index, unsigned id);
 

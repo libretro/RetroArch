@@ -32,8 +32,12 @@ QWidget *PlaylistsPage::widget()
    layout->addRow(history);
 
    layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE);
+   /*layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE); TOFIX */
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL);
    layout->add(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT);
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS);
+   layout->add(MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH);
+   layout->add(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH);
 
    widget->setLayout(layout);
 

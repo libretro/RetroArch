@@ -28,7 +28,6 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
-#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
@@ -36,8 +35,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
-
-#include "../../gfx/video_driver.h"
 
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
@@ -189,7 +186,7 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = video_shader_watch_files;
+   settings->bools.video_shader_watch_files = DEFAULT_VIDEO_SHADER_WATCH_FILES;
    return 0;
 }
 
@@ -224,13 +221,13 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_playlist_association(unsigned type, const char *label)
 {
-   int found;
-   char new_playlist_cores[PATH_MAX_LENGTH];
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
    core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
+   int found;
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
 
    core_info_get_list(&list);
    if (!list)

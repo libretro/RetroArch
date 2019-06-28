@@ -28,6 +28,7 @@
 
 #include <windows.h>
 #endif /* !defined(_XBOX) */
+#include <math.h>
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -56,7 +57,7 @@
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
-#include "../../gfx/video_driver.h"
+#include "../../retroarch.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
@@ -344,7 +345,7 @@ INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
-                        rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH,info->path);
+                        path_set(RARCH_PATH_CORE, info->path);
                      }
                      break;
                }
@@ -825,7 +826,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {

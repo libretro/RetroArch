@@ -48,21 +48,23 @@ check_compiler()
 }
 
 # check_enabled:
-# $1 = HAVE_$1 [Disabled feature]
+# $1 = HAVE_$1 [Disabled 'feature' or 'feature feature1 feature2', $1 = name]
 # $2 = USER_$2 [Enabled feature]
 # $3 = lib
 # $4 = feature
 # $5 = enable lib when true [checked only if non-empty]
 check_enabled()
-{	tmpvar="$(eval "printf %s \"\$HAVE_$1\"")"
-	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+{	setval="$(eval "printf %s \"\$HAVE_$2\"")"
 
-	if [ "$tmpvar" != 'no' ]; then
-		if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
-			eval "HAVE_$2=yes"
+	for val in $(printf %s "$1"); do
+		tmpvar="$(eval "printf %s \"\$HAVE_$val\"")"
+		if [ "$tmpvar" != 'no' ]; then
+			if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+				eval "HAVE_$2=yes"
+			fi
+			return 0
 		fi
-		return 0
-	fi
+	done
 
 	tmpval="$(eval "printf %s \"\$USER_$2\"")"
 
@@ -77,6 +79,34 @@ check_enabled()
 	fi
 
 	die 1 "Error: $4 disabled and forced to build with $3 support."
+}
+
+# check_platform:
+# $1 = OS
+# $2 = HAVE_$2
+# $3 = feature
+# $4 = enable feature when true [checked only if non-empty]
+check_platform()
+{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	[ "$tmpval" = 'no' ] && return 0
+
+	setval="$(eval "printf %s \"\$USER_$2\"")"
+
+	if [ "$setval" = 'yes' ]; then
+		if { [ "$1" != "$OS" ] && [ "${4:-}" = 'true' ]; } ||
+				{ [ "$1" = "$OS" ] &&
+				[ "${4:-}" != 'true' ]; }; then
+			die 1 "Error: $3 not supported for $OS."
+		fi
+	elif [ "$1" = "$OS" ]; then
+		if [ "${4:-}" = 'true' ]; then
+			eval "HAVE_$2=yes"
+		else
+			eval "HAVE_$2=no"
+		fi
+	elif [ "${4:-}" = 'true' ]; then
+		eval "HAVE_$2="
+	fi
 }
 
 # check_lib:
@@ -229,7 +259,7 @@ check_header()
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER"
-	eval "set -- $INCLUDE_DIRS"
+	eval "set -- $CFLAGS $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n " ... $answer"

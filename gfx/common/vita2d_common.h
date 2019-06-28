@@ -25,7 +25,7 @@
 
 #include "../../defines/psp_defines.h"
 #include "../../driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../video_coord_array.h"
 
 typedef struct vita_menu_frame

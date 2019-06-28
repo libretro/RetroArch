@@ -47,7 +47,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
-#include "../../record/record_driver.h"
+#include "../../managers/state_manager.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -829,10 +829,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
    const char     *shader_path = retroarch_get_shader_preset();
+   enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
-   enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
-
-   if (type == RARCH_SHADER_NONE)
+   if (string_is_empty(shader_path))
    {
       RARCH_LOG("[Vulkan]: Loading stock shader.\n");
       return vulkan_init_default_filter_chain(vk);
@@ -840,7 +839,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_LOG("[Vulkan]: Only SLANG shaders are supported, falling back to stock.\n");
+      RARCH_LOG("[Vulkan]: Only Slang shaders are supported, falling back to stock.\n");
       return vulkan_init_default_filter_chain(vk);
    }
 
@@ -871,11 +870,12 @@ static void vulkan_init_static_resources(vk_t *vk)
    uint32_t blank[4 * 4];
    VkCommandPoolCreateInfo pool_info = {
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    if (!vk->context)
       return;
@@ -1358,17 +1358,17 @@ static bool vulkan_set_shader(void *data,
    if (!vk)
       return false;
 
-   if (type != RARCH_SHADER_SLANG && path)
-   {
-      RARCH_WARN("[Vulkan]: Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      path = NULL;
-   }
-
    if (vk->filter_chain)
       vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
    vk->filter_chain = NULL;
 
-   if (!path)
+   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("[Vulkan]: Only Slang shaders are supported. Falling back to stock.\n");
+      path = NULL;
+   }
+
+   if (string_is_empty(path))
    {
       vulkan_init_default_filter_chain(vk);
       return true;
@@ -1750,6 +1750,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index((vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count((vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+   vulkan_filter_chain_set_frame_direction((vulkan_filter_chain_t*)vk->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
 
    /* Render offscreen filter chain passes. */
    {
@@ -1928,18 +1929,18 @@ static bool vulkan_frame(void *data, const void *frame,
                   (const struct font_params*)&video_info->osd_stat_params);
          }
       }
-
-#ifdef HAVE_MENU_WIDGETS
-      menu_widgets_frame(video_info);
 #endif
+
+#ifdef HAVE_OVERLAY
+      if (vk->overlay.enable)
+         vulkan_render_overlay(vk, video_info);
 #endif
 
       if (!string_is_empty(msg))
          font_driver_render_msg(video_info, NULL, msg, NULL);
 
-#ifdef HAVE_OVERLAY
-      if (vk->overlay.enable)
-         vulkan_render_overlay(vk, video_info);
+#ifdef HAVE_MENU_WIDGETS
+      menu_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */
@@ -2395,12 +2396,12 @@ static float vulkan_get_refresh_rate(void *data)
 
 static uint32_t vulkan_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
    return flags;
 }
@@ -2815,6 +2816,9 @@ video_driver_t video_vulkan = {
 
 #ifdef HAVE_OVERLAY
    vulkan_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
 #endif
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */

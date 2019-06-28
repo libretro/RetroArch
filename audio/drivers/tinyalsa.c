@@ -64,7 +64,7 @@
 #include <retro_inline.h>
 #include <retro_endianness.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* Implementation tinyalsa pcm */
@@ -174,17 +174,17 @@
 #define SNDRV_PCM_IOCTL_LINK		_IOW('A', 0x60, int)
 #define SNDRV_PCM_IOCTL_UNLINK		_IO('A', 0x61)
 
-#define	SNDRV_PCM_ACCESS_MMAP_INTERLEAVED	(( snd_pcm_access_t) 0) /* interleaved mmap */
-#define	SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED	(( snd_pcm_access_t) 1) /* noninterleaved mmap */
-#define	SNDRV_PCM_ACCESS_MMAP_COMPLEX		(( snd_pcm_access_t) 2) /* complex mmap */
-#define	SNDRV_PCM_ACCESS_RW_INTERLEAVED		(( snd_pcm_access_t) 3) /* readi/writei */
-#define	SNDRV_PCM_ACCESS_RW_NONINTERLEAVED	(( snd_pcm_access_t) 4) /* readn/writen */
+#define	SNDRV_PCM_ACCESS_MMAP_INTERLEAVED	(( tinyalsa_snd_pcm_access_t) 0) /* interleaved mmap */
+#define	SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED	(( tinyalsa_snd_pcm_access_t) 1) /* noninterleaved mmap */
+#define	SNDRV_PCM_ACCESS_MMAP_COMPLEX		(( tinyalsa_snd_pcm_access_t) 2) /* complex mmap */
+#define	SNDRV_PCM_ACCESS_RW_INTERLEAVED		(( tinyalsa_snd_pcm_access_t) 3) /* readi/writei */
+#define	SNDRV_PCM_ACCESS_RW_NONINTERLEAVED	(( tinyalsa_snd_pcm_access_t) 4) /* readn/writen */
 #define	SNDRV_PCM_ACCESS_LAST		SNDRV_PCM_ACCESS_RW_NONINTERLEAVED
 
-#define	SNDRV_PCM_SUBFORMAT_STD		(( snd_pcm_subformat_t) 0)
+#define	SNDRV_PCM_SUBFORMAT_STD		(( tinyalsa_snd_pcm_subformat_t) 0)
 #define	SNDRV_PCM_SUBFORMAT_LAST	SNDRV_PCM_SUBFORMAT_STD
 
-#define	SNDRV_PCM_SUBFORMAT_STD		(( snd_pcm_subformat_t) 0)
+#define	SNDRV_PCM_SUBFORMAT_STD		(( tinyalsa_snd_pcm_subformat_t) 0)
 #define	SNDRV_PCM_SUBFORMAT_LAST	SNDRV_PCM_SUBFORMAT_STD
 #define SNDRV_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
 #define SNDRV_PCM_INFO_MMAP_VALID	0x00000002	/* period data are valid during transfer */
@@ -203,15 +203,15 @@
 #define SNDRV_PCM_INFO_NO_PERIOD_WAKEUP	0x00800000	/* period wakeup can be disabled */
 #define SNDRV_PCM_INFO_HAS_WALL_CLOCK   0x01000000      /* has audio wall clock for audio/system time sync */
 #define SNDRV_PCM_INFO_FIFO_IN_FRAMES	0x80000000	/* internal kernel flag - FIFO size is in frames */
-#define	SNDRV_PCM_STATE_OPEN		(( snd_pcm_state_t) 0) /* stream is open */
-#define	SNDRV_PCM_STATE_SETUP		(( snd_pcm_state_t) 1) /* stream has a setup */
-#define	SNDRV_PCM_STATE_PREPARED	(( snd_pcm_state_t) 2) /* stream is ready to start */
-#define	SNDRV_PCM_STATE_RUNNING		(( snd_pcm_state_t) 3) /* stream is running */
-#define	SNDRV_PCM_STATE_XRUN		(( snd_pcm_state_t) 4) /* stream reached an xrun */
-#define	SNDRV_PCM_STATE_DRAINING	(( snd_pcm_state_t) 5) /* stream is draining */
-#define	SNDRV_PCM_STATE_PAUSED		(( snd_pcm_state_t) 6) /* stream is paused */
-#define	SNDRV_PCM_STATE_SUSPENDED	(( snd_pcm_state_t) 7) /* hardware is suspended */
-#define	SNDRV_PCM_STATE_DISCONNECTED	(( snd_pcm_state_t) 8) /* hardware is disconnected */
+#define	SNDRV_PCM_STATE_OPEN		(( tinyalsa_snd_pcm_state_t) 0) /* stream is open */
+#define	SNDRV_PCM_STATE_SETUP		(( tinyalsa_snd_pcm_state_t) 1) /* stream has a setup */
+#define	SNDRV_PCM_STATE_PREPARED	(( tinyalsa_snd_pcm_state_t) 2) /* stream is ready to start */
+#define	SNDRV_PCM_STATE_RUNNING		(( tinyalsa_snd_pcm_state_t) 3) /* stream is running */
+#define	SNDRV_PCM_STATE_XRUN		(( tinyalsa_snd_pcm_state_t) 4) /* stream reached an xrun */
+#define	SNDRV_PCM_STATE_DRAINING	(( tinyalsa_snd_pcm_state_t) 5) /* stream is draining */
+#define	SNDRV_PCM_STATE_PAUSED		(( tinyalsa_snd_pcm_state_t) 6) /* stream is paused */
+#define	SNDRV_PCM_STATE_SUSPENDED	(( tinyalsa_snd_pcm_state_t) 7) /* hardware is suspended */
+#define	SNDRV_PCM_STATE_DISCONNECTED	(( tinyalsa_snd_pcm_state_t) 8) /* hardware is disconnected */
 #define	SNDRV_PCM_STATE_LAST		SNDRV_PCM_STATE_DISCONNECTED
 
 #define	SNDRV_PCM_HW_PARAM_ACCESS	         0	/* Access type */
@@ -237,53 +237,53 @@
 #define SNDRV_PCM_HW_PARAMS_EXPORT_BUFFER	   (1<<1)	/* export buffer */
 #define SNDRV_PCM_HW_PARAMS_NO_PERIOD_WAKEUP	(1<<2)	/* disable period wakeups */
 
-#define	SNDRV_PCM_FORMAT_S8	(( snd_pcm_format_t) 0)
-#define	SNDRV_PCM_FORMAT_U8	(( snd_pcm_format_t) 1)
-#define	SNDRV_PCM_FORMAT_S16_LE	(( snd_pcm_format_t) 2)
-#define	SNDRV_PCM_FORMAT_S16_BE	(( snd_pcm_format_t) 3)
-#define	SNDRV_PCM_FORMAT_U16_LE	(( snd_pcm_format_t) 4)
-#define	SNDRV_PCM_FORMAT_U16_BE	(( snd_pcm_format_t) 5)
-#define	SNDRV_PCM_FORMAT_S24_LE	(( snd_pcm_format_t) 6) /* low three bytes */
-#define	SNDRV_PCM_FORMAT_S24_BE	(( snd_pcm_format_t) 7) /* low three bytes */
-#define	SNDRV_PCM_FORMAT_U24_LE	(( snd_pcm_format_t) 8) /* low three bytes */
-#define	SNDRV_PCM_FORMAT_U24_BE	(( snd_pcm_format_t) 9) /* low three bytes */
-#define	SNDRV_PCM_FORMAT_S32_LE	(( snd_pcm_format_t) 10)
-#define	SNDRV_PCM_FORMAT_S32_BE	(( snd_pcm_format_t) 11)
-#define	SNDRV_PCM_FORMAT_U32_LE	(( snd_pcm_format_t) 12)
-#define	SNDRV_PCM_FORMAT_U32_BE	(( snd_pcm_format_t) 13)
-#define	SNDRV_PCM_FORMAT_FLOAT_LE	(( snd_pcm_format_t) 14) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
-#define	SNDRV_PCM_FORMAT_FLOAT_BE	(( snd_pcm_format_t) 15) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
-#define	SNDRV_PCM_FORMAT_FLOAT64_LE	(( snd_pcm_format_t) 16) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
-#define	SNDRV_PCM_FORMAT_FLOAT64_BE	(( snd_pcm_format_t) 17) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
-#define	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE (( snd_pcm_format_t) 18) /* IEC-958 subframe, Little Endian */
-#define	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE (( snd_pcm_format_t) 19) /* IEC-958 subframe, Big Endian */
-#define	SNDRV_PCM_FORMAT_MU_LAW		(( snd_pcm_format_t) 20)
-#define	SNDRV_PCM_FORMAT_A_LAW		(( snd_pcm_format_t) 21)
-#define	SNDRV_PCM_FORMAT_IMA_ADPCM	(( snd_pcm_format_t) 22)
-#define	SNDRV_PCM_FORMAT_MPEG		(( snd_pcm_format_t) 23)
-#define	SNDRV_PCM_FORMAT_GSM		(( snd_pcm_format_t) 24)
-#define	SNDRV_PCM_FORMAT_SPECIAL	(( snd_pcm_format_t) 31)
-#define	SNDRV_PCM_FORMAT_S24_3LE	(( snd_pcm_format_t) 32)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_S24_3BE	(( snd_pcm_format_t) 33)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U24_3LE	(( snd_pcm_format_t) 34)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U24_3BE	(( snd_pcm_format_t) 35)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_S20_3LE	(( snd_pcm_format_t) 36)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_S20_3BE	(( snd_pcm_format_t) 37)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U20_3LE	(( snd_pcm_format_t) 38)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U20_3BE	(( snd_pcm_format_t) 39)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_S18_3LE	(( snd_pcm_format_t) 40)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_S18_3BE	(( snd_pcm_format_t) 41)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U18_3LE	(( snd_pcm_format_t) 42)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_U18_3BE	(( snd_pcm_format_t) 43)	/* in three bytes */
-#define	SNDRV_PCM_FORMAT_G723_24	(( snd_pcm_format_t) 44) /* 8 samples in 3 bytes */
-#define	SNDRV_PCM_FORMAT_G723_24_1B	(( snd_pcm_format_t) 45) /* 1 sample in 1 byte */
-#define	SNDRV_PCM_FORMAT_G723_40	(( snd_pcm_format_t) 46) /* 8 Samples in 5 bytes */
-#define	SNDRV_PCM_FORMAT_G723_40_1B	(( snd_pcm_format_t) 47) /* 1 sample in 1 byte */
-#define	SNDRV_PCM_FORMAT_DSD_U8		(( snd_pcm_format_t) 48) /* DSD, 1-byte samples DSD (x8) */
-#define	SNDRV_PCM_FORMAT_DSD_U16_LE	(( snd_pcm_format_t) 49) /* DSD, 2-byte samples DSD (x16), little endian */
-#define	SNDRV_PCM_FORMAT_DSD_U32_LE	(( snd_pcm_format_t) 50) /* DSD, 4-byte samples DSD (x32), little endian */
-#define	SNDRV_PCM_FORMAT_DSD_U16_BE	(( snd_pcm_format_t) 51) /* DSD, 2-byte samples DSD (x16), big endian */
-#define	SNDRV_PCM_FORMAT_DSD_U32_BE	(( snd_pcm_format_t) 52) /* DSD, 4-byte samples DSD (x32), big endian */
+#define	SNDRV_PCM_FORMAT_S8	(( tinyalsa_snd_pcm_format_t) 0)
+#define	SNDRV_PCM_FORMAT_U8	(( tinyalsa_snd_pcm_format_t) 1)
+#define	SNDRV_PCM_FORMAT_S16_LE	(( tinyalsa_snd_pcm_format_t) 2)
+#define	SNDRV_PCM_FORMAT_S16_BE	(( tinyalsa_snd_pcm_format_t) 3)
+#define	SNDRV_PCM_FORMAT_U16_LE	(( tinyalsa_snd_pcm_format_t) 4)
+#define	SNDRV_PCM_FORMAT_U16_BE	(( tinyalsa_snd_pcm_format_t) 5)
+#define	SNDRV_PCM_FORMAT_S24_LE	(( tinyalsa_snd_pcm_format_t) 6) /* low three bytes */
+#define	SNDRV_PCM_FORMAT_S24_BE	(( tinyalsa_snd_pcm_format_t) 7) /* low three bytes */
+#define	SNDRV_PCM_FORMAT_U24_LE	(( tinyalsa_snd_pcm_format_t) 8) /* low three bytes */
+#define	SNDRV_PCM_FORMAT_U24_BE	(( tinyalsa_snd_pcm_format_t) 9) /* low three bytes */
+#define	SNDRV_PCM_FORMAT_S32_LE	(( tinyalsa_snd_pcm_format_t) 10)
+#define	SNDRV_PCM_FORMAT_S32_BE	(( tinyalsa_snd_pcm_format_t) 11)
+#define	SNDRV_PCM_FORMAT_U32_LE	(( tinyalsa_snd_pcm_format_t) 12)
+#define	SNDRV_PCM_FORMAT_U32_BE	(( tinyalsa_snd_pcm_format_t) 13)
+#define	SNDRV_PCM_FORMAT_FLOAT_LE	(( tinyalsa_snd_pcm_format_t) 14) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
+#define	SNDRV_PCM_FORMAT_FLOAT_BE	(( tinyalsa_snd_pcm_format_t) 15) /* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
+#define	SNDRV_PCM_FORMAT_FLOAT64_LE	(( tinyalsa_snd_pcm_format_t) 16) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
+#define	SNDRV_PCM_FORMAT_FLOAT64_BE	(( tinyalsa_snd_pcm_format_t) 17) /* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
+#define	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE (( tinyalsa_snd_pcm_format_t) 18) /* IEC-958 subframe, Little Endian */
+#define	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE (( tinyalsa_snd_pcm_format_t) 19) /* IEC-958 subframe, Big Endian */
+#define	SNDRV_PCM_FORMAT_MU_LAW		(( tinyalsa_snd_pcm_format_t) 20)
+#define	SNDRV_PCM_FORMAT_A_LAW		(( tinyalsa_snd_pcm_format_t) 21)
+#define	SNDRV_PCM_FORMAT_IMA_ADPCM	(( tinyalsa_snd_pcm_format_t) 22)
+#define	SNDRV_PCM_FORMAT_MPEG		(( tinyalsa_snd_pcm_format_t) 23)
+#define	SNDRV_PCM_FORMAT_GSM		(( tinyalsa_snd_pcm_format_t) 24)
+#define	SNDRV_PCM_FORMAT_SPECIAL	(( tinyalsa_snd_pcm_format_t) 31)
+#define	SNDRV_PCM_FORMAT_S24_3LE	(( tinyalsa_snd_pcm_format_t) 32)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_S24_3BE	(( tinyalsa_snd_pcm_format_t) 33)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U24_3LE	(( tinyalsa_snd_pcm_format_t) 34)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U24_3BE	(( tinyalsa_snd_pcm_format_t) 35)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_S20_3LE	(( tinyalsa_snd_pcm_format_t) 36)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_S20_3BE	(( tinyalsa_snd_pcm_format_t) 37)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U20_3LE	(( tinyalsa_snd_pcm_format_t) 38)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U20_3BE	(( tinyalsa_snd_pcm_format_t) 39)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_S18_3LE	(( tinyalsa_snd_pcm_format_t) 40)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_S18_3BE	(( tinyalsa_snd_pcm_format_t) 41)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U18_3LE	(( tinyalsa_snd_pcm_format_t) 42)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_U18_3BE	(( tinyalsa_snd_pcm_format_t) 43)	/* in three bytes */
+#define	SNDRV_PCM_FORMAT_G723_24	(( tinyalsa_snd_pcm_format_t) 44) /* 8 samples in 3 bytes */
+#define	SNDRV_PCM_FORMAT_G723_24_1B	(( tinyalsa_snd_pcm_format_t) 45) /* 1 sample in 1 byte */
+#define	SNDRV_PCM_FORMAT_G723_40	(( tinyalsa_snd_pcm_format_t) 46) /* 8 Samples in 5 bytes */
+#define	SNDRV_PCM_FORMAT_G723_40_1B	(( tinyalsa_snd_pcm_format_t) 47) /* 1 sample in 1 byte */
+#define	SNDRV_PCM_FORMAT_DSD_U8		(( tinyalsa_snd_pcm_format_t) 48) /* DSD, 1-byte samples DSD (x8) */
+#define	SNDRV_PCM_FORMAT_DSD_U16_LE	(( tinyalsa_snd_pcm_format_t) 49) /* DSD, 2-byte samples DSD (x16), little endian */
+#define	SNDRV_PCM_FORMAT_DSD_U32_LE	(( tinyalsa_snd_pcm_format_t) 50) /* DSD, 4-byte samples DSD (x32), little endian */
+#define	SNDRV_PCM_FORMAT_DSD_U16_BE	(( tinyalsa_snd_pcm_format_t) 51) /* DSD, 2-byte samples DSD (x16), big endian */
+#define	SNDRV_PCM_FORMAT_DSD_U32_BE	(( tinyalsa_snd_pcm_format_t) 52) /* DSD, 4-byte samples DSD (x32), big endian */
 #define	SNDRV_PCM_FORMAT_LAST		SNDRV_PCM_FORMAT_DSD_U32_BE
 
 #define SNDRV_MASK_MAX	               256
@@ -427,10 +427,10 @@ enum
 typedef unsigned long snd_pcm_uframes_t;
 typedef signed long snd_pcm_sframes_t;
 typedef int snd_pcm_hw_param_t;
-typedef int __bitwise snd_pcm_access_t;
-typedef int __bitwise snd_pcm_subformat_t;
-typedef int __bitwise snd_pcm_state_t;
-typedef int __bitwise snd_pcm_format_t;
+typedef int __bitwise tinyalsa_snd_pcm_access_t;
+typedef int __bitwise tinyalsa_snd_pcm_subformat_t;
+typedef int __bitwise tinyalsa_snd_pcm_state_t;
+typedef int __bitwise tinyalsa_snd_pcm_format_t;
 
 /** A bit mask of 256 bits (32 bytes) that describes some hardware parameters of a PCM */
 struct pcm_mask
@@ -448,11 +448,11 @@ union snd_pcm_sync_id
 
 struct snd_pcm_mmap_status
 {
-	snd_pcm_state_t state;		/* RO: state - SNDRV_PCM_STATE_XXXX */
+	tinyalsa_snd_pcm_state_t state;		/* RO: state - SNDRV_PCM_STATE_XXXX */
 	int pad1;			/* Needed for 64 bit alignment */
 	snd_pcm_uframes_t hw_ptr;	/* RO: hw ptr (0...boundary-1) */
 	struct timespec tstamp;		/* Timestamp */
-	snd_pcm_state_t suspended_state; /* RO: suspended stream state */
+	tinyalsa_snd_pcm_state_t suspended_state; /* RO: suspended stream state */
 	struct timespec audio_tstamp;	/* from sample counter or wall clock */
 };
 
@@ -591,7 +591,7 @@ struct snd_xfern
 
 struct snd_pcm_status
 {
-   snd_pcm_state_t state;		/* stream state */
+   tinyalsa_snd_pcm_state_t state;		/* stream state */
    struct timespec trigger_tstamp;	/* time when stream was started/stopped/paused */
    struct timespec tstamp;		/* reference timestamp */
    snd_pcm_uframes_t appl_ptr;	/* appl ptr */
@@ -600,7 +600,7 @@ struct snd_pcm_status
    snd_pcm_uframes_t avail;	/* number of frames available */
    snd_pcm_uframes_t avail_max;	/* max frames available on hw since last status */
    snd_pcm_uframes_t overrange;	/* count of ADC (capture) overrange detections from last status */
-   snd_pcm_state_t suspended_state; /* suspended stream state */
+   tinyalsa_snd_pcm_state_t suspended_state; /* suspended stream state */
    __u32 reserved_alignment;	/* must be filled with zero */
    struct timespec audio_tstamp;	/* from sample counter or wall clock */
    unsigned char reserved[56-sizeof(struct timespec)]; /* must be filled with zero */
@@ -2169,10 +2169,9 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    unsigned int device          = 0;
    unsigned int frames_per_ms   = 0;
    unsigned int orig_rate       = rate;
-   unsigned int max_rate, min_rate;
+   unsigned int max_rate, min_rate, buffer_size;
    float initial_latency;
 
-   snd_pcm_uframes_t         buffer_size;
    struct pcm_config         config;
 
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));

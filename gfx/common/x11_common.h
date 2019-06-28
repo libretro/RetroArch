@@ -21,7 +21,7 @@
 
 #include <boolean.h>
 
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;

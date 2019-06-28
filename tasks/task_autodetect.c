@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C) 2016-2019 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -126,7 +127,7 @@ bool input_autoconfigure_get_swap_override(void)
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-void input_autoconfigure_joypad_reindex_devices()
+void input_autoconfigure_joypad_reindex_devices(void)
 {
    unsigned i, j, k;
 
@@ -149,30 +150,15 @@ void input_autoconfigure_joypad_reindex_devices()
             continue;
 
          /*another device with the same name found, for the first time*/
-         if(string_is_equal(tmp, other) &&
+         if (string_is_equal(tmp, other) &&
                input_device_name_index[j]==0 )
          {
             /*Mark the first device of the set*/
             input_device_name_index[i] = 1;
-
             /*count this additional device, from two up*/
             input_device_name_index[j] = k++;
          }
       }
-   }
-}
-
-static void input_autoconfigure_joypad_conf(config_file_t *conf,
-      struct retro_keybind *binds)
-{
-   unsigned i;
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      input_config_parse_joy_button(conf, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
-      input_config_parse_joy_axis(conf, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
    }
 }
 
@@ -217,12 +203,12 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 #if 0
    else
    {
-      if(string_is_empty(params->name))
-         RARCH_LOG("[autoconf]: failed match because params->name was empty\n");
-      else if(string_is_empty(ident))
-         RARCH_LOG("[autoconf]: failed match because ident was empty\n");
+      if (string_is_empty(params->name))
+         RARCH_LOG("[Autoconf]: failed match because params->name was empty\n");
+      else if (string_is_empty(ident))
+         RARCH_LOG("[Autoconf]: failed match because ident was empty\n");
       else
-         RARCH_LOG("[autoconf]: failed match because ident '%s' != param->name '%s'\n",
+         RARCH_LOG("[Autoconf]: failed match because ident '%s' != param->name '%s'\n",
                ident, params->name);
    }
 #endif
@@ -262,9 +248,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       snprintf(msg, sizeof(msg), "%s configured.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
-      if(!remote_is_bound)
+      if (!remote_is_bound)
       {
          task_free_title(task);
          task_set_title(task, strdup(msg));
@@ -278,7 +264,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name))
+            !string_is_empty(params->name))
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
@@ -338,7 +324,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
-   config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
 
    path[0]                    = '\0';
@@ -360,25 +345,22 @@ static bool input_autoconfigure_joypad_from_conf_dir(
                DIR_LIST_AUTOCONFIG, "cfg");
    }
 
-   if(!list)
+   if (!list)
    {
-      RARCH_LOG("[autoconf]: No profiles found.\n");
+      RARCH_LOG("[Autoconf]: No profiles found.\n");
       return false;
    }
 
-   if (list)
-   {
-      RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
-   }
+   RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
 
    for (i = 0; i < list->size; i++)
    {
-      conf = config_file_new(list->elems[i].data);
+      config_file_t *conf = config_file_new(list->elems[i].data);
 
       if (conf)
          ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
 
-      if(ret >= current_best)
+      if (ret >= current_best)
       {
          index        = (int)i;
          current_best = ret;
@@ -386,9 +368,9 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
 
-   if(index >= 0 && current_best > 0)
+   if (index >= 0 && current_best > 0)
    {
-      conf = config_file_new(list->elems[index].data);
+      config_file_t *conf = config_file_new(list->elems[index].data);
 
       if (conf)
       {
@@ -398,7 +380,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
-         RARCH_LOG("[autoconf]: selected configuration: %s\n", conf_path);
+         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
          input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
@@ -501,7 +483,8 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
    if (hDeviceInfo == INVALID_HANDLE_VALUE)
    {
-      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n", GetLastError());
+      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n",
+            GetLastError());
       goto done;
    }
 
@@ -816,7 +799,7 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
       {
          const blissbox_pad_type_t *pad;
          char name[255] = {0};
-         int index = params->pid - BLISSBOX_PID;
+         int index      = params->pid - BLISSBOX_PID;
 
          RARCH_LOG("[Autoconf]: Bliss-Box detected. Getting pad type...\n");
 
@@ -840,12 +823,9 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
 
             blissbox_pads[index] = pad;
          }
+         /* use NULL entry to mark as an unconnected port */
          else
-         {
-            int count = sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]);
-            /* use NULL entry to mark as an unconnected port */
-            blissbox_pads[index] = &blissbox_pad_types[count - 1];
-         }
+            blissbox_pads[index] = &blissbox_pad_types[ARRAY_SIZE(blissbox_pad_types) - 1];
       }
    }
 }

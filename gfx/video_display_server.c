@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include "video_display_server.h"
-#include "video_driver.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 static const video_display_server_t *current_display_server = &dispserv_null;
@@ -65,6 +65,7 @@ void* video_display_server_init(void)
 		   current_display_server->ident);
 
    initial_screen_orientation = video_display_server_get_screen_orientation();
+   current_screen_orientation = initial_screen_orientation;
 
    return current_display_server_data;
 }
@@ -108,9 +109,15 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
    return false;
 }
 
+bool video_display_server_has_resolution_list(void)
+{
+   return (current_display_server 
+         && current_display_server->get_resolution_list);
+}
+
 void *video_display_server_get_resolution_list(unsigned *size)
 {
-   if (current_display_server && current_display_server->get_resolution_list)
+   if (video_display_server_has_resolution_list())
       return current_display_server->get_resolution_list(current_display_server_data, size);
    return NULL;
 }
@@ -144,4 +151,16 @@ enum rotation video_display_server_get_screen_orientation(void)
    if (current_display_server && current_display_server->get_screen_orientation)
       return current_display_server->get_screen_orientation();
    return ORIENTATION_NORMAL;
+}
+
+bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
+{
+   if (!current_display_server || !current_display_server->get_flags)
+      return false;
+   if (!flags)
+      return false;
+
+   flags->flags = current_display_server->get_flags(
+         current_display_server_data);
+   return true;
 }

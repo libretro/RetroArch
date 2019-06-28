@@ -35,7 +35,6 @@
 #include "../file_path_special.h"
 
 #include "menu_driver.h"
-#include "widgets/menu_entry.h"
 
 #include "menu_thumbnail_path.h"
 
@@ -87,6 +86,34 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data)
 }
 
 /* Utility Functions */
+
+/* Fetches the thumbnail subdirectory (Named_Snaps,
+ * Named_Titles, Named_Boxarts) corresponding to the
+ * specified 'type index' (1, 2, 3).
+ * Returns true if 'type index' is valid */
+bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory)
+{
+   if (!sub_directory)
+      return false;
+   
+   switch (type_idx)
+   {
+      case 1:
+         *sub_directory = "Named_Snaps";
+         return true;
+      case 2:
+         *sub_directory = "Named_Titles";
+         return true;
+      case 3:
+         *sub_directory = "Named_Boxarts";
+         return true;
+      case 0:
+      default:
+         break;
+   }
+   
+   return false;
+}
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
@@ -142,7 +169,6 @@ bool menu_thumbnail_is_enabled(enum menu_thumbnail_id thumbnail_id)
          return settings->uints.menu_thumbnails != 0;
       case MENU_THUMBNAIL_LEFT:
          return settings->uints.menu_left_thumbnails != 0;
-         break;
       default:
          break;
    }
@@ -231,6 +257,10 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
    
    /* Determine content image name */
    fill_content_img(path_data);
+   
+   /* Have to set content path to *something*...
+    * Just use label value (it doesn't matter) */
+   strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
    
    /* Redundant error check... */
    if (string_is_empty(path_data->content_img))
@@ -352,7 +382,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       return false;
    
    /* Cache content path
-    * (This is required for imageviewer content) */
+    * (This is required for imageviewer, history and favourites content) */
    strlcpy(path_data->content_path,
             content_path, sizeof(path_data->content_path));
    
@@ -425,6 +455,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    const char *type        = menu_thumbnail_get_type(thumbnail_id);
    const char *system_name = NULL;
    char *thumbnail_path    = NULL;
+   char content_dir[PATH_MAX_LENGTH];
    
    if (!path_data)
       return false;
@@ -443,6 +474,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    }
    
    thumbnail_path[0] = '\0';
+   content_dir[0]    = '\0';
    
    /* Sundry error checking */
    if (!settings)
@@ -457,23 +489,38 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    /* Generate new path */
    
    /* > Check path_data for empty strings */
-   if (string_is_empty(path_data->content_img) ||
+   if (string_is_empty(path_data->content_path) ||
+       string_is_empty(path_data->content_img) ||
          (string_is_empty(path_data->system) &&
           string_is_empty(path_data->content_db_name)))
       return false;
    
    /* > Get current system */
-   system_name = string_is_empty(path_data->content_db_name) ?
-      path_data->system : path_data->content_db_name;
+   if (string_is_empty(path_data->content_db_name))
+   {
+      /* If this is a content history or favorites playlist
+       * then the current 'path_data->system' string is
+       * meaningless. In this case, we fall back to the
+       * content directory name */
+      if (string_is_equal(path_data->system, "history") ||
+          string_is_equal(path_data->system, "favorites"))
+      {
+         if (!menu_thumbnail_get_content_dir(path_data, content_dir, sizeof(content_dir)))
+            return false;
+         
+         system_name = content_dir;
+      }
+      else
+         system_name = path_data->system;
+   }
+   else
+      system_name = path_data->content_db_name;
    
    /* > Special case: thumbnail for imageviewer content
     *   is the image file itself */
    if (string_is_equal(system_name, "images_history") ||
        string_is_equal(path_data->content_core_name, "imageviewer"))
    {
-      if (string_is_empty(path_data->content_path))
-         return false;
-      
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,
@@ -541,6 +588,42 @@ bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_th
    return true;
 }
 
+/* Fetches current 'system' (default database name).
+ * Returns true if 'system' is valid. */
+bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system)
+{
+   if (!path_data)
+      return false;
+   
+   if (!system)
+      return false;
+   
+   if (string_is_empty(path_data->system))
+      return false;
+   
+   *system = path_data->system;
+   
+   return true;
+}
+
+/* Fetches current content path.
+ * Returns true if content path is valid. */
+bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, const char **content_path)
+{
+   if (!path_data)
+      return false;
+   
+   if (!content_path)
+      return false;
+   
+   if (string_is_empty(path_data->content_path))
+      return false;
+   
+   *content_path = path_data->content_path;
+   
+   return true;
+}
+
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
 bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char **label)
@@ -573,6 +656,76 @@ bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const c
       return false;
    
    *core_name = path_data->content_core_name;
+   
+   return true;
+}
+
+/* Fetches current database name.
+ * Returns true if database name is valid. */
+bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const char **db_name)
+{
+   if (!path_data)
+      return false;
+   
+   if (!db_name)
+      return false;
+   
+   if (string_is_empty(path_data->content_db_name))
+      return false;
+   
+   *db_name = path_data->content_db_name;
+   
+   return true;
+}
+
+/* Fetches current thumbnail image name
+ * (name is the same for all thumbnail types).
+ * Returns true if image name is valid. */
+bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name)
+{
+   if (!path_data)
+      return false;
+   
+   if (!img_name)
+      return false;
+   
+   if (string_is_empty(path_data->content_img))
+      return false;
+   
+   *img_name = path_data->content_img;
+   
+   return true;
+}
+
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
+{
+   const char *last_slash        = NULL;
+   char tmp_buf[PATH_MAX_LENGTH] = {0};
+   size_t path_length;
+   
+   if (!path_data)
+      return false;
+   
+   if (string_is_empty(path_data->content_path))
+      return false;
+   
+   last_slash = find_last_slash(path_data->content_path);
+   
+   if (!last_slash)
+      return false;
+   
+   path_length = last_slash + 1 - path_data->content_path;
+   
+   if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
+      return false;
+   
+   strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
+   strlcpy(content_dir, path_basename(tmp_buf), len);
+   
+   if (string_is_empty(content_dir))
+      return false;
    
    return true;
 }

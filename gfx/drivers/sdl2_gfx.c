@@ -724,8 +724,15 @@ static void sdl2_grab_mouse_toggle(void *data)
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
 
+static uint32_t sdl2_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   return flags;
+}
+
 static video_poke_interface_t sdl2_video_poke_interface = {
-   NULL, /* get_flags */
+   sdl2_get_flags,
    NULL,
    NULL,
    NULL,
@@ -783,6 +790,9 @@ video_driver_t video_sdl2 = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
     NULL,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
     sdl2_gfx_poke_interface
 };

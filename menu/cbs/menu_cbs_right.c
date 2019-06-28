@@ -30,7 +30,6 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
-#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
@@ -219,7 +218,7 @@ static int action_right_goto_tab(void)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
+      selection_buf->list[selection].actiondata : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
@@ -371,6 +370,88 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
+static int action_right_video_gpu_index(unsigned type, const char *label,
+      bool wraparound)
+{
+   enum gfx_ctx_api api = video_context_driver_get_api();
+
+   switch (api)
+   {
+#ifdef HAVE_VULKAN
+      case GFX_CTX_VULKAN_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.vulkan_gpu_index <(int)(list->size - 1))
+               settings->ints.vulkan_gpu_index++;
+            else if (settings->ints.vulkan_gpu_index == (int)(list->size - 1))
+               settings->ints.vulkan_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D10
+      case GFX_CTX_DIRECT3D10_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d10_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d10_gpu_index++;
+            else if (settings->ints.d3d10_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d10_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D11
+      case GFX_CTX_DIRECT3D11_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d11_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d11_gpu_index++;
+            else if (settings->ints.d3d11_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d11_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_D3D12
+      case GFX_CTX_DIRECT3D12_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->ints.d3d12_gpu_index < (int)(list->size - 1))
+               settings->ints.d3d12_gpu_index++;
+            else if (settings->ints.d3d12_gpu_index == (int)(list->size - 1))
+               settings->ints.d3d12_gpu_index = 0;
+         }
+
+         break;
+      }
+#endif
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 static int action_right_shader_watch_for_changes(unsigned type, const char *label,
       bool wraparound)
 {
@@ -389,8 +470,6 @@ static int action_right_video_resolution(unsigned type, const char *label,
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
-   char core_path[PATH_MAX_LENGTH];
-   char new_playlist_cores[PATH_MAX_LENGTH];
    size_t i, next, found, current   = 0;
    core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
@@ -398,6 +477,8 @@ static int playlist_association_right(unsigned type, const char *label,
    core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
+   char core_path[PATH_MAX_LENGTH];
+   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
 
    core_info_get_list(&list);
    if (!list)
@@ -531,6 +612,9 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_SHADER_PRESET:
          case FILE_TYPE_IMAGE:
          case FILE_TYPE_OVERLAY:
+#ifdef HAVE_VIDEO_LAYOUT
+         case FILE_TYPE_VIDEO_LAYOUT:
+#endif
          case FILE_TYPE_VIDEOFILTER:
          case FILE_TYPE_AUDIOFILTER:
          case FILE_TYPE_CONFIG:
@@ -623,7 +707,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry"))
+   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
    {
       BIND_ACTION_RIGHT(cbs, action_right_scroll);
    }
@@ -703,6 +787,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                   break;
                }
+            case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
+               BIND_ACTION_RIGHT(cbs, action_right_video_gpu_index);
+               break;
             default:
                return -1;
          }

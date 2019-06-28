@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,14 +22,15 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
+#include <lists/string_list.h>
 #include <dxgi.h>
 
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
-#include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"
@@ -45,6 +47,16 @@
 #ifdef __WINRT__
 #error "UWP does not support D3D10"
 #endif
+
+#define D3D10_MAX_GPU_COUNT 16
+
+/* Temporary workaround for d3d10 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d10_fake_context;
+static uint32_t d3d10_get_flags(void *data);
+
+static struct string_list *d3d10_gpu_list = NULL;
+static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
+static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
@@ -322,8 +334,7 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    d3d10->resize_render_targets = false;
 }
 
-static bool d3d10_gfx_set_shader(void* data,
-      enum rarch_shader_type type, const char* path)
+static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
@@ -337,12 +348,12 @@ static bool d3d10_gfx_set_shader(void* data,
    D3D10Flush(d3d10->device);
    d3d10_free_shader_preset(d3d10);
 
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D10] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -353,7 +364,7 @@ static bool d3d10_gfx_set_shader(void* data,
 
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, d3d10->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d10->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d10->shader_preset, path);
@@ -390,10 +401,11 @@ static bool d3d10_gfx_set_shader(void* data,
                &d3d10->luts[0].size_data, sizeof(*d3d10->luts)},
          },
          {
-            &d3d10->mvp,                  /* MVP */
-            &d3d10->pass[i].rt.size_data, /* OutputSize */
-            &d3d10->frame.output_size,    /* FinalViewportSize */
-            &d3d10->pass[i].frame_count,  /* FrameCount */
+            &d3d10->mvp,                     /* MVP */
+            &d3d10->pass[i].rt.size_data,    /* OutputSize */
+            &d3d10->frame.output_size,       /* FinalViewportSize */
+            &d3d10->pass[i].frame_count,     /* FrameCount */
+            &d3d10->pass[i].frame_direction, /* FrameDirection */
          }
       };
       /* clang-format on */
@@ -422,7 +434,6 @@ static bool d3d10_gfx_set_shader(void* data,
          const char*       slang_path = d3d10->shader_preset->pass[i].source.path;
          const char*       vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
          const char*       ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
-         int               base_len   = strlen(slang_path) - strlen(".slang");
 
          strlcpy(vs_path, slang_path, sizeof(vs_path));
          strlcpy(ps_path, slang_path, sizeof(ps_path));
@@ -578,6 +589,15 @@ static void d3d10_gfx_free(void* data)
       Release(d3d10->device);
    }
 
+   for (i = 0; i < D3D10_MAX_GPU_COUNT; i++)
+   {
+      if (d3d10_adapters[i])
+      {
+         Release(d3d10_adapters[i]);
+         d3d10_adapters[i] = NULL;
+      }
+   }
+
 #ifdef HAVE_MONITOR
    win32_monitor_from_window();
 #endif
@@ -666,7 +686,7 @@ d3d10_gfx_init(const video_info_t* video,
 #endif
 
       if (FAILED(D3D10CreateDeviceAndSwapChain(
-                  NULL, D3D10_DRIVER_TYPE_HARDWARE,
+                  (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
                   NULL, flags, D3D10_SDK_VERSION, &desc,
                   (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
          goto error;
@@ -949,12 +969,12 @@ d3d10_gfx_init(const video_info_t* video,
 
    font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
 
-   if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
-
-      if (ext && !strncmp(ext, "slang", 5))
-         d3d10_gfx_set_shader(d3d10, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
+      d3d10_fake_context.get_flags = d3d10_get_flags;
+      video_context_driver_set(&d3d10_fake_context); 
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      d3d10_gfx_set_shader(d3d10, type, shader_preset);
    }
 
 #if 0
@@ -980,18 +1000,25 @@ d3d10_gfx_init(const video_info_t* video,
 
    {
       int i = 0;
-      DXGI_ADAPTER_DESC desc = {0};
-      char str[128];
 
-      str[0] = '\0';
+      if (d3d10_gpu_list)
+         string_list_free(d3d10_gpu_list);
+
+      d3d10_gpu_list = string_list_new();
 
       while (true)
       {
+         DXGI_ADAPTER_DESC desc = {0};
+         union string_list_elem_attr attr = {0};
+         char str[128];
+
+         str[0] = '\0';
+
 #ifdef __WINRT__
-         if (FAILED(DXGIEnumAdapters2(d3d10->factory, i++, &d3d10->adapter)))
+         if (FAILED(DXGIEnumAdapters2(d3d10->factory, i, &d3d10->adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d10->factory, i++, &d3d10->adapter)))
+         if (FAILED(DXGIEnumAdapters(d3d10->factory, i, &d3d10->adapter)))
             break;
 #endif
 
@@ -1000,14 +1027,30 @@ d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10]: Using GPU: %s\n", str);
+         RARCH_LOG("[D3D10]: Found GPU at index %d: %s\n", i, str);
 
-         video_driver_set_gpu_device_string(str);
+         string_list_append(d3d10_gpu_list, str, attr);
 
-         Release(d3d10->adapter);
+         if (i < D3D10_MAX_GPU_COUNT)
+            d3d10_adapters[i] = d3d10->adapter;
 
-         /* We only care about the first adapter for now */
-         break;
+         i++;
+      }
+
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
+
+      if (0 <= settings->ints.d3d10_gpu_index && settings->ints.d3d10_gpu_index <= i && settings->ints.d3d10_gpu_index < D3D10_MAX_GPU_COUNT)
+      {
+         d3d10_current_adapter = d3d10_adapters[settings->ints.d3d10_gpu_index];
+         d3d10->adapter = d3d10_current_adapter;
+         RARCH_LOG("[D3D10]: Using GPU index %d.\n", settings->ints.d3d10_gpu_index);
+         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[settings->ints.d3d10_gpu_index].data);
+      }
+      else
+      {
+         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d10_gpu_index);
+         d3d10_current_adapter = d3d10_adapters[0];
+         d3d10->adapter = d3d10_current_adapter;
       }
    }
 
@@ -1283,6 +1326,8 @@ static bool d3d10_gfx_frame(
          else
             d3d10->pass[i].frame_count = frame_count;
 
+         d3d10->pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             D3D10Buffer    buffer     = d3d10->pass[i].buffers[j];
@@ -1530,14 +1575,6 @@ static void d3d10_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d10->vp;
 }
 
-static bool d3d10_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void d3d10_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
@@ -1678,7 +1715,7 @@ d3d10_get_hw_render_interface(void* data, const struct retro_hw_render_interface
 
 static uint32_t d3d10_get_flags(void *data)
 {
-   uint32_t             flags = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -1748,11 +1785,14 @@ video_driver_t video_d3d10 = {
    NULL, /* set_viewport */
    d3d10_gfx_set_rotation,
    d3d10_gfx_viewport_info,
-   d3d10_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    d3d10_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
 #endif
    d3d10_gfx_get_poke_interface,
    NULL, /* d3d10_wrap_type_to_enum */

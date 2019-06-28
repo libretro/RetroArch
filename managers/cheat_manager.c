@@ -24,7 +24,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -40,7 +39,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #include "cheat_manager.h"
@@ -68,7 +67,8 @@ unsigned cheat_manager_get_size(void)
 void cheat_manager_apply_cheats(void)
 {
 #ifdef HAVE_CHEEVOS
-   bool data_bool = false;
+   bool data_bool  = false;
+
 #endif
    unsigned i, idx = 0;
 
@@ -100,7 +100,7 @@ void cheat_manager_apply_cheats(void)
 
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
-   cheevos_apply_cheats(&data_bool);
+   rcheevos_apply_cheats(&data_bool);
 #endif
 }
 
@@ -166,8 +166,6 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    if (!overwrite)
       conf = config_file_new(cheats_file);
-   else
-      conf = config_file_new(NULL);
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -684,7 +682,7 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
    strlcat(cheat_filename, core_name, max_length);
    fill_pathname_slash(cheat_filename, max_length);
 
-   if (!filestream_exists(cheat_filename))
+   if (!path_is_valid(cheat_filename))
       path_mkdir(cheat_filename);
 
    strlcat(cheat_filename, game_name, max_length);
@@ -776,7 +774,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
             }
 
             cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers - 1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
-            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers - 1] = system->mmaps.descriptors[i].core.len;
+            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers - 1] = (unsigned)system->mmaps.descriptors[i].core.len;
             cheat_manager_state.total_memory_size += system->mmaps.descriptors[i].core.len;
 
             if (!cheat_manager_state.curr_memory_buf)

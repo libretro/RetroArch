@@ -442,7 +442,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
-   GLint internalFormat = GL_RGBA8;
+   GLint internalFormat = GL_RGB8;
    GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
    GLenum type = GL_UNSIGNED_BYTE;
 
@@ -848,12 +848,6 @@ static bool gl1_gfx_suppress_screensaver(void *data, bool enable)
    (void)data;
    (void)enable;
    return false;
-}
-
-static bool gl1_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
 }
 
 static void gl1_gfx_free(void *data)
@@ -1538,7 +1532,7 @@ video_driver_t video_gl1 = {
    gl1_gfx_alive,
    gl1_gfx_focus,
    gl1_gfx_suppress_screensaver,
-   gl1_gfx_has_windowed,
+   NULL, /* has_windowed */
    gl1_gfx_set_shader,
    gl1_gfx_free,
    "gl1",
@@ -1550,6 +1544,9 @@ video_driver_t video_gl1 = {
 
 #ifdef HAVE_OVERLAY
    gl1_get_overlay_interface,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   gl1_gfx_get_poke_interface,
   gl1_wrap_type_to_enum,

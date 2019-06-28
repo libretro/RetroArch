@@ -586,20 +586,6 @@ static bool dispmanx_gfx_set_shader(void *data,
    return false;
 }
 
-static void dispmanx_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 {
    /* Due to RetroArch setting the data pointer to NULL internally
@@ -630,8 +616,15 @@ static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 }
 
+static uint32_t dispmanx_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   return flags;
+}
+
 static const video_poke_interface_t dispmanx_poke_interface = {
-   NULL, /* get_flags */
+   dispmanx_get_flags,
    NULL,
    NULL,
    NULL, /* set_video_mode */
@@ -697,13 +690,16 @@ video_driver_t video_dispmanx = {
    dispmanx_gfx_free,
    "dispmanx",
    NULL, /* set_viewport */
-   dispmanx_gfx_set_rotation,
+   NULL, /* set_rotation */
    dispmanx_gfx_viewport_info,
-   dispmanx_gfx_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    dispmanx_gfx_get_poke_interface
 };

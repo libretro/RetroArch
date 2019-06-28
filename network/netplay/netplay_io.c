@@ -276,7 +276,8 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       for (i = 0; i < netplay->connections_size; i++)
       {
          struct netplay_connection *connection = &netplay->connections[i];
-         if (connection == except) continue;
+         if (connection == except)
+            continue;
          if (connection->active &&
              connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
              (connection->mode != NETPLAY_CONNECTION_PLAYING ||
@@ -585,11 +586,10 @@ static void announce_play_spectate(netplay_t *netplay,
 
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
          {
-            if (!(devices & (1<<device))) continue;
+            if (!(devices & (1<<device)))
+               continue;
             if (one_device == (uint32_t) -1)
-            {
                one_device = device;
-            }
             else
             {
                one_device = (uint32_t) -1;
@@ -616,7 +616,8 @@ static void announce_play_spectate(netplay_t *netplay,
             device_str_len = 0;
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               if (!(devices & (1<<device))) continue;
+               if (!(devices & (1<<device)))
+                  continue;
                if (device_str_len)
                   device_str_len += snprintf(device_str + device_str_len,
                         sizeof(device_str) - 1 - device_str_len, ", ");
@@ -782,9 +783,12 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
             /* Make sure the devices are available and/or shareable */
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               if (!(devices & (1<<device))) continue;
-               if (!netplay->device_clients[device]) continue;
-               if (netplay->device_share_modes[device] && share_mode) continue;
+               if (!(devices & (1<<device)))
+                  continue;
+               if (!netplay->device_clients[device])
+                  continue;
+               if (netplay->device_share_modes[device] && share_mode)
+                  continue;
 
                /* Device already taken and unshareable */
                payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE);
@@ -800,7 +804,8 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
             /* Set the share mode on any new devices */
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               if (!(devices & (1<<device))) continue;
+               if (!(devices & (1<<device)))
+                  continue;
                if (!netplay->device_clients[device])
                   netplay->device_share_modes[device] = share_mode;
             }
@@ -826,7 +831,7 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
                 * one device, so share it */
                if (netplay->device_share_modes[0])
                {
-                  device = 0;
+                  device     = 0;
                   share_mode = netplay->device_share_modes[0];
                   break;
                }
@@ -864,7 +869,8 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
          netplay->client_devices[client_num] = devices;
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
          {
-            if (!(devices & (1<<device))) continue;
+            if (!(devices & (1<<device)))
+               continue;
             netplay->device_clients[device] |= 1 << client_num;
          }
 
@@ -1301,12 +1307,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
                      {
                         uint32_t dsize;
                         netplay_input_state_t istate;
-                        if (!(devices & (1<<device))) continue;
+                        if (!(devices & (1<<device)))
+                           continue;
                         dsize = netplay_expected_input_size(netplay, 1 << device);
                         istate = netplay_input_state_for(
                               &dframe->real_input[device], client_num, dsize,
                               false, false);
-                        if (!istate) continue;
+                        if (!istate)
+                           continue;
                         memset(istate->data, 0, dsize*sizeof(uint32_t));
                      }
                      dframe->have_local = true;
@@ -1727,7 +1735,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Don't expect earlier data from other clients */
             for (client = 0; client < MAX_CLIENTS; client++)
             {
-               if (!(netplay->connected_players & (1<<client))) continue;
+               if (!(netplay->connected_players & (1<<client)))
+                  continue;
+
                if (frame > netplay->read_frame_count[client])
                {
                   netplay->read_ptr[client] = load_ptr;

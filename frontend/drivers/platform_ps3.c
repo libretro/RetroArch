@@ -126,7 +126,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
-   if (     filestream_exists(argv[2]) && *argc > 1
+   if (     path_is_valid(argv[2]) && *argc > 1
          && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
    {
       multiman_detected = true;
@@ -242,6 +242,11 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
             g_defaults.dirs[DEFAULT_DIR_CORE],
             "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
             g_defaults.dirs[DEFAULT_DIR_CORE],
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -601,8 +606,8 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
-      if (filestream_exists(path))
-         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
+      if (path_is_valid(path))
+         path_set(RARCH_PATH_CORE, path);
    }
 #endif
 }

@@ -932,20 +932,6 @@ static bool drm_gfx_set_shader(void *data,
    return false;
 }
 
-static void drm_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool drm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 {
    struct drm_video *_drmvars = data;
@@ -1029,13 +1015,16 @@ video_driver_t video_drm = {
    drm_gfx_free,
    "drm",
    NULL, /* set_viewport */
-   drm_gfx_set_rotation,
+   NULL, /* set_rotation */
    drm_gfx_viewport_info,
-   drm_gfx_read_viewport,
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    drm_gfx_get_poke_interface
 };

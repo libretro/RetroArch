@@ -491,7 +491,7 @@
 		05C5D56F20E3DD0900654EE4 /* btstack_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = btstack_hid.c; sourceTree = "<group>"; };
 		05C5D57020E3DD0900654EE4 /* null_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null_hid.c; sourceTree = "<group>"; };
 		05C5D57320E3DD0900654EE4 /* iohidmanager_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = iohidmanager_hid.c; sourceTree = "<group>"; };
-		05C5D57620E3DD0900654EE4 /* input_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_common.c; sourceTree = "<group>"; };
+		05C5D57620E3DD0900654EE4 /* input_hid_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_hid_common.c; sourceTree = "<group>"; };
 		05C5D57720E3DD0900654EE4 /* input_x11_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_x11_common.c; sourceTree = "<group>"; };
 		05C5D57820E3DD0900654EE4 /* linux_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = linux_common.c; sourceTree = "<group>"; };
 		05C5D57A20E3DD0900654EE4 /* hid_device_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hid_device_driver.h; sourceTree = "<group>"; };
@@ -1354,7 +1354,7 @@
 			isa = PBXGroup;
 			children = (
 				05C5D57920E3DD0900654EE4 /* hid */,
-				05C5D57620E3DD0900654EE4 /* input_common.c */,
+				05C5D57620E3DD0900654EE4 /* input_hid_common.c */,
 				05C5D57720E3DD0900654EE4 /* input_x11_common.c */,
 				05C5D58120E3DD0900654EE4 /* input_x11_common.h */,
 				05C5D57820E3DD0900654EE4 /* linux_common.c */,
@@ -1633,7 +1633,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_QT=1 MOC=${QT_INSTALL}/bin/moc generate\n";
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_MENU_WIDGETS=1 HAVE_QT=1 MOC=${QT_INSTALL}/bin/moc generate\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

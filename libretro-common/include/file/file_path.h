@@ -150,10 +150,27 @@ void path_parent_dir(char *path);
  * @buf                : buffer for path
  * @size               : size of buffer
  *
- * Turns relative paths into absolute path.
+ * Turns relative paths into absolute paths and
+ * resolves use of "." and ".." in absolute paths.
  * If relative, rebases on current working dir.
  **/
 void path_resolve_realpath(char *buf, size_t size);
+
+/**
+ * path_relative_to:
+ * @out                : buffer to write the relative path to
+ * @path               : path to be expressed relatively
+ * @base               : relative to this
+ * @size               : size of output buffer
+ *
+ * Turns @path into a path relative to @base and writes it to @out.
+ *
+ * @base is assumed to be a base directory, i.e. a path ending with '/' or '\'.
+ * Both @path and @base are assumed to be absolute paths without "." or "..".
+ *
+ * E.g. path /a/b/e/f.cgp with base /a/b/c/d/ turns into ../../e/f.cgp
+ **/
+void path_relative_to(char *out, const char *path, const char *base, size_t size);
 
 /**
  * path_is_absolute:
@@ -494,9 +511,13 @@ bool path_is_directory(const char *path);
 
 bool path_is_character_special(const char *path);
 
+int path_stat(const char *path);
+
 bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
+
+bool is_path_accessible_using_standard_io(const char *path);
 
 RETRO_END_DECLS
 

@@ -117,6 +117,9 @@ void gl_core_filter_chain_set_frame_count_period(gl_core_filter_chain_t *chain,
                                                  unsigned pass,
                                                  unsigned period);
 
+void gl_core_filter_chain_set_frame_direction(gl_core_filter_chain_t *chain,
+                                              int32_t direction);
+
 void gl_core_filter_chain_set_pass_name(gl_core_filter_chain_t *chain,
                                         unsigned pass,
                                         const char *name);

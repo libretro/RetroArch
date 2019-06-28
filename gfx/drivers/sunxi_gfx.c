@@ -824,12 +824,6 @@ static bool sunxi_gfx_focus(void *data)
    return true; /* fb device always has focus */
 }
 
-static void sunxi_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
@@ -985,13 +979,16 @@ video_driver_t video_sunxi = {
   sunxi_gfx_free,
   "sunxi",
   NULL, /* set_viewport */
-  sunxi_gfx_set_rotation,
+  NULL, /* set_rotation */
   sunxi_gfx_viewport_info,
   NULL, /* read_viewport */
   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   sunxi_gfx_get_poke_interface
 };

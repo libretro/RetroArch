@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include <boolean.h>
+
 #include <retro_miscellaneous.h>
 
 #ifndef IS_SALAMANDER
@@ -36,6 +38,9 @@ enum default_dirs
    DEFAULT_DIR_CORE,
    DEFAULT_DIR_CORE_INFO,
    DEFAULT_DIR_OVERLAY,
+#ifdef HAVE_VIDEO_LAYOUT
+   DEFAULT_DIR_VIDEO_LAYOUT,
+#endif
    DEFAULT_DIR_PORT,
    DEFAULT_DIR_SHADER,
    DEFAULT_DIR_SAVESTATE,
@@ -113,6 +118,8 @@ struct defaults
 #endif
 #endif
 };
+
+bool dir_set_defaults(enum default_dirs dir_type, const char *dirpath);
 
 /* Public data structures. */
 extern struct defaults g_defaults;

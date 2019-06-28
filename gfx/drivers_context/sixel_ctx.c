@@ -23,9 +23,9 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
-#include "../video_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
@@ -181,7 +181,7 @@ static void gfx_ctx_sixel_set_flags(void *data, uint32_t flags)
 static uint32_t gfx_ctx_sixel_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
    return flags;
 }
 

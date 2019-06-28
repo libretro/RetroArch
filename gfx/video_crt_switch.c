@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "video_driver.h"
+#include "../retroarch.h"
 #include "video_crt_switch.h"
 #include "video_display_server.h"
 
@@ -182,8 +182,8 @@ void crt_switch_res_core(unsigned width, unsigned height,
       int crt_switch_center_adjust, int monitor_index, bool dynamic)
 {
    /* ra_core_hz float passed from within
-    * void video_driver_monitor_adjust_system_rates(void) */
-   if (width == 4 )
+    * video_driver_monitor_adjust_system_rates() */
+   if (width == 4)
    {
       width = 320;
       height = 240;
@@ -192,7 +192,7 @@ void crt_switch_res_core(unsigned width, unsigned height,
    ra_core_height = height;
    ra_core_hz     = hz;
 
-   if (dynamic == true)
+   if (dynamic)
       ra_core_width = crt_compute_dynamic_width(width);
    else 
       ra_core_width  = width;

@@ -29,14 +29,27 @@
 #include <formats/image.h>
 #include <file/nbio.h>
 
-enum video_image_format
+
+enum image_type_enum image_texture_get_type(const char *path)
 {
-   IMAGE_FORMAT_NONE = 0,
-   IMAGE_FORMAT_TGA,
-   IMAGE_FORMAT_PNG,
-   IMAGE_FORMAT_JPEG,
-   IMAGE_FORMAT_BMP
-};
+#ifdef HAVE_RTGA
+   if (strstr(path, ".tga"))
+      return IMAGE_TYPE_TGA;
+#endif
+#ifdef HAVE_RPNG
+   if (strstr(path, ".png"))
+      return IMAGE_TYPE_PNG;
+#endif
+#ifdef HAVE_RJPEG
+   if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
+      return IMAGE_TYPE_JPEG;
+#endif
+#ifdef HAVE_RBMP
+   if (strstr(path, ".bmp"))
+      return IMAGE_TYPE_BMP;
+#endif
+   return IMAGE_TYPE_NONE;
+}
 
 bool image_texture_set_color_shifts(
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
@@ -162,7 +175,7 @@ static bool image_texture_load_internal(
    if (!img)
       goto end;
 
-   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr);
+   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
 
    if (!image_transfer_start(img, type))
       goto end;
@@ -214,53 +227,29 @@ void image_texture_free(struct texture_image *img)
    img->pixels = NULL;
 }
 
-static enum video_image_format image_texture_get_type(const char *path)
+bool image_texture_load_buffer(struct texture_image *out_img,
+   enum image_type_enum type, void *buffer, size_t buffer_len)
 {
-#ifdef HAVE_RTGA
-   if (strstr(path, ".tga"))
-      return IMAGE_FORMAT_TGA;
-#endif
-#ifdef HAVE_RPNG
-   if (strstr(path, ".png"))
-      return IMAGE_FORMAT_PNG;
-#endif
-#ifdef HAVE_RJPEG
-   if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
-      return IMAGE_FORMAT_JPEG;
-#endif
-#ifdef HAVE_RBMP
-   if (strstr(path, ".bmp"))
-      return IMAGE_FORMAT_BMP;
-#endif
-   return IMAGE_FORMAT_NONE;
-}
+   unsigned r_shift, g_shift, b_shift, a_shift;
+   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
+      &a_shift, out_img);
 
-static enum image_type_enum image_texture_convert_fmt_to_type(enum video_image_format fmt)
-{
-   switch (fmt)
+   if (type != IMAGE_TYPE_NONE)
    {
-#ifdef HAVE_RPNG
-      case IMAGE_FORMAT_PNG:
-         return IMAGE_TYPE_PNG;
-#endif
-#ifdef HAVE_RJPEG
-      case IMAGE_FORMAT_JPEG:
-         return IMAGE_TYPE_JPEG;
-#endif
-#ifdef HAVE_RBMP
-      case IMAGE_FORMAT_BMP:
-         return IMAGE_TYPE_BMP;
-#endif
-#ifdef HAVE_RTGA
-      case IMAGE_FORMAT_TGA:
-         return IMAGE_TYPE_TGA;
-#endif
-      case IMAGE_FORMAT_NONE:
-      default:
-         break;
+      if (image_texture_load_internal(
+         type, buffer, buffer_len, out_img,
+         a_shift, r_shift, g_shift, b_shift))
+      {
+         return true;
+      }
    }
 
-   return IMAGE_TYPE_NONE;
+   out_img->supports_rgba = false;
+   out_img->pixels = NULL;
+   out_img->width = 0;
+   out_img->height = 0;
+
+   return false;
 }
 
 bool image_texture_load(struct texture_image *out_img,
@@ -270,12 +259,12 @@ bool image_texture_load(struct texture_image *out_img,
    size_t file_len             = 0;
    struct nbio_t      *handle  = NULL;
    void                   *ptr = NULL;
-   enum video_image_format fmt = image_texture_get_type(path);
+   enum image_type_enum type  = image_texture_get_type(path);
 
    image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift, out_img);
 
-   if (fmt != IMAGE_FORMAT_NONE)
+   if (type != IMAGE_TYPE_NONE)
    {
       handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
       if (!handle)
@@ -290,7 +279,7 @@ bool image_texture_load(struct texture_image *out_img,
          goto error;
 
       if (image_texture_load_internal(
-               image_texture_convert_fmt_to_type(fmt),
+               type,
                ptr, file_len, out_img,
                a_shift, r_shift, g_shift, b_shift))
          goto success;

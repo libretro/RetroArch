@@ -33,7 +33,7 @@
 #include "config.h"
 #endif
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD

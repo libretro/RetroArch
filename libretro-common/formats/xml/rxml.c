@@ -66,20 +66,17 @@ static void rxml_free_node(struct rxml_node *node)
    {
       struct rxml_attrib_node *next_attrib = NULL;
 
-      if (!attrib_node_head)
-         continue;
-
       next_attrib = (struct rxml_attrib_node*)attrib_node_head->next;
 
-      if (!next_attrib)
-         continue;
-
-      if (attrib_node_head->attrib)
-         free(attrib_node_head->attrib);
-      if (attrib_node_head->value)
-         free(attrib_node_head->value);
-      if (attrib_node_head)
-         free(attrib_node_head);
+      if (next_attrib)
+      {
+         if (attrib_node_head->attrib)
+            free(attrib_node_head->attrib);
+         if (attrib_node_head->value)
+            free(attrib_node_head->value);
+         if (attrib_node_head)
+            free(attrib_node_head);
+      }
 
       attrib_node_head = next_attrib;
    }
@@ -308,7 +305,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          }
 
          node->data = strdup_range(cdata_start +
-               strlen("<![CDATA["), cdata_end);
+               STRLEN_CONST("<![CDATA["), cdata_end);
       }
       else if (closing_start && closing_start == child_start) /* Simple Data */
          node->data = strdup_range(closing + 1, closing_start);
@@ -404,7 +401,7 @@ static char *purge_xml_comments(const char *str)
       memcpy(copy_dest, copy_src, copy_len);
 
       copy_dest += copy_len;
-      copy_src   = comment_end + strlen("-->");
+      copy_src   = comment_end + STRLEN_CONST("-->");
    }
 
    /* Avoid strcpy() as OpenBSD is anal and hates you
@@ -420,18 +417,12 @@ rxml_document_t *rxml_load_document(const char *path)
 {
    rxml_document_t *doc;
    char *memory_buffer     = NULL;
-   char *new_memory_buffer = NULL;
-   const char *mem_ptr     = NULL;
    long len                = 0;
    RFILE *file             = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return NULL;
-
-   doc = (rxml_document_t*)calloc(1, sizeof(*doc));
-   if (!doc)
-      goto error;
 
    len           = filestream_get_size(file);
    memory_buffer = (char*)malloc(len + 1);
@@ -445,17 +436,38 @@ rxml_document_t *rxml_load_document(const char *path)
    filestream_close(file);
    file = NULL;
 
-   mem_ptr = memory_buffer;
+   doc = rxml_load_document_string(memory_buffer);
+
+   free(memory_buffer);
+   return doc;
+
+error:
+   free(memory_buffer);
+   if(file)
+      filestream_close(file);
+   return NULL;
+}
+
+rxml_document_t *rxml_load_document_string(const char *str)
+{
+   rxml_document_t *doc;
+   char *memory_buffer = NULL;
+   const char *mem_ptr = NULL;
+
+   doc = (rxml_document_t*)calloc(1, sizeof(*doc));
+   if (!doc)
+      goto error;
+
+   mem_ptr = str;
 
    if (!validate_header(&mem_ptr))
       goto error;
 
-   new_memory_buffer = purge_xml_comments(mem_ptr);
-   if (!new_memory_buffer)
+   memory_buffer = purge_xml_comments(mem_ptr);
+   if (!memory_buffer)
       goto error;
 
-   free(memory_buffer);
-   mem_ptr = memory_buffer = new_memory_buffer;
+   mem_ptr = memory_buffer;
 
    doc->root_node = rxml_parse_node(&mem_ptr);
    if (!doc->root_node)
@@ -466,7 +478,6 @@ rxml_document_t *rxml_load_document(const char *path)
 
 error:
    free(memory_buffer);
-   filestream_close(file);
    rxml_free_document(doc);
    return NULL;
 }

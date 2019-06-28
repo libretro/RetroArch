@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
-  *  Copyright (C) 2018 - Andrés Suárez
+ *  Copyright (C) 2018-2019 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -40,7 +40,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
+#include "../cheevos-new/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -138,7 +138,7 @@ static bool discord_download_avatar(
    fill_pathname_join(full_path, buf, avatar_id, sizeof(full_path));
    strlcpy(user_avatar, avatar_id, sizeof(user_avatar));
 
-   if(filestream_exists(full_path))
+   if (path_is_valid(full_path))
       return true;
 
    if (string_is_empty(avatar_id))
@@ -352,7 +352,9 @@ void discord_update(enum discord_presence presence)
             {
                playlist_get_index_by_path(
                   current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
-               label = entry->label;
+
+               if (entry && !string_is_empty(entry->label))
+                  label = entry->label;
             }
 
             if (!label)
@@ -389,6 +391,7 @@ void discord_update(enum discord_presence presence)
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
+               discord_presence.joinSecret = (const char*)'\0';
                connecting = false;
             }
          }
@@ -424,13 +427,14 @@ void discord_update(enum discord_presence presence)
          break;
       case DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED:
          {
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) && 
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
             !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
             {
                peer_party_id[0] = '\0';
                discord_presence.partyId    = NULL;
                discord_presence.partyMax   = 0;
                discord_presence.partySize  = 0;
+               discord_presence.joinSecret = (const char*)'\0';
                connecting = false;
             }
          }
@@ -439,6 +443,7 @@ void discord_update(enum discord_presence presence)
             discord_presence.partyId    = NULL;
             discord_presence.partyMax   = 0;
             discord_presence.partySize  = 0;
+            discord_presence.joinSecret = (const char*)'\0';
             connecting = false;
       default:
          break;

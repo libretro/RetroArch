@@ -33,7 +33,7 @@
 #include <retro_inline.h>
 
 #include "../../configuration.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 #include "../../frontend/frontend_driver.h"
 

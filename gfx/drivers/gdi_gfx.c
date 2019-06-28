@@ -472,28 +472,6 @@ static bool gdi_gfx_set_shader(void *data,
    return false;
 }
 
-static void gdi_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void gdi_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool gdi_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void gdi_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -629,8 +607,15 @@ static void gdi_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
+static uint32_t gdi_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   return flags;
+}
+
 static const video_poke_interface_t gdi_poke_interface = {
-   NULL, /* get_flags */
+   gdi_get_flags,
    gdi_load_texture,
    gdi_unload_texture,
    gdi_set_video_mode,
@@ -682,13 +667,16 @@ video_driver_t video_gdi = {
    gdi_gfx_free,
    "gdi",
    gdi_gfx_set_viewport,
-   gdi_gfx_set_rotation,
-   gdi_gfx_viewport_info,
-   gdi_gfx_read_viewport,
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
 #endif
   gdi_gfx_get_poke_interface,
 };

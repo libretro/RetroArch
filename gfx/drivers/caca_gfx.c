@@ -255,21 +255,6 @@ static void caca_gfx_set_rotation(void *data,
    (void)rotation;
 }
 
-static void caca_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool caca_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 static void caca_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -301,7 +286,7 @@ static void caca_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {
@@ -353,12 +338,15 @@ video_driver_t video_caca = {
    "caca",
    caca_gfx_set_viewport,
    caca_gfx_set_rotation,
-   caca_gfx_viewport_info,
-   caca_gfx_read_viewport,
+   NULL, /* viewport_info  */
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
   caca_gfx_get_poke_interface,
   NULL /* wrap_type_to_enum */

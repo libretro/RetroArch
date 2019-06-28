@@ -147,6 +147,11 @@ typedef struct video_viewport
    unsigned full_height;
 } video_viewport_t;
 
+typedef struct gfx_ctx_flags
+{
+   uint32_t flags;
+} gfx_ctx_flags_t;
+
 RETRO_END_DECLS
 
 #endif

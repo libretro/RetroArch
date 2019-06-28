@@ -29,6 +29,8 @@
 #include <time.h>
 #include <boolean.h>
 
+#include "playlist.h"
+
 RETRO_BEGIN_DECLS
 
 typedef struct
@@ -127,6 +129,12 @@ void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned sec
 
 /* Convert from microseconds to hours, minutes, seconds */
 void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *minutes, unsigned *seconds);
+
+/* Playlist manipulation */
+
+/* Updates specified playlist entry runtime values with
+ * contents of associated log file */
+void runtime_update_playlist(playlist_t *playlist, size_t idx);
 
 RETRO_END_DECLS
 

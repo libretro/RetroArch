@@ -1,9 +1,9 @@
-//
-//  metal_common.m
-//  RetroArch_Metal
-//
-//  Created by Stuart Carnie on 5/14/18.
-//
+/*
+ *  metal_common.m
+ *  RetroArch_Metal
+ *
+ *  Created by Stuart Carnie on 5/14/18.
+ */
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
@@ -14,6 +14,7 @@
 #include <simd/simd.h>
 
 #import <gfx/video_frame.h>
+#include "../../managers/state_manager.h"
 
 #import "metal_common.h"
 #import "../../ui/drivers/cocoa/cocoa_common.h"
@@ -552,6 +553,7 @@ typedef struct MTLALIGN(16)
       texture_t rt;
       texture_t feedback;
       uint32_t frame_count;
+      int32_t frame_direction;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -927,6 +929,8 @@ typedef struct MTLALIGN(16)
       if (_shader->pass[i].frame_count_mod)
          _engine.pass[i].frame_count %= _shader->pass[i].frame_count_mod;
 
+      _engine.pass[i].frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
       for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          id<MTLBuffer> buffer = _engine.pass[i].buffers[j];
@@ -1133,18 +1137,21 @@ typedef struct MTLALIGN(16)
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t *conf = config_file_new(path.UTF8String);
+   config_file_t         *conf = config_file_new(path.UTF8String);
    struct video_shader *shader = (struct video_shader *)calloc(1, sizeof(*shader));
 
    @try
    {
-      if (!video_shader_read_conf_cgp(conf, shader))
+      unsigned i;
+      texture_t *source = NULL;
+      if (!video_shader_read_conf_preset(conf, shader))
          return NO;
 
       video_shader_resolve_relative(shader, path.UTF8String);
 
-      texture_t *source = &_engine.frame.texture[0];
-      for (unsigned i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
+      source = &_engine.frame.texture[0];
+
+      for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
          matrix_float4x4 *mvp = (i == shader->passes-1) ? &_context.uniforms->projectionMatrix : &_engine.mvp;
 
@@ -1176,10 +1183,11 @@ typedef struct MTLALIGN(16)
                   &_engine.luts[0].size_data, sizeof(*_engine.luts)},
             },
             {
-               mvp,                           /* MVP */
-               &_engine.pass[i].rt.size_data, /* OutputSize */
-               &_engine.frame.output_size,    /* FinalViewportSize */
-               &_engine.pass[i].frame_count,  /* FrameCount */
+               mvp,                              /* MVP */
+               &_engine.pass[i].rt.size_data,    /* OutputSize */
+               &_engine.frame.output_size,       /* FinalViewportSize */
+               &_engine.pass[i].frame_count,     /* FrameCount */
+               &_engine.pass[i].frame_direction, /* FrameDirection */
             }
          };
          /* clang-format on */
@@ -1188,7 +1196,7 @@ typedef struct MTLALIGN(16)
             return NO;
 
 #ifdef DEBUG
-            bool save_msl = true;
+         bool save_msl = true;
 #else
          bool save_msl = false;
 #endif
@@ -1316,7 +1324,7 @@ typedef struct MTLALIGN(16)
          }
       }
 
-      for (unsigned i = 0; i < shader->luts; i++)
+      for (i = 0; i < shader->luts; i++)
       {
          struct texture_image image = {0};
          image.supports_rgba = true;
@@ -1335,7 +1343,7 @@ typedef struct MTLALIGN(16)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         // TODO(sgc): generate mip maps
+         /* TODO(sgc): generate mip maps */
          image_texture_free(&image);
       }
 

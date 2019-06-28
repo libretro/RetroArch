@@ -38,7 +38,7 @@ rpng_t *rpng_init(const char *path);
 
 bool rpng_is_valid(rpng_t *rpng);
 
-bool rpng_set_buf_ptr(rpng_t *rpng, void *data);
+bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len);
 
 rpng_t *rpng_alloc(void);
 

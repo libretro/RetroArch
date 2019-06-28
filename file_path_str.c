@@ -165,6 +165,9 @@ const char *file_path_str(enum file_path_enum enum_idx)
          str = "registry.lpl";
          break;
       case FILE_PATH_CORE_THUMBNAILS_URL:
+         str = "http://thumbnails.libretro.com";
+         break;
+      case FILE_PATH_CORE_THUMBNAILPACKS_URL:
          str = "http://thumbnailpacks.libretro.com";
          break;
       case FILE_PATH_LAKKA_URL:

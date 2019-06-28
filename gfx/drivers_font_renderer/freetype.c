@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 #include <ctype.h>
 
 #include <ft2build.h>
@@ -315,7 +316,7 @@ static const char *font_renderer_ft_get_default_font(void)
       }
 #endif
 
-      if (filestream_exists(font_paths[i]))
+      if (path_is_valid(font_paths[i]))
          return font_paths[i];
    }
 

@@ -31,6 +31,7 @@ QWidget *SavingPage::widget()
    SettingsGroup                 *saveRamGroup = new SettingsGroup("SaveRAM");
    SettingsGroup          *systemFilesDirGroup = new SettingsGroup("System Files");
    SettingsGroup          *screenshotsDirGroup = new SettingsGroup("Screenshots");
+   SettingsGroup          *runtimeLogGroup     = new SettingsGroup("Runtime Log");
 
    savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE);
    savesGroup->add(MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE);
@@ -51,11 +52,15 @@ QWidget *SavingPage::widget()
 
    screenshotsDirGroup->add(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE);
 
+   runtimeLogGroup->add(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG);
+   runtimeLogGroup->add(MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE);
+
    layout->addRow(savesGroup);
    layout->addRow(savestatesGroup);
    layout->addRow(saveRamGroup);
    layout->addRow(systemFilesDirGroup);
    layout->addRow(screenshotsDirGroup);
+   layout->addRow(runtimeLogGroup);
 
    widget->setLayout(layout);
 

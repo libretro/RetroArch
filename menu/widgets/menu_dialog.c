@@ -22,7 +22,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #endif
 
 #include "menu_dialog.h"
@@ -45,7 +45,7 @@ static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 int menu_dialog_iterate(char *s, size_t len, const char *label)
 {
 #ifdef HAVE_CHEEVOS
-   cheevos_ctx_desc_t desc_info;
+   rcheevos_ctx_desc_t desc_info;
 #endif
    bool do_exit              = false;
 
@@ -176,7 +176,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
          desc_info.idx = menu_dialog_current_id;
          desc_info.s   = s;
          desc_info.len = len;
-         cheevos_get_description(&desc_info);
+         rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
          break;
 #endif
 

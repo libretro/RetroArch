@@ -68,10 +68,12 @@ enum slang_semantic
    SLANG_SEMANTIC_FINAL_VIEWPORT  = 2,
    /* uint, frame count with modulo */
    SLANG_SEMANTIC_FRAME_COUNT     = 3,
+   /* int, frame direction */
+   SLANG_SEMANTIC_FRAME_DIRECTION = 4,
    SLANG_NUM_BASE_SEMANTICS,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER = 4,
+   SLANG_SEMANTIC_FLOAT_PARAMETER = 5,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC         = -1

@@ -26,11 +26,8 @@
 
 #include "tasks_internal.h"
 
-#include "../file_path_special.h"
-#include "../gfx/video_driver.h"
-#include "../input/input_driver.h"
 #include "../input/input_overlay.h"
-#include "../configuration.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 typedef struct overlay_loader overlay_loader_t;
@@ -51,6 +48,7 @@ struct overlay_loader
    unsigned pos_increment;
    float overlay_opacity;
    float overlay_scale;
+   bool driver_rgba_support;
 };
 
 static void task_overlay_image_done(struct overlay *overlay)
@@ -88,7 +86,7 @@ static void task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      image_tex.supports_rgba = video_driver_supports_rgba();
+      image_tex.supports_rgba = loader->driver_rgba_support;
 
       if (image_texture_load(&image_tex, path))
       {
@@ -194,7 +192,7 @@ static bool task_overlay_load_desc(
 
       for (; tmp; tmp = strtok_r(NULL, "|", &save))
       {
-         if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
+         if (!string_is_equal(tmp, "nul"))
             BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
       }
 
@@ -577,7 +575,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         image_tex.supports_rgba = video_driver_supports_rgba();
+         image_tex.supports_rgba = loader->driver_rgba_support;
 
          if (!image_texture_load(&image_tex, overlay_resolved_path))
          {
@@ -727,81 +725,89 @@ static bool task_overlay_finder(retro_task_t *task, void *user_data)
 }
 
 bool task_push_overlay_load_default(
-      retro_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb,
+      const char *overlay_path,
+      bool overlay_hide_in_menu,
+      bool input_overlay_enable,
+      float input_overlay_opacity,
+      float input_overlay_scale,
+      void *user_data)
 {
    task_finder_data_t find_data;
-   settings_t *settings     = config_get_ptr();
-   const char *overlay_path = settings->paths.path_overlay;
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
-   overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
+   overlay_loader_t *loader = NULL;
+   
+   if (string_is_empty(overlay_path))
+      return false;
+
+   /* Prevent overlay from being loaded if it already is being loaded */
+   find_data.func           = task_overlay_finder;
+   find_data.userdata       = (void*)overlay_path;
+
+   if (task_queue_find(&find_data))
+      return false;
+
+   loader                   = (overlay_loader_t*)calloc(1, sizeof(*loader));
 
    if (!loader)
       return false;
 
-   if (string_is_empty(overlay_path))
-      goto error;
-
-   /* Prevent overlay from being loaded if it already is being loaded */
-   find_data.func     = task_overlay_finder;
-   find_data.userdata = (void*)overlay_path;
-
-   if (task_queue_find(&find_data))
-      goto error;
-
    conf = config_file_new(overlay_path);
 
    if (!conf)
-      goto error;
+   {
+      free(loader);
+      return false;
+   }
 
    if (!config_get_uint(conf, "overlays", &loader->size))
    {
-      RARCH_ERR("overlays variable not defined in config.\n");
-      goto error;
+      /* Error - overlays varaible not defined in config. */
+      config_file_free(conf);
+      free(loader);
+      return false;
    }
 
    loader->overlays         = (struct overlay*)
       calloc(loader->size, sizeof(*loader->overlays));
 
    if (!loader->overlays)
-      goto error;
+   {
+      config_file_free(conf);
+      free(loader);
+      return false;
+   }
 
-   loader->overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
-   loader->overlay_enable       = settings->bools.input_overlay_enable;
-   loader->overlay_opacity      = settings->floats.input_overlay_opacity;
-   loader->overlay_scale        = settings->floats.input_overlay_scale;
-   loader->overlay_path         = strdup(overlay_path);
+   loader->overlay_hide_in_menu = overlay_hide_in_menu;
+   loader->overlay_enable       = input_overlay_enable;
+   loader->overlay_opacity      = input_overlay_opacity;
+   loader->overlay_scale        = input_overlay_scale;
    loader->conf                 = conf;
    loader->state                = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment        = (loader->size / 4) ? (loader->size / 4) : 4;
-
+#ifdef RARCH_INTERNAL
+   loader->driver_rgba_support  = video_driver_supports_rgba();
+#endif
    t                            = task_init();
 
    if (!t)
-      goto error;
+   {
+      config_file_free(conf);
+      free(loader->overlays);
+      free(loader);
+      return false;
+   }
 
-   t->handler               = task_overlay_handler;
-   t->cleanup               = task_overlay_free;
-   t->state                 = loader;
-   t->callback              = cb;
-   t->user_data             = user_data;
+   loader->overlay_path         = strdup(overlay_path);
+
+   t->handler                   = task_overlay_handler;
+   t->cleanup                   = task_overlay_free;
+   t->state                     = loader;
+   t->callback                  = cb;
+   t->user_data                 = user_data;
 
    task_queue_push(t);
 
    return true;
-
-error:
-   if (conf)
-      config_file_free(conf);
-
-   if (loader)
-   {
-      if (loader->overlay_path)
-         free(loader->overlay_path);
-      if (loader->overlays)
-         free(loader->overlays);
-      free(loader);
-   }
-
-   return false;
 }

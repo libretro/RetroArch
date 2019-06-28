@@ -34,7 +34,7 @@
 #include <retro_common_api.h>
 #include <retro_environment.h>
 #include "../../driver.h"
-#include "../video_driver.h"
+#include "../../retroarch.h"
 
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
@@ -127,7 +127,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif

@@ -20,8 +20,10 @@
 #include <string.h>
 
 #include <objc/objc-runtime.h>
+#include "cocoa_defines.h"
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
+
 
 static void* ui_application_cocoa_initialize(void)
 {

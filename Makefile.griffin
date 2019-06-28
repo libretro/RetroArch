@@ -89,6 +89,8 @@ else ifeq ($(platform), wii)
    libogc_platform    := 1
 endif
 
+HAVE_MENU_WIDGETS := 1
+
 # PS3
 ifeq ($(platform), ps3)
    #TODO
@@ -187,6 +189,8 @@ else ifeq ($(libogc_platform), 1)
    HAVE_RTGA                := 1
    HAVE_IBXM                := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -299,11 +303,13 @@ else ifeq ($(platform), vita)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
    HAVE_NETWORKING          := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -322,6 +328,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -357,6 +364,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -364,6 +372,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -404,6 +413,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -411,6 +421,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -452,6 +463,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -459,6 +471,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -480,7 +493,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
    PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
-   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib msimg32.lib
 
    PlatformSuffix = $(subst windows_msvc2010_,,$(platform))
 
@@ -523,6 +536,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -530,6 +544,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -598,6 +613,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -605,6 +621,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -673,6 +690,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    WANT_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -680,6 +698,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_NETWORK_CMD         := 1
 	HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_STB_FONT            := 1
@@ -699,6 +718,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    CXX = cl.exe
    LD = link.exe
 
+   PLATCFLAGS += -utf-8 
    PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
    PLATCFLAGS += -D__i686__ -D__MMX__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32 -DHAVE_EASTEREGG
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
@@ -826,6 +846,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -DHAVE_ZLIB
+   CFLAGS += -I./libretro-common/include/compat/zlib
 endif
 
 ifeq ($(WANT_ZLIB), 1)
@@ -858,6 +879,10 @@ endif
 
 ifeq ($(HAVE_OVERLAY), 1)
    CFLAGS      += -DHAVE_OVERLAY
+endif
+
+ifeq ($(HAVE_VIDEO_LAYOUT), 1)
+   CFLAGS      += -DHAVE_VIDEO_LAYOUT
 endif
 
 ifeq ($(HAVE_NETWORKING), 1)

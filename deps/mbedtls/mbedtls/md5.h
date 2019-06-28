@@ -33,8 +33,7 @@
 #include <stdint.h>
 
 #if !defined(MBEDTLS_MD5_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

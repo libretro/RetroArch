@@ -16,9 +16,9 @@
 #ifndef __RARCH_CHEEVOS_BADGE_H
 #define __RARCH_CHEEVOS_BADGE_H
 
-#include "../menu/menu_driver.h"
-
 #include <retro_common_api.h>
+
+#include "../menu/menu_driver.h"
 
 RETRO_BEGIN_DECLS
 

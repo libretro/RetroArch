@@ -26,6 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
+#include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -105,6 +106,7 @@ static void app_terminate(void)
 @implementation RApplication
 #endif
 
+
 - (void)sendEvent:(NSEvent *)event {
    [super sendEvent:event];
 
@@ -113,17 +115,12 @@ static void app_terminate(void)
 
    switch ((int32_t)event_type)
    {
-#if defined(HAVE_COCOA_METAL)
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
-#elif defined(HAVE_COCOA)
-      case NSKeyDown:
-      case NSKeyUp:
-#endif
          {
-            NSString* ch = event.characters;
+            NSString* ch       = event.characters;
             uint32_t character = 0;
-            uint32_t mod = 0;
+            uint32_t mod       = 0;
 
             if (ch && ch.length != 0)
             {
@@ -168,23 +165,19 @@ static void app_terminate(void)
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
          }
          break;
-#if defined(HAVE_COCOA_METAL)
         case NSEventTypeMouseMoved:
         case NSEventTypeLeftMouseDragged:
         case NSEventTypeRightMouseDragged:
-        case NSEventTypeOtherMouseDragged:
-#elif defined(HAVE_COCOA)
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
-#endif
+	    case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
+			 
+			pos.x              = 0;
+			pos.y              = 0;
 
             /* Relative */
             apple->mouse_rel_x = (int16_t)event.deltaX;
@@ -213,29 +206,6 @@ static void app_terminate(void)
         case NSScrollWheel:
 #endif
          /* TODO/FIXME - properly implement. */
-         break;
-#if defined(HAVE_COCOA_METAL)
-        case NSEventTypeLeftMouseDown:
-        case NSEventTypeRightMouseDown:
-        case NSEventTypeOtherMouseDown:
-#elif defined(HAVE_COCOA)
-        case NSLeftMouseDown:
-        case NSRightMouseDown:
-        case NSOtherMouseDown:
-#endif
-         {
-#if defined(HAVE_COCOA_METAL)
-            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-            apple = (cocoa_input_data_t*)input_driver_get_data();
-            if (!apple || pos.y < 0)
-               return;
-            apple->mouse_buttons |= 1 << event.buttonNumber;
-
-            apple->touch_count = 1;
-         }
          break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
@@ -499,11 +469,11 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if (filenames.count == 1 && filenames[0])
+	if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-      NSString *__core                 = filenames[0];
-      const char *core_name            = system ? system->library_name : NULL;
+	  NSString *__core                 = [filenames objectAtIndex:0];
+      const char *core_name            = system->library_name;
 
       if (core_name)
       {
@@ -548,7 +518,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 
     settings_t *settings = config_get_ptr();
 
-    rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    path_set(RARCH_PATH_CORE, state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
     if (info && info->load_no_content
@@ -771,9 +741,6 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    (void)data;
    (void)cmd;
-#if !defined(HAVE_COCOA_METAL)
-   command_event(cmd, NULL);
-#endif
 }
 
 static void ui_companion_cocoa_notify_list_pushed(void *data,

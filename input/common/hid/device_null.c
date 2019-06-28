@@ -16,7 +16,7 @@
 
 #include "hid_device_driver.h"
 
-extern pad_connection_interface_t null_pad_connection;
+extern pad_connection_interface_t hid_null_pad_connection;
 
 /*
  * This is the instance data structure for the pad you are implementing.
@@ -24,7 +24,8 @@ extern pad_connection_interface_t null_pad_connection;
  * sense for the pad you're writing for. The pointer to this structure
  * will be passed in as a void pointer to the methods you implement below.
  */
-typedef struct null_instance {
+typedef struct hid_null_instance
+{
    void *handle;             /* a handle to the HID subsystem adapter */
    joypad_connection_t *pad; /* a pointer to the joypad connection you assign
                                 in init() */
@@ -33,7 +34,7 @@ typedef struct null_instance {
    uint16_t motors[2];       /* rumble strength, if appropriate */
    uint8_t data[64];         /* a buffer large enough to hold the device's
                                 max rx packet */
-} null_instance_t;
+} hid_null_instance_t;
 
 /**
  * Use the HID_ macros (see input/include/hid_driver.h) to send data packets
@@ -47,17 +48,16 @@ typedef struct null_instance {
  *
  * If initialization fails, return NULL.
  */
-static void *null_init(void *handle)
+static void *hid_null_init(void *handle)
 {
-   null_instance_t *instance;
-   instance = (null_instance_t *)calloc(1, sizeof(null_instance_t));
-   if(!instance)
+   hid_null_instance_t *instance = (hid_null_instance_t *)calloc(1, sizeof(hid_null_instance_t));
+   if (!instance)
       goto error;
 
-   memset(instance, 0, sizeof(null_instance_t));
+   memset(instance, 0, sizeof(hid_null_instance_t));
    instance->handle = handle;
-   instance->pad = hid_pad_register(instance, &null_pad_connection);
-   if(!instance->pad)
+   instance->pad = hid_pad_register(instance, &hid_null_pad_connection);
+   if (!instance->pad)
       goto error;
 
    RARCH_LOG("[null]: init complete.\n");
@@ -65,7 +65,7 @@ static void *null_init(void *handle)
 
    error:
       RARCH_ERR("[null]: init failed.\n");
-      if(instance)
+      if (instance)
          free(instance);
 
       return NULL;
@@ -75,11 +75,12 @@ static void *null_init(void *handle)
  * Gets called when the pad is disconnected. It must clean up any memory
  * allocated and used by the instance data.
  */
-static void null_free(void *data)
+static void hid_null_free(void *data)
 {
-   null_instance_t *instance = (null_instance_t *)data;
+   hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
-   if(instance) {
+   if (instance)
+   {
       hid_pad_deregister(instance->pad);
       free(instance);
    }
@@ -90,18 +91,18 @@ static void null_free(void *data)
  * For most pads you'd just forward it onto the pad driver (see below).
  * A more complicated example is in the Wii U GC adapter driver.
  */
-static void null_handle_packet(void *data, uint8_t *buffer, size_t size)
+static void hid_null_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
-   null_instance_t *instance = (null_instance_t *)data;
+   hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
-   if(instance && instance->pad)
+   if (instance && instance->pad)
       instance->pad->iface->packet_handler(instance->pad->data, buffer, size);
 }
 
 /**
  * Return true if the passed in VID and PID are supported by the driver.
  */
-static bool null_detect(uint16_t vendor_id, uint16_t product_id)
+static bool hid_null_detect(uint16_t vendor_id, uint16_t product_id)
 {
   return vendor_id == VID_NONE && product_id == PID_NONE;
 }
@@ -110,10 +111,10 @@ static bool null_detect(uint16_t vendor_id, uint16_t product_id)
  * Assign function pointers to the driver structure.
  */
 hid_device_t null_hid_device = {
-  null_init,
-  null_free,
-  null_handle_packet,
-  null_detect,
+  hid_null_init,
+  hid_null_free,
+  hid_null_handle_packet,
+  hid_null_detect,
   "Null HID device"
 };
 
@@ -123,11 +124,11 @@ hid_device_t null_hid_device = {
  * But if you need to track multiple pads attached to the same HID device
  * (see: Wii U GC adapter), you can allocate that memory here.
  */
-static void *null_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void *hid_null_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   null_instance_t *instance = (null_instance_t *)data;
+   hid_null_instance_t *instance = (hid_null_instance_t *)data;
 
-   if(!instance)
+   if (!instance)
       return NULL;
 
    instance->slot = slot;
@@ -135,9 +136,9 @@ static void *null_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 }
 
 /**
- * If you allocate any memory in null_pad_init() above, de-allocate it here.
+ * If you allocate any memory in hid_null_pad_init() above, de-allocate it here.
  */
-static void null_pad_deinit(void *data)
+static void hid_null_pad_deinit(void *data)
 {
 }
 
@@ -145,10 +146,10 @@ static void null_pad_deinit(void *data)
  * Translate the button data from the pad into the input_bits_t format
  * that RetroArch can use.
  */
-static void null_get_buttons(void *data, input_bits_t *state)
+static void hid_null_get_buttons(void *data, input_bits_t *state)
 {
-   null_instance_t *instance = (null_instance_t *)data;
-   if(!instance)
+   hid_null_instance_t *instance = (hid_null_instance_t *)data;
+   if (!instance)
       return;
 
    /* TODO: get buttons */
@@ -157,10 +158,10 @@ static void null_get_buttons(void *data, input_bits_t *state)
 /**
  * Handle a single packet for the pad.
  */
-static void null_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hid_null_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
-   null_instance_t *instance = (null_instance_t *)data;
-   if(!instance)
+   hid_null_instance_t *instance = (hid_null_instance_t *)data;
+   if (!instance)
       return;
 
    RARCH_LOG_BUFFER(packet, size);
@@ -169,7 +170,7 @@ static void null_packet_handler(void *data, uint8_t *packet, uint16_t size)
 /**
  * If the pad doesn't support rumble, then this can just be a no-op.
  */
-static void null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
+static void hid_null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
 {
 }
 
@@ -182,7 +183,7 @@ static void null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_
  * - (-32768,-32768) is top-left
  * - (32767,32767) is bottom-right
  */
-static int16_t null_get_axis(void *data, unsigned axis)
+static int16_t hid_null_get_axis(void *data, unsigned axis)
 {
    return 0;
 }
@@ -191,7 +192,7 @@ static int16_t null_get_axis(void *data, unsigned axis)
  * The name the pad will show up as in the UI, also used to auto-assign
  * buttons in input/input_autodetect_builtin.c
  */
-static const char *null_get_name(void *data)
+static const char *hid_null_get_name(void *data)
 {
    return "Null HID Pad";
 }
@@ -199,7 +200,7 @@ static const char *null_get_name(void *data)
 /**
  * Read the state of a single button.
  */
-static bool null_button(void *data, uint16_t joykey)
+static bool hid_null_button(void *data, uint16_t joykey)
 {
   return false;
 }
@@ -207,13 +208,13 @@ static bool null_button(void *data, uint16_t joykey)
 /**
  * Fill in the joypad interface
  */
-pad_connection_interface_t null_pad_connection = {
-   null_pad_init,
-   null_pad_deinit,
-   null_packet_handler,
-   null_set_rumble,
-   null_get_buttons,
-   null_get_axis,
-   null_get_name,
-   null_button
+pad_connection_interface_t hid_null_pad_connection = {
+   hid_null_pad_init,
+   hid_null_pad_deinit,
+   hid_null_packet_handler,
+   hid_null_set_rumble,
+   hid_null_get_buttons,
+   hid_null_get_axis,
+   hid_null_get_name,
+   hid_null_button
 };

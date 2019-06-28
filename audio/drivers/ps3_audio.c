@@ -19,7 +19,7 @@
 
 #include <queues/fifo_queue.h>
 
-#include "../audio_driver.h"
+#include "../../retroarch.h"
 
 #include "../../defines/ps3_defines.h"
 

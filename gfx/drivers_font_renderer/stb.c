@@ -184,7 +184,7 @@ error:
 static const char *font_renderer_stb_get_default_font(void)
 {
    static const char *paths[] = {
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__WINRT__)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",
 #elif defined(__APPLE__)
@@ -205,22 +205,22 @@ static const char *font_renderer_stb_get_default_font(void)
       "vs0:data/external/font/pvf/k006004ds.ttf",
       "vs0:data/external/font/pvf/n023055ms.ttf",
       "vs0:data/external/font/pvf/n023055ts.ttf",
-#else
+#elif !defined(__WINRT__)
       "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
       "/usr/share/fonts/TTF/DejaVuSans.ttf",
       "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",
       "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
       "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-#endif
       "osd-font.ttf",
+#endif
       NULL
    };
 
    const char **p;
 
    for (p = paths; *p; ++p)
-      if (filestream_exists(*p))
+      if (path_is_valid(*p))
          return *p;
 
    return NULL;

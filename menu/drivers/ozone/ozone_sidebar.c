@@ -25,7 +25,6 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 
 #include "../../menu_animation.h"
 
@@ -127,7 +126,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       return;
 
    if (ozone->horizontal_list)
-      horizontal_list_size = ozone->horizontal_list->size;
+      horizontal_list_size = (unsigned)ozone->horizontal_list->size;
 
    menu_display_scissor_begin(video_info, 0, ozone->dimensions.header_height, (unsigned) ozone->dimensions.sidebar_width, video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
 
@@ -321,7 +320,7 @@ unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
 
 unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
 {
-   int entries = (ozone->system_tab_end + 1 + (ozone->horizontal_list ? ozone->horizontal_list->size : 0));
+   int entries = (int)(ozone->system_tab_end + 1 + (ozone->horizontal_list ? ozone->horizontal_list->size : 0));
    return entries * ozone->dimensions.sidebar_entry_height + (entries - 1) * ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.sidebar_padding_vertical +
          (ozone->horizontal_list && ozone->horizontal_list->size > 0 ? ozone->dimensions.sidebar_entry_padding_vertical + 1 : 0);
 }
@@ -621,7 +620,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* If the playlist icon doesn't exist return default */
 
-         if (!filestream_exists(texturepath))
+         if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, icons_path, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
@@ -652,7 +651,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
 
          /* If the content icon doesn't exist return default-content */
-         if (!filestream_exists(content_texturepath))
+         if (!path_is_valid(content_texturepath))
          {
             strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
             strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));

@@ -570,6 +570,10 @@ MSG_HASH(
     "Automatic Screenshot"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
+    "Use Old Implementation (Debug Only)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
     "Close Content"
     )
@@ -1417,6 +1421,10 @@ MSG_HASH(
     "Show Inputs On Overlay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Show Mouse Cursor With Overlay"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Show Inputs Listen Port"
     )
@@ -1917,6 +1925,14 @@ MSG_HASH(
     "Network Remote Base Port"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+    "On-Demand Thumbnail Downloads"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Automatically download missing thumbnail images while browsing playlists. Has a severe performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Network"
     )
@@ -2024,6 +2040,16 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Adjust Bezels and Onscreen controls"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Video Layout"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Adjust Video Layout"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Onscreen Notifications"
@@ -2052,6 +2078,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Overlay"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+    "Video Layout"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Overlay Opacity"
@@ -2146,7 +2178,15 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Quit RetroArch"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+    "Restart RetroArch"
+    )
 #endif
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+      "Database Entry")
+MSG_HASH(MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+      "Show database information for current content")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
     "Analog supported"
@@ -2259,6 +2299,30 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+    "Name"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+    "File Path"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+    "Core"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+    "Database"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+    "Play Time"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+    "Last Played"
+    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
@@ -2351,10 +2415,6 @@ MSG_HASH(
     "Restart"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-    "Restart RetroArch"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESUME,
     "Resume"
     )
@@ -2441,6 +2501,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
     "Add to Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Download Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+    "Download screenshot/box art/title screen thumbnail images for current content. Updates any existing thumbnails."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -2705,6 +2773,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
     "CoreText support"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+    "CPU Model"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
@@ -2991,6 +3063,22 @@ MSG_HASH(
     "Thumbnails Vertical Disposition"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Thumbnail Scale Factor"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Reduce thumbnail display size by scaling maximum allowed width."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Thumbnail Upscaling Threshold"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Automatically upscale thumbnail images with a width/height smaller than the specified value. Improves picture quality. Has a moderate performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
     "Show Playlist Thumbnails"
     )
@@ -3113,6 +3201,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
     "Thumbnails Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+    "Download complete thumbnail package for selected system."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Playlist Thumbnails Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Download individual thumbnails for each entry of selected playlist."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
@@ -3721,6 +3821,22 @@ MSG_HASH(
     "Set VI Screen Width"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Overscan Correction (Top)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+    "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from top of screen). Note: May introduce scaling artefacts."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Overscan Correction (Bottom)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+    "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from bottom of screen). Note: May introduce scaling artefacts."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
     "Vertical Sync (Vsync)"
     )
@@ -3744,6 +3860,32 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Fullscreen Height"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
+    "Enable Video Layout"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
+    "Video layouts are used for bezels and other artwork."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
+    "Video Layout Path"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+    "Select a video layout from the file browser."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
+    "Selected View"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+    "Select a view within the loaded layout."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Wi-Fi"
@@ -3967,6 +4109,11 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
     "Automatically take a screenshot when an achievement is triggered."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
+    "Use the old achievements processing implementation\n"
+    "(if unsure, keep it off)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -4990,7 +5137,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+    "Viewport size calculation failed! Will continue using raw data. This will probably not work right..."
     )
 MSG_HASH(
     MSG_VIRTUAL_DISK_TRAY,
@@ -5384,6 +5531,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Quit the program."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+    "Restart the program."
+    )
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -5428,6 +5579,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Show the mouse cursor when using an onscreen overlay."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -6251,6 +6406,12 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "Defines a directory where overlays are kept for easy access."
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+    "Defines a directory where video layouts are kept for easy access."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "Cheat files are kept here."
@@ -6436,6 +6597,14 @@ MSG_HASH(
     "Show/hide the 'Online Updater' option."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Show Legacy Thumbnails Updater"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Show/hide the ability to download legacy thumbnail packages."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
     "Views"
     )
@@ -6613,6 +6782,14 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
     "Show/hide the 'Quit RetroArch' option."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+    "Show Restart RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+    "Show/hide the 'Restart RetroArch' option."
+    )
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
@@ -6749,6 +6926,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
     "Show/hide the 'Information' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Show Download Thumbnails"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Show/hide the 'Download Thumbnails' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -6959,6 +7144,38 @@ MSG_HASH(
     "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+    "Background Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+    "Enable background particle animation effect. Has a significant performance impact."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+    "OFF"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+    "Snow (Light)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+    "Snow (Heavy)"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+    "Rain"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+    "Vortex"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+    "Star Field"
+)
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Extended ASCII Support"
     )
@@ -7006,6 +7223,16 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Show Overlay Settings"
     )
+#ifdef HAVE_VIDEO_LAYOUT
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
+    "Show Video Layout Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+    "Show/hide Video Layout options."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mixer"
@@ -7064,7 +7291,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
-    "&Options..."
+    "&Settings..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
@@ -7096,7 +7323,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-    "Options"
+    "Settings"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -8297,6 +8524,10 @@ MSG_HASH(
     "Streaming toggle"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+    "AI Service"
+    )
+MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
     "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )
@@ -8461,6 +8692,18 @@ MSG_HASH(
     "Never"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+    "History & Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+    "All Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+    "OFF"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
     "Sort playlists alphabetically"
     )
@@ -8561,6 +8804,14 @@ MSG_HASH(
     "Per Core"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "Fuzzy archive matching"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
     "Aggregate"
     )
@@ -8612,3 +8863,19 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Save system event log files to this directory."
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+      "Menu Widgets")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+      "Video Shaders")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+      "Scan without core match")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+      "When disabled, content is only added to playlists if you have a core installed that supports its extension. By enabling this, it will add to playlist regardless. This way, you can install the core you need later on after scanning.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+      "Animation Horizontal Icon Highlight")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+      "Animation Move Up/Down")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+      "Animation Main Menu Opens/Closes")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+      "GPU Index")

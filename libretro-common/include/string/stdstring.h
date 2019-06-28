@@ -37,30 +37,30 @@ RETRO_BEGIN_DECLS
 
 static INLINE bool string_is_empty(const char *data)
 {
-   return (data == NULL) || (*data == '\0');
+   return !data || (*data == '\0');
 }
 
 static INLINE bool string_is_equal(const char *a, const char *b)
 {
-   if (!a || !b)
-      return false;
-   return !strcmp(a, b);
+   return (a && b) ? !strcmp(a, b) : false;
 }
 
-static INLINE bool string_is_not_equal(const char *a, const char *b)
-{
-   return !string_is_equal(a, b);
-}
+#define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
-#define string_add_pair_open(s, size)    strlcat((s), " (", (size))
-#define string_add_pair_close(s, size)   strlcat((s), ")",  (size))
-#define string_add_bracket_open(s, size) strlcat((s), "{",  (size))
+#define string_is_not_equal(a, b)         !string_is_equal((a), (b))
+
+#define string_add_pair_open(s, size)     strlcat((s), " (", (size))
+#define string_add_pair_close(s, size)    strlcat((s), ")",  (size))
+#define string_add_bracket_open(s, size)  strlcat((s), "{",  (size))
 #define string_add_bracket_close(s, size) strlcat((s), "}",  (size))
-#define string_add_single_quote(s, size) strlcat((s), "'",  (size))
-#define string_add_quote(s, size) strlcat((s), "\"",  (size))
-#define string_add_colon(s, size) strlcat((s), ":",  (size))
-#define string_add_glob_open(s, size) strlcat((s), "glob('*",  (size))
-#define string_add_glob_close(s, size) strlcat((s), "*')",  (size))
+#define string_add_single_quote(s, size)  strlcat((s), "'",  (size))
+#define string_add_quote(s, size)         strlcat((s), "\"",  (size))
+#define string_add_colon(s, size)         strlcat((s), ":",  (size))
+#define string_add_glob_open(s, size)     strlcat((s), "glob('*",  (size))
+#define string_add_glob_close(s, size)    strlcat((s), "*')",  (size))
+
+#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
+#define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
 static INLINE void string_add_between_pairs(char *s, const char *str,
       size_t size)
@@ -69,9 +69,6 @@ static INLINE void string_add_between_pairs(char *s, const char *str,
    strlcat(s, str,  size);
    string_add_pair_close(s, size);
 }
-
-#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
-#define string_is_equal_fast(a, b, size) (memcmp(a, b, size) == 0)
 
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
@@ -114,7 +111,7 @@ char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);
 
-char *string_ucwords(char* s);
+char *string_ucwords(char *s);
 
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
@@ -128,7 +125,9 @@ char *string_trim_whitespace_right(char *const s);
 /* Remove leading and trailing whitespaces */
 char *string_trim_whitespace(char *const s);
 
-char *word_wrap(char* buffer, const char *string, int line_width, bool unicode);
+/* max_lines == 0 means no limit */
+char *word_wrap(char *buffer, const char *string,
+      int line_width, bool unicode, unsigned max_lines);
 
 RETRO_END_DECLS
 

@@ -25,6 +25,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../retroarch.h"
+#include "../../managers/state_manager.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -45,6 +46,9 @@
 #include "wiiu_dbg.h"
 
 #include "../font_driver.h"
+
+/* Temporary workaround for gx2 not being able to poll flags during init */
+static gfx_ctx_driver_t wiiu_fake_context;
 
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
 {
@@ -196,6 +200,8 @@ static void wiiu_gfx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    wiiu->should_resize = true;
 }
 
+static uint32_t wiiu_gfx_get_flags(void *data);
+
 static void *wiiu_gfx_init(const video_info_t *video,
                            const input_driver_t **input, void **input_data)
 {
@@ -332,7 +338,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R4_G4_B4_A4;
    wiiu->menu.texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
    wiiu->menu.texture.viewNumSlices    = 1;
-   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_A, _R, _G, _B);
+   /* Presumably an endian thing. RGBA, but swap R and G, then B and A. */
+   wiiu->menu.texture.compMap          = GX2_COMP_SEL(_G, _R, _A, _B);
    GX2CalcSurfaceSizeAndAlignment(&wiiu->menu.texture.surface);
    GX2InitTextureRegs(&wiiu->menu.texture);
 
@@ -369,7 +376,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->menu.v->coord.v = 0.0f;
    wiiu->menu.v->coord.width = 1.0f;
    wiiu->menu.v->coord.height = 1.0f;
-   wiiu->menu.v->color = 0xFFFFFF80;
+   wiiu->menu.v->color = 0xFFFFFFFF;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
    wiiu->vertex_cache.size       = 0x1000;
@@ -448,13 +455,17 @@ static void *wiiu_gfx_init(const video_info_t *video,
                         video->is_threaded,
                         FONT_DRIVER_RENDER_WIIU);
 
-   if(settings->bools.video_shader_enable &&
-      !string_is_empty(retroarch_get_shader_preset()))
    {
-      const char* ext = path_get_extension(retroarch_get_shader_preset());
+      enum rarch_shader_type type;
+      const char *shader_preset   = NULL;
 
-      if(ext && !strncmp(ext, "slang", 5))
-         wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
+      wiiu_fake_context.get_flags = wiiu_gfx_get_flags;
+
+      video_context_driver_set(&wiiu_fake_context); 
+
+      shader_preset               = retroarch_get_shader_preset();
+      type                        = video_shader_parse_type(shader_preset);
+      wiiu_gfx_set_shader(wiiu, type, shader_preset);
    }
 
    return wiiu;
@@ -873,7 +884,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 }
 
 static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *ubo, int id,
-      int size, int uniformVarCount, GX2UniformVar *uniformVars, uint64_t frame_count)
+      int size, int uniformVarCount, GX2UniformVar *uniformVars,
+      uint64_t frame_count, int32_t frame_direction)
 {
    for (int i = 0; i < uniformVarCount; i++)
    {
@@ -916,6 +928,13 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
+      if (string_is_equal(id, "FrameDirection"))
+      {
+         *dst = frame_direction;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
       if (string_is_equal(id, "OriginalSize"))
       {
          ((GX2_vec4 *)dst)->x = wiiu->texture.surface.width;
@@ -935,9 +954,11 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
-      if (!strncmp(id, "OriginalHistorySize", strlen("OriginalHistorySize")))
+      if (!strncmp(id, "OriginalHistorySize",
+               STRLEN_CONST("OriginalHistorySize")))
       {
-         unsigned index = strtoul(id + strlen("OriginalHistorySize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("OriginalHistorySize"),
+               NULL, 0);
          if(index > pass)
             index = 0;
 
@@ -952,9 +973,10 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
          continue;
       }
 
-      if ((pass > 0 ) && !strncmp(id, "PassOutputSize", strlen("PassOutputSize")))
+      if ((pass > 0 ) && !strncmp(id, "PassOutputSize",
+               STRLEN_CONST("PassOutputSize")))
       {
-         unsigned index = strtoul(id + strlen("PassOutputSize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("PassOutputSize"), NULL, 0);
          if(index > pass - 1)
             index = pass - 1;
          GX2Surface *output = &wiiu->pass[index].texture.surface;
@@ -966,9 +988,9 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
       }
 
       /* feedback not supported yet */
-      if (!strncmp(id, "PassFeedbackSize", strlen("PassFeedbackSize")))
+      if (!strncmp(id, "PassFeedbackSize", STRLEN_CONST("PassFeedbackSize")))
       {
-         unsigned index = strtoul(id + strlen("PassFeedbackSize"), NULL, 0);
+         unsigned index = strtoul(id + STRLEN_CONST("PassFeedbackSize"), NULL, 0);
          if(index > wiiu->shader_preset->passes - 1)
             index = wiiu->shader_preset->passes - 1;
          GX2Surface *output = &wiiu->pass[index].texture.surface;
@@ -981,8 +1003,9 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *u
 
       for (int k = 0; k < wiiu->shader_preset->luts; k++)
       {
-         if (!strncmp(id, wiiu->shader_preset->lut[k].id, strlen(wiiu->shader_preset->lut[k].id))
-             && !!strcmp(id + strlen(wiiu->shader_preset->lut[k].id), "Size"))
+         size_t lut_id_size = strlen(wiiu->shader_preset->lut[k].id);
+         if (!strncmp(id, wiiu->shader_preset->lut[k].id, lut_id_size)
+             && !!strcmp(id + lut_id_size, "Size"))
          {
             GX2Surface *surface = &wiiu->luts[k].surface;
             ((GX2_vec4 *)dst)->x = surface->width;
@@ -1142,6 +1165,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 
    if (wiiu->shader_preset)
    {
+      int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
       {
 
@@ -1151,7 +1176,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                                           wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                                      wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -1162,7 +1188,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          {
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                                           wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
-                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars, frame_count);
+                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
+                                          frame_count, frame_direction);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                                     wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }
@@ -1189,9 +1216,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                continue;
             }
 
-            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "OriginalHistory", strlen("OriginalHistory")))
+            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "OriginalHistory", STRLEN_CONST("OriginalHistory")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("OriginalHistory"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("OriginalHistory"), NULL, 0);
                if(index > i)
                   index = 0;
 
@@ -1207,9 +1234,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                continue;
             }
 
-            if ((i > 0) && !strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassOutput", strlen("PassOutput")))
+            if ((i > 0) && !strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassOutput", STRLEN_CONST("PassOutput")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("PassOutput"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("PassOutput"), NULL, 0);
                if(index > i - 1)
                   index = i - 1;
                GX2SetPixelTexture(&wiiu->pass[index].texture, wiiu->pass[i].gfd->ps->samplerVars[j].location);
@@ -1221,9 +1248,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
             }
 
             /* feedback not supported yet */
-            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassFeedback", strlen("PassFeedback")))
+            if (!strncmp(wiiu->pass[i].gfd->ps->samplerVars[j].name, "PassFeedback", STRLEN_CONST("PassFeedback")))
             {
-               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + strlen("PassFeedback"), NULL, 0);
+               unsigned index = strtoul(wiiu->pass[i].gfd->ps->samplerVars[j].name + STRLEN_CONST("PassFeedback"), NULL, 0);
                if(index > wiiu->shader_preset->passes - 1)
                   index = wiiu->shader_preset->passes - 1;
 
@@ -1317,7 +1344,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->menu.v), sizeof(*wiiu->menu.v), wiiu->menu.v);
 
       GX2SetPixelTexture(&wiiu->menu.texture, sprite_shader.ps.samplerVars[0].location);
-      GX2SetPixelSampler(&wiiu->sampler_linear[RARCH_WRAP_DEFAULT],
+      GX2SetPixelSampler(wiiu->smooth ? &wiiu->sampler_linear[RARCH_WRAP_DEFAULT] :
+                         &wiiu->sampler_nearest[RARCH_WRAP_DEFAULT],
                          sprite_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, 0, 1);
@@ -1405,9 +1433,10 @@ static bool wiiu_gfx_suppress_screensaver(void *data, bool enable)
 }
 
 static bool wiiu_gfx_set_shader(void *data,
-                                enum rarch_shader_type type, const char *path)
+      enum rarch_shader_type type, const char *path)
 {
-   wiiu_video_t *wiiu = (wiiu_video_t *)data;
+   config_file_t *conf = NULL;
+   wiiu_video_t *wiiu  = (wiiu_video_t *)data;
 
    if (!wiiu)
       return false;
@@ -1415,23 +1444,21 @@ static bool wiiu_gfx_set_shader(void *data,
    GX2DrawDone();
    wiiu_free_shader_preset(wiiu);
 
-   if (type != RARCH_SHADER_SLANG && path)
-   {
-      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
-      path = NULL;
-   }
-
-   if (!path)
+   if (string_is_empty(path))
       return true;
 
-   config_file_t *conf = config_file_new(path);
+   if (type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("[GX2] Only Slang shaders are supported. Falling back to stock.\n");
+      return false;
+   }
 
-   if (!conf)
+   if (!(conf = config_file_new(path)))
       return false;
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
 
-   if (!video_shader_read_conf_cgp(conf, wiiu->shader_preset))
+   if (!video_shader_read_conf_preset(conf, wiiu->shader_preset))
    {
       free(wiiu->shader_preset);
       wiiu->shader_preset = NULL;
@@ -1440,15 +1467,15 @@ static bool wiiu_gfx_set_shader(void *data,
 
    video_shader_resolve_relative(wiiu->shader_preset, path);
 
-   #if 0
-		video_shader_resolve_parameters(conf, wiiu->shader_preset);
-   #else
-      for (int i = 0; i < wiiu->shader_preset->passes; i++)
-          slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
+#if 0
+   video_shader_resolve_parameters(conf, wiiu->shader_preset);
+#else
+   for (int i = 0; i < wiiu->shader_preset->passes; i++)
+       slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
 
-      video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
-   #endif
-          config_file_free(conf);
+   video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
+#endif
+   config_file_free(conf);
 
    for (int i = 0; i < wiiu->shader_preset->passes; i++)
    {
@@ -1528,7 +1555,6 @@ static bool wiiu_gfx_set_shader(void *data,
    }
 
    return true;
-
 }
 
 static struct video_shader *wiiu_gfx_get_current_shader(void *data)
@@ -1561,14 +1587,6 @@ static void wiiu_gfx_viewport_info(void *data,
 
    if (wiiu)
       *vp = wiiu->vp;
-}
-
-static bool wiiu_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
 }
 
 static uintptr_t wiiu_gfx_load_texture(void *video_data, void *data,
@@ -1667,14 +1685,14 @@ static void wiiu_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu->menu.v->pos.x = 0.0f;
-   wiiu->menu.v->pos.y = 0.0f;
-   wiiu->menu.v->pos.width = width;
-   wiiu->menu.v->pos.height = height;
+   wiiu->menu.v->pos.x = wiiu->vp.x;
+   wiiu->menu.v->pos.y = wiiu->vp.y;
+   wiiu->menu.v->pos.width = wiiu->vp.width;
+   wiiu->menu.v->pos.height = wiiu->vp.height;
    wiiu->menu.v->coord.u = 0.0f;
    wiiu->menu.v->coord.v = 0.0f;
-   wiiu->menu.v->coord.width = (float)width / wiiu->texture.surface.width;
-   wiiu->menu.v->coord.height = (float)height / wiiu->texture.surface.height;
+   wiiu->menu.v->coord.width = (float)width / wiiu->menu.texture.surface.width;
+   wiiu->menu.v->coord.height = (float)height / wiiu->menu.texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
 }
@@ -1710,7 +1728,10 @@ static uint32_t wiiu_gfx_get_flags(void *data)
 {
    uint32_t flags = 0;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
 
    return flags;
 }
@@ -1769,10 +1790,13 @@ video_driver_t video_wiiu =
    NULL, /* set_viewport */
    wiiu_gfx_set_rotation,
    wiiu_gfx_viewport_info,
-   wiiu_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gx2_get_overlay_interface, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */

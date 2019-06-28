@@ -69,10 +69,10 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
-#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
-#include "../../configuration.h"
 
+#include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)
@@ -185,7 +185,7 @@ static void udev_handle_keyboard(void *data,
    {
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
-         if (event->value && video_driver_cb_has_focus())
+         if (event->value && video_driver_has_focus())
             BIT_SET(udev_key_state, keysym);
          else
             BIT_CLEAR(udev_key_state, keysym);
@@ -224,7 +224,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS || !video_driver_cb_has_focus())
+   if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
    for (i = 0; i < udev->num_devices; ++i)
@@ -856,10 +856,9 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
    return BIT_GET(udev_key_state,bit);
 }
 
-static bool udev_mbutton_pressed(udev_input_t *udev, unsigned port, unsigned key)
+static bool udev_mouse_button_pressed(
+      udev_input_t *udev, unsigned port, unsigned key)
 {
-   bool result;
-
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
@@ -867,26 +866,24 @@ static bool udev_mbutton_pressed(udev_input_t *udev, unsigned port, unsigned key
 
    switch ( key )
    {
-
-   case RETRO_DEVICE_ID_MOUSE_LEFT:
-      return mouse->l;
-   case RETRO_DEVICE_ID_MOUSE_RIGHT:
-      return mouse->r;
-   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-      return mouse->m;
-   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-      return mouse->b4;
-   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-      return mouse->b5;
-   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-      return mouse->wu;
-   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-      return mouse->wd;
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-      return mouse->whu;
-   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-      return mouse->whd;
-
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return mouse->l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return mouse->r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return mouse->m;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return mouse->b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return mouse->b5;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return mouse->wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return mouse->wd;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         return mouse->whu;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         return mouse->whd;
    }
 
    return false;
@@ -905,9 +902,17 @@ static bool udev_is_pressed(udev_input_t *udev,
 
    if (binds && binds[id].valid)
    {
-      if (udev_mbutton_pressed(udev, port, bind->mbutton))
+      /* Auto-binds are per joypad, not per user. */
+      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+      if (udev_mouse_button_pressed(udev, port, bind->mbutton))
          return true;
-      if (input_joypad_pressed(udev->joypad, joypad_info, port, binds, id))
+      if (joykey != NO_BTN && udev->joypad->button(joypad_info.joy_idx, joykey))
+         return true;
+      if (((float)abs(udev->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
    }
 
@@ -922,7 +927,7 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
    int16_t pressed_minus = 0;
    int16_t pressed_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if (     binds[id_minus].valid
          && BIT_GET(udev_key_state,
@@ -968,10 +973,22 @@ static int16_t udev_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return udev_is_pressed(udev, joypad_info, binds[port], port, id);
-         break;
-
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (udev_is_pressed(
+                        udev, joypad_info, binds[port], port, i))
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               ret = udev_is_pressed(udev, joypad_info, binds[port], port, id);
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret && binds[port])

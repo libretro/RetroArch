@@ -136,12 +136,6 @@ void FormLayout::addFileSelector(rarch_setting_t *setting)
       addRow(formLabel(setting), new FileSelector(setting));
 }
 
-void FormLayout::addFontSelector(rarch_setting_t *setting)
-{
-    if (setting && setting->short_description)
-       addRow(formLabel(setting), new FontSelector(setting));
-}
-
 void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
@@ -150,9 +144,9 @@ void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 
 void FormLayout::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
 {
-   rarch_setting_t *red = menu_setting_find_enum(r);
+   rarch_setting_t   *red = menu_setting_find_enum(r);
    rarch_setting_t *green = menu_setting_find_enum(g);
-   rarch_setting_t *blue = menu_setting_find_enum(b);
+   rarch_setting_t  *blue = menu_setting_find_enum(b);
 
    if (red && green && blue)
       addRow(title, new UIntColorButton(red, green, blue));
@@ -218,11 +212,6 @@ void SettingsGroup::addDirectorySelector(rarch_setting_t *setting)
 void SettingsGroup::addFileSelector(rarch_setting_t *setting)
 {
    m_layout->addFileSelector(setting);
-}
-
-void SettingsGroup::addFontSelector(rarch_setting_t *setting)
-{
-   m_layout->addFontSelector(setting);
 }
 
 void SettingsGroup::addStringLineEdit(rarch_setting_t *setting)
@@ -326,7 +315,7 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
    if (setting && setting->short_description)
    {
       m_setting = setting;
-      m_value = setting->value.target.boolean;
+      m_value   = setting->value.target.boolean;
 
       setTitle(setting->short_description);
 
@@ -520,9 +509,9 @@ void UIntComboBox::populate(double min, double max)
 {
    float i;
    unsigned orig_value = *m_setting->value.target.unsigned_integer;
-   float step = m_setting->step;
-   bool checked_found = false;
-   unsigned count = 0;
+   float          step = m_setting->step;
+   bool  checked_found = false;
+   unsigned      count = 0;
 
    if (m_setting->get_string_representation)
    {
@@ -722,31 +711,27 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    /* from menu_displaylist */
    float i;
    unsigned orig_value = *setting->value.target.unsigned_integer;
-   float step = setting->step;
-   double min = setting->enforce_minrange ? setting->min : 0.00;
-   double max = setting->enforce_maxrange ? setting->max : UINT_MAX;
+   float          step = setting->step;
+   double          min = setting->enforce_minrange ? setting->min : 0.00;
+   double          max = setting->enforce_maxrange ? setting->max : UINT_MAX;
 
-   bool checked_found = false;
+   bool  checked_found = false;
 
    if (setting->get_string_representation)
    {
       for (i = min; i <= max; i += step)
       {
          char val_s[256];
-         //int val = (int)i;
 
          *setting->value.target.unsigned_integer = i;
 
          setting->get_string_representation(setting, val_s, sizeof(val_s));
-
-         //m_hash[i] = QString(val_s);
 
          QRadioButton *button = new QRadioButton(QString(val_s), this);
 
          m_buttonGroup->addButton(button, i);
 
          layout->addWidget(button);
-         //addItem(m_hash[i], i);
 
          if (!checked_found && i == orig_value)
          {
@@ -883,19 +868,29 @@ PathButton::PathButton(const char *setting, QWidget *parent) :
 {
 }
 
+QString PathButton::currentPath()
+{
+   QString current(m_setting->value.target.string);
+   if (current.isEmpty())
+      current = m_setting->default_value.string;
+   return current;
+}
+
 void DirectoryButton::onClicked(bool)
 {
    QString dir = QFileDialog::getExistingDirectory(
       this,
       "Choose " + QString(m_setting->short_description) + " Directory",
-      QString(m_setting->default_value.string));
+      currentPath());
 
    if (!dir.isNull())
    {
-       strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(dir).toUtf8().data(), m_setting->size);
+      strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(dir).toUtf8().data(), m_setting->size);
 
-       handleChange(m_setting);
+      handleChange(m_setting);
    }
+
+   emit changed();
 }
 
 void FileButton::onClicked(bool)
@@ -903,7 +898,7 @@ void FileButton::onClicked(bool)
    QString file = QFileDialog::getOpenFileName(
       this,
       "Choose File",
-      QString(m_setting->default_value.string),
+      currentPath(),
       QString(m_setting->short_description) + " (*." + QString(m_setting->values) + ")");
 
    if (!file.isNull())
@@ -912,29 +907,19 @@ void FileButton::onClicked(bool)
 
       handleChange(m_setting);
    }
-}
 
-void FontButton::onClicked(bool)
-{
-   QString file = QFileDialog::getOpenFileName(
-      this,
-      "Choose Font",
-      QString(m_setting->default_value.string),
-      "TrueType font (*.ttf)");
-
-   if (!file.isNull())
-   {
-      strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(file).toUtf8().data(), m_setting->size);
-
-      handleChange(m_setting);
-   }
+   emit changed();
 }
 
 DirectorySelector::DirectorySelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
+   ,m_lineEdit(new StringLineEdit(setting))
+   ,m_button(new DirectoryButton(setting))
 {
-   addWidget(new StringLineEdit(setting));
-   addWidget(new DirectoryButton(setting));
+   addWidget(m_lineEdit);
+   addWidget(m_button);
+
+   connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
 FileSelector::FileSelector(const char *setting, QWidget *parent) :
@@ -944,16 +929,14 @@ FileSelector::FileSelector(const char *setting, QWidget *parent) :
 
 FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
-{
-   addWidget(new StringLineEdit(setting));
-   addWidget(new FileButton(setting));
-}
+   ,m_lineEdit(new StringLineEdit(setting))
+   ,m_button(new FileButton(setting))
 
-FontSelector::FontSelector(rarch_setting_t *setting, QWidget *parent) :
-   QHBoxLayout(parent)
 {
-   addWidget(new StringLineEdit(setting));
-   addWidget(new FontButton(setting));
+   addWidget(m_lineEdit);
+   addWidget(m_button);
+
+   connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
 FloatSlider::FloatSlider(const char *setting, QWidget *parent) :
@@ -1091,23 +1074,24 @@ ColorButton::ColorButton(msg_hash_enums red, msg_hash_enums green, msg_hash_enum
 /* Stolen from Qt Creator's QtColorButton */
 void ColorButton::paintEvent(QPaintEvent *event)
 {
+   const int pixSize = 10;
+   const int    corr = 5;
+   const QColor frameColor1(0, 0, 0, 26);
+   const QColor frameColor2(0, 0, 0, 51);
+
    QToolButton::paintEvent(event);
    if (!isEnabled())
       return;
 
-   const int pixSize = 10;
    QBrush br(color());
 
    QPainter p(this);
-   const int corr = 5;
    QRect r = rect().adjusted(corr, corr, -corr, -corr);
    p.setBrushOrigin((r.width() % pixSize + pixSize) / 2 + corr, (r.height() % pixSize + pixSize) / 2 + corr);
    p.fillRect(r, br);
 
-   const QColor frameColor1(0, 0, 0, 26);
    p.setPen(frameColor1);
    p.drawRect(r.adjusted(1, 1, -2, -2));
-   const QColor frameColor2(0, 0, 0, 51);
    p.setPen(frameColor2);
    p.drawRect(r.adjusted(0, 0, -1, -1));
 }
@@ -1126,9 +1110,9 @@ void UIntColorButton::onColorChanged(const QColor &color)
 {
    if (color.isValid())
    {
-      *m_red->value.target.unsigned_integer = color.red();
+      *m_red->value.target.unsigned_integer   = color.red();
       *m_green->value.target.unsigned_integer = color.green();
-      *m_blue->value.target.unsigned_integer = color.blue();
+      *m_blue->value.target.unsigned_integer  = color.blue();
    }
 }
 
@@ -1149,9 +1133,9 @@ void FloatColorButton::onColorChanged(const QColor &color)
 {
    if (color.isValid())
    {
-      *m_red->value.target.fraction = color.red() / 255.0f;
+      *m_red->value.target.fraction   = color.red() / 255.0f;
       *m_green->value.target.fraction = color.green() / 255.0f;
-      *m_blue->value.target.fraction = color.blue() / 255.0f;
+      *m_blue->value.target.fraction  = color.blue() / 255.0f;
    }
 }
 

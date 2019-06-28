@@ -64,6 +64,12 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data);
 
 /* Utility Functions */
 
+/* Fetches the thumbnail subdirectory (Named_Snaps,
+ * Named_Titles, Named_Boxarts) corresponding to the
+ * specified 'type index' (1, 2, 3).
+ * Returns true if 'type index' is valid */
+bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
+
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
@@ -116,6 +122,14 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
  * Returns true if path is valid. */
 bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id, const char **path);
 
+/* Fetches current 'system' (default database name).
+ * Returns true if 'system' is valid. */
+bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system);
+
+/* Fetches current content path.
+ * Returns true if content path is valid. */
+bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, const char **content_path);
+
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
 bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char **label);
@@ -123,6 +137,19 @@ bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char 
 /* Fetches current thumbnail core name.
  * Returns true if core name is valid. */
 bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const char **core_name);
+
+/* Fetches current database name.
+ * Returns true if database name is valid. */
+bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const char **db_name);
+
+/* Fetches current thumbnail image name
+ * (name is the same for all thumbnail types).
+ * Returns true if image name is valid. */
+bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name);
+
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
 
 RETRO_END_DECLS
 

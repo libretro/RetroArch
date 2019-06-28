@@ -49,7 +49,6 @@
 #include "../../core_info.h"
 #include "../../core.h"
 
-#include "../widgets/menu_entry.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
@@ -613,7 +612,7 @@ static void stripes_draw_icon(
       draw.y            = height - y - shadow_offset;
 
 #if defined(VITA) || defined(WIIU)
-      if(scale_factor < 1)
+      if (scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size-draw.width)/2;
          draw.y         = draw.y + (icon_size-draw.width)/2;
@@ -627,7 +626,7 @@ static void stripes_draw_icon(
    draw.y               = height - y;
 
 #if defined(VITA) || defined(WIIU)
-   if(scale_factor < 1)
+   if (scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size-draw.width)/2;
       draw.y            = draw.y + (icon_size-draw.width)/2;
@@ -864,11 +863,10 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    playlist_t     *playlist       = NULL;
    const char    *dir_thumbnails  = settings->paths.directory_thumbnails;
 
-   menu_entry_init(&entry);
-
    if (!stripes || string_is_empty(dir_thumbnails))
       goto end;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    entry_type = menu_entry_get_type_new(&entry);
@@ -911,8 +909,8 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
          if (pos == 'R' || (pos == 'L' && string_is_equal(stripes_thumbnails_ident('R'),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
          {
-            if (!string_is_empty(entry.label))
-               strlcpy(new_path, entry.label,
+            if (!string_is_empty(entry->label))
+               strlcpy(new_path, entry->label,
                      sizeof(new_path));
             goto end;
          }
@@ -997,8 +995,6 @@ end:
       if (pos == 'L')
          stripes->left_thumbnail_file_path = strdup(new_path);
    }
-
-   menu_entry_free(&entry);
 }
 
 static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1046,7 +1042,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (filestream_exists(path))
+         if (path_is_valid(path))
          {
             if (!string_is_empty(stripes->savestate_thumbnail_file_path))
                free(stripes->savestate_thumbnail_file_path);
@@ -1056,20 +1052,20 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
          free(path);
       }
    }
-
-   menu_entry_free(&entry);
 }
 
 static void stripes_update_thumbnail_image(void *data)
 {
    stripes_handle_t *stripes = (stripes_handle_t*)data;
+   bool supports_rgba        = video_driver_supports_rgba();
    if (!stripes)
       return;
 
    if (!(string_is_empty(stripes->thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->thumbnail_file_path))
+         if (path_is_valid(stripes->thumbnail_file_path))
             task_push_image_load(stripes->thumbnail_file_path,
+                  supports_rgba, 0,
                   menu_display_handle_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->thumbnail);
@@ -1080,8 +1076,9 @@ static void stripes_update_thumbnail_image(void *data)
 
    if (!(string_is_empty(stripes->left_thumbnail_file_path)))
       {
-         if (filestream_exists(stripes->left_thumbnail_file_path))
+         if (path_is_valid(stripes->left_thumbnail_file_path))
             task_push_image_load(stripes->left_thumbnail_file_path,
+                  supports_rgba, 0,
                   menu_display_handle_left_thumbnail_upload, NULL);
          else
             video_driver_texture_unload(&stripes->left_thumbnail);
@@ -1089,6 +1086,11 @@ static void stripes_update_thumbnail_image(void *data)
          free(stripes->left_thumbnail_file_path);
          stripes->left_thumbnail_file_path = NULL;
       }
+}
+
+static void stripes_refresh_thumbnail_image(void *data)
+{
+   stripes_update_thumbnail_image(data);
 }
 
 static void stripes_set_thumbnail_system(void *data, char*s, size_t len)
@@ -1100,6 +1102,16 @@ static void stripes_set_thumbnail_system(void *data, char*s, size_t len)
    if (!string_is_empty(stripes->thumbnail_system))
       free(stripes->thumbnail_system);
    stripes->thumbnail_system = strdup(s);
+}
+
+static void stripes_get_thumbnail_system(void *data, char*s, size_t len)
+{
+   stripes_handle_t *stripes = (stripes_handle_t*)data;
+   if (!stripes)
+      return;
+
+   if (!string_is_empty(stripes->thumbnail_system))
+      strlcpy(s, stripes->thumbnail_system, len);
 }
 
 static void stripes_reset_thumbnail_content(void *data)
@@ -1128,9 +1140,9 @@ static void stripes_update_savestate_thumbnail_image(void *data)
    if (!stripes)
       return;
 
-   if (!string_is_empty(stripes->savestate_thumbnail_file_path)
-         && filestream_exists(stripes->savestate_thumbnail_file_path))
+   if (path_is_valid(stripes->savestate_thumbnail_file_path))
       task_push_image_load(stripes->savestate_thumbnail_file_path,
+            video_driver_supports_rgba(), 0,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
       video_driver_texture_unload(&stripes->savestate_thumbnail);
@@ -1163,7 +1175,7 @@ static void stripes_selection_pointer_changed(
    menu_entry_init(&entry);
 
    if (!stripes)
-      goto end;
+      return;
 
    menu_entry_get(&entry, 0, selection, NULL, true);
 
@@ -1227,9 +1239,6 @@ static void stripes_selection_pointer_changed(
          menu_animation_push(&anim_entry);
       }
    }
-
-end:
-   menu_entry_free(&entry);
 }
 
 static void stripes_list_open_old(stripes_handle_t *stripes,
@@ -1501,15 +1510,16 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!filestream_exists(path))
+      if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-       if(!string_is_equal(path, stripes->bg_file_path))
+       if (!string_is_equal(path, stripes->bg_file_path))
        {
-           if(filestream_exists(path))
+           if (path_is_valid(path))
            {
               task_push_image_load(path,
+                    video_driver_supports_rgba(), 0,
                   menu_display_handle_wallpaper_upload, NULL);
               if (!string_is_empty(stripes->bg_file_path))
                  free(stripes->bg_file_path);
@@ -1731,8 +1741,6 @@ static void stripes_list_switch(stripes_handle_t *stripes)
       if (!string_is_empty(entry.path))
          stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
 
-      menu_entry_free(&entry);
-
       stripes_update_thumbnail_path(stripes, 0, 'R');
       stripes_update_thumbnail_image(stripes);
    }
@@ -1746,8 +1754,6 @@ static void stripes_list_switch(stripes_handle_t *stripes)
 
       if (!string_is_empty(entry.path))
          stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
-
-      menu_entry_free(&entry);
 
       stripes_update_thumbnail_path(stripes, 0, 'L');
       stripes_update_thumbnail_image(stripes);
@@ -1821,12 +1827,15 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
    info.list                    = stripes->horizontal_list;
    info.path                    = strdup(
          settings->paths.directory_playlist);
+#if 0
+   /* TODO/FIXME - will need to look what to do here */
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
+   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+#endif
    info.exts                    = strdup(
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
-   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 
    if (!string_is_empty(info.path))
    {
@@ -1935,7 +1944,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->icon);
                video_driver_texture_load(&ti,
@@ -1952,7 +1961,7 @@ static void stripes_context_reset_horizontal_list(
 
          if (image_texture_load(&ti, content_texturepath))
          {
-            if(ti.pixels)
+            if (ti.pixels)
             {
                video_driver_texture_unload(&node->content_icon);
                video_driver_texture_load(&ti,
@@ -2329,7 +2338,7 @@ static int stripes_draw_item(
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
    char tmp[255];
-   char *ticker_str                  = NULL;
+   const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
    const float half_size             = stripes->icon_size / 2.0f;
    uintptr_t texture_switch          = 0;
@@ -2446,7 +2455,7 @@ static int stripes_draw_item(
    }
 
    if (!string_is_empty(entry->path))
-      ticker_str      = menu_entry_get_rich_label(entry);
+      menu_entry_get_rich_label(entry, &ticker_str);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2465,7 +2474,7 @@ static int stripes_draw_item(
 
       label_offset      = - stripes->margins_label_top;
 
-      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true);
+      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
 
       stripes_draw_text(video_info, stripes, entry_sublabel,
             node->x + stripes->margins_screen_left +
@@ -2564,13 +2573,9 @@ static int stripes_draw_item(
             stripes->shadow_offset);
 
 iterate:
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return 0;
 
 end:
-   if (!string_is_empty(ticker_str))
-      free(ticker_str);
    return -1;
 }
 
@@ -2641,7 +2646,6 @@ static void stripes_draw_items(
             list, color, thumb_ident, left_thumb_ident,
             i, current,
             width, height);
-      menu_entry_free(&entry);
       if (ret == -1)
          break;
    }
@@ -3675,8 +3679,9 @@ static void stripes_context_reset_background(const char *iconpath)
             PATH_MAX_LENGTH * sizeof(char));
    }
 
-   if (filestream_exists(path))
+   if (path_is_valid(path))
       task_push_image_load(path,
+            video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
    if (path)
@@ -3831,7 +3836,6 @@ static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
 
    menu_animation_kill_by_tag(&tag);
 
-   /* use true here because file_list_copy() doesn't free actiondata */
    stripes_free_list_nodes(dst, true);
 
    file_list_clear(dst);
@@ -4148,11 +4152,14 @@ static int stripes_list_push(void *data, void *userdata,
             }
 
 #ifdef HAVE_LIBRETRODB
+#if 0
+            /* TODO/FIXME - figure out what to do here */
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
                   MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
                   MENU_SETTING_ACTION, 0, 0);
+#endif
 #endif
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
@@ -4302,8 +4309,11 @@ static int stripes_list_push(void *data, void *userdata,
             }
 
 #ifndef HAVE_DYNAMIC
-            entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_restart_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+               menu_displaylist_setting(&entry);
+            }
 #endif
 
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
@@ -4443,7 +4453,9 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_pointer_tap,
    stripes_update_thumbnail_path,
    stripes_update_thumbnail_image,
+   stripes_refresh_thumbnail_image,
    stripes_set_thumbnail_system,
+   stripes_get_thumbnail_system,
    stripes_set_thumbnail_content,
    stripes_osk_ptr_at_pos,
    stripes_update_savestate_thumbnail_path,

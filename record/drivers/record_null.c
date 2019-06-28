@@ -25,7 +25,7 @@
 #include "../../config.h"
 #endif
 
-#include "../record_driver.h"
+#include "../../retroarch.h"
 
 static void record_null_free(void *data)
 {

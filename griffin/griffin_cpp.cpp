@@ -78,6 +78,7 @@ UI
 #include "../ui/drivers/qt/options/ui.cpp"
 #include "../ui/drivers/qt/options/achievements.cpp"
 #include "../ui/drivers/qt/options/network.cpp"
+#include "../ui/drivers/qt/moc_settingswidgets.cpp"
 #include "../ui/drivers/qt/options/moc_options.cpp"
 #endif
 #include "../ui/drivers/moc_ui_qt.cpp"
@@ -98,7 +99,7 @@ VIDEO DRIVER
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #endif
 
-#if defined(HAVE_OPENGL) && defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_OPENGL_CORE)
 #include "../gfx/drivers_shader/shader_gl_core.cpp"
 #endif
 
@@ -110,6 +111,8 @@ VIDEO DRIVER
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
 #include "../deps/SPIRV-Cross/spirv_glsl.cpp"
 #include "../deps/SPIRV-Cross/spirv_msl.cpp"
+#include "../deps/SPIRV-Cross/spirv_parser.cpp"
+#include "../deps/SPIRV-Cross/spirv_cross_parsed_ir.cpp"
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.cpp"
 #include "../gfx/drivers_shader/slang_preprocess.cpp"

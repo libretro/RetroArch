@@ -19,10 +19,7 @@ GRIFFIN_BUILD           = 0
 
 OBJ :=
 
-# For threading we need to overwrite some vars with global defines because devkitPro's includes
-# make it hard for us. This works for the pthread wrapper
-DEFINES_THREAD := -Dpthread_t=Thread -Dpthread_mutex_t=Mutex -Dpthread_mutexattr_t='void*' -Dpthread_attr_t=int -Dpthread_cond_t=CondVar -Dpthread_condattr_t='int' -D_SYS__PTHREADTYPES_H_
-DEFINES := -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD) -DHAVE_STB_VORBIS
+DEFINES := -D__SWITCH__=1 -U__linux__ -U__linux -DGLM_FORCE_PURE=1 -DRARCH_CONSOLE -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' -DHAVE_STB_VORBIS
 
 HAVE_CC_RESAMPLER = 1
 HAVE_MENU_COMMON = 1
@@ -52,6 +49,7 @@ HAVE_SWITCH = 1
 HAVE_LIBNX = 1
 HAVE_OPENGL = 1
 HAVE_LANGEXTRA = 1
+HAVE_MENU_WIDGETS = 1
 
 ifeq ($(HAVE_OPENGL), 1)
   HAVE_EGL = 1
@@ -61,6 +59,7 @@ ifeq ($(HAVE_OPENGL), 1)
   HAVE_XMB = 1
   HAVE_OZONE = 1
   HAVE_OVERLAY = 1
+  HAVE_VIDEO_LAYOUT = 0
 else
   HAVE_RGUI = 1
   HAVE_MATERIALUI = 0
@@ -113,7 +112,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
-          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
+          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
 CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_STB_FONT #-DHAVE_FREETYPE
 
@@ -121,16 +120,12 @@ ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
   CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
 endif
 
-# The following line works around an issue in newlib that produces a compilation
-# error in glm. It will be removed as soon as this issue is resolved.
-CFLAGS	+= -D_GLIBCXX_USE_C99_MATH_TR1 -D_LDBL_EQ_DBL
-
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lstdc++ -lbz2 -lpng -lz -lnx -lm
+LIBS	:= -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)

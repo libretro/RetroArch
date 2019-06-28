@@ -16,6 +16,7 @@
  */
 
 /* We are targeting XRandR 1.2 here. */
+#include <math.h>
 
 #include <compat/strl.h>
 
@@ -23,7 +24,9 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 
+#ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
@@ -34,7 +37,7 @@
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../configuration.h"
-#include "../video_driver.h" /* needed to set refresh rate in set resolution */
+#include "../../retroarch.h"
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
 #ifdef HAVE_XRANDR
@@ -552,6 +555,17 @@ static enum rotation x11_display_server_get_screen_orientation(void)
 }
 #endif
 
+static uint32_t x11_display_server_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+#ifdef HAVE_XRANDR
+   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+#endif
+
+   return flags;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -572,5 +586,6 @@ const video_display_server_t dispserv_x11 = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
+   x11_display_server_get_flags,
    "x11"
 };

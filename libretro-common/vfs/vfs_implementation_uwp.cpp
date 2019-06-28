@@ -55,63 +55,71 @@ using namespace Windows::Storage::FileProperties;
 
 namespace
 {
+	/* Dear Microsoft
+	 * I really appreciate all the effort you took to not provide any
+	 * synchronous file APIs and block all attempts to synchronously
+	 * wait for the results of async tasks for "smooth user experience",
+	 * but I'm not going to run and rewrite all RetroArch cores for
+	 * async I/O. I hope you like this hack I made instead.
+	 */
 	template<typename T>
-	static T RunAsyncAndCatchErrors(std::function<concurrency::task<T>()> func, T valueOnError)
+	T RunAsync(std::function<concurrency::task<T>()> func)
+	{
+		volatile bool finished = false;
+		Platform::Exception^ exception = nullptr;
+		T result;
+
+		func().then([&finished, &exception, &result](concurrency::task<T> t) {
+			try
+			{
+				result = t.get();
+			}
+			catch (Platform::Exception^ exception_)
+			{
+				exception = exception_;
+			}
+			finished = true;
+		});
+
+		/* Don't stall the UI thread - prevents a deadlock */
+		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+		while (!finished)
+		{
+			if (corewindow) {
+				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+			}
+		}
+
+		if (exception != nullptr)
+			throw exception;
+		return result;
+	}
+
+	template<typename T>
+	T RunAsyncAndCatchErrors(std::function<concurrency::task<T>()> func, T valueOnError)
 	{
 		try
 		{
-			/* Dear Microsoft
-	         * I really appreciate all the effort you took to not provide any
-	         * synchronous file APIs and block all attempts to synchronously
-	         * wait for the results of async tasks for "smooth user experience",
-	         * but I'm not going to run and rewrite all RetroArch cores for
-	         * async I/O. I hope you like this hack I made instead.
-	         */
-			volatile bool finished = false;
-			volatile Platform::Exception^ exception = nullptr;
-			volatile T result;
-			func().then([&finished, &exception, &result](concurrency::task<T> t) {
-				try
-				{
-					result = t.get();
-				}
-				catch (Platform::Exception^ exception_)
-				{
-					exception = exception_;
-				}
-				finished = true;
-			});
-
-			/* Don't stall the UI thread - prevents a deadlock */
-			Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-			while (!finished)
-			{
-				if (corewindow)
-					corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-			}
-
-			if (exception != nullptr)
-				throw exception;
-			return result;
+			return RunAsync<T>(func);
 		}
 		catch (Platform::Exception^ e)
 		{
 			return valueOnError;
 		}
 	}
-}
 
-static void windowsize_path(wchar_t* path)
-{
-	/* UWP deals with paths containing / instead of \ way worse than normal Windows */
-	/* and RetroArch may sometimes mix them (e.g. on archive extraction) */
-	if (!path)
-		return;
-	while (*path)
+	void windowsize_path(wchar_t* path)
 	{
-		if (*path == '/')
-			*path = '\\';
-		++path;
+		/* UWP deals with paths containing / instead of \ way worse than normal Windows */
+		/* and RetroArch may sometimes mix them (e.g. on archive extraction) */
+		if (!path)
+			return;
+		while (*path)
+		{
+			if (*path == '/')
+				*path = '\\';
+			++path;
+		}
 	}
 }
 
@@ -119,38 +127,35 @@ namespace
 {
 	/* Damn you, UWP, why no functions for that either */
 	template<typename T>
-	static concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
+	concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		static_assert(false, "StorageFile and StorageFolder only");
 	}
-
 	template<>
-	static concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
+	concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		return concurrency::create_task(StorageFile::GetFileFromPathAsync(path));
 	}
 	template<>
-	static concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
+	concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
 	{
 		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
 	}
 
 	template<typename T>
-	static concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		static_assert(false, "StorageFile and StorageFolder only");
 	}
-
 	template<>
-	static concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		if (path->IsEmpty())
 			retro_assert(false); /* Attempt to read a folder as a file - this really should have been caught earlier */
 		return concurrency::create_task(folder->GetFileAsync(path));
 	}
-
 	template<>
-	static concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
+	concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
 	{
 		if (path->IsEmpty())
 			return concurrency::create_task(concurrency::create_async([folder]() { return folder; }));
@@ -163,7 +168,7 @@ namespace
 	/* A list of all StorageFolder objects returned using from the file picker */
 	Platform::Collections::Vector<StorageFolder^> accessible_directories;
 
-	static concurrency::task<Platform::String^> TriggerPickerAddDialog()
+	concurrency::task<Platform::String^> TriggerPickerAddDialog()
 	{
 		auto folderPicker = ref new Windows::Storage::Pickers::FolderPicker();
 		folderPicker->SuggestedStartLocation = Windows::Storage::Pickers::PickerLocationId::Desktop;
@@ -180,18 +185,16 @@ namespace
 	}
 
 	template<typename T>
-	static concurrency::task<T^> LocateStorageItem(Platform::String^ path)
+	concurrency::task<T^> LocateStorageItem(Platform::String^ path)
 	{
 		/* Look for a matching directory we can use */
 		for each (StorageFolder^ folder in accessible_directories)
 		{
-			std::wstring file_path;
 			std::wstring folder_path = folder->Path->Data();
 			/* Could be C:\ or C:\Users\somebody - remove the trailing slash to unify them */
 			if (folder_path[folder_path.size() - 1] == '\\')
 				folder_path.erase(folder_path.size() - 1);
-			file_path = path->Data();
-
+			std::wstring file_path = path->Data();
 			if (file_path.find(folder_path) == 0)
 			{
 				/* Found a match */
@@ -201,7 +204,7 @@ namespace
 		}
 
 		/* No matches - try accessing directly, and fallback to user prompt */
-		return concurrency::create_task(GetItemFromPathAsync<T>(path)).then([path](concurrency::task<T^> item) {
+		return concurrency::create_task(GetItemFromPathAsync<T>(path)).then([&](concurrency::task<T^> item) {
 			try
 			{
 				T^ storageItem = item.get();
@@ -230,7 +233,7 @@ namespace
 		});
 	}
 
-	static IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
+	IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
 	{
 		if (!path || path->IsEmpty())
 			return nullptr;
@@ -238,19 +241,20 @@ namespace
 		if (*(path->End() - 1) == '\\')
 		{
 			/* Ends with a slash, so it's definitely a directory */
-			return RunAsyncAndCatchErrors<StorageFolder^>([=]() {
+			return RunAsyncAndCatchErrors<StorageFolder^>([&]() {
 				return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
 			}, nullptr);
 		}
 		else
 		{
 			/* No final slash - probably a file (since RetroArch usually slash-terminates dirs), but there is still a chance it's a directory */
-			IStorageItem ^item = RunAsyncAndCatchErrors<StorageFile^>([=]() {
+			IStorageItem^ item;
+			item = RunAsyncAndCatchErrors<StorageFile^>([&]() {
 				return concurrency::create_task(LocateStorageItem<StorageFile>(path));
 			}, nullptr);
 			if (!item)
 			{
-				item = RunAsyncAndCatchErrors<StorageFolder^>([=]() {
+				item = RunAsyncAndCatchErrors<StorageFolder^>([&]() {
 					return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
 				}, nullptr);
 			}
@@ -259,153 +263,6 @@ namespace
 	}
 }
 
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle
-#else
-struct libretro_vfs_implementation_file
-#endif
-{
-	IRandomAccessStream^ fp;
-	char* orig_path;
-};
-
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(
-	const char *path, unsigned mode, unsigned hints)
-{
-	char *filename         = NULL;
-	char *dirpath          = NULL;
-	wchar_t *dirpath_wide  = NULL;
-	wchar_t *filename_wide = NULL;
-
-	if (!path || !*path)
-		return NULL;
-
-	if (!path_is_absolute(path))
-	{
-		RARCH_WARN("Something tried to access files from current directory ('%s'). This is not allowed on UWP.\n", path);
-		return NULL;
-	}
-
-	if (path_char_is_slash(path[strlen(path) - 1]))
-	{
-		RARCH_WARN("Trying to open a directory as file?! ('%s')\n", path);
-		return NULL;
-	}
-
-	dirpath                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-	if (!dirpath)
-		return NULL;
-
-	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);
-
-	dirpath_wide                   = utf8_to_utf16_string_alloc(dirpath);
-	windowsize_path(dirpath_wide);
-	Platform::String^ dirpath_str  = ref new Platform::String(dirpath_wide);
-
-	filename                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-	fill_pathname_base(filename, path, PATH_MAX_LENGTH);
-	filename_wide                  = utf8_to_utf16_string_alloc(filename);
-	Platform::String^ filename_str = ref new Platform::String(filename_wide);
-
-	free(filename_wide);
-	free(filename);
-	free(dirpath_wide);
-	free(dirpath);
-
-	retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
-
-	return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([=]() {
-		return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).
-			then([=](StorageFolder^ dir)
-			{
-				if (mode == RETRO_VFS_FILE_ACCESS_READ)
-					return dir->GetFileAsync(filename_str);
-				return dir->CreateFileAsync(filename_str, (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-					CreationCollisionOption::OpenIfExists : CreationCollisionOption::ReplaceExisting);
-			}
-			).then([=](StorageFile^ file)
-			{
-				FileAccessMode accessMode = mode == RETRO_VFS_FILE_ACCESS_READ ?
-				FileAccessMode::Read : FileAccessMode::ReadWrite;
-				return file->OpenAsync(accessMode);
-			}
-			).then([=](IRandomAccessStream^ fpstream)
-			{
-				libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
-				if (!stream)
-					return (libretro_vfs_implementation_file*)NULL;
-
-				stream->orig_path = strdup(path);
-				stream->fp = fpstream;
-				stream->fp->Seek(0);
-				return stream;
-			}
-			);
-	}, NULL);
-}
-
-int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
-{
-	if (!stream || !stream->fp)
-		return -1;
-
-	/* Apparently, this is how you close a file in WinRT */
-	/* Yes, really */
-	stream->fp = nullptr;
-
-	return 0;
-}
-
-int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
-{
-	return false; /* TODO */
-}
-
-int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
-{
-	if (!stream || !stream->fp)
-		return 0;
-	return stream->fp->Size;
-}
-
-int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
-{
-	if (!stream || !stream->fp)
-		return -1;
-	stream->fp->Size = length;
-	return 0;
-}
-
-int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
-{
-	if (!stream || !stream->fp)
-		return -1;
-	return stream->fp->Position;
-}
-
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int seek_position)
-{
-	if (!stream || !stream->fp)
-		return -1;
-
-	switch (seek_position)
-	{
-	case RETRO_VFS_SEEK_POSITION_START:
-		stream->fp->Seek(offset);
-		break;
-
-	case RETRO_VFS_SEEK_POSITION_CURRENT:
-		stream->fp->Seek(stream->fp->Position + offset);
-		break;
-
-	case RETRO_VFS_SEEK_POSITION_END:
-		stream->fp->Seek(stream->fp->Size - offset);
-		break;
-	}
-
-	return 0;
-}
 
 /* This is some pure magic and I have absolutely no idea how it works */
 /* Wraps a raw buffer into a WinRT object */
@@ -422,10 +279,9 @@ public:
 
 	HRESULT __stdcall RuntimeClassInitialize(byte *buffer, uint32_t capacity, uint32_t length)
 	{
-		m_buffer   = buffer;
+		m_buffer = buffer;
 		m_capacity = capacity;
-		m_length   = length;
-
+		m_length = length;
 		return S_OK;
 	}
 
@@ -468,8 +324,154 @@ IBuffer^ CreateNativeBuffer(void* buf, uint32_t capacity, uint32_t length)
 	Microsoft::WRL::ComPtr<NativeBuffer> nativeBuffer;
 	Microsoft::WRL::Details::MakeAndInitialize<NativeBuffer>(&nativeBuffer, (byte *)buf, capacity, length);
 	auto iinspectable = (IInspectable *)reinterpret_cast<IInspectable *>(nativeBuffer.Get());
-	IBuffer ^buffer   = reinterpret_cast<IBuffer ^>(iinspectable);
+	IBuffer ^buffer = reinterpret_cast<IBuffer ^>(iinspectable);
 	return buffer;
+}
+
+#ifdef VFS_FRONTEND
+struct retro_vfs_file_handle
+#else
+struct libretro_vfs_implementation_file
+#endif
+{
+	IRandomAccessStream^ fp;
+	IBuffer^ bufferp;
+	char* buffer;
+	char* orig_path;
+	size_t buffer_size;
+	int buffer_left;
+	size_t buffer_fill;
+};
+
+libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
+{
+	if (!path || !*path)
+		return NULL;
+
+	if (!path_is_absolute(path))
+	{
+		RARCH_WARN("Something tried to access files from current directory ('%s'). This is not allowed on UWP.\n", path);
+		return NULL;
+	}
+
+	if (path_char_is_slash(path[strlen(path) - 1]))
+	{
+		RARCH_WARN("Trying to open a directory as file?! ('%s')\n", path);
+		return NULL;
+	}
+
+	char* dirpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);
+	wchar_t *dirpath_wide = utf8_to_utf16_string_alloc(dirpath);
+	windowsize_path(dirpath_wide);
+	Platform::String^ dirpath_str = ref new Platform::String(dirpath_wide);
+	free(dirpath_wide);
+	free(dirpath);
+
+	char* filename = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	fill_pathname_base(filename, path, PATH_MAX_LENGTH);
+	wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
+	Platform::String^ filename_str = ref new Platform::String(filename_wide);
+	free(filename_wide);
+	free(filename);
+
+	retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
+
+	return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([&]() {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).then([&](StorageFolder^ dir) {
+			if (mode == RETRO_VFS_FILE_ACCESS_READ)
+				return dir->GetFileAsync(filename_str);
+			else
+				return dir->CreateFileAsync(filename_str, (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
+					CreationCollisionOption::OpenIfExists : CreationCollisionOption::ReplaceExisting);
+		}).then([&](StorageFile^ file) {
+			FileAccessMode accessMode = mode == RETRO_VFS_FILE_ACCESS_READ ?
+				FileAccessMode::Read : FileAccessMode::ReadWrite;
+			return file->OpenAsync(accessMode);
+		}).then([&](IRandomAccessStream^ fpstream) {
+			libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
+			if (!stream)
+				return (libretro_vfs_implementation_file*)NULL;
+
+			stream->orig_path = strdup(path);
+			stream->fp = fpstream;
+			stream->fp->Seek(0);
+			// Preallocate a small buffer for manually buffered IO, makes short read faster
+			int buf_size = 8 * 1024;
+			stream->buffer = (char*)malloc(buf_size);
+			stream->bufferp = CreateNativeBuffer(stream->buffer, buf_size, 0);
+			stream->buffer_left = 0;
+			stream->buffer_fill = 0;
+			stream->buffer_size = buf_size;
+			return stream;
+		});
+	}, NULL);
+}
+
+int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
+{
+	if (!stream || !stream->fp)
+		return -1;
+
+	/* Apparently, this is how you close a file in WinRT */
+	/* Yes, really */
+	stream->fp = nullptr;
+	free(stream->buffer);
+
+	return 0;
+}
+
+int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
+{
+	return false; /* TODO */
+}
+
+int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
+{
+	if (!stream || !stream->fp)
+		return 0;
+	return stream->fp->Size;
+}
+
+int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
+{
+	if (!stream || !stream->fp)
+		return -1;
+	stream->fp->Size = length;
+	return 0;
+}
+
+int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
+{
+	if (!stream || !stream->fp)
+		return -1;
+	return stream->fp->Position - stream->buffer_left;
+}
+
+int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int seek_position)
+{
+	if (!stream || !stream->fp)
+		return -1;
+
+	switch (seek_position)
+	{
+	case RETRO_VFS_SEEK_POSITION_START:
+		stream->fp->Seek(offset);
+		break;
+
+	case RETRO_VFS_SEEK_POSITION_CURRENT:
+		stream->fp->Seek(retro_vfs_file_tell_impl(stream) + offset);
+		break;
+
+	case RETRO_VFS_SEEK_POSITION_END:
+		stream->fp->Seek(stream->fp->Size - offset);
+		break;
+	}
+
+	// For simplicity always flush the buffer on seek
+	stream->buffer_left = 0;
+
+	return 0;
 }
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len)
@@ -477,13 +479,71 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
 	if (!stream || !stream->fp || !s)
 		return -1;
 
-	IBuffer^ buffer = CreateNativeBuffer(s, len, 0);
-	return RunAsyncAndCatchErrors<int64_t>([=]() {
-		return concurrency::create_task(stream->fp->ReadAsync(buffer, buffer->Capacity, InputStreamOptions::None)).then([=](IBuffer^ buf) {
+	int64_t bytes_read = 0;
+
+	if (len <= stream->buffer_size) {
+		// Small read, use manually buffered IO
+		if (stream->buffer_left < len) {
+			// Exhaust the buffer
+			memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
+			len -= stream->buffer_left;
+			bytes_read += stream->buffer_left;
+			stream->buffer_left = 0;
+
+			// Fill buffer
+			stream->buffer_left = RunAsyncAndCatchErrors<int64_t>([&]() {
+				return concurrency::create_task(stream->fp->ReadAsync(stream->bufferp, stream->bufferp->Capacity, InputStreamOptions::None)).then([&](IBuffer^ buf) {
+					retro_assert(stream->bufferp == buf);
+					return (int64_t)stream->bufferp->Length;
+				});
+			}, -1);
+			stream->buffer_fill = stream->buffer_left;
+
+			if (stream->buffer_left == -1) {
+				stream->buffer_left = 0;
+				stream->buffer_fill = 0;
+				return -1;
+			}
+
+			if (stream->buffer_left < len) {
+				// EOF
+				memcpy(&((char*)s)[bytes_read], stream->buffer, stream->buffer_left);
+				bytes_read += stream->buffer_left;
+				stream->buffer_left = 0;
+				return bytes_read;
+			}
+
+			memcpy(&((char*)s)[bytes_read], stream->buffer, len);
+			bytes_read += len;
+			stream->buffer_left -= len;
+			return bytes_read;
+		}
+
+		// Internal buffer already contains requested amount
+		memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], len);
+		stream->buffer_left -= len;
+		return len;
+	}
+
+	// Big read exceeding buffer size, exhaust small buffer and read rest in one go
+	memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
+	len -= stream->buffer_left;
+	bytes_read += stream->buffer_left;
+	stream->buffer_left = 0;
+
+	IBuffer^ buffer = CreateNativeBuffer(&((char*)s)[bytes_read], len, 0);
+
+	int64_t ret = RunAsyncAndCatchErrors<int64_t>([&]() {
+		return concurrency::create_task(stream->fp->ReadAsync(buffer, buffer->Capacity - bytes_read, InputStreamOptions::None)).then([&](IBuffer^ buf) {
 			retro_assert(buf == buffer);
 			return (int64_t)buffer->Length;
 		});
 	}, -1);
+
+	if (ret == -1) {
+		return -1;
+	}
+	return bytes_read + ret;
 }
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
@@ -491,9 +551,10 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 	if (!stream || !stream->fp || !s)
 		return -1;
 
+	// const_cast to remove const modifier is undefined behaviour, but the buffer is only read, should be safe
 	IBuffer^ buffer = CreateNativeBuffer(const_cast<void*>(s), len, len);
-	return RunAsyncAndCatchErrors<int64_t>([=]() {
-		return concurrency::create_task(stream->fp->WriteAsync(buffer)).then([=](unsigned int written) {
+	return RunAsyncAndCatchErrors<int64_t>([&]() {
+		return concurrency::create_task(stream->fp->WriteAsync(buffer)).then([&](unsigned int written) {
 			return (int64_t)written;
 		});
 	}, -1);
@@ -504,8 +565,8 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 	if (!stream || !stream->fp)
 		return -1;
 
-	return RunAsyncAndCatchErrors<int>([=]() {
-		return concurrency::create_task(stream->fp->FlushAsync()).then([=](bool this_value_is_not_even_documented_wtf) {
+	return RunAsyncAndCatchErrors<int>([&]() {
+		return concurrency::create_task(stream->fp->FlushAsync()).then([&](bool this_value_is_not_even_documented_wtf) {
 			/* The bool value may be reporting an error or something, but just leave it alone for now */
 			/* https://github.com/MicrosoftDocs/winrt-api/issues/841 */
 			return 0;
@@ -515,19 +576,18 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
-	wchar_t *path_wide                  = NULL;
 	if (!path || !*path)
 		return -1;
 
-	path_wide                           = utf8_to_utf16_string_alloc(path);
+	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
 	windowsize_path(path_wide);
-	Platform::String^ path_str          = ref new Platform::String(path_wide);
+	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
-	return RunAsyncAndCatchErrors<int>([=]() {
-		return concurrency::create_task(LocateStorageItem<StorageFile>(path_str)).then([=](StorageFile^ file) {
+	return RunAsyncAndCatchErrors<int>([&]() {
+		return concurrency::create_task(LocateStorageItem<StorageFile>(path_str)).then([&](StorageFile^ file) {
 			return file->DeleteAsync(StorageDeleteOption::PermanentDelete);
-		}).then([=]() {
+		}).then([&]() {
 			return 0;
 		});
 	}, -1);
@@ -536,52 +596,43 @@ int retro_vfs_file_remove_impl(const char *path)
 /* TODO: this may not work if trying to move a directory */
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
-	wchar_t *old_path_wide             = NULL;
-	wchar_t *new_dir_path_wide         = NULL;
-	wchar_t *new_file_name_wide        = NULL;
-	char *new_dir_path                 = NULL;
-	char *new_file_name                = NULL;
-
 	if (!old_path || !*old_path || !new_path || !*new_path)
 		return -1;
 
-	old_path_wide                      = utf8_to_utf16_string_alloc(old_path);
-	Platform::String^ old_path_str     = ref new Platform::String(old_path_wide);
+	wchar_t* old_path_wide = utf8_to_utf16_string_alloc(old_path);
+	Platform::String^ old_path_str = ref new Platform::String(old_path_wide);
 	free(old_path_wide);
 
-	new_dir_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	char* new_dir_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_basedir(new_dir_path, new_path, PATH_MAX_LENGTH);
-	new_dir_path_wide                  = utf8_to_utf16_string_alloc(new_dir_path);
+	wchar_t *new_dir_path_wide = utf8_to_utf16_string_alloc(new_dir_path);
 	windowsize_path(new_dir_path_wide);
 	Platform::String^ new_dir_path_str = ref new Platform::String(new_dir_path_wide);
 	free(new_dir_path_wide);
 	free(new_dir_path);
 
-	new_file_name                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	char* new_file_name = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(new_file_name, new_path, PATH_MAX_LENGTH);
-	new_file_name_wide                  = utf8_to_utf16_string_alloc(new_file_name);
+	wchar_t *new_file_name_wide = utf8_to_utf16_string_alloc(new_file_name);
 	Platform::String^ new_file_name_str = ref new Platform::String(new_file_name_wide);
 	free(new_file_name_wide);
 	free(new_file_name);
 
-	retro_assert(
-		   !old_path_str->IsEmpty()
-		&& !new_dir_path_str->IsEmpty()
-		&& !new_file_name_str->IsEmpty());
+	retro_assert(!old_path_str->IsEmpty() && !new_dir_path_str->IsEmpty() && !new_file_name_str->IsEmpty());
 
-	return RunAsyncAndCatchErrors<int>([=]() {
+	return RunAsyncAndCatchErrors<int>([&]() {
 		concurrency::task<StorageFile^> old_file_task = concurrency::create_task(LocateStorageItem<StorageFile>(old_path_str));
 		concurrency::task<StorageFolder^> new_dir_task = concurrency::create_task(LocateStorageItem<StorageFolder>(new_dir_path_str));
-		return concurrency::create_task([=] {
+		return concurrency::create_task([&] {
 			/* Run these two tasks in parallel */
 			/* TODO: There may be some cleaner way to express this */
 			concurrency::task_group group;
-			group.run([=] { return old_file_task; });
-			group.run([=] { return new_dir_task; });
+			group.run([&] { return old_file_task; });
+			group.run([&] { return new_dir_task; });
 			group.wait();
-		}).then([=]() {
+		}).then([&]() {
 			return old_file_task.get()->MoveAsync(new_dir_task.get(), new_file_name_str, NameCollisionOption::ReplaceExisting);
-		}).then([=]() {
+		}).then([&]() {
 			return 0;
 		});
 	}, -1);
@@ -597,17 +648,11 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
-	wchar_t *path_wide = NULL;
 	if (!path || !*path)
 		return 0;
 
-	path_wide = utf8_to_utf16_string_alloc(path);
-
-	if (!path_wide)
-		return 0;
-
+	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
 	windowsize_path(path_wide);
-
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
@@ -615,8 +660,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 	if (!item)
 		return 0;
 
-	return RunAsyncAndCatchErrors<int>([=]() {
-		return concurrency::create_task(item->GetBasicPropertiesAsync()).then([=](BasicProperties^ properties) {
+	return RunAsyncAndCatchErrors<int>([&]() {
+		return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
 			if (size)
 				*size = properties->Size;
 			return item->IsOfType(StorageItemTypes::Folder) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
@@ -626,31 +671,25 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
 int retro_vfs_mkdir_impl(const char *dir)
 {
-	char *dir_local                   = NULL;
-	char *tmp                         = NULL;
-	char *dir_name                    = NULL;
-	char *parent_path                 = NULL;
-	wchar_t *dir_name_wide            = NULL;
-	wchar_t *parent_path_wide         = NULL;
 	if (!dir || !*dir)
 		return -1;
 
-	dir_local                         = strdup(dir);
+	char* dir_local = strdup(dir);
 	/* If the path ends with a slash, we have to remove it for basename to work */
-	tmp                               = dir_local + strlen(dir_local) - 1;
+	char* tmp = dir_local + strlen(dir_local) - 1;
 	if (path_char_is_slash(*tmp))
 		*tmp = 0;
 
-	dir_name                          = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	char* dir_name = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_base(dir_name, dir_local, PATH_MAX_LENGTH);
-	dir_name_wide                     = utf8_to_utf16_string_alloc(dir_name);
-	Platform::String^ dir_name_str    = ref new Platform::String(dir_name_wide);
+	wchar_t *dir_name_wide = utf8_to_utf16_string_alloc(dir_name);
+	Platform::String^ dir_name_str = ref new Platform::String(dir_name_wide);
 	free(dir_name_wide);
 	free(dir_name);
 
-	parent_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+	char* parent_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_parent_dir(parent_path, dir_local, PATH_MAX_LENGTH);
-	parent_path_wide                  = utf8_to_utf16_string_alloc(parent_path);
+	wchar_t *parent_path_wide = utf8_to_utf16_string_alloc(parent_path);
 	windowsize_path(parent_path_wide);
 	Platform::String^ parent_path_str = ref new Platform::String(parent_path_wide);
 	free(parent_path_wide);
@@ -660,10 +699,10 @@ int retro_vfs_mkdir_impl(const char *dir)
 
 	free(dir_local);
 
-	return RunAsyncAndCatchErrors<int>([=]() {
-		return concurrency::create_task(LocateStorageItem<StorageFolder>(parent_path_str)).then([=](StorageFolder^ parent) {
+	return RunAsyncAndCatchErrors<int>([&]() {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(parent_path_str)).then([&](StorageFolder^ parent) {
 			return parent->CreateFolderAsync(dir_name_str);
-		}).then([=](concurrency::task<StorageFolder^> new_dir) {
+		}).then([&](concurrency::task<StorageFolder^> new_dir) {
 			try
 			{
 				new_dir.get();
@@ -692,8 +731,7 @@ struct libretro_vfs_implementation_dir
 
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool include_hidden)
 {
-	libretro_vfs_implementation_dir *rdir = NULL;
-	wchar_t *name_wide                    = NULL;
+	libretro_vfs_implementation_dir *rdir;
 
 	if (!name || !*name)
 		return NULL;
@@ -702,13 +740,13 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
 	if (!rdir)
 		return NULL;
 
-	name_wide = utf8_to_utf16_string_alloc(name);
+	wchar_t *name_wide = utf8_to_utf16_string_alloc(name);
 	windowsize_path(name_wide);
 	Platform::String^ name_str = ref new Platform::String(name_wide);
 	free(name_wide);
 
-	rdir->directory = RunAsyncAndCatchErrors<IVectorView<IStorageItem^>^>([=]() {
-		return concurrency::create_task(LocateStorageItem<StorageFolder>(name_str)).then([=](StorageFolder^ folder) {
+	rdir->directory = RunAsyncAndCatchErrors<IVectorView<IStorageItem^>^>([&]() {
+		return concurrency::create_task(LocateStorageItem<StorageFolder>(name_str)).then([&](StorageFolder^ folder) {
 			return folder->GetItemsAsync();
 		});
 	}, nullptr);
@@ -727,8 +765,10 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 		rdir->entry = rdir->directory->First();
 		return rdir->entry->HasCurrent;
 	}
-
-	return rdir->entry->MoveNext();
+	else
+	{
+		return rdir->entry->MoveNext();
+	}
 }
 
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
@@ -751,37 +791,23 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 
 	if (rdir->entry_name)
 		free(rdir->entry_name);
-	rdir->entry     = nullptr;
+	rdir->entry = nullptr;
 	rdir->directory = nullptr;
 
 	free(rdir);
 	return 0;
 }
 
-bool uwp_is_path_accessible_using_standard_io(const char *path)
-{
-	bool result                = false;
-	char *relative_path_abbrev = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-	fill_pathname_abbreviate_special(relative_path_abbrev, path, PATH_MAX_LENGTH * sizeof(char));
-
-	result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
-
-	free(relative_path_abbrev);
-	return result;
-}
-
 bool uwp_drive_exists(const char *path)
 {
-	wchar_t *path_wide = NULL;
 	if (!path || !*path)
 		return 0;
 
-	path_wide = utf8_to_utf16_string_alloc(path);
+	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
 	Platform::String^ path_str = ref new Platform::String(path_wide);
 	free(path_wide);
 
-	return RunAsyncAndCatchErrors<bool>([=]() {
+	return RunAsyncAndCatchErrors<bool>([&]() {
 		return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path_str)).then([](StorageFolder^ properties) {
 			return true;
 		});
@@ -790,7 +816,7 @@ bool uwp_drive_exists(const char *path)
 
 char* uwp_trigger_picker(void)
 {
-	return RunAsyncAndCatchErrors<char*>([=]() {
+	return RunAsyncAndCatchErrors<char*>([&]() {
 		return TriggerPickerAddDialog().then([](Platform::String^ path) {
 			return utf16_to_utf8_string_alloc(path->Data());
 		});

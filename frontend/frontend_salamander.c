@@ -123,8 +123,7 @@ static void salamander_init(char *s, size_t len)
    if (config_exists)
    {
       char tmp_str[PATH_MAX_LENGTH] = {0};
-      config_file_t * conf          = (config_file_t*)
-         config_file_new(g_defaults.path.config);
+      config_file_t * conf          = config_file_new(g_defaults.path.config);
 
       if (conf)
       {

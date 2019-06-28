@@ -1,6 +1,7 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2011-2017 - Daniel De Matteis
  * Copyright (C) 2016-2019 - Brad Parker
+ * Copyright (C) 2018-2019 - Andrés Suárez
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -20,6 +21,10 @@
 
 #include <retro_miscellaneous.h>
 #include <windows.h>
+#if defined(_WIN32) && !defined(_XBOX)
+#include <process.h>
+#include <errno.h>
+#endif
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -43,7 +48,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
-
+#include "../../paths.h"
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
@@ -447,6 +452,10 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+      ":\\layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
       ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
@@ -468,7 +477,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #ifdef HAVE_MENU
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    snprintf(g_defaults.settings.menu,
          sizeof(g_defaults.settings.menu), "xmb");
 #endif
@@ -592,29 +601,30 @@ enum retro_language frontend_win32_get_user_language(void)
    /* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
    const struct lang_pair pairs[] =
    {
-      {0x9, RETRO_LANGUAGE_ENGLISH},
-      {0x11, RETRO_LANGUAGE_JAPANESE},
-      {0xc, RETRO_LANGUAGE_FRENCH},
-      {0xa, RETRO_LANGUAGE_SPANISH},
-      {0x7, RETRO_LANGUAGE_GERMAN},
-      {0x10, RETRO_LANGUAGE_ITALIAN},
-      {0x13, RETRO_LANGUAGE_DUTCH},
-      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
-      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x19, RETRO_LANGUAGE_RUSSIAN},
-      {0x12, RETRO_LANGUAGE_KOREAN},
-      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      /* array order MUST be kept, always largest ID first */
+      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
       {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
       {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
-      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
+      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
+      {0x19, RETRO_LANGUAGE_RUSSIAN},
+      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+      {0x15, RETRO_LANGUAGE_POLISH},
+      {0x13, RETRO_LANGUAGE_DUTCH},
+      {0x12, RETRO_LANGUAGE_KOREAN},
+      {0x11, RETRO_LANGUAGE_JAPANESE},
+      {0x10, RETRO_LANGUAGE_ITALIAN},
+      {0xc, RETRO_LANGUAGE_FRENCH},
+      {0xa, RETRO_LANGUAGE_SPANISH},
+      {0x9, RETRO_LANGUAGE_ENGLISH},
+      {0x8, RETRO_LANGUAGE_GREEK},
+      {0x7, RETRO_LANGUAGE_GERMAN},
       {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
+      {0x1, RETRO_LANGUAGE_ARABIC},
       /* MS does not support Esperanto */
       /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
-      {0x15, RETRO_LANGUAGE_POLISH},
-      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
-      {0x1, RETRO_LANGUAGE_ARABIC},
-      {0x8, RETRO_LANGUAGE_GREEK},
    };
 
    for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
@@ -630,14 +640,72 @@ enum retro_language frontend_win32_get_user_language(void)
    return lang;
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
+enum frontend_fork win32_fork_mode;
+
+static void frontend_win32_respawn(char *s, size_t len)
+{
+   STARTUPINFO si;
+   PROCESS_INFORMATION pi;
+   char executable_path[PATH_MAX_LENGTH] = {0};
+
+   if (win32_fork_mode != FRONTEND_FORK_RESTART)
+      return;
+
+   memset(&si, 0, sizeof(si));
+   si.cb = sizeof(si);
+   memset(&pi, 0, sizeof(pi));
+
+   fill_pathname_application_path(executable_path,
+         sizeof(executable_path));
+   path_set(RARCH_PATH_CORE, executable_path);
+   RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
+      executable_path, get_retroarch_launch_arguments());
+
+   if(!CreateProcess( executable_path, get_retroarch_launch_arguments(),
+      NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+   {
+      RARCH_LOG("Failed to restart RetroArch\n");
+   }
+   return;
+}
+
+static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         break;
+      case FRONTEND_FORK_RESTART:
+         command_event(CMD_EVENT_QUIT, NULL);
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
+   }
+   win32_fork_mode = fork_mode;
+   return true;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_respawn,         /* exitspawn */
+#else
    NULL,                           /* exitspawn */
+#endif
    NULL,                           /* process_args */
    NULL,                           /* exec */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_set_fork,        /* set_fork */
+#else
    NULL,                           /* set_fork */
+#endif
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_win32_get_os,

@@ -202,7 +202,6 @@ typedef struct midi_driver
 } midi_driver_t;
 
 const void *midi_driver_find_handle(int index);
-const char *midi_driver_find_ident(int index);
 
 struct string_list *midi_driver_get_avail_inputs(void);
 struct string_list *midi_driver_get_avail_outputs(void);
@@ -235,6 +234,8 @@ bool midi_driver_flush(void);
  *          this function will return 0.
  **/
 size_t midi_driver_get_event_size(uint8_t status);
+
+const char *midi_driver_find_ident(int index);
 
 RETRO_END_DECLS
 

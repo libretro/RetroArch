@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../location_driver.h"
+#include "../../retroarch.h"
 
 static void *null_location_init(void)
 {

@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <string/stdstring.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -53,7 +55,7 @@ typedef struct
 
 static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
-static int x_nul_handler(Display *dpy, XErrorEvent *event)
+static int xegl_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -430,7 +432,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    /* This can blow up on some drivers. It's not fatal,
     * so override errors for this call.
     */
-   old_handler = XSetErrorHandler(x_nul_handler);
+   old_handler = XSetErrorHandler(xegl_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
    XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);
@@ -603,8 +605,18 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 static uint32_t gfx_ctx_xegl_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+
+   if (string_is_equal(video_driver_get_ident(), "glcore"))
+   {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+   }
+   else
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+   }
+
    return flags;
 }
 

@@ -2426,7 +2426,7 @@ D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT sub
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>
 #include <libretro_d3d.h>
-#include "../video_driver.h"
+#include "../../retroarch.h"
 #include "../drivers_shader/slang_process.h"
 
 typedef struct d3d11_vertex_t
@@ -2584,6 +2584,7 @@ typedef struct
       D3D11_VIEWPORT             viewport;
       pass_semantics_t           semantics;
       uint32_t                   frame_count;
+      int32_t                    frame_direction;
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;

@@ -21,6 +21,7 @@
 #include <encodings/utf.h>
 #include <retro_math.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #include <features/features_cpu.h>
 
 #define DG_DYNARR_IMPLEMENTATION
@@ -54,6 +55,7 @@ struct menu_animation
 {
    tween_array_t list;
    tween_array_t pending;
+   bool initialized;
    bool pending_deletes;
    bool in_update;
 };
@@ -65,7 +67,7 @@ typedef struct menu_animation menu_animation_t;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim;
+static menu_animation_t anim    = {0};
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
@@ -358,7 +360,7 @@ static void menu_animation_ticker_loop(uint64_t idx,
    offset   = (phase < (int)str_width) ? phase : 0;
    width    = (int)(str_width - phase);
    width    = (width < 0) ? 0 : width;
-   width    = (width > (int)max_width) ? max_width : width;
+   width    = (width > (int)max_width) ? (int)max_width : width;
    
    *offset1 = offset;
    *width1  = width;
@@ -367,14 +369,14 @@ static void menu_animation_ticker_loop(uint64_t idx,
    offset   = (int)(phase - str_width);
    offset   = offset < 0 ? 0 : offset;
    width    = (int)(max_width - *width1);
-   width    = (width > (int)spacer_width) ? spacer_width : width;
+   width    = (width > (int)spacer_width) ? (int)spacer_width : width;
    width    = width - offset;
    
    *offset2 = offset;
    *width2  = width;
    
    /* String 3 */
-   width    = max_width - (*width1 + *width2);
+   width    = (int)(max_width - (*width1 + *width2));
    width    = width < 0 ? 0 : width;
    
    /* Note: offset is always zero here so offset3 is
@@ -382,18 +384,6 @@ static void menu_animation_ticker_loop(uint64_t idx,
     * symmetry... */
    *offset3 = 0;
    *width3  = width;
-}
-
-void menu_animation_init(void)
-{
-   da_init(anim.list);
-   da_init(anim.pending);
-}
-
-void menu_animation_free(void)
-{
-   da_free(anim.list);
-   da_free(anim.pending);
 }
 
 static void menu_delayed_animation_cb(void *userdata)
@@ -551,6 +541,13 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
+   if (!anim.initialized)
+   {
+      da_init(anim.list);
+      da_init(anim.pending);
+      anim.initialized = true;
+   }
+
    if (anim.in_update)
       da_push(anim.pending, t);
    else
@@ -611,9 +608,13 @@ bool menu_animation_update(void)
    anim.in_update       = true;
    anim.pending_deletes = false;
 
-   for(i = 0; i < da_count(anim.list); i++)
+   for (i = 0; i < da_count(anim.list); i++)
    {
       struct tween *tween   = da_getptr(anim.list, i);
+      
+      if (!tween)
+         continue;
+
       tween->running_since += delta_time;
 
       *tween->subject = tween->easing(
@@ -636,9 +637,11 @@ bool menu_animation_update(void)
 
    if (anim.pending_deletes)
    {
-      for(i = 0; i < da_count(anim.list); i++)
+      for (i = 0; i < da_count(anim.list); i++)
       {
          struct tween *tween = da_getptr(anim.list, i);
+         if (!tween)
+            continue;
          if (tween->deleted)
          {
             da_delete(anim.list, i);
@@ -783,7 +786,7 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
    for (i = 0; i < da_count(anim.list); ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
-      if (t->tag != *tag)
+      if (!t || t->tag != *tag)
          continue;
 
       if (anim.in_update)
@@ -809,6 +812,8 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
+      if (!t)
+         continue;
 
       for (j = 0; j < subject->count; ++j)
       {
@@ -848,11 +853,15 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             for (i = 0; i < da_count(anim.list); i++)
             {
                struct tween *t = da_getptr(anim.list, i);
+               if (!t)
+                  continue;
+
                if (t->subject)
                   t->subject = NULL;
             }
 
             da_free(anim.list);
+            da_free(anim.pending);
 
             memset(&anim, 0, sizeof(menu_animation_t));
          }

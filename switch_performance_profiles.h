@@ -20,23 +20,21 @@
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 #ifdef HAVE_LAKKA_SWITCH
 static char *SWITCH_GPU_PROFILES[] = {
-    "docked-overclock-3",
-    "docked-overclock-2",
-    "docked-overclock-1",
-    "docked",
-    "non-docked-overclock-5",
-    "non-docked-overclock-4",
-    "non-docked-overclock-3",
-    "non-docked-overclock-2",
-    "non-docked-overclock-1",
-    "non-docked",
-    "non-docked-underclock-1",
-    "non-docked-underclock-2",
-    "non-docked-underclock-3",
+    "Docked Stock +2",
+    "Docked Stock +1",
+    "Docked Stock Mode",
+    "Handheld Boost +3",
+    "Handheld Boost +2",
+    "Handheld Boost +1",
+    "Handheld Boost Mode",
+    "Handheld Stock +1",
+    "Handheld Stock Mode",
+    "Powersaving +2",
+    "Powersaving +1",
+    "Powersaving Mode",
 };
 
 static char *SWITCH_GPU_SPEEDS[] = {
-    "998 Mhz",
     "921 Mhz",
     "844 Mhz",
     "768 Mhz",
@@ -48,7 +46,8 @@ static char *SWITCH_GPU_SPEEDS[] = {
     "307 Mhz",
     "230 Mhz",
     "153 Mhz",
-    "76 Mhz"};
+    "76 Mhz"
+};
 
 static int SWITCH_BRIGHTNESS[] = {
     10,
@@ -65,11 +64,16 @@ static int SWITCH_BRIGHTNESS[] = {
 
 static char *SWITCH_CPU_PROFILES[] = {
 #ifndef HAVE_LIBNX
-    "overclock-4",
-    "overclock-3",
-    "overclock-2",
-    "overclock-1",
-    "default",
+    "Max Overdrive +3",
+    "Max Overdrive +2",
+    "Max Overdrive +1",
+    "Maximum Performance",
+    "High Performance",
+    "Boost Performance",
+    "Stock Performance",
+    "Powersaving Mode 1",
+    "Powersaving Mode 2",
+    "Powersaving Mode 3",
 #else
     "Maximum Performance",
     "High Performance",
@@ -86,11 +90,16 @@ static char *SWITCH_CPU_PROFILES[] = {
 
 static char *SWITCH_CPU_SPEEDS[] = {
 #ifndef HAVE_LIBNX
-    "1912 MHz",
-    "1734 MHz",
-    "1530 MHz",
+    " **UNSTABLE**  2091 MHz",
+    " **UNSTABLE**  1989 MHz",
+    " **UNSTABLE**  1887 MHz",
+    "1785 MHz",
+    "1581 MHz",
     "1224 MHz",
-    "1020 MHz"
+    "1020 MHz",
+    "918 MHz",
+    "816 MHz",
+    "714 MHz"
 #else
     "1785 MHz",
     "1581 MHz",
@@ -102,14 +111,9 @@ static char *SWITCH_CPU_SPEEDS[] = {
 #endif
 };
 
+#ifdef HAVE_LIBNX
+// not used in switch-lakka
 static unsigned SWITCH_CPU_SPEEDS_VALUES[] = {
-#ifndef HAVE_LIBNX
-    1912000000,
-    1734000000,
-    1530000000,
-    1224000000,
-    1020000000
-#else
     1785000000,
     1581000000,
     1224000000,
@@ -117,8 +121,8 @@ static unsigned SWITCH_CPU_SPEEDS_VALUES[] = {
     918000000,
     816000000,
     714000000
-#endif
 };
+#endif
 
 #endif
 

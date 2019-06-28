@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2019 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -82,7 +82,7 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
 
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
    if ((id_minus < RARCH_BIND_LIST_END) && binds->valid &&
          linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[id_minus].key]]
@@ -107,12 +107,53 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
-               linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
-               );
-         if (!ret)
-            ret = input_joypad_pressed(linuxraw->joypad,
-                  joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               bool res = (binds[port]->valid &&
+                     linuxraw->state[rarch_keysym_lut[
+                     (enum retro_key)binds[port][i].key]]
+                     );
+
+               if (!res)
+               {
+                  /* Auto-binds are per joypad, not per user. */
+                  const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+                     ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                     ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+
+                  if (joykey != NO_BTN && linuxraw->joypad->button(joypad_info.joy_idx, joykey))
+                     res = true;
+                  else if (((float)abs(linuxraw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                     res = true;
+               }
+
+               if (res)
+                  ret |= (1 << i);
+            }
+         }
+         else
+         {
+            ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
+                  linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+                  );
+
+            if (!ret)
+            {
+               /* Auto-binds are per joypad, not per user. */
+               const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+                  ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+               const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+                  ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+               if (joykey != NO_BTN && linuxraw->joypad->button(joypad_info.joy_idx, joykey))
+                  ret = 1;
+               else if (((float)abs(linuxraw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  ret = 1;
+            }
+         }
          return ret;
       case RETRO_DEVICE_ANALOG:
          ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);

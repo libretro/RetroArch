@@ -71,13 +71,12 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
-   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *label              = NULL;
 
    if (!menu)
       return 0;
 
-   menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
+   menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
 
    menu->menu_state_msg[0]   = '\0';
 
@@ -159,6 +158,11 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
                   case FILE_TYPE_OVERLAY:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY;
                      break;
+#ifdef HAVE_VIDEO_LAYOUT
+                  case FILE_TYPE_VIDEO_LAYOUT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_VIDEO_LAYOUT;
+                     break;
+#endif
                   case FILE_TYPE_CHEAT:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CHEAT;
                      break;
@@ -229,10 +233,15 @@ int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action a
             selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
             menu_entry_init(&entry);
+            /* Note: If menu_entry_action() is modified,
+             * will have to verify that these parameters
+             * remain unused... */
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
             menu_entry_get(&entry, 0, selection, NULL, false);
             ret = menu_entry_action(&entry,
                   (unsigned)selection, (enum menu_action)action);
-            menu_entry_free(&entry);
             if (ret)
                goto end;
 

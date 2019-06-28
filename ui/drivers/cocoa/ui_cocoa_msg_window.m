@@ -21,6 +21,7 @@
 
 #include <string/stdstring.h>
 
+#include "cocoa_defines.h"
 #include "cocoa_common.h"
 
 #if defined(HAVE_COCOA)

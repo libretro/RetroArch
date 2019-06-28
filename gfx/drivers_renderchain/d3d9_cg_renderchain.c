@@ -34,8 +34,8 @@
 #include "../common/d3d_common.h"
 #include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
-#include "../video_driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "d3d9_renderchain.h"
@@ -366,7 +366,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
    /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
    for (index = 0; index < 4; index++)
    {
-      if (stream_taken[index] == false)
+      if (!stream_taken[index])
          break;
    }
 

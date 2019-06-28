@@ -40,9 +40,9 @@
 #include "SDL_syswm.h"
 
 #include "../font_driver.h"
-#include "../video_driver.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 typedef struct sdl_menu_frame
 {
@@ -429,7 +429,8 @@ static bool sdl_gfx_has_windowed(void *data)
 static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
-   vp->x = vp->y = 0;
+   vp->x      = 0;
+   vp->y      = 0;
    vp->width  = vp->full_width  = vid->screen->w;
    vp->height = vp->full_height = vid->screen->h;
 }
@@ -516,8 +517,17 @@ static void sdl_grab_mouse_toggle(void *data)
    SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }
 
+static uint32_t sdl_get_flags(void *data)
+{
+   uint32_t             flags   = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+   return flags;
+}
+
 static const video_poke_interface_t sdl_poke_interface = {
-   NULL, /* get_flags */
+   sdl_get_flags,
    NULL,
    NULL,
    NULL,
@@ -557,20 +567,6 @@ static bool sdl_gfx_set_shader(void *data,
    return false;
 }
 
-static void sdl_gfx_set_rotation(void *data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
-
 video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
@@ -583,12 +579,15 @@ video_driver_t video_sdl = {
    sdl_gfx_free,
    "sdl",
    NULL,
-   sdl_gfx_set_rotation,
+   NULL, /* set_rotation */
    sdl_gfx_viewport_info,
-   sdl_gfx_read_viewport,
+   NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL,
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+  NULL,
 #endif
    sdl_get_poke_interface
 };
