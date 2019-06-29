@@ -60,7 +60,6 @@ static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
 #if defined(HAVE_COCOATOUCH)
 static GLKView *g_view;
-UIView *g_pause_indicator_view;
 #endif
 
 static GLContextClass* g_hw_ctx;
@@ -157,16 +156,9 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
 void *glkitview_init(void)
 {
 #if defined(HAVE_COCOATOUCH)
-#if TARGET_OS_IOS
-   /* iOS Pause menu and lifecycle. */
-   UINib *xib = (UINib*)[UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
-   g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-#endif
-
    g_view = [GLKView new];
 #if TARGET_OS_IOS
    g_view.multipleTouchEnabled = YES;
-    [g_view addSubview:g_pause_indicator_view];
 #endif
    g_view.enableSetNeedsDisplay = NO;
 
