@@ -262,8 +262,6 @@ void retro_vfs_file_open_cdrom(
    {
       if (!cdrom_get_inquiry(stream, model, sizeof(model)))
       {
-         size_t len = 0;
-
 #ifdef CDROM_DEBUG
          printf("CDROM Model: %s\n", model);
          fflush(stdout);
