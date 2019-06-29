@@ -147,7 +147,7 @@ void retro_vfs_file_open_cdrom(
       {
          if (!memcmp(path + 6, "-track", strlen("-track")))
          {
-            if (sscanf(path + 12, "%02hhd", &stream->cdrom.cur_track))
+            if (sscanf(path + 12, "%02u", (unsigned*)&stream->cdrom.cur_track))
             {
 #ifdef CDROM_DEBUG
                printf("CDROM: Opening track %d\n", stream->cdrom.cur_track);
@@ -227,7 +227,7 @@ void retro_vfs_file_open_cdrom(
    {
       if (!memcmp(path + 1, ":/drive-track", strlen(":/drive-track")))
       {
-         if (sscanf(path + 14, "%02hhd", &stream->cdrom.cur_track))
+         if (sscanf(path + 14, "%02u", (unsigned*)&stream->cdrom.cur_track))
          {
 #ifdef CDROM_DEBUG
             printf("CDROM: Opening track %d\n", stream->cdrom.cur_track);
