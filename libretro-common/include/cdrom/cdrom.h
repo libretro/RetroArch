@@ -56,9 +56,7 @@ typedef struct
 
 typedef struct
 {
-   unsigned char cur_min;
-   unsigned char cur_sec;
-   unsigned char cur_frame;
+   char drive;
    unsigned char num_tracks;
    cdrom_track_t track[99];
 } cdrom_toc_t;

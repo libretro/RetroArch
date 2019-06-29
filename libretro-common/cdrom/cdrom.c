@@ -536,7 +536,11 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
          cdrom_read_track_info(stream, point, toc);
 
+#ifdef _WIN32
+         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c://drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
+#else
          pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
+#endif
          pos += snprintf(*out_buf + pos, len - pos, "  TRACK %02d %s\n", point, track_type);
          pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 %02d:%02d:%02d\n", pmin, psec, pframe);
       }

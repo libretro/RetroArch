@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <libretro.h>
 
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #ifdef _WIN32
 typedef void* HANDLE;
 #endif
@@ -56,10 +60,7 @@ struct libretro_vfs_implementation_file
    uint8_t *mapped;
    enum vfs_scheme scheme;
 #ifdef HAVE_CDROM
-   char *cdrom_cue_buf;
-   size_t cdrom_cue_len;
-   size_t cdrom_byte_pos;
-   char cdrom_drive;
+   vfs_cdrom_t cdrom;
 #endif
 };
 
