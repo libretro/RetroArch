@@ -68,6 +68,8 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
       unsigned char frame = 0;
       const char *seek_type = "SEEK_SET";
 
+      (void)seek_type;
+
       lba_to_msf(frames, &min, &sec, &frame);
 
       switch (whence)

@@ -220,6 +220,9 @@ retry:
       unsigned i;
       const char *sense_key_text = NULL;
 
+      (void)sense_key_text;
+      (void)i;
+
       switch (sense[2] & 0xF)
       {
          case 0:
