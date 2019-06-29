@@ -490,12 +490,24 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->size = orbisLseek(stream->fd, 0, SEEK_END);
    orbisLseek(stream->fd, 0, SEEK_SET);
 #else
-   retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
-   retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+   if (stream->scheme == VFS_SCHEME_CDROM)
+   {
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_END);
 
-   stream->size = retro_vfs_file_tell_impl(stream);
+      stream->size = retro_vfs_file_tell_impl(stream);
 
-   retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
+   }
+   else
+   {
+      retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+
+      stream->size = retro_vfs_file_tell_impl(stream);
+
+      retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+   }
 #endif
    return stream;
 
@@ -600,6 +612,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+         return retro_vfs_file_tell_cdrom(stream);
+#endif
 #ifdef ORBIS
       int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
       if (ret < 0)
@@ -610,11 +626,6 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef ATLEAST_VC2005
       return _ftelli64(stream->fp);
 #else
-#ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_tell_cdrom(stream);
-      else
-#endif
          return ftell(stream->fp);
 #endif
 #endif
