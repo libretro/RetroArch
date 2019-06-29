@@ -41,10 +41,6 @@ if [ -d "${SHADERS_DIR}" ]; then
    cp -rv ${SHADERS_DIR} ${APP_BUNDLE_DIR}/
 fi
 
-if [ -f "${APP_BUNDLE_DIR}/PauseIndicatorView.xib" ]; then
-   rm -v ${APP_BUNDLE_DIR}/PauseIndicatorView.xib
-fi
-
 cp -r ${IOSDIR}/en.lproj ${APP_BUNDLE_DIR}
 
 plistutil -i ${IOSDIR}/Info.plist -o ${APP_BUNDLE_DIR}/Info.plist
