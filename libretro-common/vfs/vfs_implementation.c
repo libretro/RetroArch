@@ -490,6 +490,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->size = orbisLseek(stream->fd, 0, SEEK_END);
    orbisLseek(stream->fd, 0, SEEK_SET);
 #else
+#ifdef HAVE_CDROM
    if (stream->scheme == VFS_SCHEME_CDROM)
    {
       retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
@@ -500,6 +501,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
    }
    else
+#endif
    {
       retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
       retro_vfs_file_seek_internal(stream, 0, SEEK_END);
