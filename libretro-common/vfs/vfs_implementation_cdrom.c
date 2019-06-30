@@ -132,6 +132,8 @@ void retro_vfs_file_open_cdrom(
    size_t path_len = strlen(path);
    const char *ext = path_get_extension(path);
 
+   stream->cdrom.cur_track = 1;
+
    if (!string_is_equal_noncase(ext, "cue") && !string_is_equal_noncase(ext, "bin"))
       return;
 
