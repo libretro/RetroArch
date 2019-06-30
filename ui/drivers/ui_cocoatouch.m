@@ -67,7 +67,7 @@ static void rarch_disable_ui(void)
 
    rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
    rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   rarch_menu_running_finished();
+   rarch_menu_running_finished(false);
 }
 
 static void ui_companion_cocoatouch_event_command(

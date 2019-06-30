@@ -295,7 +295,7 @@ static void handshake_password(void *ignore, const char *line)
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
-   rarch_menu_running_finished();
+   rarch_menu_running_finished(false);
 #endif
 }
 #endif

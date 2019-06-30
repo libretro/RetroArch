@@ -5291,7 +5291,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
    }
 
    menu_input_dialog_end();
-   rarch_menu_running_finished();
+   rarch_menu_running_finished(false);
 }
 #endif
 

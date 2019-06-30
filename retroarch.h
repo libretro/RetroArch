@@ -417,7 +417,7 @@ void runloop_unset(enum runloop_action action);
 
 void rarch_menu_running(void);
 
-void rarch_menu_running_finished(void);
+void rarch_menu_running_finished(bool quit);
 
 bool retroarch_is_on_main_thread(void);
 

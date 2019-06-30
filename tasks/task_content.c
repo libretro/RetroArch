@@ -1383,7 +1383,7 @@ bool task_push_load_content_from_playlist_from_menu(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #else
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   rarch_menu_running_finished();
+   rarch_menu_running_finished(true);
 #endif
 
 end:

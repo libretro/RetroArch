@@ -14404,7 +14404,7 @@ void rarch_menu_running(void)
 #endif
 }
 
-void rarch_menu_running_finished(void)
+void rarch_menu_running_finished(bool quit)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    const settings_t *settings = (const settings_t*)configuration_settings;
@@ -14415,14 +14415,17 @@ void rarch_menu_running_finished(void)
    /* Prevent stray input */
    input_driver_flushing_input = true;
 
-   /* Stop menu background music before we exit the menu */
-   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-      audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+   if (!quit)
+      /* Stop menu background music before we exit the menu */
+      if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
-   if (settings->bools.input_overlay_hide_in_menu)
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   if (!quit)
+      if (settings->bools.input_overlay_hide_in_menu)
+         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
 }
 
@@ -15593,7 +15596,7 @@ bool retroarch_main_quit(void)
    }
 
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   rarch_menu_running_finished();
+   rarch_menu_running_finished(true);
 
    return true;
 }
@@ -16089,7 +16092,7 @@ static enum runloop_state runloop_check_state(
       }
 
       if (!menu_driver_iterate(&iter))
-         rarch_menu_running_finished();
+         rarch_menu_running_finished(false);
 
       if (focused || !runloop_idle)
       {
@@ -16173,7 +16176,7 @@ static enum runloop_state runloop_check_state(
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
-               rarch_menu_running_finished();
+               rarch_menu_running_finished(false);
                menu_event_kb_set(false, RETROK_F1);
             }
          }
@@ -16185,7 +16188,7 @@ static enum runloop_state runloop_check_state(
          if (menu_driver_is_alive())
          {
             if (rarch_is_initialized && !core_type_is_dummy)
-               rarch_menu_running_finished();
+               rarch_menu_running_finished(false);
          }
          else
          {
