@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_VFS_IMPLEMENTATION_H
 #define __LIBRETRO_SDK_VFS_IMPLEMENTATION_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <libretro.h>
 

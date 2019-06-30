@@ -555,17 +555,17 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
 #endif
    }
+#ifdef HAVE_CDROM
 end:
+   if (stream->cdrom.cue_buf)
+      free(stream->cdrom.cue_buf);
+#endif
    if (stream->buf)
       free(stream->buf);
 
    if (stream->orig_path)
       free(stream->orig_path);
 
-#ifdef HAVE_CDROM
-   if (stream->cdrom.cue_buf)
-      free(stream->cdrom.cue_buf);
-#endif
    free(stream);
 
    return 0;

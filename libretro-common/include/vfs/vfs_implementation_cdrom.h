@@ -33,12 +33,13 @@ typedef struct
 {
    char *cue_buf;
    size_t cue_len;
-   size_t byte_pos;
+   int64_t byte_pos;
    char drive;
    unsigned char cur_min;
    unsigned char cur_sec;
    unsigned char cur_frame;
    unsigned char cur_track;
+   unsigned cur_lba;
 } vfs_cdrom_t;
 
 #ifdef VFS_FRONTEND

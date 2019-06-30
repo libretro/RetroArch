@@ -44,10 +44,11 @@ RETRO_BEGIN_DECLS
 
 typedef struct
 {
-   unsigned lba_start;
+   unsigned lba_start; /* start of pregap */
+   unsigned lba; /* start of data */
    unsigned track_size;
    unsigned char track_num;
-   unsigned char min;
+   unsigned char min; /* start of data */
    unsigned char sec;
    unsigned char frame;
    unsigned char mode;

@@ -213,7 +213,9 @@ retry:
 #endif
    {
       rv = 0;
-      memcpy(buf, xfer_buf + skip, len);
+
+      if (buf)
+         memcpy(buf, xfer_buf + skip, len);
    }
    else
    {
@@ -516,6 +518,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
       unsigned char pmin = buf[4 + (i * 11) + 8];
       unsigned char psec = buf[4 + (i * 11) + 9];
       unsigned char pframe = buf[4 + (i * 11) + 10];
+      unsigned lba = msf_to_lba(pmin, psec, pframe);
 
       /*printf("i %d control %d adr %d tno %d point %d: ", i, control, adr, tno, point);*/
       /* why is control always 0? */
@@ -538,6 +541,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
          toc->track[point - 1].min = pmin;
          toc->track[point - 1].sec = psec;
          toc->track[point - 1].frame = pframe;
+         toc->track[point - 1].lba = lba;
          toc->track[point - 1].mode = mode;
          toc->track[point - 1].audio = audio;
 
