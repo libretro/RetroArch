@@ -2384,7 +2384,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-    "Salvar Arquivo de Remapeamento de Núcleo"
+    "Salvar Remapeamento de Núcleo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
@@ -2392,19 +2392,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-    "Salvar Arquivo de Remapeamento de Jogo"
+    "Salvar Remapeamento de Jogo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-    "Excluir Arquivo de Remapeamento de Núcleo"
+    "Excluir Remapeamento de Núcleo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-    "Excluir Arquivo de Remapeamento de Jogo"
+    "Excluir Remapeamento de Jogo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-    "Excluir Arquivo de Remapeamento de Jogo do Diretório de Conteúdo"
+    "Excluir Remapeamento de Jogo do Diretório de Conteúdo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REQUIRED,
