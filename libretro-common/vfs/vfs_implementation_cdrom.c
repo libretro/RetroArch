@@ -440,3 +440,8 @@ int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream)
 {
    return 0;
 }
+
+const vfs_cdrom_t* retro_vfs_file_get_cdrom_position(const libretro_vfs_implementation_file *stream)
+{
+   return &stream->cdrom;
+}

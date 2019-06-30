@@ -438,6 +438,15 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    return 0;
 }
 
+int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed)
+{
+   unsigned new_speed = swap_if_big32(speed);
+   /* MMC Command: SET CD SPEED */
+   unsigned char cmd[] = {0xBB, 0, (new_speed >> 24) & 0xFF, (new_speed >> 16) & 0xFF, (new_speed >> 8) & 0xFF, new_speed & 0xFF, 0, 0, 0, 0, 0, 0 };
+
+   return cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cmd, sizeof(cmd), 0);
+}
+
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc)
 {
    unsigned char buf[2352] = {0};
@@ -455,6 +464,8 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 #endif
       return 1;
    }
+
+   cdrom_set_read_speed(stream, 0xFFFFFFFF);
 
    rv = cdrom_read_subq(stream, buf, sizeof(buf));
 

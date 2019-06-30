@@ -76,6 +76,8 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int
 
 int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
+int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed);
+
 RETRO_END_DECLS
 
 #endif
