@@ -813,7 +813,7 @@ else ifneq (,$(findstring unix,$(platform)))
    EXT_TARGET := $(TARGET_NAME)
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
-	 LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
+   LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
