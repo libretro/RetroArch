@@ -609,3 +609,8 @@ char *filestream_getline(RFILE *stream)
    newline[idx]      = '\0';
    return newline;
 }
+
+const libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream)
+{
+   return (const libretro_vfs_implementation_file*)stream->hfile;
+}

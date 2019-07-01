@@ -23,8 +23,47 @@
 #ifndef __LIBRETRO_SDK_VFS_IMPLEMENTATION_H
 #define __LIBRETRO_SDK_VFS_IMPLEMENTATION_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <libretro.h>
+
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
+#ifdef _WIN32
+typedef void* HANDLE;
+#endif
+
+enum vfs_scheme
+{
+   VFS_SCHEME_NONE = 0,
+   VFS_SCHEME_CDROM
+};
+
+#ifdef VFS_FRONTEND
+struct retro_vfs_file_handle
+#else
+struct libretro_vfs_implementation_file
+#endif
+{
+   int fd;
+   unsigned hints;
+   int64_t size;
+   char *buf;
+   FILE *fp;
+#ifdef _WIN32
+   HANDLE fh;
+#endif
+   char* orig_path;
+   uint64_t mappos;
+   uint64_t mapsize;
+   uint8_t *mapped;
+   enum vfs_scheme scheme;
+#ifdef HAVE_CDROM
+   vfs_cdrom_t cdrom;
+#endif
+};
 
 /* Replace the following symbol with something appropriate
  * to signify the file is being compiled for a front end instead of a core.
