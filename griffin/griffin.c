@@ -965,6 +965,12 @@ FILE
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
 #endif
+
+#ifdef HAVE_CDROM
+#include "../libretro-common/cdrom/cdrom.c"
+#include "../libretro-common/vfs/vfs_implementation_cdrom.c"
+#endif
+
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
