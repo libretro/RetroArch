@@ -33,13 +33,13 @@ endif
 ifeq ($(platform),)
    platform = unix
 
-   ifeq ($(shell uname -a),)
+   ifeq ($(shell uname -s),)
       platform = win
-   else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   else ifneq ($(findstring MINGW,$(shell uname -s)),)
       platform = win
-   else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   else ifneq ($(findstring Darwin,$(shell uname -s)),)
       platform = osx
-   else ifneq ($(findstring win,$(shell uname -a)),)
+   else ifneq ($(findstring win,$(shell uname -s)),)
       platform = win
    endif
 endif
@@ -47,12 +47,12 @@ endif
 # system platform
 system_platform = unix
 
-ifeq ($(shell uname -a),)
+ifeq ($(shell uname -s),)
    EXE_EXT = .exe
    system_platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
+else ifneq ($(findstring Darwin,$(shell uname -s)),)
    system_platform = osx
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
+else ifneq ($(findstring MINGW,$(shell uname -s)),)
    system_platform = win
 endif
 
@@ -78,7 +78,11 @@ endif
 ifneq (,$(findstring msvc,$(platform)))
    LIBS               := $(WHOLE_START) $(WHOLE_END)
 else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS               := $(WHOLE_START) $(WHOLE_END)
+else
    LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
+endif
 endif
 
 libogc_platform    :=
@@ -696,7 +700,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -778,6 +782,38 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
       export INCLUDE := $(INCLUDE);libretro-common\include;libretro-common\include\compat\msvc;gfx\include;deps;deps\stb
       export LIB := $(LIB)
    endif
+else ifneq (,$(findstring unix,$(platform)))
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_BUILTINZLIB         := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   WANT_GLSLANG							:= 1
+
+   PLATCFLAGS += -DHAVE_EASTEREGG -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_MENU_WIDGETS -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_UPDATE_ASSETS -DHAVE_VULKAN -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_X11 -DHAVE_XCB -DHAVE_UDEV -DHAVE_PULSE
+   EXT_TARGET := $(TARGET_NAME)
+   EXT_INTER_TARGET := $(TARGET_NAME)
+   INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
+	 LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
