@@ -2165,6 +2165,22 @@ MSG_HASH(
     "Specify core to use when launching content via a playlist entry that does not have an existing core association."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+    "Reset Core Associations"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+    "Remove existing core associations for all playlist entries."
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+    "Resetting cores: "
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_CORES_RESET,
+    "Cores reset: "
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
     "Touch Support"
     )

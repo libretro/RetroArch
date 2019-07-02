@@ -2631,8 +2631,14 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
          MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0);
 
+   /* Reset core associations */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
+         FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+
    /* TODO: Add
-    * - Reset core associations
     * - Remove invalid entries */
 
    return true;

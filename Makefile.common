@@ -175,6 +175,7 @@ OBJ += frontend/frontend.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_audio_mixer.o \
+       tasks/task_playlist_manager.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \

@@ -2323,6 +2323,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];

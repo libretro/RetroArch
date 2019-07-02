@@ -2504,7 +2504,8 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES)))
             {
                node->texture_switch2_index = MUI_TEXTURE_RENAME;
                node->texture_switch2_set   = true;
