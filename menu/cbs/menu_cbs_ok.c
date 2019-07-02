@@ -5517,6 +5517,25 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
 }
 #endif
 
+static int action_ok_playlist_reset_cores(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist      = playlist_get_cached();
+   const char *playlist_path = NULL;
+
+   if (!playlist)
+      return -1;
+
+   playlist_path = playlist_get_conf_path(playlist);
+
+   if (string_is_empty(playlist_path))
+      return -1;
+
+   task_push_pl_manager_reset_cores(playlist_path);
+
+   return 0;
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -5867,6 +5886,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_settings);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
+            BIND_ACTION_OK(cbs, action_ok_playlist_reset_cores);
             break;
          case MENU_ENUM_LABEL_RECORDING_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_recording_settings_list);
