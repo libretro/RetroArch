@@ -639,7 +639,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
    }
    else
    {
-      unsigned frames = msf_to_lba(min, sec, frame) + round((len + skip) / 2352.0);
+      unsigned frames = msf_to_lba(min, sec, frame) + ceil((len + skip) / 2352.0);
 
       lba_to_msf(frames, &cdb[6], &cdb[7], &cdb[8]);
 
