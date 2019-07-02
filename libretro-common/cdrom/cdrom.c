@@ -48,7 +48,7 @@
 #include <ntddscsi.h>
 #endif
 
-#define CDROM_CUE_TRACK_BYTES 86
+#define CDROM_CUE_TRACK_BYTES 107
 #define CDROM_MAX_SENSE_BYTES 16
 #define CDROM_MAX_RETRIES 10
 
@@ -379,7 +379,7 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
       if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point >= 1 && point <= 99)
       {
          printf("- Session#: %d TNO %d POINT %d ", session_num, tno, point);
-         printf("Track start time: (MSF %02u:%02u:%02u) ", pmin, psec, pframe);
+         printf("Track start time: (MSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
       }
       else if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point == 0xA0)
       {
@@ -395,7 +395,7 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
       else if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point == 0xA2)
       {
          printf("- Session#: %d TNO %d POINT %d ", session_num, tno, point);
-         printf("Lead-out runtime: (MSF %02u:%02u:%02u) ", pmin, psec, pframe);
+         printf("Lead-out runtime: (MSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
       }
 
       printf("\n");
@@ -560,7 +560,24 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
          pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #endif
          pos += snprintf(*out_buf + pos, len - pos, "  TRACK %02d %s\n", point, track_type);
-         pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 00:00:00\n");
+
+         {
+            unsigned pregap_lba_len = toc->track[point - 1].lba - toc->track[point - 1].lba_start;
+
+            if (toc->track[point - 1].audio && pregap_lba_len > 0)
+            {
+               unsigned char min = 0;
+               unsigned char sec = 0;
+               unsigned char frame = 0;
+
+               lba_to_msf(pregap_lba_len, &min, &sec, &frame);
+
+               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 00 00:00:00\n");
+               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
+            }
+            else
+               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 00:00:00\n");
+         }
       }
    }
 
