@@ -166,6 +166,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -254,6 +256,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST;
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST;
+      case ACTION_OK_DL_PLAYLIST_MANAGER_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST;
+      case ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS:
+         return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
@@ -356,6 +362,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -915,6 +930,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
+      case ACTION_OK_DL_PLAYLIST_MANAGER_LIST:
+      case ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS:
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
@@ -1792,11 +1809,15 @@ static int action_ok_playlist_entry_collection(const char *path,
    {
       core_info_ctx_find_t core_info;
       const char *entry_path                 = NULL;
-      const char             *path_base      =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
+
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf       = NULL;
       core_info.path      = new_core_path;
@@ -1855,14 +1876,15 @@ static int action_ok_playlist_entry(const char *path,
 {
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
-   playlist_t *playlist                = g_defaults.content_history;
+   playlist_t *playlist                = playlist_get_cached();
    menu_handle_t *menu                 = NULL;
    const struct playlist_entry *entry  = NULL;
    const char *entry_label             = NULL;
 
    new_core_path[0] = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!playlist ||
+       !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    selection_ptr = entry_idx;
@@ -1875,11 +1897,15 @@ static int action_ok_playlist_entry(const char *path,
          && string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      const char *path_base                  =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
+
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
@@ -1946,15 +1972,17 @@ static int action_ok_playlist_entry_start_content(const char *path,
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char             *path_base      =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      = false;
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
 
       new_core_path[0]                       = '\0';
 
-      found_associated_core                  =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
@@ -4308,6 +4336,8 @@ default_action_ok_func(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SE
 default_action_ok_func(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_playlist_manager_list, ACTION_OK_DL_PLAYLIST_MANAGER_LIST)
+default_action_ok_func(action_ok_push_playlist_manager_settings, ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS)
 default_action_ok_func(action_ok_push_input_hotkey_binds_list, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST)
 default_action_ok_func(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
@@ -5065,6 +5095,71 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_info_list_t *core_info_list = NULL;
+   playlist_t *playlist             = playlist_get_cached();
+   const char* core_name            = path;
+
+   (void)label;
+   (void)type;
+   (void)idx;
+   (void)entry_idx;
+
+   /* Get core list */
+   core_info_get_list(&core_info_list);
+
+   if (!core_info_list || !playlist)
+      return -1;
+
+   /* Handle N/A or empty path input */
+   if (string_is_empty(core_name) ||
+       string_is_equal(core_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+   {
+      playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+      playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+   }
+   else
+   {
+      core_info_t *core_info = NULL;
+      bool found             = false;
+      size_t i;
+
+      /* Loop through cores until we find a match */
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info = NULL;
+         core_info = core_info_get(core_info_list, i);
+
+         if (core_info)
+         {
+            if (string_is_equal(core_name, core_info->display_name))
+            {
+               /* Update playlist */
+               playlist_set_default_core_path(playlist, core_info->path);
+               playlist_set_default_core_name(playlist, core_info->display_name);
+
+               found = true;
+               break;
+            }
+         }
+      }
+
+      /* Fallback... */
+      if (!found)
+      {
+         playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+         playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+      }
+   }
+
+   /* In all cases, update file on disk */
+   playlist_write_file(playlist);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5240,6 +5335,16 @@ static int action_ok_video_resolution(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
 #endif
 
+   return 0;
+}
+
+static int action_ok_playlist_default_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
    return 0;
 }
 
@@ -5757,6 +5862,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_list);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_settings);
+            break;
          case MENU_ENUM_LABEL_RECORDING_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_recording_settings_list);
             break;
@@ -5993,6 +6104,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
+            break;
          case MENU_ENUM_LABEL_UPDATE_ASSETS:
             BIND_ACTION_OK(cbs, action_ok_update_assets);
             break;
@@ -6140,6 +6254,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
             break;
+         case MENU_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
+            break;
          default:
             return -1;
       }
@@ -6201,10 +6318,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
-   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
-   {
-      return -1;
-   }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
       BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
@@ -6248,6 +6361,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_default_core);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);

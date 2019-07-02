@@ -119,6 +119,7 @@ default_title_macro(action_get_frontend_counters_list,          MENU_ENUM_LABEL_
 default_title_macro(action_get_core_counters_list,              MENU_ENUM_LABEL_VALUE_CORE_COUNTERS)
 default_title_macro(action_get_recording_settings_list,         MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS)
 default_title_macro(action_get_playlist_settings_list,          MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS)
+default_title_macro(action_get_playlist_manager_list,           MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)
 default_title_macro(action_get_input_hotkey_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)
 default_title_macro(action_get_driver_settings_list,            MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS)
 default_title_macro(action_get_core_settings_list,              MENU_ENUM_LABEL_VALUE_CORE_SETTINGS)
@@ -865,6 +866,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_playlist_manager_list);
+            break;
          case MENU_ENUM_LABEL_MANAGEMENT:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
@@ -1181,6 +1185,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
+         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_playlist_manager_list);
+            break;
          case MENU_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
             break;
@@ -1329,12 +1336,23 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
          return 0;
    }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)))
+   {
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+         return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
       return 0;
    }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
       return 0;

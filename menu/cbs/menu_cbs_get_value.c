@@ -42,6 +42,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../playlist.h"
 
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay.h"
@@ -1071,54 +1072,24 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       const char *path,
       char *s2, size_t len2)
 {
-   char playlist_name_with_ext[255];
-   bool found_matching_core_association         = false;
-   settings_t         *settings                 = config_get_ptr();
-   struct string_list *str_list                 = string_split(settings->arrays.playlist_names, ";");
-   struct string_list *str_list2                = string_split(settings->arrays.playlist_cores, ";");
+   playlist_t *playlist  = playlist_get_cached();
+   const char *core_name = NULL;
 
-   strlcpy(s2, path, len2);
-
-   playlist_name_with_ext[0] = '\0';
    *s = '\0';
    *w = 19;
 
-   fill_pathname_noext(playlist_name_with_ext, path,
-         file_path_str(FILE_PATH_LPL_EXTENSION),
-         sizeof(playlist_name_with_ext));
-
-   for (i = 0; i < str_list->size; i++)
-   {
-      if (string_is_equal(str_list->elems[i].data, playlist_name_with_ext))
-      {
-         if (str_list->size != str_list2->size)
-            break;
-
-         if (!str_list2->elems[i].data)
-            break;
-
-         found_matching_core_association = true;
-         strlcpy(s, str_list2->elems[i].data, len);
-      }
-   }
-
-   string_list_free(str_list);
-   string_list_free(str_list2);
-
-   if (string_is_equal(s, file_path_str(FILE_PATH_DETECT)) || !found_matching_core_association)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
-   else
-   {
-      char buf[PATH_MAX_LENGTH];
-      core_info_list_t *list = NULL;
-
-      core_info_get_list(&list);
-
-      if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
-         strlcpy(s, buf, len);
-   }
-
    strlcpy(s2, path, len2);
+
+   if (!playlist)
+      return;
+
+   core_name = playlist_get_default_core_name(playlist);
+
+   if (!string_is_empty(core_name) &&
+       !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+      strlcpy(s, core_name, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
@@ -1345,6 +1316,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_playlist_associations);
             break;
          default:
             return - 1;
@@ -1628,12 +1603,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
-   {
-      BIND_ACTION_GET_VALUE(cbs,
-         menu_action_setting_disp_set_label_playlist_associations);
-      return 0;
-   }
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
       BIND_ACTION_GET_VALUE(cbs,

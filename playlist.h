@@ -190,6 +190,12 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name);
 
+char *playlist_get_default_core_path(playlist_t *playlist);
+char *playlist_get_default_core_name(playlist_t *playlist);
+
+void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
+void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
+
 RETRO_END_DECLS
 
 #endif

@@ -2560,78 +2560,82 @@ static unsigned menu_displaylist_parse_cores(
    return items_found;
 }
 
-static void menu_displaylist_parse_playlist_associations(
+static unsigned menu_displaylist_parse_playlist_manager_list(
       menu_displaylist_info_t *info)
 {
    settings_t      *settings    = config_get_ptr();
-   struct string_list *str_list = dir_list_new_special(
+   unsigned count               = 0;
+   struct string_list *str_list = NULL;
+
+   if (!settings)
+      return count;
+
+   str_list = dir_list_new_special(
          settings->paths.directory_playlist,
          DIR_LIST_COLLECTIONS, NULL);
 
    if (str_list && str_list->size)
    {
       unsigned i;
-      char new_playlist_names[sizeof(settings->arrays.playlist_names) / sizeof(settings->arrays.playlist_names[0])];
-      char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
-      struct string_list *stnames  = string_split(settings->arrays.playlist_names, ";");
-      struct string_list *stcores  = string_split(settings->arrays.playlist_cores, ";");
 
-      new_playlist_names[0] = new_playlist_cores[0] = '\0';
+      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
-         char path_base[PATH_MAX_LENGTH];
-         char core_path[PATH_MAX_LENGTH];
-         union string_list_elem_attr attr;
-         unsigned found                   = 0;
-         const char *path                 =
-            path_basename(str_list->elems[i].data);
+         const char *path = str_list->elems[i].data;
 
-         attr.i       = 0;
-         path_base[0] = core_path[0]      = '\0';
+         if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
+            continue;
 
-         if (!menu_content_playlist_find_associated_core(
-                  path, core_path, sizeof(core_path)))
-            strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+         if (string_is_empty(path))
+            continue;
 
-         strlcpy(path_base, path, sizeof(path_base));
+         if (!string_is_equal_noncase(path_get_extension(path),
+                  file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+            continue;
 
-         found = string_list_find_elem(stnames, path_base);
-
-         if (found)
-            string_list_set(stcores, found-1, core_path);
-         else
-         {
-            string_list_append(stnames, path_base, attr);
-            string_list_append(stcores, core_path, attr);
-         }
-
-         path_remove_extension(path_base);
          menu_entries_append_enum(info->list,
-               path_base,
                path,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY,
-               MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i,
+               "",
+               MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+               MENU_SETTING_ACTION,
                0, 0);
+         count++;
       }
-
-      string_list_join_concat(new_playlist_names,
-            sizeof(new_playlist_names), stnames, ";");
-      string_list_join_concat(new_playlist_cores,
-            sizeof(new_playlist_cores), stcores, ";");
-
-      strlcpy(settings->arrays.playlist_names,
-            new_playlist_names,
-            sizeof(settings->arrays.playlist_names));
-      strlcpy(settings->arrays.playlist_cores,
-            new_playlist_cores,
-            sizeof(settings->arrays.playlist_cores));
-
-      string_list_free(stnames);
-      string_list_free(stcores);
    }
 
+   /* Not necessary to check for NULL here */
    string_list_free(str_list);
+
+   return count;
+}
+
+static bool menu_displaylist_parse_playlist_manager_settings(
+      menu_handle_t *menu,
+      menu_displaylist_info_t *info,
+      const char *playlist_path)
+{
+   playlist_t *playlist = NULL;
+
+   menu_displaylist_set_new_playlist(menu, playlist_path);
+
+   playlist             = playlist_get_cached();
+
+   if (!playlist)
+      return false;
+
+   /* Default core association */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+         MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0);
+
+   /* TODO: Add
+    * - Reset core associations
+    * - Remove invalid entries */
+
+   return true;
 }
 
 #ifdef HAVE_NETWORKING
@@ -2663,7 +2667,14 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 
          path_base[0] = '\0';
 
+         if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
+            continue;
+
          if (string_is_empty(path))
+            continue;
+
+         if (!string_is_equal_noncase(path_get_extension(path),
+                  file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
             continue;
 
          strlcpy(path_base, path, sizeof(path_base));
@@ -2703,8 +2714,9 @@ static unsigned menu_displaylist_parse_content_information(
    bool content_loaded                 = false;
    bool playlist_valid                 = false;
    unsigned count                      = 0;
+   int n                               = 0;
    char core_name[PATH_MAX_LENGTH];
-   char tmp[8192];
+   char tmp[PATH_MAX_LENGTH];
 
    core_name[0] = '\0';
 
@@ -2764,8 +2776,13 @@ static unsigned menu_displaylist_parse_content_information(
    {
       tmp[0] = '\0';
 
-      snprintf(tmp, sizeof(tmp),
+      n = snprintf(tmp, sizeof(tmp),
             "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), content_label);
+
+      /* Silence gcc compiler warning
+       * (getting so sick of these...) */
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0;
 
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
@@ -2779,8 +2796,13 @@ static unsigned menu_displaylist_parse_content_information(
    {
       tmp[0] = '\0';
 
-      snprintf(tmp, sizeof(tmp),
+      n = snprintf(tmp, sizeof(tmp),
             "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), content_path);
+
+      /* Silence gcc compiler warning
+       * (getting so sick of these...) */
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0;
 
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
@@ -2793,7 +2815,6 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(core_name) &&
        !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
-      int n  = 0;
       tmp[0] = '\0';
 
       n = snprintf(tmp, sizeof(tmp),
@@ -2829,8 +2850,13 @@ static unsigned menu_displaylist_parse_content_information(
       {
          tmp[0] = '\0';
 
-         snprintf(tmp, sizeof(tmp),
+         n = snprintf(tmp, sizeof(tmp),
                "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), db_name_no_ext);
+
+         /* Silence gcc compiler warning
+          * (getting so sick of these...) */
+         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+            n = 0;
 
          if (menu_entries_append_enum(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
@@ -2870,9 +2896,14 @@ static unsigned menu_displaylist_parse_content_information(
 
             tmp[0] = '\0';
 
-            snprintf(tmp, sizeof(tmp),
+            n = snprintf(tmp, sizeof(tmp),
                   "%s: %02u:%02u:%02u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME),
                   runtime_hours, runtime_minutes, runtime_seconds);
+
+            /* Silence gcc compiler warning
+             * (getting so sick of these...) */
+            if ((n < 0) || (n >= PATH_MAX_LENGTH))
+               n = 0;
 
             if (menu_entries_append_enum(info->list, tmp,
                   msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_RUNTIME),
@@ -2887,11 +2918,16 @@ static unsigned menu_displaylist_parse_content_information(
 
             tmp[0] = '\0';
 
-            snprintf(tmp, sizeof(tmp),
+            n = snprintf(tmp, sizeof(tmp),
                   "%s: %04u/%02u/%02u - %02u:%02u:%02u",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED),
                   last_played_year, last_played_month, last_played_day,
                   last_played_hour, last_played_minute, last_played_second);
+
+            /* Silence gcc compiler warning
+             * (getting so sick of these...) */
+            if ((n < 0) || (n >= PATH_MAX_LENGTH))
+               n = 0;
 
             if (menu_entries_append_enum(info->list, tmp,
                   msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED),
@@ -3543,6 +3579,59 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                }
 
                free(video_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
+         {
+            core_info_list_t *core_info_list = NULL;
+            playlist_t *playlist             = playlist_get_cached();
+
+            /* Get core list */
+            core_info_get_list(&core_info_list);
+
+            if (core_info_list && playlist)
+            {
+               const char *current_core_name = playlist_get_default_core_name(playlist);
+               core_info_t *core_info        = NULL;
+               size_t i;
+
+               /* Sort cores alphabetically */
+               core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
+
+               /* Add N/A entry */
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
+                     0, 0))
+                  count++;
+
+               if (string_is_empty(current_core_name) ||
+                   string_is_equal(current_core_name, file_path_str(FILE_PATH_DETECT)))
+                  menu_entries_set_checked(list, 0, true);
+
+               /* Loop through cores */
+               for (i = 0; i < core_info_list->count; i++)
+               {
+                  core_info = NULL;
+                  core_info = core_info_get(core_info_list, i);
+
+                  if (core_info)
+                  {
+                     if (menu_entries_append_enum(list,
+                           core_info->display_name,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
+                           i + 1, 0))
+                        count++;
+
+                     if (string_is_equal(current_core_name, core_info->display_name))
+                        menu_entries_set_checked(list, i + 1, true);
+                  }
+               }
             }
          }
          break;
@@ -5949,8 +6038,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
          }
 
-         menu_displaylist_parse_playlist_associations(info);
+         if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST),
+                  MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+
          info->need_push    = true;
+         break;
+
+      case DISPLAYLIST_PLAYLIST_MANAGER_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_parse_playlist_manager_list(info);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         info->need_push    = true;
+
+         break;
+      case DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (!menu_displaylist_parse_playlist_manager_settings(menu, info, info->path))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         info->need_push    = true;
+
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6010,6 +6133,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_OPTIONS_CHEATS:
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
@@ -6029,6 +6153,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         FILE_TYPE_NONE, 0, 0);
                   break;
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+               case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),

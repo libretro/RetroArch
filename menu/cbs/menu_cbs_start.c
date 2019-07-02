@@ -35,6 +35,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
+#include "../../playlist.h"
 
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
@@ -221,36 +222,17 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_playlist_association(unsigned type, const char *label)
 {
-   struct string_list *stnames      = NULL;
-   struct string_list *stcores      = NULL;
-   core_info_list_t           *list = NULL;
-   settings_t *settings             = config_get_ptr();
-   const char *path                 = path_basename(label);
-   int found;
-   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
+   playlist_t *playlist  = playlist_get_cached();
+   bool load_playlist    = false;
 
-   core_info_get_list(&list);
-   if (!list)
+   if (!playlist)
       return -1;
 
-   new_playlist_cores[0] = '\0';
+   /* Set default core path + name to DETECT */
+   playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+   playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+   playlist_write_file(playlist);
 
-   stnames = string_split(settings->arrays.playlist_names, ";");
-   stcores = string_split(settings->arrays.playlist_cores, ";");
-   found   = string_list_find_elem(stnames, path);
-
-   if (found)
-      string_list_set(stcores, found-1,
-            file_path_str(FILE_PATH_DETECT));
-
-   string_list_join_concat(new_playlist_cores,
-         sizeof(new_playlist_cores), stcores, ";");
-
-   strlcpy(settings->arrays.playlist_cores,
-         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
-
-   string_list_free(stcores);
-   string_list_free(stnames);
    return 0;
 }
 
@@ -318,6 +300,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
             BIND_ACTION_START(cbs, action_start_netplay_mitm_server);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_START(cbs, action_start_playlist_association);
+            break;
          default:
             return -1;
       }
@@ -353,10 +338,6 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
-   }
-   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
-   {
-      BIND_ACTION_START(cbs, action_start_playlist_association);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {

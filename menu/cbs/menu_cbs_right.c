@@ -39,6 +39,7 @@
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../network/netplay/netplay.h"
+#include "../../playlist.h"
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) \
@@ -470,59 +471,67 @@ static int action_right_video_resolution(unsigned type, const char *label,
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
-   size_t i, next, found, current   = 0;
-   core_info_t *info                = NULL;
-   struct string_list *stnames      = NULL;
-   struct string_list *stcores      = NULL;
-   core_info_list_t           *list = NULL;
-   settings_t *settings             = config_get_ptr();
-   const char *path                 = path_basename(label);
    char core_path[PATH_MAX_LENGTH];
-   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
+   size_t i, next, current          = 0;
+   playlist_t *playlist             = playlist_get_cached();
+   core_info_list_t *core_info_list = NULL;
+   core_info_t *core_info           = NULL;
 
-   core_info_get_list(&list);
-   if (!list)
+   core_path[0]     = '\0';
+
+   if (!playlist)
+      return -1;
+
+   core_info_get_list(&core_info_list);
+   if (!core_info_list)
       return menu_cbs_exit();
 
-   core_path[0] = new_playlist_cores[0] = '\0';
+   /* Get current core path association */
+   if (string_is_empty(playlist_get_default_core_path(playlist)))
+      strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+   else
+      strlcpy(core_path, playlist_get_default_core_path(playlist), sizeof(core_path));
 
-   stnames = string_split(settings->arrays.playlist_names, ";");
-   stcores = string_split(settings->arrays.playlist_cores, ";");
+   /* Sort cores alphabetically */
+   core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
 
-   if (!menu_content_playlist_find_associated_core(path, core_path, sizeof(core_path)))
-         strlcpy(core_path,
-               file_path_str(FILE_PATH_DETECT), sizeof(core_path));
-
-   for (i = 0; i < list->count; i++)
+   /* Get the index of the currently associated core */
+   for (i = 0; i < core_info_list->count; i++)
    {
-      core_info_t *info = core_info_get(list, i);
-      if (string_is_equal(info->path, core_path))
+      core_info = NULL;
+      core_info = core_info_get(core_info_list, i);
+      if (!core_info)
+         return -1;
+      if (string_is_equal(core_info->path, core_path))
          current = i;
    }
 
+   /* Increment core index */
    next = current + 1;
-   if (next >= list->count)
+   if (next >= core_info_list->count)
    {
       if (wraparound)
          next = 0;
       else
-         next = list->count-1;
+      {
+         if (core_info_list->count > 0)
+            next = core_info_list->count - 1;
+         else
+            next = 0;
+      }
    }
 
-   info = core_info_get(list, next);
+   /* Get new core info */
+   core_info = NULL;
+   core_info = core_info_get(core_info_list, next);
+   if (!core_info)
+      return -1;
 
-   found = string_list_find_elem(stnames, path);
-   if (found && info)
-      string_list_set(stcores, (unsigned)(found-1), info->path);
+   /* Update playlist */
+   playlist_set_default_core_path(playlist, core_info->path);
+   playlist_set_default_core_name(playlist, core_info->display_name);
+   playlist_write_file(playlist);
 
-   string_list_join_concat(new_playlist_cores,
-         sizeof(new_playlist_cores), stcores, ";");
-
-   strlcpy(settings->arrays.playlist_cores,
-         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
-
-   string_list_free(stnames);
-   string_list_free(stcores);
    return 0;
 }
 
@@ -582,10 +591,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
-   }
-   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
-   {
-      BIND_ACTION_RIGHT(cbs, playlist_association_right);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
@@ -789,6 +794,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                }
             case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
                BIND_ACTION_RIGHT(cbs, action_right_video_gpu_index);
+               break;
+            case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+               BIND_ACTION_RIGHT(cbs, playlist_association_right);
                break;
             default:
                return -1;
