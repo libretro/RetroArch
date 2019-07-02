@@ -455,7 +455,7 @@ static bool menu_swap_ok_cancel_buttons = true;
 static bool menu_swap_ok_cancel_buttons = false;
 #endif
 
-static bool quit_press_twice = false;
+static bool quit_press_twice = true;
 
 static bool default_log_to_file = false;
 static bool log_to_file_timestamp = false;
