@@ -1526,6 +1526,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Φόρτωση Περιεχομένου"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "Load Disc")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "Dump Disc")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "Φόρτωση Κατάστασης"

@@ -2111,6 +2111,12 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
+            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+            menu_displaylist_setting(&entry);
+
+            entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+            menu_displaylist_setting(&entry);
+
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
             entry.enum_idx      = MENU_ENUM_LABEL_UPDATE_LAKKA;

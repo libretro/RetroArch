@@ -1617,6 +1617,10 @@ MSG_HASH(
          MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
          "Charger du contenu"
          )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "Load Disc")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "Dump Disc")
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_LOAD_STATE,
          "Charger une sauvegarde instantanée"

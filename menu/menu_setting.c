@@ -6649,6 +6649,26 @@ static bool setting_append_list(
                   parent_group);
          }
 
+#ifdef HAVE_CDROM
+         /* TODO/FIXME - add check seeing if CDROM is inserted into tray
+          */
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LOAD_DISC,
+               MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_DUMP_DISC,
+               MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
+
          if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_ACTION(

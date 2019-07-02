@@ -7299,6 +7299,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      PARSE_ACTION, false) == 0)
                   count++;
 
+            if (menu_displaylist_parse_settings_enum(info->list,
+                     MENU_ENUM_LABEL_LOAD_DISC,
+                     PARSE_ACTION, false) == 0)
+               count++;
+
+            if (menu_displaylist_parse_settings_enum(info->list,
+                     MENU_ENUM_LABEL_DUMP_DISC,
+                     PARSE_ACTION, false) == 0)
+               count++;
+
             if (string_is_equal(settings->arrays.menu_driver, "rgui") &&
 #ifndef HAVE_LIBRETRODB
                 settings->bools.menu_show_advanced_settings &&

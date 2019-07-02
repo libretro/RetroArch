@@ -5689,6 +5689,12 @@ static int xmb_list_push(void *data, void *userdata,
                menu_subsystem_populate(subsystem, info);
             }
 
+            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+            menu_displaylist_setting(&entry);
+
+            entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+            menu_displaylist_setting(&entry);
+
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
             menu_displaylist_setting(&entry);
 #ifdef HAVE_QT

@@ -4802,6 +4802,20 @@ static int action_ok_push_downloads_dir(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+static int action_ok_push_load_disc(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* TODO/FIXME - fill in - call a task here */
+   return 0;
+}
+
+static int action_ok_push_dump_disc(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* TODO/FIXME - fill in - call a task here */
+   return 0;
+}
+
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5904,6 +5918,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACCOUNTS_TWITCH:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_twitch_list);
+            break;
+         case MENU_ENUM_LABEL_LOAD_DISC:
+            BIND_ACTION_OK(cbs, action_ok_push_load_disc);
+            break;
+         case MENU_ENUM_LABEL_DUMP_DISC:
+            BIND_ACTION_OK(cbs, action_ok_push_dump_disc);
             break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTIONS:
