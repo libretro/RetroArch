@@ -655,8 +655,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
          string_list_free(file_list);
    }
 
-   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-
    if (!video_shader_parse_textures(conf, shader))
       return false;
 
@@ -982,11 +980,14 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 
 bool video_shader_any_supported(void)
 {
+   gfx_ctx_flags_t flags;
+   video_context_driver_get_flags(&flags);
+
    return
-      video_shader_is_supported(RARCH_SHADER_SLANG) ||
-      video_shader_is_supported(RARCH_SHADER_HLSL)  ||
-      video_shader_is_supported(RARCH_SHADER_GLSL)  ||
-      video_shader_is_supported(RARCH_SHADER_CG);
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG) ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)  ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)    ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 }
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
@@ -998,10 +999,11 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
    if (strlen(ext) > 1 && ext[0] == '.')
       ext++;
 
-   *is_preset =
-      string_is_equal_case_insensitive(ext, "cgp")   ||
-      string_is_equal_case_insensitive(ext, "glslp") ||
-      string_is_equal_case_insensitive(ext, "slangp");
+   if (is_preset)
+      *is_preset =
+         string_is_equal_case_insensitive(ext, "cgp")   ||
+         string_is_equal_case_insensitive(ext, "glslp") ||
+         string_is_equal_case_insensitive(ext, "slangp");
 
    if (string_is_equal_case_insensitive(ext, "cgp") ||
        string_is_equal_case_insensitive(ext, "cg")
@@ -1032,10 +1034,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
  **/
 enum rarch_shader_type video_shader_parse_type(const char *path)
 {
-   bool is_preset = false;
-   if (!path)
-      return RARCH_SHADER_NONE;
-   return video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
+   return video_shader_get_type_from_ext(path_get_extension(path), NULL);
 }
 
 bool video_shader_check_for_changes(void)

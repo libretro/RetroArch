@@ -1586,7 +1586,8 @@ static int generic_action_ok(const char *path,
             flush_char = msg_hash_to_str(flush_id);
             menu_shader_manager_set_preset(shader,
                   video_shader_parse_type(action_path),
-                  action_path);
+                  action_path,
+                  true);
          }
 #endif
          break;

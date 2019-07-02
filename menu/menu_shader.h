@@ -40,11 +40,12 @@ bool menu_shader_manager_init(void);
  * @shader                   : Shader handle.
  * @type                     : Type of shader.
  * @preset_path              : Preset path to load from.
+ * @apply                    : Whether to apply the shader or just update shader information
  *
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(
-      void *data, enum rarch_shader_type type, const char *preset_path);
+      void *data, enum rarch_shader_type type, const char *preset_path, bool apply);
 
 /**
  * menu_shader_manager_save_preset:
