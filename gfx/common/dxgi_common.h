@@ -260,6 +260,19 @@ static INLINE ULONG Release(void* object)
 #endif
 #endif
 
+#if !defined(__cplusplus) || defined(CINTERFACE)
+#ifndef COM_ADDREF_DECLARED
+#define COM_ADDREF_DECLARED
+static INLINE ULONG AddRef(void* object)
+{
+   if (object)
+      return ((IUnknown*)object)->lpVtbl->AddRef((IUnknown*)object);
+
+   return 0;
+}
+#endif
+#endif
+
 /* auto-generated */
 
 typedef IDXGIObject*            DXGIObject;
