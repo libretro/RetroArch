@@ -47,6 +47,7 @@
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
 #include <winioctl.h>
 #include <ntddscsi.h>
 #endif
@@ -228,35 +229,39 @@ retry:
       (void)sense_key_text;
       (void)i;
 
-      switch (sense[2] & 0xF)
+      /* INQUIRY should never fail, don't retry */
+      if (cmd[0] != 0x12)
       {
-         case 0:
-         case 2:
-         case 3:
-         case 4:
-         case 6:
-            if (retries_left)
-            {
+         switch (sense[2] & 0xF)
+         {
+            case 0:
+            case 2:
+            case 3:
+            case 4:
+            case 6:
+               if (retries_left)
+               {
 #ifdef CDROM_DEBUG
-               printf("CDROM Read Retry...\n");
-               fflush(stdout);
+                  printf("CDROM Read Retry...\n");
+                  fflush(stdout);
 #endif
-               retries_left--;
-               usleep(1000 * 1000);
-               goto retry;
-            }
-            else
-            {
-               rv = 1;
+                  retries_left--;
+                  usleep(1000 * 1000);
+                  goto retry;
+               }
+               else
+               {
+                  rv = 1;
 #ifdef CDROM_DEBUG
-               printf("CDROM Read Retries failed, giving up.\n");
-               fflush(stdout);
+                  printf("CDROM Read Retries failed, giving up.\n");
+                  fflush(stdout);
 #endif
-            }
+               }
 
-            break;
-         default:
-            break;
+               break;
+            default:
+               break;
+         }
       }
 
 #ifdef CDROM_DEBUG
@@ -805,6 +810,56 @@ struct string_list* cdrom_get_available_drives(void)
    string_list_free(dir_list);
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
+   DWORD drive_mask = GetLogicalDrives();
+   int i;
+   int drive_index = 0;
+
+   for (i = 0; i < sizeof(DWORD) * 8; i++)
+   {
+      char path[] = {"a:\\"};
+      char cdrom_path[] = {"cdrom://a:/drive-track01.bin"};
+
+      path[0] += i;
+      cdrom_path[8] += i;
+
+      /* this drive letter doesn't exist */
+      if (!(drive_mask & (1 << i)))
+         continue;
+
+      if (GetDriveType(path) != DRIVE_CDROM)
+         continue;
+      else
+      {
+         char drive_model[32] = {0};
+         char drive_string[64] = {0};
+         union string_list_elem_attr attr = {0};
+         RFILE *file = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+         const libretro_vfs_implementation_file *stream;
+         bool is_cdrom = false;
+
+         if (!file)
+            continue;
+
+         stream = filestream_get_vfs_handle(file);
+         cdrom_get_inquiry(stream, drive_model, sizeof(drive_model), &is_cdrom);
+         filestream_close(file);
+
+         if (!is_cdrom)
+            continue;
+
+         attr.i = path[0];
+
+         snprintf(drive_string, sizeof(drive_string), "Drive %d: ", drive_index + 1);
+
+         if (!string_is_empty(drive_model))
+            strlcat(drive_string, drive_model, sizeof(drive_string));
+         else
+            strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
+
+         string_list_append(list, drive_string, attr);
+         drive_index++;
+      }
+   }
 #endif
    return list;
 }
