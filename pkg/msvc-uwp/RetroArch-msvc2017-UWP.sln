@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2017-UWP", "RetroArch-msvc2017-UWP\RetroArch-msvc2017-UWP.vcxproj", "{F5E937B6-1BA0-4446-B94B-F3BBDEF908F4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2017-UWP-cores-nonfree", "RetroArch-msvc2017-UWP-cores-nonfree\RetroArch-msvc2017-UWP-cores-nonfree.vcxproj", "{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,32 +45,6 @@ Global
 		{F5E937B6-1BA0-4446-B94B-F3BBDEF908F4}.Release|x86.ActiveCfg = Release|Win32
 		{F5E937B6-1BA0-4446-B94B-F3BBDEF908F4}.Release|x86.Build.0 = Release|Win32
 		{F5E937B6-1BA0-4446-B94B-F3BBDEF908F4}.Release|x86.Deploy.0 = Release|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM.ActiveCfg = Debug|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM.Build.0 = Debug|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM.Deploy.0 = Debug|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM64.Build.0 = Debug|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|ARM64.Deploy.0 = Debug|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x64.ActiveCfg = Debug|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x64.Build.0 = Debug|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x64.Deploy.0 = Debug|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x86.ActiveCfg = Debug|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x86.Build.0 = Debug|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Debug|x86.Deploy.0 = Debug|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|Any CPU.ActiveCfg = Release|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM.ActiveCfg = Release|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM.Build.0 = Release|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM.Deploy.0 = Release|ARM
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM64.ActiveCfg = Release|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM64.Build.0 = Release|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|ARM64.Deploy.0 = Release|ARM64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x64.ActiveCfg = Release|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x64.Build.0 = Release|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x64.Deploy.0 = Release|x64
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x86.ActiveCfg = Release|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x86.Build.0 = Release|Win32
-		{CC7B9A23-BD64-4EB9-9D8F-F5115FB8960F}.Release|x86.Deploy.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
