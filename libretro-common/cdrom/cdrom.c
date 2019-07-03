@@ -662,3 +662,88 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
    return 0;
 }
 
+int cdrom_stop(libretro_vfs_implementation_file *stream)
+{
+   /* MMC Command: START STOP UNIT */
+   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x0, 0};
+   int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("stop status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
+int cdrom_unlock(libretro_vfs_implementation_file *stream)
+{
+   /* MMC Command: PREVENT ALLOW MEDIUM REMOVAL */
+   unsigned char cdb[] = {0x1E, 0, 0, 0, 0x2, 0};
+   int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("persistent prevent clear status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   cdb[4] = 0x0;
+
+   rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("prevent clear status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
+int cdrom_open_tray(libretro_vfs_implementation_file *stream)
+{
+   /* MMC Command: START STOP UNIT */
+   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x2, 0};
+   int rv;
+
+   cdrom_unlock(stream);
+   cdrom_stop(stream);
+
+   rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("open tray status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
+int cdrom_close_tray(libretro_vfs_implementation_file *stream)
+{
+   /* MMC Command: START STOP UNIT */
+   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x3, 0};
+   int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("close tray status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
