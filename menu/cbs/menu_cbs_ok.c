@@ -2727,19 +2727,21 @@ static int action_ok_core_deferred_set(const char *new_core_path,
 {
    char ext_name[255];
    char core_display_name[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
+   struct playlist_entry entry             = {0};
 
    ext_name[0]                             = '\0';
+   core_display_name[0]                    = '\0';
+   msg[0]                                  = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return menu_cbs_exit();
-
-   core_display_name[0] = '\0';
 
    core_info_get_name(new_core_path,
          core_display_name, sizeof(core_display_name),
@@ -2749,20 +2751,20 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files,
          true);
 
-   {
-      struct playlist_entry entry = {0};
+   /* the update function reads our entry 
+    * as const, so these casts are safe */
+   entry.core_path = (char*)new_core_path;
+   entry.core_name = core_display_name;
 
-      /* the update function reads our entry 
-       * as const, so these casts are safe */
-      entry.label     = (char*)content_label;
-      entry.core_path = (char*)new_core_path;
-      entry.core_name = core_display_name;
+   command_playlist_update_write(
+         NULL,
+         menu->scratchpad.unsigned_var,
+         &entry);
 
-      command_playlist_update_write(
-            NULL,
-            menu->scratchpad.unsigned_var,
-            &entry);
-   }
+   /* Provide visual feedback */
+   strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+   strlcat(msg, core_display_name, sizeof(msg));
+   runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
@@ -3903,6 +3905,19 @@ default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SC
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
 default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
 default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
+
+static int action_ok_set_core_association(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu                 = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   return generic_action_ok_displaylist_push(path, NULL,
+         NULL, 0, menu->rpl_entry_selection_ptr, entry_idx,
+         ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+}
 
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5744,6 +5759,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
+            break;
+         case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
+            BIND_ACTION_OK(cbs, action_ok_set_core_association);
             break;
          case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
             BIND_ACTION_OK(cbs, action_ok_reset_core_association);

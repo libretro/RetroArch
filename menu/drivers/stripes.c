@@ -2230,6 +2230,7 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_SETTING_ACTION_CORE_INFORMATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
+      case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
          return stripes->textures.list[STRIPES_TEXTURE_INPUT_REMAPPING_OPTIONS];

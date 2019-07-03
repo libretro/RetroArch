@@ -2547,6 +2547,10 @@ MSG_HASH(
     "Download screenshot/box art/title screen thumbnail images for current content. Updates any existing thumbnails."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
+    "Set Core Association"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
     "Reset Core Association"
     )
@@ -4362,6 +4366,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ADDED_TO_FAVORITES,
     "Added to favorites"
+    )
+MSG_HASH(
+    MSG_SET_CORE_ASSOCIATION,
+    "Core set: "
     )
 MSG_HASH(
     MSG_RESET_CORE_ASSOCIATION,
@@ -6898,6 +6906,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
     "Show/hide the 'Start Streaming' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Show Set Core Association"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Show/hide the 'Set Core Association' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
