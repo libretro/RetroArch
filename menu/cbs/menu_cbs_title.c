@@ -174,6 +174,7 @@ default_title_macro(action_get_title_goto_image,                MENU_ENUM_LABEL_
 default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
+default_title_macro(action_get_title_deferred_core_list,        MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -186,7 +187,6 @@ default_fill_title_macro(action_get_title_core_directory,       MENU_ENUM_LABEL_
 default_fill_title_macro(action_get_title_core_info_directory,  MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH)
 default_fill_title_macro(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR)
 default_fill_title_macro(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
-default_fill_title_macro(action_get_title_deferred_core_list,   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 default_fill_title_macro(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
 default_fill_title_macro(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
 default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
@@ -650,6 +650,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
+         case MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -1004,6 +1005,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
+         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
          case MENU_LABEL_CONFIGURATIONS:
