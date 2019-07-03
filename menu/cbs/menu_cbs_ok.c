@@ -2128,6 +2128,12 @@ static int action_ok_mixer_stream_action_stop(const char *path,
    return 0;
 }
 
+static int action_ok_dump_cdrom(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return 0;
+}
+
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6325,7 +6331,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
-   if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
+   if (type == MENU_SET_CDROM_LIST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
+   }
+   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
