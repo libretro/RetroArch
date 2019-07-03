@@ -264,6 +264,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
+      case ACTION_OK_DL_DUMP_DISC_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
@@ -940,6 +942,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_BROWSE_URL_LIST:
       case ACTION_OK_DL_MUSIC_LIST:
       case ACTION_OK_DL_IMAGES_LIST:
+      case ACTION_OK_DL_DUMP_DISC_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
@@ -4343,6 +4346,7 @@ default_action_ok_func(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_L
 default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
+default_action_ok_func(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 default_action_ok_func(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
@@ -4803,13 +4807,6 @@ static int action_ok_push_downloads_dir(const char *path,
 }
 
 static int action_ok_push_load_disc(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   /* TODO/FIXME - fill in - call a task here */
-   return 0;
-}
-
-static int action_ok_push_dump_disc(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    /* TODO/FIXME - fill in - call a task here */
@@ -5923,7 +5920,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_load_disc);
             break;
          case MENU_ENUM_LABEL_DUMP_DISC:
-            BIND_ACTION_OK(cbs, action_ok_push_dump_disc);
+            BIND_ACTION_OK(cbs, action_ok_push_dump_disc_list);
             break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTIONS:

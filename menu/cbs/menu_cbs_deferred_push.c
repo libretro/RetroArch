@@ -95,6 +95,7 @@ generic_deferred_push(deferred_push_content_collection_list,        DISPLAYLIST_
 generic_deferred_push(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
 generic_deferred_push(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 generic_deferred_push(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
+generic_deferred_push(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
 generic_deferred_push(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
 generic_deferred_push(deferred_push_information,                    DISPLAYLIST_INFORMATION)
 generic_deferred_push(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
@@ -639,7 +640,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash)
 {
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_favorites_list);
       return 0;
@@ -1369,6 +1375,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
                break;
+            case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
+               break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
             case MENU_ENUM_LABEL_FAVORITES:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
@@ -1620,6 +1629,8 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
+
+   RARCH_LOG("Label: %s\n", label);
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
        menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
