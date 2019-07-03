@@ -40,6 +40,8 @@ typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
 typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
 #endif
 
+struct string_list;
+
 RETRO_BEGIN_DECLS
 
 typedef struct
@@ -73,7 +75,7 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc);
 
 /* needs 32 bytes for full vendor, product and version */
-int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len);
+int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom);
 
 int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
@@ -86,6 +88,9 @@ int cdrom_unlock(libretro_vfs_implementation_file *stream);
 int cdrom_open_tray(libretro_vfs_implementation_file *stream);
 
 int cdrom_close_tray(libretro_vfs_implementation_file *stream);
+
+/* must be freed by the caller */
+struct string_list* cdrom_get_available_drives(void);
 
 RETRO_END_DECLS
 

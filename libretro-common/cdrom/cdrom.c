@@ -34,16 +34,19 @@
 #include <retro_endianness.h>
 #include <retro_miscellaneous.h>
 #include <vfs/vfs_implementation.h>
+#include <lists/string_list.h>
+#include <lists/dir_list.h>
+#include <string/stdstring.h>
 
 #include <math.h>
 #include <unistd.h>
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
 #include <stropts.h>
 #include <scsi/sg.h>
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #include <winioctl.h>
 #include <ntddscsi.h>
 #endif
@@ -86,7 +89,7 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
    *frame = (*frame < 74) ? (*frame + 1) : 0;
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 static int cdrom_send_command_win32(HANDLE fh, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, unsigned char *sense, size_t sense_len)
 {
    DWORD ioctl_bytes;
@@ -134,7 +137,7 @@ static int cdrom_send_command_win32(HANDLE fh, CDROM_CMD_Direction dir, void *bu
 }
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
 static int cdrom_send_command_linux(int fd, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, unsigned char *sense, size_t sense_len)
 {
    sg_io_hdr_t sgio = {0};
@@ -172,7 +175,7 @@ static int cdrom_send_command_linux(int fd, CDROM_CMD_Direction dir, void *buf, 
 }
 #endif
 
-static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
+static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
    unsigned char *xfer_buf;
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
@@ -204,10 +207,10 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 #endif
 
 retry:
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
    if (!cdrom_send_command_linux(fileno(stream->fp), dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
 #else
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
    if (!cdrom_send_command_win32(stream->fh, dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
 #endif
 #endif
@@ -554,7 +557,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
          cdrom_read_track_info(stream, point, toc);
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
          pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c://drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #else
          pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
@@ -585,7 +588,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 }
 
 /* needs 32 bytes for full vendor, product and version */
-int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len)
+int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom)
 {
    /* MMC Command: INQUIRY */
    unsigned char cdb[] = {0x12, 0, 0, 0, 0xff, 0};
@@ -612,6 +615,9 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int
       /* version */
       memcpy(model + 26, buf + 32, 4);
    }
+
+   if (is_cdrom && buf[0] == 5)
+      *is_cdrom = true;
 
    return 0;
 }
@@ -745,5 +751,63 @@ int cdrom_close_tray(libretro_vfs_implementation_file *stream)
       return 1;
 
    return 0;
+}
+
+struct string_list* cdrom_get_available_drives(void)
+{
+   struct string_list *list = string_list_new();
+   int drive_index = 0;
+
+#if defined(__linux__) && !defined(ANDROID)
+   struct string_list *dir_list = dir_list_new("/dev", NULL, false, false, false, false);
+   int i;
+
+   if (!dir_list)
+      return list;
+
+   for (i = 0; i < dir_list->size; i++)
+   {
+      if (strstr(dir_list->elems[i].data, "/dev/sg"))
+      {
+         char drive_model[32] = {0};
+         char drive_string[64] = {0};
+         union string_list_elem_attr attr = {0};
+         int dev_index = 0;
+         RFILE *file = filestream_open(dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
+         const libretro_vfs_implementation_file *stream;
+         bool is_cdrom = false;
+
+         if (!file)
+            continue;
+
+         stream = filestream_get_vfs_handle(file);
+         cdrom_get_inquiry(stream, drive_model, sizeof(drive_model), &is_cdrom);
+         filestream_close(file);
+
+         if (!is_cdrom)
+            continue;
+
+         sscanf(dir_list->elems[i].data + strlen("/dev/sg"), "%d", &dev_index);
+
+         attr.i = dev_index;
+
+         snprintf(drive_string, sizeof(drive_string), "Drive %d: ", drive_index + 1);
+
+         if (!string_is_empty(drive_model))
+            strlcat(drive_string, drive_model, sizeof(drive_string));
+         else
+            strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
+
+         string_list_append(list, drive_string, attr);
+         drive_index++;
+      }
+   }
+
+   string_list_free(dir_list);
+#else
+   string_list_append(list, "Drive 1", attr);
+#endif
+
+   return list;
 }
 

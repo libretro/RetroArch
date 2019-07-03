@@ -194,6 +194,8 @@ enum menu_settings_type
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
+   MENU_SET_CDROM_LIST,
+
    MENU_SETTINGS_LAST
 };
 

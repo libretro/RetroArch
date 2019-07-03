@@ -53,7 +53,7 @@ void string_list_free(struct string_list *list)
       free(list->elems);
    }
 
-   list->elems = NULL; 
+   list->elems = NULL;
    free(list);
 }
 

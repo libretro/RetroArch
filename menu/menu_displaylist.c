@@ -60,6 +60,10 @@
 #include "../frontend/drivers/platform_unix.h"
 #endif
 
+#ifdef HAVE_CDROM
+#include <cdrom/cdrom.h>
+#endif
+
 #include "menu_cbs.h"
 #include "menu_content.h"
 #include "menu_driver.h"
@@ -4890,23 +4894,40 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
    switch (type)
    {
+#ifdef HAVE_CDROM
       case DISPLAYLIST_DUMP_DISC:
+      {
+         int i;
+         struct string_list *list = cdrom_get_available_drives();
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
-         
-         /* TODO/FIXME - remove 'count = 0;' and implement disk list */
 
-         if (count == 0)
+         for (i = 0; list && i < list->size; i++)
+         {
+            menu_entries_append_enum(info->list,
+                  list->elems[i].data,
+                  "",
+                  0,
+                  MENU_SET_CDROM_LIST,
+                  0, i);
+         }
+
+         if (list->size == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
 
+         string_list_free(list);
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
          break;
+      }
+#endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {

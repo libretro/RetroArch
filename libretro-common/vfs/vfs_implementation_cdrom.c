@@ -26,7 +26,7 @@
 #include <string/stdstring.h>
 #include <cdrom/cdrom.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #endif
 
@@ -127,7 +127,7 @@ void retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints)
 {
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
    char model[32] = {0};
    char cdrom_path[] = "/dev/sg1";
    size_t path_len = strlen(path);
@@ -176,7 +176,7 @@ void retro_vfs_file_open_cdrom(
 
    if (stream->fp)
    {
-      if (!cdrom_get_inquiry(stream, model, sizeof(model)))
+      if (!cdrom_get_inquiry(stream, model, sizeof(model), NULL))
       {
 #ifdef CDROM_DEBUG
          printf("CDROM Model: %s\n", model);
@@ -211,7 +211,7 @@ void retro_vfs_file_open_cdrom(
 #endif
    }
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
    char model[32] = {0};
    char cdrom_path[] = "\\\\.\\D:";
    size_t path_len = strlen(path);
@@ -313,7 +313,7 @@ int retro_vfs_file_close_cdrom(libretro_vfs_implementation_file *stream)
    fflush(stdout);
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
    if (!stream->fh || !CloseHandle(stream->fh))
       return -1;
 #else

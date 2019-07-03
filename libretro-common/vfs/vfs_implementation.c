@@ -410,7 +410,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       if (stream->scheme == VFS_SCHEME_CDROM)
       {
          retro_vfs_file_open_cdrom(stream, path, mode, hints);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
          if (!stream->fh)
             goto error;
 #else
