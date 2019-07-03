@@ -192,10 +192,10 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
 #ifdef __WINRT__
          if (FAILED(DXGIEnumAdapters2(d3d12->factory, i, &d3d12->adapter)))
-            return false;
+            break;
 #else
          if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &d3d12->adapter)))
-            return false;
+            break;
 #endif
 
          IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
