@@ -756,10 +756,9 @@ int cdrom_close_tray(libretro_vfs_implementation_file *stream)
 struct string_list* cdrom_get_available_drives(void)
 {
    struct string_list *list = string_list_new();
-   int drive_index = 0;
-
 #if defined(__linux__) && !defined(ANDROID)
    struct string_list *dir_list = dir_list_new("/dev", NULL, false, false, false, false);
+   int drive_index = 0;
    int i;
 
    if (!dir_list)
@@ -804,10 +803,9 @@ struct string_list* cdrom_get_available_drives(void)
    }
 
    string_list_free(dir_list);
-#else
-   string_list_append(list, "Drive 1", attr);
 #endif
-
+#if defined(_WIN32) && !defined(_XBOX)
+#endif
    return list;
 }
 
