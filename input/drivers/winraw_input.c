@@ -204,6 +204,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
    }
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
+   free(devs);
 
    *mice      = mice_r;
    *mouse_cnt = mouse_cnt_r;
