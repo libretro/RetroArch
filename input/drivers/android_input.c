@@ -1508,7 +1508,7 @@ static int16_t android_input_state(void *data,
             if (!res)
                res = android_keyboard_port_input_pressed(binds[port], id);
             if (res)
-               ret |= (1 << i);
+               ret |= (1 << id);
          }
          return ret;
       case RETRO_DEVICE_ANALOG:
