@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <libretro.h>
+#include <retro_environment.h>
 
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
@@ -41,6 +42,7 @@ enum vfs_scheme
    VFS_SCHEME_CDROM
 };
 
+#ifndef __WINRT__
 #ifdef VFS_FRONTEND
 struct retro_vfs_file_handle
 #else
@@ -64,6 +66,7 @@ struct libretro_vfs_implementation_file
    vfs_cdrom_t cdrom;
 #endif
 };
+#endif
 
 /* Replace the following symbol with something appropriate
  * to signify the file is being compiled for a front end instead of a core.
