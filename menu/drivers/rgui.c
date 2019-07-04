@@ -2397,7 +2397,7 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
                   *frame_buf_ptr = shadow_color;
                   frame_buf_ptr += fb_width - 1;
                   /* Small performance hack... */
-                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+                  memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
                }
             }
          }
@@ -2501,7 +2501,7 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
                   *frame_buf_ptr = shadow_color;
                   frame_buf_ptr += fb_width - 1;
                   /* Small performance hack... */
-                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+                  memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
                }
             }
          }
@@ -2605,7 +2605,7 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
             *frame_buf_ptr = shadow_color;
             frame_buf_ptr += fb_width - 1;
             /* Small performance hack... */
-            *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+            memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
          }
       }
    }
