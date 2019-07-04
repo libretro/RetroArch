@@ -746,12 +746,12 @@ const char *config_get_midi_driver_options(void);
 const char *config_get_default_record(void);
 
 /**
- * config_load:
+ * config_parse_file:
  *
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void);
+void config_parse_file(void);
 
 /**
  * config_load_override:

@@ -260,8 +260,9 @@ static retro_bits_t has_set_libretro_device;
 
 static bool has_set_core                                        = false;
 #ifdef HAVE_DISCORD
-bool discord_is_inited                                         = false;
+bool discord_is_inited                                          = false;
 #endif
+static bool rarch_block_config_read                             = false;
 static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
 static bool rarch_force_fullscreen                              = false;
@@ -13677,8 +13678,16 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       }
    }
 
+   /* Flush out some states that could have been set
+    * by core environment variables. */
+   core_unset_input_descriptors();
+
    /* Load the config file now that we know what it is */
-   config_load();
+   if (!rarch_block_config_read)
+   {
+      config_set_defaults();
+      config_parse_file();
+   }
 
    /* Second pass: All other arguments override the config file */
    optind = 1;
@@ -14484,7 +14493,6 @@ static void runloop_task_msg_queue_push(
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    static bool has_set_username        = false;
-   static bool rarch_block_config_read = false;
    static bool rarch_patch_blocked     = false;
    static bool runloop_missing_bios    = false;
    /* TODO/FIXME - not used right now? */

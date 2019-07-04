@@ -3523,21 +3523,29 @@ success:
    return true;
 }
 
-static void parse_config_file(void)
+/**
+ * config_parse_file:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
+void config_parse_file(void)
 {
-   const char *config_path = path_get(RARCH_PATH_CONFIG);
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");
    }
 
-   RARCH_LOG("[config] loading config from: %s.\n", config_path);
+   {
+      const char *config_path = path_get(RARCH_PATH_CONFIG);
+      RARCH_LOG("[config] loading config from: %s.\n", config_path);
 
-   if (config_load_file(config_path, config_get_ptr()))
-      return;
-
-   RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
-         config_path);
+      if (!config_load_file(config_path, config_get_ptr()))
+      {
+         RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
+               config_path);
+      }
+   }
 }
 
 /**
@@ -3548,15 +3556,8 @@ static void parse_config_file(void)
  */
 void config_load(void)
 {
-   /* Flush out some states that could have been
-    * set by core environment variables */
-   core_unset_input_descriptors();
-
-   if (rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
-      return;
-
    config_set_defaults();
-   parse_config_file();
+   config_parse_file();
 }
 
 /**
