@@ -1059,6 +1059,59 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
    rv = cdrom_send_command(stream, DIRECTION_IN, s, len, cdb, sizeof(cdb), skip);
 
 #ifdef CDROM_DEBUG
+   printf("read msf status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
+int cdrom_read_lba(libretro_vfs_implementation_file *stream, unsigned lba, void *s, size_t len, size_t skip)
+{
+   /* MMC Command: READ CD */
+   unsigned char cdb[] = {0xBE, 0, 0, 0, 0, 0, 0, 0, 0, 0xF8, 0, 0};
+   unsigned lba_orig = lba;
+   int rv;
+
+   lba = swap_if_big32(lba);
+
+   cdb[2] = (lba >> 24) & 0xFF;
+   cdb[3] = (lba >> 16) & 0xFF;
+   cdb[4] = (lba >> 8) & 0xFF;
+   cdb[5] = (lba >> 0) & 0xFF;
+
+   if (len + skip <= 2352)
+   {
+      cdb[8] = 1;
+
+#ifdef CDROM_DEBUG
+      printf("single-frame read: from %d count %d skip %" PRId64 "\n", lba_orig, 1, skip);
+      fflush(stdout);
+#endif
+   }
+   else
+   {
+      unsigned frames = lba_orig + ceil((len + skip) / 2352.0);
+      unsigned lba_count = frames - lba_orig;
+
+      lba_count = swap_if_big32(lba_count);
+
+      cdb[6] = (lba_count >> 16) & 0xFF;
+      cdb[7] = (lba_count >> 8) & 0xFF;
+      cdb[8] = (lba_count >> 0) & 0xFF;
+
+#ifdef CDROM_DEBUG
+      printf("multi-frame read: from %d to %d len %d skip %" PRId64 "\n", lba_orig, frames, frames - lba_orig, skip);
+      fflush(stdout);
+#endif
+   }
+
+   rv = cdrom_send_command(stream, DIRECTION_IN, s, len, cdb, sizeof(cdb), skip);
+
+#ifdef CDROM_DEBUG
    printf("read status code %d\n", rv);
    fflush(stdout);
 #endif

@@ -372,6 +372,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 #endif
 
       rv = cdrom_read(stream, min, sec, frame, s, (size_t)len, skip);
+      /*rv = cdrom_read_lba(stream, stream->cdrom.cur_lba, s, (size_t)len, skip);*/
 
       if (rv)
       {
