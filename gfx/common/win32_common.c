@@ -644,7 +644,6 @@ static void win32_set_position_from_config(void)
    settings_t *settings  = config_get_ptr();
    int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
    int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
-   int menu_bar_height   = GetSystemMetrics(SM_CYMENU);
 
    if (!settings->bools.video_window_save_positions)
       return;
