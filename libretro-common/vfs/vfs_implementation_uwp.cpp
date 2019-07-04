@@ -328,6 +328,21 @@ IBuffer^ CreateNativeBuffer(void* buf, uint32_t capacity, uint32_t length)
 	return buffer;
 }
 
+#ifdef VFS_FRONTEND
+struct retro_vfs_file_handle
+#else
+struct libretro_vfs_implementation_file
+#endif
+{
+	IRandomAccessStream^ fp;
+	IBuffer^ bufferp;
+	char* buffer;
+	char* orig_path;
+	size_t buffer_size;
+	int buffer_left;
+	size_t buffer_fill;
+};
+
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
 	if (!path || !*path)
