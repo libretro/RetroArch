@@ -364,6 +364,8 @@ retry:
    }
    else
    {
+      cdrom_print_sense_data(sense, sizeof(sense));
+
       /* INQUIRY/TEST should never fail, don't retry */
       if (cmd[0] != 0x0 && cmd[0] != 0x12)
       {
@@ -400,11 +402,7 @@ retry:
                break;
          }
       }
-#ifdef CDROM_DEBUG
-      printf("CHECK CONDITION\n");
 
-      cdrom_print_sense_data(sense, sizeof(sense));
-#endif
       rv = 1;
    }
 
