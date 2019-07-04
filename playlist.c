@@ -1822,38 +1822,37 @@ static bool playlist_read_file(
 
    /* Detect format of playlist */
    {
-      char buf[16] = {0};
-      int64_t bytes_read = filestream_read(file, buf, 15);
+      char test_char = 0;
 
-      /* Empty playlist file */
-      if (bytes_read == 0)
+      /* Read file until we find the first non-whitespace
+       * ASCII character */
+      while ((test_char <= 0x20) || (test_char >= 0x7F))
       {
-         filestream_close(file);
-         return true;
+         test_char = filestream_getc(file);
+
+         /* Sanity check:
+          * - If filestream_getc() returns 0, stream is invalid
+          * - If filestream_getc() returns EOF, then no non-whitespace
+          *   ASCII characters were found */
+         if ((test_char == 0) || (test_char == EOF))
+            goto end;
       }
 
-      filestream_seek(file, 0, SEEK_SET);
-
-      if (bytes_read == 15)
+      if (test_char == '{')
       {
-         if (string_is_equal(buf, "{\n  \"version\": "))
-         {
-            /* new playlist format detected */
-            /*RARCH_LOG("New playlist format detected.\n");*/
-            new_format = true;
-         }
-         else
-         {
-            /* old playlist format detected */
-            /*RARCH_LOG("Old playlist format detected.\n");*/
-            new_format = false;
-         }
+         /* New playlist format detected */
+         /*RARCH_LOG("New playlist format detected.\n");*/
+         new_format = true;
       }
       else
       {
-         /* corrupt playlist? */
-         RARCH_ERR("Could not detect playlist format.\n");
+         /* old playlist format detected */
+         /*RARCH_LOG("Old playlist format detected.\n");*/
+         new_format = false;
       }
+
+      /* Reset file to start */
+      filestream_seek(file, 0, SEEK_SET);
    }
 
    if (new_format)
