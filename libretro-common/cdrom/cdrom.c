@@ -1197,7 +1197,7 @@ struct string_list* cdrom_get_available_drives(void)
          char drive_model[32] = {0};
          char drive_string[64] = {0};
          union string_list_elem_attr attr = {0};
-         libretro_vfs_implementation_file *stream = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+         RFILE *file = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
          const libretro_vfs_implementation_file *stream;
          bool is_cdrom = false;
 
