@@ -1037,7 +1037,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
    return 0;
 }
 
-int cdrom_stop(libretro_vfs_implementation_file *stream)
+int cdrom_stop(const libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
    unsigned char cdb[] = {0x1B, 0, 0, 0, 0x0, 0};
@@ -1054,7 +1054,7 @@ int cdrom_stop(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int cdrom_unlock(libretro_vfs_implementation_file *stream)
+int cdrom_unlock(const libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: PREVENT ALLOW MEDIUM REMOVAL */
    unsigned char cdb[] = {0x1E, 0, 0, 0, 0x2, 0};
@@ -1083,7 +1083,7 @@ int cdrom_unlock(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int cdrom_open_tray(libretro_vfs_implementation_file *stream)
+int cdrom_open_tray(const libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
    unsigned char cdb[] = {0x1B, 0, 0, 0, 0x2, 0};
@@ -1105,7 +1105,7 @@ int cdrom_open_tray(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int cdrom_close_tray(libretro_vfs_implementation_file *stream)
+int cdrom_close_tray(const libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
    unsigned char cdb[] = {0x1B, 0, 0, 0, 0x3, 0};

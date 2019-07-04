@@ -81,13 +81,13 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
 
 int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed);
 
-int cdrom_stop(libretro_vfs_implementation_file *stream);
+int cdrom_stop(const libretro_vfs_implementation_file *stream);
 
-int cdrom_unlock(libretro_vfs_implementation_file *stream);
+int cdrom_unlock(const libretro_vfs_implementation_file *stream);
 
-int cdrom_open_tray(libretro_vfs_implementation_file *stream);
+int cdrom_open_tray(const libretro_vfs_implementation_file *stream);
 
-int cdrom_close_tray(libretro_vfs_implementation_file *stream);
+int cdrom_close_tray(const libretro_vfs_implementation_file *stream);
 
 /* must be freed by the caller */
 struct string_list* cdrom_get_available_drives(void);
