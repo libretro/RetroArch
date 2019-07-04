@@ -90,6 +90,147 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
    *frame = (*frame < 74) ? (*frame + 1) : 0;
 }
 
+static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
+{
+   unsigned i;
+   const char *sense_key_text = NULL;
+   unsigned char key;
+   unsigned char asc;
+   unsigned char ascq;
+
+   if (len < 16)
+   {
+      printf("CDROM sense data buffer length too small.\n");
+      fflush(stdout);
+      return;
+   }
+
+   key = sense[2] & 0xF;
+   asc = sense[12];
+   ascq = sense[13];
+
+   printf("Sense Data: ");
+
+   for (i = 0; i < MIN(len, 16); i++)
+   {
+      printf("%02X ", sense[i]);
+   }
+
+   printf("\n");
+
+   if (sense[0] == 0x70)
+      printf("CURRENT ERROR:\n");
+   if (sense[0] == 0x71)
+      printf("DEFERRED ERROR:\n");
+
+   switch (key)
+   {
+      case 0:
+         sense_key_text = "NO SENSE";
+         break;
+      case 1:
+         sense_key_text = "RECOVERED ERROR";
+         break;
+      case 2:
+         sense_key_text = "NOT READY";
+         break;
+      case 3:
+         sense_key_text = "MEDIUM ERROR";
+         break;
+      case 4:
+         sense_key_text = "HARDWARE ERROR";
+         break;
+      case 5:
+         sense_key_text = "ILLEGAL REQUEST";
+         break;
+      case 6:
+         sense_key_text = "UNIT ATTENTION";
+         break;
+      case 7:
+         sense_key_text = "DATA PROTECT";
+         break;
+      case 8:
+         sense_key_text = "BLANK CHECK";
+         break;
+      case 9:
+         sense_key_text = "VENDOR SPECIFIC";
+         break;
+      case 10:
+         sense_key_text = "COPY ABORTED";
+         break;
+      case 11:
+         sense_key_text = "ABORTED COMMAND";
+         break;
+      case 13:
+         sense_key_text = "VOLUME OVERFLOW";
+         break;
+      case 14:
+         sense_key_text = "MISCOMPARE";
+         break;
+   }
+
+   printf("Sense Key: %02X (%s)\n", key, sense_key_text);
+   printf("ASC: %02X\n", asc);
+   printf("ASCQ: %02X\n", ascq);
+
+   switch (key)
+   {
+      case 2:
+      {
+         switch (asc)
+         {
+            case 4:
+            {
+               switch (ascq)
+               {
+                  case 1:
+                     printf("Description: LOGICAL UNIT IS IN PROCESS OF BECOMING READY\n");
+                     break;
+                  default:
+                     break;
+               }
+
+               break;
+            }
+            case 0x3a:
+            {
+               switch (ascq)
+               {
+                  case 0:
+                     printf("Description: MEDIUM NOT PRESENT\n");
+                     break;
+                  case 3:
+                     printf("Description: MEDIUM NOT PRESENT - LOADABLE\n");
+                     break;
+                  case 1:
+                     printf("Description: MEDIUM NOT PRESENT - TRAY CLOSED\n");
+                     break;
+                  case 2:
+                     printf("Description: MEDIUM NOT PRESENT - TRAY OPEN\n");
+                     break;
+                  default:
+                     break;
+               }
+
+               break;
+            }
+            default:
+               break;
+         }
+      }
+      case 6:
+      {
+         if (asc == 0x28 && ascq == 0)
+            printf("Description: NOT READY TO READY CHANGE, MEDIUM MAY HAVE CHANGED\n");
+         break;
+      }
+      default:
+         break;
+   }
+
+   fflush(stdout);
+}
+
 #if defined(_WIN32) && !defined(_XBOX)
 static int cdrom_send_command_win32(HANDLE fh, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, unsigned char *sense, size_t sense_len)
 {
@@ -223,18 +364,11 @@ retry:
    }
    else
    {
-      unsigned i;
-      const char *sense_key_text = NULL;
-      unsigned char key = sense[2] & 0xF;
-      unsigned char asc = sense[12];
-      unsigned char ascq = sense[13];
-
-      (void)sense_key_text;
-      (void)i;
-
       /* INQUIRY/TEST should never fail, don't retry */
       if (cmd[0] != 0x0 && cmd[0] != 0x12)
       {
+         unsigned char key = sense[2] & 0xF;
+
          switch (key)
          {
             case 0:
@@ -266,131 +400,12 @@ retry:
                break;
          }
       }
-
 #ifdef CDROM_DEBUG
       printf("CHECK CONDITION\n");
 
-      for (i = 0; i < CDROM_MAX_SENSE_BYTES; i++)
-      {
-         printf("%02X ", sense[i]);
-      }
-
-      printf("\n");
-
-      if (sense[0] == 0x70)
-         printf("CURRENT ERROR:\n");
-      if (sense[0] == 0x71)
-         printf("DEFERRED ERROR:\n");
-
-      switch (key)
-      {
-         case 0:
-            sense_key_text = "NO SENSE";
-            break;
-         case 1:
-            sense_key_text = "RECOVERED ERROR";
-            break;
-         case 2:
-            sense_key_text = "NOT READY";
-            break;
-         case 3:
-            sense_key_text = "MEDIUM ERROR";
-            break;
-         case 4:
-            sense_key_text = "HARDWARE ERROR";
-            break;
-         case 5:
-            sense_key_text = "ILLEGAL REQUEST";
-            break;
-         case 6:
-            sense_key_text = "UNIT ATTENTION";
-            break;
-         case 7:
-            sense_key_text = "DATA PROTECT";
-            break;
-         case 8:
-            sense_key_text = "BLANK CHECK";
-            break;
-         case 9:
-            sense_key_text = "VENDOR SPECIFIC";
-            break;
-         case 10:
-            sense_key_text = "COPY ABORTED";
-            break;
-         case 11:
-            sense_key_text = "ABORTED COMMAND";
-            break;
-         case 13:
-            sense_key_text = "VOLUME OVERFLOW";
-            break;
-         case 14:
-            sense_key_text = "MISCOMPARE";
-            break;
-      }
-
-      printf("Sense Key: %02X (%s)\n", key, sense_key_text);
-      printf("ASC: %02X\n", asc);
-      printf("ASCQ: %02X\n", ascq);
-
-      switch (key)
-      {
-         case 2:
-         {
-            switch (asc)
-            {
-               case 4:
-               {
-                  switch (ascq)
-                  {
-                     case 1:
-                        printf("Description: LOGICAL UNIT IS IN PROCESS OF BECOMING READY\n");
-                        break;
-                     default:
-                        break;
-                  }
-
-                  break;
-               }
-               case 0x3a:
-               {
-                  switch (ascq)
-                  {
-                     case 0:
-                        printf("Description: MEDIUM NOT PRESENT\n");
-                        break;
-                     case 3:
-                        printf("Description: MEDIUM NOT PRESENT - LOADABLE\n");
-                        break;
-                     case 1:
-                        printf("Description: MEDIUM NOT PRESENT - TRAY CLOSED\n");
-                        break;
-                     case 2:
-                        printf("Description: MEDIUM NOT PRESENT - TRAY OPEN\n");
-                        break;
-                     default:
-                        break;
-                  }
-
-                  break;
-               }
-               default:
-                  break;
-            }
-         }
-         case 6:
-         {
-            if (asc == 0x28 && ascq == 0)
-               printf("Description: NOT READY TO READY CHANGE, MEDIUM MAY HAVE CHANGED\n");
-            break;
-         }
-         default:
-            break;
-      }
-
-      fflush(stdout);
-
-      rv = 1;
+      cdrom_print_sense_data(sense, sizeof(sense));
 #endif
+      rv = 1;
    }
 
    if (xfer_buf)
@@ -486,6 +501,25 @@ static const char* get_profile(unsigned short profile)
    }
 
    return "Unknown";
+}
+
+int cdrom_get_sense(const libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len)
+{
+   unsigned char cdb[] = {0x3, 0, 0, 0, 0xFC, 0};
+   unsigned char buf[0xFC] = {0};
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("get sense data status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   cdrom_print_sense_data(buf, sizeof(buf));
+
+   return 0;
 }
 
 void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream)

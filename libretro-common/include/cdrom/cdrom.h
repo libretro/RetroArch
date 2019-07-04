@@ -104,6 +104,8 @@ void cdrom_get_current_config_multiread(const libretro_vfs_implementation_file *
 
 void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream);
 
+int cdrom_get_sense(const libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len);
+
 RETRO_END_DECLS
 
 #endif
