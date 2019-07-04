@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <libretro.h>
+#include <retro_environment.h>
 
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
@@ -47,6 +48,15 @@ struct retro_vfs_file_handle
 struct libretro_vfs_implementation_file
 #endif
 {
+#ifdef __WINRT__
+   IRandomAccessStream^ fp;
+   IBuffer^ bufferp;
+   char* buffer;
+   char* orig_path;
+   size_t buffer_size;
+   int buffer_left;
+   size_t buffer_fill;
+#else
    int fd;
    unsigned hints;
    int64_t size;
@@ -62,6 +72,7 @@ struct libretro_vfs_implementation_file
    enum vfs_scheme scheme;
 #ifdef HAVE_CDROM
    vfs_cdrom_t cdrom;
+#endif
 #endif
 };
 
