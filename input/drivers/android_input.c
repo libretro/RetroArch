@@ -1505,8 +1505,10 @@ static int16_t android_input_state(void *data,
             else if (((float)abs(android->joypad->axis(
                            joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
                res = true;
-            if (!ret && (id < RARCH_BIND_LIST_END))
-               ret = android_keyboard_port_input_pressed(binds[port], id);
+            if (!res)
+               res = android_keyboard_port_input_pressed(binds[port], id);
+            if (res)
+               ret |= (1 << i);
          }
          return ret;
       case RETRO_DEVICE_ANALOG:
