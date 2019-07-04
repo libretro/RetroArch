@@ -41,11 +41,12 @@
 #    include <xtl.h>
 #    define INVALID_FILE_ATTRIBUTES -1
 #  else
-#    include <io.h>
+
 #    include <fcntl.h>
 #    include <direct.h>
 #    include <windows.h>
 #  endif
+#    include <io.h>
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
