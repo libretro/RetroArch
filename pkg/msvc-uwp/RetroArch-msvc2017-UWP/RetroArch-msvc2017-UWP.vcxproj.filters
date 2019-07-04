@@ -130,7 +130,4 @@
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="Bundle.Mapping.txt" />
-  </ItemGroup>
 </Project>

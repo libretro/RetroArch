@@ -328,9 +328,6 @@
       <Link>%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="Bundle.Mapping.txt" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ImageContentTask.targets" />
