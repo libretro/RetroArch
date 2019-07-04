@@ -453,12 +453,15 @@ static bool load_content_from_compressed_archive(
    info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size - 1].data;
 
-   free(new_path);
 
    if (!string_list_append(content_ctx->temporary_content,
             new_path, attributes))
+   {
+      free(new_path);
       return false;
+   }
 
+   free(new_path);
    return true;
 }
 
