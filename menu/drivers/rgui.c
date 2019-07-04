@@ -2363,11 +2363,9 @@ static void blit_line_regular(unsigned fb_width, int x, int y,
 static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   uint16_t *frame_buf_data  = rgui_frame_buf.data;
-   uint32_t shadow_colour_32 = shadow_color;
-
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   uint16_t color_buf[2]        = {color,        shadow_color};
+   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
 
    while (!string_is_empty(message))
    {
@@ -2389,15 +2387,12 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-                  /* Text pixel */
-                  *frame_buf_ptr = color;
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-                  /* Shadow pixels */
-                  frame_buf_ptr++;
-                  *frame_buf_ptr = shadow_color;
-                  frame_buf_ptr += fb_width - 1;
-                  /* Small performance hack... */
-                  memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
                }
             }
          }
@@ -2454,11 +2449,9 @@ static void blit_line_extended(unsigned fb_width, int x, int y,
 static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   uint16_t *frame_buf_data  = rgui_frame_buf.data;
-   uint32_t shadow_colour_32 = shadow_color;
-
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   uint16_t color_buf[2]        = {color,        shadow_color};
+   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
 
    while (!string_is_empty(message))
    {
@@ -2493,15 +2486,12 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-                  /* Text pixel */
-                  *frame_buf_ptr = color;
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-                  /* Shadow pixels */
-                  frame_buf_ptr++;
-                  *frame_buf_ptr = shadow_color;
-                  frame_buf_ptr += fb_width - 1;
-                  /* Small performance hack... */
-                  memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
                }
             }
          }
@@ -2577,15 +2567,13 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   uint16_t *frame_buf_data   = rgui_frame_buf.data;
-   uint32_t shadow_colour_32  = shadow_color;
-   const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   uint16_t color_buf[2]        = {color,        shadow_color};
+   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
+   const uint8_t *symbol_data   = rgui_get_symbol_data(symbol);
 
    if (!symbol_data)
       return;
-
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
 
    for (j = 0; j < FONT_HEIGHT; j++)
    {
@@ -2597,15 +2585,12 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
          {
             uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-            /* Symbol pixel */
-            *frame_buf_ptr = color;
+            /* Symbol pixel + right shadow */
+            memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-            /* Shadow pixels */
-            frame_buf_ptr++;
-            *frame_buf_ptr = shadow_color;
-            frame_buf_ptr += fb_width - 1;
-            /* Small performance hack... */
-            memcpy(frame_buf_ptr, &shadow_colour_32, sizeof(uint32_t));
+            /* Bottom shadow */
+            frame_buf_ptr += fb_width;
+            memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
          }
       }
    }
