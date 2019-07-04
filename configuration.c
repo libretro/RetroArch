@@ -1174,7 +1174,6 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
 static struct config_path_setting *populate_settings_path(settings_t *settings, int *size)
 {
    unsigned count = 0;
-   global_t   *global                  = global_get_ptr();
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
 
    if (!tmp)
@@ -1302,12 +1301,15 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          "screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, false);
 
-   if (global)
    {
-      SETTING_PATH("recording_output_directory",
-            global->record.output_dir, false, NULL, true);
-      SETTING_PATH("recording_config_directory",
-            global->record.config_dir, false, NULL, true);
+      global_t   *global                  = global_get_ptr();
+      if (global)
+      {
+         SETTING_PATH("recording_output_directory",
+               global->record.output_dir, false, NULL, true);
+         SETTING_PATH("recording_config_directory",
+               global->record.config_dir, false, NULL, true);
+      }
    }
 
    SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
