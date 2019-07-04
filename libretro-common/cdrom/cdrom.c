@@ -131,7 +131,7 @@ static int cdrom_send_command_win32(HANDLE fh, CDROM_CMD_Direction dir, void *bu
    ioctl_rv = DeviceIoControl(fh, IOCTL_SCSI_PASS_THROUGH_DIRECT, &sptd,
       sizeof(sptd), &sptd, sizeof(sptd), &ioctl_bytes, NULL);
 
-   if (!ioctl_rv)
+   if (!ioctl_rv || sptd.s.ScsiStatus != 0)
       return 1;
 
    return 0;
@@ -225,14 +225,17 @@ retry:
    {
       unsigned i;
       const char *sense_key_text = NULL;
+      unsigned char key = sense[2] & 0xF;
+      unsigned char asc = sense[12];
+      unsigned char ascq = sense[13];
 
       (void)sense_key_text;
       (void)i;
 
-      /* INQUIRY should never fail, don't retry */
-      if (cmd[0] != 0x12)
+      /* INQUIRY/TEST should never fail, don't retry */
+      if (cmd[0] != 0x0 && cmd[0] != 0x12)
       {
-         switch (sense[2] & 0xF)
+         switch (key)
          {
             case 0:
             case 2:
@@ -279,7 +282,7 @@ retry:
       if (sense[0] == 0x71)
          printf("DEFERRED ERROR:\n");
 
-      switch (sense[2] & 0xF)
+      switch (key)
       {
          case 0:
             sense_key_text = "NO SENSE";
@@ -325,9 +328,64 @@ retry:
             break;
       }
 
-      printf("Sense Key: %02X (%s)\n", sense[2] & 0xF, sense_key_text);
-      printf("ASC: %02X\n", sense[12]);
-      printf("ASCQ: %02X\n", sense[13]);
+      printf("Sense Key: %02X (%s)\n", key, sense_key_text);
+      printf("ASC: %02X\n", asc);
+      printf("ASCQ: %02X\n", ascq);
+
+      switch (key)
+      {
+         case 2:
+         {
+            switch (asc)
+            {
+               case 4:
+               {
+                  switch (ascq)
+                  {
+                     case 1:
+                        printf("Description: LOGICAL UNIT IS IN PROCESS OF BECOMING READY\n");
+                        break;
+                     default:
+                        break;
+                  }
+
+                  break;
+               }
+               case 0x3a:
+               {
+                  switch (ascq)
+                  {
+                     case 0:
+                        printf("Description: MEDIUM NOT PRESENT\n");
+                        break;
+                     case 3:
+                        printf("Description: MEDIUM NOT PRESENT - LOADABLE\n");
+                        break;
+                     case 1:
+                        printf("Description: MEDIUM NOT PRESENT - TRAY CLOSED\n");
+                        break;
+                     case 2:
+                        printf("Description: MEDIUM NOT PRESENT - TRAY OPEN\n");
+                        break;
+                     default:
+                        break;
+                  }
+
+                  break;
+               }
+               default:
+                  break;
+            }
+         }
+         case 6:
+         {
+            if (asc == 0x28 && ascq == 0)
+               printf("Description: NOT READY TO READY CHANGE, MEDIUM MAY HAVE CHANGED\n");
+            break;
+         }
+         default:
+            break;
+      }
 
       fflush(stdout);
 
@@ -339,6 +397,306 @@ retry:
       free(xfer_buf);
 
    return rv;
+}
+
+static const char* get_profile(unsigned short profile)
+{
+   switch (profile)
+   {
+      case 2:
+         return "Removable disk";
+         break;
+      case 8:
+         return "CD-ROM";
+         break;
+      case 9:
+         return "CD-R";
+         break;
+      case 0xA:
+         return "CD-RW";
+         break;
+      case 0x10:
+         return "DVD-ROM";
+         break;
+      case 0x11:
+         return "DVD-R Sequential Recording";
+         break;
+      case 0x12:
+         return "DVD-RAM";
+         break;
+      case 0x13:
+         return "DVD-RW Restricted Overwrite";
+         break;
+      case 0x14:
+         return "DVD-RW Sequential recording";
+         break;
+      case 0x15:
+         return "DVD-R Dual Layer Sequential Recording";
+         break;
+      case 0x16:
+         return "DVD-R Dual Layer Jump Recording";
+         break;
+      case 0x17:
+         return "DVD-RW Dual Layer";
+         break;
+      case 0x1A:
+         return "DVD+RW";
+         break;
+      case 0x1B:
+         return "DVD+R";
+         break;
+      case 0x2A:
+         return "DVD+RW Dual Layer";
+         break;
+      case 0x2B:
+         return "DVD+R Dual Layer";
+         break;
+      case 0x40:
+         return "BD-ROM";
+         break;
+      case 0x41:
+         return "BD-R SRM";
+         break;
+      case 0x42:
+         return "BD-R RRM";
+         break;
+      case 0x43:
+         return "BD-RE";
+         break;
+      case 0x50:
+         return "HD DVD-ROM";
+         break;
+      case 0x51:
+         return "HD DVD-R";
+         break;
+      case 0x52:
+         return "HD DVD-RAM";
+         break;
+      case 0x53:
+         return "HD DVD-RW";
+         break;
+      case 0x58:
+         return "HD DVD-R Dual Layer";
+         break;
+      case 0x5A:
+         return "HD DVD-RW Dual Layer";
+         break;
+      default:
+         break;
+   }
+
+   return "Unknown";
+}
+
+void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream)
+{
+   unsigned char cdb[] = {0x46, 0x2, 0, 0x10, 0, 0, 0, 0, 0x14, 0};
+   unsigned char buf[0x14] = {0};
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int i;
+
+   printf("get current config random readable status code %d\n", rv);
+
+   if (rv)
+      return;
+
+   printf("Feature Header: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+
+   printf("Random Readable Feature Descriptor: ");
+
+   for (i = 0; i < 12; i++)
+   {
+      printf("%02X ", buf[8 + i]);
+   }
+
+   printf("\n");
+
+   printf("Supported commands: READ CAPACITY, READ (10)\n");
+}
+
+void cdrom_get_current_config_multiread(const libretro_vfs_implementation_file *stream)
+{
+   unsigned char cdb[] = {0x46, 0x2, 0, 0x1D, 0, 0, 0, 0, 0xC, 0};
+   unsigned char buf[0xC] = {0};
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int i;
+
+   printf("get current config multi-read status code %d\n", rv);
+
+   if (rv)
+      return;
+
+   printf("Feature Header: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+
+   printf("Multi-Read Feature Descriptor: ");
+
+   for (i = 0; i < 4; i++)
+   {
+      printf("%02X ", buf[8 + i]);
+   }
+
+   printf("\n");
+
+   printf("Supported commands: READ (10), READ CD, READ DISC INFORMATION, READ TRACK INFORMATION\n");
+}
+
+void cdrom_get_current_config_cdread(const libretro_vfs_implementation_file *stream)
+{
+   unsigned char cdb[] = {0x46, 0x2, 0, 0x1E, 0, 0, 0, 0, 0x10, 0};
+   unsigned char buf[0x10] = {0};
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int i;
+
+   printf("get current config cd read status code %d\n", rv);
+
+   if (rv)
+      return;
+
+   printf("Feature Header: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+
+   printf("CD Read Feature Descriptor: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[8 + i]);
+   }
+
+   if (buf[8 + 2] & 1)
+      printf("(current)\n");
+
+   printf("Supported commands: READ CD, READ CD MSF, READ TOC/PMA/ATIP\n");
+}
+
+void cdrom_get_current_config_profiles(const libretro_vfs_implementation_file *stream)
+{
+   unsigned char cdb[] = {0x46, 0x2, 0, 0x0, 0, 0, 0, 0xFF, 0xFA, 0};
+   unsigned char buf[0xFFFA] = {0};
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int i;
+
+   printf("get current config profiles status code %d\n", rv);
+
+   if (rv)
+      return;
+
+   printf("Feature Header: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+
+   printf("Profile List Descriptor: ");
+
+   for (i = 0; i < 4; i++)
+   {
+      printf("%02X ", buf[8 + i]);
+   }
+
+   printf("\n");
+
+   printf("Number of profiles: %u\n", buf[8 + 3] / 4);
+
+   for (i = 0; i < buf[8 + 3] / 4; i++)
+   {
+      unsigned short profile = (buf[8 + (4 * (i + 1))] << 8) | buf[8 + (4 * (i + 1)) + 1];
+      profile = swap_if_big32(profile);
+
+      printf("Profile Number: %04X (%s) ", profile, get_profile(profile));
+
+      if (buf[8 + (4 * (i + 1)) + 2] & 1)
+         printf("(current)\n");
+      else
+         printf("\n");
+   }
+}
+
+void cdrom_get_current_config_core(const libretro_vfs_implementation_file *stream)
+{
+   unsigned char cdb[] = {0x46, 0x2, 0, 0x1, 0, 0, 0, 0, 0x14, 0};
+   unsigned char buf[20] = {0};
+   unsigned intf_std = 0;
+   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int i;
+   const char *intf_std_name = "Unknown";
+
+   printf("get current config core status code %d\n", rv);
+
+   if (rv)
+      return;
+
+   printf("Feature Header: ");
+
+   for (i = 0; i < 8; i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+
+   if (buf[6] == 0 && buf[7] == 8)
+      printf("Current Profile: CD-ROM\n");
+   else
+      printf("Current Profile: %02X%02X\n", buf[6], buf[7]);
+
+   printf("Core Feature Descriptor: ");
+
+   for (i = 0; i < 12; i++)
+   {
+      printf("%02X ", buf[8 + i]);
+   }
+
+   printf("\n");
+
+   intf_std = buf[8 + 4] << 24 | buf[8 + 5] << 16 | buf[8 + 6] << 8 | buf[8 + 7];
+
+   intf_std = swap_if_big32(intf_std);
+
+   switch (intf_std)
+   {
+      case 0:
+         intf_std_name = "Unspecified";
+         break;
+      case 1:
+         intf_std_name = "SCSI Family";
+         break;
+      case 2:
+         intf_std_name = "ATAPI";
+         break;
+      case 7:
+         intf_std_name = "Serial ATAPI";
+         break;
+      case 8:
+         intf_std_name = "USB";
+         break;
+      default:
+         break;
+   }
+
+   printf("Physical Interface Standard: %u (%s)\n", intf_std, intf_std_name);
 }
 
 int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf, size_t len)
@@ -599,6 +957,7 @@ int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *mode
    unsigned char cdb[] = {0x12, 0, 0, 0, 0xff, 0};
    unsigned char buf[256] = {0};
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   bool cdrom = false;
 
    if (rv)
       return 1;
@@ -621,9 +980,14 @@ int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *mode
       memcpy(model + 26, buf + 32, 4);
    }
 
-   if (is_cdrom && buf[0] == 5)
+   cdrom = (buf[0] == 5);
+
+   if (is_cdrom && cdrom)
       *is_cdrom = true;
 
+#ifdef CDROM_DEBUG
+   printf("Device Model: %s (is CD-ROM? %s)\n", model, (cdrom ? "yes" : "no"));
+#endif
    return 0;
 }
 
@@ -833,7 +1197,7 @@ struct string_list* cdrom_get_available_drives(void)
          char drive_model[32] = {0};
          char drive_string[64] = {0};
          union string_list_elem_attr attr = {0};
-         RFILE *file = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+         libretro_vfs_implementation_file *stream = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
          const libretro_vfs_implementation_file *stream;
          bool is_cdrom = false;
 
@@ -862,5 +1226,24 @@ struct string_list* cdrom_get_available_drives(void)
    }
 #endif
    return list;
+}
+
+bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream)
+{
+   /* MMC Command: TEST UNIT READY */
+   unsigned char cdb[] = {0x00, 0, 0, 0, 0, 0};
+   int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
+
+#ifdef CDROM_DEBUG
+   printf("media inserted status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   /* Will also return false if the drive is simply not ready yet (tray open, disc spinning back up after tray closed etc).
+    * Command will not block or wait for media to become ready. */
+   if (rv)
+      return false;
+
+   return true;
 }
 

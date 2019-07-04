@@ -128,7 +128,6 @@ void retro_vfs_file_open_cdrom(
       const char *path, unsigned mode, unsigned hints)
 {
 #if defined(__linux__) && !defined(ANDROID)
-   char model[32] = {0};
    char cdrom_path[] = "/dev/sg1";
    size_t path_len = strlen(path);
    const char *ext = path_get_extension(path);
@@ -174,17 +173,7 @@ void retro_vfs_file_open_cdrom(
 #endif
    stream->fp = (FILE*)fopen_utf8(cdrom_path, "r+b");
 
-   if (stream->fp)
-   {
-      if (!cdrom_get_inquiry(stream, model, sizeof(model), NULL))
-      {
-#ifdef CDROM_DEBUG
-         printf("CDROM Model: %s\n", model);
-         fflush(stdout);
-#endif
-      }
-   }
-   else
+   if (!stream->fp)
       return;
 
    if (string_is_equal_noncase(ext, "cue"))
@@ -212,7 +201,6 @@ void retro_vfs_file_open_cdrom(
    }
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
-   char model[32] = {0};
    char cdrom_path[] = "\\\\.\\D:";
    size_t path_len = strlen(path);
    const char *ext = path_get_extension(path);
@@ -255,16 +243,6 @@ void retro_vfs_file_open_cdrom(
 
    if (stream->fh == INVALID_HANDLE_VALUE)
       return;
-   else
-   {
-      if (!cdrom_get_inquiry(stream, model, sizeof(model), NULL))
-      {
-#ifdef CDROM_DEBUG
-         printf("CDROM Model: %s\n", model);
-         fflush(stdout);
-#endif
-      }
-   }
 
    if (string_is_equal_noncase(ext, "cue"))
    {

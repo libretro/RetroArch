@@ -439,9 +439,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        */
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
 #if !defined(PS2) && !defined(PSP)
-      stream->buf = (char*)calloc(1, 0x4000);
-      if (stream->fp)
-         setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+      if (stream->scheme != VFS_SCHEME_CDROM)
+      {
+         stream->buf = (char*)calloc(1, 0x4000);
+         if (stream->fp)
+            setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+      }
 #endif
 #endif
    }

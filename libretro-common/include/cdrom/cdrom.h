@@ -92,6 +92,18 @@ int cdrom_close_tray(libretro_vfs_implementation_file *stream);
 /* must be freed by the caller */
 struct string_list* cdrom_get_available_drives(void);
 
+bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream);
+
+void cdrom_get_current_config_core(const libretro_vfs_implementation_file *stream);
+
+void cdrom_get_current_config_profiles(const libretro_vfs_implementation_file *stream);
+
+void cdrom_get_current_config_cdread(const libretro_vfs_implementation_file *stream);
+
+void cdrom_get_current_config_multiread(const libretro_vfs_implementation_file *stream);
+
+void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream);
+
 RETRO_END_DECLS
 
 #endif
