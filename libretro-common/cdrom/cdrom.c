@@ -323,11 +323,17 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
    unsigned char retries_left = CDROM_MAX_RETRIES;
    int rv = 0;
+   size_t padded_req_bytes;
 
    if (!cmd || cmd_len == 0)
       return 1;
 
-   xfer_buf = (unsigned char*)calloc(1, len + skip);
+   if (cmd[0] == 0xBE || cmd[0] == 0xB9)
+      padded_req_bytes = 2352 * ceil((len + skip) / 2352.0);
+   else
+      padded_req_bytes = len + skip;
+
+   xfer_buf = (unsigned char*)calloc(1, padded_req_bytes);
 
    if (!xfer_buf)
       return 1;
@@ -343,6 +349,9 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
          printf("%02X ", cmd[i]);
       }
 
+      if (len)
+         printf("(buffer of size %" PRId64 " with skip bytes %" PRId64 " padded to %" PRId64 ")\n", len, skip, padded_req_bytes);
+
       printf("\n");
       fflush(stdout);
    }
@@ -350,10 +359,10 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
 
 retry:
 #if defined(__linux__) && !defined(ANDROID)
-   if (!cdrom_send_command_linux(fileno(stream->fp), dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
+   if (!cdrom_send_command_linux(fileno(stream->fp), dir, xfer_buf, padded_req_bytes, cmd, cmd_len, sense, sizeof(sense)))
 #else
 #if defined(_WIN32) && !defined(_XBOX)
-   if (!cdrom_send_command_win32(stream->fh, dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
+   if (!cdrom_send_command_win32(stream->fh, dir, xfer_buf, padded_req_bytes, cmd, cmd_len, sense, sizeof(sense)))
 #endif
 #endif
    {
