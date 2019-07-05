@@ -195,6 +195,7 @@ enum menu_settings_type
 #endif
 
    MENU_SET_CDROM_LIST,
+   MENU_SET_LOAD_CDROM_LIST,
 
    MENU_SETTINGS_LAST
 };
