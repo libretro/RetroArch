@@ -2364,8 +2364,14 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data     = rgui_frame_buf.data;
-   uint16_t color_buf[2]        = {color,        shadow_color};
-   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    while (!string_is_empty(message))
    {
@@ -2450,8 +2456,14 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data     = rgui_frame_buf.data;
-   uint16_t color_buf[2]        = {color,        shadow_color};
-   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    while (!string_is_empty(message))
    {
@@ -2568,9 +2580,15 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
 {
    unsigned i, j;
    uint16_t *frame_buf_data     = rgui_frame_buf.data;
-   uint16_t color_buf[2]        = {color,        shadow_color};
-   uint16_t shadow_color_buf[2] = {shadow_color, shadow_color};
    const uint8_t *symbol_data   = rgui_get_symbol_data(symbol);
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    if (!symbol_data)
       return;
