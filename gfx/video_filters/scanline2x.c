@@ -18,6 +18,7 @@
 
 #include "softfilter.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation scanline2x_get_implementation
@@ -121,29 +122,33 @@ static void scanline2x_work_cb_xrgb8888(void *data, void *thread_data)
          /* Note: We process the 'padding' bits as though they
           * matter (they don't), since this deals with any potential
           * byte swapping issues */ 
-         uint32_t color            = *(input + x);
-         uint8_t  p                = (color >> 24 & 0xFF); /* Padding bits */
-         uint8_t  r                = (color >> 16 & 0xFF);
-         uint8_t  g                = (color >>  8 & 0xFF);
-         uint8_t  b                = (color       & 0xFF);
-         uint64_t color64          = (uint64_t)color;
-         uint64_t scanline_color64 =
+         uint32_t color          = *(input + x);
+         uint8_t  p              = (color >> 24 & 0xFF); /* Padding bits */
+         uint8_t  r              = (color >> 16 & 0xFF);
+         uint8_t  g              = (color >>  8 & 0xFF);
+         uint8_t  b              = (color       & 0xFF);
+         uint32_t scanline_color =
                (((p >> 1) + (p >> 2)) << 24) |
                (((r >> 1) + (r >> 2)) << 16) |
                (((g >> 1) + (g >> 2)) <<  8) |
                (((b >> 1) + (b >> 2))      );
+         uint32_t color_buf[2];
+         uint32_t scanline_color_buf[2];
 
-         color64          |= (color64          << 32);
-         scanline_color64 |= (scanline_color64 << 32);
+         color_buf[0] = color;
+         color_buf[1] = color;
 
-         *(uint64_t *)(out_ptr)              = color64;
-         *(uint64_t *)(out_ptr + out_stride) = scanline_color64;
+         scanline_color_buf[0] = scanline_color;
+         scanline_color_buf[1] = scanline_color;
+
+         memcpy(out_ptr,              color_buf,          sizeof(color_buf));
+         memcpy(out_ptr + out_stride, scanline_color_buf, sizeof(scanline_color_buf));
 
          out_ptr += 2;
       }
 
       input  += in_stride;
-		output += out_stride << 1;
+      output += out_stride << 1;
    }
 }
 
@@ -158,30 +163,34 @@ static void scanline2x_work_cb_rgb565(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint16_t * out_ptr = output;
+      uint16_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint16_t color            = *(input + x);
-         uint8_t  r                = (color >> 11 & 0x1F);
-         uint8_t  g                = (color >>  6 & 0x1F);
-         uint8_t  b                = (color       & 0x1F);
-         uint32_t color32          = (uint32_t)color;
-         uint32_t scanline_color32 =
+         uint16_t color          = *(input + x);
+         uint8_t  r              = (color >> 11 & 0x1F);
+         uint8_t  g              = (color >>  6 & 0x1F);
+         uint8_t  b              = (color       & 0x1F);
+         uint16_t scanline_color =
                (((r >> 1) + (r >> 2)) << 11) |
                (((g >> 1) + (g >> 2)) <<  6) |
                (((b >> 1) + (b >> 2))      );
+         uint16_t color_buf[2];
+         uint16_t scanline_color_buf[2];
 
-         color32          |= (color32          << 16);
-         scanline_color32 |= (scanline_color32 << 16);
+         color_buf[0] = color;
+         color_buf[1] = color;
 
-         *(uint32_t *)(out_ptr)              = color32;
-         *(uint32_t *)(out_ptr + out_stride) = scanline_color32;
+         scanline_color_buf[0] = scanline_color;
+         scanline_color_buf[1] = scanline_color;
+
+         memcpy(out_ptr,              color_buf,          sizeof(color_buf));
+         memcpy(out_ptr + out_stride, scanline_color_buf, sizeof(scanline_color_buf));
 
          out_ptr += 2;
       }
 
       input  += in_stride;
-		output += out_stride << 1;
+      output += out_stride << 1;
    }
 }
 
