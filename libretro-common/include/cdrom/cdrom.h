@@ -64,9 +64,9 @@ typedef struct
    cdrom_track_t track[99];
 } cdrom_toc_t;
 
-void lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame);
+void cdrom_lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame);
 
-unsigned msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame);
+unsigned cdrom_msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame);
 
 void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame);
 

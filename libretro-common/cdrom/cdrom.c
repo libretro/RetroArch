@@ -63,7 +63,7 @@ typedef enum
    DIRECTION_OUT
 } CDROM_CMD_Direction;
 
-void lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame)
+void cdrom_lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame)
 {
    if (!min || !sec || !frame)
       return;
@@ -75,7 +75,7 @@ void lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned c
    *min = lba;
 }
 
-unsigned msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame)
+unsigned cdrom_msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame)
 {
    return (min * 60 + sec) * 75 + frame;
 }
@@ -925,7 +925,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
       unsigned char pmin = buf[4 + (i * 11) + 8];
       unsigned char psec = buf[4 + (i * 11) + 9];
       unsigned char pframe = buf[4 + (i * 11) + 10];
-      unsigned lba = msf_to_lba(pmin, psec, pframe);
+      unsigned lba = cdrom_msf_to_lba(pmin, psec, pframe);
 
       /*printf("i %d control %d adr %d tno %d point %d: ", i, control, adr, tno, point);*/
       /* why is control always 0? */
@@ -977,7 +977,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
                unsigned char sec = 0;
                unsigned char frame = 0;
 
-               lba_to_msf(pregap_lba_len, &min, &sec, &frame);
+               cdrom_lba_to_msf(pregap_lba_len, &min, &sec, &frame);
 
                pos += snprintf(*out_buf + pos, len - pos, "    INDEX 00 00:00:00\n");
                pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
@@ -1055,9 +1055,9 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
    }
    else
    {
-      unsigned frames = msf_to_lba(min, sec, frame) + ceil((len + skip) / 2352.0);
+      unsigned frames = cdrom_msf_to_lba(min, sec, frame) + ceil((len + skip) / 2352.0);
 
-      lba_to_msf(frames, &cdb[6], &cdb[7], &cdb[8]);
+      cdrom_lba_to_msf(frames, &cdb[6], &cdb[7], &cdb[8]);
 
 #ifdef CDROM_DEBUG
       printf("multi-frame read: from %d %d %d to %d %d %d skip %" PRId64 "\n", cdb[3], cdb[4], cdb[5], cdb[6], cdb[7], cdb[8], skip);

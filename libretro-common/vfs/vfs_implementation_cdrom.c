@@ -81,7 +81,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
             new_lba = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba + (stream->cdrom.byte_pos / 2352);
             seek_type = "SEEK_CUR";
 
-            lba_to_msf(new_lba, &min, &sec, &frame);
+            cdrom_lba_to_msf(new_lba, &min, &sec, &frame);
 
             break;
          }
@@ -90,7 +90,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
             ssize_t pregap_lba_len = (vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].audio ? 0 : (vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba_start));
             ssize_t lba_len = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_size - pregap_lba_len;
 
-            lba_to_msf(lba_len + lba, &min, &sec, &frame);
+            cdrom_lba_to_msf(lba_len + lba, &min, &sec, &frame);
 
             stream->cdrom.byte_pos = lba_len * 2352;
             seek_type = "SEEK_END";
@@ -102,7 +102,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
          {
             seek_type = "SEEK_SET";
             stream->cdrom.byte_pos = offset;
-            lba_to_msf(vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba + (stream->cdrom.byte_pos / 2352), &min, &sec, &frame);
+            cdrom_lba_to_msf(vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba + (stream->cdrom.byte_pos / 2352), &min, &sec, &frame);
             break;
          }
       }
@@ -110,7 +110,7 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
       stream->cdrom.cur_min = min;
       stream->cdrom.cur_sec = sec;
       stream->cdrom.cur_frame = frame;
-      stream->cdrom.cur_lba = msf_to_lba(min, sec, frame);
+      stream->cdrom.cur_lba = cdrom_msf_to_lba(min, sec, frame);
 
 #ifdef CDROM_DEBUG
       printf("CDROM Seek %s: Path %s Offset %" PRIu64 " is now at %" PRIu64 " (MSF %02u:%02u:%02u) (LBA %u)...\n", seek_type, stream->orig_path, offset, stream->cdrom.byte_pos, (unsigned)stream->cdrom.cur_min, (unsigned)stream->cdrom.cur_sec, (unsigned)stream->cdrom.cur_frame, stream->cdrom.cur_lba);
@@ -273,14 +273,14 @@ void retro_vfs_file_open_cdrom(
       stream->cdrom.cur_min = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].min;
       stream->cdrom.cur_sec = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].sec;
       stream->cdrom.cur_frame = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].frame;
-      stream->cdrom.cur_lba = msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame);
+      stream->cdrom.cur_lba = cdrom_msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame);
    }
    else
    {
       stream->cdrom.cur_min = vfs_cdrom_toc.track[0].min;
       stream->cdrom.cur_sec = vfs_cdrom_toc.track[0].sec;
       stream->cdrom.cur_frame = vfs_cdrom_toc.track[0].frame;
-      stream->cdrom.cur_lba = msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame);
+      stream->cdrom.cur_lba = cdrom_msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame);
    }
 }
 
@@ -364,7 +364,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       unsigned char sec = 0;
       unsigned char frame = 0;
 
-      lba_to_msf(stream->cdrom.cur_lba, &min, &sec, &frame);
+      cdrom_lba_to_msf(stream->cdrom.cur_lba, &min, &sec, &frame);
 
 #ifdef CDROM_DEBUG
       printf("CDROM Read: Reading %" PRIu64 " bytes from %s starting at byte offset %" PRIu64 " (MSF %02u:%02u:%02u) (LBA %u) skip %" PRIu64 "...\n", len, stream->orig_path, stream->cdrom.byte_pos, (unsigned)min, (unsigned)sec, (unsigned)frame, stream->cdrom.cur_lba, skip);
@@ -385,10 +385,10 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
       stream->cdrom.byte_pos += len;
       stream->cdrom.cur_lba = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba + (stream->cdrom.byte_pos / 2352);
-      lba_to_msf(stream->cdrom.cur_lba, &stream->cdrom.cur_min, &stream->cdrom.cur_sec, &stream->cdrom.cur_frame);
+      cdrom_lba_to_msf(stream->cdrom.cur_lba, &stream->cdrom.cur_min, &stream->cdrom.cur_sec, &stream->cdrom.cur_frame);
 
 #ifdef CDROM_DEBUG
-      printf("CDROM read %" PRIu64 " bytes, position is now: %" PRIu64 " (MSF %02u:%02u:%02u) (LBA %u)\n", len, stream->cdrom.byte_pos, (unsigned)stream->cdrom.cur_min, (unsigned)stream->cdrom.cur_sec, (unsigned)stream->cdrom.cur_frame, msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame));
+      printf("CDROM read %" PRIu64 " bytes, position is now: %" PRIu64 " (MSF %02u:%02u:%02u) (LBA %u)\n", len, stream->cdrom.byte_pos, (unsigned)stream->cdrom.cur_min, (unsigned)stream->cdrom.cur_sec, (unsigned)stream->cdrom.cur_frame, cdrom_msf_to_lba(stream->cdrom.cur_min, stream->cdrom.cur_sec, stream->cdrom.cur_frame));
       fflush(stdout);
 #endif
 
