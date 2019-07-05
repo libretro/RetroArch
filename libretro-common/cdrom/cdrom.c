@@ -218,6 +218,22 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
                break;
          }
       }
+      case 3:
+      {
+         if (asc == 0x11 && ascq == 0x5)
+            printf("Description: L-EC UNCORRECTABLE ERROR\n");
+         break;
+      }
+      case 5:
+      {
+         if (asc == 0x20 && ascq == 0)
+            printf("Description: INVALID COMMAND OPERATION CODE\n");
+         else if (asc == 0x24 && ascq == 0)
+            printf("Description: INVALID FIELD IN CDB\n");
+         else if (asc == 0x26 && ascq == 0)
+            printf("Description: INVALID FIELD IN PARAMETER LIST\n");
+         break;
+      }
       case 6:
       {
          if (asc == 0x28 && ascq == 0)
@@ -839,7 +855,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    printf("Track %d Info: ", track);
    printf("Copy: %d ", (buf[5] & 0x10) > 0);
    printf("Data Mode: %d ", buf[6] & 0xF);
-   printf("LBA Start: %d ", lba);
+   printf("LBA Start: %d (%d) ", lba, toc->track[track - 1].lba);
    printf("Track Size: %d\n", track_size);
    fflush(stdout);
 #endif
