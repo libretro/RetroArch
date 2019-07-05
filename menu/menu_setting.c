@@ -11088,6 +11088,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.menu_savestate_resume,
+               MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,
+               MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+               menu_savestate_resume,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.menu_mouse_enable,
                MENU_ENUM_LABEL_MOUSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,

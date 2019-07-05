@@ -3315,27 +3315,37 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
+   bool resume          = true;
+
+   if (settings)
+      resume = settings->bools.menu_savestate_resume;
+
    if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
-   /* TODO/FIXME: Make this a user-configurable option */
-#if defined(HAVE_THREADS)
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-#else
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
    return 0;
-#endif
 }
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
+   bool resume          = true;
+
+   if (settings)
+      resume = settings->bools.menu_savestate_resume;
+
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
-   /* TODO/FIXME: Make this a user-configurable option */
-#if defined(HAVE_THREADS)
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-#else
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
    return 0;
-#endif
 }
 
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
