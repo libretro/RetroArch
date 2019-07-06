@@ -42,6 +42,7 @@ using namespace Windows::Storage::FileProperties;
 #endif
 #endif
 
+#include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <encodings/utf.h>

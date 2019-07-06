@@ -277,7 +277,7 @@ static int cdrom_send_command_win32(HANDLE fh, CDROM_CMD_Direction dir, void *bu
          break;
    }
 
-   sptd.s.TimeOutValue = 30;
+   sptd.s.TimeOutValue = 5;
    sptd.s.DataBuffer = buf;
    sptd.s.DataTransferLength = len;
    sptd.s.SenseInfoLength = sizeof(sptd.sense);
@@ -322,7 +322,7 @@ static int cdrom_send_command_linux(int fd, CDROM_CMD_Direction dir, void *buf, 
    sgio.dxfer_len = len;
    sgio.sbp = sense;
    sgio.mx_sb_len = sense_len;
-   sgio.timeout = 30000;
+   sgio.timeout = 5000;
 
    rv = ioctl(fd, SG_IO, &sgio);
 
@@ -1357,3 +1357,77 @@ bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream)
    return true;
 }
 
+bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool enabled)
+{
+   /* MMC Command: MODE SENSE (10) and MODE SELECT (10) */
+   unsigned char cdb_sense_changeable[] = {0x5A, 0, 0x48, 0, 0, 0, 0, 0, 0x14, 0};
+   unsigned char cdb_sense[] = {0x5A, 0, 0x8, 0, 0, 0, 0, 0, 0x14, 0};
+   unsigned char cdb_select[] = {0x55, 0x10, 0, 0, 0, 0, 0, 0, 0x14, 0};
+   unsigned char buf[20] = {0};
+   int rv, i;
+
+   rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb_sense_changeable, sizeof(cdb_sense_changeable), 0);
+
+#ifdef CDROM_DEBUG
+   printf("mode sense changeable status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return false;
+
+   if (!(buf[10] & 0x1))
+   {
+      /* RCD (read cache disable) bit is not changeable */
+#ifdef CDROM_DEBUG
+      printf("RCD (read cache disable) bit is not changeable.\n");
+      fflush(stdout);
+#endif
+      return false;
+   }
+
+   memset(buf, 0, sizeof(buf));
+
+   rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb_sense, sizeof(cdb_sense), 0);
+
+#ifdef CDROM_DEBUG
+   printf("mode sense status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return false;
+
+#ifdef CDROM_DEBUG
+   printf("Mode sense data for caching mode page: ");
+
+   for (i = 0; i < sizeof(buf); i++)
+   {
+      printf("%02X ", buf[i]);
+   }
+
+   printf("\n");
+   fflush(stdout);
+#endif
+
+   /* "When transferred during execution of the MODE SELECT (10) command, Mode Data Length is reserved." */
+   for (i = 0; i < 8; i++)
+      buf[i] = 0;
+
+   if (enabled)
+      buf[10] &= ~1;
+   else
+      buf[10] |= 1;
+
+   rv = cdrom_send_command(stream, DIRECTION_OUT, buf, sizeof(buf), cdb_select, sizeof(cdb_select), 0);
+
+#ifdef CDROM_DEBUG
+   printf("mode select status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return false;
+
+   return true;
+}

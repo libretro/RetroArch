@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <libretro.h>
 #include <retro_environment.h>
+#include <vfs/vfs.h>
 
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
@@ -34,56 +35,6 @@
 
 #ifdef _WIN32
 typedef void* HANDLE;
-#endif
-
-enum vfs_scheme
-{
-   VFS_SCHEME_NONE = 0,
-   VFS_SCHEME_CDROM
-};
-
-#ifndef __WINRT__
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle
-#else
-struct libretro_vfs_implementation_file
-#endif
-{
-   int fd;
-   unsigned hints;
-   int64_t size;
-   char *buf;
-   FILE *fp;
-#ifdef _WIN32
-   HANDLE fh;
-#endif
-   char* orig_path;
-   uint64_t mappos;
-   uint64_t mapsize;
-   uint8_t *mapped;
-   enum vfs_scheme scheme;
-#ifdef HAVE_CDROM
-   vfs_cdrom_t cdrom;
-#endif
-};
-#endif
-
-/* Replace the following symbol with something appropriate
- * to signify the file is being compiled for a front end instead of a core.
- * This allows the same code to act as reference implementation
- * for VFS and as fallbacks for when the front end does not provide VFS functionality.
- */
-
-#ifdef VFS_FRONTEND
-typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
-#else
-typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
-#endif
-
-#ifdef VFS_FRONTEND
-typedef struct retro_vfs_dir_handle libretro_vfs_implementation_dir;
-#else
-typedef struct libretro_vfs_implementation_dir libretro_vfs_implementation_dir;
 #endif
 
 #ifdef __cplusplus

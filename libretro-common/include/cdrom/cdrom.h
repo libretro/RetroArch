@@ -28,17 +28,12 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <vfs/vfs.h>
 #include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
 #include <boolean.h>
-
-#ifdef VFS_FRONTEND
-typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
-#else
-typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
-#endif
 
 struct string_list;
 
@@ -107,6 +102,8 @@ void cdrom_get_current_config_multiread(const libretro_vfs_implementation_file *
 void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream);
 
 int cdrom_get_sense(const libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len);
+
+bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool enabled);
 
 RETRO_END_DECLS
 

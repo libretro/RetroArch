@@ -23,30 +23,12 @@
 #ifndef __LIBRETRO_SDK_VFS_IMPLEMENTATION_CDROM_H
 #define __LIBRETRO_SDK_VFS_IMPLEMENTATION_CDROM_H
 
+#include <vfs/vfs.h>
 #include <cdrom/cdrom.h>
 
 RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;
-
-typedef struct
-{
-   char *cue_buf;
-   size_t cue_len;
-   int64_t byte_pos;
-   char drive;
-   unsigned char cur_min;
-   unsigned char cur_sec;
-   unsigned char cur_frame;
-   unsigned char cur_track;
-   unsigned cur_lba;
-} vfs_cdrom_t;
-
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle;
-#else
-struct libretro_vfs_implementation_file;
-#endif
 
 int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
