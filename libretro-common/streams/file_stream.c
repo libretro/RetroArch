@@ -221,6 +221,9 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    int        ret       = 0;
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
 
+   if (maxlen <= 0)
+      return EOF;
+
    buf[maxlen] = '\0';
 
    va_start(args, format);
