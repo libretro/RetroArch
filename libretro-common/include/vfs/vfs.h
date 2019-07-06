@@ -27,6 +27,10 @@
 
 RETRO_BEGIN_DECLS
 
+#ifdef _WIN32
+typedef void* HANDLE;
+#endif
+
 #ifdef HAVE_CDROM
 typedef struct
 {

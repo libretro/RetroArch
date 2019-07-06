@@ -33,10 +33,6 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
-#ifdef _WIN32
-typedef void* HANDLE;
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
