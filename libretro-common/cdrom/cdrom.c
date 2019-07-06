@@ -978,7 +978,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
          cdrom_read_track_info(stream, point, toc);
 
 #if defined(_WIN32) && !defined(_XBOX)
-         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c://drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
+         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c:/drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #else
          pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #endif
