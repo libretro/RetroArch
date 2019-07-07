@@ -1066,16 +1066,17 @@ int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t 
    }
    else
    {
-      unsigned frames = cdrom_msf_to_lba(min, sec, frame) + ceil((len + skip) / 2352.0);
+      double frames = (len + skip) / 2352.0;
+      unsigned frame_end = cdrom_msf_to_lba(min, sec, frame) + ceil(frames);
 
-      if (timeouts->g1_timeout && frames / 75 > timeouts->g1_timeout)
+      if (timeouts->g1_timeout && frames > timeouts->g1_timeout)
       {
-         printf("multi-frame read of %d seconds is longer than group 1 timeout of %d seconds\n", frames / 75, timeouts->g1_timeout);
+         printf("multi-frame read of %d seconds is longer than group 1 timeout of %d seconds\n", (int)frames, timeouts->g1_timeout);
          fflush(stdout);
          return 1;
       }
 
-      cdrom_lba_to_msf(frames, &cdb[6], &cdb[7], &cdb[8]);
+      cdrom_lba_to_msf(frame_end, &cdb[6], &cdb[7], &cdb[8]);
 
 #ifdef CDROM_DEBUG
       printf("multi-frame read: from %d %d %d to %d %d %d skip %" PRId64 "\n", cdb[3], cdb[4], cdb[5], cdb[6], cdb[7], cdb[8], skip);
