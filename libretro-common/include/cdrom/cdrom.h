@@ -115,6 +115,8 @@ bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool e
 
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
+bool cdrom_has_atip(const libretro_vfs_implementation_file *stream);
+
 RETRO_END_DECLS
 
 #endif
