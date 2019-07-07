@@ -695,7 +695,11 @@ const char *config_get_default_audio(void)
       case AUDIO_CTR:
          return "dsp";
       case AUDIO_SWITCH:
+#if defined(HAVE_LIBNX)
+         return "switch_thread";
+#else
          return "switch";
+#endif
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       case AUDIO_JACK:

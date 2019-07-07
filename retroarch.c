@@ -312,8 +312,12 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_ctr_dsp,
 #endif
 #ifdef SWITCH
-   &audio_switch_thread,
    &audio_switch,
+   &audio_switch_thread,
+#ifdef HAVE_LIBNX
+   &audio_switch_libnx_audren,
+   &audio_switch_libnx_audren_thread,
+#endif
 #endif
    &audio_null,
    NULL,
