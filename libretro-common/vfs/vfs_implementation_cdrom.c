@@ -185,6 +185,7 @@ void retro_vfs_file_open_cdrom(
       }
 
       cdrom_write_cue(stream, &stream->cdrom.cue_buf, &stream->cdrom.cue_len, stream->cdrom.drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
+      cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
 
 #ifdef CDROM_DEBUG
       if (string_is_empty(stream->cdrom.cue_buf))
@@ -253,6 +254,7 @@ void retro_vfs_file_open_cdrom(
       }
 
       cdrom_write_cue(stream, &stream->cdrom.cue_buf, &stream->cdrom.cue_len, stream->cdrom.drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
+      cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
 
 #ifdef CDROM_DEBUG
       if (string_is_empty(stream->cdrom.cue_buf))
@@ -371,7 +373,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       fflush(stdout);
 #endif
 
-      rv = cdrom_read(stream, min, sec, frame, s, (size_t)len, skip);
+      rv = cdrom_read(stream, &vfs_cdrom_toc.timeouts, min, sec, frame, s, (size_t)len, skip);
       /*rv = cdrom_read_lba(stream, stream->cdrom.cur_lba, s, (size_t)len, skip);*/
 
       if (rv)

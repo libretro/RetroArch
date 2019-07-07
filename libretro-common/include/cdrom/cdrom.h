@@ -41,6 +41,13 @@ RETRO_BEGIN_DECLS
 
 typedef struct
 {
+   unsigned short g1_timeout;
+   unsigned short g2_timeout;
+   unsigned short g3_timeout;
+} cdrom_group_timeouts_t;
+
+typedef struct
+{
    unsigned lba_start; /* start of pregap */
    unsigned lba; /* start of data */
    unsigned track_size;
@@ -56,6 +63,7 @@ typedef struct
 {
    char drive;
    unsigned char num_tracks;
+   cdrom_group_timeouts_t timeouts;
    cdrom_track_t track[99];
 } cdrom_toc_t;
 
@@ -72,7 +80,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 /* needs 32 bytes for full vendor, product and version */
 int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom);
 
-int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
+int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
 int cdrom_read_lba(libretro_vfs_implementation_file *stream, unsigned lba, void *s, size_t len, size_t skip);
 
@@ -104,6 +112,8 @@ void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_
 int cdrom_get_sense(const libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len);
 
 bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool enabled);
+
+bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
 RETRO_END_DECLS
 
