@@ -2996,7 +2996,6 @@ static int16_t input_state_internal(
       unsigned idx, unsigned id,
       bool button_mask)
 {
-   int16_t bsv_result;
    int16_t res         = 0;
 #ifdef HAVE_OVERLAY
    int16_t res_overlay = 0;
@@ -3004,13 +3003,6 @@ static int16_t input_state_internal(
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
    bool reset_state    = false;
-
-   if (bsv_movie_is_playback_on())
-   {
-      if (intfstream_read(bsv_movie_state_handle->file, &bsv_result, 1) == 1)
-         return swap_if_big16(bsv_result);
-      bsv_movie_state.movie_end = true;
-   }
 
    if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
@@ -3029,9 +3021,11 @@ static int16_t input_state_internal(
                if (idx < 2 && id < 2)
                {
                   unsigned offset = RARCH_FIRST_CUSTOM_BIND + (idx * 4) + (id * 2);
-                  if (settings->uints.input_remap_ids[port][offset]   != offset)
+                  if (settings->uints.input_remap_ids
+                        [port][offset]   != offset)
                      reset_state = true;
-                  if (settings->uints.input_remap_ids[port][offset+1] != (offset+1))
+                  else if (settings->uints.input_remap_ids
+                        [port][offset+1] != (offset+1))
                      reset_state = true;
                }
                break;
@@ -3055,11 +3049,11 @@ static int16_t input_state_internal(
                break;
             case RETRO_DEVICE_ANALOG:
                {
-                  unsigned base = 0;
                   input_remote_state_t *input_state  = &remote_st_ptr;
 
                   if (input_state)
                   {
+                     unsigned base = 0;
                      if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                         base = 2;
                      if (id == RETRO_DEVICE_ID_ANALOG_Y)
@@ -3163,6 +3157,14 @@ static int16_t input_state_internal(
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   if (bsv_movie_is_playback_on())
+   {
+      int16_t bsv_result;
+      if (intfstream_read(bsv_movie_state_handle->file, &bsv_result, 1) == 1)
+         return swap_if_big16(bsv_result);
+      bsv_movie_state.movie_end = true;
+   }
+
    device &= RETRO_DEVICE_MASK;
    if (  (device == RETRO_DEVICE_JOYPAD) &&
          (id == RETRO_DEVICE_ID_JOYPAD_MASK))
@@ -3176,6 +3178,7 @@ int16_t input_state(unsigned port, unsigned device,
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       ret                        = current_input->input_state(
             current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+
 
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
          if (input_state_internal(ret, port, device, idx, i, true))
