@@ -3142,21 +3142,12 @@ static int16_t input_state_internal(
                      &res_overlay, port, device, idx, id);
 #endif
 
-            {
-               if (button_mask)
-               {
-                  res = 0;
-                  if (ret & (1 << id))
-                     res |= (1 << id);
-               }
-               else
-                  res = ret;
+            res = ret;
 
 #ifdef HAVE_OVERLAY
-               if (input_overlay_is_alive(overlay_ptr) && port == 0)
-                  res |= res_overlay;
+            if (input_overlay_is_alive(overlay_ptr) && port == 0)
+               res |= res_overlay;
 #endif
-            }
 
             if (settings->bools.input_remap_binds_enable && input_driver_mapper)
                input_mapper_state(input_driver_mapper,
@@ -3266,14 +3257,7 @@ static int16_t input_state_internal(
 
                   if (!reset_state)
                   {
-                     if (button_mask)
-                     {
-                        res = 0;
-                        if (ret & (1 << id))
-                           res |= (1 << id);
-                     }
-                     else
-                        res = ret;
+                     res = ret;
 
 #ifdef HAVE_OVERLAY
                      if (input_overlay_is_alive(overlay_ptr) && port == 0)
