@@ -12480,50 +12480,60 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    return true;
 }
 
-#ifdef HAVE_RUNAHEAD
 /* Runahead */
 
-static size_t runahead_save_state_size     = 0;
-
-static bool runahead_save_state_size_known = false;
-static bool request_fast_savestate         = false;
-static bool hard_disable_audio             = false;
-
-/* Save State List for Run Ahead */
-static MyList *runahead_save_state_list    = NULL;
-
-static bool input_is_dirty                 = false;
-static MyList *input_state_list            = NULL;
-
-typedef struct InputListElement_t
+#ifdef HAVE_RUNAHEAD
+typedef struct input_list_element_t
 {
    unsigned port;
    unsigned device;
    unsigned index;
    int16_t *state;
    unsigned int state_size;
-} InputListElement;
+} input_list_element;
 
-typedef bool(*LoadStateFunction)(const void*, size_t);
+static size_t runahead_save_state_size          = 0;
 
-static function_t retro_reset_callback_original = NULL;
-static LoadStateFunction retro_unserialize_callback_original = NULL;
+static bool runahead_save_state_size_known      = false;
+static bool request_fast_savestate              = false;
+static bool hard_disable_audio                  = false;
+
+/* Save State List for Run Ahead */
+static MyList *runahead_save_state_list         = NULL;
+static MyList *input_state_list                 = NULL;
+
+static bool input_is_dirty                      = false;
+
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+
 static retro_input_state_t input_state_callback_original;
+static function_t retro_reset_callback_original = NULL;
+static runahead_load_state_function
+retro_unserialize_callback_original             = NULL;
 
-static void* InputListElementConstructor(void)
+static function_t original_retro_deinit         = NULL;
+static function_t original_retro_unload         = NULL;
+
+static bool runahead_video_driver_is_active     = true;
+static bool runahead_available                  = true;
+static bool runahead_secondary_core_available   = true;
+static bool runahead_force_input_dirty          = true;
+static uint64_t runahead_last_frame_count       = 0;
+
+static void *input_list_element_constructor(void)
 {
-   const int initial_state_array_size = 256;
-   void *ptr                          = calloc(1, sizeof(InputListElement));
-   InputListElement *element          = (InputListElement*)ptr;
+   void *ptr                          = calloc(1, sizeof(input_list_element));
+   input_list_element *element        = (input_list_element*)ptr;
 
-   element->state_size                = initial_state_array_size;
+   element->state_size                = 256;
    element->state                     = (int16_t*)calloc(
          element->state_size, sizeof(int16_t));
 
    return ptr;
 }
 
-static void InputListElementRealloc(InputListElement *element,
+static void input_list_element_realloc(
+      input_list_element *element,
       unsigned int new_size)
 {
    if (new_size > element->state_size)
@@ -12536,65 +12546,63 @@ static void InputListElementRealloc(InputListElement *element,
    }
 }
 
-static void InputListElementExpand(
-      InputListElement *element, unsigned int newIndex)
+static void input_list_element_expand(
+      input_list_element *element, unsigned int newIndex)
 {
    unsigned int new_size = element->state_size;
    if (new_size == 0)
       new_size = 32;
    while (newIndex >= new_size)
       new_size *= 2;
-   InputListElementRealloc(element, new_size);
+   input_list_element_realloc(element, new_size);
 }
 
-static void InputListElementDestructor(void* element_ptr)
+static void input_list_element_destructor(void* element_ptr)
 {
-   InputListElement *element = (InputListElement*)element_ptr;
+   input_list_element *element = (input_list_element*)element_ptr;
+   if (!element)
+      return;
+
    free(element->state);
    free(element_ptr);
 }
 
-static void input_state_destroy(void)
-{
-   mylist_destroy(&input_state_list);
-}
+#define input_state_destroy() mylist_destroy(&input_state_list)
 
 static void input_state_set_last(unsigned port, unsigned device,
       unsigned index, unsigned id, int16_t value)
 {
    unsigned i;
-   InputListElement *element = NULL;
-   if (id >= 65536)
-      return;
-   /*arbitrary limit of up to 65536 elements in state array*/
+   input_list_element *element = NULL;
 
    if (!input_state_list)
       mylist_create(&input_state_list, 16,
-            InputListElementConstructor, InputListElementDestructor);
+            input_list_element_constructor,
+            input_list_element_destructor);
 
-   /* find list item */
+   /* Find list item */
    for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
-      element = (InputListElement*)input_state_list->data[i];
+      element = (input_list_element*)input_state_list->data[i];
       if (  (element->port   == port)   &&
             (element->device == device) &&
             (element->index  == index)
          )
       {
          if (id >= element->state_size)
-            InputListElementExpand(element, id);
+            input_list_element_expand(element, id);
          element->state[id] = value;
          return;
       }
    }
 
-   element            = (InputListElement*)
+   element            = (input_list_element*)
       mylist_add_element(input_state_list);
    element->port      = port;
    element->device    = device;
    element->index     = index;
    if (id >= element->state_size)
-      InputListElementExpand(element, id);
+      input_list_element_expand(element, id);
    element->state[id] = value;
 }
 
@@ -12609,8 +12617,8 @@ int16_t input_state_get_last(unsigned port,
    /* find list item */
    for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
-      InputListElement *element =
-         (InputListElement*)input_state_list->data[i];
+      input_list_element *element =
+         (input_list_element*)input_state_list->data[i];
 
       if (  (element->port   == port)   &&
             (element->device == device) &&
@@ -12633,8 +12641,12 @@ static int16_t input_state_with_logging(unsigned port,
             port, device, index, id);
       int16_t last_input = input_state_get_last(port, device, index, id);
       if (result != last_input)
-         input_is_dirty = true;
-      input_state_set_last(port, device, index, id, result);
+         input_is_dirty  = true;
+
+      /*arbitrary limit of up to 65536 elements in state array*/
+      if (id < 65536)
+         input_state_set_last(port, device, index, id, result);
+
       return result;
    }
    return 0;
@@ -12647,7 +12659,7 @@ static void reset_hook(void)
       retro_reset_callback_original();
 }
 
-static bool unserialze_hook(const void *buf, size_t size)
+static bool unserialize_hook(const void *buf, size_t size)
 {
    input_is_dirty = true;
    if (retro_unserialize_callback_original)
@@ -12673,7 +12685,7 @@ static void add_input_state_hook(void)
    if (!retro_unserialize_callback_original)
    {
       retro_unserialize_callback_original = current_core.retro_unserialize;
-      current_core.retro_unserialize      = unserialze_hook;
+      current_core.retro_unserialize      = unserialize_hook;
    }
 }
 
@@ -12740,10 +12752,7 @@ static void runahead_save_state_list_init(size_t saveStateSize)
          runahead_save_state_alloc, runahead_save_state_free);
 }
 
-static void runahead_save_state_list_destroy(void)
-{
-   mylist_destroy(&runahead_save_state_list);
-}
+#define runahead_save_state_list_destroy() mylist_destroy(&runahead_save_state_list)
 
 #if 0
 static void runahead_save_state_list_rotate(void)
@@ -12761,31 +12770,21 @@ static void runahead_save_state_list_rotate(void)
 #endif
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
-
-static function_t originalRetroDeinit = NULL;
-static function_t originalRetroUnload = NULL;
-
 static void runahead_remove_hooks(void)
 {
-   if (originalRetroDeinit)
+   if (original_retro_deinit)
    {
-      current_core.retro_deinit = originalRetroDeinit;
-      originalRetroDeinit       = NULL;
+      current_core.retro_deinit      = original_retro_deinit;
+      original_retro_deinit          = NULL;
    }
 
-   if (originalRetroUnload)
+   if (original_retro_unload)
    {
-      current_core.retro_unload_game = originalRetroUnload;
-      originalRetroUnload            = NULL;
+      current_core.retro_unload_game = original_retro_unload;
+      original_retro_unload          = NULL;
    }
    remove_input_state_hook();
 }
-
-static bool runahead_video_driver_is_active   = true;
-static bool runahead_available                = true;
-static bool runahead_secondary_core_available = true;
-static bool runahead_force_input_dirty        = true;
-static uint64_t runahead_last_frame_count     = 0;
 
 static void runahead_clear_variables(void)
 {
@@ -12825,15 +12824,15 @@ static void runahead_deinit_hook(void)
 
 static void runahead_add_hooks(void)
 {
-   if (!originalRetroDeinit)
+   if (!original_retro_deinit)
    {
-      originalRetroDeinit       = current_core.retro_deinit;
+      original_retro_deinit     = current_core.retro_deinit;
       current_core.retro_deinit = runahead_deinit_hook;
    }
 
-   if (!originalRetroUnload)
+   if (!original_retro_unload)
    {
-      originalRetroUnload = current_core.retro_unload_game;
+      original_retro_unload          = current_core.retro_unload_game;
       current_core.retro_unload_game = unload_hook;
    }
    add_input_state_hook();
@@ -12843,10 +12842,10 @@ static void runahead_add_hooks(void)
 
 static void runahead_error(void)
 {
-   runahead_available = false;
+   runahead_available             = false;
    runahead_save_state_list_destroy();
    runahead_remove_hooks();
-   runahead_save_state_size = 0;
+   runahead_save_state_size       = 0;
    runahead_save_state_size_known = true;
 }
 
@@ -12875,12 +12874,15 @@ static bool runahead_create(void)
 
 static bool runahead_save_state(void)
 {
-   bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info;
+   bool okay                                  = false;
+
    if (!runahead_save_state_list)
       return false;
-   serialize_info =
+
+   serialize_info         =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
+
    request_fast_savestate = true;
    okay                   = core_serialize(serialize_info);
    request_fast_savestate = false;
@@ -12937,24 +12939,17 @@ static bool runahead_load_state_secondary(void)
    return true;
 }
 
-static bool runahead_run_secondary(void)
-{
-   if (!secondary_core_run_use_last_input())
-   {
-      runahead_secondary_core_available = false;
-      return false;
-   }
-   return true;
-}
+#define runahead_run_secondary() \
+   if (!secondary_core_run_use_last_input()) \
+      runahead_secondary_core_available = false
+
 #endif
 
-static void runahead_resume_video(void)
-{
-   if (runahead_video_driver_is_active)
-      video_driver_active = true;
-   else
-      video_driver_active = false;
-}
+#define runahead_resume_video() \
+   if (runahead_video_driver_is_active) \
+      video_driver_active = true; \
+   else \
+      video_driver_active = false
 
 static void retro_input_poll_null(void);
 
@@ -15545,7 +15540,7 @@ void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_
       current_core_type           = type;
    }
    else if (!has_set_core)
-      current_core_type          = type;
+      current_core_type           = type;
 }
 
 /**
@@ -15569,7 +15564,7 @@ void retroarch_fail(int error_code, const char *error)
 bool retroarch_main_quit(void)
 {
 #ifdef HAVE_DISCORD
-      if (discord_is_inited)
+   if (discord_is_inited)
    {
       discord_userdata_t userdata;
       userdata.status = DISCORD_PRESENCE_SHUTDOWN;
