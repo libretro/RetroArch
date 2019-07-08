@@ -2144,21 +2144,6 @@ bool bsv_movie_init(void)
 #define bsv_movie_is_playback_on() (bsv_movie_state_handle && bsv_movie_state.movie_playback)
 #define bsv_movie_is_playback_off() (bsv_movie_state_handle && !bsv_movie_state.movie_playback)
 
-static bool bsv_movie_get_input(int16_t *bsv_data)
-{
-   if (!bsv_movie_is_playback_on())
-      return false;
-   if (intfstream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
-   {
-      bsv_movie_state.movie_end = true;
-      return false;
-   }
-
-   *bsv_data = swap_if_big16(*bsv_data);
-
-   return true;
-}
-
 void bsv_movie_set_path(const char *path)
 {
    strlcpy(bsv_movie_state.movie_path,
@@ -3020,8 +3005,12 @@ static int16_t input_state_internal(
       is in action for that button*/
    bool reset_state    = false;
 
-   if (bsv_movie_get_input(&bsv_result))
-      return bsv_result;
+   if (bsv_movie_is_playback_on())
+   {
+      if (intfstream_read(bsv_movie_state_handle->file, &bsv_result, 1) == 1)
+         return swap_if_big16(bsv_result);
+      bsv_movie_state.movie_end = true;
+   }
 
    if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
