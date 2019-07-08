@@ -1254,7 +1254,7 @@ struct string_list* cdrom_get_available_drives(void)
       if (strstr(dir_list->elems[i].data, "/dev/sg"))
       {
          char drive_model[32] = {0};
-         char drive_string[32] = {0};
+         char drive_string[33] = {0};
          union string_list_elem_attr attr = {0};
          int dev_index = 0;
          RFILE *file = filestream_open(dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
@@ -1309,7 +1309,7 @@ struct string_list* cdrom_get_available_drives(void)
       else
       {
          char drive_model[32] = {0};
-         char drive_string[64] = {0};
+         char drive_string[33] = {0};
          union string_list_elem_attr attr = {0};
          RFILE *file = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
          const libretro_vfs_implementation_file *stream;

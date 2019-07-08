@@ -4906,7 +4906,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          for (i = 0; list && i < list->size; i++)
          {
-            char drive_string[32] = {0};
+            char drive_string[256] = {0};
             char drive[2] = {0};
             size_t pos = 0;
 
