@@ -25,6 +25,7 @@ android {
   flavorDimensions "variant"
 
   defaultConfig {
+    minSdkVersion 16
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
