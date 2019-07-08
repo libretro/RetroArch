@@ -435,30 +435,32 @@ static void path_init_savefile_internal(void)
 
 void path_fill_names(void)
 {
+   global_t *global = global_get_ptr();
+
    path_init_savefile_internal();
+
+   if (global)
+      bsv_movie_set_path(global->name.savefile);
 
    if (string_is_empty(path_main_basename))
       return;
 
+   if (global)
    {
-      global_t *global = global_get_ptr();
-      if (global)
-      {
-         if (string_is_empty(global->name.ups))
-            fill_pathname_noext(global->name.ups, path_main_basename,
-                  file_path_str(FILE_PATH_UPS_EXTENSION),
-                  sizeof(global->name.ups));
+      if (string_is_empty(global->name.ups))
+         fill_pathname_noext(global->name.ups, path_main_basename,
+               file_path_str(FILE_PATH_UPS_EXTENSION),
+               sizeof(global->name.ups));
 
-         if (string_is_empty(global->name.bps))
-            fill_pathname_noext(global->name.bps, path_main_basename,
-                  file_path_str(FILE_PATH_BPS_EXTENSION),
-                  sizeof(global->name.bps));
+      if (string_is_empty(global->name.bps))
+         fill_pathname_noext(global->name.bps, path_main_basename,
+               file_path_str(FILE_PATH_BPS_EXTENSION),
+               sizeof(global->name.bps));
 
-         if (string_is_empty(global->name.ips))
-            fill_pathname_noext(global->name.ips, path_main_basename,
-                  file_path_str(FILE_PATH_IPS_EXTENSION),
-                  sizeof(global->name.ips));
-      }
+      if (string_is_empty(global->name.ips))
+         fill_pathname_noext(global->name.ips, path_main_basename,
+               file_path_str(FILE_PATH_IPS_EXTENSION),
+               sizeof(global->name.ips));
    }
 }
 

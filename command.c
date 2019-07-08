@@ -1104,6 +1104,7 @@ static void command_event_init_cheats(void)
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
+   allow_cheats &= !rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL);
 
    if (!allow_cheats)
       return;
@@ -1275,6 +1276,7 @@ static bool event_init_content(void)
    command_event_load_auto_state();
 #endif
 
+   command_event(CMD_EVENT_BSV_MOVIE_INIT, NULL);
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
    return true;
@@ -1758,7 +1760,11 @@ bool command_event(enum event_command cmd, void *data)
          dir_check_shader(false, true);
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
-         /* Dead code */
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         bsv_movie_check();
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
       {
@@ -1880,6 +1886,11 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_LOAD_STATE:
+         /* Immutable - disallow savestate load when
+          * we absolutely cannot change game state. */
+         if (rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
+            return false;
+
 #ifdef HAVE_CHEEVOS
          if (rcheevos_hardcore_active)
             return false;
@@ -2618,10 +2629,11 @@ TODO: Add a setting for these tweaks */
             return false;
          break;
       case CMD_EVENT_BSV_MOVIE_DEINIT:
-         /* Dead code */
+         bsv_movie_deinit();
          break;
       case CMD_EVENT_BSV_MOVIE_INIT:
-         /* Dead code */
+         command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+         bsv_movie_init();
          break;
 #ifdef HAVE_NETWORKING
       case CMD_EVENT_NETPLAY_GAME_WATCH:
