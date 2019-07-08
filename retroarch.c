@@ -3126,12 +3126,6 @@ static int16_t input_state_internal(
       }
    }
 
-   if (bsv_movie_is_playback_off())
-   {
-      res = swap_if_big16(res);
-      intfstream_write(bsv_movie_state_handle->file, &res, 1);
-   }
-
    return res;
 }
 
@@ -3151,6 +3145,7 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
+   int16_t result             = 0;
    int16_t ret                = 0;
    joypad_info.axis_threshold = input_driver_axis_threshold;
    joypad_info.joy_idx        = configuration_settings->uints.input_joypad_map[port];
@@ -3177,10 +3172,21 @@ int16_t input_state(unsigned port, unsigned device,
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
          if (input_state_internal(ret, port, device, idx, i, true))
             res |= (1 << i);
+      if (bsv_movie_is_playback_off())
+      {
+         res = swap_if_big16(res);
+         intfstream_write(bsv_movie_state_handle->file, &res, 1);
+      }
       return res;
    }
 
-   return input_state_internal(ret, port, device, idx, id, false);
+   result = input_state_internal(ret, port, device, idx, id, false);
+   if (bsv_movie_is_playback_off())
+   {
+      result = swap_if_big16(result);
+      intfstream_write(bsv_movie_state_handle->file, &result, 1);
+   }
+   return result;
 }
 
 /**
