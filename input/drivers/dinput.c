@@ -270,10 +270,10 @@ static bool dinput_mouse_button_pressed(
 		return false;
 
 	/* the driver only supports one mouse */
-	if ( settings->uints.input_mouse_index[ port ] != 0 )
+	if ( settings->uints.input_mouse_index[ port ] != 0)
 		return false;
 
-	switch ( key )
+	switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return di->mouse_l;
@@ -336,7 +336,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
       if (dinput_mouse_button_pressed(di, port, binds[id].mbutton))
          return true;
-      if (joykey != NO_BTN 
+      if (joykey != NO_BTN
             && di->joypad->button(joypad_info.joy_idx, joykey))
          return true;
       if (((float)abs(di->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
@@ -378,67 +378,65 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id )
+static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id)
 {
-	const int edge_detect = 32700;
-	struct video_viewport vp;
-	bool inside = false;
-	int x = 0;
-	int y = 0;
-	int16_t res_x = 0;
-	int16_t res_y = 0;
-	int16_t res_screen_x = 0;
-	int16_t res_screen_y = 0;
-	unsigned num = 0;
+   const int edge_detect = 32700;
+   struct video_viewport vp;
+   bool inside = false;
+   int x = 0;
+   int y = 0;
+   int16_t res_x = 0;
+   int16_t res_y = 0;
+   int16_t res_screen_x = 0;
+   int16_t res_screen_y = 0;
+   unsigned num = 0;
 
-	struct pointer_status* check_pos = di->pointer_head.next;
+   struct pointer_status* check_pos = di->pointer_head.next;
 
-	vp.x = 0;
-	vp.y = 0;
-	vp.width = 0;
-	vp.height = 0;
-	vp.full_width = 0;
-	vp.full_height = 0;
+   vp.x = 0;
+   vp.y = 0;
+   vp.width = 0;
+   vp.height = 0;
+   vp.full_width = 0;
+   vp.full_height = 0;
 
-	while ( check_pos && num < idx )
-	{
-		num++;
-		check_pos = check_pos->next;
-	}
+   while ( check_pos && num < idx)
+   {
+      num++;
+      check_pos = check_pos->next;
+   }
 
-	if ( !check_pos && idx > 0 ) /* idx = 0 has mouse fallback. */
-		return 0;
+   if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
+      return 0;
 
-	x = di->mouse_x;
-	y = di->mouse_y;
+   x = di->mouse_x;
+   y = di->mouse_y;
 
-	if ( check_pos )
-	{
-		x = check_pos->pointer_x;
-		y = check_pos->pointer_y;
-	}
+   if (check_pos)
+   {
+      x = check_pos->pointer_x;
+      y = check_pos->pointer_y;
+   }
 
-	if ( !( video_driver_translate_coord_viewport_wrap(
-		&vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y ) ) )
-	{
-		return 0;
-	}
+   if ( !( video_driver_translate_coord_viewport_wrap(
+               &vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y)))
+      return 0;
 
-	inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
+   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
 
-	switch ( id )
-	{
-	case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-		return inside ? res_x : 0;
-	case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-		return inside ? res_y : 0;
-	case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-		return !inside;
-	default:
-		break;
-	}
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         return inside ? res_x : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         return inside ? res_y : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !inside;
+      default:
+         break;
+   }
 
-	return 0;
+   return 0;
 }
 
 static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsigned id)
@@ -451,9 +449,8 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsign
 		return false;
 
 	/* the driver only supports one mouse */
-	if ( settings->uints.input_mouse_index[ port ] != 0 ) {
+	if (settings->uints.input_mouse_index[ port ] != 0)
 		return 0;
-	}
 
    switch (id)
    {
@@ -504,9 +501,8 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned port,
 		return false;
 
 	/* the driver only supports one mouse */
-	if ( settings->uints.input_mouse_index[ port ] != 0 ) {
+	if (settings->uints.input_mouse_index[ port ] != 0)
 		return 0;
-	}
 
    switch (id)
    {
@@ -646,13 +642,13 @@ static int16_t dinput_input_state(void *data,
                device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
-			switch ( id )
+			switch (id)
 			{
 				/*aiming*/
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
 				case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-					return dinput_lightgun_aiming_state( di, idx, id );
+					return dinput_lightgun_aiming_state( di, idx, id);
 
 				/*buttons*/
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
