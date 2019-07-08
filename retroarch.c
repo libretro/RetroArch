@@ -3002,9 +3002,6 @@ static int16_t input_state_internal(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3088,8 +3085,6 @@ static int16_t input_state_internal(
 
       case RETRO_DEVICE_MOUSE:
 
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3129,8 +3124,6 @@ static int16_t input_state_internal(
 
       case RETRO_DEVICE_KEYBOARD:
 
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3157,8 +3150,6 @@ static int16_t input_state_internal(
 
       case RETRO_DEVICE_LIGHTGUN:
 
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3198,8 +3189,6 @@ static int16_t input_state_internal(
 
       case RETRO_DEVICE_ANALOG:
 
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3277,8 +3266,6 @@ static int16_t input_state_internal(
 
       case RETRO_DEVICE_POINTER:
 
-         if (     !input_driver_flushing_input
-               && !input_driver_block_libretro_input)
          {
 #ifdef HAVE_OVERLAY
             int16_t res_overlay  = 0;
@@ -3359,9 +3346,13 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned i;
       int16_t res = 0;
 
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-         if (input_state_internal(ret, port, device, idx, i, true))
-            res |= (1 << i);
+      if (     !input_driver_flushing_input
+            && !input_driver_block_libretro_input)
+      {
+         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (input_state_internal(ret, port, device, idx, i, true))
+               res |= (1 << i);
+      }
       if (bsv_movie_is_playback_off())
       {
          res = swap_if_big16(res);
@@ -3370,7 +3361,9 @@ int16_t input_state(unsigned port, unsigned device,
       return res;
    }
 
-   result = input_state_internal(ret, port, device, idx, id, false);
+   if (     !input_driver_flushing_input
+         && !input_driver_block_libretro_input)
+      result = input_state_internal(ret, port, device, idx, id, false);
 
    if (bsv_movie_is_playback_off())
    {
