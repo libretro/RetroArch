@@ -2996,85 +2996,152 @@ static int16_t input_state_internal(
       unsigned idx, unsigned id,
       bool button_mask)
 {
-   int16_t res         = 0;
-#ifdef HAVE_OVERLAY
-   int16_t res_overlay = 0;
-#endif
-   /* used to reset input state of a button when the gamepad mapper
-      is in action for that button*/
-   bool reset_state    = false;
+   int16_t res          = 0;
+   settings_t *settings = configuration_settings;
 
-   if (     !input_driver_flushing_input
-         && !input_driver_block_libretro_input)
+   switch (device)
    {
-      settings_t *settings = configuration_settings;
+      case RETRO_DEVICE_JOYPAD:
 
-      if (settings->bools.input_remap_binds_enable)
-      {
-         switch (device)
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
          {
-            case RETRO_DEVICE_JOYPAD:
-               if (id != settings->uints.input_remap_ids[port][id])
-                  reset_state = true;
-               break;
-            case RETRO_DEVICE_ANALOG:
-               if (idx < 2 && id < 2)
-               {
-                  unsigned offset = RARCH_FIRST_CUSTOM_BIND + (idx * 4) + (id * 2);
-                  if (settings->uints.input_remap_ids
-                        [port][offset]   != offset)
-                     reset_state = true;
-                  else if (settings->uints.input_remap_ids
-                        [port][offset+1] != (offset+1))
-                     reset_state = true;
-               }
-               break;
-         }
-      }
-
 #ifdef HAVE_OVERLAY
-      if (overlay_ptr)
-         input_state_overlay(overlay_ptr,
-               &res_overlay, port, device, idx, id);
+            int16_t res_overlay  = 0;
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
-      {
-         switch (device)
-         {
-            case RETRO_DEVICE_JOYPAD:
+            if (input_driver_remote)
                if (input_remote_key_pressed(id, port))
                   res |= 1;
-               break;
-            case RETRO_DEVICE_ANALOG:
-               {
-                  input_remote_state_t *input_state  = &remote_st_ptr;
-
-                  if (input_state)
-                  {
-                     unsigned base = 0;
-                     if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                        base = 2;
-                     if (id == RETRO_DEVICE_ID_ANALOG_Y)
-                        base += 1;
-                     if (input_state->analog[base][port])
-                        res = input_state->analog[base][port];
-                  }
-               }
-               break;
-         }
-      }
 #endif
 
-      if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-      {
-         bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
+            if (id < RARCH_FIRST_META_KEY)
+            {
+               bool bind_valid = libretro_input_binds[port] 
+                  && libretro_input_binds[port][id].valid;
 
-         if (bind_valid || device == RETRO_DEVICE_KEYBOARD)
+               if (bind_valid)
+               {
+                  /* reset_state - used to reset input state of a button 
+                   * when the gamepad mapper is in action for that button*/
+                  bool reset_state     = false;
+                  if (settings->bools.input_remap_binds_enable)
+                     if (id != settings->uints.input_remap_ids[port][id])
+                        reset_state = true;
+
+                  if (!reset_state)
+                  {
+                     if (button_mask)
+                     {
+                        res = 0;
+                        if (ret & (1 << id))
+                           res |= (1 << id);
+                     }
+                     else
+                        res = ret;
+
+#ifdef HAVE_OVERLAY
+                     if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                        res |= res_overlay;
+#endif
+                  }
+                  else
+                     res = 0;
+               }
+            }
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
+
+            /* Don't allow turbo for D-pad. */
+            if ((id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
+            {
+               /*
+                * Apply turbo button if activated.
+                *
+                * If turbo button is held, all buttons pressed except
+                * for D-pad will go into a turbo mode. Until the button is
+                * released again, the input state will be modulated by a
+                * periodic pulse defined by the configured duty cycle.
+                */
+               if (res && input_driver_turbo_btns.frame_enable[port])
+                  input_driver_turbo_btns.enable[port] |= (1 << id);
+               else if (!res)
+                  input_driver_turbo_btns.enable[port] &= ~(1 << id);
+
+               if (input_driver_turbo_btns.enable[port] & (1 << id))
+               {
+                  /* if turbo button is enabled for this key ID */
+                  res = res && ((input_driver_turbo_btns.count
+                           % settings->uints.input_turbo_period)
+                        < settings->uints.input_turbo_duty_cycle);
+               }
+            }
+         }
+
+         break;
+
+      case RETRO_DEVICE_MOUSE:
+
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
          {
+#ifdef HAVE_OVERLAY
+            int16_t res_overlay  = 0;
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
+#endif
 
-            if (!reset_state)
+            if (id < RARCH_FIRST_META_KEY)
+            {
+               bool bind_valid = libretro_input_binds[port] 
+                  && libretro_input_binds[port][id].valid;
+
+               if (bind_valid)
+               {
+                  if (button_mask)
+                  {
+                     res = 0;
+                     if (ret & (1 << id))
+                        res |= (1 << id);
+                  }
+                  else
+                     res = ret;
+
+#ifdef HAVE_OVERLAY
+                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                     res |= res_overlay;
+#endif
+               }
+            }
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
+         }
+         break;
+
+      case RETRO_DEVICE_KEYBOARD:
+
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
+         {
+#ifdef HAVE_OVERLAY
+            int16_t res_overlay  = 0;
+#endif
+
+#ifdef HAVE_OVERLAY
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
+#endif
+
             {
                if (button_mask)
                {
@@ -3090,40 +3157,179 @@ static int16_t input_state_internal(
                   res |= res_overlay;
 #endif
             }
-            else
-               res = 0;
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
          }
-      }
+         break;
 
-      if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-         input_mapper_state(input_driver_mapper,
-               &res, port, device, idx, id);
+      case RETRO_DEVICE_LIGHTGUN:
 
-      /* Don't allow turbo for D-pad. */
-      if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
-               id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      {
-         /*
-          * Apply turbo button if activated.
-          *
-          * If turbo button is held, all buttons pressed except
-          * for D-pad will go into a turbo mode. Until the button is
-          * released again, the input state will be modulated by a
-          * periodic pulse defined by the configured duty cycle.
-          */
-         if (res && input_driver_turbo_btns.frame_enable[port])
-            input_driver_turbo_btns.enable[port] |= (1 << id);
-         else if (!res)
-            input_driver_turbo_btns.enable[port] &= ~(1 << id);
-
-         if (input_driver_turbo_btns.enable[port] & (1 << id))
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
          {
-            /* if turbo button is enabled for this key ID */
-            res = res && ((input_driver_turbo_btns.count
-                     % settings->uints.input_turbo_period)
-                  < settings->uints.input_turbo_duty_cycle);
+#ifdef HAVE_OVERLAY
+            int16_t res_overlay  = 0;
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
+#endif
+
+            if (id < RARCH_FIRST_META_KEY)
+            {
+               bool bind_valid = libretro_input_binds[port] 
+                  && libretro_input_binds[port][id].valid;
+
+               if (bind_valid)
+               {
+                  if (button_mask)
+                  {
+                     res = 0;
+                     if (ret & (1 << id))
+                        res |= (1 << id);
+                  }
+                  else
+                     res = ret;
+
+#ifdef HAVE_OVERLAY
+                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                     res |= res_overlay;
+#endif
+               }
+            }
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
          }
-      }
+         break;
+
+      case RETRO_DEVICE_ANALOG:
+
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
+         {
+#ifdef HAVE_OVERLAY
+            int16_t res_overlay  = 0;
+#endif
+
+#ifdef HAVE_OVERLAY
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+            if (input_driver_remote)
+            {
+               input_remote_state_t *input_state  = &remote_st_ptr;
+
+               if (input_state)
+               {
+                  unsigned base = 0;
+                  if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                     base = 2;
+                  if (id == RETRO_DEVICE_ID_ANALOG_Y)
+                     base += 1;
+                  if (input_state->analog[base][port])
+                     res = input_state->analog[base][port];
+               }
+            }
+#endif
+
+            if (id < RARCH_FIRST_META_KEY)
+            {
+               bool bind_valid = libretro_input_binds[port] 
+                  && libretro_input_binds[port][id].valid;
+
+               if (bind_valid)
+               {
+                  /* reset_state - used to reset input state of a button 
+                   * when the gamepad mapper is in action for that button*/
+                  bool reset_state     = false;
+                  if (settings->bools.input_remap_binds_enable)
+                  {
+                     if (idx < 2 && id < 2)
+                     {
+                        unsigned offset = RARCH_FIRST_CUSTOM_BIND + 
+                           (idx * 4) + (id * 2);
+
+                        if (settings->uints.input_remap_ids
+                              [port][offset]   != offset)
+                           reset_state = true;
+                        else if (settings->uints.input_remap_ids
+                              [port][offset+1] != (offset+1))
+                           reset_state = true;
+                     }
+                  }
+
+                  if (!reset_state)
+                  {
+                     if (button_mask)
+                     {
+                        res = 0;
+                        if (ret & (1 << id))
+                           res |= (1 << id);
+                     }
+                     else
+                        res = ret;
+
+#ifdef HAVE_OVERLAY
+                     if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                        res |= res_overlay;
+#endif
+                  }
+                  else
+                     res = 0;
+               }
+            }
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
+         }
+         break;
+
+      case RETRO_DEVICE_POINTER:
+
+         if (     !input_driver_flushing_input
+               && !input_driver_block_libretro_input)
+         {
+#ifdef HAVE_OVERLAY
+            int16_t res_overlay  = 0;
+            if (overlay_ptr)
+               input_state_overlay(overlay_ptr,
+                     &res_overlay, port, device, idx, id);
+#endif
+            if (id < RARCH_FIRST_META_KEY)
+            {
+               bool bind_valid = libretro_input_binds[port] 
+                  && libretro_input_binds[port][id].valid;
+
+               if (bind_valid)
+               {
+                  if (button_mask)
+                  {
+                     res = 0;
+                     if (ret & (1 << id))
+                        res |= (1 << id);
+                  }
+                  else
+                     res = ret;
+
+#ifdef HAVE_OVERLAY
+                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                     res |= res_overlay;
+#endif
+               }
+            }
+
+            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+               input_mapper_state(input_driver_mapper,
+                     &res, port, device, idx, id);
+         }
+         break;
    }
 
    return res;
@@ -3181,11 +3387,13 @@ int16_t input_state(unsigned port, unsigned device,
    }
 
    result = input_state_internal(ret, port, device, idx, id, false);
+
    if (bsv_movie_is_playback_off())
    {
       result = swap_if_big16(result);
       intfstream_write(bsv_movie_state_handle->file, &result, 1);
    }
+
    return result;
 }
 
