@@ -28,7 +28,7 @@
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
-#include "../dynamic.h"
+#include "../configuration.h"
 
 enum image_status_enum
 {
@@ -192,7 +192,8 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    nbio_handle_t *nbio             = (nbio_handle_t*)data;
    struct nbio_image_handle *image = nbio  ? (struct nbio_image_handle*)nbio->data : NULL;
    void *handle                    = image ? image_transfer_new(image->type)       : NULL;
-   float refresh_rate;
+   settings_t *settings            = config_get_ptr();
+   float refresh_rate              = 0.0f;
 
    if (!handle)
       return -1;
@@ -209,8 +210,10 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    image->size                     = len;
 
    /* Set task iteration duration */
-   rarch_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &refresh_rate);
-   if (refresh_rate == 0.0f)
+   if (settings)
+      refresh_rate = settings->floats.video_refresh_rate;
+
+   if (refresh_rate <= 0.0f)
       refresh_rate = 60.0f;
    image->frame_duration = (unsigned)((1.0 / refresh_rate) * 1000000.0f);
 
