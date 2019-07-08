@@ -875,7 +875,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         case MENU_ENUM_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
@@ -1190,9 +1189,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_manager_list);
             break;
-         case MENU_LABEL_PLAYLISTS_TAB:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
-            break;
          case MENU_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheevos_list);
             break;
@@ -1362,6 +1358,11 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
       return 0;
    }
 
