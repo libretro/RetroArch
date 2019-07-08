@@ -835,6 +835,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    unsigned lba = 0;
    unsigned track_size = 0;
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   ssize_t pregap_lba_len;
 
    if (rv)
      return 1;
@@ -848,6 +849,10 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    /* lba_start may be earlier than the MSF start times seen in read_subq */
    toc->track[track - 1].lba_start = lba;
    toc->track[track - 1].track_size = track_size;
+
+   pregap_lba_len = (toc->track[track - 1].audio ? 0 : (toc->track[track - 1].lba - toc->track[track - 1].lba_start));
+
+   toc->track[track - 1].track_bytes = (track_size - pregap_lba_len) * 2352;
    toc->track[track - 1].mode = buf[6] & 0xF;
 
 #ifdef CDROM_DEBUG
@@ -1239,7 +1244,6 @@ struct string_list* cdrom_get_available_drives(void)
    struct string_list *list = string_list_new();
 #if defined(__linux__) && !defined(ANDROID)
    struct string_list *dir_list = dir_list_new("/dev", NULL, false, false, false, false);
-   int drive_index = 0;
    int i;
 
    if (!dir_list)
@@ -1250,7 +1254,7 @@ struct string_list* cdrom_get_available_drives(void)
       if (strstr(dir_list->elems[i].data, "/dev/sg"))
       {
          char drive_model[32] = {0};
-         char drive_string[64] = {0};
+         char drive_string[32] = {0};
          union string_list_elem_attr attr = {0};
          int dev_index = 0;
          RFILE *file = filestream_open(dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
@@ -1272,15 +1276,12 @@ struct string_list* cdrom_get_available_drives(void)
          dev_index = '0' + dev_index;
          attr.i = dev_index;
 
-         snprintf(drive_string, sizeof(drive_string), "Drive %d: ", drive_index + 1);
-
          if (!string_is_empty(drive_model))
             strlcat(drive_string, drive_model, sizeof(drive_string));
          else
             strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
-         drive_index++;
       }
    }
 
@@ -1326,15 +1327,12 @@ struct string_list* cdrom_get_available_drives(void)
 
          attr.i = path[0];
 
-         snprintf(drive_string, sizeof(drive_string), "Drive %d: ", drive_index + 1);
-
          if (!string_is_empty(drive_model))
             strlcat(drive_string, drive_model, sizeof(drive_string));
          else
             strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
-         drive_index++;
       }
    }
 #endif
@@ -1506,4 +1504,53 @@ bool cdrom_has_atip(const libretro_vfs_implementation_file *stream)
       return false;
 
    return true;
+}
+
+void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char track, bool is_cue)
+{
+   size_t pos = 0;
+
+   if (!path || len == 0)
+      return;
+
+   if (is_cue)
+   {
+#ifdef _WIN32
+      pos = strlcpy(path, "cdrom://", len);
+
+      if (len > pos)
+         path[pos++] = drive;
+
+      pos = strlcat(path, ":/drive.cue", len);
+#else
+#ifdef __linux__
+      pos = strlcpy(path, "cdrom://drive", len);
+
+      if (len > pos)
+         path[pos++] = drive;
+
+      pos = strlcat(path, ".cue", len);
+#endif
+#endif
+   }
+   else
+   {
+#ifdef _WIN32
+      pos = strlcpy(path, "cdrom://", len);
+
+      if (len > pos)
+         path[pos++] = drive;
+
+      pos += snprintf(path + pos, len - pos, ":/drive-track%02d.bin", track);
+#else
+#ifdef __linux__
+      pos = strlcpy(path, "cdrom://drive", len);
+
+      if (len > pos)
+         path[pos++] = drive;
+
+      pos += snprintf(path + pos, len - pos, "-track%02d.bin", track);
+#endif
+#endif
+   }
 }

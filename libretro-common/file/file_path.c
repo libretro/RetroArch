@@ -629,11 +629,20 @@ void fill_str_dated_filename(char *out_filename,
    const struct tm* tm_ = localtime(&cur_time);
 
    format[0]            = '\0';
-   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
 
-   fill_pathname_join_concat_noext(out_filename,
-         in_str, format, ext,
-         size);
+   if (string_is_empty(ext))
+   {
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", tm_);
+      fill_pathname_noext(out_filename, in_str, format, size);
+   }
+   else
+   {
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
+
+      fill_pathname_join_concat_noext(out_filename,
+            in_str, format, ext,
+            size);
+   }
 }
 
 /**
@@ -885,8 +894,7 @@ void fill_pathname_join_special_ext(char *out_path,
    strlcat(out_path, ext, size);
 }
 
-void fill_pathname_join_concat_noext(
-      char *out_path,
+void fill_pathname_join_concat_noext(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size)

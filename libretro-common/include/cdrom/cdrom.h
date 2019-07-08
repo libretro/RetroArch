@@ -50,7 +50,8 @@ typedef struct
 {
    unsigned lba_start; /* start of pregap */
    unsigned lba; /* start of data */
-   unsigned track_size;
+   unsigned track_size; /* in LBAs */
+   unsigned track_bytes;
    unsigned char track_num;
    unsigned char min; /* start of data */
    unsigned char sec;
@@ -116,6 +117,8 @@ bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool e
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
 bool cdrom_has_atip(const libretro_vfs_implementation_file *stream);
+
+void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char track, bool is_cue);
 
 RETRO_END_DECLS
 

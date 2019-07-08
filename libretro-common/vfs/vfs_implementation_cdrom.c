@@ -369,6 +369,12 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       unsigned char rsec = 0;
       unsigned char rframe = 0;
 
+      if (stream->cdrom.byte_pos >= vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
+         return 0;
+
+      if (stream->cdrom.byte_pos + len > vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
+         len -= (stream->cdrom.byte_pos + len) - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes;
+
       cdrom_lba_to_msf(stream->cdrom.cur_lba, &min, &sec, &frame);
       cdrom_lba_to_msf(stream->cdrom.cur_lba - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba, &rmin, &rsec, &rframe);
 

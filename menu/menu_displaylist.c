@@ -168,7 +168,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          if (!info_list[i].name)
             continue;
 
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(info_list[i].msg),
                ": ",
                info_list[i].name,
@@ -345,7 +345,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    (void)tmp_string;
 
 #ifdef HAVE_GIT_VERSION
-   fill_pathname_join_concat_noext(
+   fill_pathname_join_concat(
          tmp,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          ": ",
@@ -493,7 +493,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       tmp2[0] = '\0';
 
-      fill_pathname_join_concat_noext(
+      fill_pathname_join_concat(
             tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
             ": ",
@@ -509,7 +509,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
       {
          frontend->get_lakka_version(tmp2, sizeof(tmp2));
 
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                ": ",
                tmp2,
@@ -525,7 +525,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
       {
          frontend->get_name(tmp2, sizeof(tmp2));
 
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                ": ",
                tmp2,
@@ -661,7 +661,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                break;
          }
 
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
                ": ",
@@ -678,7 +678,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
-   fill_pathname_join_concat_noext(tmp,
+   fill_pathname_join_concat(tmp,
          msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
          ": ",
@@ -809,7 +809,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         fill_pathname_join_concat_noext(feat_str,
+         fill_pathname_join_concat(feat_str,
                msg_hash_to_str(
                   info_list[i].msg),
                ": ",
@@ -987,7 +987,7 @@ static int create_string_list_rdb_entry_string(
    string_list_join_concat(output_label, str_len, str_list, "|");
    string_list_free(str_list);
 
-   fill_pathname_join_concat_noext(tmp, desc, ": ",
+   fill_pathname_join_concat(tmp, desc, ": ",
          actual_string, path_size);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
@@ -1181,7 +1181,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->name)
       {
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                ": ",
                db_info_entry->name,
@@ -1193,7 +1193,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       }
       if (db_info_entry->description)
       {
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
                ": ",
                db_info_entry->description,
@@ -1205,7 +1205,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       }
       if (db_info_entry->genre)
       {
-         fill_pathname_join_concat_noext(tmp,
+         fill_pathname_join_concat(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE),
                ": ",
                db_info_entry->genre,
@@ -4906,9 +4906,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          for (i = 0; list && i < list->size; i++)
          {
+            char drive_string[32] = {0};
+            char drive[2] = {0};
+            size_t pos = 0;
+
+            drive[0] = list->elems[i].attr.i;
+
+            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
+            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+
             menu_entries_append_enum(info->list,
-                  list->elems[i].data,
-                  "",
+                  drive_string,
+                  drive,
                   0,
                   MENU_SET_CDROM_LIST,
                   0, i);

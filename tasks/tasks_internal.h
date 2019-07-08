@@ -150,6 +150,10 @@ void input_autoconfigure_joypad_reindex_devices(void);
 
 void set_save_state_in_background(bool state);
 
+#ifdef HAVE_CDROM
+void task_push_cdrom_dump(const char *drive);
+#endif
+
 extern const char* const input_builtin_autoconfs[];
 
 RETRO_END_DECLS

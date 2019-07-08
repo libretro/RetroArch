@@ -2141,7 +2141,11 @@ static int action_ok_load_cdrom(const char *path,
 static int action_ok_dump_cdrom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME - implement */
+   if (string_is_empty(label))
+      return -1;
+#ifdef HAVE_CDROM
+   task_push_cdrom_dump(label);
+#endif
    return 0;
 }
 
