@@ -12512,12 +12512,14 @@ static retro_input_state_t input_state_callback_original;
 
 static void* InputListElementConstructor(void)
 {
-   const int size = sizeof(InputListElement);
    const int initial_state_array_size = 256;
-   void *ptr = calloc(1, size);
-   InputListElement *element = (InputListElement*)ptr;
-   element->state_size = initial_state_array_size;
-   element->state = (int16_t*)calloc(element->state_size, sizeof(int16_t));
+   void *ptr                          = calloc(1, sizeof(InputListElement));
+   InputListElement *element          = (InputListElement*)ptr;
+
+   element->state_size                = initial_state_array_size;
+   element->state                     = (int16_t*)calloc(
+         element->state_size, sizeof(int16_t));
+
    return ptr;
 }
 
@@ -12731,8 +12733,9 @@ static void runahead_save_state_free(void *data)
 
 static void runahead_save_state_list_init(size_t saveStateSize)
 {
-   runahead_save_state_size = saveStateSize;
+   runahead_save_state_size       = saveStateSize;
    runahead_save_state_size_known = true;
+
    mylist_create(&runahead_save_state_list, 16,
          runahead_save_state_alloc, runahead_save_state_free);
 }
@@ -12746,8 +12749,9 @@ static void runahead_save_state_list_destroy(void)
 static void runahead_save_state_list_rotate(void)
 {
    unsigned i;
-   void *element;
+   void *element      = NULL;
    void *firstElement = runahead_save_state_list->data[0];
+
    for (i = 1; i < runahead_save_state_list->size; i++)
       runahead_save_state_list->data[i - 1] =
          runahead_save_state_list->data[i];
@@ -12976,7 +12980,7 @@ static bool runahead_core_run_use_last_input(void)
    return true;
 }
 
-static void run_ahead(int runahead_count, bool useSecondary)
+static void run_ahead(int runahead_count, bool use_secondary)
 {
    int frame_number        = 0;
    bool last_frame         = false;
@@ -13015,7 +13019,7 @@ static void run_ahead(int runahead_count, bool useSecondary)
 
    runahead_last_frame_count = frame_count;
 
-   if (!useSecondary || !have_dynamic || !runahead_secondary_core_available)
+   if (!use_secondary || !have_dynamic || !runahead_secondary_core_available)
    {
       /* TODO: multiple savestates for higher performance
        * when not using secondary core */
@@ -13192,10 +13196,12 @@ static void retroarch_override_setting_free_state(void)
       {
          unsigned j;
          for (j = 0; j < MAX_USERS; j++)
-            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
+            retroarch_override_setting_unset(
+                  (enum rarch_override_setting)(i), &j);
       }
       else
-         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
+         retroarch_override_setting_unset(
+               (enum rarch_override_setting)(i), NULL);
    }
 }
 
@@ -13487,10 +13493,10 @@ static void retroarch_print_help(const char *arg0)
  **/
 static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
+   unsigned i;
    static bool first_run = true;
    const char *optstring = NULL;
    bool explicit_menu    = false;
-   unsigned i;
    global_t  *global     = &g_extern;
 
    const struct option opts[] = {
@@ -14154,46 +14160,6 @@ static void retroarch_validate_cpu_features(void)
 #endif
 }
 
-static void retroarch_main_init_media(enum rarch_content_type cont_type,
-      bool builtin_mediaplayer, bool builtin_imageviewer)
-{
-   switch (cont_type)
-   {
-      case RARCH_CONTENT_MOVIE:
-      case RARCH_CONTENT_MUSIC:
-         if (builtin_mediaplayer)
-         {
-            /* TODO/FIXME - it needs to become possible to 
-             * switch between FFmpeg and MPV at runtime */
-#if defined(HAVE_MPV)
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-            retroarch_set_current_core_type(CORE_TYPE_MPV, false);
-#elif defined(HAVE_FFMPEG)
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-            retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
-#endif
-         }
-         break;
-#ifdef HAVE_IMAGEVIEWER
-      case RARCH_CONTENT_IMAGE:
-         if (builtin_imageviewer)
-         {
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-            retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
-         }
-         break;
-#endif
-#ifdef HAVE_EASTEREGG
-      case RARCH_CONTENT_GONG:
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-         retroarch_set_current_core_type(CORE_TYPE_GONG, false);
-         break;
-#endif
-      default:
-         break;
-   }
-}
-
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -14273,8 +14239,41 @@ bool retroarch_main_init(int argc, char *argv[])
          bool builtin_imageviewer          = settings ? settings->bools.multimedia_builtin_imageviewer_enable : false;
          bool builtin_mediaplayer          = settings ? settings->bools.multimedia_builtin_mediaplayer_enable : false;
 
-         retroarch_main_init_media(cont_type, builtin_mediaplayer,
-               builtin_imageviewer);
+         switch (cont_type)
+         {
+            case RARCH_CONTENT_MOVIE:
+            case RARCH_CONTENT_MUSIC:
+               if (builtin_mediaplayer)
+               {
+                  /* TODO/FIXME - it needs to become possible to 
+                   * switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                  retroarch_set_current_core_type(CORE_TYPE_MPV, false);
+#elif defined(HAVE_FFMPEG)
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                  retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
+#endif
+               }
+               break;
+#ifdef HAVE_IMAGEVIEWER
+            case RARCH_CONTENT_IMAGE:
+               if (builtin_imageviewer)
+               {
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+                  retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
+               }
+               break;
+#endif
+#ifdef HAVE_EASTEREGG
+            case RARCH_CONTENT_GONG:
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+               retroarch_set_current_core_type(CORE_TYPE_GONG, false);
+               break;
+#endif
+            default:
+               break;
+         }
       }
    }
 
