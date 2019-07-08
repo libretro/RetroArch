@@ -2094,12 +2094,6 @@ extern const shader_backend_t gl_cg_backend;
 
 /* BSV Movie */
 
-enum rarch_movie_type
-{
-   RARCH_MOVIE_PLAYBACK = 0,
-   RARCH_MOVIE_RECORD
-};
-
 void bsv_movie_deinit(void);
 
 bool bsv_movie_init(void);
@@ -2107,10 +2101,6 @@ bool bsv_movie_init(void);
 void bsv_movie_frame_rewind(void);
 
 void bsv_movie_set_path(const char *path);
-
-bool bsv_movie_get_input(int16_t *bsv_data);
-
-void bsv_movie_set_input(int16_t *bsv_data);
 
 bool bsv_movie_check(void);
 
