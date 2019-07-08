@@ -1531,7 +1531,7 @@ bool recording_init(void)
 
    output[0] = '\0';
 
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (current_core_type == CORE_TYPE_DUMMY)
    {
       RARCH_WARN("[recording] %s\n",
             msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
@@ -14513,8 +14513,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_IPS_PREF:
          rarch_ips_pref = false;
          break;
-      case RARCH_CTL_IS_DUMMY_CORE:
-         return (current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_USERNAME_SET:
          has_set_username = true;
          break;
