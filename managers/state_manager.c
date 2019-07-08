@@ -735,8 +735,6 @@ bool state_manager_check_rewind(bool pressed,
          serial_info.size       = rewind_state.size;
 
          core_unserialize(&serial_info);
-
-         bsv_movie_frame_rewind();
       }
       else
       {
@@ -772,7 +770,7 @@ bool state_manager_check_rewind(bool pressed,
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
+      if (cnt == 0)
       {
          retro_ctx_serialize_info_t serial_info;
          void *state = NULL;
