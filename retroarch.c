@@ -3315,33 +3315,24 @@ static int16_t input_state_internal(
                bool bind_valid = libretro_input_binds[port] 
                   && libretro_input_binds[port][id].valid;
 
-               if (bind_valid)
+               if (settings->bools.input_remap_binds_enable &&
+                     id != settings->uints.input_remap_ids[port][id])
+                  res = 0;
+               else if (bind_valid)
                {
-                  /* reset_state - used to reset input state of a button 
-                   * when the gamepad mapper is in action for that button*/
-                  bool reset_state     = false;
-                  if (settings->bools.input_remap_binds_enable)
-                     if (id != settings->uints.input_remap_ids[port][id])
-                        reset_state = true;
-
-                  if (!reset_state)
+                  if (button_mask)
                   {
-                     if (button_mask)
-                     {
-                        res = 0;
-                        if (ret & (1 << id))
-                           res |= (1 << id);
-                     }
-                     else
-                        res = ret;
-
-#ifdef HAVE_OVERLAY
-                     if (input_overlay_is_alive(overlay_ptr) && port == 0)
-                        res |= res_overlay;
-#endif
+                     res = 0;
+                     if (ret & (1 << id))
+                        res |= (1 << id);
                   }
                   else
-                     res = 0;
+                     res = ret;
+
+#ifdef HAVE_OVERLAY
+                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                     res |= res_overlay;
+#endif
                }
             }
 
