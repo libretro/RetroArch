@@ -1281,6 +1281,7 @@ static bool runahead_save_state_size_known      = false;
 static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
 
+#ifdef HAVE_RUNAHEAD
 /* Save State List for Run Ahead */
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
@@ -1302,6 +1303,7 @@ static bool runahead_available                  = true;
 static bool runahead_secondary_core_available   = true;
 static bool runahead_force_input_dirty          = true;
 static uint64_t runahead_last_frame_count       = 0;
+#endif
 
 /* INPUT REMOTE GLOBAL VARIABLES */
 
