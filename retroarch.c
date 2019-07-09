@@ -4908,6 +4908,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
          {
             input_driver_block_libretro_input = true;
          }
+      }
       else {
          hotkey_counter = 0;
          input_driver_block_hotkey         = true;
