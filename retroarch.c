@@ -11206,7 +11206,7 @@ void video_driver_set_title_buf(void)
    struct retro_system_info info;
    core_get_system_info(&info);
 
-   fill_pathname_join_concat(
+   fill_pathname_join_concat_noext(
          video_driver_title_buf,
          msg_hash_to_str(MSG_PROGRAM),
          " ",
