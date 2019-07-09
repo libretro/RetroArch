@@ -473,7 +473,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -487,6 +487,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+   HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
 
    EXT_TARGET := $(TARGET_NAME).exe
@@ -546,7 +547,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -560,6 +561,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+   HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
 
    EXT_TARGET := $(TARGET_NAME).exe
@@ -623,7 +625,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -637,6 +639,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+   HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
 
    EXT_TARGET := $(TARGET_NAME).exe
@@ -714,6 +717,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+   HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
 
    EXT_TARGET := $(TARGET_NAME).exe
