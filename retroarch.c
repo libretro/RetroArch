@@ -3034,31 +3034,26 @@ error:
 }
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    unsigned user;
    for(user = 0; user < max_users; user ++)
       socket_close(handle->net_fd[user]);
-#endif
 
    free(handle);
 }
 
-
 static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    unsigned user;
    settings_t   *settings = configuration_settings;
-#endif
    input_remote_t *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    for(user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
@@ -3069,10 +3064,10 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
             return NULL;
          }
    }
-#endif
 
    return handle;
 }
+#endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static void input_remote_parse_packet(struct remote_message *msg, unsigned user)
