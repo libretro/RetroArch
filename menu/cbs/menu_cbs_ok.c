@@ -4853,13 +4853,6 @@ static int action_ok_push_downloads_dir(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
-static int action_ok_push_load_disc(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   /* TODO/FIXME - fill in - call a task here */
-   return 0;
-}
-
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
