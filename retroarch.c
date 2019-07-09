@@ -738,10 +738,14 @@ typedef struct runloop_ctx_msg_info
 
 static struct global g_extern;
 
+
 static struct                     retro_callbacks retro_ctx;
 static struct                     retro_core_t current_core;
 
 static jmp_buf error_sjlj_context;
+
+static settings_t *configuration_settings                       = NULL;
+
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 static char error_string[255]                                   = {0};
@@ -1574,8 +1578,6 @@ static const void *hid_data                       = NULL;
 #endif
 
 #if defined(HAVE_RUNAHEAD)
-
-/* Runahead - Secondary core  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 #include <dynamic/dylib.h>
 
@@ -1586,13 +1588,59 @@ static int16_t input_state_get_last(unsigned port,
 extern retro_ctx_load_content_info_t *load_content_info;
 extern enum rarch_core_type last_core_type;
 
+/* RUNAHEAD - SECONDARY CORE GLOBAL VARIABLES */
 static int port_map[16];
 
 static dylib_t secondary_module;
 static struct retro_core_t secondary_core;
 static struct retro_callbacks secondary_callbacks;
 static char *secondary_library_path                = NULL;
+#endif
+#endif
 
+/* GLOBAL POINTER GETTERS */
+struct retro_system_av_info *video_viewport_get_system_av_info(void)
+{
+   return &video_driver_av_info;
+}
+
+settings_t *config_get_ptr(void)
+{
+   return configuration_settings;
+}
+
+global_t *global_get_ptr(void)
+{
+   return &g_extern;
+}
+
+const ui_companion_driver_t *ui_companion_get_ptr(void)
+{
+   return ui_companion;
+}
+
+const input_driver_t *input_get_ptr(void)
+{
+   return current_input;
+}
+
+/**
+ * video_driver_get_ptr:
+ *
+ * Use this if you need the real video driver
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
+void *video_driver_get_ptr(bool force_nonthreaded_data)
+{
+   return video_driver_get_ptr_internal(force_nonthreaded_data);
+}
+
+
+#if defined(HAVE_RUNAHEAD)
+/* RUNAHEAD - SECONDARY CORE  */
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void secondary_core_destroy(void)
 {
    if (!secondary_module)
@@ -2285,21 +2333,6 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
    opt->updated         = true;
 }
 
-/* VIDEO */
-struct retro_system_av_info *video_viewport_get_system_av_info(void)
-{
-   return &video_driver_av_info;
-}
-
-/* Configuration global state */
-
-static settings_t *configuration_settings = NULL;
-
-settings_t *config_get_ptr(void)
-{
-   return configuration_settings;
-}
-
 /* MESSAGE QUEUE */
 static void retroarch_msg_queue_deinit(void)
 {
@@ -2547,11 +2580,6 @@ bool ui_companion_is_on_foreground(void)
 const ui_companion_driver_t *ui_companion_init_first(void)
 {
    return ui_companion_drivers[0];
-}
-
-const ui_companion_driver_t *ui_companion_get_ptr(void)
-{
-   return ui_companion;
 }
 
 void ui_companion_event_command(enum event_command action)
@@ -4751,11 +4779,6 @@ const char* config_get_input_driver_options(void)
 void *input_get_data(void)
 {
    return current_input_data;
-}
-
-const input_driver_t *input_get_ptr(void)
-{
-   return current_input;
 }
 
 /**
@@ -10670,19 +10693,6 @@ bool *video_driver_get_threaded(void)
 void video_driver_set_threaded(bool val)
 {
    video_driver_threaded = val;
-}
-
-/**
- * video_driver_get_ptr:
- *
- * Use this if you need the real video driver
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *video_driver_get_ptr(bool force_nonthreaded_data)
-{
-   return video_driver_get_ptr_internal(force_nonthreaded_data);
 }
 
 const char *video_driver_get_ident(void)
@@ -17427,11 +17437,6 @@ bool retroarch_main_quit(void)
    rarch_menu_running_finished(true);
 
    return true;
-}
-
-global_t *global_get_ptr(void)
-{
-   return &g_extern;
 }
 
 void runloop_msg_queue_push(const char *msg,
