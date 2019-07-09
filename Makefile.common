@@ -223,7 +223,6 @@ OBJ += frontend/frontend.o \
        input/input_keymaps.o \
        input/input_remapping.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
-       managers/core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
        managers/cheat_manager.o \
