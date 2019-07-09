@@ -71,7 +71,7 @@
 #endif
 
 #ifdef HAVE_RUNAHEAD
-#include "runahead/secondary_core.h"
+#include "runahead/copy_load_info.h"
 #include "runahead/run_ahead.h"
 #endif
 

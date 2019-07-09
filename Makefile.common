@@ -265,8 +265,7 @@ ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
    OBJ += runahead/copy_load_info.o \
           runahead/mem_util.o \
-          runahead/mylist.o \
-          runahead/secondary_core.o
+          runahead/mylist.o
 endif
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
