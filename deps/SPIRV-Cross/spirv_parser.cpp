@@ -162,7 +162,6 @@ void Parser::parse(const Instruction &instruction)
 	case OpSourceContinued:
 	case OpSourceExtension:
 	case OpNop:
-	case OpNoLine:
 	case OpModuleProcessed:
 		break;
 
@@ -244,6 +243,8 @@ void Parser::parse(const Instruction &instruction)
 		auto ext = extract_string(ir.spirv, instruction.offset + 1);
 		if (ext == "GLSL.std.450")
 			set<SPIRExtension>(id, SPIRExtension::GLSL);
+		else if (ext == "DebugInfo")
+			set<SPIRExtension>(id, SPIRExtension::SPV_debug_info);
 		else if (ext == "SPV_AMD_shader_ballot")
 			set<SPIRExtension>(id, SPIRExtension::SPV_AMD_shader_ballot);
 		else if (ext == "SPV_AMD_shader_explicit_vertex_parameter")
@@ -257,6 +258,14 @@ void Parser::parse(const Instruction &instruction)
 
 		// Other SPIR-V extensions which have ExtInstrs are currently not supported.
 
+		break;
+	}
+
+	case OpExtInst:
+	{
+		// The SPIR-V debug information extended instructions might come at global scope.
+		if (current_block)
+			current_block->ops.push_back(instruction);
 		break;
 	}
 
@@ -1054,6 +1063,14 @@ void Parser::parse(const Instruction &instruction)
 				current_function->entry_line.line_literal = ops[1];
 			}
 		}
+		break;
+	}
+
+	case OpNoLine:
+	{
+		// OpNoLine might come at global scope.
+		if (current_block)
+			current_block->ops.push_back(instruction);
 		break;
 	}
 
