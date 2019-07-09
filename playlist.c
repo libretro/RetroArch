@@ -1937,7 +1937,6 @@ static bool playlist_read_file(
       char metadata_line[1024];
       char default_core_path[1024];
       char default_core_name[1024];
-      char metadata_char;
       size_t metadata_counter;
 
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
@@ -1946,7 +1945,6 @@ static bool playlist_read_file(
       metadata_line[0]     = '\0';
       default_core_path[0] = '\0';
       default_core_name[0] = '\0';
-      metadata_char        = 0;
       metadata_counter     = 0;
 
       /* Attempt to read metadata lines at end of file */

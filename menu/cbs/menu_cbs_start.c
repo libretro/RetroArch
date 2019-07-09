@@ -223,7 +223,6 @@ static int action_start_core_setting(unsigned type,
 static int action_start_playlist_association(unsigned type, const char *label)
 {
    playlist_t *playlist  = playlist_get_cached();
-   bool load_playlist    = false;
 
    if (!playlist)
       return -1;
