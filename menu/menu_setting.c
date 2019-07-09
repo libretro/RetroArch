@@ -6652,21 +6652,33 @@ static bool setting_append_list(
 #ifdef HAVE_CDROM
          /* TODO/FIXME - add check seeing if CDROM is inserted into tray
           */
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_LOAD_DISC,
-               MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         {
+            struct string_list *drive_list = cdrom_get_available_drives();
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_DUMP_DISC,
-               MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+            if (drive_list)
+            {
+               if (drive_list->size)
+               {
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_LOAD_DISC,
+                        MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_DUMP_DISC,
+                        MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+               }
+
+               string_list_free(drive_list);
+            }
+         }
 #endif
 
          if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))

@@ -4923,14 +4923,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   0, i);
          }
 
-         if (list->size == 0)
+         if (!list || list->size == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
 
-         string_list_free(list);
+         if (list)
+            string_list_free(list);
 
          info->need_push    = true;
          info->need_refresh = true;
