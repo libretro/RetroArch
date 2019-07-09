@@ -67,7 +67,7 @@ typedef struct menu_animation menu_animation_t;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim    = {0};
+static menu_animation_t anim    = {{0}};
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
