@@ -137,6 +137,12 @@ check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
+if [ "$HAVE_NO_CDROM" = "" ]; then
+   if [ "$OS" = 'Win32' ] || [ "$OS" = 'Linux' ]; then
+      HAVE_CDROM=yes
+   fi
+fi
+
 if [ "$OS" = 'Win32' ]; then
    HAVE_DYLIB=yes
 else
