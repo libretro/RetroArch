@@ -425,26 +425,26 @@ static char *get_temp_directory_alloc(void)
    char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD pathLength       = GetTempPath(0, NULL) + 1;
-   path                   = (char*)malloc(pathLength * sizeof(char));
+   DWORD path_length      = GetTempPath(0, NULL) + 1;
+   path                   = (char*)malloc(path_length * sizeof(char));
 
    if (!path)
       return NULL;
 
-   path[pathLength - 1]   = 0;
-   GetTempPath(pathLength, path);
+   path[path_length - 1]   = 0;
+   GetTempPath(path_length, path);
 #else
-   DWORD pathLength = GetTempPathW(0, NULL) + 1;
-   wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
+   DWORD path_length = GetTempPathW(0, NULL) + 1;
+   wchar_t *wide_str = (wchar_t*)malloc(path_length * sizeof(wchar_t));
 
-   if (!wideStr)
+   if (!wide_str)
       return NULL;
 
-   wideStr[pathLength - 1] = 0;
-   GetTempPathW(pathLength, wideStr);
+   wide_str[path_length - 1] = 0;
+   GetTempPathW(path_length, wide_str);
 
-   path = utf16_to_utf8_string_alloc(wideStr);
-   free(wideStr);
+   path = utf16_to_utf8_string_alloc(wide_str);
+   free(wide_str);
 #endif
 #elif defined ANDROID
    {
@@ -461,8 +461,8 @@ static char *get_temp_directory_alloc(void)
    return path;
 }
 
-static bool write_file_with_random_name(char **tempDllPath,
-      const char *retroarchTempPath, const void* data, ssize_t dataSize)
+static bool write_file_with_random_name(char **temp_dll_path,
+      const char *retroarch_temp_path, const void* data, ssize_t dataSize)
 {
    unsigned i;
    char number_buf[32];
@@ -471,7 +471,7 @@ static bool write_file_with_random_name(char **tempDllPath,
    time_t time_value        = time(NULL);
    unsigned number_value    = (unsigned)time_value;
    char *ext                = strcpy_alloc_force(
-         path_get_extension(*tempDllPath));
+         path_get_extension(*temp_dll_path));
    int ext_len              = (int)strlen(ext);
 
    if (ext_len > 0)
@@ -491,14 +491,16 @@ static bool write_file_with_random_name(char **tempDllPath,
 
       snprintf(number_buf, sizeof(number_buf), "%05d", number);
 
-      if (*tempDllPath)
-         free(*tempDllPath);
-      *tempDllPath = NULL;
-      strcat_alloc(tempDllPath, retroarchTempPath);
-      strcat_alloc(tempDllPath, prefix);
-      strcat_alloc(tempDllPath, number_buf);
-      strcat_alloc(tempDllPath, ext);
-      if (filestream_write_file(*tempDllPath, data, dataSize))
+      if (*temp_dll_path)
+         free(*temp_dll_path);
+      *temp_dll_path = NULL;
+
+      strcat_alloc(temp_dll_path, retroarch_temp_path);
+      strcat_alloc(temp_dll_path, prefix);
+      strcat_alloc(temp_dll_path, number_buf);
+      strcat_alloc(temp_dll_path, ext);
+
+      if (filestream_write_file(*temp_dll_path, data, dataSize))
       {
          okay = true;
          break;
@@ -513,75 +515,75 @@ static bool write_file_with_random_name(char **tempDllPath,
 
 static char *copy_core_to_temp_file(void)
 {
-   bool failed              = false;
-   char *tempDirectory      = NULL;
-   char *retroarchTempPath  = NULL;
-   char *tempDllPath        = NULL;
-   void *dllFileData        = NULL;
-   int64_t dllFileSize      = 0;
-   const char *corePath     = path_get(RARCH_PATH_CORE);
-   const char *coreBaseName = path_basename(corePath);
+   bool failed                = false;
+   char *temp_directory       = NULL;
+   char *retroarch_temp_path  = NULL;
+   char *temp_dll_path        = NULL;
+   void *dll_file_data        = NULL;
+   int64_t dll_file_size      = 0;
+   const char *core_path      = path_get(RARCH_PATH_CORE);
+   const char *core_base_name = path_basename(core_path);
 
-   if (strlen(coreBaseName) == 0)
+   if (strlen(core_base_name) == 0)
    {
       failed = true;
       goto end;
    }
 
-   tempDirectory = get_temp_directory_alloc();
-   if (!tempDirectory)
+   temp_directory = get_temp_directory_alloc();
+   if (!temp_directory)
    {
       failed = true;
       goto end;
    }
 
-   strcat_alloc(&retroarchTempPath, tempDirectory);
-   strcat_alloc(&retroarchTempPath, path_default_slash());
-   strcat_alloc(&retroarchTempPath, "retroarch_temp");
-   strcat_alloc(&retroarchTempPath, path_default_slash());
+   strcat_alloc(&retroarch_temp_path, temp_directory);
+   strcat_alloc(&retroarch_temp_path, path_default_slash());
+   strcat_alloc(&retroarch_temp_path, "retroarch_temp");
+   strcat_alloc(&retroarch_temp_path, path_default_slash());
 
-   if (!path_mkdir(retroarchTempPath))
+   if (!path_mkdir(retroarch_temp_path))
    {
       failed = true;
       goto end;
    }
 
-   if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
+   if (!filestream_read_file(core_path, &dll_file_data, &dll_file_size))
    {
       failed = true;
       goto end;
    }
 
-   strcat_alloc(&tempDllPath, retroarchTempPath);
-   strcat_alloc(&tempDllPath, coreBaseName);
+   strcat_alloc(&temp_dll_path, retroarch_temp_path);
+   strcat_alloc(&temp_dll_path, core_base_name);
 
-   if (!filestream_write_file(tempDllPath, dllFileData, dllFileSize))
+   if (!filestream_write_file(temp_dll_path, dll_file_data, dll_file_size))
    {
       /* try other file names */
-      if (!write_file_with_random_name(&tempDllPath,
-               retroarchTempPath, dllFileData, dllFileSize))
+      if (!write_file_with_random_name(&temp_dll_path,
+               retroarch_temp_path, dll_file_data, dll_file_size))
          failed = true;
    }
 
 end:
-   if (tempDirectory)
-      free(tempDirectory);
-   if (retroarchTempPath)
-      free(retroarchTempPath);
-   if (dllFileData)
-      free(dllFileData);
+   if (temp_directory)
+      free(temp_directory);
+   if (retroarch_temp_path)
+      free(retroarch_temp_path);
+   if (dll_file_data)
+      free(dll_file_data);
 
-   tempDirectory     = NULL;
-   retroarchTempPath = NULL;
-   dllFileData       = NULL;
+   temp_directory      = NULL;
+   retroarch_temp_path = NULL;
+   dll_file_data       = NULL;
 
    if (!failed)
-      return tempDllPath;
+      return temp_dll_path;
 
-   if (tempDllPath)
-      free(tempDllPath);
+   if (temp_dll_path)
+      free(temp_dll_path);
 
-   tempDllPath       = NULL;
+   temp_dll_path     = NULL;
 
    return NULL;
 }
@@ -13835,8 +13837,8 @@ static bool runahead_core_run_use_last_input(void)
 
    current_core.retro_run();
 
-   retro_ctx.poll_cb  = old_poll_function;
-   retro_ctx.state_cb = old_input_function;
+   retro_ctx.poll_cb                      = old_poll_function;
+   retro_ctx.state_cb                     = old_input_function;
 
    current_core.retro_set_input_poll(retro_ctx.poll_cb);
    current_core.retro_set_input_state(retro_ctx.state_cb);
@@ -14033,7 +14035,8 @@ void rarch_core_runtime_tick(void)
 static void update_runtime_log(bool log_per_core)
 {
    /* Initialise runtime log file */
-   runtime_log_t *runtime_log = runtime_log_init(runtime_content_path, runtime_core_path, log_per_core);
+   runtime_log_t *runtime_log = runtime_log_init(
+         runtime_content_path, runtime_core_path, log_per_core);
 
    if (!runtime_log)
       return;
