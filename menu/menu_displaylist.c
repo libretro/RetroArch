@@ -2734,7 +2734,7 @@ static unsigned menu_displaylist_parse_content_information(
    unsigned count                      = 0;
    int n                               = 0;
    char core_name[PATH_MAX_LENGTH];
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[8192];
 
    core_name[0] = '\0';
 
