@@ -306,10 +306,11 @@ int retro_vfs_file_close_cdrom(libretro_vfs_implementation_file *stream)
 
 int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream)
 {
+   const char *ext = NULL;
    if (!stream)
       return -1;
 
-   const char *ext = path_get_extension(stream->orig_path);
+   ext = path_get_extension(stream->orig_path);
 
    if (string_is_equal_noncase(ext, "cue"))
    {

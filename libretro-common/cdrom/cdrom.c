@@ -30,6 +30,7 @@
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_math.h>
+#include <retro_timers.h>
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
 #include <retro_miscellaneous.h>
@@ -39,7 +40,11 @@
 #include <string/stdstring.h>
 
 #include <math.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 
 #if defined(__linux__) && !defined(ANDROID)
 #include <stropts.h>
@@ -411,7 +416,7 @@ retry:
                   fflush(stdout);
 #endif
                   retries_left--;
-                  usleep(1000 * 1000);
+	              retro_sleep(1000);
                   goto retry;
                }
                else
@@ -1437,11 +1442,12 @@ bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool e
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts)
 {
    /* MMC Command: MODE SENSE (10) */
-   unsigned char cdb[] = {0x5A, 0, 0x1D, 0, 0, 0, 0, 0, 0x14, 0};
+   int rv, i;
+   unsigned char cdb[]   = {0x5A, 0, 0x1D, 0, 0, 0, 0, 0, 0x14, 0};
    unsigned char buf[20] = {0};
-   unsigned short g1 = 0, g2 = 0, g3 = 0;
-   int rv;
-   int i;
+   unsigned short g1     = 0;
+   unsigned short g2     = 0;
+   unsigned short g3     = 0;
 
    if (!timeouts)
       return false;
