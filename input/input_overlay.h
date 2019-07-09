@@ -210,12 +210,6 @@ void input_overlay_free(input_overlay_t *ol);
 void input_overlay_free_overlay(struct overlay *overlay);
 
 /**
- * input_overlay_init
- *
- * Initializes the overlay system.
- */
-void input_overlay_init(void);
-/**
  * input_overlay_set_alpha_mod:
  * @mod                   : New modulating factor to apply.
  *
@@ -239,19 +233,6 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
  * screen.
  **/
 void input_overlay_next(input_overlay_t *ol, float opacity);
-
-/*
- * input_poll_overlay:
- * @ol : pointer to overlay
- *
- * Poll pressed buttons/keys on currently active overlay.
- **/
-void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad_mode,
-      float axis_threshold);
-
-void input_state_overlay(input_overlay_t *ol,
-      int16_t *ret, unsigned port, unsigned device, unsigned idx,
-      unsigned id);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 

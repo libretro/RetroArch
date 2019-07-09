@@ -809,8 +809,7 @@ endif
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
    OBJ += tasks/task_overlay.o \
-     input/input_overlay.o \
-     led/drivers/led_overlay.o
+			 led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)

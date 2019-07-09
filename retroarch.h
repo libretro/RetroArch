@@ -1763,11 +1763,6 @@ void video_driver_set_texture_enable(bool enable, bool full_screen);
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
 
-#ifdef HAVE_OVERLAY
-bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface);
-#endif
-
 #ifdef HAVE_VIDEO_LAYOUT
 const video_layout_render_interface_t *video_driver_layout_render_interface(void);
 #endif

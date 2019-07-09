@@ -47,6 +47,7 @@
 #include <locale.h>
 
 #include <boolean.h>
+#include <clamping.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
@@ -338,6 +339,398 @@ static char launch_arguments[4096];
 
 static bool has_variable_update                                 = false;
 
+/* INPUT REMOTE GLOBAL VARIABLES */
+
+#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
+#define UDP_FRAME_PACKETS 16
+
+struct remote_message
+{
+   uint16_t state;
+   int port;
+   int device;
+   int index;
+   int id;
+};
+
+struct input_remote
+{
+   bool state[RARCH_BIND_LIST_END];
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   int net_fd[MAX_USERS];
+#endif
+};
+
+typedef struct input_remote input_remote_t;
+
+typedef struct input_remote_state
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4][MAX_USERS];
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons[MAX_USERS];
+} input_remote_state_t;
+
+static input_remote_state_t remote_st_ptr;
+
+
+/* INPUT GLOBAL VARIABLES */
+static const input_driver_t *input_drivers[] = {
+#ifdef ORBIS
+   &input_ps4,
+#endif
+#ifdef __CELLOS_LV2__
+   &input_ps3,
+#endif
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
+   &input_psp,
+#endif
+#if defined(PS2)
+   &input_ps2,
+#endif
+#if defined(_3DS)
+   &input_ctr,
+#endif
+#if defined(SWITCH)
+   &input_switch,
+#endif
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &input_sdl,
+#endif
+#ifdef HAVE_DINPUT
+   &input_dinput,
+#endif
+#ifdef HAVE_X11
+   &input_x,
+#endif
+#ifdef __WINRT__
+   &input_uwp,
+#endif
+#ifdef XENON
+   &input_xenon360,
+#endif
+#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1) || defined(__WINRT__)
+   &input_xinput,
+#endif
+#ifdef GEKKO
+   &input_gx,
+#endif
+#ifdef WIIU
+   &input_wiiu,
+#endif
+#ifdef ANDROID
+   &input_android,
+#endif
+#ifdef HAVE_UDEV
+   &input_udev,
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+   &input_linuxraw,
+#endif
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+   &input_cocoa,
+#endif
+#ifdef __QNX__
+   &input_qnx,
+#endif
+#ifdef EMSCRIPTEN
+   &input_rwebinput,
+#endif
+#ifdef DJGPP
+   &input_dos,
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+   /* winraw only available since XP */
+   &input_winraw,
+#endif
+   &input_null,
+   NULL,
+};
+
+static input_device_driver_t *joypad_drivers[] = {
+#ifdef __CELLOS_LV2__
+   &ps3_joypad,
+#endif
+#ifdef HAVE_XINPUT
+   &xinput_joypad,
+#endif
+#ifdef GEKKO
+   &gx_joypad,
+#endif
+#ifdef WIIU
+   &wiiu_joypad,
+#endif
+#ifdef _XBOX
+   &xdk_joypad,
+#endif
+#if defined(ORBIS)
+   &ps4_joypad,
+#endif
+#if defined(PSP) || defined(VITA)
+   &psp_joypad,
+#endif
+#if defined(PS2)
+   &ps2_joypad,
+#endif
+#ifdef _3DS
+   &ctr_joypad,
+#endif
+#ifdef SWITCH
+   &switch_joypad,
+#endif
+#ifdef HAVE_DINPUT
+   &dinput_joypad,
+#endif
+#ifdef HAVE_UDEV
+   &udev_joypad,
+#endif
+#if defined(__linux) && !defined(ANDROID)
+   &linuxraw_joypad,
+#endif
+#ifdef HAVE_PARPORT
+   &parport_joypad,
+#endif
+#ifdef ANDROID
+   &android_joypad,
+#endif
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &sdl_joypad,
+#endif
+#ifdef __QNX__
+   &qnx_joypad,
+#endif
+#ifdef HAVE_MFI
+   &mfi_joypad,
+#endif
+#ifdef DJGPP
+   &dos_joypad,
+#endif
+/* Selecting the HID gamepad driver disables the Wii U gamepad. So while
+ * we want the HID code to be compiled & linked, we don't want the driver
+ * to be selectable in the UI. */
+#if defined(HAVE_HID) && !defined(WIIU)
+   &hid_joypad,
+#endif
+#ifdef EMSCRIPTEN
+   &rwebpad_joypad,
+#endif
+   &null_joypad,
+   NULL,
+};
+
+#ifdef HAVE_HID
+static hid_driver_t *hid_drivers[] = {
+#if defined(HAVE_BTSTACK)
+   &btstack_hid,
+#endif
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+   &iohidmanager_hid,
+#endif
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
+   &libusb_hid,
+#endif
+#ifdef HW_RVL
+   &wiiusb_hid,
+#endif
+   &null_hid,
+   NULL,
+};
+#endif
+
+/* Input config. */
+struct input_bind_map
+{
+   bool valid;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+
+   const char *base;
+   enum msg_hash_enums desc;
+   uint8_t retro_key;
+};
+
+static const uint8_t buttons[] = {
+   RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_L,
+   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   RETRO_DEVICE_ID_JOYPAD_LEFT,
+   RETRO_DEVICE_ID_JOYPAD_DOWN,
+   RETRO_DEVICE_ID_JOYPAD_UP,
+   RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_SELECT,
+   RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_B,
+};
+
+static uint16_t input_config_vid[MAX_USERS];
+static uint16_t input_config_pid[MAX_USERS];
+
+static char input_device_display_names[MAX_INPUT_DEVICES][64];
+static char input_device_config_names [MAX_INPUT_DEVICES][64];
+static char input_device_config_paths [MAX_INPUT_DEVICES][64];
+char        input_device_names        [MAX_INPUT_DEVICES][64];
+
+uint64_t lifecycle_state;
+struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+static const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
+#define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
+#define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
+
+const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
+      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
+      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
+      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
+      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START),
+      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP),
+      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN),
+      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT),
+      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT),
+      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A),
+      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X),
+      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L),
+      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R),
+      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2),
+      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2),
+      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3),
+      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3),
+      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS),
+      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS),
+      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS),
+      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS),
+      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS),
+      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS),
+      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
+      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
+
+      DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
+      DECLARE_BIND( gun_offscreen_shot,	RARCH_LIGHTGUN_RELOAD,	        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
+      DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
+      DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
+      DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
+      DECLARE_BIND( gun_start,			RARCH_LIGHTGUN_START,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
+      DECLARE_BIND( gun_select,			RARCH_LIGHTGUN_SELECT,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
+      DECLARE_BIND( gun_dpad_up,			RARCH_LIGHTGUN_DPAD_UP,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
+      DECLARE_BIND( gun_dpad_down,		RARCH_LIGHTGUN_DPAD_DOWN,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
+      DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
+      DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
+
+      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
+
+      DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
+      DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
+      DECLARE_META_BIND(1, toggle_slowmotion,     RARCH_SLOWMOTION_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY),
+      DECLARE_META_BIND(2, hold_slowmotion,       RARCH_SLOWMOTION_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY),
+      DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
+      DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
+      DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
+      DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
+      DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
+      DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
+      DECLARE_META_BIND(2, movie_record_toggle,   RARCH_BSV_RECORD_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE),
+      DECLARE_META_BIND(2, pause_toggle,          RARCH_PAUSE_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE),
+      DECLARE_META_BIND(2, frame_advance,         RARCH_FRAMEADVANCE,          MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE),
+      DECLARE_META_BIND(2, reset,                 RARCH_RESET,                 MENU_ENUM_LABEL_VALUE_INPUT_META_RESET),
+      DECLARE_META_BIND(2, shader_next,           RARCH_SHADER_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT),
+      DECLARE_META_BIND(2, shader_prev,           RARCH_SHADER_PREV,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV),
+      DECLARE_META_BIND(2, cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS),
+      DECLARE_META_BIND(2, cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS),
+      DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE),
+      DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
+      DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
+      DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
+      DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
+      DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
+      DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
+      DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
+      DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
+      DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
+      DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,           MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
+      DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,          MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
+      DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE),
+      DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
+      DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
+      DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
+      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
+      DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
+#ifdef HAVE_MENU
+      DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
+#endif
+      DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
+      DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
+      DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
+};
+
+typedef struct turbo_buttons turbo_buttons_t;
+
+/* Turbo support. */
+struct turbo_buttons
+{
+   bool frame_enable[MAX_USERS];
+   uint16_t enable[MAX_USERS];
+   unsigned count;
+};
+
+struct input_keyboard_line
+{
+   char *buffer;
+   size_t ptr;
+   size_t size;
+
+   /** Line complete callback.
+    * Calls back after return is
+    * pressed with the completed line.
+    * Line can be NULL.
+    **/
+   input_keyboard_line_complete_t cb;
+   void *userdata;
+};
+
+static bool input_driver_keyboard_linefeed_enable = false;
+static input_keyboard_line_t *g_keyboard_line     = NULL;
+
+static void *g_keyboard_press_data                = NULL;
+
+static unsigned osk_last_codepoint                = 0;
+static unsigned osk_last_codepoint_len            = 0;
+
+static input_keyboard_press_t g_keyboard_press_cb;
+
+static turbo_buttons_t input_driver_turbo_btns;
+#ifdef HAVE_COMMAND
+static command_t *input_driver_command            = NULL;
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+static input_remote_t *input_driver_remote        = NULL;
+#endif
+static input_mapper_t *input_driver_mapper        = NULL;
+static const input_driver_t *current_input        = NULL;
+static void *current_input_data                   = NULL;
+static bool input_driver_block_hotkey             = false;
+static bool input_driver_block_libretro_input     = false;
+static bool input_driver_nonblock_state           = false;
+static bool input_driver_flushing_input           = false;
+static float input_driver_axis_threshold          = 0.0f;
+static unsigned input_driver_max_users            = 0;
+
+#ifdef HAVE_HID
+static const void *hid_data                       = NULL;
+#endif
+
+#ifdef HAVE_THREADS
+#define video_driver_get_ptr_internal(force) ((video_driver_is_threaded_internal() && !force) ? video_thread_get_ptr(NULL) : video_driver_data)
+#else
+#define video_driver_get_ptr_internal(force) (video_driver_data)
+#endif
 
 #if defined(HAVE_RUNAHEAD)
 
@@ -447,7 +840,7 @@ static char *get_temp_directory_alloc(void)
 #endif
 #elif defined ANDROID
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings = configuration_settings;
       path = strcpy_alloc_force(settings->paths.directory_libretro);
    }
 #else
@@ -2962,40 +3355,917 @@ bool bsv_movie_check(void)
    return true;
 }
 
+/* Input Overlay */
+#ifdef HAVE_OVERLAY
+static bool video_driver_overlay_interface(
+      const video_overlay_interface_t **iface);
 
-/* Input Remote */
+#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
-#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define UDP_FRAME_PACKETS 16
+#define MAX_VISIBILITY 32
+static enum overlay_visibility* visibility = NULL;
 
-struct remote_message
-{
-   uint16_t state;
-   int port;
-   int device;
-   int index;
-   int id;
-};
-
-struct input_remote
-{
-   bool state[RARCH_BIND_LIST_END];
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
-#endif
-};
-
-typedef struct input_remote input_remote_t;
-
-typedef struct input_remote_state
+typedef struct input_overlay_state
 {
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS];
+   int16_t analog[4];
+   uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons[MAX_USERS];
-} input_remote_state_t;
+   input_bits_t buttons;
+} input_overlay_state_t;
 
-static input_remote_state_t remote_st_ptr;
+struct input_overlay
+{
+   enum overlay_status state;
+
+   bool enable;
+   bool blocked;
+   bool alive;
+
+   unsigned next_index;
+
+   size_t index;
+   size_t size;
+
+   struct overlay *overlays;
+   const struct overlay *active;
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+
+   input_overlay_state_t overlay_state;
+};
+
+input_overlay_t *overlay_ptr = NULL;
+
+/**
+ * input_overlay_add_inputs:
+ * @ol : pointer to overlay
+ * @port : the user to show the inputs of
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay
+ */
+static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      unsigned port, unsigned analog_dpad_mode)
+{
+   switch(desc->type)
+   {
+      case OVERLAY_TYPE_BUTTONS:
+         {
+            unsigned i;
+            bool all_buttons_pressed        = false;
+
+            /*Check each bank of the mask*/
+            for (i = 0; i < ARRAY_SIZE(desc->button_mask.data); ++i)
+            {
+               /*Get bank*/
+               uint32_t bank_mask = BITS_GET_ELEM(desc->button_mask,i);
+               unsigned        id = i * 32;
+
+               /*Worth pursuing? Have we got any bits left in here?*/
+               while (bank_mask)
+               {
+                  /*If this bit is set then we need to query the pad
+                   *The button must be pressed.*/
+                  if (bank_mask & 1)
+                  {
+                     /* Light up the button if pressed */
+                     if (!input_state(port, RETRO_DEVICE_JOYPAD, 0, id))
+                     {
+                        /* We need ALL of the inputs to be active,
+                         * abort. */
+                        desc->updated    = false;
+                        return false;
+                     }
+
+                     all_buttons_pressed = true;
+                     desc->updated       = true;
+                  }
+
+                  bank_mask >>= 1;
+                  ++id;
+               }
+            }
+
+            return all_buttons_pressed;
+         }
+
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         {
+            unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
+               RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+
+            float analog_x     = input_state(port, RETRO_DEVICE_ANALOG,
+                  index, RETRO_DEVICE_ID_ANALOG_X);
+            float analog_y     = input_state(port, RETRO_DEVICE_ANALOG,
+                  index, RETRO_DEVICE_ID_ANALOG_Y);
+            float dx           = (analog_x/0x8000)*(desc->range_x/2);
+            float dy           = (analog_y/0x8000)*(desc->range_y/2);
+
+            desc->delta_x      = dx;
+            desc->delta_y      = dy;
+
+            /*Maybe use some option here instead of 0, only display
+              changes greater than some magnitude.
+              */
+            if ((dx * dx) > 0 || (dy*dy) > 0)
+               return true;
+         }
+         break;
+
+      case OVERLAY_TYPE_KEYBOARD:
+         if (input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
+         {
+            desc->updated  = true;
+            return true;
+         }
+         break;
+
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static bool input_overlay_add_inputs(input_overlay_t *ol,
+      unsigned port, unsigned analog_dpad_mode)
+{
+   unsigned i;
+   bool button_pressed             = false;
+   input_overlay_state_t *ol_state = &ol->overlay_state;
+
+   if (!ol_state)
+      return false;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      overlay_desc_t *desc  = &(ol->active->descs[i]);
+      button_pressed       |= input_overlay_add_inputs_inner(desc,
+            port, analog_dpad_mode);
+   }
+
+   return button_pressed;
+}
+/**
+ * input_overlay_scale:
+ * @ol                    : Overlay handle.
+ * @scale                 : Scaling factor.
+ *
+ * Scales overlay and all its associated descriptors
+ * by a given scaling factor (@scale).
+ **/
+static void input_overlay_scale(struct overlay *ol, float scale)
+{
+   size_t i;
+
+   if (!ol)
+      return;
+
+   if (ol->block_scale)
+      scale = 1.0f;
+
+   ol->scale = scale;
+   ol->mod_w = ol->w * scale;
+   ol->mod_h = ol->h * scale;
+   ol->mod_x = ol->center_x +
+      (ol->x - ol->center_x) * scale;
+   ol->mod_y = ol->center_y +
+      (ol->y - ol->center_y) * scale;
+
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay_desc *desc = &ol->descs[i];
+      float scale_w             = ol->mod_w * desc->range_x;
+      float scale_h             = ol->mod_h * desc->range_y;
+      float adj_center_x        = ol->mod_x + desc->x * ol->mod_w;
+      float adj_center_y        = ol->mod_y + desc->y * ol->mod_h;
+
+      desc->mod_w               = 2.0f * scale_w;
+      desc->mod_h               = 2.0f * scale_h;
+      desc->mod_x               = adj_center_x - scale_w;
+      desc->mod_y               = adj_center_y - scale_h;
+   }
+}
+
+static void input_overlay_set_vertex_geom(input_overlay_t *ol)
+{
+   size_t i;
+
+   if (ol->active->image.pixels)
+      ol->iface->vertex_geom(ol->iface_data, 0,
+            ol->active->mod_x, ol->active->mod_y,
+            ol->active->mod_w, ol->active->mod_h);
+
+   if (ol->iface->vertex_geom)
+      for (i = 0; i < ol->active->size; i++)
+      {
+         struct overlay_desc *desc = &ol->active->descs[i];
+
+         if (!desc->image.pixels)
+            continue;
+
+         ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+               desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
+      }
+}
+
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @scale                 : Factor of scale to apply.
+ *
+ * Scales the overlay by a factor of scale.
+ **/
+void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
+{
+   size_t i;
+
+   if (!ol)
+      return;
+
+   for (i = 0; i < ol->size; i++)
+      input_overlay_scale(&ol->overlays[i], scale);
+
+   input_overlay_set_vertex_geom(ol);
+}
+
+void input_overlay_free_overlay(struct overlay *overlay)
+{
+   size_t i;
+
+   if (!overlay)
+      return;
+
+   for (i = 0; i < overlay->size; i++)
+      image_texture_free(&overlay->descs[i].image);
+
+   if (overlay->load_images)
+      free(overlay->load_images);
+   overlay->load_images = NULL;
+   if (overlay->descs)
+      free(overlay->descs);
+   overlay->descs       = NULL;
+   image_texture_free(&overlay->image);
+
+   if (overlay_ptr)
+      free(overlay_ptr);
+   overlay_ptr = NULL;
+}
+
+static void input_overlay_free_overlays(input_overlay_t *ol)
+{
+   size_t i;
+
+   if (!ol)
+      return;
+
+   for (i = 0; i < ol->size; i++)
+      input_overlay_free_overlay(&ol->overlays[i]);
+
+   if (ol->overlays)
+      free(ol->overlays);
+   ol->overlays = NULL;
+}
+
+static void input_overlay_load_active(input_overlay_t *ol, float opacity)
+{
+   if (!ol)
+      return;
+
+   if (ol->iface->load)
+      ol->iface->load(ol->iface_data, ol->active->load_images,
+            ol->active->load_images_size);
+
+   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_vertex_geom(ol);
+
+   if (ol->iface->full_screen)
+      ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+}
+
+/**
+ * input_overlay_enable:
+ * @enable                : Enable or disable the overlay
+ *
+ * Enable or disable the overlay.
+ **/
+static void input_overlay_enable(input_overlay_t *ol, bool enable)
+{
+   ol->enable = enable;
+
+   if (ol->iface->enable)
+      ol->iface->enable(ol->iface_data, enable);
+}
+
+/**
+ * inside_hitbox:
+ * @desc                  : Overlay descriptor handle.
+ * @x                     : X coordinate value.
+ * @y                     : Y coordinate value.
+ *
+ * Check whether the given @x and @y coordinates of the overlay
+ * descriptor @desc is inside the overlay descriptor's hitbox.
+ *
+ * Returns: true (1) if X, Y coordinates are inside a hitbox,
+ * otherwise false (0).
+ **/
+static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
+{
+   if (!desc)
+      return false;
+
+   switch (desc->hitbox)
+   {
+      case OVERLAY_HITBOX_RADIAL:
+      {
+         /* Ellipsis. */
+         float x_dist  = (x - desc->x) / desc->range_x_mod;
+         float y_dist  = (y - desc->y) / desc->range_y_mod;
+         float sq_dist = x_dist * x_dist + y_dist * y_dist;
+         return (sq_dist <= 1.0f);
+      }
+
+      case OVERLAY_HITBOX_RECT:
+         return
+            (fabs(x - desc->x) <= desc->range_x_mod) &&
+            (fabs(y - desc->y) <= desc->range_y_mod);
+   }
+
+   return false;
+}
+
+/**
+ * input_overlay_poll:
+ * @out                   : Polled output data.
+ * @norm_x                : Normalized X coordinate.
+ * @norm_y                : Normalized Y coordinate.
+ *
+ * Polls input overlay.
+ *
+ * @norm_x and @norm_y are the result of
+ * input_translate_coord_viewport().
+ **/
+static void input_overlay_poll(
+      input_overlay_t *ol,
+      input_overlay_state_t *out,
+      int16_t norm_x, int16_t norm_y)
+{
+   size_t i;
+
+   /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
+    * like RETRO_DEVICE_POINTER. */
+   float x = (float)(norm_x + 0x7fff) / 0xffff;
+   float y = (float)(norm_y + 0x7fff) / 0xffff;
+
+   x -= ol->active->mod_x;
+   y -= ol->active->mod_y;
+   x /= ol->active->mod_w;
+   y /= ol->active->mod_h;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      float x_dist, y_dist;
+      struct overlay_desc *desc = &ol->active->descs[i];
+
+      if (!inside_hitbox(desc, x, y))
+         continue;
+
+      desc->updated = true;
+      x_dist        = x - desc->x;
+      y_dist        = y - desc->y;
+
+      switch (desc->type)
+      {
+         case OVERLAY_TYPE_BUTTONS:
+            {
+               bits_or_bits(out->buttons.data,
+                     desc->button_mask.data,
+                     ARRAY_SIZE(desc->button_mask.data));
+
+               if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
+                  ol->next_index = desc->next_index;
+            }
+            break;
+         case OVERLAY_TYPE_KEYBOARD:
+            if (desc->retro_key_idx < RETROK_LAST)
+               OVERLAY_SET_KEY(out, desc->retro_key_idx);
+            break;
+         default:
+            {
+               float x_val           = x_dist / desc->range_x;
+               float y_val           = y_dist / desc->range_y;
+               float x_val_sat       = x_val / desc->analog_saturate_pct;
+               float y_val_sat       = y_val / desc->analog_saturate_pct;
+
+               unsigned int base     =
+                  (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
+                  ? 2 : 0;
+
+               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
+                  * 32767.0f;
+               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
+                  * 32767.0f;
+            }
+            break;
+      }
+
+      if (desc->movable)
+      {
+         desc->delta_x = clamp_float(x_dist, -desc->range_x, desc->range_x)
+            * ol->active->mod_w;
+         desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
+            * ol->active->mod_h;
+      }
+   }
+
+   if (!bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
+      ol->blocked = false;
+   else if (ol->blocked)
+      memset(out, 0, sizeof(*out));
+}
+
+/**
+ * input_overlay_update_desc_geom:
+ * @ol                    : overlay handle.
+ * @desc                  : overlay descriptors handle.
+ *
+ * Update input overlay descriptors' vertex geometry.
+ **/
+static void input_overlay_update_desc_geom(input_overlay_t *ol,
+      struct overlay_desc *desc)
+{
+   if (!desc || !desc->image.pixels)
+      return;
+   if (!desc->movable)
+      return;
+
+   if (ol->iface->vertex_geom)
+      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+            desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
+            desc->mod_w, desc->mod_h);
+
+   desc->delta_x = 0.0f;
+   desc->delta_y = 0.0f;
+}
+
+/**
+ * input_overlay_post_poll:
+ *
+ * Called after all the input_overlay_poll() calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods.
+ **/
+static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
+{
+   size_t i;
+
+   input_overlay_set_alpha_mod(ol, opacity);
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+
+      desc->range_x_mod = desc->range_x;
+      desc->range_y_mod = desc->range_y;
+
+      if (desc->updated)
+      {
+         /* If pressed this frame, change the hitbox. */
+         desc->range_x_mod *= desc->range_mod;
+         desc->range_y_mod *= desc->range_mod;
+
+         if (desc->image.pixels)
+         {
+            if (ol->iface->set_alpha)
+               ol->iface->set_alpha(ol->iface_data, desc->image_index,
+                     desc->alpha_mod * opacity);
+         }
+      }
+
+      input_overlay_update_desc_geom(ol, desc);
+      desc->updated = false;
+   }
+}
+
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
+static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
+{
+   size_t i;
+
+   ol->blocked = false;
+
+   input_overlay_set_alpha_mod(ol, opacity);
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+
+      desc->range_x_mod = desc->range_x;
+      desc->range_y_mod = desc->range_y;
+      desc->updated     = false;
+
+      desc->delta_x     = 0.0f;
+      desc->delta_y     = 0.0f;
+      input_overlay_update_desc_geom(ol, desc);
+   }
+}
+
+/**
+ * input_overlay_next:
+ * @ol                    : Overlay handle.
+ *
+ * Switch to the next available overlay
+ * screen.
+ **/
+void input_overlay_next(input_overlay_t *ol, float opacity)
+{
+   if (!ol)
+      return;
+
+   ol->index      = ol->next_index;
+   ol->active     = &ol->overlays[ol->index];
+
+   input_overlay_load_active(ol, opacity);
+
+   ol->blocked    = true;
+   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
+}
+
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
+void input_overlay_free(input_overlay_t *ol)
+{
+   if (!ol)
+      return;
+   overlay_ptr = NULL;
+
+   input_overlay_free_overlays(ol);
+
+   if (ol->iface->enable)
+      ol->iface->enable(ol->iface_data, false);
+
+   free(ol);
+}
+
+/* task_data = overlay_task_data_t* */
+void input_overlay_loaded(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   size_t i;
+   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
+   input_overlay_t                    *ol = NULL;
+   const video_overlay_interface_t *iface = NULL;
+   settings_t *settings                   = configuration_settings;
+
+   if (err)
+      return;
+
+#ifdef HAVE_MENU
+   /* We can't display when the menu is up */
+   if (data->hide_in_menu && menu_driver_is_alive())
+   {
+      if (data->overlay_enable)
+         goto abort_load;
+   }
+#endif
+
+   if (  !data->overlay_enable                   ||
+         !video_driver_overlay_interface(&iface) ||
+         !iface)
+   {
+      RARCH_ERR("Overlay interface is not present in video driver,"
+            " or not enabled.\n");
+      goto abort_load;
+   }
+
+   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
+   ol->overlays   = data->overlays;
+   ol->size       = data->size;
+   ol->active     = data->active;
+   ol->iface      = iface;
+   ol->iface_data = video_driver_get_ptr_internal(true);
+
+   input_overlay_load_active(ol, data->overlay_opacity);
+   input_overlay_enable(ol, data->overlay_enable);
+
+   input_overlay_set_scale_factor(ol, data->overlay_scale);
+
+   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
+   ol->state      = OVERLAY_STATUS_NONE;
+   ol->alive      = true;
+   overlay_ptr    = ol;
+
+   free(data);
+
+   if (!settings->bools.input_overlay_show_mouse_cursor)
+      video_driver_hide_mouse();
+
+   return;
+
+abort_load:
+   for (i = 0; i < data->size; i++)
+      input_overlay_free_overlay(&data->overlays[i]);
+
+   free(data->overlays);
+   free(data);
+}
+
+void input_overlay_set_visibility(int overlay_idx,
+      enum overlay_visibility vis)
+{
+    input_overlay_t *ol = overlay_ptr;
+
+    if (!visibility)
+    {
+       unsigned i;
+       visibility = (enum overlay_visibility *)calloc(
+             MAX_VISIBILITY, sizeof(enum overlay_visibility));
+
+       for (i = 0; i < MAX_VISIBILITY; i++)
+          visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
+    }
+
+    visibility[overlay_idx] = vis;
+
+    if (!ol)
+       return;
+    if (vis == OVERLAY_VISIBILITY_HIDDEN)
+      ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
+}
+
+static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
+{
+    if (!visibility)
+       return OVERLAY_VISIBILITY_DEFAULT;
+    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
+       return OVERLAY_VISIBILITY_DEFAULT;
+    return visibility[overlay_idx];
+}
+
+static bool input_overlay_is_hidden(int overlay_idx)
+{
+    return (input_overlay_get_visibility(overlay_idx)
+          == OVERLAY_VISIBILITY_HIDDEN);
+}
+
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
+{
+   unsigned i;
+
+   if (!ol)
+      return;
+
+   for (i = 0; i < ol->active->load_images_size; i++)
+   {
+      if (input_overlay_is_hidden(i))
+          ol->iface->set_alpha(ol->iface_data, i, 0.0);
+      else
+          ol->iface->set_alpha(ol->iface_data, i, mod);
+   }
+}
+
+bool input_overlay_is_alive(input_overlay_t *ol)
+{
+   if (ol)
+      return ol->alive;
+   return false;
+}
+
+bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
+{
+   input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
+   if (!ol)
+      return false;
+   return (BIT256_GET(ol_state->buttons, key));
+}
+
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+static void input_poll_overlay(input_overlay_t *ol, float opacity,
+      unsigned analog_dpad_mode,
+      float axis_threshold)
+{
+   rarch_joypad_info_t joypad_info;
+   input_overlay_state_t old_key_state;
+   unsigned i, j, device;
+   settings_t *settings            = configuration_settings;
+   uint16_t key_mod                = 0;
+   bool polled                     = false;
+   bool button_pressed             = false;
+   void *input_data                = current_input_data;
+   input_overlay_state_t *ol_state = &ol->overlay_state;
+   const input_driver_t *input_ptr = current_input;
+
+   if (!ol_state)
+      return;
+
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
+
+   memcpy(old_key_state.keys, ol_state->keys,
+         sizeof(ol_state->keys));
+   memset(ol_state, 0, sizeof(*ol_state));
+
+   device = ol->active->full_screen ?
+      RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
+
+   for (i = 0;
+         input_ptr->input_state(input_data, joypad_info,
+            NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         i++)
+   {
+      input_overlay_state_t polled_data;
+      int16_t x = input_ptr->input_state(input_data, joypad_info,
+            NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_X);
+      int16_t y = input_ptr->input_state(input_data, joypad_info,
+            NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_Y);
+
+      memset(&polled_data, 0, sizeof(struct input_overlay_state));
+
+      if (ol->enable)
+         input_overlay_poll(ol, &polled_data, x, y);
+      else
+         ol->blocked = false;
+
+      bits_or_bits(ol_state->buttons.data,
+            polled_data.buttons.data,
+            ARRAY_SIZE(polled_data.buttons.data));
+
+      for (j = 0; j < ARRAY_SIZE(ol_state->keys); j++)
+         ol_state->keys[j] |= polled_data.keys[j];
+
+      /* Fingers pressed later take priority and matched up
+       * with overlay poll priorities. */
+      for (j = 0; j < 4; j++)
+         if (polled_data.analog[j])
+            ol_state->analog[j] = polled_data.analog[j];
+
+      polled = true;
+   }
+
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
+         OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
+      key_mod |= RETROKMOD_SHIFT;
+
+   if (OVERLAY_GET_KEY(ol_state, RETROK_LCTRL) ||
+       OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
+      key_mod |= RETROKMOD_CTRL;
+
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
+         OVERLAY_GET_KEY(ol_state, RETROK_RALT))
+      key_mod |= RETROKMOD_ALT;
+
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
+         OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
+      key_mod |= RETROKMOD_META;
+
+   /* CAPSLOCK SCROLLOCK NUMLOCK */
+   for (i = 0; i < ARRAY_SIZE(ol_state->keys); i++)
+   {
+      if (ol_state->keys[i] != old_key_state.keys[i])
+      {
+         uint32_t orig_bits = old_key_state.keys[i];
+         uint32_t new_bits  = ol_state->keys[i];
+
+         for (j = 0; j < 32; j++)
+            if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
+               input_keyboard_event(new_bits & (1 << j),
+                     i * 32 + j, 0, key_mod, RETRO_DEVICE_POINTER);
+      }
+   }
+
+   /* Map "analog" buttons to analog axes like regular input drivers do. */
+   for (j = 0; j < 4; j++)
+   {
+      unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
+      unsigned bind_minus = bind_plus + 1;
+
+      if (ol_state->analog[j])
+         continue;
+
+      if (input_overlay_key_pressed(ol, bind_plus))
+         ol_state->analog[j] += 0x7fff;
+      if (input_overlay_key_pressed(ol, bind_minus))
+         ol_state->analog[j] -= 0x7fff;
+   }
+
+   /* Check for analog_dpad_mode.
+    * Map analogs to d-pad buttons when configured. */
+   switch (analog_dpad_mode)
+   {
+      case ANALOG_DPAD_LSTICK:
+      case ANALOG_DPAD_RSTICK:
+      {
+         float analog_x, analog_y;
+         unsigned analog_base = 2;
+
+         if (analog_dpad_mode == ANALOG_DPAD_LSTICK)
+            analog_base = 0;
+
+         analog_x = (float)ol_state->analog[analog_base + 0] / 0x7fff;
+         analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         break;
+      }
+
+      default:
+         break;
+   }
+
+   if (settings->bools.input_overlay_show_physical_inputs)
+      button_pressed = input_overlay_add_inputs(ol,
+            settings->uints.input_overlay_show_physical_inputs_port,
+            analog_dpad_mode);
+
+   if (button_pressed || polled)
+      input_overlay_post_poll(ol, opacity);
+   else
+      input_overlay_poll_clear(ol, opacity);
+}
+
+static void input_state_overlay(input_overlay_t *ol, int16_t *ret,
+      unsigned port, unsigned device, unsigned idx,
+      unsigned id)
+{
+   input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;
+
+   if (!ol || port != 0)
+      return;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         if (input_overlay_key_pressed(ol, id))
+            *ret |= 1;
+         break;
+      case RETRO_DEVICE_KEYBOARD:
+         if (id < RETROK_LAST)
+         {
+#if 0
+            RARCH_LOG("UDLR %u %u %u %u\n",
+                  OVERLAY_GET_KEY(ol_state, RETROK_UP),
+                  OVERLAY_GET_KEY(ol_state, RETROK_DOWN),
+                  OVERLAY_GET_KEY(ol_state, RETROK_LEFT),
+                  OVERLAY_GET_KEY(ol_state, RETROK_RIGHT)
+                  );
+#endif
+            if (OVERLAY_GET_KEY(ol_state, id))
+               *ret |= 1;
+         }
+         break;
+      case RETRO_DEVICE_ANALOG:
+         {
+            unsigned base = 0;
+
+            if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+               base = 2;
+            if (id == RETRO_DEVICE_ID_ANALOG_Y)
+               base += 1;
+            if (ol_state && ol_state->analog[base])
+               *ret = ol_state->analog[base];
+         }
+         break;
+   }
+}
+#endif
+
+/* Input Remote */
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static bool input_remote_init_network(input_remote_t *handle,
@@ -3112,356 +4382,6 @@ void fire_connection_listener(unsigned port, input_device_driver_t *driver)
    pad_connection_listener->connected(port, driver);
 }
 
-static const input_driver_t *input_drivers[] = {
-#ifdef ORBIS
-   &input_ps4,
-#endif
-#ifdef __CELLOS_LV2__
-   &input_ps3,
-#endif
-#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
-   &input_psp,
-#endif
-#if defined(PS2)
-   &input_ps2,
-#endif
-#if defined(_3DS)
-   &input_ctr,
-#endif
-#if defined(SWITCH)
-   &input_switch,
-#endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &input_sdl,
-#endif
-#ifdef HAVE_DINPUT
-   &input_dinput,
-#endif
-#ifdef HAVE_X11
-   &input_x,
-#endif
-#ifdef __WINRT__
-   &input_uwp,
-#endif
-#ifdef XENON
-   &input_xenon360,
-#endif
-#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1) || defined(__WINRT__)
-   &input_xinput,
-#endif
-#ifdef GEKKO
-   &input_gx,
-#endif
-#ifdef WIIU
-   &input_wiiu,
-#endif
-#ifdef ANDROID
-   &input_android,
-#endif
-#ifdef HAVE_UDEV
-   &input_udev,
-#endif
-#if defined(__linux__) && !defined(ANDROID)
-   &input_linuxraw,
-#endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-   &input_cocoa,
-#endif
-#ifdef __QNX__
-   &input_qnx,
-#endif
-#ifdef EMSCRIPTEN
-   &input_rwebinput,
-#endif
-#ifdef DJGPP
-   &input_dos,
-#endif
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-   /* winraw only available since XP */
-   &input_winraw,
-#endif
-   &input_null,
-   NULL,
-};
-
-static input_device_driver_t *joypad_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &ps3_joypad,
-#endif
-#ifdef HAVE_XINPUT
-   &xinput_joypad,
-#endif
-#ifdef GEKKO
-   &gx_joypad,
-#endif
-#ifdef WIIU
-   &wiiu_joypad,
-#endif
-#ifdef _XBOX
-   &xdk_joypad,
-#endif
-#if defined(ORBIS)
-   &ps4_joypad,
-#endif
-#if defined(PSP) || defined(VITA)
-   &psp_joypad,
-#endif
-#if defined(PS2)
-   &ps2_joypad,
-#endif
-#ifdef _3DS
-   &ctr_joypad,
-#endif
-#ifdef SWITCH
-   &switch_joypad,
-#endif
-#ifdef HAVE_DINPUT
-   &dinput_joypad,
-#endif
-#ifdef HAVE_UDEV
-   &udev_joypad,
-#endif
-#if defined(__linux) && !defined(ANDROID)
-   &linuxraw_joypad,
-#endif
-#ifdef HAVE_PARPORT
-   &parport_joypad,
-#endif
-#ifdef ANDROID
-   &android_joypad,
-#endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &sdl_joypad,
-#endif
-#ifdef __QNX__
-   &qnx_joypad,
-#endif
-#ifdef HAVE_MFI
-   &mfi_joypad,
-#endif
-#ifdef DJGPP
-   &dos_joypad,
-#endif
-/* Selecting the HID gamepad driver disables the Wii U gamepad. So while
- * we want the HID code to be compiled & linked, we don't want the driver
- * to be selectable in the UI. */
-#if defined(HAVE_HID) && !defined(WIIU)
-   &hid_joypad,
-#endif
-#ifdef EMSCRIPTEN
-   &rwebpad_joypad,
-#endif
-   &null_joypad,
-   NULL,
-};
-
-#ifdef HAVE_HID
-static hid_driver_t *hid_drivers[] = {
-#if defined(HAVE_BTSTACK)
-   &btstack_hid,
-#endif
-#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
-   &iohidmanager_hid,
-#endif
-#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
-   &libusb_hid,
-#endif
-#ifdef HW_RVL
-   &wiiusb_hid,
-#endif
-   &null_hid,
-   NULL,
-};
-#endif
-
-/* Input config. */
-struct input_bind_map
-{
-   bool valid;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   uint8_t meta;
-
-   const char *base;
-   enum msg_hash_enums desc;
-   uint8_t retro_key;
-};
-
-static const uint8_t buttons[] = {
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_B,
-};
-
-static uint16_t input_config_vid[MAX_USERS];
-static uint16_t input_config_pid[MAX_USERS];
-
-static char input_device_display_names[MAX_INPUT_DEVICES][64];
-static char input_device_config_names [MAX_INPUT_DEVICES][64];
-static char input_device_config_paths [MAX_INPUT_DEVICES][64];
-char        input_device_names        [MAX_INPUT_DEVICES][64];
-
-uint64_t lifecycle_state;
-struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
-struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
-static const struct retro_keybind *libretro_input_binds[MAX_USERS];
-
-#define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
-#define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
-
-const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
-      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
-      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
-      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
-      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START),
-      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP),
-      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN),
-      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT),
-      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT),
-      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A),
-      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X),
-      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L),
-      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R),
-      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2),
-      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2),
-      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3),
-      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3),
-      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS),
-      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS),
-      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS),
-      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS),
-      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS),
-      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS),
-      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
-      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
-
-      DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
-      DECLARE_BIND( gun_offscreen_shot,	RARCH_LIGHTGUN_RELOAD,	        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
-      DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
-      DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
-      DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
-      DECLARE_BIND( gun_start,			RARCH_LIGHTGUN_START,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
-      DECLARE_BIND( gun_select,			RARCH_LIGHTGUN_SELECT,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
-      DECLARE_BIND( gun_dpad_up,			RARCH_LIGHTGUN_DPAD_UP,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
-      DECLARE_BIND( gun_dpad_down,		RARCH_LIGHTGUN_DPAD_DOWN,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
-      DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
-      DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
-
-      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
-
-      DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
-      DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
-      DECLARE_META_BIND(1, toggle_slowmotion,     RARCH_SLOWMOTION_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY),
-      DECLARE_META_BIND(2, hold_slowmotion,       RARCH_SLOWMOTION_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY),
-      DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
-      DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
-      DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
-      DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
-      DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
-      DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
-      DECLARE_META_BIND(2, movie_record_toggle,   RARCH_BSV_RECORD_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE),
-      DECLARE_META_BIND(2, pause_toggle,          RARCH_PAUSE_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE),
-      DECLARE_META_BIND(2, frame_advance,         RARCH_FRAMEADVANCE,          MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE),
-      DECLARE_META_BIND(2, reset,                 RARCH_RESET,                 MENU_ENUM_LABEL_VALUE_INPUT_META_RESET),
-      DECLARE_META_BIND(2, shader_next,           RARCH_SHADER_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT),
-      DECLARE_META_BIND(2, shader_prev,           RARCH_SHADER_PREV,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV),
-      DECLARE_META_BIND(2, cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS),
-      DECLARE_META_BIND(2, cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS),
-      DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE),
-      DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
-      DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
-      DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
-      DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
-      DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
-      DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
-      DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
-      DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
-      DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
-      DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,           MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
-      DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,          MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
-      DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE),
-      DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
-      DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
-      DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
-      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
-      DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
-#ifdef HAVE_MENU
-      DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
-#endif
-      DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
-      DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
-      DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
-};
-
-typedef struct turbo_buttons turbo_buttons_t;
-
-/* Turbo support. */
-struct turbo_buttons
-{
-   bool frame_enable[MAX_USERS];
-   uint16_t enable[MAX_USERS];
-   unsigned count;
-};
-
-struct input_keyboard_line
-{
-   char *buffer;
-   size_t ptr;
-   size_t size;
-
-   /** Line complete callback.
-    * Calls back after return is
-    * pressed with the completed line.
-    * Line can be NULL.
-    **/
-   input_keyboard_line_complete_t cb;
-   void *userdata;
-};
-
-static bool input_driver_keyboard_linefeed_enable = false;
-static input_keyboard_line_t *g_keyboard_line     = NULL;
-
-static void *g_keyboard_press_data                = NULL;
-
-static unsigned osk_last_codepoint                = 0;
-static unsigned osk_last_codepoint_len            = 0;
-
-static input_keyboard_press_t g_keyboard_press_cb;
-
-static turbo_buttons_t input_driver_turbo_btns;
-#ifdef HAVE_COMMAND
-static command_t *input_driver_command            = NULL;
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-static input_remote_t *input_driver_remote        = NULL;
-#endif
-static input_mapper_t *input_driver_mapper        = NULL;
-static const input_driver_t *current_input        = NULL;
-static void *current_input_data                   = NULL;
-static bool input_driver_block_hotkey             = false;
-static bool input_driver_block_libretro_input     = false;
-static bool input_driver_nonblock_state           = false;
-static bool input_driver_flushing_input           = false;
-static float input_driver_axis_threshold          = 0.0f;
-static unsigned input_driver_max_users            = 0;
-
-#ifdef HAVE_HID
-static const void *hid_data                       = NULL;
-#endif
 
 /**
  * check_input_driver_block_hotkey:
@@ -3648,7 +4568,7 @@ static void input_poll(void)
    }
 
 #ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
+   if (overlay_ptr && overlay_ptr->alive)
       input_poll_overlay(
             overlay_ptr,
             settings->floats.input_overlay_opacity,
@@ -3752,7 +4672,7 @@ static int16_t input_state_internal(
                      res = ret;
 
 #ifdef HAVE_OVERLAY
-                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                  if (overlay_ptr && overlay_ptr->alive && port == 0)
                      res |= res_overlay;
 #endif
                }
@@ -3817,7 +4737,7 @@ static int16_t input_state_internal(
                      res = ret;
 
 #ifdef HAVE_OVERLAY
-                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                  if (overlay_ptr && overlay_ptr->alive && port == 0)
                      res |= res_overlay;
 #endif
                }
@@ -3845,7 +4765,7 @@ static int16_t input_state_internal(
             res = ret;
 
 #ifdef HAVE_OVERLAY
-            if (input_overlay_is_alive(overlay_ptr) && port == 0)
+            if (overlay_ptr && overlay_ptr->alive && port == 0)
                res |= res_overlay;
 #endif
 
@@ -3882,7 +4802,7 @@ static int16_t input_state_internal(
                      res = ret;
 
 #ifdef HAVE_OVERLAY
-                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                  if (overlay_ptr && overlay_ptr->alive && port == 0)
                      res |= res_overlay;
 #endif
                }
@@ -3956,7 +4876,7 @@ static int16_t input_state_internal(
                      res = ret;
 
 #ifdef HAVE_OVERLAY
-                     if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                     if (overlay_ptr && overlay_ptr->alive && port == 0)
                         res |= res_overlay;
 #endif
                   }
@@ -3997,7 +4917,7 @@ static int16_t input_state_internal(
                      res = ret;
 
 #ifdef HAVE_OVERLAY
-                  if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                  if (overlay_ptr && overlay_ptr->alive && port == 0)
                      res |= res_overlay;
 #endif
                }
@@ -4422,7 +5342,7 @@ static unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
       mouse_enabled = !(settings->bools.input_overlay_enable
-            && input_overlay_is_alive(overlay_ptr));
+            && overlay_ptr && overlay_ptr->alive);
 #endif
 
    if (!mouse_enabled)
@@ -4556,7 +5476,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (
          !settings->bools.menu_mouse_enable
 #ifdef HAVE_OVERLAY
-         || (settings->bools.input_overlay_enable && input_overlay_is_alive(overlay_ptr))
+         || (settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive)
 #endif
          )
    {
@@ -4857,7 +5777,7 @@ static int menu_input_pointer_post_iterate(
     * precedence and we don't want regular menu
     * pointer controls to be handled */
    if ((       settings->bools.input_overlay_enable
-            && input_overlay_is_alive(overlay_ptr)))
+            && overlay_ptr && overlay_ptr->alive))
       return 0;
 #endif
 
@@ -9659,12 +10579,6 @@ void video_driver_set_threaded(bool val)
    video_driver_threaded = val;
 }
 
-#ifdef HAVE_THREADS
-#define video_driver_get_ptr_internal(force) ((video_driver_is_threaded_internal() && !force) ? video_thread_get_ptr(NULL) : video_driver_data)
-#else
-#define video_driver_get_ptr_internal(force) (video_driver_data)
-#endif
-
 /**
  * video_driver_get_ptr:
  *
@@ -10322,7 +11236,8 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 }
 
 #ifdef HAVE_OVERLAY
-bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
+static bool video_driver_overlay_interface(
+      const video_overlay_interface_t **iface)
 {
    if (!current_video || !current_video->overlay_interface)
       return false;

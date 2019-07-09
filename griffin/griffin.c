@@ -580,7 +580,6 @@ INPUT
 #include "../input/input_remapping.c"
 
 #ifdef HAVE_OVERLAY
-#include "../input/input_overlay.c"
 #include "../led/drivers/led_overlay.c"
 #include "../tasks/task_overlay.c"
 #endif
