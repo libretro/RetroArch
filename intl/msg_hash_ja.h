@@ -1629,9 +1629,9 @@ MSG_HASH(
    "コンテンツをロード"
 )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "ディスクをロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "ディスクをダンプ")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "ステートロード"
@@ -9007,3 +9007,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    "GPUインデックス"
 )
+MSG_HASH(MSG_DUMPING_DISC,
+      "ディスクをダンプ中...")
+MSG_HASH(MSG_DRIVE_NUMBER,
+      "ドライブ%d")
+MSG_HASH(MSG_LOAD_CORE_FIRST,
+      "コアをロードしてください。")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+      "ドライブからの読み込みに失敗しました。ダンプが中止されました。")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+      "ディスクに書き込みに失敗しました。ダンプが中止されました。")

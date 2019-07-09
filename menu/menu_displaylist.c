@@ -4947,9 +4947,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          for (i = 0; list && i < list->size; i++)
          {
+            char drive_string[256] = {0};
+            char drive[2] = {0};
+            size_t pos = 0;
+
+            drive[0] = list->elems[i].attr.i;
+
+            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
+            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+
             menu_entries_append_enum(info->list,
-                  list->elems[i].data,
-                  "",
+                  drive_string,
+                  drive,
                   0,
                   MENU_SET_LOAD_CDROM_LIST,
                   0, i);

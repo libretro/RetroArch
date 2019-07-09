@@ -412,7 +412,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             {
                task_set_progress(task, 100);
                task_free_title(task);
-               task_set_title(task, strdup("Failed to read from drive. Dump aborted."));
+               task_set_title(task, strdup(msg_hash_to_str(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE)));
                return;
             }
 
@@ -428,7 +428,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             {
                task_set_progress(task, 100);
                task_free_title(task);
-               task_set_title(task, strdup("Failed to write to disk. Dump aborted."));
+               task_set_title(task, strdup(msg_hash_to_str(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK)));
                return;
             }
 

@@ -2134,7 +2134,47 @@ static int action_ok_mixer_stream_action_stop(const char *path,
 static int action_ok_load_cdrom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME - implement */
+#ifdef HAVE_CDROM
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+
+   if (system && !string_is_empty(system->library_name))
+   {
+      char cdrom_path[256];
+
+      cdrom_path[0] = '\0';
+
+      cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
+
+      RARCH_LOG("[CDROM] Loading disc from path: %s\n", cdrom_path);
+
+      path_clear(RARCH_PATH_CONTENT);
+      path_set(RARCH_PATH_CONTENT, cdrom_path);
+
+#if defined(HAVE_DYNAMIC)
+      {
+         content_ctx_info_t content_info;
+
+         content_info.argc        = 0;
+         content_info.argv        = NULL;
+         content_info.args        = NULL;
+         content_info.environ_get = NULL;
+
+         task_push_load_content_with_core_from_menu(cdrom_path, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+      }
+#else
+      frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+#endif
+   }
+   else
+   {
+      RARCH_LOG("[CDROM] Cannot load disc without a core.\n");
+
+      runloop_msg_queue_push(
+         msg_hash_to_str(MSG_LOAD_CORE_FIRST),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+#endif
    return 0;
 }
 

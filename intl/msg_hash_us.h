@@ -8943,3 +8943,9 @@ MSG_HASH(MSG_DUMPING_DISC,
       "Dumping disc...")
 MSG_HASH(MSG_DRIVE_NUMBER,
       "Drive %d")
+MSG_HASH(MSG_LOAD_CORE_FIRST,
+      "Please load a core first.")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+      "Failed to read from drive. Dump aborted.")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+      "Failed to write to disk. Dump aborted.")
