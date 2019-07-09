@@ -123,10 +123,6 @@
 #include "network/netplay/netplay.h"
 #endif
 
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "network/httpserver/httpserver.h"
-#endif
-
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -15914,14 +15910,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_HTTPSERVER_INIT:
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-         httpserver_init(8888);
-#endif
          break;
       case RARCH_CTL_HTTPSERVER_DESTROY:
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-         httpserver_destroy();
-#endif
          break;
       case RARCH_CTL_CAMERA_SET_ACTIVE:
          camera_driver_active = true;

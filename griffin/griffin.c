@@ -1507,11 +1507,6 @@ XML
 /*============================================================
 HTTP SERVER
 ============================================================ */
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "../deps/civetweb/civetweb.c"
-#include "network/httpserver/httpserver.c"
-#endif
-
 #if defined(HAVE_DISCORD)
 #include "../discord/discord.c"
 #endif
