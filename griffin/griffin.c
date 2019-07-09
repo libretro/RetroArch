@@ -730,15 +730,6 @@ INPUT (HID)
 #endif
 
 /*============================================================
-STATE TRACKER
-============================================================ */
-#include "../gfx/video_state_tracker.c"
-
-#ifdef HAVE_PYTHON
-#include "../gfx/drivers_tracker/video_state_python.c"
-#endif
-
-/*============================================================
 FIFO BUFFER
 ============================================================ */
 #include "../libretro-common/queues/fifo_queue.c"

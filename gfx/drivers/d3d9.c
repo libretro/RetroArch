@@ -99,51 +99,6 @@ static bool d3d9_set_resize(d3d9_video_t *d3d,
    return true;
 }
 
-static bool d3d9_init_imports(d3d9_video_t *d3d)
-{
-   retro_ctx_memory_info_t    mem_info;
-   state_tracker_t *state_tracker         = NULL;
-   struct state_tracker_info tracker_info = {0};
-
-   if (!d3d->shader.variables)
-      return true;
-
-   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
-
-   core_get_memory(&mem_info);
-
-   tracker_info.script_class      = NULL;
-   tracker_info.wram              = (uint8_t*)mem_info.data;
-   tracker_info.info              = d3d->shader.variable;
-   tracker_info.info_elem         = d3d->shader.variables;
-   tracker_info.script            = NULL;
-   tracker_info.script_is_file    = false;
-
-#ifdef HAVE_PYTHON
-   if (*d3d->shader.script_path)
-   {
-      tracker_info.script         = d3d->shader.script_path;
-      tracker_info.script_is_file = true;
-   }
-
-   if (*d3d->shader.script_class)
-      tracker_info.script_class   = d3d->shader.script_class;
-#endif
-
-   state_tracker                  =
-      state_tracker_init(&tracker_info);
-
-   if (!state_tracker)
-   {
-      RARCH_ERR("[D3D9]: Failed to initialize state tracker.\n");
-      return false;
-   }
-
-   d3d->state_tracker = state_tracker;
-
-   return true;
-}
-
 extern d3d9_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d9_renderchain_driver_t hlsl_d3d9_renderchain;
 
@@ -333,12 +288,6 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
                return false;
             }
          }
-      }
-
-      if (!d3d9_init_imports(d3d))
-      {
-         RARCH_ERR("[D3D9]: Failed to init imports.\n");
-         return false;
       }
    }
 
@@ -622,10 +571,6 @@ static void d3d9_deinitialize(d3d9_video_t *d3d)
    d3d9_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
 
-   if (d3d->state_tracker)
-      state_tracker_free(d3d->state_tracker);
-
-   d3d->state_tracker       = NULL;
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl = NULL;
 }
@@ -1682,7 +1627,6 @@ static bool d3d9_frame(void *data, const void *frame,
 
    if (!d3d->renderchain_driver->render(
             d3d, video_info,
-            d3d->state_tracker,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {

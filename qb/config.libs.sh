@@ -484,8 +484,6 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
-check_pkgconf PYTHON 'python3 python3 python-3.7 python-3.6 python-3.5 python-3.4 python-3.3 python-3.2'
-
 if [ "$HAVE_MENU" != 'no' ]; then
    if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then

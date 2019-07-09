@@ -571,144 +571,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 }
 
 /**
- * video_shader_parse_imports:
- * @conf              : Preset file to read from.
- * @shader            : Shader passes handle.
- *
- * Resolves import parameters belonging to shaders.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool video_shader_parse_imports(config_file_t *conf,
-      struct video_shader *shader)
-{
-   size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
-   const char *id     = NULL;
-   char *save         = NULL;
-   char *tmp_str      = NULL;
-   char *imports      = (char*)malloc(1024 * sizeof(char));
-
-   imports[0]         = '\0';
-
-   if (!config_get_array(conf, "imports", imports,
-            1024 * sizeof(char)))
-   {
-      free(imports);
-      return true;
-   }
-
-   for (id = strtok_r(imports, ";", &save);
-         id && shader->variables < GFX_MAX_VARIABLES;
-         shader->variables++, id = strtok_r(NULL, ";", &save))
-   {
-      char semantic_buf[64];
-      char wram_buf[64];
-      char input_slot_buf[64];
-      char mask_buf[64];
-      char equal_buf[64];
-      char semantic[64];
-      unsigned addr           = 0;
-      unsigned mask           = 0;
-      unsigned equal          = 0;
-      struct state_tracker_uniform_info *var =
-         &shader->variable[shader->variables];
-
-      semantic_buf[0] = wram_buf[0] = input_slot_buf[0] =
-         mask_buf[0] = equal_buf[0] = semantic[0] = '\0';
-
-      strlcpy(var->id, id, sizeof(var->id));
-
-      snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
-
-      if (!config_get_array(conf, semantic_buf, semantic, sizeof(semantic)))
-      {
-         RARCH_ERR("No semantic for import variable.\n");
-         goto error;
-      }
-
-      snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
-      snprintf(input_slot_buf, sizeof(input_slot_buf), "%s_input_slot", id);
-      snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
-      snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
-
-      if (string_is_equal(semantic, "capture"))
-         var->type = RARCH_STATE_CAPTURE;
-      else if (string_is_equal(semantic, "transition"))
-         var->type = RARCH_STATE_TRANSITION;
-      else if (string_is_equal(semantic, "transition_count"))
-         var->type = RARCH_STATE_TRANSITION_COUNT;
-      else if (string_is_equal(semantic, "capture_previous"))
-         var->type = RARCH_STATE_CAPTURE_PREV;
-      else if (string_is_equal(semantic, "transition_previous"))
-         var->type = RARCH_STATE_TRANSITION_PREV;
-      else if (string_is_equal(semantic, "python"))
-         var->type = RARCH_STATE_PYTHON;
-      else
-      {
-         RARCH_ERR("Invalid semantic.\n");
-         goto error;
-      }
-
-      if (var->type != RARCH_STATE_PYTHON)
-      {
-         unsigned input_slot = 0;
-
-         if (config_get_uint(conf, input_slot_buf, &input_slot))
-         {
-            switch (input_slot)
-            {
-               case 1:
-                  var->ram_type = RARCH_STATE_INPUT_SLOT1;
-                  break;
-
-               case 2:
-                  var->ram_type = RARCH_STATE_INPUT_SLOT2;
-                  break;
-
-               default:
-                  RARCH_ERR("Invalid input slot for import.\n");
-                  goto error;
-            }
-         }
-         else if (config_get_hex(conf, wram_buf, &addr))
-         {
-            var->ram_type = RARCH_STATE_WRAM;
-            var->addr = addr;
-         }
-         else
-         {
-            RARCH_ERR("No address assigned to semantic.\n");
-            goto error;
-         }
-      }
-
-      if (config_get_hex(conf, mask_buf, &mask))
-         var->mask = mask;
-      if (config_get_hex(conf, equal_buf, &equal))
-         var->equal = equal;
-   }
-
-   tmp_str    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   if (!tmp_str)
-      goto error;
-
-   tmp_str[0] = '\0';
-   if (config_get_path(conf, "import_script", tmp_str, path_size))
-      strlcpy(shader->script_path, tmp_str, sizeof(shader->script_path));
-   config_get_array(conf, "import_script_class",
-         shader->script_class, sizeof(shader->script_class));
-   free(tmp_str);
-
-   free(imports);
-   return true;
-
-error:
-   free(imports);
-   return false;
-}
-
-/**
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -799,9 +661,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
    if (!video_shader_parse_textures(conf, shader))
       return false;
 
-   if (!video_shader_parse_imports(conf, shader))
-      return false;
-
    return true;
 }
 
@@ -861,87 +720,6 @@ static void shader_write_fbo(config_file_t *conf,
          fbo->scale_x, fbo->abs_x, i);
    shader_write_scale_dim(conf, "y", fbo->type_y,
          fbo->scale_y, fbo->abs_y, i);
-}
-
-/**
- * import_semantic_to_string:
- * @type              : Import semantic type from state tracker.
- *
- * Translates import semantic to human-readable string identifier.
- *
- * Returns: human-readable string identifier of import semantic.
- **/
-static const char *import_semantic_to_str(enum state_tracker_type type)
-{
-   switch (type)
-   {
-      case RARCH_STATE_CAPTURE:
-         return "capture";
-      case RARCH_STATE_TRANSITION:
-         return "transition";
-      case RARCH_STATE_TRANSITION_COUNT:
-         return "transition_count";
-      case RARCH_STATE_CAPTURE_PREV:
-         return "capture_previous";
-      case RARCH_STATE_TRANSITION_PREV:
-         return "transition_previous";
-      case RARCH_STATE_PYTHON:
-         return "python";
-      default:
-         break;
-   }
-
-   return "?";
-}
-
-/**
- * shader_write_variable:
- * @conf              : Preset file to read from.
- * @info              : State tracker uniform info handle.
- *
- * Writes variable to shader preset file.
- **/
-static void shader_write_variable(config_file_t *conf,
-      const struct state_tracker_uniform_info *info)
-{
-   char semantic_buf[64];
-   char wram_buf[64];
-   char input_slot_buf[64];
-   char mask_buf[64];
-   char equal_buf[64];
-   const char *id          = info->id;
-
-   semantic_buf[0] = wram_buf[0] = input_slot_buf[0] =
-      mask_buf[0] = equal_buf[0] = '\0';
-
-   snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
-   snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
-   snprintf(input_slot_buf, sizeof(input_slot_buf), "%s_input_slot", id);
-   snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
-   snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
-
-   config_set_string(conf, semantic_buf,
-         import_semantic_to_str(info->type));
-   config_set_hex(conf, mask_buf, info->mask);
-   config_set_hex(conf, equal_buf, info->equal);
-
-   switch (info->ram_type)
-   {
-      case RARCH_STATE_INPUT_SLOT1:
-         config_set_int(conf, input_slot_buf, 1);
-         break;
-
-      case RARCH_STATE_INPUT_SLOT2:
-         config_set_int(conf, input_slot_buf, 2);
-         break;
-
-      case RARCH_STATE_WRAM:
-         config_set_hex(conf, wram_buf, info->addr);
-         break;
-
-      case RARCH_STATE_NONE:
-         break;
-   }
 }
 
 /**
@@ -1094,36 +872,6 @@ void video_shader_write_conf_preset(config_file_t *conf,
             config_set_bool(conf, key,
                   shader->lut[i].mipmap);
          }
-      }
-   }
-
-   if (*shader->script_path)
-      config_set_string(conf, "import_script", shader->script_path);
-   if (*shader->script_class)
-      config_set_string(conf, "import_script_class", shader->script_class);
-
-   if (shader->variables)
-   {
-      size_t var_tmp  = 4096 * sizeof(char);
-      char *variables = (char*)malloc(var_tmp);
-
-      if (variables)
-      {
-         variables[0] = '\0';
-
-         strlcpy(variables, shader->variable[0].id, var_tmp);
-
-         for (i = 1; i < shader->variables; i++)
-         {
-            strlcat(variables, ";", var_tmp);
-            strlcat(variables, shader->variable[i].id, var_tmp);
-         }
-
-         config_set_string(conf, "imports", variables);
-
-         for (i = 0; i < shader->variables; i++)
-            shader_write_variable(conf, &shader->variable[i]);
-         free(variables);
       }
    }
 }
@@ -1295,13 +1043,6 @@ void video_shader_resolve_relative(struct video_shader *shader,
       strlcpy(tmp_path, shader->lut[i].path, tmp_path_size);
       fill_pathname_resolve_relative(shader->lut[i].path,
             ref_path, tmp_path, sizeof(shader->lut[i].path));
-   }
-
-   if (*shader->script_path)
-   {
-      strlcpy(tmp_path, shader->script_path, tmp_path_size);
-      fill_pathname_resolve_relative(shader->script_path,
-            ref_path, tmp_path, sizeof(shader->script_path));
    }
 
    free(tmp_path);

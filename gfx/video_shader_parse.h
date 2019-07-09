@@ -17,8 +17,6 @@
 #ifndef __VIDEO_SHADER_PARSE_H
 #define __VIDEO_SHADER_PARSE_H
 
-#include "video_state_tracker.h"
-
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
@@ -142,11 +140,7 @@ struct video_shader_lut
 struct video_shader
 {
    char prefix[64];
-   char script_class[512];
-   char script_path[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   char *script; /* Dynamically allocated. Must be free'd. Only used by XML. */
-
    bool modern; /* Only used for XML shaders. */
 
    unsigned passes;
@@ -163,7 +157,6 @@ struct video_shader
    struct video_shader_lut lut[GFX_MAX_TEXTURES];
 
    struct video_shader_parameter parameters[GFX_MAX_PARAMETERS];
-   struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
 };
 
 /**

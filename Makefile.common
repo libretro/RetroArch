@@ -508,12 +508,6 @@ ifeq ($(HAVE_STDIN_CMD), 1)
    DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
 endif
 
-ifeq ($(HAVE_PYTHON), 1)
-   DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
-   LIBS += $(PYTHON_LIBS)
-   OBJ += gfx/drivers_tracker/video_state_python.o
-endif
-
 ifeq ($(HAVE_EMSCRIPTEN), 1)
    OBJ += frontend/drivers/platform_emscripten.o \
           input/drivers/rwebinput_input.o \
@@ -1045,8 +1039,7 @@ endif
 
 # Video
 
-OBJ += gfx/drivers_context/gfx_null_ctx.o \
-       gfx/video_state_tracker.o
+OBJ += gfx/drivers_context/gfx_null_ctx.o
 
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
