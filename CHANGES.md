@@ -3,6 +3,7 @@
 - COMMON: Add optional 'on demand' thumbnail downloads.
 - COMMON: Add new playlist-based thumbnail downloader. Hide the legacy thumbnail pack version by default.
 - COMMON: Show license per core (if available) inside 'Load Core'.
+- COMMON: Add option to load content from (and dump) CD-ROM discs.
 - GAMECUBE: Add default video/audio filter directories.
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
