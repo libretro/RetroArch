@@ -540,14 +540,6 @@ static void udev_joypad_poll(void)
    }
 }
 
-/* Used for sorting devnodes to appear in the correct order */
-static int sort_devnodes(const void *a, const void *b)
-{
-   const struct joypad_udev_entry *aa = (const struct joypad_udev_entry*)a;
-   const struct joypad_udev_entry *bb = (const struct joypad_udev_entry*)b;
-   return strcmp(aa->devnode, bb->devnode);
-}
-
 static bool udev_joypad_init(void *data)
 {
    unsigned i;
@@ -582,33 +574,13 @@ static bool udev_joypad_init(void *data)
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 
-   for (item = devs; item; item = udev_list_entry_get_next(item))
+   udev_list_entry_foreach(item, devs)
    {
       const char         *name = udev_list_entry_get_name(item);
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
-      if (devnode != NULL) {
-         sorted[sorted_count].devnode = devnode;
-         sorted[sorted_count].item = item;
-         sorted_count++;
-      } else {
-         udev_device_unref(dev);
-      }
-   }
-
-   /* Sort the udev entries by devnode name so that they are
-    * created in the proper order */
-   qsort(sorted, sorted_count,
-         sizeof(struct joypad_udev_entry), sort_devnodes);
-
-   for (i = 0; i < sorted_count; i++)
-   {
-      const char         *name = udev_list_entry_get_name(sorted[i].item);
-      struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
-      const char      *devnode = udev_device_get_devnode(dev);
-
-      if (devnode)
+      if (devnode != NULL)
          udev_check_device(dev, devnode);
       udev_device_unref(dev);
    }
