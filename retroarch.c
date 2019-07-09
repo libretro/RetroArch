@@ -446,7 +446,7 @@ static void core_option_manager_get(core_option_manager_t *opt,
 
       if (string_is_equal(opt->opts[i].key, var->key))
       {
-         var->value = core_option_manager_get_val(opt, i);
+         var->value = opt->opts[i].vals->elems[opt->opts[i].index].data;
          return;
       }
    }
@@ -529,7 +529,7 @@ static bool core_option_manager_flush(core_option_manager_t *opt)
 
       if (option)
          config_set_string(opt->conf, option->key,
-               core_option_manager_get_val(opt, i));
+               opt->opts[i].vals->elems[opt->opts[i].index].data);
    }
 
    RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
@@ -556,7 +556,7 @@ static bool core_option_manager_flush_game_specific(
 
       if (option)
          config_set_string(opt->conf, option->key,
-               core_option_manager_get_val(opt, i));
+               opt->opts[i].vals->elems[opt->opts[i].index].data);
    }
 
    return config_file_write(opt->conf, path, true);
