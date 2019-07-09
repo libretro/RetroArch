@@ -177,72 +177,6 @@
 
 #include "audio/audio_thread_wrapper.h"
 
-#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
-
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
-} while(0)
-
-#ifdef HAVE_ZLIB
-#define DEFAULT_EXT "zip"
-#else
-#define DEFAULT_EXT ""
-#endif
-
-#define SHADER_FILE_WATCH_DELAY_MSEC 500
-#define HOLD_START_DELAY_SEC 2
-
-#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
-
-#define DEBUG_INFO_FILENAME "debug_info.txt"
-
-/* Descriptive names for options without short variant.
- *
- * Please keep the name in sync with the option name.
- * Order does not matter. */
-enum
-{
-   RA_OPT_MENU = 256, /* must be outside the range of a char */
-   RA_OPT_STATELESS,
-   RA_OPT_CHECK_FRAMES,
-   RA_OPT_PORT,
-   RA_OPT_SPECTATE,
-   RA_OPT_NICK,
-   RA_OPT_COMMAND,
-   RA_OPT_APPENDCONFIG,
-   RA_OPT_BPS,
-   RA_OPT_IPS,
-   RA_OPT_NO_PATCH,
-   RA_OPT_RECORDCONFIG,
-   RA_OPT_SUBSYSTEM,
-   RA_OPT_SIZE,
-   RA_OPT_FEATURES,
-   RA_OPT_VERSION,
-   RA_OPT_EOF_EXIT,
-   RA_OPT_LOG_FILE,
-   RA_OPT_MAX_FRAMES,
-   RA_OPT_MAX_FRAMES_SCREENSHOT,
-   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
-};
-
-enum  runloop_state
-{
-   RUNLOOP_STATE_ITERATE = 0,
-   RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
-   RUNLOOP_STATE_QUIT
-};
-
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
-
 /* DRIVERS */
 
 static const audio_driver_t *audio_drivers[] = {
@@ -735,6 +669,72 @@ static const camera_driver_t *camera_drivers[] = {
 };
 
 /* MAIN GLOBAL VARIABLES */
+
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
+
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "zip"
+#else
+#define DEFAULT_EXT ""
+#endif
+
+#define SHADER_FILE_WATCH_DELAY_MSEC 500
+#define HOLD_START_DELAY_SEC 2
+
+#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
+
+#define DEBUG_INFO_FILENAME "debug_info.txt"
+
+/* Descriptive names for options without short variant.
+ *
+ * Please keep the name in sync with the option name.
+ * Order does not matter. */
+enum
+{
+   RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_STATELESS,
+   RA_OPT_CHECK_FRAMES,
+   RA_OPT_PORT,
+   RA_OPT_SPECTATE,
+   RA_OPT_NICK,
+   RA_OPT_COMMAND,
+   RA_OPT_APPENDCONFIG,
+   RA_OPT_BPS,
+   RA_OPT_IPS,
+   RA_OPT_NO_PATCH,
+   RA_OPT_RECORDCONFIG,
+   RA_OPT_SUBSYSTEM,
+   RA_OPT_SIZE,
+   RA_OPT_FEATURES,
+   RA_OPT_VERSION,
+   RA_OPT_EOF_EXIT,
+   RA_OPT_LOG_FILE,
+   RA_OPT_MAX_FRAMES,
+   RA_OPT_MAX_FRAMES_SCREENSHOT,
+   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
+};
+
+enum  runloop_state
+{
+   RUNLOOP_STATE_ITERATE = 0,
+   RUNLOOP_STATE_POLLED_AND_SLEEP,
+   RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_QUIT
+};
+
+typedef struct runloop_ctx_msg_info
+{
+   const char *msg;
+   unsigned prio;
+   unsigned duration;
+   bool flush;
+} runloop_ctx_msg_info_t;
 
 static struct global g_extern;
 
