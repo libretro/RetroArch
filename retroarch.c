@@ -168,7 +168,6 @@
 #include "retroarch.h"
 
 #ifdef HAVE_RUNAHEAD
-#include "runahead/dirty_input.h"
 #include "runahead/copy_load_info.h"
 #include "runahead/mylist.h"
 #include "runahead/mem_util.h"
@@ -705,6 +704,9 @@ static bool secondary_core_create(void)
 }
 
 static void secondary_core_input_poll_null(void) { }
+
+static int16_t input_state_get_last(unsigned port,
+      unsigned device, unsigned index, unsigned id);
 
 bool secondary_core_run_use_last_input(void)
 {
@@ -13477,7 +13479,7 @@ static void input_state_set_last(unsigned port, unsigned device,
    element->state[id] = value;
 }
 
-int16_t input_state_get_last(unsigned port,
+static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
    unsigned i;
