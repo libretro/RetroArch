@@ -120,7 +120,7 @@ dylib_t dylib_load(const char *path)
    }
    last_dyn_error[0] = 0;
 #else
-   dylib_t lib = dlopen(path, RTLD_LAZY);
+   dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #endif
    return lib;
 }
