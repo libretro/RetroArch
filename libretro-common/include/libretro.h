@@ -614,7 +614,7 @@ enum retro_mod
                                             * Afterward it may be called again for the core to communicate
                                             * updated options to the frontend, but the number of core
                                             * options must not change from the number in the initial call.
-					    *
+                                            *
                                             * 'data' points to an array of retro_variable structs
                                             * terminated by a { NULL, NULL } element.
                                             * retro_variable::key should be namespaced to not collide
@@ -1104,6 +1104,69 @@ enum retro_mod
                                             * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'
                                             * to retro_input_state_t (make sure 'device' is set to RETRO_DEVICE_JOYPAD).
                                             * It will return a bitmask of all the digital buttons.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_ENHANCED_CORE_OPTIONS 52
+                                           /* bool * --
+                                            * If true, the libretro implementation supports enhanced
+                                            * core options definitions.
+                                            *
+                                            * In legacy code, core options are set by passing an array of
+                                            * retro_variable structs to RETRO_ENVIRONMENT_SET_VARIABLES.
+                                            * This may be still be done regardless of whether enhanced
+                                            * core options are supported.
+                                            *
+                                            * If RETRO_ENVIRONMENT_GET_ENHANCED_CORE_OPTIONS does
+                                            * return true, however, core options may instead be set by
+                                            * passing an array of retro_core_option_definition structs to
+                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS. This allows the core
+                                            * to additionally set option sublabel information.
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_CORE_OPTIONS 53
+                                           /* const struct retro_core_option_definition * --
+                                            * Allows an implementation to signal the environment
+                                            * which variables it might want to check for later using
+                                            * GET_VARIABLE.
+                                            * This allows the frontend to present these variables to
+                                            * a user dynamically.
+                                            * This should only be called if RETRO_ENVIRONMENT_GET_ENHANCED_CORE_OPTIONS
+                                            * returns true, and instead of RETRO_ENVIRONMENT_SET_VARIABLES.
+                                            * This should be called the first time as early as
+                                            * possible (ideally in retro_set_environment).
+                                            * Afterwards it may be called again for the core to communicate
+                                            * updated options to the frontend, but the number of core
+                                            * options must not change from the number in the initial call.
+                                            *
+                                            * 'data' points to an array of retro_core_option_definition structs
+                                            * terminated by a { NULL, NULL, NULL, NULL } element.
+                                            * retro_core_option_definition::key should be namespaced to not collide
+                                            * with other implementations' keys. E.g. A core called
+                                            * 'foo' should use keys named as 'foo_option'.
+                                            * retro_core_option_definition::desc should contain a human readable
+                                            * description of the key.
+                                            * retro_variable::values should contain a '|' delimited list
+                                            * of expected values.
+                                            * retro_core_option_definition::info should contain any additional human
+                                            * readable information text that a typical user may need to
+                                            * understand the functionality of the option.
+                                            *
+                                            * The number of possible options should be very limited,
+                                            * i.e. it should be feasible to cycle through options
+                                            * without a keyboard.
+                                            *
+                                            * First entry should be treated as a default.
+                                            *
+                                            * Example entry:
+                                            * {
+                                            *     "foo_option",
+                                            *     "Speed hack coprocessor X",
+                                            *     "false|true",
+                                            *     "Provides increased performance at the expense of reduced accuracy"
+                                            * }
+                                            *
+                                            * Only strings are operated on. The possible values will
+                                            * generally be displayed and stored as-is by the frontend.
                                             */
 
 /* VFS functionality */
@@ -2349,6 +2412,21 @@ struct retro_variable
 
    /* Value to be obtained. If key does not exist, it is set to NULL. */
    const char *value;
+};
+
+struct retro_core_option_definition
+{
+   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE. */
+   const char *key;
+
+   /* Human-readable core option description (used as menu label) */
+   const char *desc;
+
+   /* '|' delimited list of expected values. */
+   const char *values;
+
+   /* Human-readable core option information (used as menu sublabel) */
+   const char *info;
 };
 
 struct retro_game_info

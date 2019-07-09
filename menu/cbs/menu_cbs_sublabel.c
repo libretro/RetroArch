@@ -23,6 +23,7 @@
 #include "../menu_cbs.h"
 
 #include "../../retroarch.h"
+#include "../../managers/core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos-new/cheevos.h"
@@ -1003,6 +1004,26 @@ static int action_bind_sublabel_playlist_entry(
    return 0;
 }
 
+static int action_bind_sublabel_core_option(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   core_option_manager_t *opt = NULL;
+   const char *info           = NULL;
+
+   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
+      return 0;
+
+   info = core_option_manager_get_info(opt, type - MENU_SETTINGS_CORE_OPTION_START);
+
+   if (!string_is_empty(info))
+      strlcpy(s, info, len);
+
+   return 0;
+}
+
 static int action_bind_sublabel_generic(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1084,6 +1105,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_stream);
+      return 0;
+   }
+
+   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
       return 0;
    }
 

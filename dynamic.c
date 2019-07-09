@@ -1008,8 +1008,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          *(bool*)data = rarch_ctl(RARCH_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
+      /* SET_VARIABLES: Legacy path */
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("Environ SET_VARIABLES.\n");
+
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+         rarch_ctl(RARCH_CTL_CORE_VARIABLES_INIT, data);
+
+         break;
+
+      case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
+         RARCH_LOG("Environ SET_CORE_OPTIONS.\n");
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
@@ -1843,6 +1852,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
+         /* Just falldown, the function will return true */
+         break;
+
+      case RETRO_ENVIRONMENT_GET_ENHANCED_CORE_OPTIONS:
          /* Just falldown, the function will return true */
          break;
 

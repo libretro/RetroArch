@@ -29,20 +29,21 @@ RETRO_BEGIN_DECLS
 
 struct core_option
 {
-  char *desc;
-  char *key;
-  struct string_list *vals;
-  size_t index;
+   char *desc;
+   char *info;
+   char *key;
+   struct string_list *vals;
+   size_t index;
 };
 
 struct core_option_manager
 {
-  config_file_t *conf;
-  char conf_path[PATH_MAX_LENGTH];
+   config_file_t *conf;
+   char conf_path[PATH_MAX_LENGTH];
 
-  struct core_option *opts;
-  size_t size;
-  bool updated;
+   struct core_option *opts;
+   size_t size;
+   bool updated;
 };
 
 typedef struct core_option_manager core_option_manager_t;
@@ -66,6 +67,18 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx);
  * Returns: Description for an option.
  **/
 const char *core_option_manager_get_desc(core_option_manager_t *opt,
+      size_t idx);
+
+/**
+ * core_option_manager_get_info:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets information text for an option.
+ *
+ * Returns: Information text for an option.
+ **/
+const char *core_option_manager_get_info(core_option_manager_t *opt,
       size_t idx);
 
 /**
