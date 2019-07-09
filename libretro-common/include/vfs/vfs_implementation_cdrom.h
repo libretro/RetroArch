@@ -28,8 +28,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct RFILE RFILE;
-
 int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
 void retro_vfs_file_open_cdrom(

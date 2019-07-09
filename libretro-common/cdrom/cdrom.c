@@ -835,13 +835,17 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsigned char track, cdrom_toc_t *toc)
 {
    /* MMC Command: READ TRACK INFORMATION */
-   unsigned char cdb[] = {0x52, 0x1, 0, 0, 0, track, 0, 0x1, 0x80, 0};
+   unsigned char cdb[] = {0x52, 0x1, 0, 0, 0, 0, 0, 0x1, 0x80, 0};
    unsigned char buf[384] = {0};
    unsigned char mode = 0;
    unsigned lba = 0;
    unsigned track_size = 0;
-   int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
+   int rv;
    ssize_t pregap_lba_len;
+
+   cdb[5] = track;
+
+   rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
 
    if (rv)
      return 1;
@@ -876,7 +880,12 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed)
 {
    /* MMC Command: SET CD SPEED */
-   unsigned char cmd[] = {0xBB, 0, (speed >> 24) & 0xFF, (speed >> 16) & 0xFF, (speed >> 8) & 0xFF, speed & 0xFF, 0, 0, 0, 0, 0, 0 };
+   unsigned char cmd[] = {0xBB, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+   cmd[2] = (speed >> 24) & 0xFF;
+   cmd[3] = (speed >> 16) & 0xFF;
+   cmd[4] = (speed >> 8) & 0xFF;
+   cmd[5] = speed & 0xFF;
 
    return cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cmd, sizeof(cmd), 0);
 }
@@ -1060,8 +1069,12 @@ int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *mode
 int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip)
 {
    /* MMC Command: READ CD MSF */
-   unsigned char cdb[] = {0xB9, 0, 0, min, sec, frame, 0, 0, 0, 0xF8, 0, 0};
+   unsigned char cdb[] = {0xB9, 0, 0, 0, 0, 0, 0, 0, 0, 0xF8, 0, 0};
    int rv;
+
+   cdb[3] = min;
+   cdb[4] = sec;
+   cdb[5] = frame;
 
    if (len + skip <= 2352)
    {
