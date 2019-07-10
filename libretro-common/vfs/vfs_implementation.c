@@ -178,12 +178,6 @@
 #endif
 #endif
 
-#ifdef RARCH_INTERNAL
-#ifndef VFS_FRONTEND
-#define VFS_FRONTEND
-#endif
-#endif
-
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <memmap.h>

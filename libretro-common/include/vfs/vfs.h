@@ -25,6 +25,12 @@
 
 #include <retro_common_api.h>
 
+#ifdef RARCH_INTERNAL
+#ifndef VFS_FRONTEND
+#define VFS_FRONTEND
+#endif
+#endif
+
 RETRO_BEGIN_DECLS
 
 #ifdef _WIN32
