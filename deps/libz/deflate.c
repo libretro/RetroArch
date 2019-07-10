@@ -95,11 +95,6 @@ uInt longest_match  (deflate_state *s, IPos cur_match);
 static uInt longest_match  (deflate_state *s, IPos cur_match);
 #endif
 
-#ifdef DEBUG
-static  void check_match (deflate_state *s, IPos start, IPos match,
-         int length);
-#endif
-
 /* ===========================================================================
  * Local data
  */
@@ -1309,29 +1304,6 @@ static uInt longest_match(s, cur_match)
 
 #endif /* FASTEST */
 
-#ifdef DEBUG
-/* ===========================================================================
- * Check that the match at match_start is indeed a match.
- */
-static void check_match(s, start, match, length)
-   deflate_state *s;
-   IPos start, match;
-   int length;
-{
-   /* check that the match is indeed a match */
-   if (zmemcmp(s->window + match,
-            s->window + start, length) != EQUAL) {
-      fprintf(stderr, " start %u, match %u, length %d\n",
-            start, match, length);
-      do {
-         fprintf(stderr, "%c%c", s->window[match++], s->window[start++]);
-      } while (--length != 0);
-   }
-}
-#else
-#  define check_match(s, start, match, length)
-#endif /* DEBUG */
-
 /* ===========================================================================
  * Fill the window when the lookahead becomes insufficient.
  * Updates strstart and lookahead.
@@ -1616,8 +1588,6 @@ static block_state deflate_fast(deflate_state *s, int flush)
          /* longest_match() sets match_start */
       }
       if (s->match_length >= MIN_MATCH) {
-         check_match(s, s->strstart, s->match_start, s->match_length);
-
          _tr_tally_dist(s, s->strstart - s->match_start,
                s->match_length - MIN_MATCH, bflush);
 
@@ -1739,8 +1709,6 @@ static block_state deflate_slow(deflate_state *s, int flush)
          uInt max_insert = s->strstart + s->lookahead - MIN_MATCH;
          /* Do not insert strings in hash table beyond this. */
 
-         check_match(s, s->strstart-1, s->prev_match, s->prev_length);
-
          _tr_tally_dist(s, s->strstart -1 - s->prev_match,
                s->prev_length - MIN_MATCH, bflush);
 
@@ -1847,8 +1815,6 @@ static block_state deflate_rle(deflate_state *s, int flush)
 
       /* Emit match if have run of MIN_MATCH or longer, else emit literal */
       if (s->match_length >= MIN_MATCH) {
-         check_match(s, s->strstart, s->strstart - 1, s->match_length);
-
          _tr_tally_dist(s, 1, s->match_length - MIN_MATCH, bflush);
 
          s->lookahead -= s->match_length;
