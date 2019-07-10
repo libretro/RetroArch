@@ -11272,20 +11272,20 @@ error:
    return audio_driver_deinit();
 }
 
+#define audio_driver_set_nonblocking_state_internal(val, chunk_size) \
+   if (audio_driver_active && audio_driver_context_audio_data) \
+      current_audio->set_nonblock_state(audio_driver_context_audio_data, val); \
+   audio_driver_chunk_size = chunk_size;
+
+
 void audio_driver_set_nonblocking_state(bool enable)
 {
    settings_t *settings  = configuration_settings;
-   if (
-         audio_driver_active
-         && audio_driver_context_audio_data
-      )
-      current_audio->set_nonblock_state(
-            audio_driver_context_audio_data,
-            settings->bools.audio_sync ? enable : true);
-
-   audio_driver_chunk_size = enable ?
-      audio_driver_chunk_nonblock_size :
-      audio_driver_chunk_block_size;
+   audio_driver_set_nonblocking_state_internal(
+         settings->bools.audio_sync ? enable : true,
+         enable ?
+         audio_driver_chunk_nonblock_size :
+         audio_driver_chunk_block_size);
 }
 
 /**
@@ -11367,10 +11367,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
    src_data.ratio           = audio_source_ratio_current;
 
    if (is_slowmotion)
-   {
-      settings_t *settings  = configuration_settings;
-      src_data.ratio       *= settings->floats.slowmotion_ratio;
-   }
+      src_data.ratio       *= configuration_settings->floats.slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
@@ -11555,7 +11552,8 @@ static void audio_driver_sample_rewind(int16_t left, int16_t right)
  * Returns: amount of frames sampled. Will be equal to @frames
  * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
  **/
-static size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
+static size_t audio_driver_sample_batch_rewind(
+      const int16_t *data, size_t frames)
 {
    size_t i;
    size_t samples   = frames << 1;
@@ -20371,13 +20369,21 @@ end:
       if (fastforward_after_frames && settings->bools.audio_sync)
       {
          if (fastforward_after_frames == 1)
-            command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
+         {
+            /* Nonblocking audio */
+            audio_driver_set_nonblocking_state_internal(
+                  true,
+                  audio_driver_chunk_nonblock_size);
+         }
 
          fastforward_after_frames++;
 
          if (fastforward_after_frames == 6)
          {
-            command_event(CMD_EVENT_AUDIO_SET_BLOCKING_STATE, NULL);
+            /* Blocking audio */
+            audio_driver_set_nonblocking_state_internal(
+                  settings->bools.audio_sync ? false : true,
+                  audio_driver_chunk_block_size);
             fastforward_after_frames = 0;
          }
       }
