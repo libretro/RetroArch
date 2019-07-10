@@ -20319,13 +20319,8 @@ int runloop_iterate(unsigned *sleep_ms)
    cheat_manager_apply_retro_cheats();
 
 #ifdef HAVE_DISCORD
-   if (discord_is_inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME;
-
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
+   if (discord_is_inited && discord_is_ready())
+      discord_update(DISCORD_PRESENCE_GAME);
 #endif
 
    for (i = 0; i < max_users; i++)
