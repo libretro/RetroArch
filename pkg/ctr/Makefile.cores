@@ -267,6 +267,14 @@ else ifeq ($(LIBRETRO), pokemini)
 	APP_ICON             = pkg/ctr/assets/pokemini.png
 	APP_BANNER           = pkg/ctr/assets/pokemini_banner.png
 
+else ifeq ($(LIBRETRO), prboom)
+	APP_TITLE            = PrBoom
+	APP_AUTHOR           = Florian Schulze
+	APP_PRODUCT_CODE     = RARCH-PRBOOM
+	APP_UNIQUE_ID        = 0xBAC90
+	APP_ICON             = pkg/ctr/assets/prboom.png
+	APP_BANNER           = pkg/ctr/assets/prboom_banner.png
+
 else ifeq ($(LIBRETRO), prosystem)
 	APP_TITLE            = ProSystem Libretro
 	APP_PRODUCT_CODE     = RARCH-PROSYSTEM
