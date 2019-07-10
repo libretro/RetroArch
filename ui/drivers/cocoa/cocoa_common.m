@@ -23,6 +23,7 @@
 
 #include "../../../verbosity.h"
 
+#include "../../../input/input_driver.h"
 #include "../../../input/drivers/cocoa_input.h"
 #include "../../../retroarch.h"
 
