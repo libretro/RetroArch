@@ -3915,7 +3915,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
  *
  * Scales the overlay by a factor of scale.
  **/
-void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
+static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
 
@@ -3962,6 +3962,47 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
       free(ol->overlays);
    ol->overlays = NULL;
 }
+
+static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
+{
+    if (!visibility)
+       return OVERLAY_VISIBILITY_DEFAULT;
+    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
+       return OVERLAY_VISIBILITY_DEFAULT;
+    return visibility[overlay_idx];
+}
+
+
+static bool input_overlay_is_hidden(int overlay_idx)
+{
+    return (input_overlay_get_visibility(overlay_idx)
+          == OVERLAY_VISIBILITY_HIDDEN);
+}
+
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
+static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
+{
+   unsigned i;
+
+   if (!ol)
+      return;
+
+   for (i = 0; i < ol->active->load_images_size; i++)
+   {
+      if (input_overlay_is_hidden(i))
+          ol->iface->set_alpha(ol->iface_data, i, 0.0);
+      else
+          ol->iface->set_alpha(ol->iface_data, i, mod);
+   }
+}
+
 
 static void input_overlay_load_active(input_overlay_t *ol, float opacity)
 {
@@ -4193,26 +4234,6 @@ static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
    }
 }
 
-/**
- * input_overlay_next:
- * @ol                    : Overlay handle.
- *
- * Switch to the next available overlay
- * screen.
- **/
-void input_overlay_next(input_overlay_t *ol, float opacity)
-{
-   if (!ol)
-      return;
-
-   ol->index      = ol->next_index;
-   ol->active     = &ol->overlays[ol->index];
-
-   input_overlay_load_active(ol, opacity);
-
-   ol->blocked    = true;
-   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
-}
 
 /**
  * input_overlay_free:
@@ -4220,7 +4241,7 @@ void input_overlay_next(input_overlay_t *ol, float opacity)
  *
  * Frees overlay handle.
  **/
-void input_overlay_free(input_overlay_t *ol)
+static void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
@@ -4323,45 +4344,6 @@ void input_overlay_set_visibility(int overlay_idx,
        return;
     if (vis == OVERLAY_VISIBILITY_HIDDEN)
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
-}
-
-static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
-{
-    if (!visibility)
-       return OVERLAY_VISIBILITY_DEFAULT;
-    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
-       return OVERLAY_VISIBILITY_DEFAULT;
-    return visibility[overlay_idx];
-}
-
-static bool input_overlay_is_hidden(int overlay_idx)
-{
-    return (input_overlay_get_visibility(overlay_idx)
-          == OVERLAY_VISIBILITY_HIDDEN);
-}
-
-/**
- * input_overlay_set_alpha_mod:
- * @ol                    : Overlay handle.
- * @mod                   : New modulating factor to apply.
- *
- * Sets a modulating factor for alpha channel. Default is 1.0.
- * The alpha factor is applied for all overlays.
- **/
-void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
-{
-   unsigned i;
-
-   if (!ol)
-      return;
-
-   for (i = 0; i < ol->active->load_images_size; i++)
-   {
-      if (input_overlay_is_hidden(i))
-          ol->iface->set_alpha(ol->iface_data, i, 0.0);
-      else
-          ol->iface->set_alpha(ol->iface_data, i, mod);
-   }
 }
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
@@ -4531,10 +4513,28 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       input_overlay_poll_clear(ol, opacity);
 }
 
+/**
+ * retroarch_overlay_next:
+ * @ol                    : Overlay handle.
+ *
+ * Switch to the next available overlay
+ * screen.
+ **/
 void retroarch_overlay_next(void)
 {
    settings_t *settings      = configuration_settings;
-   input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
+   float opacity             = settings->floats.input_overlay_opacity;
+
+   if (!overlay_ptr)
+      return;
+
+   overlay_ptr->index      = overlay_ptr->next_index;
+   overlay_ptr->active     = &overlay_ptr->overlays[overlay_ptr->index];
+
+   input_overlay_load_active(overlay_ptr, opacity);
+
+   overlay_ptr->blocked    = true;
+   overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
 }
 
 void retroarch_overlay_set_scale_factor(void)

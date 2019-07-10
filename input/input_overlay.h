@@ -200,39 +200,7 @@ typedef struct
     struct overlay *active;
 } overlay_task_data_t;
 
-/**
- * input_overlay_free:
- *
- * Frees overlay handle.
- **/
-void input_overlay_free(input_overlay_t *ol);
-
 void input_overlay_free_overlay(struct overlay *overlay);
-
-/**
- * input_overlay_set_alpha_mod:
- * @mod                   : New modulating factor to apply.
- *
- * Sets a modulating factor for alpha channel. Default is 1.0.
- * The alpha factor is applied for all overlays.
- **/
-void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
-
-/**
- * input_overlay_set_scale_factor:
- * @scale                 : Factor of scale to apply.
- *
- * Scales the overlay by a factor of scale.
- **/
-void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
-
-/**
- * input_overlay_next:
- *
- * Switch to the next available overlay
- * screen.
- **/
-void input_overlay_next(input_overlay_t *ol, float opacity);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
