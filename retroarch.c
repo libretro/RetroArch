@@ -857,10 +857,10 @@ static menu_input_t menu_input_state;
 #endif
 
 /* RECORDING GLOBAL VARIABLES */
-unsigned    recording_width                                     = 0;
-unsigned    recording_height                                    = 0;
-size_t      recording_gpu_width                                 = 0;
-size_t      recording_gpu_height                                = 0;
+static unsigned recording_width                                 = 0;
+static unsigned recording_height                                = 0;
+static size_t recording_gpu_width                               = 0;
+static size_t recording_gpu_height                              = 0;
 static bool recording_enable                                    = false;
 static bool streaming_enable                                    = false;
 
