@@ -19360,7 +19360,7 @@ static enum runloop_state runloop_check_state(
    /* Should be called once per frame */
    if (!appletMainLoop())
       return RUNLOOP_STATE_QUIT;
-#else
+#elif !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)
    if (!video_driver_is_threaded_internal())
    {
       const ui_application_t *application = ui_companion 
