@@ -253,6 +253,7 @@ static void handle_discord_spectate(const char* secret)
    RARCH_LOG("[discord] spectate (%s)\n", secret);
 }
 
+#ifdef HAVE_MENU
 static void handle_discord_join_response(void *ignore, const char *line)
 {
    /* To-Do: needs in-game widgets
@@ -265,6 +266,7 @@ static void handle_discord_join_response(void *ignore, const char *line)
 #endif
 */
 }
+#endif
 
 static void handle_discord_join_request(const DiscordUser* request)
 {
