@@ -422,6 +422,7 @@ void d3d9_set_mvp(void *data, const void *mat_data)
    d3d9_set_vertex_shader_constantf(dev, 0, (const float*)mat_data, 4);
 }
 
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 static void d3d9_overlay_render(d3d9_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay, bool force_linear)
@@ -539,6 +540,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    d3d9_disable_blend_func(dev);
    d3d9_set_viewports(dev, &d3d->final_viewport);
 }
+#endif
 
 static void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
 {
