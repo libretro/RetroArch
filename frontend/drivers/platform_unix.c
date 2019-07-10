@@ -1664,15 +1664,9 @@ static void frontend_unix_get_env(int *argc,
    frontend_android_get_name(device_model, sizeof(device_model));
    system_property_get("getprop", "ro.product.id", device_id);
 
-   g_defaults.settings.video_threaded_enable = true;
-
    /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
-   {
       g_defaults.settings.out_latency = 128;
-      g_defaults.settings.video_refresh_rate = 59.19132938771038;
-      g_defaults.settings.video_threaded_enable = false;
-   }
    else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
    else if (strstr(device_model, "SHIELD"))

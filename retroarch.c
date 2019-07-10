@@ -16572,9 +16572,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
    uint64_t frame_count    = video_driver_frame_count;
 
    if (runahead_count <= 0 || !runahead_available)
-   {
       goto force_input_dirty;
-   }
 
    if (!runahead_save_state_size_known)
    {

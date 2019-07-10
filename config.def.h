@@ -192,7 +192,7 @@
 /* Threaded video. Will possibly increase performance significantly
  * at the cost of worse synchronization and latency.
  */
-#if defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX) || defined(ANDROID)
 #define DEFAULT_VIDEO_THREADED true
 #else
 #define DEFAULT_VIDEO_THREADED false
