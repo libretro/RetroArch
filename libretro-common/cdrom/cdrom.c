@@ -1377,6 +1377,32 @@ bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream)
    return true;
 }
 
+bool cdrom_drive_has_media(const char drive)
+{
+   RFILE *file;
+   char cdrom_path_bin[256];
+
+   cdrom_path_bin[0] = '\0';
+
+   cdrom_device_fillpath(cdrom_path_bin, sizeof(cdrom_path_bin), drive, 1, false);
+
+   file = filestream_open(cdrom_path_bin, RETRO_VFS_FILE_ACCESS_READ, 0);
+
+   if (file)
+   {
+      const libretro_vfs_implementation_file *stream = filestream_get_vfs_handle(file);
+      bool has_media = false;
+
+      has_media = cdrom_is_media_inserted(stream);
+
+      filestream_close(file);
+
+      return has_media;
+   }
+
+   return false;
+}
+
 bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool enabled)
 {
    /* MMC Command: MODE SENSE (10) and MODE SELECT (10) */

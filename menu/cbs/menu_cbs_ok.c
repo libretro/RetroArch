@@ -2135,7 +2135,19 @@ static int action_ok_load_cdrom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CDROM
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system;
+
+   if (!cdrom_drive_has_media(label[0]))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_NO_DISC_INSERTED),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
+   }
+
+   system = runloop_get_libretro_system_info();
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -2173,6 +2185,8 @@ static int action_ok_load_cdrom(const char *path,
          msg_hash_to_str(MSG_LOAD_CORE_FIRST),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
    }
 #endif
    return 0;
@@ -2184,6 +2198,16 @@ static int action_ok_dump_cdrom(const char *path,
    if (string_is_empty(label))
       return -1;
 #ifdef HAVE_CDROM
+   if (!cdrom_drive_has_media(label[0]))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_NO_DISC_INSERTED),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
+   }
+
    task_push_cdrom_dump(label);
 #endif
    return 0;

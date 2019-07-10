@@ -100,6 +100,8 @@ struct string_list* cdrom_get_available_drives(void);
 
 bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream);
 
+bool cdrom_drive_has_media(const char drive);
+
 void cdrom_get_current_config_core(const libretro_vfs_implementation_file *stream);
 
 void cdrom_get_current_config_profiles(const libretro_vfs_implementation_file *stream);

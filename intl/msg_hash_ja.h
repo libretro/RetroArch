@@ -9017,3 +9017,5 @@ MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
       "ドライブからの読み込みに失敗しました。ダンプが中止されました。")
 MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
       "ディスクに書き込みに失敗しました。ダンプが中止されました。")
+MSG_HASH(MSG_NO_DISC_INSERTED,
+      "ドライブにディスクが挿入されていません。")
