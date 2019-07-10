@@ -244,22 +244,6 @@ bool input_sensor_set_state(unsigned port,
 
 float input_sensor_get_input(unsigned port, unsigned id);
 
-/**
- * input_state:
- * @port                 : user number.
- * @device               : device identifier of user.
- * @idx                  : index value of user.
- * @id                   : identifier of key pressed by user.
- *
- * Input state callback function.
- *
- * Returns: Non-zero if the given key (identified by @id) 
- * was pressed by the user
- * (assigned to @port).
- **/
-int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 void *input_driver_get_data(void);
 
 void input_get_state_for_port(
@@ -268,10 +252,6 @@ void input_get_state_for_port(
 const input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
-
-void **input_driver_get_data_ptr(void);
-
-bool input_driver_has_capabilities(void);
 
 void input_driver_set_flushing_input(void);
 

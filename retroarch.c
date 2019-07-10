@@ -49,6 +49,7 @@
 #include <boolean.h>
 #include <clamping.h>
 #include <string/stdstring.h>
+#include <dynamic/dylib.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
 #include <retro_math.h>
@@ -58,6 +59,11 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
+#include <libretro.h>
+#define VFS_FRONTEND
+#include <vfs/vfs_implementation.h>
+
+#include <features/features_cpu.h>
 
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
@@ -74,7 +80,6 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
-#include <features/features_cpu.h>
 #include <lists/dir_list.h>
 #include <net/net_http.h>
 
@@ -128,9 +133,16 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#if defined(HAVE_OPENGL)
+#include "gfx/common/gl_common.h"
+#elif defined(HAVE_OPENGL_CORE)
+#include "gfx/common/gl_core_common.h"
+#endif
+
 #include "autosave.h"
 #include "command.h"
 #include "config.features.h"
+#include "cores/internal_cores.h"
 #include "content.h"
 #include "core_type.h"
 #include "core_info.h"
@@ -172,7 +184,6 @@
 #include "runahead/copy_load_info.h"
 #include "runahead/mylist.h"
 #include "runahead/mem_util.h"
-#include "runahead/run_ahead.h"
 #endif
 
 #include "audio/audio_thread_wrapper.h"
@@ -794,7 +805,7 @@ static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
 static bool runloop_idle                                        = false;
 static bool runloop_slowmotion                                  = false;
-bool runloop_fastmotion                                         = false;
+static bool runloop_fastmotion                                  = false;
 static bool runloop_shutdown_initiated                          = false;
 static bool runloop_core_shutdown_initiated                     = false;
 static bool runloop_perfcnt_enable                              = false;
@@ -1583,12 +1594,12 @@ static const void *hid_data                       = NULL;
 
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-#include <dynamic/dylib.h>
 
 /* Forward declarations */
 static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
+
 extern retro_ctx_load_content_info_t *load_content_info;
 extern enum rarch_core_type last_core_type;
 
@@ -1602,7 +1613,21 @@ static char *secondary_library_path                = NULL;
 #endif
 #endif
 
+static bool core_uninit_libretro_callbacks(void);
+static bool core_is_game_loaded(void);
+static int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+static bool driver_update_system_av_info(
+      const struct retro_system_av_info *info);
+
 /* GLOBAL POINTER GETTERS */
+#define video_driver_get_hw_context_internal() (&hw_render)
+
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   return video_driver_get_hw_context_internal();
+}
+
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
 {
    return &video_driver_av_info;
@@ -1641,6 +1666,2119 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    return video_driver_get_ptr_internal(force_nonthreaded_data);
 }
 
+/* CORE OPTIONS */
+static bool core_option_manager_parse_variable(
+      core_option_manager_t *opt, size_t idx,
+      const struct retro_variable *var)
+{
+   const char *val_start      = NULL;
+   char *value                = NULL;
+   char *desc_end             = NULL;
+   char *config_val           = NULL;
+   struct core_option *option = (struct core_option*)&opt->opts[idx];
+
+   if (!string_is_empty(var->key))
+      option->key             = strdup(var->key);
+   if (!string_is_empty(var->value))
+      value                   = strdup(var->value);
+
+   if (!string_is_empty(value))
+      desc_end                = strstr(value, "; ");
+
+   if (!desc_end)
+      goto error;
+
+   *desc_end    = '\0';
+
+   if (!string_is_empty(value))
+      option->desc    = strdup(value);
+
+   val_start          = desc_end + 2;
+   option->vals       = string_split(val_start, "|");
+
+   if (!option->vals)
+      goto error;
+
+   if (config_get_string(opt->conf, option->key, &config_val))
+   {
+      size_t i;
+
+      for (i = 0; i < option->vals->size; i++)
+      {
+         if (string_is_equal(option->vals->elems[i].data, config_val))
+         {
+            option->index = i;
+            break;
+         }
+      }
+
+      free(config_val);
+   }
+
+   free(value);
+
+   return true;
+
+error:
+   free(value);
+   return false;
+}
+
+/**
+ * core_option_manager_free:
+ * @opt              : options manager handle
+ *
+ * Frees core option manager handle.
+ **/
+static void core_option_manager_free(core_option_manager_t *opt)
+{
+   size_t i;
+
+   if (!opt)
+      return;
+
+   for (i = 0; i < opt->size; i++)
+   {
+      if (opt->opts[i].desc)
+         free(opt->opts[i].desc);
+      if (opt->opts[i].key)
+         free(opt->opts[i].key);
+
+      if (opt->opts[i].vals)
+         string_list_free(opt->opts[i].vals);
+
+      opt->opts[i].desc = NULL;
+      opt->opts[i].key  = NULL;
+      opt->opts[i].vals = NULL;
+   }
+
+   if (opt->conf)
+      config_file_free(opt->conf);
+   free(opt->opts);
+   free(opt);
+}
+
+static void core_option_manager_get(core_option_manager_t *opt,
+      struct retro_variable *var)
+{
+   size_t i;
+
+#ifdef HAVE_RUNAHEAD
+   if (opt->updated)
+      has_variable_update = true;
+#endif
+
+   opt->updated = false;
+
+   for (i = 0; i < opt->size; i++)
+   {
+      if (string_is_empty(opt->opts[i].key))
+         continue;
+
+      if (string_is_equal(opt->opts[i].key, var->key))
+      {
+         var->value = opt->opts[i].vals->elems[opt->opts[i].index].data;
+         return;
+      }
+   }
+
+   var->value = NULL;
+}
+
+/**
+ * core_option_manager_new:
+ * @conf_path        : Filesystem path to write core option config file to.
+ * @vars             : Pointer to variable array handle.
+ *
+ * Creates and initializes a core manager handle.
+ *
+ * Returns: handle to new core manager handle, otherwise NULL.
+ **/
+static core_option_manager_t *core_option_manager_new(const char *conf_path,
+      const struct retro_variable *vars)
+{
+   const struct retro_variable *var;
+   size_t size                       = 0;
+   core_option_manager_t *opt        = (core_option_manager_t*)
+      calloc(1, sizeof(*opt));
+
+   if (!opt)
+      return NULL;
+
+   if (!string_is_empty(conf_path))
+      opt->conf                     = config_file_new(conf_path);
+   if (!opt->conf)
+      opt->conf                     = config_file_new(NULL);
+
+   strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
+
+   if (!opt->conf)
+      goto error;
+
+   for (var = vars; var->key && var->value; var++)
+      size++;
+
+   if (size == 0)
+      goto error;
+
+   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
+   if (!opt->opts)
+      goto error;
+
+   opt->size = size;
+   size      = 0;
+
+   for (var = vars; var->key && var->value; size++, var++)
+   {
+      if (!core_option_manager_parse_variable(opt, size, var))
+         goto error;
+   }
+
+   return opt;
+
+error:
+   core_option_manager_free(opt);
+   return NULL;
+}
+
+/**
+ * core_option_manager_flush:
+ * @opt              : options manager handle
+ *
+ * Writes core option key-pair values to file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+static bool core_option_manager_flush(core_option_manager_t *opt)
+{
+   size_t i;
+
+   for (i = 0; i < opt->size; i++)
+   {
+      struct core_option *option = (struct core_option*)&opt->opts[i];
+
+      if (option)
+         config_set_string(opt->conf, option->key,
+               opt->opts[i].vals->elems[opt->opts[i].index].data);
+   }
+
+   RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
+   return config_file_write(opt->conf, opt->conf_path, true);
+}
+
+/**
+ * core_option_manager_flush_game_specific:
+ * @opt              : options manager handle
+ * @path             : path for the core options file
+ *
+ * Writes core option key-pair values to a custom file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+static bool core_option_manager_flush_game_specific(
+      core_option_manager_t *opt, const char* path)
+{
+   size_t i;
+   for (i = 0; i < opt->size; i++)
+   {
+      struct core_option *option = (struct core_option*)&opt->opts[i];
+
+      if (option)
+         config_set_string(opt->conf, option->key,
+               opt->opts[i].vals->elems[opt->opts[i].index].data);
+   }
+
+   return config_file_write(opt->conf, path, true);
+}
+
+/**
+ * core_option_manager_get_desc:
+ * @opt              : options manager handle
+ * @index            : index identifier of the option
+ *
+ * Gets description for an option.
+ *
+ * Returns: Description for an option.
+ **/
+const char *core_option_manager_get_desc(
+      core_option_manager_t *opt, size_t idx)
+{
+   if (!opt)
+      return NULL;
+   return opt->opts[idx].desc;
+}
+
+/**
+ * core_option_manager_get_val:
+ * @opt              : options manager handle
+ * @index            : index identifier of the option
+ *
+ * Gets value for an option.
+ *
+ * Returns: Value for an option.
+ **/
+const char *core_option_manager_get_val(core_option_manager_t *opt, size_t idx)
+{
+   struct core_option *option = NULL;
+   if (!opt)
+      return NULL;
+   option = (struct core_option*)&opt->opts[idx];
+   return option->vals->elems[option->index].data;
+}
+
+void core_option_manager_set_val(core_option_manager_t *opt,
+      size_t idx, size_t val_idx)
+{
+   struct core_option *option= NULL;
+
+   if (!opt)
+      return;
+
+   option        = (struct core_option*)&opt->opts[idx];
+   option->index = val_idx % option->vals->size;
+
+   opt->updated  = true;
+}
+
+/**
+ * core_option_manager_set_default:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : index of core option to be reset to defaults.
+ *
+ * Reset core option specified by @idx and sets default value for option.
+ **/
+void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
+{
+   if (!opt)
+      return;
+
+   opt->opts[idx].index = 0;
+   opt->updated         = true;
+}
+
+
+/* DYNAMIC LIBRETRO CORE  */
+
+#ifdef HAVE_DYNAMIC
+#define SYMBOL(x) do { \
+   function_t func = dylib_proc(lib_handle_local, #x); \
+   memcpy(&current_core->x, &func, sizeof(func)); \
+   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+} while (0)
+
+static dylib_t lib_handle;
+#else
+#define SYMBOL(x) current_core->x = x
+#endif
+
+#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+
+#ifdef HAVE_FFMPEG
+#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
+#endif
+
+#ifdef HAVE_MPV
+#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
+#endif
+
+#if defined(HAVE_VIDEOPROCESSOR)
+#define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
+#endif
+
+#ifdef HAVE_EASTEREGG
+#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
+#endif
+
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
+
+static bool ignore_environment_cb   = false;
+static bool core_set_shared_context = false;
+static bool *load_no_content_hook   = NULL;
+
+struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+unsigned subsystem_current_count;
+
+const struct retro_subsystem_info *libretro_find_subsystem_info(
+      const struct retro_subsystem_info *info, unsigned num_info,
+      const char *ident)
+{
+   unsigned i;
+   for (i = 0; i < num_info; i++)
+   {
+      if (string_is_equal(info[i].ident, ident))
+         return &info[i];
+      else if (string_is_equal(info[i].desc, ident))
+         return &info[i];
+   }
+
+   return NULL;
+}
+
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Returns: controller description of found controller on success,
+ * otherwise NULL.
+ **/
+const struct retro_controller_description *
+libretro_find_controller_description(
+      const struct retro_controller_info *info, unsigned id)
+{
+   unsigned i;
+
+   for (i = 0; i < info->num_types; i++)
+   {
+      if (info->types[i].id != id)
+         continue;
+
+      return &info->types[i];
+   }
+
+   return NULL;
+}
+
+/**
+ * libretro_free_system_info:
+ * @info                         : Pointer to system info information.
+ *
+ * Frees system information.
+ **/
+void libretro_free_system_info(struct retro_system_info *info)
+{
+   if (!info)
+      return;
+
+   free((void*)info->library_name);
+   free((void*)info->library_version);
+   free((void*)info->valid_extensions);
+   memset(info, 0, sizeof(*info));
+}
+
+static bool environ_cb_get_system_info(unsigned cmd, void *data)
+{
+   rarch_system_info_t *system  = &runloop_system;
+   switch (cmd)
+   {
+      case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
+         *load_no_content_hook = *(const bool*)data;
+         break;
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
+      {
+         unsigned i, j, size;
+         const struct retro_subsystem_info *info =
+            (const struct retro_subsystem_info*)data;
+         settings_t *settings    = configuration_settings;
+         unsigned log_level      = settings->uints.libretro_log_level;
+
+         subsystem_current_count = 0;
+
+         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+
+         for (i = 0; info[i].ident; i++)
+         {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
+            RARCH_LOG("Subsystem ID: %d\n", i);
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  Content:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ?
+                     "required" : "optional");
+            }
+         }
+
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Subsystems: %d\n", i);
+         size = i;
+
+         if (log_level == RETRO_LOG_DEBUG)
+            if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
+               RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+
+         if (system)
+         {
+            for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
+            {
+               /* Nasty, but have to do it like this since
+                * the pointers are const char *
+                * (if we don't free them, we get a memory leak) */
+               if (!string_is_empty(subsystem_data[i].desc))
+                  free((char *)subsystem_data[i].desc);
+               if (!string_is_empty(subsystem_data[i].ident))
+                  free((char *)subsystem_data[i].ident);
+               subsystem_data[i].desc = strdup(info[i].desc);
+               subsystem_data[i].ident = strdup(info[i].ident);
+               subsystem_data[i].id = info[i].id;
+               subsystem_data[i].num_roms = info[i].num_roms;
+
+               if (log_level == RETRO_LOG_DEBUG)
+                  if (subsystem_data[i].num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
+                     RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
+
+               for (j = 0; j < subsystem_data[i].num_roms && j < SUBSYSTEM_MAX_SUBSYSTEM_ROMS; j++)
+               {
+                  /* Nasty, but have to do it like this since
+                   * the pointers are const char *
+                   * (if we don't free them, we get a memory leak) */
+                  if (!string_is_empty(subsystem_data_roms[i][j].desc))
+                     free((char *)subsystem_data_roms[i][j].desc);
+                  if (!string_is_empty(subsystem_data_roms[i][j].valid_extensions))
+                     free((char *)subsystem_data_roms[i][j].valid_extensions);
+                  subsystem_data_roms[i][j].desc = strdup(info[i].roms[j].desc);
+                  subsystem_data_roms[i][j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
+                  subsystem_data_roms[i][j].required = info[i].roms[j].required;
+                  subsystem_data_roms[i][j].block_extract = info[i].roms[j].block_extract;
+                  subsystem_data_roms[i][j].need_fullpath = info[i].roms[j].need_fullpath;
+               }
+               subsystem_data[i].roms = subsystem_data_roms[i];
+            }
+
+            subsystem_current_count = 
+               size <= SUBSYSTEM_MAX_SUBSYSTEMS 
+               ? size 
+               : SUBSYSTEM_MAX_SUBSYSTEMS;
+         }
+         break;
+      }
+      default:
+         return false;
+   }
+
+   return true;
+}
+
+static bool dynamic_request_hw_context(enum retro_hw_context_type type,
+      unsigned minor, unsigned major)
+{
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_NONE:
+         RARCH_LOG("Requesting no HW context.\n");
+         break;
+
+      case RETRO_HW_CONTEXT_VULKAN:
+#ifdef HAVE_VULKAN
+         RARCH_LOG("Requesting Vulkan context.\n");
+         break;
+#else
+         RARCH_ERR("Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
+         return false;
+#endif
+
+#if defined(HAVE_OPENGLES)
+
+#if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         RARCH_LOG("Requesting OpenGLES%u context.\n",
+               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
+         break;
+
+#if defined(HAVE_OPENGLES3)
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
+               major, minor);
+         break;
+#endif
+
+#endif
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         RARCH_ERR("Requesting OpenGL context, but RetroArch "
+               "is compiled against OpenGLES. Cannot use HW context.\n");
+         return false;
+
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
+               "is compiled against OpenGL. Cannot use HW context.\n",
+               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
+         return false;
+
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch "
+               "is compiled against OpenGL. Cannot use HW context.\n",
+               major, minor);
+         return false;
+
+      case RETRO_HW_CONTEXT_OPENGL:
+         RARCH_LOG("Requesting OpenGL context.\n");
+         break;
+
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         /* TODO/FIXME - we should do a check here to see if
+          * the requested core GL version is supported */
+         RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
+               major, minor);
+         break;
+#endif
+
+#if defined(HAVE_D3D9) || defined(HAVE_D3D11)
+      case RETRO_HW_CONTEXT_DIRECT3D:
+         switch (major)
+         {
+#ifdef HAVE_D3D9
+            case 9:
+               RARCH_LOG("Requesting D3D9 context.\n");
+               break;
+#endif
+#ifdef HAVE_D3D11
+            case 11:
+               RARCH_LOG("Requesting D3D11 context.\n");
+               break;
+#endif
+            default:
+               RARCH_LOG("Requesting unknown context.\n");
+               return false;
+         }
+         break;
+#endif
+
+      default:
+         RARCH_LOG("Requesting unknown context.\n");
+         return false;
+   }
+
+   return true;
+}
+
+static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
+      unsigned minor, unsigned major)
+{
+   const char *video_ident = (current_video) ? current_video->ident : NULL;
+
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_VULKAN:
+         if (!string_is_equal(video_ident, "vulkan"))
+            return false;
+         break;
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         if (!string_is_equal(video_ident, "gl") &&
+             !string_is_equal(video_ident, "glcore"))
+         {
+            return false;
+         }
+         break;
+		case RETRO_HW_CONTEXT_DIRECT3D:
+			if (!(string_is_equal(video_ident, "d3d11") && major == 11))
+				return false;
+		break;
+      default:
+         break;
+   }
+
+   return true;
+}
+
+static void rarch_log_libretro(enum retro_log_level level,
+      const char *fmt, ...)
+{
+   va_list vp;
+   settings_t *settings = configuration_settings;
+
+   if ((unsigned)level < settings->uints.libretro_log_level)
+      return;
+
+   if (!verbosity_is_enabled())
+      return;
+
+   va_start(vp, fmt);
+
+   switch (level)
+   {
+      case RETRO_LOG_DEBUG:
+         RARCH_LOG_V("[libretro DEBUG]", fmt, vp);
+         break;
+
+      case RETRO_LOG_INFO:
+         RARCH_LOG_OUTPUT_V("[libretro INFO]", fmt, vp);
+         break;
+
+      case RETRO_LOG_WARN:
+         RARCH_WARN_V("[libretro WARN]", fmt, vp);
+         break;
+
+      case RETRO_LOG_ERROR:
+         RARCH_ERR_V("[libretro ERROR]", fmt, vp);
+         break;
+
+      default:
+         break;
+   }
+
+   va_end(vp);
+}
+
+static void core_performance_counter_start(struct retro_perf_counter *perf)
+{
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+   {
+      perf->call_cnt++;
+      perf->start      = cpu_features_get_perf_counter();
+   }
+}
+
+static void core_performance_counter_stop(struct retro_perf_counter *perf)
+{
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+      perf->total += cpu_features_get_perf_counter() - perf->start;
+}
+
+static size_t mmap_add_bits_down(size_t n)
+{
+   n |= n >>  1;
+   n |= n >>  2;
+   n |= n >>  4;
+   n |= n >>  8;
+   n |= n >> 16;
+
+   /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
+   if (sizeof(size_t) > 4)
+      n |= n >> 16 >> 16;
+
+   return n;
+}
+
+static size_t mmap_inflate(size_t addr, size_t mask)
+{
+    while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+
+      /* to put in an 1 bit instead, OR in tmp+1 */
+      addr       = ((addr & ~tmp) << 1) | (addr & tmp);
+      mask       = mask & (mask - 1);
+   }
+
+   return addr;
+}
+
+static size_t mmap_reduce(size_t addr, size_t mask)
+{
+   while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+      addr       = (addr & tmp) | ((addr >> 1) & ~tmp);
+      mask       = (mask & (mask - 1)) >> 1;
+   }
+
+   return addr;
+}
+
+static size_t mmap_highest_bit(size_t n)
+{
+   n = mmap_add_bits_down(n);
+   return n ^ (n >> 1);
+}
+
+
+static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsigned count)
+{
+   size_t                      top_addr = 1;
+   rarch_memory_descriptor_t *desc      = NULL;
+   const rarch_memory_descriptor_t *end = first + count;
+
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->core.select != 0)
+         top_addr |= desc->core.select;
+      else
+         top_addr |= desc->core.start + desc->core.len - 1;
+   }
+
+   top_addr = mmap_add_bits_down(top_addr);
+
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->core.select == 0)
+      {
+         if (desc->core.len == 0)
+            return false;
+
+         if ((desc->core.len & (desc->core.len - 1)) != 0)
+            return false;
+
+         desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
+               desc->core.disconnect);
+      }
+
+      if (desc->core.len == 0)
+         desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select,
+                  desc->core.disconnect)) + 1;
+
+      if (desc->core.start & ~desc->core.select)
+         return false;
+
+      while (mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect) >> 1 > desc->core.len - 1)
+         desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
+
+      desc->disconnect_mask = mmap_add_bits_down(desc->core.len - 1);
+      desc->core.disconnect &= desc->disconnect_mask;
+
+      while ((~desc->disconnect_mask) >> 1 & desc->core.disconnect)
+      {
+         desc->disconnect_mask >>= 1;
+         desc->core.disconnect &= desc->disconnect_mask;
+      }
+   }
+
+   return true;
+}
+
+static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
+{
+   if ( clear_threads > 0)
+      audio_driver_start(false) ;
+   else
+      audio_driver_stop() ;
+
+   return true;
+}
+
+
+
+/**
+ * rarch_environment_cb:
+ * @cmd                          : Identifier of command.
+ * @data                         : Pointer to data.
+ *
+ * Environment callback function implementation.
+ *
+ * Returns: true (1) if environment callback command could
+ * be performed, otherwise false (0).
+ **/
+bool rarch_environment_cb(unsigned cmd, void *data)
+{
+   unsigned p;
+   settings_t         *settings = configuration_settings;
+   rarch_system_info_t *system  = &runloop_system;
+
+   if (ignore_environment_cb)
+      return false;
+
+   switch (cmd)
+   {
+      case RETRO_ENVIRONMENT_GET_OVERSCAN:
+         *(bool*)data = !settings->bools.video_crop_overscan;
+         RARCH_LOG("Environ GET_OVERSCAN: %u\n",
+               (unsigned)!settings->bools.video_crop_overscan);
+         break;
+
+      case RETRO_ENVIRONMENT_GET_CAN_DUPE:
+         *(bool*)data = true;
+         RARCH_LOG("Environ GET_CAN_DUPE: true\n");
+         break;
+
+      case RETRO_ENVIRONMENT_GET_VARIABLE:
+         {
+            unsigned log_level         = settings->uints.libretro_log_level;
+            struct retro_variable *var = (struct retro_variable*)data;
+
+            if (!runloop_core_options || !var)
+            {
+               if (var)
+               {
+                  RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n",
+                        var->key);
+                  var->value = NULL;
+               }
+               return true;
+            }
+            core_option_manager_get(runloop_core_options, var);
+
+            if (log_level == RETRO_LOG_DEBUG)
+            {
+               RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
+               RARCH_LOG("\t%s\n", var->value ? var->value :
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            }
+         }
+
+         break;
+
+      case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
+         if (runloop_core_options)
+            *(bool*)data = runloop_core_options->updated;
+         else
+            *(bool*)data = false;
+         break;
+
+      case RETRO_ENVIRONMENT_SET_VARIABLES:
+         RARCH_LOG("Environ SET_VARIABLES.\n");
+
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
+
+         break;
+
+      case RETRO_ENVIRONMENT_SET_MESSAGE:
+      {
+         const struct retro_message *msg = (const struct retro_message*)data;
+         RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
+#ifdef HAVE_MENU_WIDGETS
+         if (!menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f)))
+#endif
+            runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_ROTATION:
+      {
+         unsigned rotation = *(const unsigned*)data;
+         RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
+         if (!settings->bools.video_allow_rotate)
+            break;
+
+         if (system)
+            system->rotation = rotation;
+
+         if (!video_driver_set_rotation(rotation))
+            return false;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SHUTDOWN:
+         RARCH_LOG("Environ SHUTDOWN.\n");
+
+         /* This case occurs when a core (internally) requests
+          * a shutdown event. Must save runtime log file here,
+          * since normal command.c CMD_EVENT_CORE_DEINIT event
+          * will not occur until after the current content has
+          * been cleared (causing log to be skipped) */
+         rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
+
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
+         rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
+         break;
+
+      case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
+         if (system)
+         {
+            system->performance_level = *(const unsigned*)data;
+            RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n",
+                  system->performance_level);
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
+         if (string_is_empty(settings->paths.directory_system) || settings->bools.systemfiles_in_content_dir)
+         {
+            const char *fullpath = path_get(RARCH_PATH_CONTENT);
+            if (!string_is_empty(fullpath))
+            {
+               size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+               char *temp_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+               temp_path[0] = '\0';
+
+               if (string_is_empty(settings->paths.directory_system))
+                  RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                        fullpath);
+               fill_pathname_basedir(temp_path, fullpath, path_size);
+               dir_set(RARCH_DIR_SYSTEM, temp_path);
+               free(temp_path);
+            }
+
+            *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+                  dir_get(RARCH_DIR_SYSTEM));
+         }
+         else
+         {
+            *(const char**)data = settings->paths.directory_system;
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+               settings->paths.directory_system);
+         }
+
+         break;
+
+      case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
+         *(const char**)data = dir_get(RARCH_DIR_CURRENT_SAVEFILE);
+         break;
+
+      case RETRO_ENVIRONMENT_GET_USERNAME:
+         *(const char**)data = *settings->paths.username ?
+            settings->paths.username : NULL;
+         RARCH_LOG("Environ GET_USERNAME: \"%s\".\n",
+               settings->paths.username);
+         break;
+
+      case RETRO_ENVIRONMENT_GET_LANGUAGE:
+#ifdef HAVE_LANGEXTRA
+         {
+            unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+            *(unsigned *)data  = user_lang;
+            RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n", user_lang);
+         }
+#endif
+         break;
+
+      case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
+      {
+         enum retro_pixel_format pix_fmt =
+            *(const enum retro_pixel_format*)data;
+
+         switch (pix_fmt)
+         {
+            case RETRO_PIXEL_FORMAT_0RGB1555:
+               RARCH_LOG("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
+               break;
+
+            case RETRO_PIXEL_FORMAT_RGB565:
+               RARCH_LOG("Environ SET_PIXEL_FORMAT: RGB565.\n");
+               break;
+            case RETRO_PIXEL_FORMAT_XRGB8888:
+               RARCH_LOG("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
+               break;
+            default:
+               return false;
+         }
+
+         video_driver_set_pixel_format(pix_fmt);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
+      {
+         static const char *libretro_btn_desc[]    = {
+            "B (bottom)", "Y (left)", "Select", "Start",
+            "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
+            "A (right)", "X (up)",
+            "L", "R", "L2", "R2", "L3", "R3",
+         };
+
+         if (system)
+         {
+            unsigned retro_id;
+            const struct retro_input_descriptor *desc = NULL;
+            memset((void*)&system->input_desc_btn, 0,
+                  sizeof(system->input_desc_btn));
+
+            desc = (const struct retro_input_descriptor*)data;
+
+            for (; desc->description; desc++)
+            {
+               unsigned retro_port = desc->port;
+
+               retro_id            = desc->id;
+
+               if (desc->port >= MAX_USERS)
+                  continue;
+
+               /* Ignore all others for now. */
+               if (
+                     desc->device != RETRO_DEVICE_JOYPAD  &&
+                     desc->device != RETRO_DEVICE_ANALOG)
+                  continue;
+
+               if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
+                  continue;
+
+               if (desc->device == RETRO_DEVICE_ANALOG)
+               {
+                  switch (retro_id)
+                  {
+                     case RETRO_DEVICE_ID_ANALOG_X:
+                        switch (desc->index)
+                        {
+                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                              break;
+                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                              break;
+                        }
+                        break;
+                     case RETRO_DEVICE_ID_ANALOG_Y:
+                        switch (desc->index)
+                        {
+                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                              break;
+                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                              break;
+                        }
+                        break;
+                  }
+               }
+               else
+                  system->input_desc_btn[retro_port]
+                     [retro_id] = desc->description;
+            }
+
+            RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
+
+            {
+               unsigned log_level      = settings->uints.libretro_log_level;
+               
+               if (log_level == RETRO_LOG_DEBUG)
+               {
+                  for (p = 0; p < input_driver_max_users; p++)
+                  {
+                     for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                     {
+                        const char *description = system->input_desc_btn[p][retro_id];
+
+                        if (!description)
+                           continue;
+
+                        RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                              p + 1, libretro_btn_desc[retro_id], description);
+                     }
+                  }
+               }
+            }
+
+            current_core.has_set_input_descriptors = true;
+         }
+
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
+      {
+         retro_keyboard_event_t *frontend_key_event = NULL;
+         retro_keyboard_event_t *key_event          = NULL;
+         const struct retro_keyboard_callback *info =
+            (const struct retro_keyboard_callback*)data;
+
+         rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+         rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
+
+         RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
+         if (key_event)
+            *key_event                  = info->callback;
+
+         if (frontend_key_event && key_event)
+            *frontend_key_event         = *key_event;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
+         RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
+         if (system)
+            system->disk_control_cb =
+               *(const struct retro_disk_control_callback*)data;
+         break;
+
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
+      {
+         struct retro_hw_render_callback *cb =
+            (struct retro_hw_render_callback*)data;
+         struct retro_hw_render_callback *hwr =
+            video_driver_get_hw_context_internal();
+
+         RARCH_LOG("Environ SET_HW_RENDER.\n");
+
+         if (!dynamic_request_hw_context(
+                  cb->context_type, cb->version_minor, cb->version_major))
+            return false;
+
+         if (!dynamic_verify_hw_context(
+                  cb->context_type, cb->version_minor, cb->version_major))
+            return false;
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
+         if (!gl_set_core_context(cb->context_type)) { }
+#endif
+
+         cb->get_current_framebuffer = video_driver_get_current_framebuffer;
+         cb->get_proc_address        = video_driver_get_proc_address;
+
+         /* Old ABI. Don't copy garbage. */
+         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL)
+         {
+            memcpy(hwr,
+                  cb, offsetof(struct retro_hw_render_callback, stencil));
+            memset((uint8_t*)hwr + offsetof(struct retro_hw_render_callback, stencil),
+               0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
+         }
+         else
+            memcpy(hwr, cb, sizeof(*cb));
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
+
+         if (state)
+            content_set_does_not_need_content();
+         else
+            content_unset_does_not_need_content();
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+
+         set_save_state_in_background(state) ;
+
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
+      {
+         const char **path = (const char**)data;
+#ifdef HAVE_DYNAMIC
+         *path = path_get(RARCH_PATH_CORE);
+#else
+         *path = NULL;
+#endif
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
+#ifdef HAVE_THREADS
+      {
+         const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
+         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            return false;
+#endif
+         if (recording_data) /* A/V sync is a must. */
+            return false;
+         if (cb)
+            audio_callback = *cb;
+      }
+#endif
+      break;
+
+      case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
+      {
+         const struct retro_frame_time_callback *info =
+            (const struct retro_frame_time_callback*)data;
+
+         RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
+#ifdef HAVE_NETWORKING
+         /* retro_run() will be called in very strange and
+          * mysterious ways, have to disable it. */
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            return false;
+#endif
+         runloop_frame_time = *info;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
+      {
+         struct retro_rumble_interface *iface =
+            (struct retro_rumble_interface*)data;
+
+         RARCH_LOG("Environ GET_RUMBLE_INTERFACE.\n");
+         iface->set_rumble_state = input_driver_set_rumble_state;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES:
+      {
+         uint64_t *mask = (uint64_t*)data;
+
+         RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
+         if (!current_input->get_capabilities || !current_input_data)
+            return false;
+         else
+            *mask = input_driver_get_capabilities();
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
+      {
+         struct retro_sensor_interface *iface =
+            (struct retro_sensor_interface*)data;
+
+         RARCH_LOG("Environ GET_SENSOR_INTERFACE.\n");
+         iface->set_sensor_state = input_sensor_set_state;
+         iface->get_sensor_input = input_sensor_get_input;
+         break;
+      }
+      case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
+      {
+         struct retro_camera_callback *cb =
+            (struct retro_camera_callback*)data;
+
+         RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
+         cb->start                        = driver_camera_start;
+         cb->stop                         = driver_camera_stop;
+
+         rarch_ctl(RARCH_CTL_CAMERA_SET_CB, cb);
+
+         if (cb->caps != 0)
+            rarch_ctl(RARCH_CTL_CAMERA_SET_ACTIVE, NULL);
+         else
+            rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
+      {
+         struct retro_location_callback *cb =
+            (struct retro_location_callback*)data;
+
+         RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
+         cb->start                 = driver_location_start;
+         cb->stop                  = driver_location_stop;
+         cb->get_position          = driver_location_get_position;
+         cb->set_interval          = driver_location_set_interval;
+
+         if (system)
+            system->location_cb    = *cb;
+
+         rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_LOG_INTERFACE:
+      {
+         struct retro_log_callback *cb = (struct retro_log_callback*)data;
+
+         RARCH_LOG("Environ GET_LOG_INTERFACE.\n");
+         cb->log = rarch_log_libretro;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_PERF_INTERFACE:
+      {
+         struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
+
+         RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
+         cb->get_time_usec    = cpu_features_get_time_usec;
+         cb->get_cpu_features = cpu_features_get;
+         cb->get_perf_counter = cpu_features_get_perf_counter;
+
+         cb->perf_register    = performance_counter_register;
+         cb->perf_start       = core_performance_counter_start;
+         cb->perf_stop        = core_performance_counter_stop;
+         cb->perf_log         = retro_perf_log;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
+      {
+         const char **dir = (const char**)data;
+
+         *dir = *settings->paths.directory_core_assets ?
+            settings->paths.directory_core_assets : NULL;
+         RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
+               settings->paths.directory_core_assets);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+      /**
+       * Update the system Audio/Video information.
+       * Will reinitialize audio/video drivers.
+       * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
+       **/
+      {
+         const struct retro_system_av_info **info = (const struct retro_system_av_info**)&data;
+         if (info)
+         {
+            RARCH_LOG("Environ SET_SYSTEM_AV_INFO.\n");
+            return driver_update_system_av_info(*info);
+         }
+         return false;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
+      {
+         unsigned i;
+         const struct retro_subsystem_info *info =
+            (const struct retro_subsystem_info*)data;
+         unsigned log_level   = settings->uints.libretro_log_level;
+
+         if (log_level == RETRO_LOG_DEBUG)
+            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+
+         for (i = 0; info[i].ident; i++)
+         {
+            unsigned j;
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
+            RARCH_LOG("Special game type: %s\n", info[i].desc);
+            RARCH_LOG("  Ident: %s\n", info[i].ident);
+            RARCH_LOG("  ID: %u\n", info[i].id);
+            RARCH_LOG("  Content:\n");
+            for (j = 0; j < info[i].num_roms; j++)
+            {
+               RARCH_LOG("    %s (%s)\n",
+                     info[i].roms[j].desc, info[i].roms[j].required ?
+                     "required" : "optional");
+            }
+         }
+
+         if (system)
+         {
+            struct retro_subsystem_info *info_ptr = NULL;
+            free(system->subsystem.data);
+            system->subsystem.data = NULL;
+            system->subsystem.size = 0;
+
+            info_ptr = (struct retro_subsystem_info*)
+               malloc(i * sizeof(*info_ptr));
+
+            if (!info_ptr)
+               return false;
+
+            system->subsystem.data = info_ptr;
+
+            memcpy(system->subsystem.data, info,
+                  i * sizeof(*system->subsystem.data));
+            system->subsystem.size = i;
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
+      {
+         unsigned i, j;
+         const struct retro_controller_info *info =
+            (const struct retro_controller_info*)data;
+         unsigned log_level      = settings->uints.libretro_log_level;
+
+         RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
+
+         for (i = 0; info[i].types; i++)
+         {
+            if (log_level != RETRO_LOG_DEBUG)
+               continue;
+
+            RARCH_LOG("Controller port: %u\n", i + 1);
+            for (j = 0; j < info[i].num_types; j++)
+               RARCH_LOG("   %s (ID: %u)\n", info[i].types[j].desc,
+                     info[i].types[j].id);
+         }
+
+         if (system)
+         {
+            struct retro_controller_info *info_ptr = NULL;
+
+            free(system->ports.data);
+            system->ports.data = NULL;
+            system->ports.size = 0;
+
+            info_ptr = (struct retro_controller_info*)calloc(i, sizeof(*info_ptr));
+            if (!info_ptr)
+               return false;
+
+            system->ports.data = info_ptr;
+            memcpy(system->ports.data, info,
+                  i * sizeof(*system->ports.data));
+            system->ports.size = i;
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
+      {
+         if (system)
+         {
+            unsigned i;
+            const struct retro_memory_map *mmaps        =
+               (const struct retro_memory_map*)data;
+            rarch_memory_descriptor_t *descriptors = NULL;
+
+            RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+            free((void*)system->mmaps.descriptors);
+            system->mmaps.descriptors     = 0;
+            system->mmaps.num_descriptors = 0;
+            descriptors = (rarch_memory_descriptor_t*)
+               calloc(mmaps->num_descriptors,
+                     sizeof(*descriptors));
+
+            if (!descriptors)
+               return false;
+
+            system->mmaps.descriptors     = descriptors;
+            system->mmaps.num_descriptors = mmaps->num_descriptors;
+
+            for (i = 0; i < mmaps->num_descriptors; i++)
+               system->mmaps.descriptors[i].core = mmaps->descriptors[i];
+
+            mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+
+            if (sizeof(void *) == 8)
+               RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
+            else
+               RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
+
+            for (i = 0; i < system->mmaps.num_descriptors; i++)
+            {
+               const rarch_memory_descriptor_t *desc =
+                  &system->mmaps.descriptors[i];
+               char flags[7];
+
+               flags[0] = 'M';
+               if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+                  flags[1] = '8';
+               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+                  flags[1] = '4';
+               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+                  flags[1] = '2';
+               else
+                  flags[1] = '1';
+
+               flags[2] = 'A';
+               if ((desc->core.flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+                  flags[3] = '8';
+               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+                  flags[3] = '4';
+               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+                  flags[3] = '2';
+               else
+                  flags[3] = '1';
+
+               flags[4] = (desc->core.flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+               flags[5] = (desc->core.flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
+               flags[6] = 0;
+
+               RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
+                     i + 1, flags, desc->core.ptr, desc->core.offset, desc->core.start,
+                     desc->core.select, desc->core.disconnect, desc->core.len,
+                     desc->core.addrspace ? desc->core.addrspace : "");
+            }
+         }
+         else
+         {
+            RARCH_WARN("Environ SET_MEMORY_MAPS, but system pointer not initialized..\n");
+         }
+
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_GEOMETRY:
+      {
+         const struct retro_game_geometry *in_geom = NULL;
+         struct retro_system_av_info *av_info      = &video_driver_av_info;
+         struct retro_game_geometry  *geom         = (struct retro_game_geometry*)&av_info->geometry;
+
+         if (!geom)
+            return false;
+
+         in_geom = (const struct retro_game_geometry*)data;
+
+         RARCH_LOG("Environ SET_GEOMETRY.\n");
+
+         /* Can potentially be called every frame,
+          * don't do anything unless required. */
+         if (  (geom->base_width   != in_geom->base_width)  ||
+               (geom->base_height  != in_geom->base_height) ||
+               (geom->aspect_ratio != in_geom->aspect_ratio))
+         {
+            geom->base_width   = in_geom->base_width;
+            geom->base_height  = in_geom->base_height;
+            geom->aspect_ratio = in_geom->aspect_ratio;
+
+            RARCH_LOG("SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
+                  geom->base_width, geom->base_height, geom->aspect_ratio);
+
+            /* Forces recomputation of aspect ratios if
+             * using core-dependent aspect ratios. */
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+
+            /* TODO: Figure out what to do, if anything, with recording. */
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
+         return video_driver_get_current_software_framebuffer(
+               (struct retro_framebuffer*)data);
+
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
+         return video_driver_get_hw_render_interface(
+               (const struct retro_hw_render_interface**)data);
+
+      case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
+#ifdef HAVE_CHEEVOS
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
+            rcheevos_set_support_cheevos(state);
+         }
+#endif
+         break;
+
+      case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
+      {
+         const struct retro_hw_render_context_negotiation_interface *iface =
+            (const struct retro_hw_render_context_negotiation_interface*)data;
+         RARCH_LOG("Environ SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE.\n");
+         video_driver_set_context_negotiation_interface(iface);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+      {
+         uint64_t *quirks = (uint64_t *) data;
+         core_set_serialization_quirks(*quirks);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+         core_set_shared_context = true;
+         break;
+
+      case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+      {
+         const uint32_t supported_vfs_version = 3;
+         static struct retro_vfs_interface vfs_iface =
+         {
+            /* VFS API v1 */
+            retro_vfs_file_get_path_impl,
+            retro_vfs_file_open_impl,
+            retro_vfs_file_close_impl,
+            retro_vfs_file_size_impl,
+            retro_vfs_file_tell_impl,
+            retro_vfs_file_seek_impl,
+            retro_vfs_file_read_impl,
+            retro_vfs_file_write_impl,
+            retro_vfs_file_flush_impl,
+            retro_vfs_file_remove_impl,
+            retro_vfs_file_rename_impl,
+            /* VFS API v2 */
+            retro_vfs_file_truncate_impl,
+            /* VFS API v3 */
+            retro_vfs_stat_impl,
+            retro_vfs_mkdir_impl,
+            retro_vfs_opendir_impl,
+            retro_vfs_readdir_impl,
+            retro_vfs_dirent_get_name_impl,
+            retro_vfs_dirent_is_dir_impl,
+            retro_vfs_closedir_impl
+         };
+
+         struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
+         if (vfs_iface_info->required_interface_version <= supported_vfs_version)
+         {
+            RARCH_LOG("Core requested VFS version >= v%d, providing v%d\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            vfs_iface_info->required_interface_version = supported_vfs_version;
+            vfs_iface_info->iface                      = &vfs_iface;
+            system->supports_vfs = true;
+         }
+         else
+         {
+            RARCH_WARN("Core requested VFS version v%d which is higher than what we support (v%d)\n", vfs_iface_info->required_interface_version, supported_vfs_version);
+            return false;
+         }
+
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
+      {
+         struct retro_led_interface *ledintf =
+            (struct retro_led_interface *)data;
+         if (ledintf)
+            ledintf->set_led_state = led_driver_set_led;
+      }
+      break;
+
+      case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
+      {
+         int result = 0;
+         if (!audio_suspended && audio_driver_active)
+            result |= 2;
+         if (video_driver_active && !(current_video->frame == video_null.frame))
+            result |= 1;
+#ifdef HAVE_RUNAHEAD
+         if (request_fast_savestate)
+            result |= 4;
+         if (hard_disable_audio)
+            result |= 8;
+#endif
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
+            result &= ~(1|2);
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            result |= 4;
+#endif
+         if (data != NULL)
+         {
+            int* result_p = (int*)data;
+            *result_p = result;
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
+      {
+         struct retro_midi_interface *midi_interface =
+               (struct retro_midi_interface *)data;
+
+         if (midi_interface)
+         {
+            midi_interface->input_enabled = midi_driver_input_enabled;
+            midi_interface->output_enabled = midi_driver_output_enabled;
+            midi_interface->read = midi_driver_read;
+            midi_interface->write = midi_driver_write;
+            midi_interface->flush = midi_driver_flush;
+         }
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
+         *(bool *)data = runloop_fastmotion;
+         break;
+
+      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
+         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
+         break;
+
+      case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
+         /* Just falldown, the function will return true */
+         break;
+
+      case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
+      {
+         /* Try to use the polled refresh rate first.  */
+         float target_refresh_rate = video_driver_get_refresh_rate();
+
+         /* If the above function failed [possibly because it is not
+          * implemented], use the refresh rate set in the config instead. */
+         if (target_refresh_rate == 0.0 && settings)
+            target_refresh_rate = settings->floats.video_refresh_rate;
+
+         *(float *)data = target_refresh_rate;
+         break;
+      }
+
+      default:
+         RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
+         return false;
+   }
+
+   return true;
+}
+
+#ifdef HAVE_DYNAMIC
+/**
+ * libretro_get_environment_info:
+ * @func                         : Function pointer for get_environment_info.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Sets environment callback in order to get statically known
+ * information from it.
+ *
+ * Fetched via environment callbacks instead of
+ * retro_get_system_info(), as this info is part of extensions.
+ *
+ * Should only be called once right after core load to
+ * avoid overwriting the "real" environ callback.
+ *
+ * For statically linked cores, pass retro_set_environment as argument.
+ */
+static void libretro_get_environment_info(void (*func)(retro_environment_t),
+      bool *load_no_content)
+{
+   load_no_content_hook = load_no_content;
+
+   /* load_no_content gets set in this callback. */
+   func(environ_cb_get_system_info);
+
+   /* It's possible that we just set get_system_info callback
+    * to the currently running core.
+    *
+    * Make sure we reset it to the actual environment callback.
+    * Ignore any environment callbacks here in case we're running
+    * on the non-current core. */
+   ignore_environment_cb = true;
+   func(rarch_environment_cb);
+   ignore_environment_cb = false;
+}
+
+static bool load_dynamic_core(const char *path, char *buf, size_t size)
+{
+   /* Can't lookup symbols in itself on UWP */
+#if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   if (dylib_proc(NULL, "retro_init"))
+   {
+      /* Try to verify that -lretro was not linked in from other modules
+       * since loading it dynamically and with -l will fail hard. */
+      RARCH_ERR("Serious problem. RetroArch wants to load libretro cores"
+            " dynamically, but it is already linked.\n");
+      RARCH_ERR("This could happen if other modules RetroArch depends on "
+            "link against libretro directly.\n");
+      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+      retroarch_fail(1, "init_libretro_symbols()");
+   }
+#endif
+
+   /* Need to use absolute path for this setting. It can be
+    * saved to content history, and a relative path would
+    * break in that scenario. */
+   path_resolve_realpath(buf, size);
+   if ((lib_handle = dylib_load(path)))
+      return true;
+   return false;
+}
+
+static dylib_t libretro_get_system_info_lib(const char *path,
+      struct retro_system_info *info, bool *load_no_content)
+{
+   dylib_t lib = dylib_load(path);
+   void (*proc)(struct retro_system_info*);
+
+   if (!lib)
+      return NULL;
+
+   proc = (void (*)(struct retro_system_info*))
+      dylib_proc(lib, "retro_get_system_info");
+
+   if (!proc)
+   {
+      dylib_close(lib);
+      return NULL;
+   }
+
+   proc(info);
+
+   if (load_no_content)
+   {
+      void (*set_environ)(retro_environment_t);
+      *load_no_content = false;
+      set_environ = (void (*)(retro_environment_t))
+         dylib_proc(lib, "retro_set_environment");
+
+      if (set_environ)
+         libretro_get_environment_info(set_environ, load_no_content);
+   }
+
+   return lib;
+}
+#endif
+
+static char current_library_name[1024];
+static char current_library_version[1024];
+static char current_valid_extensions[1024];
+
+/**
+ * libretro_get_system_info:
+ * @path                         : Path to libretro library.
+ * @info                         : Pointer to system info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from an arbitrary lib.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool libretro_get_system_info(const char *path,
+      struct retro_system_info *info, bool *load_no_content)
+{
+   struct retro_system_info dummy_info;
+#ifdef HAVE_DYNAMIC
+   dylib_t lib;
+#endif
+
+   dummy_info.library_name     = NULL;
+   dummy_info.library_version  = NULL;
+   dummy_info.valid_extensions = NULL;
+   dummy_info.need_fullpath    = false;
+   dummy_info.block_extract    = false;
+
+#ifdef HAVE_DYNAMIC
+   lib                         = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content);
+
+   if (!lib)
+   {
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+            path);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
+      return false;
+   }
+#else
+   if (load_no_content)
+   {
+      load_no_content_hook = load_no_content;
+
+      /* load_no_content gets set in this callback. */
+      retro_set_environment(environ_cb_get_system_info);
+
+      /* It's possible that we just set get_system_info callback
+       * to the currently running core.
+       *
+       * Make sure we reset it to the actual environment callback.
+       * Ignore any environment callbacks here in case we're running
+       * on the non-current core. */
+      ignore_environment_cb = true;
+      retro_set_environment(rarch_environment_cb);
+      ignore_environment_cb = false;
+   }
+
+   retro_get_system_info(&dummy_info);
+#endif
+
+   memcpy(info, &dummy_info, sizeof(*info));
+
+   current_library_name[0] = '\0';
+   current_library_version[0] = '\0';
+   current_valid_extensions[0] = '\0';
+
+   if (!string_is_empty(dummy_info.library_name))
+      strlcpy(current_library_name,
+            dummy_info.library_name, sizeof(current_library_name));
+   if (!string_is_empty(dummy_info.library_version))
+      strlcpy(current_library_version,
+            dummy_info.library_version, sizeof(current_library_version));
+   if (dummy_info.valid_extensions)
+      strlcpy(current_valid_extensions,
+            dummy_info.valid_extensions, sizeof(current_valid_extensions));
+
+   info->library_name     = current_library_name;
+   info->library_version  = current_library_version;
+   info->valid_extensions = current_valid_extensions;
+
+#ifdef HAVE_DYNAMIC
+   dylib_close(lib);
+#endif
+   return true;
+}
+
+/**
+ * load_symbols:
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will
+ *                                load dummy symbols.
+ *
+ * Setup libretro callback symbols. Returns true on success,
+ * or false if symbols could not be loaded.
+ **/
+static bool init_libretro_symbols_custom(enum rarch_core_type type,
+      struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
+{
+#ifdef HAVE_DYNAMIC
+   /* the library handle for use with the SYMBOL macro */
+   dylib_t lib_handle_local;
+#endif
+
+   switch (type)
+   {
+      case CORE_TYPE_PLAIN:
+         {
+#ifdef HAVE_DYNAMIC
+#ifdef HAVE_RUNAHEAD
+            dylib_t *lib_handle_p = (dylib_t*)_lib_handle_p;
+            if (!lib_path || !lib_handle_p)
+#endif
+            {
+               const char *path = path_get(RARCH_PATH_CORE);
+
+               if (string_is_empty(path))
+               {
+                  RARCH_ERR("Frontend is built for dynamic libretro cores, but "
+                        "path is not set. Cannot continue.\n");
+                  retroarch_fail(1, "init_libretro_symbols()");
+               }
+
+               RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+                     path);
+
+               if (!load_dynamic_core(
+                        path,
+                        path_get_ptr(RARCH_PATH_CORE),
+                        path_get_realsize(RARCH_PATH_CORE)
+                        ))
+               {
+                  RARCH_ERR("Failed to open libretro core: \"%s\"\n", path);
+                  RARCH_ERR("Error(s): %s\n", dylib_error());
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                        1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  return false;
+               }
+               lib_handle_local = lib_handle;
+            }
+#ifdef HAVE_RUNAHEAD
+            else
+            {
+               /* for a secondary core, we already have a
+                * primary library loaded, so we can skip
+                * some checks and just load the library */
+               retro_assert(lib_path != NULL && lib_handle_p != NULL);
+               lib_handle_local = dylib_load(lib_path);
+
+               if (!lib_handle_local)
+                  return false;
+               *lib_handle_p = lib_handle_local;
+            }
+#endif
+#endif
+
+            CORE_SYMBOLS(SYMBOL);
+         }
+         break;
+      case CORE_TYPE_DUMMY:
+         CORE_SYMBOLS(SYMBOL_DUMMY);
+         break;
+      case CORE_TYPE_FFMPEG:
+#ifdef HAVE_FFMPEG
+         CORE_SYMBOLS(SYMBOL_FFMPEG);
+#endif
+         break;
+      case CORE_TYPE_MPV:
+#ifdef HAVE_MPV
+         CORE_SYMBOLS(SYMBOL_MPV);
+#endif
+         break;
+      case CORE_TYPE_IMAGEVIEWER:
+#ifdef HAVE_IMAGEVIEWER
+         CORE_SYMBOLS(SYMBOL_IMAGEVIEWER);
+#endif
+         break;
+      case CORE_TYPE_NETRETROPAD:
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+         CORE_SYMBOLS(SYMBOL_NETRETROPAD);
+#endif
+         break;
+      case CORE_TYPE_VIDEO_PROCESSOR:
+#if defined(HAVE_VIDEOPROCESSOR)
+         CORE_SYMBOLS(SYMBOL_VIDEOPROCESSOR);
+#endif
+         break;
+      case CORE_TYPE_GONG:
+#ifdef HAVE_EASTEREGG
+         CORE_SYMBOLS(SYMBOL_GONG);
+#endif
+         break;
+   }
+
+   return true;
+}
+
+/**
+ * init_libretro_symbols:
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will
+ *                                load dummy symbols.
+ *
+ * Initializes libretro symbols and
+ * setups environment callback functions. Returns true on success,
+ * or false if symbols could not be loaded.
+ **/
+static bool init_libretro_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+{
+   /* Load symbols */
+   if (!init_libretro_symbols_custom(type, current_core, NULL, NULL))
+      return false;
+
+#ifdef HAVE_RUNAHEAD
+   /* remember last core type created, so creating a
+    * secondary core will know what core type to use. */
+   set_last_core_type(type);
+#endif
+   return true;
+}
+
+bool libretro_get_shared_context(void)
+{
+   return core_set_shared_context;
+}
+
+/**
+ * uninit_libretro_sym:
+ *
+ * Frees libretro core.
+ *
+ * Frees all core options,
+ * associated state, and
+ * unbind all libretro callback symbols.
+ **/
+static void uninit_libretro_symbols(struct retro_core_t *current_core)
+{
+#ifdef HAVE_DYNAMIC
+   if (lib_handle)
+      dylib_close(lib_handle);
+   lib_handle = NULL;
+#endif
+
+   memset(current_core, 0, sizeof(struct retro_core_t));
+
+   core_set_shared_context = false;
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+   rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+   rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
+   rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+
+   /* Performance counters no longer valid. */
+   performance_counters_clear();
+}
 
 #if defined(HAVE_RUNAHEAD)
 /* RUNAHEAD - SECONDARY CORE  */
@@ -1699,11 +3837,6 @@ static void clear_controller_port_map(void)
    unsigned port;
    for (port = 0; port < 16; port++)
       port_map[port] = -1;
-}
-
-static void secondary_core_set_variable_update(void)
-{
-   has_variable_update = true;
 }
 
 static char *get_temp_directory_alloc(void)
@@ -1912,14 +4045,16 @@ static bool secondary_core_create(void)
       return false;
 
    /* Load Core */
-   if (init_libretro_sym_custom(
+   if (init_libretro_symbols_custom(
             CORE_TYPE_PLAIN, &secondary_core,
             secondary_library_path, &secondary_module))
    {
       secondary_core.symbols_inited = true;
       secondary_core.retro_set_environment(
             rarch_environment_secondary_core_hook);
-      secondary_core_set_variable_update();
+#ifdef HAVE_RUNAHEAD
+      has_variable_update = true;
+#endif
 
       secondary_core.retro_init();
 
@@ -2034,308 +4169,12 @@ static void remember_controller_port_device(long port, long device)
 {
 }
 
-static void secondary_core_set_variable_update(void)
-{
-}
-
 static void clear_controller_port_map(void)
 {
 }
 #endif
 
 #endif
-
-/* CORE OPTIONS */
-static bool core_option_manager_parse_variable(
-      core_option_manager_t *opt, size_t idx,
-      const struct retro_variable *var)
-{
-   const char *val_start      = NULL;
-   char *value                = NULL;
-   char *desc_end             = NULL;
-   char *config_val           = NULL;
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
-
-   if (!string_is_empty(var->key))
-      option->key             = strdup(var->key);
-   if (!string_is_empty(var->value))
-      value                   = strdup(var->value);
-
-   if (!string_is_empty(value))
-      desc_end                = strstr(value, "; ");
-
-   if (!desc_end)
-      goto error;
-
-   *desc_end    = '\0';
-
-   if (!string_is_empty(value))
-      option->desc    = strdup(value);
-
-   val_start          = desc_end + 2;
-   option->vals       = string_split(val_start, "|");
-
-   if (!option->vals)
-      goto error;
-
-   if (config_get_string(opt->conf, option->key, &config_val))
-   {
-      size_t i;
-
-      for (i = 0; i < option->vals->size; i++)
-      {
-         if (string_is_equal(option->vals->elems[i].data, config_val))
-         {
-            option->index = i;
-            break;
-         }
-      }
-
-      free(config_val);
-   }
-
-   free(value);
-
-   return true;
-
-error:
-   free(value);
-   return false;
-}
-
-/**
- * core_option_manager_free:
- * @opt              : options manager handle
- *
- * Frees core option manager handle.
- **/
-static void core_option_manager_free(core_option_manager_t *opt)
-{
-   size_t i;
-
-   if (!opt)
-      return;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      if (opt->opts[i].desc)
-         free(opt->opts[i].desc);
-      if (opt->opts[i].key)
-         free(opt->opts[i].key);
-
-      if (opt->opts[i].vals)
-         string_list_free(opt->opts[i].vals);
-
-      opt->opts[i].desc = NULL;
-      opt->opts[i].key  = NULL;
-      opt->opts[i].vals = NULL;
-   }
-
-   if (opt->conf)
-      config_file_free(opt->conf);
-   free(opt->opts);
-   free(opt);
-}
-
-static void core_option_manager_get(core_option_manager_t *opt,
-      struct retro_variable *var)
-{
-   size_t i;
-
-#ifdef HAVE_RUNAHEAD
-   if (opt->updated)
-      secondary_core_set_variable_update();
-#endif
-
-   opt->updated = false;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      if (string_is_empty(opt->opts[i].key))
-         continue;
-
-      if (string_is_equal(opt->opts[i].key, var->key))
-      {
-         var->value = opt->opts[i].vals->elems[opt->opts[i].index].data;
-         return;
-      }
-   }
-
-   var->value = NULL;
-}
-
-/**
- * core_option_manager_new:
- * @conf_path        : Filesystem path to write core option config file to.
- * @vars             : Pointer to variable array handle.
- *
- * Creates and initializes a core manager handle.
- *
- * Returns: handle to new core manager handle, otherwise NULL.
- **/
-static core_option_manager_t *core_option_manager_new(const char *conf_path,
-      const struct retro_variable *vars)
-{
-   const struct retro_variable *var;
-   size_t size                       = 0;
-   core_option_manager_t *opt        = (core_option_manager_t*)
-      calloc(1, sizeof(*opt));
-
-   if (!opt)
-      return NULL;
-
-   if (!string_is_empty(conf_path))
-      opt->conf                     = config_file_new(conf_path);
-   if (!opt->conf)
-      opt->conf                     = config_file_new(NULL);
-
-   strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
-
-   if (!opt->conf)
-      goto error;
-
-   for (var = vars; var->key && var->value; var++)
-      size++;
-
-   if (size == 0)
-      goto error;
-
-   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
-   if (!opt->opts)
-      goto error;
-
-   opt->size = size;
-   size      = 0;
-
-   for (var = vars; var->key && var->value; size++, var++)
-   {
-      if (!core_option_manager_parse_variable(opt, size, var))
-         goto error;
-   }
-
-   return opt;
-
-error:
-   core_option_manager_free(opt);
-   return NULL;
-}
-
-/**
- * core_option_manager_flush:
- * @opt              : options manager handle
- *
- * Writes core option key-pair values to file.
- *
- * Returns: true (1) if core option values could be
- * successfully saved to disk, otherwise false (0).
- **/
-static bool core_option_manager_flush(core_option_manager_t *opt)
-{
-   size_t i;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = (struct core_option*)&opt->opts[i];
-
-      if (option)
-         config_set_string(opt->conf, option->key,
-               opt->opts[i].vals->elems[opt->opts[i].index].data);
-   }
-
-   RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
-   return config_file_write(opt->conf, opt->conf_path, true);
-}
-
-/**
- * core_option_manager_flush_game_specific:
- * @opt              : options manager handle
- * @path             : path for the core options file
- *
- * Writes core option key-pair values to a custom file.
- *
- * Returns: true (1) if core option values could be
- * successfully saved to disk, otherwise false (0).
- **/
-static bool core_option_manager_flush_game_specific(
-      core_option_manager_t *opt, const char* path)
-{
-   size_t i;
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = (struct core_option*)&opt->opts[i];
-
-      if (option)
-         config_set_string(opt->conf, option->key,
-               opt->opts[i].vals->elems[opt->opts[i].index].data);
-   }
-
-   return config_file_write(opt->conf, path, true);
-}
-
-/**
- * core_option_manager_get_desc:
- * @opt              : options manager handle
- * @index            : index identifier of the option
- *
- * Gets description for an option.
- *
- * Returns: Description for an option.
- **/
-const char *core_option_manager_get_desc(
-      core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return NULL;
-   return opt->opts[idx].desc;
-}
-
-/**
- * core_option_manager_get_val:
- * @opt              : options manager handle
- * @index            : index identifier of the option
- *
- * Gets value for an option.
- *
- * Returns: Value for an option.
- **/
-const char *core_option_manager_get_val(core_option_manager_t *opt, size_t idx)
-{
-   struct core_option *option = NULL;
-   if (!opt)
-      return NULL;
-   option = (struct core_option*)&opt->opts[idx];
-   return option->vals->elems[option->index].data;
-}
-
-void core_option_manager_set_val(core_option_manager_t *opt,
-      size_t idx, size_t val_idx)
-{
-   struct core_option *option= NULL;
-
-   if (!opt)
-      return;
-
-   option        = (struct core_option*)&opt->opts[idx];
-   option->index = val_idx % option->vals->size;
-
-   opt->updated  = true;
-}
-
-/**
- * core_option_manager_set_default:
- * @opt                   : pointer to core option manager object.
- * @idx                   : index of core option to be reset to defaults.
- *
- * Reset core option specified by @idx and sets default value for option.
- **/
-void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return;
-
-   opt->opts[idx].index = 0;
-   opt->updated         = true;
-}
 
 /* MESSAGE QUEUE */
 static void retroarch_msg_queue_deinit(void)
@@ -3262,11 +5101,6 @@ bool recording_init(void)
    }
 
    return true;
-}
-
-void *recording_driver_get_data_ptr(void)
-{
-   return recording_data;
 }
 
 void recording_driver_update_streaming_url(void)
@@ -4839,7 +6673,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
  *
  * Input polling callback function.
  **/
-static void input_poll(void)
+static void input_driver_poll(void)
 {
    size_t i;
    settings_t *settings           = configuration_settings;
@@ -5268,7 +7102,7 @@ static int16_t input_state_device(
  * Returns: Non-zero if the given key (identified by @id)
  * was pressed by the user (assigned to @port).
  **/
-int16_t input_state(unsigned port, unsigned device,
+static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
@@ -6609,18 +8443,6 @@ void input_get_state_for_port(void *data, unsigned port,
 void *input_driver_get_data(void)
 {
    return current_input_data;
-}
-
-void **input_driver_get_data_ptr(void)
-{
-   return (void**)&current_input_data;
-}
-
-bool input_driver_has_capabilities(void)
-{
-   if (!current_input->get_capabilities || !current_input_data)
-      return false;
-   return true;
 }
 
 static bool input_driver_init(void)
@@ -10361,16 +12183,6 @@ void audio_driver_mixer_remove_stream(unsigned i)
    }
 }
 
-bool audio_driver_set_callback(const void *data)
-{
-   const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
-
-   if (cb)
-      audio_callback = *cb;
-
-   return true;
-}
-
 bool audio_driver_enable_callback(void)
 {
    if (!audio_callback.callback)
@@ -10495,16 +12307,6 @@ void audio_driver_frame_is_reverse(void)
             audio_driver_rewind_buf + audio_driver_rewind_ptr,
             audio_driver_rewind_size - audio_driver_rewind_ptr,
             runloop_slowmotion);
-}
-
-bool audio_driver_is_suspended(void)
-{
-   return audio_suspended;
-}
-
-bool audio_driver_is_active(void)
-{
-   return audio_driver_active;
 }
 
 static void audio_driver_destroy(void)
@@ -11000,13 +12802,6 @@ static void video_driver_free_internal(void)
    video_driver_monitor_compute_fps_statistics();
 }
 
-#define video_driver_get_hw_context_internal() (&hw_render)
-
-struct retro_hw_render_callback *video_driver_get_hw_context(void)
-{
-   return video_driver_get_hw_context_internal();
-}
-
 static bool video_driver_pixel_converter_init(unsigned size)
 {
    struct retro_hw_render_callback *hwr =
@@ -11189,7 +12984,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
       if (!video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
-               &current_input, input_driver_get_data_ptr(),
+               &current_input, (void**)&current_input_data,
                current_video, video))
       {
          RARCH_ERR("[Video]: Cannot open threaded video driver ... Exiting ...\n");
@@ -11200,7 +12995,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #endif
       video_driver_data = current_video->init(
             &video, &current_input,
-            input_driver_get_data_ptr());
+            (void**)&current_input_data);
 
    if (!video_driver_data)
    {
@@ -11645,11 +13440,6 @@ void video_driver_unset_stub_frame(void)
       current_video->frame = frame_bak;
 
    frame_bak = NULL;
-}
-
-bool video_driver_is_stub_frame(void)
-{
-   return current_video->frame == video_null.frame;
 }
 
 bool video_driver_supports_viewport_read(void)
@@ -12179,11 +13969,6 @@ void video_driver_unset_video_cache_context_ack(void)
 bool video_driver_is_video_cache_context_ack(void)
 {
    return video_driver_cache_context_ack;
-}
-
-bool video_driver_is_active(void)
-{
-   return video_driver_active;
 }
 
 bool video_driver_get_current_software_framebuffer(
@@ -13296,28 +15081,28 @@ enum gfx_ctx_api video_context_driver_get_api(void)
 
    if (ctx_api == GFX_CTX_NONE)
    {
-      const char *video_driver = video_driver_get_ident();
-      if (string_is_equal(video_driver, "d3d9"))
+      const char *video_ident  = (current_video) ? current_video->ident : NULL;
+      if (string_is_equal(video_ident, "d3d9"))
          return GFX_CTX_DIRECT3D9_API;
-      else if (string_is_equal(video_driver, "d3d10"))
+      else if (string_is_equal(video_ident, "d3d10"))
          return GFX_CTX_DIRECT3D10_API;
-      else if (string_is_equal(video_driver, "d3d11"))
+      else if (string_is_equal(video_ident, "d3d11"))
          return GFX_CTX_DIRECT3D11_API;
-      else if (string_is_equal(video_driver, "d3d12"))
+      else if (string_is_equal(video_ident, "d3d12"))
          return GFX_CTX_DIRECT3D12_API;
-      else if (string_is_equal(video_driver, "gx2"))
+      else if (string_is_equal(video_ident, "gx2"))
          return GFX_CTX_GX2_API;
-      else if (string_is_equal(video_driver, "gx"))
+      else if (string_is_equal(video_ident, "gx"))
          return GFX_CTX_GX_API;
-      else if (string_is_equal(video_driver, "gl"))
+      else if (string_is_equal(video_ident, "gl"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal(video_driver, "gl1"))
+      else if (string_is_equal(video_ident, "gl1"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal(video_driver, "glcore"))
+      else if (string_is_equal(video_ident, "glcore"))
          return GFX_CTX_OPENGL_API;
-      else if (string_is_equal(video_driver, "vulkan"))
+      else if (string_is_equal(video_ident, "vulkan"))
          return GFX_CTX_VULKAN_API;
-      else if (string_is_equal(video_driver, "metal"))
+      else if (string_is_equal(video_ident, "metal"))
          return GFX_CTX_METAL_API;
 
       return GFX_CTX_NONE;
@@ -13948,7 +15733,7 @@ void driver_set_nonblock_state(void)
    bool                 enable = input_driver_nonblock_state;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_is_active() && video_driver_get_ptr_internal(false))
+   if (video_driver_active && video_driver_get_ptr_internal(false))
    {
       settings_t *settings       = configuration_settings;
       bool video_nonblock        = enable;
@@ -14284,13 +16069,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             driver_adjust_system_rates();
          }
          break;
-      case RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO:
-         {
-            const struct retro_system_av_info **info = (const struct retro_system_av_info**)data;
-            if (info)
-               return driver_update_system_av_info(*info);
-         }
-         return false;
       case RARCH_DRIVER_CTL_FIND_FIRST:
          {
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
@@ -14674,7 +16452,7 @@ static bool runahead_create(void)
    request_fast_savestate = false;
 
    runahead_save_state_list_init(info.size);
-   runahead_video_driver_is_active = video_driver_is_active();
+   runahead_video_driver_is_active = video_driver_active;
 
    if (runahead_save_state_size == 0 || !runahead_save_state_size_known)
    {
@@ -14791,7 +16569,7 @@ static bool runahead_core_run_use_last_input(void)
    return true;
 }
 
-static void run_ahead(int runahead_count, bool use_secondary)
+static void do_runahead(int runahead_count, bool use_secondary)
 {
    int frame_number        = 0;
    bool last_frame         = false;
@@ -14805,9 +16583,7 @@ static void run_ahead(int runahead_count, bool use_secondary)
 
    if (runahead_count <= 0 || !runahead_available)
    {
-      core_run();
-      runahead_force_input_dirty = true;
-      return;
+      goto force_input_dirty;
    }
 
    if (!runahead_save_state_size_known)
@@ -14817,9 +16593,7 @@ static void run_ahead(int runahead_count, bool use_secondary)
          settings_t *settings = configuration_settings;
          if (!settings->bools.run_ahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         core_run();
-         runahead_force_input_dirty = true;
-         return;
+         goto force_input_dirty;
       }
    }
 
@@ -14882,9 +16656,7 @@ static void run_ahead(int runahead_count, bool use_secondary)
       {
          runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         core_run();
-         runahead_force_input_dirty = true;
-         return;
+         goto force_input_dirty;
       }
 
       /* run main core with video suspended */
@@ -14927,18 +16699,12 @@ static void run_ahead(int runahead_count, bool use_secondary)
 #endif
    }
    runahead_force_input_dirty = false;
-}
+   return;
 
-bool want_fast_savestate(void)
-{
-   return request_fast_savestate;
+force_input_dirty:
+   core_run();
+   runahead_force_input_dirty = true;
 }
-
-bool get_hard_disable_audio(void)
-{
-   return hard_disable_audio;
-}
-
 #endif
 
 void rarch_core_runtime_tick(void)
@@ -15041,7 +16807,7 @@ static void global_free(void)
    runloop_remaps_game_active            = false;
    runloop_remaps_content_dir_active     = false;
 
-   core_unset_input_descriptors();
+   current_core.has_set_input_descriptors = false;
 
    global = &g_extern;
    path_clear_all();
@@ -15488,7 +17254,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    /* Flush out some states that could have been set
     * by core environment variables. */
-   core_unset_input_descriptors();
+   current_core.has_set_input_descriptors = false;
 
    /* Load the config file now that we know what it is */
    if (!rarch_block_config_read)
@@ -16663,19 +18429,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_NONBLOCK_FORCED:
          return runloop_force_nonblock;
-      case RARCH_CTL_SET_FRAME_TIME:
-         {
-            const struct retro_frame_time_callback *info =
-               (const struct retro_frame_time_callback*)data;
-#ifdef HAVE_NETWORKING
-            /* retro_run() will be called in very strange and
-             * mysterious ways, have to disable it. */
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-               return false;
-#endif
-            runloop_frame_time = *info;
-         }
-         break;
       case RARCH_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -16753,10 +18506,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_DATA_DEINIT:
          task_queue_deinit();
          break;
-      case RARCH_CTL_IS_CORE_OPTION_UPDATED:
-         if (!runloop_core_options)
-            return false;
-         return runloop_core_options->updated;
       case RARCH_CTL_CORE_OPTION_PREV:
          /*
           * Get previous value for core option specified by @idx.
@@ -16799,27 +18548,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                option->index                 = 
                   (option->index + 1) % option->vals->size;
                runloop_core_options->updated = true;
-            }
-         }
-         break;
-      case RARCH_CTL_CORE_OPTIONS_GET:
-         {
-            settings_t *settings       = configuration_settings;
-            unsigned log_level         = settings->uints.libretro_log_level;
-
-            struct retro_variable *var = (struct retro_variable*)data;
-
-            if (!runloop_core_options || !var)
-               return false;
-
-            if (runloop_core_options)
-               core_option_manager_get(runloop_core_options, var);
-
-            if (log_level == RETRO_LOG_DEBUG)
-            {
-               RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
-               RARCH_LOG("\t%s\n", var->value ? var->value :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             }
          }
          break;
@@ -18570,24 +20298,25 @@ int runloop_iterate(unsigned *sleep_ms)
    if ((video_frame_delay > 0) && !input_nonblock_state)
       retro_sleep(video_frame_delay);
 
-#ifdef HAVE_RUNAHEAD
    {
-      unsigned run_ahead_num_frames = settings->uints.run_ahead_frames;
+      bool want_runahead            = false;
+      unsigned run_ahead_num_frames = 0;
+#ifdef HAVE_RUNAHEAD
+      run_ahead_num_frames          = settings->uints.run_ahead_frames;
       /* Run Ahead Feature replaces the call to core_run in this loop */
-      if (settings->bools.run_ahead_enabled && run_ahead_num_frames > 0
+      want_runahead                 = settings->bools.run_ahead_enabled && run_ahead_num_frames > 0;
 #ifdef HAVE_NETWORKING
-            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
+      want_runahead                 = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
-         )
-         run_ahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
+#endif
+
+#ifdef HAVE_RUNAHEAD
+      if (want_runahead)
+         do_runahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
       else
+#endif
          core_run();
    }
-#else
-   {
-      core_run();
-   }
-#endif
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
@@ -19609,7 +21338,7 @@ static void retro_input_poll_null(void)
 static void core_input_state_poll_maybe(void)
 {
    if (current_core.poll_type == POLL_TYPE_NORMAL)
-      input_poll();
+      input_driver_poll();
 }
 
 static int16_t core_input_state_poll(unsigned port,
@@ -19618,16 +21347,11 @@ static int16_t core_input_state_poll(unsigned port,
    if (current_core.poll_type == POLL_TYPE_LATE)
    {
       if (!current_core.input_polled)
-         input_poll();
+         input_driver_poll();
 
       current_core.input_polled = true;
    }
    return input_state(port, device, idx, id);
-}
-
-void core_set_input_state(retro_ctx_input_state_info_t *info)
-{
-   current_core.retro_set_input_state(info->cb);
 }
 
 /**
@@ -19669,15 +21393,14 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
    cbs->state_cb        = core_input_state_poll;
-   cbs->poll_cb         = input_poll;
+   cbs->poll_cb         = input_driver_poll;
 
    return true;
 }
 
-bool core_deinit(void *data)
+static bool core_uninit_libretro_callbacks(void)
 {
-   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-
+   struct retro_callbacks *cbs = (struct retro_callbacks*)&retro_ctx;
    if (!cbs)
       return false;
 
@@ -19690,11 +21413,6 @@ bool core_deinit(void *data)
    current_core.inited  = false;
 
    return true;
-}
-
-bool core_uninit_libretro_callbacks(void)
-{
-   return core_deinit(&retro_ctx);
 }
 
 /**
@@ -19788,13 +21506,13 @@ bool core_set_poll_type(unsigned *type)
 
 void core_uninit_symbols(void)
 {
-   uninit_libretro_sym(&current_core);
+   uninit_libretro_symbols(&current_core);
    current_core.symbols_inited = false;
 }
 
 bool core_init_symbols(enum rarch_core_type *type)
 {
-   if (!type || !init_libretro_sym(*type, &current_core))
+   if (!type || !init_libretro_symbols(*type, &current_core))
       return false;
 
    if (!current_core.retro_run)
@@ -19970,21 +21688,21 @@ bool core_run(void)
    {
       /* Paused due to netplay. We must poll and display something so that a
        * netplay peer pausing doesn't just hang. */
-      input_poll();
+      input_driver_poll();
       video_driver_cached_frame();
       return true;
    }
 #endif
 
    if (early_polling)
-      input_poll();
+      input_driver_poll();
    else if (late_polling)
       current_core.input_polled = false;
 
    current_core.retro_run();
 
    if (late_polling && !current_core.input_polled)
-      input_poll();
+      input_driver_poll();
 
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
@@ -20020,7 +21738,7 @@ bool core_load(unsigned poll_type_behavior)
    if (!core_init_libretro_cbs(&retro_ctx))
       return false;
 
-   core_get_system_av_info(video_viewport_get_system_av_info());
+   core_get_system_av_info(&video_driver_av_info);
 
    return true;
 }
@@ -20038,16 +21756,6 @@ bool core_has_set_input_descriptor(void)
    return current_core.has_set_input_descriptors;
 }
 
-void core_set_input_descriptors(void)
-{
-   current_core.has_set_input_descriptors = true;
-}
-
-void core_unset_input_descriptors(void)
-{
-   current_core.has_set_input_descriptors = false;
-}
-
 bool core_is_inited(void)
 {
   return current_core.inited;
@@ -20058,7 +21766,7 @@ bool core_is_symbols_inited(void)
   return current_core.symbols_inited;
 }
 
-bool core_is_game_loaded(void)
+static bool core_is_game_loaded(void)
 {
   return current_core.game_loaded;
 }

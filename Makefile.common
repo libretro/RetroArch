@@ -213,7 +213,6 @@ OBJ += frontend/frontend.o \
        gfx/video_crt_switch.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
-       dynamic.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
        managers/state_manager.o \

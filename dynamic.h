@@ -120,32 +120,6 @@ struct retro_core_t
 
 bool libretro_get_shared_context(void);
 
-/**
- * init_libretro_sym:
- * @type                        : Type of core to be loaded.
- *                                If CORE_TYPE_DUMMY, will
- *                                load dummy symbols.
- *
- * Initializes libretro symbols and
- * setups environment callback functions. Returns true on success,
- * or false if symbols could not be loaded.
- **/
-bool init_libretro_sym(enum rarch_core_type type,
-      struct retro_core_t *core);
-
-bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, void *lib_handle_p);
-
-/**
- * uninit_libretro_sym:
- *
- * Frees libretro core.
- *
- * Frees all core options,
- * associated state, and
- * unbind all libretro callback symbols.
- **/
-void uninit_libretro_sym(struct retro_core_t *core);
-
 /* Arbitrary twenty subsystems limite */
 #define SUBSYSTEM_MAX_SUBSYSTEMS 20
 /* Arbitrary 10 roms for each subsystem limit */

@@ -116,7 +116,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_FRAME_TIME_FREE,
    RARCH_CTL_SET_FRAME_TIME_LAST,
-   RARCH_CTL_SET_FRAME_TIME,
 
    RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
@@ -176,11 +175,9 @@ enum rarch_ctl_state
    /* Core options */
    RARCH_CTL_HAS_CORE_OPTIONS,
    RARCH_CTL_GET_CORE_OPTION_SIZE,
-   RARCH_CTL_IS_CORE_OPTION_UPDATED,
    RARCH_CTL_CORE_OPTIONS_LIST_GET,
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
-   RARCH_CTL_CORE_OPTIONS_GET,
    RARCH_CTL_CORE_OPTIONS_INIT,
    RARCH_CTL_CORE_OPTIONS_DEINIT,
 
@@ -555,10 +552,6 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-bool audio_driver_is_suspended(void);
-
-bool audio_driver_is_active(void);
-
 bool audio_driver_enable_callback(void);
 
 bool audio_driver_disable_callback(void);
@@ -603,8 +596,6 @@ void audio_driver_set_buffer_size(size_t bufsize);
 bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
-
-bool audio_driver_set_callback(const void *data);
 
 bool audio_driver_callback(void);
 
@@ -829,8 +820,6 @@ bool recording_is_enabled(void);
 void recording_set_state(bool state);
 
 void streaming_set_state(bool state);
-
-void *recording_driver_get_data_ptr(void);
 
 bool recording_is_enabled(void);
 
@@ -1632,8 +1621,9 @@ bool video_driver_cached_frame_has_valid_framebuffer(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
-bool video_driver_is_stub_frame(void);
+
 bool video_driver_supports_viewport_read(void);
+
 bool video_driver_prefer_viewport_read(void);
 bool video_driver_supports_read_frame_raw(void);
 void video_driver_set_viewport_config(void);
@@ -1678,8 +1668,6 @@ bool video_driver_is_video_cache_context(void);
 void video_driver_set_video_cache_context_ack(void);
 
 bool video_driver_is_video_cache_context_ack(void);
-
-bool video_driver_is_active(void);
 
 bool video_driver_get_current_software_framebuffer(struct
       retro_framebuffer *fb);

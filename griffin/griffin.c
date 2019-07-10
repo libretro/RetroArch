@@ -918,7 +918,6 @@ FILTERS
 DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
-#include "../dynamic.c"
 #include "../gfx/video_filter.c"
 #include "../libretro-common/audio/dsp_filter.c"
 

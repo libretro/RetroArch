@@ -87,11 +87,6 @@ enum driver_ctl_state
     * calls audio_monitor_set_refresh_rate(). */
    RARCH_DRIVER_CTL_SET_REFRESH_RATE,
 
-   /* Update the system Audio/Video information.
-    * Will reinitialize audio/video drivers.
-    * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
-   RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO,
-
    RARCH_DRIVER_CTL_FIND_FIRST,
 
    RARCH_DRIVER_CTL_FIND_LAST,

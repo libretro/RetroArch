@@ -174,8 +174,6 @@ bool core_run(void);
 
 bool core_init(void);
 
-bool core_deinit(void *data);
-
 bool core_unload_game(void);
 
 bool core_reset(void);
@@ -216,21 +214,11 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
 
 bool core_has_set_input_descriptor(void);
 
-void core_set_input_descriptors(void);
-
-void core_unset_input_descriptors(void);
-
-bool core_uninit_libretro_callbacks(void);
-
 void core_uninit_symbols(void);
-
-void core_set_input_state(retro_ctx_input_state_info_t *info);
 
 bool core_is_symbols_inited(void);
 
 bool core_is_inited(void);
-
-bool core_is_game_loaded(void);
 
 void core_free_retro_game_info(struct retro_game_info *dest);
 
