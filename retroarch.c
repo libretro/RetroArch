@@ -13850,12 +13850,6 @@ static int driver_find_index(const char * label, const char *drv)
    return -1;
 }
 
-static bool driver_find_first(const char *label, char *s, size_t len)
-{
-   find_driver_nonempty(label, 0, s, len);
-   return true;
-}
-
 /**
  * driver_find_last:
  * @label              : string of driver type to be found.
@@ -13873,10 +13867,11 @@ static bool driver_find_last(const char *label, char *s, size_t len)
    {}
 
    if (i)
-      find_driver_nonempty(label, i-1, s, len);
+      i = i - 1;
    else
-      driver_find_first(label, s, len);
+      i = 0;
 
+   find_driver_nonempty(label, i, s, len);
    return true;
 }
 
@@ -14302,8 +14297,9 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
             if (!drv)
                return false;
-            return driver_find_first(drv->label, drv->s, drv->len);
+            find_driver_nonempty(drv->label, 0, drv->s, drv->len);
          }
+         break;
       case RARCH_DRIVER_CTL_FIND_LAST:
          {
             driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
@@ -14344,6 +14340,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 /* RUNAHEAD */
 
 #ifdef HAVE_RUNAHEAD
+
 static void *input_list_element_constructor(void)
 {
    void *ptr                          = calloc(1, sizeof(input_list_element));
@@ -14390,8 +14387,6 @@ static void input_list_element_destructor(void* element_ptr)
    free(element->state);
    free(element_ptr);
 }
-
-#define input_state_destroy() mylist_destroy(&input_state_list)
 
 static void input_state_set_last(unsigned port, unsigned device,
       unsigned index, unsigned id, int16_t value)
@@ -14520,7 +14515,7 @@ static void remove_input_state_hook(void)
       retro_ctx.state_cb            = input_state_callback_original;
       current_core.retro_set_input_state(retro_ctx.state_cb);
       input_state_callback_original = NULL;
-      input_state_destroy();
+      mylist_destroy(&input_state_list);
    }
 
    if (retro_reset_callback_original)
@@ -14576,8 +14571,6 @@ static void runahead_save_state_list_init(size_t saveStateSize)
          runahead_save_state_alloc, runahead_save_state_free);
 }
 
-#define runahead_save_state_list_destroy() mylist_destroy(&runahead_save_state_list)
-
 #if 0
 static void runahead_save_state_list_rotate(void)
 {
@@ -14623,7 +14616,7 @@ static void runahead_clear_variables(void)
 
 static void runahead_destroy(void)
 {
-   runahead_save_state_list_destroy();
+   mylist_destroy(&runahead_save_state_list);
    runahead_remove_hooks();
    runahead_clear_variables();
 }
@@ -14667,7 +14660,7 @@ static void runahead_add_hooks(void)
 static void runahead_error(void)
 {
    runahead_available             = false;
-   runahead_save_state_list_destroy();
+   mylist_destroy(&runahead_save_state_list);
    runahead_remove_hooks();
    runahead_save_state_size       = 0;
    runahead_save_state_size_known = true;
@@ -18089,7 +18082,7 @@ static enum runloop_state runloop_check_state(
             debug_seq = 0;
       }
 
-      old_pressed = pressed;
+      old_pressed     = pressed;
       old_any_pressed = any_pressed;
    }
 
