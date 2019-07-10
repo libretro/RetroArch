@@ -29,10 +29,6 @@
 #include <retro_environment.h>
 #include <vfs/vfs.h>
 
-#ifdef HAVE_CDROM
-#include <vfs/vfs_implementation_cdrom.h>
-#endif
-
 RETRO_BEGIN_DECLS
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);

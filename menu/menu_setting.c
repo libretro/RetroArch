@@ -36,6 +36,10 @@
 #include "../config.h"
 #endif
 
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 

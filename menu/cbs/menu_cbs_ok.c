@@ -26,6 +26,11 @@
 #include "../../config.h"
 #endif
 
+#include <vfs/vfs_implementation.h>
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #ifdef HAVE_DISCORD
 #include "../../discord/discord.h"
 #endif

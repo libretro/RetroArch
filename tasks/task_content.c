@@ -57,6 +57,11 @@
 #include <file/archive_file.h>
 #include <string/stdstring.h>
 
+#include <vfs/vfs_implementation.h>
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <retro_assert.h>
