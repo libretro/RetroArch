@@ -3245,7 +3245,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
-            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+            video_driver_set_aspect_ratio();
 
             /* TODO: Figure out what to do, if anything, with recording. */
          }
@@ -3253,12 +3253,30 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_get_current_software_framebuffer(
-               (struct retro_framebuffer*)data);
+      {
+         struct retro_framebuffer *fb = (struct retro_framebuffer*)data;
+         if (
+               video_driver_poke
+               && video_driver_poke->get_current_software_framebuffer
+               && video_driver_poke->get_current_software_framebuffer(
+                  video_driver_data, fb))
+            return true;
+
+         return false;
+      }
 
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
-         return video_driver_get_hw_render_interface(
-               (const struct retro_hw_render_interface**)data);
+      {
+         const struct retro_hw_render_interface **iface = (const struct retro_hw_render_interface **)data;
+         if (
+               video_driver_poke
+               && video_driver_poke->get_hw_render_interface
+               && video_driver_poke->get_hw_render_interface(
+                  video_driver_data, iface))
+            return true;
+
+         return false;
+      }
 
       case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
 #ifdef HAVE_CHEEVOS
@@ -13971,32 +13989,6 @@ bool video_driver_is_video_cache_context_ack(void)
    return video_driver_cache_context_ack;
 }
 
-bool video_driver_get_current_software_framebuffer(
-      struct retro_framebuffer *fb)
-{
-   if (
-            video_driver_poke
-         && video_driver_poke->get_current_software_framebuffer
-         && video_driver_poke->get_current_software_framebuffer(
-            video_driver_data, fb))
-      return true;
-
-   return false;
-}
-
-bool video_driver_get_hw_render_interface(
-      const struct retro_hw_render_interface **iface)
-{
-   if (
-            video_driver_poke
-         && video_driver_poke->get_hw_render_interface
-         && video_driver_poke->get_hw_render_interface(
-            video_driver_data, iface))
-      return true;
-
-   return false;
-}
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    if (!current_video || !current_video->viewport_info)
@@ -14005,10 +13997,10 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
    return true;
 }
 
-void video_driver_set_title_buf(void)
+static void video_driver_set_title_buf(void)
 {
    struct retro_system_info info;
-   core_get_system_info(&info);
+   current_core.retro_get_system_info(&info);
 
    fill_pathname_join_concat_noext(
          video_driver_title_buf,
@@ -18214,7 +18206,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
       case RARCH_CTL_SYSTEM_INFO_INIT:
-         core_get_system_info(&runloop_system.info);
+         current_core.retro_get_system_info(&runloop_system.info);
 
          if (!runloop_system.info.library_name)
             runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
