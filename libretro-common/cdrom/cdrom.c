@@ -1421,7 +1421,7 @@ bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool e
 #ifdef CDROM_DEBUG
    printf("Mode sense data for caching mode page: ");
 
-   for (i = 0; i < sizeof(buf); i++)
+   for (i = 0; i < (int)sizeof(buf); i++)
    {
       printf("%02X ", buf[i]);
    }
@@ -1482,7 +1482,7 @@ bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_ti
 #ifdef CDROM_DEBUG
    printf("Mode sense data for timeout groups: ");
 
-   for (i = 0; i < sizeof(buf); i++)
+   for (i = 0; i < (int)sizeof(buf); i++)
    {
       printf("%02X ", buf[i]);
    }
