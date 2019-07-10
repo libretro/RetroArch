@@ -29,6 +29,7 @@ extern "C" {
 #include <file/file_path.h>
 #include "../../../command.h"
 #include "../../../configuration.h"
+#include "../../../msg_hash.h"
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"

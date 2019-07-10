@@ -29,6 +29,8 @@
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
+#include <formats/image.h>
+
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>

@@ -57,9 +57,11 @@
 #include "performance_counters.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
+#include "input/input_driver.h"
 
 #include "cores/internal_cores.h"
 #include "content.h"
+#include "msg_hash.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "configuration.h"

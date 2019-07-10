@@ -36,7 +36,7 @@ input_mapper_t *input_mapper_new(void);
 void input_mapper_free(input_mapper_t *handle);
 
 void input_mapper_poll(input_mapper_t *handle,
-      input_overlay_t *overlay_pointer,
+      void *overlay_pointer,
       void *settings_data,
       unsigned max_users,
       bool poll_overlay);

@@ -23,6 +23,8 @@
 #include <file/file_path.h>
 #include <encodings/utf.h>
 #include <lists/string_list.h>
+#include <formats/image.h>
+
 #include <dxgi.h>
 
 #include "../../driver.h"
@@ -58,6 +60,19 @@ static struct string_list *d3d10_gpu_list = NULL;
 static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
+static void d3d10_clear_scissor(d3d10_video_t *d3d10, video_frame_info_t *video_info)
+{
+   D3D10_RECT scissor_rect;
+
+   scissor_rect.left   = 0;
+   scissor_rect.top    = 0;
+   scissor_rect.right  = video_info->width;
+   scissor_rect.bottom = video_info->height;
+
+   D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
+}
+
+
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
@@ -84,18 +99,6 @@ d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
    sprites[index].pos.w    = w;
    sprites[index].pos.h    = h;
    D3D10UnmapBuffer(d3d10->overlays.vbo);
-}
-
-static void d3d10_clear_scissor(d3d10_video_t *d3d10, video_frame_info_t *video_info)
-{
-   D3D10_RECT scissor_rect;
-
-   scissor_rect.left   = 0;
-   scissor_rect.top    = 0;
-   scissor_rect.right  = video_info->width;
-   scissor_rect.bottom = video_info->height;
-
-   D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
 }
 
 static void d3d10_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)

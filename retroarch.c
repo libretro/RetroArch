@@ -1340,6 +1340,7 @@ typedef struct input_remote_state
 static input_remote_state_t remote_st_ptr;
 
 /* INPUT OVERLAY GLOBAL VARIABLES */
+#ifdef HAVE_OVERLAY
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
@@ -1379,6 +1380,7 @@ struct input_overlay
 };
 
 input_overlay_t *overlay_ptr = NULL;
+#endif
 
 /* INPUT GLOBAL VARIABLES */
 
@@ -4845,7 +4847,11 @@ static void input_poll(void)
 
       if (do_poll)
          input_mapper_poll(input_driver_mapper, 
+#ifdef HAVE_OVERLAY
                overlay_ptr,
+#else
+               NULL,
+#endif
                settings,
                max_users,
                overlay_is_alive

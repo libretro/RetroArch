@@ -25,6 +25,7 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 
 #include "../../menu_animation.h"
 

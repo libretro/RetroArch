@@ -38,6 +38,7 @@
 #include "../config.h"
 #endif
 
+#include "input_driver.h"
 #include "input_mapper.h"
 
 #ifdef HAVE_OVERLAY
@@ -79,13 +80,16 @@ void input_mapper_free(input_mapper_t *handle)
 }
 
 void input_mapper_poll(input_mapper_t *handle,
-      input_overlay_t *overlay_pointer,
+      void *ol_pointer,
       void *settings_data,
       unsigned max_users,
       bool poll_overlay)
 {
    unsigned i, j;
    input_bits_t current_input;
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_pointer           = (input_overlay_t*)ol_pointer;
+#endif
    settings_t *settings                       = (settings_t*)settings_data;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END] = { false };
 

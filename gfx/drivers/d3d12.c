@@ -20,6 +20,7 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
