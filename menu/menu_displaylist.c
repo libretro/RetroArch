@@ -4918,7 +4918,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_append_enum(info->list,
                   drive_string,
                   drive,
-                  0,
+                  MSG_UNKNOWN,
                   MENU_SET_CDROM_LIST,
                   0, i);
          }
@@ -4960,7 +4960,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_append_enum(info->list,
                   drive_string,
                   drive,
-                  0,
+                  MSG_UNKNOWN,
                   MENU_SET_LOAD_CDROM_LIST,
                   0, i);
          }
