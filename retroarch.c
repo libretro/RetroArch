@@ -3858,9 +3858,6 @@ static void input_overlay_scale(struct overlay *ol, float scale)
 {
    size_t i;
 
-   if (!ol)
-      return;
-
    if (ol->block_scale)
       scale = 1.0f;
 
@@ -3956,9 +3953,6 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 {
    size_t i;
 
-   if (!ol)
-      return;
-
    for (i = 0; i < ol->size; i++)
       input_overlay_free_overlay(&ol->overlays[i]);
 
@@ -3969,9 +3963,6 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 
 static void input_overlay_load_active(input_overlay_t *ol, float opacity)
 {
-   if (!ol)
-      return;
-
    if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
@@ -3981,20 +3972,6 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
 
    if (ol->iface->full_screen)
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
-}
-
-/**
- * input_overlay_enable:
- * @enable                : Enable or disable the overlay
- *
- * Enable or disable the overlay.
- **/
-static void input_overlay_enable(input_overlay_t *ol, bool enable)
-{
-   ol->enable = enable;
-
-   if (ol->iface->enable)
-      ol->iface->enable(ol->iface_data, enable);
 }
 
 /**
@@ -4134,9 +4111,7 @@ static void input_overlay_poll(
 static void input_overlay_update_desc_geom(input_overlay_t *ol,
       struct overlay_desc *desc)
 {
-   if (!desc || !desc->image.pixels)
-      return;
-   if (!desc->movable)
+   if (!desc->image.pixels || !desc->movable)
       return;
 
    if (ol->iface->vertex_geom)
@@ -4296,7 +4271,12 @@ void input_overlay_loaded(retro_task_t *task,
    ol->iface_data = video_driver_get_ptr_internal(true);
 
    input_overlay_load_active(ol, data->overlay_opacity);
-   input_overlay_enable(ol, data->overlay_enable);
+
+   /* Enable or disable the overlay. */
+   ol->enable = data->overlay_enable;
+
+   if (ol->iface->enable)
+      ol->iface->enable(ol->iface_data, data->overlay_enable);
 
    input_overlay_set_scale_factor(ol, data->overlay_scale);
 
@@ -4380,13 +4360,6 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       else
           ol->iface->set_alpha(ol->iface_data, i, mod);
    }
-}
-
-bool input_overlay_is_alive(input_overlay_t *ol)
-{
-   if (ol)
-      return ol->alive;
-   return false;
 }
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
@@ -4554,51 +4527,6 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       input_overlay_post_poll(ol, opacity);
    else
       input_overlay_poll_clear(ol, opacity);
-}
-
-static void input_state_overlay(input_overlay_t *ol, int16_t *ret,
-      unsigned port, unsigned device, unsigned idx,
-      unsigned id)
-{
-   input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;
-
-   if (!ol || port != 0)
-      return;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (input_overlay_key_pressed(ol, id))
-            *ret |= 1;
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST)
-         {
-#if 0
-            RARCH_LOG("UDLR %u %u %u %u\n",
-                  OVERLAY_GET_KEY(ol_state, RETROK_UP),
-                  OVERLAY_GET_KEY(ol_state, RETROK_DOWN),
-                  OVERLAY_GET_KEY(ol_state, RETROK_LEFT),
-                  OVERLAY_GET_KEY(ol_state, RETROK_RIGHT)
-                  );
-#endif
-            if (OVERLAY_GET_KEY(ol_state, id))
-               *ret |= 1;
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         {
-            unsigned base = 0;
-
-            if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-               base = 2;
-            if (id == RETRO_DEVICE_ID_ANALOG_Y)
-               base += 1;
-            if (ol_state && ol_state->analog[base])
-               *ret = ol_state->analog[base];
-         }
-         break;
-   }
 }
 #endif
 
@@ -4903,7 +4831,26 @@ static void input_poll(void)
 #endif
 
    if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-      input_mapper_poll(input_driver_mapper);
+   {
+#ifdef HAVE_OVERLAY
+      bool overlay_is_alive = (overlay_ptr && overlay_ptr->alive);
+#else
+      bool overlay_is_alive = false;
+#endif
+#ifdef HAVE_MENU
+      bool do_poll          = menu_driver_is_alive() ? false : true;
+#else
+      bool do_poll          = true;
+#endif
+
+      if (do_poll)
+         input_mapper_poll(input_driver_mapper, 
+               overlay_ptr,
+               settings,
+               max_users,
+               overlay_is_alive
+               );
+   }
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
@@ -4952,7 +4899,7 @@ static void input_poll(void)
 #endif
 }
 
-static int16_t input_state_internal(
+static int16_t input_state_device(
       int16_t ret,
       unsigned port, unsigned device,
       unsigned idx, unsigned id,
@@ -4960,18 +4907,54 @@ static int16_t input_state_internal(
 {
    int16_t res          = 0;
    settings_t *settings = configuration_settings;
+#ifdef HAVE_OVERLAY
+   int16_t res_overlay  = 0;
+
+   if (overlay_ptr && port == 0)
+   {
+      input_overlay_state_t *ol_state = &overlay_ptr->overlay_state;
+
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            if (input_overlay_key_pressed(overlay_ptr, id))
+               res_overlay |= 1;
+            break;
+         case RETRO_DEVICE_KEYBOARD:
+            if (id < RETROK_LAST)
+            {
+#if 0
+               RARCH_LOG("UDLR %u %u %u %u\n",
+                     OVERLAY_GET_KEY(ol_state, RETROK_UP),
+                     OVERLAY_GET_KEY(ol_state, RETROK_DOWN),
+                     OVERLAY_GET_KEY(ol_state, RETROK_LEFT),
+                     OVERLAY_GET_KEY(ol_state, RETROK_RIGHT)
+                     );
+#endif
+               if (OVERLAY_GET_KEY(ol_state, id))
+                  res_overlay |= 1;
+            }
+            break;
+         case RETRO_DEVICE_ANALOG:
+            {
+               unsigned base = 0;
+
+               if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  base = 2;
+               if (id == RETRO_DEVICE_ID_ANALOG_Y)
+                  base += 1;
+               if (ol_state && ol_state->analog[base])
+                  res_overlay = ol_state->analog[base];
+            }
+            break;
+      }
+   }
+#endif
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
-
 #ifdef HAVE_NETWORKGAMEPAD
             if (input_driver_remote)
                if (input_remote_key_pressed(id, port))
@@ -5039,13 +5022,6 @@ static int16_t input_state_internal(
       case RETRO_DEVICE_MOUSE:
 
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
-
             if (id < RARCH_FIRST_META_KEY)
             {
                bool bind_valid = libretro_input_binds[port] 
@@ -5078,16 +5054,6 @@ static int16_t input_state_internal(
       case RETRO_DEVICE_KEYBOARD:
 
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-#endif
-
-#ifdef HAVE_OVERLAY
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
-
             res = ret;
 
 #ifdef HAVE_OVERLAY
@@ -5104,13 +5070,6 @@ static int16_t input_state_internal(
       case RETRO_DEVICE_LIGHTGUN:
 
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
-
             if (id < RARCH_FIRST_META_KEY)
             {
                bool bind_valid = libretro_input_binds[port] 
@@ -5143,16 +5102,6 @@ static int16_t input_state_internal(
       case RETRO_DEVICE_ANALOG:
 
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-#endif
-
-#ifdef HAVE_OVERLAY
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
-
 #ifdef HAVE_NETWORKGAMEPAD
             if (input_driver_remote)
             {
@@ -5220,12 +5169,6 @@ static int16_t input_state_internal(
       case RETRO_DEVICE_POINTER:
 
          {
-#ifdef HAVE_OVERLAY
-            int16_t res_overlay  = 0;
-            if (overlay_ptr)
-               input_state_overlay(overlay_ptr,
-                     &res_overlay, port, device, idx, id);
-#endif
             if (id < RARCH_FIRST_META_KEY)
             {
                bool bind_valid = libretro_input_binds[port] 
@@ -5303,7 +5246,7 @@ int16_t input_state(unsigned port, unsigned device,
             && !input_driver_block_libretro_input)
       {
          for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            if (input_state_internal(ret, port, device, idx, i, true))
+            if (input_state_device(ret, port, device, idx, i, true))
                res |= (1 << i);
       }
       if (BSV_MOVIE_IS_PLAYBACK_OFF())
@@ -5316,7 +5259,7 @@ int16_t input_state(unsigned port, unsigned device,
 
    if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
-      result = input_state_internal(ret, port, device, idx, id, false);
+      result = input_state_device(ret, port, device, idx, id, false);
 
    if (BSV_MOVIE_IS_PLAYBACK_OFF())
    {

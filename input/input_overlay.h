@@ -236,8 +236,6 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
-bool input_overlay_is_alive(input_overlay_t *ol);
-
 void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 
