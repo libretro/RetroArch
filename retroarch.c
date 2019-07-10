@@ -1613,6 +1613,10 @@ static char *secondary_library_path                = NULL;
 #endif
 #endif
 
+/* Forward declarations */
+static retro_proc_address_t video_driver_get_proc_address(const char *sym);
+static uintptr_t video_driver_get_current_framebuffer(void);
+static bool video_driver_find_driver(void);
 static bool core_uninit_libretro_callbacks(void);
 static bool core_is_game_loaded(void);
 static int16_t input_state(unsigned port, unsigned device,
@@ -4899,7 +4903,7 @@ void streaming_set_state(bool state)
    streaming_enable = state;
 }
 
-bool video_driver_gpu_record_init(unsigned size)
+static bool video_driver_gpu_record_init(unsigned size)
 {
    video_driver_record_gpu_buffer = (uint8_t*)malloc(size);
    if (!video_driver_record_gpu_buffer)
@@ -5085,14 +5089,14 @@ bool recording_init(void)
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
       if (settings->bools.video_post_filter_record
-            && video_driver_frame_filter_alive())
+            && !!video_driver_state_filter)
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;
 
          params.pix_fmt    = FFEMU_PIX_RGB565;
 
-         if (video_driver_frame_filter_is_32bit())
+         if (video_driver_state_out_rgb32)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(
@@ -12580,14 +12584,14 @@ void video_context_driver_destroy(void)
  *
  * Returns: pointer to hardware framebuffer object, otherwise 0.
  **/
-uintptr_t video_driver_get_current_framebuffer(void)
+static uintptr_t video_driver_get_current_framebuffer(void)
 {
    if (video_driver_poke && video_driver_poke->get_current_framebuffer)
       return video_driver_poke->get_current_framebuffer(video_driver_data);
    return 0;
 }
 
-retro_proc_address_t video_driver_get_proc_address(const char *sym)
+static retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    if (video_driver_poke && video_driver_poke->get_proc_address)
       return video_driver_poke->get_proc_address(video_driver_data, sym);
@@ -13737,7 +13741,7 @@ void video_driver_set_nonblock_state(bool toggle)
       current_video->set_nonblock_state(video_driver_data, toggle);
 }
 
-bool video_driver_find_driver(void)
+static bool video_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
@@ -13843,16 +13847,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
    return false;
 }
 
-bool video_driver_frame_filter_alive(void)
-{
-   return !!video_driver_state_filter;
-}
-
-bool video_driver_frame_filter_is_32bit(void)
-{
-   return video_driver_state_out_rgb32;
-}
-
 void video_driver_default_settings(void)
 {
    global_t *global    = &g_extern;
@@ -13953,7 +13947,6 @@ bool video_driver_is_hw_context(void)
 
    return is_hw_context;
 }
-
 
 const struct retro_hw_render_context_negotiation_interface *
    video_driver_get_context_negotiation_interface(void)
@@ -15136,7 +15129,7 @@ float video_driver_get_refresh_rate(void)
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-bool video_driver_has_widgets(void)
+static bool video_driver_has_widgets(void)
 {
    return current_video && current_video->menu_widgets_enabled 
       && current_video->menu_widgets_enabled(video_driver_data);
@@ -16018,7 +16011,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
           * (breaking video_driver_has_widgets) */
          menu_widgets_context_destroy();
          menu_widgets_free();
-
 #endif
          video_driver_destroy();
          audio_driver_destroy();

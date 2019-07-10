@@ -1641,12 +1641,9 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
 void video_driver_show_mouse(void);
 void video_driver_hide_mouse(void);
 void video_driver_set_nonblock_state(bool toggle);
-bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
-bool video_driver_frame_filter_alive(void);
-bool video_driver_frame_filter_is_32bit(void);
 void video_driver_default_settings(void);
 void video_driver_load_settings(config_file_t *conf);
 void video_driver_save_settings(config_file_t *conf);
@@ -1659,8 +1656,6 @@ const struct retro_hw_render_context_negotiation_interface
 void video_driver_set_context_negotiation_interface(const struct
       retro_hw_render_context_negotiation_interface *iface);
 
-bool video_driver_gpu_record_init(unsigned size);
-
 void video_driver_gpu_record_deinit(void);
 
 bool video_driver_is_video_cache_context(void);
@@ -1668,10 +1663,6 @@ bool video_driver_is_video_cache_context(void);
 void video_driver_set_video_cache_context_ack(void);
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-bool video_driver_has_widgets(void);
-#endif
 
 /**
  * video_driver_find_handle:
@@ -1709,18 +1700,6 @@ const char* config_get_video_driver_options(void);
  * Returns: video driver's userdata.
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data);
-
-/**
- * video_driver_get_current_framebuffer:
- *
- * Gets pointer to current hardware renderer framebuffer object.
- * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
- *
- * Returns: pointer to hardware framebuffer object, otherwise 0.
- **/
-uintptr_t video_driver_get_current_framebuffer(void);
-
-retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *shader);
