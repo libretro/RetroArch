@@ -163,8 +163,7 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       const ui_application_t *ui_application = 
          ui_companion_driver_get_qt_application_ptr();
-
-      if (ui_application && ui_application->run)
+      if (ui_application)
          ui_application->run(data);
    }
 #endif
