@@ -13982,11 +13982,6 @@ void video_driver_unset_video_cache_context_ack(void)
    video_driver_cache_context_ack = false;
 }
 
-bool video_driver_is_video_cache_context_ack(void)
-{
-   return video_driver_cache_context_ack;
-}
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    if (!current_video || !current_video->viewport_info)
@@ -15821,7 +15816,7 @@ void drivers_init(int flags)
       video_driver_set_cached_frame_ptr(NULL);
       video_driver_init_internal(&video_is_threaded);
 
-      if (!video_driver_is_video_cache_context_ack()
+      if (!video_driver_cache_context_ack
             && hwr->context_reset)
          hwr->context_reset();
       video_driver_unset_video_cache_context_ack();

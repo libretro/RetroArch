@@ -1667,8 +1667,6 @@ bool video_driver_is_video_cache_context(void);
 
 void video_driver_set_video_cache_context_ack(void);
 
-bool video_driver_is_video_cache_context_ack(void);
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
