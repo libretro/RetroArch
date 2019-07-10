@@ -2259,6 +2259,16 @@ void driver_camera_stop(void);
 
 bool driver_camera_start(void);
 
+void retroarch_overlay_next(void);
+
+void retroarch_overlay_set_scale_factor(void);
+
+void retroarch_overlay_set_alpha_mod(void);
+
+void retroarch_overlay_deinit(void);
+
+void retroarch_overlay_init(void);
+
 RETRO_END_DECLS
 
 #endif

@@ -241,9 +241,6 @@ void input_overlay_loaded(retro_task_t *task,
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 
-/* FIXME - temporary. Globals are bad */
-extern input_overlay_t *overlay_ptr;
-
 RETRO_END_DECLS
 
 #endif

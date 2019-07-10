@@ -1744,6 +1744,16 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_OVERLAY_DEINIT:
+#ifdef HAVE_OVERLAY
+         retroarch_overlay_deinit();
+#endif
+         break;
+      case CMD_EVENT_OVERLAY_INIT:
+#ifdef HAVE_OVERLAY
+         retroarch_overlay_init();
+#endif
+         break;
       case CMD_EVENT_CHEAT_INDEX_PLUS:
          cheat_manager_index_next();
          break;
@@ -2170,45 +2180,10 @@ TODO: Add a setting for these tweaks */
             settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          }
          break;
-      case CMD_EVENT_OVERLAY_DEINIT:
-#ifdef HAVE_OVERLAY
-         input_overlay_free(overlay_ptr);
-         overlay_ptr = NULL;
-#endif
-         break;
-      case CMD_EVENT_OVERLAY_INIT:
-         {
-#if defined(GEKKO)
-            /* Avoid a crash at startup or even when toggling overlay in rgui */
-            uint64_t memory_used       = frontend_driver_get_used_memory();
-            if(memory_used > (72 * 1024 * 1024))
-               break;
-#endif
-            command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-#ifdef HAVE_OVERLAY
-            {
-               const settings_t *settings      = (const settings_t*)config_get_ptr();
-               if (settings->bools.input_overlay_enable)
-               {
-                  task_push_overlay_load_default(input_overlay_loaded,
-                        settings->paths.path_overlay,
-                        settings->bools.input_overlay_hide_in_menu,
-                        settings->bools.input_overlay_enable,
-                        settings->floats.input_overlay_opacity,
-                        settings->floats.input_overlay_scale,
-                        NULL);
-               }
-            }
-#endif
-         }
-         break;
       case CMD_EVENT_OVERLAY_NEXT:
-         {
 #ifdef HAVE_OVERLAY
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
-            input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
+         retroarch_overlay_next();
 #endif
-         }
          break;
       case CMD_EVENT_DSP_FILTER_DEINIT:
          audio_driver_dsp_filter_free();
@@ -2398,20 +2373,14 @@ TODO: Add a setting for these tweaks */
          audio_driver_set_nonblocking_state(boolean);
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
-         {
 #ifdef HAVE_OVERLAY
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
-            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
+         retroarch_overlay_set_scale_factor();
 #endif
-         }
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
-         {
 #ifdef HAVE_OVERLAY
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
-            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
+         retroarch_overlay_set_alpha_mod();
 #endif
-         }
          break;
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK);

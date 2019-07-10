@@ -1379,7 +1379,7 @@ struct input_overlay
    input_overlay_state_t overlay_state;
 };
 
-input_overlay_t *overlay_ptr = NULL;
+static input_overlay_t *overlay_ptr = NULL;
 #endif
 
 /* INPUT GLOBAL VARIABLES */
@@ -4529,6 +4529,54 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       input_overlay_post_poll(ol, opacity);
    else
       input_overlay_poll_clear(ol, opacity);
+}
+
+void retroarch_overlay_next(void)
+{
+   settings_t *settings      = configuration_settings;
+   input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
+}
+
+void retroarch_overlay_set_scale_factor(void)
+{
+   settings_t *settings      = configuration_settings;
+   input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
+}
+
+void retroarch_overlay_set_alpha_mod(void)
+{
+#ifdef HAVE_OVERLAY
+   settings_t *settings      = configuration_settings;
+   input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
+#endif
+}
+
+void retroarch_overlay_deinit(void)
+{
+   input_overlay_free(overlay_ptr);
+   overlay_ptr = NULL;
+}
+
+void retroarch_overlay_init(void)
+{
+   settings_t *settings      = configuration_settings;
+#if defined(GEKKO)
+   /* Avoid a crash at startup or even when toggling overlay in rgui */
+   uint64_t memory_used       = frontend_driver_get_used_memory();
+   if(memory_used > (72 * 1024 * 1024))
+      break;
+#endif
+
+   retroarch_overlay_deinit();
+
+   if (settings->bools.input_overlay_enable)
+      task_push_overlay_load_default(input_overlay_loaded,
+            settings->paths.path_overlay,
+            settings->bools.input_overlay_hide_in_menu,
+            settings->bools.input_overlay_enable,
+            settings->floats.input_overlay_opacity,
+            settings->floats.input_overlay_scale,
+            NULL);
 }
 #endif
 
@@ -11185,8 +11233,10 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_driver_init_input(tmp);
 
-   command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+#ifdef HAVE_OVERLAY
+   retroarch_overlay_deinit();
+   retroarch_overlay_init();
+#endif
 
 #ifdef HAVE_VIDEO_LAYOUT
    if (settings->bools.video_layout_enable)
@@ -16185,7 +16235,7 @@ void rarch_menu_running_finished(bool quit)
 #ifdef HAVE_OVERLAY
    if (!quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+         retroarch_overlay_init();
 #endif
 }
 
@@ -17686,12 +17736,12 @@ static enum runloop_state runloop_check_state(
       if (input_driver_keyboard_linefeed_enable)
       {
          prev_overlay_restore  = false;
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+         retroarch_overlay_init();
       }
       else if (prev_overlay_restore)
       {
          if (!settings->bools.input_overlay_hide_in_menu)
-            command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+            retroarch_overlay_init();
          prev_overlay_restore = false;
       }
    }
