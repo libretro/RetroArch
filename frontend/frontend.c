@@ -110,11 +110,6 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
-   void *args                      = (void*)data;
-#if defined(HAVE_MAIN) && defined(HAVE_QT)
-   const ui_application_t *ui_application = NULL;
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    if (FAILED(CoInitialize(NULL)))
    {
@@ -124,7 +119,7 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
-   frontend_driver_init_first(args);
+   frontend_driver_init_first(data);
    rarch_ctl(RARCH_CTL_INIT, NULL);
 
    if (frontend_driver_is_inited())
@@ -133,7 +128,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       info.argc            = argc;
       info.argv            = argv;
-      info.args            = args;
+      info.args            = data;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
       if (!task_push_load_content_from_cli(
@@ -163,12 +158,15 @@ int rarch_main(int argc, char *argv[], void *data)
          break;
    }while(1);
 
-   main_exit(args);
+   main_exit(data);
 #elif defined(HAVE_QT)
-   ui_application = ui_companion_driver_get_qt_application_ptr();
+   {
+      const ui_application_t *ui_application = 
+         ui_companion_driver_get_qt_application_ptr();
 
-   if (ui_application && ui_application->run)
-      ui_application->run(args);
+      if (ui_application && ui_application->run)
+         ui_application->run(data);
+   }
 #endif
 
    return 0;
