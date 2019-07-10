@@ -159,7 +159,7 @@ static void check_variables(void)
       int i;
       g_state->refresh = atoi(var.value);
 
-      for (i = 0; i < sizeof(g_state->g_input) / sizeof(g_state->g_input[0]); i++)
+      for (i = 0; i < (int)(sizeof(g_state->g_input) / sizeof(g_state->g_input[0])); i++)
          g_state->g_input[i].last_dt = 1.0f / g_state->refresh;
    }
 

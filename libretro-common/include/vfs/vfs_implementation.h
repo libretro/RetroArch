@@ -33,9 +33,7 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
@@ -77,8 +75,6 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

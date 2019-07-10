@@ -1268,7 +1268,7 @@ struct string_list* cdrom_get_available_drives(void)
    if (!dir_list)
       return list;
 
-   for (i = 0; i < dir_list->size; i++)
+   for (i = 0; i < (int)dir_list->size; i++)
    {
       if (strstr(dir_list->elems[i].data, "/dev/sg"))
       {
