@@ -154,14 +154,10 @@ static void ui_application_qt_quit(void)
 static void ui_application_qt_run(void *args)
 {
 #ifdef HAVE_MAIN
-   int ret;
-   unsigned sleep_ms = 0;
-
    do
    {
-      ui_application_qt_process_events();
-
-      ret = runloop_iterate(&sleep_ms);
+      unsigned sleep_ms = 0;
+      int ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
