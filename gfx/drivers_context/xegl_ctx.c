@@ -27,6 +27,7 @@
 
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
 #include "../../verbosity.h"
 
 #include "../common/egl_common.h"
