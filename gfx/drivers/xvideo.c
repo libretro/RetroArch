@@ -42,6 +42,7 @@
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../input/input_driver.h"
 #include "../../verbosity.h"
 
 #include "../common/x11_common.h"
