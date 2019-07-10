@@ -835,7 +835,10 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 #ifdef HAVE_VULKAN
          [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
          if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_MACOS))
-            goto error;
+         {
+            free(cocoa_ctx);
+            return NULL;
+         }
 #endif
          break;
       case GFX_CTX_NONE:
@@ -844,10 +847,6 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    }
 
    return cocoa_ctx;
-
-error:
-   free(cocoa_ctx);
-   return NULL;
 }
 
 #ifdef HAVE_COCOA_METAL
