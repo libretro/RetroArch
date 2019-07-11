@@ -14524,45 +14524,45 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
    video_info->timedate_enable        = settings->bools.menu_timedate_enable;
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
-   video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
-   video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;
-   video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
-   video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
+   video_info->xmb_shadows_enable          = 
+      settings->bools.menu_xmb_shadows_enable;
+   video_info->xmb_alpha_factor            = 
+      settings->uints.menu_xmb_alpha_factor;
+   video_info->menu_wallpaper_opacity      = 
+      settings->floats.menu_wallpaper_opacity;
+   video_info->menu_framebuffer_opacity    = 
+      settings->floats.menu_framebuffer_opacity;
 
-   video_info->libretro_running       = current_core.game_loaded;
+   video_info->libretro_running            = current_core.game_loaded;
 #else
-   video_info->menu_is_alive          = false;
-   video_info->menu_footer_opacity    = 0.0f;
-   video_info->menu_header_opacity    = 0.0f;
-   video_info->materialui_color_theme = 0;
-   video_info->menu_shader_pipeline   = 0;
-   video_info->xmb_color_theme        = 0;
-   video_info->xmb_theme              = 0;
-   video_info->timedate_enable        = false;
-   video_info->battery_level_enable   = false;
-   video_info->xmb_shadows_enable     = false;
-   video_info->xmb_alpha_factor       = 0.0f;
-   video_info->menu_framebuffer_opacity = 0.0f;
-   video_info->menu_wallpaper_opacity = 0.0f;
+   video_info->menu_is_alive               = false;
+   video_info->menu_footer_opacity         = 0.0f;
+   video_info->menu_header_opacity         = 0.0f;
+   video_info->materialui_color_theme      = 0;
+   video_info->menu_shader_pipeline        = 0;
+   video_info->xmb_color_theme             = 0;
+   video_info->xmb_theme                   = 0;
+   video_info->timedate_enable             = false;
+   video_info->battery_level_enable        = false;
+   video_info->xmb_shadows_enable          = false;
+   video_info->xmb_alpha_factor            = 0.0f;
+   video_info->menu_framebuffer_opacity    = 0.0f;
+   video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
-
-   video_info->is_perfcnt_enable      = is_perfcnt_enable;
-   video_info->runloop_is_paused      = is_paused;
-   video_info->runloop_is_idle        = is_idle;
-   video_info->runloop_is_slowmotion  = is_slowmotion;
+   video_info->is_perfcnt_enable           = runloop_perfcnt_enable;
+   video_info->runloop_is_paused           = runloop_paused;
+   video_info->runloop_is_idle             = runloop_idle;
+   video_info->runloop_is_slowmotion       = runloop_slowmotion;
 
    video_info->input_driver_nonblock_state = input_driver_nonblock_state;
+   video_info->context_data                = video_context_data;
+   video_info->cb_update_window_title      = current_video_context.update_window_title;
+   video_info->cb_swap_buffers             = current_video_context.swap_buffers;
+   video_info->cb_get_metrics              = current_video_context.get_metrics;
+   video_info->cb_set_resize               = current_video_context.set_resize;
 
-   video_info->context_data           = video_context_data;
-
-   video_info->cb_update_window_title = current_video_context.update_window_title;
-   video_info->cb_swap_buffers        = current_video_context.swap_buffers;
-   video_info->cb_get_metrics         = current_video_context.get_metrics;
-   video_info->cb_set_resize          = current_video_context.set_resize;
-
-   video_info->userdata               = video_driver_get_ptr_internal(false);
+   video_info->userdata                    = video_driver_get_ptr_internal(false);
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
