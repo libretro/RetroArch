@@ -966,10 +966,18 @@ FILE
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
+#if defined(__linux__)
 #include "../libretro-common/file/nbio/nbio_linux.c"
+#endif
+#if defined(HAVE_MMAP) && defined(BSD)
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#endif
+#if defined(ORBIS)
 #include "../libretro-common/file/nbio/nbio_orbis.c"
+#endif
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================

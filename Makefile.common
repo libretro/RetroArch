@@ -192,10 +192,21 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        list_special.o \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
+
+ifneq ($(findstring Linux,$(OS)),)
+	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
+endif
+ifneq ($(findstring Win32,$(OS)),)
+   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o
+endif
+ifneq ($(findstring BSD,$(OS)),)
+	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
+else ifneq ($(findstring Darwin,$(OS)),)
+	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
+endif
+
+OBJ += \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
@@ -257,6 +268,7 @@ OBJ += frontend/frontend.o \
        performance_counters.o \
        verbosity.o \
        midi/drivers/null_midi.o
+
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
 	DEFINES += -DHAVE_AUDIOMIXER
