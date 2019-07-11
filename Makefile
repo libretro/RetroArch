@@ -193,9 +193,11 @@ config.mk: configure qb/*
 endif
 endif
 
+SYMBOL_MAP := -Wl,-Map=output.map
+
 retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS) -Wl,-Map=output.map
+	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
