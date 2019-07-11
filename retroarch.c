@@ -19360,14 +19360,6 @@ static enum runloop_state runloop_check_state(
    /* Should be called once per frame */
    if (!appletMainLoop())
       return RUNLOOP_STATE_QUIT;
-#elif !defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)
-   if (!video_driver_is_threaded_internal())
-   {
-      const ui_application_t *application = ui_companion 
-         ? ui_companion->application : NULL;
-      if (application)
-         application->process_events();
-   }
 #endif
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
@@ -19408,6 +19400,13 @@ static enum runloop_state runloop_check_state(
       }
    }
 
+   if (!video_driver_is_threaded_internal())
+   {
+      const ui_application_t *application = ui_companion 
+         ? ui_companion->application : NULL;
+      if (application)
+         application->process_events();
+   }
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)

@@ -167,8 +167,13 @@ int rarch_main(int argc, char *argv[], void *data)
       {
          do
          {
+            int ret;
             unsigned sleep_ms = 0;
-            int ret = runloop_iterate(&sleep_ms);
+
+            if (ui_application->process_events)
+               ui_application->process_events();
+
+            ret = runloop_iterate(&sleep_ms);
 
             if (ret == 1 && sleep_ms > 0)
                retro_sleep(sleep_ms);
