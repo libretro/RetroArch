@@ -6415,7 +6415,7 @@ void retroarch_overlay_init(void)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    uint64_t memory_used       = frontend_driver_get_used_memory();
    if(memory_used > (72 * 1024 * 1024))
-      break;
+      return;
 #endif
 
    retroarch_overlay_deinit();
