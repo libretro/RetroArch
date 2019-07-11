@@ -1614,6 +1614,8 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static void driver_camera_stop(void);
+static bool driver_camera_start(void);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(void);
@@ -15417,7 +15419,7 @@ const char* config_get_camera_driver_options(void)
    return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
 }
 
-bool driver_camera_start(void)
+static bool driver_camera_start(void)
 {
    if (camera_driver && camera_data && camera_driver->start)
    {
@@ -15432,7 +15434,7 @@ bool driver_camera_start(void)
    return true;
 }
 
-void driver_camera_stop(void)
+static void driver_camera_stop(void)
 {
    if (     camera_driver
          && camera_driver->stop
@@ -15653,7 +15655,7 @@ static bool driver_find_prev(const char *label, char *s, size_t len)
  *
  * Find next driver in driver array.
  **/
-bool driver_find_next(const char *label, char *s, size_t len)
+static bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 

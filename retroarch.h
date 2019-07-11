@@ -2212,10 +2212,6 @@ const void *camera_driver_find_handle(int index);
  **/
 const char *camera_driver_find_ident(int index);
 
-void driver_camera_stop(void);
-
-bool driver_camera_start(void);
-
 void retroarch_overlay_next(void);
 
 void retroarch_overlay_set_scale_factor(void);
