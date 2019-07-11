@@ -680,7 +680,7 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(int *x, int *y, ude
       int minY = view.y;
       int maxY = view.y + view.height;
 
-      // not running in a window
+      /* Not running in a window. */
       noX11DispX = noX11DispX + dx;
       if (noX11DispX < minX)
          noX11DispX = minX;
