@@ -96,6 +96,7 @@ generic_deferred_push(deferred_push_configurations_list,            DISPLAYLIST_
 generic_deferred_push(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 generic_deferred_push(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
 generic_deferred_push(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
+generic_deferred_push(deferred_push_cdrom_info_detail_list,         DISPLAYLIST_CDROM_DETAIL_INFO)
 generic_deferred_push(deferred_push_load_disk_list,                 DISPLAYLIST_LOAD_DISC)
 generic_deferred_push(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
 generic_deferred_push(deferred_push_information,                    DISPLAYLIST_INFORMATION)
@@ -1390,6 +1391,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);
                break;
+            case MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_DETAIL_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
+               break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
             case MENU_ENUM_LABEL_FAVORITES:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
@@ -1626,6 +1630,11 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    else if (type == MENU_SETTING_ACTION_CORE_DISK_OPTIONS)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_disk_options);
+   }
+   else if (type == MENU_SET_CDROM_INFO)
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
+      return 0;
    }
    else
       return -1;

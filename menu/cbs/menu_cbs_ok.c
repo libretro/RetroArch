@@ -285,6 +285,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
       case ACTION_OK_DL_IMAGES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
+      case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST;
       default:
          break;
    }
@@ -951,6 +953,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_IMAGES_LIST:
       case ACTION_OK_DL_LOAD_DISC_LIST:
       case ACTION_OK_DL_DUMP_DISC_LIST:
+      case ACTION_OK_DL_CDROM_INFO_LIST:
+      case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
@@ -4386,6 +4390,7 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
 default_action_ok_func(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
 default_action_ok_func(action_ok_goto_favorites, ACTION_OK_DL_FAVORITES_LIST)
 default_action_ok_func(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
+default_action_ok_func(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
 default_action_ok_func(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 default_action_ok_func(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
 default_action_ok_func(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
@@ -6427,6 +6432,10 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    if (type == MENU_SET_CDROM_LIST)
    {
       BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
+   }
+   else if (type == MENU_SET_CDROM_INFO)
+   {
+      BIND_ACTION_OK(cbs, action_ok_cdrom_info_list);
    }
    else if (type == MENU_SET_LOAD_CDROM_LIST)
    {
