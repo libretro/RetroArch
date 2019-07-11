@@ -5287,7 +5287,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DATABASE_ENTRY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
+#ifdef HAVE_LIBRETRODB
             bool parse_database          = false;
+#endif
             struct string_list *str_list = NULL;
 
             if (!string_is_empty(info->label))
@@ -5311,7 +5313,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      info->path_b   = strdup(str_list->elems[1].data);
                      info->label    = strdup(str_list->elems[0].data);
+#ifdef HAVE_LIBRETRODB
                      parse_database = true;
+#endif
                   }
                }
 
@@ -7774,6 +7778,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
+
+            (void)attr;
 
             attr.i = 0;
             new_exts[0] = '\0';

@@ -20390,8 +20390,7 @@ rarch_system_info_t *runloop_get_system_info(void)
 
 struct retro_system_info *runloop_get_libretro_system_info(void)
 {
-   struct retro_system_info *system = &runloop_system.info;
-   return system;
+   return &runloop_system.info;
 }
 
 char *get_retroarch_launch_arguments(void)
