@@ -1625,7 +1625,6 @@ static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(void);
 static bool core_uninit_libretro_callbacks(void);
-static bool core_is_game_loaded(void);
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 static bool driver_update_system_av_info(
@@ -13072,7 +13071,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
 #endif
 
-   if (!core_is_game_loaded())
+   if (!current_core.game_loaded)
       video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
@@ -14484,7 +14483,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->monitor_index         = settings->uints.video_monitor_index;
    video_info->shared_context        = settings->bools.video_shared_context;
 
-   if (libretro_get_shared_context() && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+   if (core_set_shared_context && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       video_info->shared_context     = true;
 
    video_info->font_enable           = settings->bools.video_font_enable;
@@ -14526,7 +14525,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
    video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
 
-   video_info->libretro_running       = core_is_game_loaded();
+   video_info->libretro_running       = current_core.game_loaded;
 #else
    video_info->menu_is_alive          = false;
    video_info->menu_footer_opacity    = 0.0f;
@@ -21751,11 +21750,6 @@ bool core_is_inited(void)
 bool core_is_symbols_inited(void)
 {
   return current_core.symbols_inited;
-}
-
-static bool core_is_game_loaded(void)
-{
-  return current_core.game_loaded;
 }
 
 void core_free_retro_game_info(struct retro_game_info *dest)
