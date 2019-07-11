@@ -209,7 +209,12 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers_context/gdi_ctx.c"
+#endif
+#endif
+
 #include "../gfx/display_servers/dispserv_win32.c"
 
 #if defined(HAVE_FFMPEG)
@@ -468,7 +473,9 @@ VIDEO DRIVER
 #include "../gfx/drivers/nullgfx.c"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers/gdi_gfx.c"
+#endif
 #endif
 
 #include "../deps/ibxm/ibxm.c"
@@ -552,7 +559,9 @@ FONTS
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers_font/gdi_font.c"
+#endif
 #endif
 
 #if defined(HAVE_VULKAN)
@@ -1329,7 +1338,9 @@ MENU
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../menu/drivers_display/menu_display_gdi.c"
+#endif
 #endif
 
 #endif

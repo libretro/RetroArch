@@ -364,6 +364,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include;deps;deps\stb
    export LIB := $(LIB);$(INETSDK)\Lib
 else ifeq ($(platform), windows_msvc2003_x86)
+   HAVE_GDI                 := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -413,6 +414,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
       export LIB := $(LIB);$(INETSDK)\Lib
    endif
 else ifeq ($(platform), windows_msvc2005_x86)
+   HAVE_GDI                 := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -463,6 +465,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
       export LIB := $(LIB);$(INETSDK)\Lib
    endif
 else ifneq (,$(findstring windows_msvc2010,$(platform)))
+   HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -538,6 +541,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
       export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
    endif
 else ifneq (,$(findstring windows_msvc2012,$(platform)))
+   HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -617,6 +621,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
       export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
    endif
 else ifneq (,$(findstring windows_msvc2013,$(platform)))
+   HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -696,6 +701,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
       export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
    endif
 else ifneq (,$(findstring windows_msvc2015,$(platform)))
+   HAVE_GDI                 := 1
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1

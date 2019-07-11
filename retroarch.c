@@ -364,7 +364,9 @@ static const video_driver_t *video_drivers[] = {
    &video_xshm,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
    &video_gdi,
+#endif
 #endif
 #ifdef DJGPP
    &video_vga,
@@ -443,7 +445,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_khr_display,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
    &gfx_ctx_gdi,
+#endif
 #endif
 #ifdef HAVE_SIXEL
    &gfx_ctx_sixel,

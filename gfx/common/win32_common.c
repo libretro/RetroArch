@@ -38,7 +38,11 @@
 #endif
 
 #include "win32_common.h"
+
+#ifdef HAVE_GDI
 #include "gdi_common.h"
+#endif
+
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -94,7 +98,9 @@ static HDEVNOTIFY notification_handler;
 #ifdef HAVE_DINPUT
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
+#ifdef HAVE_GDI
 extern void *dinput_gdi;
+#endif
 extern void *dinput_wgl;
 extern void *dinput;
 #endif
@@ -881,6 +887,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 }
 #endif
 
+#ifdef HAVE_GDI
 LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -978,6 +985,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,

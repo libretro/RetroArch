@@ -2,6 +2,7 @@ HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
 HAVE_BIN_DIR=              # Binary install directory (Deprecated)
 HAVE_MAN_DIR=              # Manpage install directory (Deprecated)
+HAVE_GDI=yes               # GDI support (Win32-only)
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_CACA=auto             # Libcaca support

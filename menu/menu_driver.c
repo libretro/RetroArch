@@ -152,7 +152,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    &menu_display_ctx_wiiu,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
    &menu_display_ctx_gdi,
+#endif
 #endif
 #ifdef DJGPP
    &menu_display_ctx_vga,

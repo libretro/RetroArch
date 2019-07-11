@@ -1595,8 +1595,8 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
 else
 ifneq ($(HAVE_ZLIB), 0)
    HAVE_ZLIB_COMMON = 1
-endif
    LIBS += $(ZLIB_LIBS)
+endif
 endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
@@ -1861,17 +1861,19 @@ endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           gfx/common/win32_common.o \
-          frontend/drivers/platform_win32.o
-
-   OBJ += gfx/drivers/gdi_gfx.o \
-          gfx/drivers_context/gdi_ctx.o \
-          gfx/drivers_font/gdi_font.o \
+          frontend/drivers/platform_win32.o \
           gfx/display_servers/dispserv_win32.o
 
+   ifeq ($(HAVE_GDI), 1)
+      OBJ += gfx/drivers/gdi_gfx.o \
+				 gfx/drivers_context/gdi_ctx.o \
+				 gfx/drivers_font/gdi_font.o
+		LIBS += -lmsimg32
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gdi.o
    endif
-   LIBS += -lmsimg32 -lhid -lsetupapi
+   endif
+   LIBS += -lhid -lsetupapi
 endif
 
 # Record
