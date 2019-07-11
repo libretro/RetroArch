@@ -222,7 +222,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
       task_set_finished(task, true);
 
-      RARCH_LOG("[CDROM] Dump finished.\n");
+      RARCH_LOG("[CDROM]: Dump finished.\n");
 
       return;
    }
@@ -270,7 +270,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          state->toc = retro_vfs_file_get_cdrom_toc();
 
          if (cdrom_has_atip(state->stream))
-            RARCH_LOG("[CDROM] This disc is not genuine.\n");
+            RARCH_LOG("[CDROM]: This disc is not genuine.\n");
 
          filestream_close(state->file);
 
@@ -356,7 +356,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             return;
          }
 
-         RARCH_LOG("[CDROM] Dumping track %d...\n", state->cur_track);
+         RARCH_LOG("[CDROM]: Dumping track %d...\n", state->cur_track);
 
          memset(state->cdrom_path, 0, sizeof(state->cdrom_path));
 
@@ -426,7 +426,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             progress = (state->disc_read_bytes / (double)state->disc_total_bytes) * 100.0;
 
 #ifdef CDROM_DEBUG
-            RARCH_LOG("[CDROM] Read %" PRId64 " bytes, totalling %" PRId64 " of %" PRId64 " bytes. Progress: %d%%\n", read_bytes, state->track_written_bytes, state->cur_track_bytes, progress);
+            RARCH_LOG("[CDROM]: Read %" PRId64 " bytes, totalling %" PRId64 " of %" PRId64 " bytes. Progress: %d%%\n", read_bytes, state->track_written_bytes, state->cur_track_bytes, progress);
 #endif
 
             if (filestream_write(state->output_file, data, read_bytes) <= 0)
@@ -491,7 +491,7 @@ void task_push_cdrom_dump(const char *drive)
    task->callback = task_cdrom_dump_callback;
    task->title    = strdup(msg_hash_to_str(MSG_DUMPING_DISC));
 
-   RARCH_LOG("[CDROM] Starting disc dump...\n");
+   RARCH_LOG("[CDROM]: Starting disc dump...\n");
 
    task_queue_push(task);
 }

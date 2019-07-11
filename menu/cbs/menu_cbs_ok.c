@@ -2144,6 +2144,8 @@ static int action_ok_load_cdrom(const char *path,
 
    if (!cdrom_drive_has_media(label[0]))
    {
+      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_NO_DISC_INSERTED),
             1, 100, true,
@@ -2162,7 +2164,7 @@ static int action_ok_load_cdrom(const char *path,
 
       cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
 
-      RARCH_LOG("[CDROM] Loading disc from path: %s\n", cdrom_path);
+      RARCH_LOG("[CDROM]: Loading disc from path: %s\n", cdrom_path);
 
       path_clear(RARCH_PATH_CONTENT);
       path_set(RARCH_PATH_CONTENT, cdrom_path);
@@ -2184,7 +2186,7 @@ static int action_ok_load_cdrom(const char *path,
    }
    else
    {
-      RARCH_LOG("[CDROM] Cannot load disc without a core.\n");
+      RARCH_LOG("[CDROM]: Cannot load disc without a core.\n");
 
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_LOAD_CORE_FIRST),
@@ -2205,6 +2207,8 @@ static int action_ok_dump_cdrom(const char *path,
 #ifdef HAVE_CDROM
    if (!cdrom_drive_has_media(label[0]))
    {
+      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_NO_DISC_INSERTED),
             1, 100, true,
