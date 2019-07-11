@@ -33,7 +33,9 @@
 
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
+#ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
+#endif
 
 #include "audio/audio_defines.h"
 
@@ -442,6 +444,7 @@ enum retro_language rarch_get_language_from_iso(const char *lang);
 
 /* Audio */
 
+#ifdef HAVE_AUDIOMIXER
 typedef struct audio_mixer_stream
 {
    audio_mixer_sound_t *handle;
@@ -469,6 +472,7 @@ typedef struct audio_mixer_stream_params
    size_t bufsize;
    audio_mixer_stop_cb_t cb;
 } audio_mixer_stream_params_t;
+#endif
 
 typedef struct audio_driver
 {
@@ -619,6 +623,7 @@ float *audio_get_float_ptr(enum audio_action action);
 
 bool *audio_get_bool_ptr(enum audio_action action);
 
+#ifdef HAVE_AUDIOMIXER
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
@@ -646,6 +651,8 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 void audio_driver_load_menu_sounds(void);
+
+#endif
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;

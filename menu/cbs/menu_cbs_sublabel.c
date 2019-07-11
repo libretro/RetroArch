@@ -91,6 +91,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    return 1;
 }
 
+#ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
       MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY)
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer,
@@ -107,6 +108,7 @@ default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_remove,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE)
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
+#endif
 default_sublabel_macro(action_bind_sublabel_reset_to_default_config,             MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
@@ -154,7 +156,9 @@ default_sublabel_macro(action_bind_sublabel_crt_switchres_settings_list,        
 default_sublabel_macro(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
 default_sublabel_macro(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
+#ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(action_bind_sublabel_mixer_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS)
+#endif
 default_sublabel_macro(action_bind_sublabel_input_settings_list,           MENU_ENUM_SUBLABEL_INPUT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_latency_settings_list,         MENU_ENUM_SUBLABEL_LATENCY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
@@ -197,7 +201,9 @@ default_sublabel_macro(action_bind_sublabel_video_shared_context,          MENU_
 default_sublabel_macro(action_bind_sublabel_audio_latency,                 MENU_ENUM_SUBLABEL_AUDIO_LATENCY)
 default_sublabel_macro(action_bind_sublabel_audio_rate_control_delta,      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA)
 default_sublabel_macro(action_bind_sublabel_audio_mute,                    MENU_ENUM_SUBLABEL_AUDIO_MUTE)
+#ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(action_bind_sublabel_audio_mixer_mute,              MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE)
+#endif
 default_sublabel_macro(action_bind_sublabel_camera_allow,                  MENU_ENUM_SUBLABEL_CAMERA_ALLOW)
 default_sublabel_macro(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
 default_sublabel_macro(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
@@ -206,7 +212,9 @@ default_sublabel_macro(action_bind_sublabel_input_all_users_control_menu,  MENU_
 default_sublabel_macro(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 default_sublabel_macro(action_bind_sublabel_input_bind_hold,               MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD)
 default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
+#ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(action_bind_sublabel_audio_mixer_volume,            MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME)
+#endif
 default_sublabel_macro(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
 default_sublabel_macro(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
@@ -749,6 +757,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    return 0;
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_bind_sublabel_audio_mixer_stream(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -788,6 +797,7 @@ static int action_bind_sublabel_audio_mixer_stream(
          stream->volume);
    return 0;
 }
+#endif
 
 static int action_bind_sublabel_remap_sublabel(
       file_list_t *list,
@@ -1026,6 +1036,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
    }
+#ifdef HAVE_AUDIOMIXER
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
    {
@@ -1068,6 +1079,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          menu_action_sublabel_setting_audio_mixer_stream_volume);
       return 0;
    }
+#endif
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_END)
@@ -1081,12 +1093,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_desc);
    }
 
+#ifdef HAVE_AUDIOMIXER
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_stream);
       return 0;
    }
+#endif
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -1099,11 +1113,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play);
+#endif
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_start_streaming);
@@ -2185,7 +2203,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_volume);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_volume);
+#endif
             break;
          case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
@@ -2209,7 +2229,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mute);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_MUTE:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_mute);
+#endif
             break;
          case MENU_ENUM_LABEL_AUDIO_LATENCY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_latency);
@@ -2372,7 +2394,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mixer_settings_list);
+#endif
             break;
          case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_latency_settings_list);

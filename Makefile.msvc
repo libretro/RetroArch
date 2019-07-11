@@ -11,6 +11,7 @@ WindowsSdkDir = C:\Program Files (x86)\Windows Kits\10\$(NOTHING)
 WindowsSDKVersion := 10.0.14393.0\$(NOTHING)
 VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING)
 
+HAVE_AUDIOMIXER          := 1
 HAVE_D3DX                := 1
 HAVE_D3D8                := 0
 HAVE_D3D9                := 1

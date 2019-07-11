@@ -56,6 +56,7 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
+#ifdef HAVE_AUDIOMIXER
 static void menu_action_setting_audio_mixer_stream_name(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -93,6 +94,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
 
    snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
 }
+#endif
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -1336,6 +1338,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 static int menu_cbs_init_bind_get_string_representation_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
+#ifdef HAVE_AUDIOMIXER
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
    {
@@ -1349,7 +1352,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_audio_mixer_stream_volume);
    }
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   else
+#endif
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_GET_VALUE(cbs,

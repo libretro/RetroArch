@@ -195,6 +195,7 @@ static int action_right_scroll(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int audio_mixer_stream_volume_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -211,6 +212,7 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
 
    return 0;
 }
+#endif
 
 static int action_right_goto_tab(void)
 {
@@ -567,11 +569,13 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, action_right_cheat);
    }
+#ifdef HAVE_AUDIOMIXER
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
    }
+#endif
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {

@@ -48,6 +48,7 @@
    cbs->action_start_ident = #name;
 #endif
 
+#ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
 {
    unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
@@ -59,6 +60,7 @@ static int action_start_audio_mixer_stream_volume(unsigned type, const char *lab
 
    return 0;
 }
+#endif
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
@@ -358,12 +360,14 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
+#ifdef HAVE_AUDIOMIXER
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_START(cbs, action_start_audio_mixer_stream_volume);
       return 0;
    }
+#endif
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
 

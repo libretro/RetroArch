@@ -84,6 +84,7 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    return ret;
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int audio_mixer_stream_volume_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -100,6 +101,7 @@ static int audio_mixer_stream_volume_left(unsigned type, const char *label,
 
    return 0;
 }
+#endif
 
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
@@ -678,11 +680,13 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, action_left_cheat);
    }
+#ifdef HAVE_AUDIOMIXER
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_LEFT(cbs, audio_mixer_stream_volume_left);
    }
+#endif
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {

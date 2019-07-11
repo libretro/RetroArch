@@ -174,7 +174,6 @@ OBJ += frontend/frontend.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
-       tasks/task_audio_mixer.o \
        tasks/task_playlist_manager.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
@@ -203,7 +202,6 @@ OBJ += frontend/frontend.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
-       $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/common/input_hid_common.o \
        input/input_mapper.o \
        led/led_driver.o \
@@ -259,6 +257,14 @@ OBJ += frontend/frontend.o \
        performance_counters.o \
        verbosity.o \
        midi/drivers/null_midi.o
+
+ifeq ($(HAVE_AUDIOMIXER), 1)
+	DEFINES += -DHAVE_AUDIOMIXER
+	OBJ += \
+			 tasks/task_audio_mixer.o \
+			 $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
+			 $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
+endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
@@ -661,7 +667,6 @@ endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
-       $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
        $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 
 ifeq ($(HAVE_NEON),1)

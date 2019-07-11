@@ -61,7 +61,9 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#ifdef HAVE_AUDIOMIXER
 #include "../../tasks/task_audio_mixer.h"
+#endif
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
@@ -313,8 +315,10 @@ int generic_action_ok_displaylist_push(const char *path,
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    menu_displaylist_info_init(&info);
 
@@ -1312,8 +1316,10 @@ static int generic_action_ok_command(enum event_command cmd)
 {
    settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
@@ -1388,8 +1394,10 @@ static int generic_action_ok(const char *path,
    menu_handle_t               *menu = NULL;
    settings_t              *settings = config_get_ptr();
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -2040,6 +2048,7 @@ error:
    return menu_cbs_exit();
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_ok_mixer_stream_action_play(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2139,6 +2148,7 @@ static int action_ok_mixer_stream_action_stop(const char *path,
    }
    return 0;
 }
+#endif
 
 static int action_ok_load_cdrom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2232,6 +2242,7 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, MENU_ACTION_OK, false);
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_ok_audio_add_to_mixer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2334,6 +2345,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    return 0;
 }
+#endif
 
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4432,7 +4444,9 @@ default_action_ok_func(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS
 default_action_ok_func(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
 default_action_ok_func(action_ok_midi_list, ACTION_OK_DL_MIDI_SETTINGS_LIST)
 default_action_ok_func(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
+#ifdef HAVE_AUDIOMIXER
 default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
+#endif
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_sideload_core_list, ACTION_OK_DL_SIDELOAD_CORE_LIST)
@@ -4458,7 +4472,9 @@ default_action_ok_func(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SE
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
+#ifdef HAVE_AUDIOMIXER
 default_action_ok_func(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
+#endif
 default_action_ok_func(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
@@ -5779,16 +5795,24 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_audio_run);
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection_and_play);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_play);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
@@ -5999,7 +6023,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_audio_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_push_audio_mixer_settings_list);
+#endif
             break;
          case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_latency_settings_list);
@@ -6446,6 +6472,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
    }
+#ifdef HAVE_AUDIOMIXER
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
    {
@@ -6476,6 +6503,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_mixer_stream_actions);
    }
+#endif
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {

@@ -5871,7 +5871,9 @@ void general_write_handler(rarch_setting_t *setting)
          audio_set_float(AUDIO_ACTION_VOLUME_GAIN, *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+#ifdef HAVE_AUDIOMIXER
          audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
+#endif
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
@@ -5930,12 +5932,15 @@ void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
+#ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
             audio_driver_load_menu_sounds();
          else
             audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
          break;
       case MENU_ENUM_LABEL_MENU_SOUND_BGM:
+#ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
          {
             if (settings->bools.audio_enable_menu_bgm)
@@ -5943,6 +5948,7 @@ void general_write_handler(rarch_setting_t *setting)
             else
                audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
          }
+#endif
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
@@ -6932,6 +6938,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
@@ -6940,7 +6947,9 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_MENU_SOUNDS,
@@ -6948,6 +6957,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -9423,6 +9433,7 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_BOOL(
                list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE),
@@ -9438,6 +9449,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_LAKKA_ADVANCED
                );
+#endif
 
          CONFIG_FLOAT(
                list, list_info,
@@ -9454,6 +9466,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.audio_mixer_volume,
@@ -9469,6 +9482,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 

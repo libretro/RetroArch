@@ -2008,6 +2008,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_parse_load_content_settings(menu, info);
    else
    {
+#ifdef HAVE_AUDIOMIXER
       const char *ext = NULL;
 
       if (entry && !string_is_empty(entry->path))
@@ -2028,6 +2029,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
       }
+#endif
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
@@ -5134,34 +5136,39 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif /* HAVE_LAKKA_SWITCH || HAVE_LIBNX */
       case DISPLAYLIST_MUSIC_LIST:
          {
-            char combined_path[PATH_MAX_LENGTH];
-            const char *ext  = NULL;
-
-            combined_path[0] = '\0';
-
-            fill_pathname_join(combined_path, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(combined_path));
-
-            ext = path_get_extension(combined_path);
-
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (audio_driver_mixer_extension_supported(ext))
+#ifdef HAVE_AUDIOMIXER
             {
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION),
-                     msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION),
-                     MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
-                     FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
-                  count++;
+               char combined_path[PATH_MAX_LENGTH];
+               const char *ext  = NULL;
 
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
-                     MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-                     FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
-                  count++;
+               combined_path[0] = '\0';
+
+               fill_pathname_join(combined_path, menu->scratch2_buf,
+                     menu->scratch_buf, sizeof(combined_path));
+
+               ext = path_get_extension(combined_path);
+
+
+               if (audio_driver_mixer_extension_supported(ext))
+               {
+                  if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION),
+                           msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION),
+                           MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
+                           FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
+                     count++;
+
+                  if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
+                           msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
+                           MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+                           FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
+                     count++;
+               }
             }
+#endif
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             {
@@ -5192,6 +5199,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_MIXER_STREAM_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#ifdef HAVE_AUDIOMIXER
          {
             char lbl_play[128];
             char lbl_play_looped[128];
@@ -5254,6 +5262,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   0, 0))
                count++;
          }
+#endif
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
 
          info->need_push    = true;
          info->need_refresh = true;
@@ -6549,6 +6565,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             unsigned i;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#ifdef HAVE_AUDIOMIXER
 #if 1
             /* TODO - for developers -
              * turn this into #if 0 if you want to be able to see
@@ -6568,6 +6585,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      0, 0);
                count++;
             }
+#endif
 
             info->need_refresh = true;
             info->need_push    = true;

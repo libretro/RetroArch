@@ -170,7 +170,9 @@
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
+#ifdef HAVE_AUDIOMIXER
 #include "tasks/task_audio_mixer.h"
+#endif
 #include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "performance_counters.h"
@@ -1225,8 +1227,14 @@ static struct retro_system_av_info video_driver_av_info;
 #define db_to_gain(db) (powf(10.0f, (db) / 20.0f))
 
 
+#ifdef HAVE_AUDIOMIXER
 static struct audio_mixer_stream 
 audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS]      = {{0}};
+
+static bool audio_driver_mixer_mute_enable               = false;
+static bool audio_mixer_active                           = false;
+static float audio_driver_mixer_volume_gain              = 0.0f;
+#endif
 
 static size_t audio_driver_chunk_size                    = 0;
 static size_t audio_driver_chunk_nonblock_size           = 0;
@@ -1245,16 +1253,13 @@ static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
 
 static bool audio_driver_control                         = false;
-static bool audio_driver_mixer_mute_enable               = false;
 static bool audio_driver_mute_enable                     = false;
 static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
-static bool audio_mixer_active                           = false;
 
 static float audio_driver_rate_control_delta             = 0.0f;
 static float audio_driver_input                          = 0.0f;
 static float audio_driver_volume_gain                    = 0.0f;
-static float audio_driver_mixer_volume_gain              = 0.0f;
 
 static float *audio_driver_input_data                    = NULL;
 static float *audio_driver_output_samples_buf            = NULL;
@@ -10784,12 +10789,14 @@ size_t midi_driver_get_event_size(uint8_t status)
 
 /* AUDIO */
 
+#ifdef HAVE_AUDIOMIXER
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 static void audio_mixer_play_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
+#endif
 
 static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
@@ -10801,6 +10808,7 @@ static enum resampler_quality audio_driver_get_resampler_quality(void)
    return (enum resampler_quality)settings->uints.audio_resampler_quality;
 }
 
+#ifdef HAVE_AUDIOMIXER
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i)
 {
    if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
@@ -10816,6 +10824,23 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
       return audio_mixer_streams[i].name;
    return "N/A";
 }
+
+static void audio_driver_mixer_deinit(void)
+{
+   unsigned i;
+
+   audio_mixer_active = false;
+
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+   {
+      audio_driver_mixer_stop_stream(i);
+      audio_driver_mixer_remove_stream(i);
+   }
+
+   audio_mixer_done();
+}
+
+#endif
 
 /**
  * audio_compute_buffer_statistics:
@@ -11001,21 +11026,6 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
-static void audio_driver_mixer_deinit(void)
-{
-   unsigned i;
-
-   audio_mixer_active = false;
-
-   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
-   {
-      audio_driver_mixer_stop_stream(i);
-      audio_driver_mixer_remove_stream(i);
-   }
-
-   audio_mixer_done();
-}
-
 static bool audio_driver_free_devices_list(void)
 {
    if (!current_audio || !current_audio->device_list_free
@@ -11029,17 +11039,14 @@ static bool audio_driver_free_devices_list(void)
 
 static bool audio_driver_deinit(void)
 {
+#ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit();
+#endif
    audio_driver_free_devices_list();
 
    if (!audio_driver_deinit_internal())
       return false;
    return true;
-}
-
-static void audio_driver_mixer_init(unsigned audio_out_rate)
-{
-   audio_mixer_init(audio_out_rate);
 }
 
 static bool audio_driver_find_driver(void)
@@ -11248,7 +11255,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    audio_driver_free_samples_count = 0;
 
-   audio_driver_mixer_init(settings->uints.audio_out_rate);
+#ifdef HAVE_AUDIOMIXER
+   audio_mixer_init(settings->uints.audio_out_rate);
+#endif
 
    /* Threaded driver is initially stopped. */
    if (
@@ -11362,6 +11371,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
+#ifdef HAVE_AUDIOMIXER
    if (audio_mixer_active)
    {
       bool override     = audio_driver_mixer_mute_enable ? true :
@@ -11371,6 +11381,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
       audio_mixer_mix(audio_driver_output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
+#endif
 
    {
       const void *output_data = audio_driver_output_samples_buf;
@@ -11654,6 +11665,7 @@ bool audio_driver_get_devices_list(void **data)
    return true;
 }
 
+#ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_extension_supported(const char *ext)
 {
    union string_list_elem_attr attr;
@@ -12189,6 +12201,7 @@ void audio_driver_mixer_remove_stream(unsigned i)
       audio_mixer_streams[i].name    = NULL;
    }
 }
+#endif
 
 bool audio_driver_enable_callback(void)
 {
@@ -12244,11 +12257,13 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
+#ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_toggle_mute(void)
 {
    audio_driver_mixer_mute_enable  = !audio_driver_mixer_mute_enable;
    return true;
 }
+#endif
 
 static INLINE bool audio_driver_alive(void)
 {
@@ -12327,7 +12342,9 @@ void audio_set_bool(enum audio_action action, bool val)
    switch (action)
    {
       case AUDIO_ACTION_MIXER:
+#ifdef HAVE_AUDIOMIXER
          audio_mixer_active = val;
+#endif
          break;
       case AUDIO_ACTION_NONE:
       default:
@@ -12343,7 +12360,9 @@ void audio_set_float(enum audio_action action, float val)
          audio_driver_volume_gain        = db_to_gain(val);
          break;
       case AUDIO_ACTION_MIXER_VOLUME_GAIN:
+#ifdef HAVE_AUDIOMIXER
          audio_driver_mixer_volume_gain  = db_to_gain(val);
+#endif
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
          audio_driver_rate_control_delta = val;
@@ -12373,7 +12392,11 @@ bool *audio_get_bool_ptr(enum audio_action action)
    switch (action)
    {
       case AUDIO_ACTION_MIXER_MUTE_ENABLE:
+#ifdef HAVE_AUDIOMIXER
          return &audio_driver_mixer_mute_enable;
+#else
+         break;
+#endif
       case AUDIO_ACTION_MUTE_ENABLE:
          return &audio_driver_mute_enable;
       case AUDIO_ACTION_NONE:
@@ -17894,13 +17917,9 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
-#ifdef HAVE_MENU
-   {
-      settings_t *settings = configuration_settings;
-
-      if (settings->bools.audio_enable_menu)
-         audio_driver_load_menu_sounds();
-   }
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (configuration_settings->bools.audio_enable_menu)
+      audio_driver_load_menu_sounds();
 #endif
 
    return true;
@@ -17932,9 +17951,11 @@ void rarch_menu_running(void)
    /* Prevent stray input */
    input_driver_flushing_input = true;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu 
          && settings->bools.audio_enable_menu_bgm)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
 #endif
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_hide_in_menu)
@@ -17953,10 +17974,12 @@ void rarch_menu_running_finished(bool quit)
    /* Prevent stray input */
    input_driver_flushing_input = true;
 
+#ifdef HAVE_AUDIOMIXER
    if (!quit)
       /* Stop menu background music before we exit the menu */
       if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
          audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
 
 #endif
    video_driver_set_texture_enable(false, false);

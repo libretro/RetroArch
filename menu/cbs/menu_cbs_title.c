@@ -78,6 +78,7 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
    return 0;
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
@@ -85,6 +86,7 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
    snprintf(s, len, "Mixer Stream #%d: %s", offset + 1, audio_driver_mixer_get_stream_name(offset));
    return 0;
 }
+#endif
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
@@ -158,7 +160,9 @@ default_title_macro(action_get_privacy_settings_list,           MENU_ENUM_LABEL_
 default_title_macro(action_get_midi_settings_list,              MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS)
 default_title_macro(action_get_updater_settings_list,           MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS)
 default_title_macro(action_get_audio_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
+#ifdef HAVE_AUDIOMIXER
 default_title_macro(action_get_audio_mixer_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS)
+#endif
 default_title_macro(action_get_input_settings_list,             MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 default_title_macro(action_get_latency_settings_list,           MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)
 default_title_macro(action_get_core_cheat_options_list,         MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
@@ -570,11 +574,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_audio_settings_list);
       return 0;
    }
+#ifdef HAVE_AUDIOMIXER
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_audio_mixer_settings_list);
       return 0;
    }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_latency_settings_list);
@@ -1328,12 +1334,14 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
 
+#ifdef HAVE_AUDIOMIXER
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_mixer_stream_actions);
       return 0;
    }
+#endif
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {

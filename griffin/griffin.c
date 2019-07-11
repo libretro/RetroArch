@@ -575,7 +575,9 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
+#endif
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
 
@@ -876,7 +878,9 @@ DRIVERS
 #include "../gfx/video_crt_switch.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
+#endif
 
 /*============================================================
 SCALERS
@@ -1472,7 +1476,9 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mix.c"
+#endif
 
 /*============================================================
  LIBRETRODB

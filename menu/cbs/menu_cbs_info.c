@@ -50,8 +50,10 @@ static int action_info_default(unsigned type, const char *label)
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       goto error;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_notice)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+#endif
 
    if (!menu_displaylist_process(&info))
       goto error;

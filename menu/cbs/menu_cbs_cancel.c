@@ -43,8 +43,10 @@ int action_cancel_pop_default(const char *path,
    (void)type;
    (void)idx;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_cancel)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+#endif
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 

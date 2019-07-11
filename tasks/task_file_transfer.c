@@ -21,7 +21,9 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_AUDIOMIXER
 #include "task_audio_mixer.h"
+#endif
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
@@ -109,8 +111,10 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_TYPE_OGG:
          case NBIO_TYPE_MOD:
          case NBIO_TYPE_WAV:
+#ifdef HAVE_AUDIOMIXER
             if (!task_audio_mixer_load_handler(task))
                task_set_finished(task, true);
+#endif
             break;
          case NBIO_TYPE_NONE:
          default:
