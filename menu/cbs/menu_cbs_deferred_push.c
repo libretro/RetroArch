@@ -130,6 +130,7 @@ generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_
 generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
 generic_deferred_push(deferred_push_core_information,               DISPLAYLIST_CORE_INFO)
+generic_deferred_push(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
 generic_deferred_push(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
 generic_deferred_push(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
 generic_deferred_push(deferred_push_achievement_list,               DISPLAYLIST_ACHIEVEMENT_LIST)
@@ -943,6 +944,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_disc_information);
    }
 #ifdef HAVE_LAKKA_SWITCH
    else if (strstr(label,

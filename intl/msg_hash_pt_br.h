@@ -8767,3 +8767,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
       "Animação Move Para Cima/Baixo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Animação do Menu Principal Abre/Fecha")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Disc Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "View information about inserted media discs."
+    )

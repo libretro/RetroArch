@@ -9019,3 +9019,11 @@ MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
       "ディスクに書き込みに失敗しました。ダンプが中止されました。")
 MSG_HASH(MSG_NO_DISC_INSERTED,
       "ドライブにディスクが挿入されていません。")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Disc Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "View information about inserted media discs."
+    )

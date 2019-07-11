@@ -6043,6 +6043,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INFORMATION:
+         case MENU_ENUM_LABEL_DISC_INFORMATION:
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
          case MENU_ENUM_LABEL_NETWORK_INFORMATION:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:

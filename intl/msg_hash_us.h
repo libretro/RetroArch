@@ -8951,3 +8951,11 @@ MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
       "Failed to write to disk. Dump aborted.")
 MSG_HASH(MSG_NO_DISC_INSERTED,
       "No disc is inserted in the drive.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Disc Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "View information about inserted media discs."
+    )

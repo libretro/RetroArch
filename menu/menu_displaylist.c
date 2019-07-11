@@ -2188,6 +2188,12 @@ static int menu_displaylist_parse_information_list(
             MENU_ENUM_LABEL_CORE_INFORMATION,
             MENU_SETTING_ACTION, 0, 0);
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
+         msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
+         MENU_ENUM_LABEL_DISC_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0);
+
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
    menu_entries_append_enum(info->list,
@@ -4896,6 +4902,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    switch (type)
    {
 #ifdef HAVE_CDROM
+      case DISPLAYLIST_DISC_INFO:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         info->need_push = true;
+         break;
       case DISPLAYLIST_DUMP_DISC:
       {
          int i;
@@ -4907,10 +4917,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          for (i = 0; list && i < list->size; i++)
          {
             char drive_string[256] = {0};
-            char drive[2] = {0};
-            size_t pos = 0;
+            char drive[2]          = {0};
+            size_t pos             = 0;
 
-            drive[0] = list->elems[i].attr.i;
+            drive[0]               = list->elems[i].attr.i;
 
             pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
             pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
@@ -4949,10 +4959,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          for (i = 0; list && i < list->size; i++)
          {
             char drive_string[256] = {0};
-            char drive[2] = {0};
-            size_t pos = 0;
+            char drive[2]          = {0};
+            size_t pos             = 0;
 
-            drive[0] = list->elems[i].attr.i;
+            drive[0]               = list->elems[i].attr.i;
 
             pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
             pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
@@ -4980,6 +4990,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       }
 #else
+      case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_LOAD_DISC:
       case DISPLAYLIST_DUMP_DISC:
          /* No-op */
