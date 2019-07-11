@@ -59,7 +59,6 @@ ui_application_t ui_application_cocoa = {
    ui_application_cocoa_pending_events,
    ui_application_cocoa_process_events,
    NULL,
-   NULL,
    false,
    "cocoa"
 };
