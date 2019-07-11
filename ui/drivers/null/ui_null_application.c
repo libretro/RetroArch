@@ -35,16 +35,11 @@ static void ui_application_null_process_events(void)
 {
 }
 
-static void ui_application_null_run(void *args)
-{
-   (void)args;
-}
-
 ui_application_t ui_application_null = {
    ui_application_null_initialize,
    ui_application_null_pending_events,
    ui_application_null_process_events,
-   ui_application_null_run,
    NULL,
+   false,
    "null"
 };

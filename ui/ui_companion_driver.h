@@ -107,8 +107,8 @@ typedef struct ui_application
    void* (*initialize)(void);
    bool (*pending_events)(void);
    void (*process_events)(void);
-   void (*run)(void *args);
    void (*quit)(void);
+   bool exiting;
    const char *ident;
 } ui_application_t;
 

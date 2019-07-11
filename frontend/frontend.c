@@ -164,8 +164,26 @@ int rarch_main(int argc, char *argv[], void *data)
       const ui_application_t *ui_application = 
          ui_companion_driver_get_qt_application_ptr();
       if (ui_application)
-         ui_application->run(data);
+      {
+         do
+         {
+            unsigned sleep_ms = 0;
+            int ret = runloop_iterate(&sleep_ms);
+
+            if (ret == 1 && sleep_ms > 0)
+               retro_sleep(sleep_ms);
+
+            task_queue_check();
+
+            if (ret == -1 || ui_application->exiting)
+            {
+               ui_application->quit();
+               break;
+            }
+         }while(1);
+      }
    }
+   main_exit(data);
 #endif
 
    return 0;
