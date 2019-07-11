@@ -417,7 +417,7 @@ static char** waiting_argv;
 #ifdef HAVE_QT
        const ui_application_t *application = &ui_application_qt;
 #else
-       const ui_application_t *application = ui_companion_driver_get_application_ptr();
+       const ui_application_t *application = &ui_application_cocoa;
 #endif
        if (application)
           application->process_events();

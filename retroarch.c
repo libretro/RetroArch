@@ -4593,21 +4593,6 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
    return ui->browser_window;
 }
 
-#ifdef HAVE_QT
-const ui_application_t *ui_companion_driver_get_qt_application_ptr(void)
-{
-   return ui_companion_qt.application;
-}
-#endif
-
-const ui_application_t *ui_companion_driver_get_application_ptr(void)
-{
-   const ui_companion_driver_t *ui = ui_companion;
-   if (!ui)
-      return NULL;
-   return ui->application;
-}
-
 static void ui_companion_driver_msg_queue_push(
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {

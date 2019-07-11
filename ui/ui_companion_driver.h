@@ -218,12 +218,6 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void);
 
 const ui_window_t *ui_companion_driver_get_window_ptr(void);
 
-const ui_application_t *ui_companion_driver_get_application_ptr(void);
-
-#ifdef HAVE_QT
-const ui_application_t *ui_companion_driver_get_qt_application_ptr(void);
-#endif
-
 void ui_companion_driver_log_msg(const char *msg);
 
 void *ui_companion_driver_get_main_window(void);
