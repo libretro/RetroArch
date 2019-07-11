@@ -195,7 +195,7 @@ endif
 
 retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS) -Wl,-Map=output.map
 
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)

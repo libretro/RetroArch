@@ -596,6 +596,7 @@ typedef struct settings
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
       char browse_url[4096];
+      char path_stream_url[8192];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];
@@ -608,7 +609,6 @@ typedef struct settings
 #endif
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
-      char path_stream_url[8192];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
