@@ -146,8 +146,12 @@ int rarch_main(int argc, char *argv[], void *data)
 #if !defined(HAVE_MAIN)
    do
    {
+      int ret;
       unsigned sleep_ms = 0;
-      int           ret = runloop_iterate(&sleep_ms);
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      ui_companion_win32.application->process_events();
+#endif
+      ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
@@ -170,6 +174,9 @@ int rarch_main(int argc, char *argv[], void *data)
             int ret;
             unsigned sleep_ms = 0;
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+            ui_companion_win32.application->process_events();
+#endif
             if (ui_application->process_events)
                ui_application->process_events();
 

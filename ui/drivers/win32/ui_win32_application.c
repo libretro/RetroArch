@@ -36,7 +36,8 @@ static bool ui_application_win32_pending_events(void)
 
 static void ui_application_win32_process_events(void)
 {
-   while (ui_application_win32_pending_events())
+   MSG msg;
+   while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
    {
       MSG msg;
 
