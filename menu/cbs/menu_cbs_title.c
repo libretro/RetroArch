@@ -126,6 +126,8 @@ default_title_macro(action_get_core_settings_list,              MENU_ENUM_LABEL_
 default_title_macro(action_get_video_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
 default_title_macro(action_get_crt_switchres_settings_list,     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS)
 default_title_macro(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS)
+default_title_macro(action_get_load_disc_list,                  MENU_ENUM_LABEL_VALUE_LOAD_DISC)
+default_title_macro(action_get_dump_disc_list,                  MENU_ENUM_LABEL_VALUE_DUMP_DISC)
 default_title_macro(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
 default_title_macro(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 default_title_macro(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
@@ -165,6 +167,7 @@ default_title_macro(action_get_load_content_special,            MENU_ENUM_LABEL_
 default_title_macro(action_get_cursor_manager_list,             MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER)
 default_title_macro(action_get_database_manager_list,           MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER)
 default_title_macro(action_get_system_information_list,         MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION)
+default_title_macro(action_get_disc_information_list,        MENU_ENUM_LABEL_VALUE_DISC_INFORMATION)
 default_title_macro(action_get_network_information_list,        MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION)
 default_title_macro(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 default_title_macro(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
@@ -375,6 +378,16 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_dump_disc_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_load_disc_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
@@ -570,6 +583,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_system_information_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_disc_information_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION)))
