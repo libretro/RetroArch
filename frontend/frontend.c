@@ -143,13 +143,17 @@ int rarch_main(int argc, char *argv[], void *data)
 
    ui_companion_driver_init_first();
 
-#if !defined(HAVE_MAIN)
+#if !defined(HAVE_MAIN) || defined(HAVE_QT)
    do
    {
       int ret;
+      bool app_exit     = false;
       unsigned sleep_ms = 0;
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       ui_companion_win32.application->process_events();
+#endif
+#ifdef HAVE_QT
+      ui_companion_qt.application->process_events();
 #endif
       ret = runloop_iterate(&sleep_ms);
 
@@ -158,43 +162,19 @@ int rarch_main(int argc, char *argv[], void *data)
 
       task_queue_check();
 
-      if (ret == -1)
+#ifdef HAVE_QT
+      app_exit = ui_companion_qt.application->exiting;
+#endif
+
+      if (ret == -1 || app_exit)
+      {
+#ifdef HAVE_QT
+         ui_companion_qt.application->quit();
+#endif
          break;
+      }
    }while(1);
 
-   main_exit(data);
-#elif defined(HAVE_QT)
-   {
-      const ui_application_t *ui_application = 
-         ui_companion_driver_get_qt_application_ptr();
-      if (ui_application)
-      {
-         do
-         {
-            int ret;
-            unsigned sleep_ms = 0;
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-            ui_companion_win32.application->process_events();
-#endif
-            if (ui_application->process_events)
-               ui_application->process_events();
-
-            ret = runloop_iterate(&sleep_ms);
-
-            if (ret == 1 && sleep_ms > 0)
-               retro_sleep(sleep_ms);
-
-            task_queue_check();
-
-            if (ret == -1 || ui_application->exiting)
-            {
-               ui_application->quit();
-               break;
-            }
-         }while(1);
-      }
-   }
    main_exit(data);
 #endif
 
