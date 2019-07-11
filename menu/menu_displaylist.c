@@ -4901,7 +4901,7 @@ static int menu_displaylist_parse_disc_info(menu_displaylist_info_t *info,
                drive_string,
                drive,
                MSG_UNKNOWN,
-               MENU_SET_CDROM_LIST,
+               type,
                0, i))
          count++;
    }
@@ -4939,7 +4939,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_CDROM
       case DISPLAYLIST_DISC_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count = menu_displaylist_parse_disc_info(info,
+               MENU_SET_CDROM_INFO);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
          info->need_push = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
          break;
       case DISPLAYLIST_DUMP_DISC:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
