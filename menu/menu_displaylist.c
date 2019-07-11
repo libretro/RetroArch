@@ -4878,6 +4878,41 @@ static bool history_needs_navigation_clear(menu_handle_t *menu, playlist_t *play
 }
 #endif
 
+#ifdef HAVE_CDROM
+static int menu_displaylist_parse_disc_info(menu_displaylist_info_t *info,
+      unsigned type)
+{
+   unsigned i;
+   unsigned           count = 0;
+   struct string_list *list = cdrom_get_available_drives();
+
+   for (i = 0; list && i < list->size; i++)
+   {
+      char drive_string[256] = {0};
+      char drive[2]          = {0};
+      size_t pos             = 0;
+
+      drive[0]               = list->elems[i].attr.i;
+
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+
+      if (menu_entries_append_enum(info->list,
+               drive_string,
+               drive,
+               MSG_UNKNOWN,
+               MENU_SET_CDROM_LIST,
+               0, i))
+         count++;
+   }
+
+   if (list)
+      string_list_free(list);
+
+   return count;
+}
+#endif
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info)
 {
@@ -4907,88 +4942,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push = true;
          break;
       case DISPLAYLIST_DUMP_DISC:
-      {
-         int i;
-         struct string_list *list = cdrom_get_available_drives();
-
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = 0;
+         count = menu_displaylist_parse_disc_info(info,
+               MENU_SET_CDROM_LIST);
 
-         for (i = 0; list && i < list->size; i++)
-         {
-            char drive_string[256] = {0};
-            char drive[2]          = {0};
-            size_t pos             = 0;
-
-            drive[0]               = list->elems[i].attr.i;
-
-            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
-            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
-
-            menu_entries_append_enum(info->list,
-                  drive_string,
-                  drive,
-                  MSG_UNKNOWN,
-                  MENU_SET_CDROM_LIST,
-                  0, i);
-         }
-
-         if (!list || list->size == 0)
+         if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
 
-         if (list)
-            string_list_free(list);
-
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
          break;
-      }
       case DISPLAYLIST_LOAD_DISC:
-      {
-         int i;
-         struct string_list *list = cdrom_get_available_drives();
-
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = 0;
+         count = menu_displaylist_parse_disc_info(info,
+               MENU_SET_LOAD_CDROM_LIST);
 
-         for (i = 0; list && i < list->size; i++)
-         {
-            char drive_string[256] = {0};
-            char drive[2]          = {0};
-            size_t pos             = 0;
-
-            drive[0]               = list->elems[i].attr.i;
-
-            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
-            pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
-
-            menu_entries_append_enum(info->list,
-                  drive_string,
-                  drive,
-                  MSG_UNKNOWN,
-                  MENU_SET_LOAD_CDROM_LIST,
-                  0, i);
-         }
-
-         if (list->size == 0)
+         if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
 
-         string_list_free(list);
-
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
          break;
-      }
 #else
       case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_LOAD_DISC:
