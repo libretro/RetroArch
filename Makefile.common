@@ -1592,11 +1592,9 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
    DEFINES += -DWANT_ZLIB
-else
-ifneq ($(HAVE_ZLIB), 0)
+else ifeq ($(HAVE_ZLIB),1)
    HAVE_ZLIB_COMMON = 1
    LIBS += $(ZLIB_LIBS)
-endif
 endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
