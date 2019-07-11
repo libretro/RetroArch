@@ -1593,7 +1593,9 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
    DEFINES += -DWANT_ZLIB
 else
+ifneq ($(HAVE_ZLIB), 0)
    HAVE_ZLIB_COMMON = 1
+endif
    LIBS += $(ZLIB_LIBS)
 endif
 
