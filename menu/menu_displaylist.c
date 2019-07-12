@@ -8050,6 +8050,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      bool checked_found              = false;
                      unsigned checked                = 0;
 
+                     /* Note: Although we display value labels here,
+                      * most logic is performed using values. This seems
+                      * more appropriate somehow... */
+
                      if (settings->bools.game_specific_options)
                      {
                         val = core_option_manager_get_val(coreopts, i-1);
@@ -8065,19 +8069,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned k;
                         for (k = 0; k < option->vals->size; k++)
                         {
-                           const char *str = option->vals->elems[k].data;
+                           const char *val_str       = option->vals->elems[k].data;
+                           const char *val_label_str = option->val_labels->elems[k].data;
 
-                           if (!string_is_empty(str))
+                           if (!string_is_empty(val_label_str))
                            {
                               char val_d[256];
                               snprintf(val_d, sizeof(val_d), "%d", i);
+
+                              if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+                              else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
                               menu_entries_append_enum(info->list,
-                                    str,
+                                    val_label_str,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
                                     MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
 
-                              if (!checked_found && string_is_equal(str, val))
+                              if (!checked_found && string_is_equal(val_str, val))
                               {
                                  checked = k;
                                  checked_found = true;
@@ -8093,6 +8104,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
 
+               if (tmp_str_list)
+                  string_list_free(tmp_str_list);
             }
             else
             {
@@ -8135,6 +8148,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               if (checked_found)
                                  menu_entries_set_checked(info->list, checked, true);
                            }
+
+                           if (tmp_str_list)
+                              string_list_free(tmp_str_list);
                         }
                         break;
                      case ST_INT:
@@ -8373,6 +8389,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   unsigned checked                = 0;
                   const char *val                 = core_option_manager_get_val(coreopts, i-1);
 
+                  /* Note: Although we display value labels here,
+                   * most logic is performed using values. This seems
+                   * more appropriate somehow... */
+
                   i--;
 
                   option                          = (struct core_option*)&coreopts->opts[i];
@@ -8382,20 +8402,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      unsigned k;
                      for (k = 0; k < option->vals->size; k++)
                      {
-                        const char *str = option->vals->elems[k].data;
+                        const char *val_str       = option->vals->elems[k].data;
+                        const char *val_label_str = option->val_labels->elems[k].data;
 
-                        if (!string_is_empty(str))
+                        if (!string_is_empty(val_label_str))
                         {
                            char val_d[256];
                            snprintf(val_d, sizeof(val_d), "%d", i);
-                           
+
+                           if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+                           else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
                            menu_entries_append_enum(info->list,
-                                 str,
+                                 val_label_str,
                                  val_d,
                                  MENU_ENUM_LABEL_NO_ITEMS,
                                  MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
 
-                           if (!checked_found && string_is_equal(str, val))
+                           if (!checked_found && string_is_equal(val_str, val))
                            {
                               checked = k;
                               checked_found = true;
@@ -8409,6 +8435,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
+            if (tmp_str_list)
+               string_list_free(tmp_str_list);
          }
          else
          {
@@ -8450,6 +8478,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            if (checked_found)
                               menu_entries_set_checked(info->list, checked, true);
                         }
+
+                        if (tmp_str_list)
+                           string_list_free(tmp_str_list);
                      }
                      break;
                   case ST_INT:

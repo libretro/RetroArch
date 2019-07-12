@@ -1109,13 +1109,19 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
 
    if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
-      core_opt = core_option_manager_get_val(coreopts,
+      core_opt = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
 
       strlcpy(s, "", len);
 
       if (core_opt)
+      {
+         if (string_is_equal(core_opt, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+            core_opt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+         else if (string_is_equal(core_opt, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+            core_opt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
          strlcpy(s, core_opt, len);
+      }
    }
 
    strlcpy(s2, path, len2);
