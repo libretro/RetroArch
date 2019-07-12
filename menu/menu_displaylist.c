@@ -6068,63 +6068,86 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
          {
-            size_t                   opts = 0;
-            settings_t      *settings     = config_get_ptr();
+            /* Number of displayed options is dynamic. If user opens
+             * 'Quick Menu > Core Options', toggles something
+             * that changes the number of displayed items, then
+             * toggles the Quick Menu off and on again (returning
+             * to the Core Options menu) the menu must be refreshed
+             * (or undefined behaviour occurs).
+             * The only way to check whether the number of visible
+             * options has changed is to cache the last set menu size,
+             * and compare this with the new size after processing
+             * the current core_option_manager_t struct */
+            size_t prev_count = info->list->size;
 
-            rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (settings->bools.game_specific_options)
+            if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               size_t                   opts = 0;
+               settings_t      *settings     = config_get_ptr();
+
+               rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+
+               if (settings->bools.game_specific_options)
                {
-                  if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
-                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
-                        MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                     count++;
+                  if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+                  {
+                     if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
+                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
+                        count++;
+                  }
+                  else
+                     if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
+                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
+                        count++;
                }
-               else
-                  if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
-                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
-                        MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                     count++;
+
+               if (opts != 0)
+               {
+                  core_option_manager_t *coreopts = NULL;
+
+                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+                  for (i = 0; i < opts; i++)
+                  {
+                     if (core_option_manager_get_visible(coreopts, i))
+                     {
+                        menu_entries_append_enum(info->list,
+                              core_option_manager_get_desc(coreopts, i), "",
+                              MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
+                              (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
+                        count++;
+                     }
+                  }
+               }
             }
 
-            if (opts != 0)
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
+                     MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
+                     MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+
+            if (count != prev_count)
             {
-               core_option_manager_t *coreopts = NULL;
-
-               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-               for (i = 0; i < opts; i++)
-               {
-                  menu_entries_append_enum(info->list,
-                        core_option_manager_get_desc(coreopts, i), "",
-                        MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
-                        (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
-                  count++;
-               }
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
             }
+            info->need_push                = true;
          }
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
-                  MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
-         info->need_push = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -8047,24 +8070,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      settings_t *settings            = config_get_ptr();
                      unsigned size                   = (unsigned)tmp_str_list->size;
-                     unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                     unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                     unsigned visible_index          = 0;
+                     unsigned option_index           = 0;
+                     bool option_found               = false;
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
+                     unsigned i;
 
                      /* Note: Although we display value labels here,
                       * most logic is performed using values. This seems
                       * more appropriate somehow... */
 
+                     /* Convert menu index to option index */
                      if (settings->bools.game_specific_options)
-                     {
-                        val = core_option_manager_get_val(coreopts, i-1);
-                        i--;
-                     }
-                     else
-                        val = core_option_manager_get_val(coreopts, i);
+                        menu_index--;
 
-                     option                          = (struct core_option*)&coreopts->opts[i];
+                     for (i = 0; i < coreopts->size; i++)
+                     {
+                        if (core_option_manager_get_visible(coreopts, i))
+                        {
+                           if (visible_index == menu_index)
+                           {
+                              option_found = true;
+                              option_index = i;
+                              break;
+                           }
+                           visible_index++;
+                        }
+                     }
+
+                     if (option_found)
+                     {
+                        val    = core_option_manager_get_val(coreopts, option_index);
+                        option = (struct core_option*)&coreopts->opts[option_index];
+                     }
 
                      if (option)
                      {
@@ -8077,7 +8118,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            if (!string_is_empty(val_label_str))
                            {
                               char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", i);
+                              snprintf(val_d, sizeof(val_d), "%d", option_index);
 
                               if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
                                  val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
@@ -8379,25 +8420,48 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (tmp_str_list && tmp_str_list->size > 0)
             {
                core_option_manager_t *coreopts = NULL;
+               const char *val                 = NULL;
 
                rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                if (coreopts)
                {
                   unsigned size                   = (unsigned)tmp_str_list->size;
-                  unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                  unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                  unsigned visible_index          = 0;
+                  unsigned option_index           = 0;
+                  bool option_found               = false;
                   struct core_option *option      = NULL;
                   bool checked_found              = false;
                   unsigned checked                = 0;
-                  const char *val                 = core_option_manager_get_val(coreopts, i-1);
+                  unsigned i;
 
                   /* Note: Although we display value labels here,
                    * most logic is performed using values. This seems
                    * more appropriate somehow... */
 
-                  i--;
+                  /* Convert menu index to option index */
+                  menu_index--;
 
-                  option                          = (struct core_option*)&coreopts->opts[i];
+                  for (i = 0; i < coreopts->size; i++)
+                  {
+                     if (core_option_manager_get_visible(coreopts, i))
+                     {
+                        if (visible_index == menu_index)
+                        {
+                           option_found = true;
+                           option_index = i;
+                           break;
+                        }
+                        visible_index++;
+                     }
+                  }
+
+                  if (option_found)
+                  {
+                     val    = core_option_manager_get_val(coreopts, option_index);
+                     option = (struct core_option*)&coreopts->opts[option_index];
+                  }
 
                   if (option)
                   {
@@ -8410,7 +8474,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (!string_is_empty(val_label_str))
                         {
                            char val_d[256];
-                           snprintf(val_d, sizeof(val_d), "%d", i);
+                           snprintf(val_d, sizeof(val_d), "%d", option_index);
 
                            if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
                               val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);

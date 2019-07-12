@@ -1693,6 +1693,9 @@ static bool core_option_manager_parse_variable(
    char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
+   /* All options are visible by default */
+   option->visible = true;
+
    if (!string_is_empty(var->key))
       option->key             = strdup(var->key);
    if (!string_is_empty(var->value))
@@ -1757,6 +1760,9 @@ static bool core_option_manager_parse_option(
    char *config_val                             = NULL;
    struct core_option *option                   = (struct core_option*)&opt->opts[idx];
    const struct retro_core_option_value *values = option_def->values;
+
+   /* All options are visible by default */
+   option->visible = true;
 
    if (!string_is_empty(option_def->key))
       option->key             = strdup(option_def->key);
@@ -2133,6 +2139,26 @@ const char *core_option_manager_get_val_label(core_option_manager_t *opt, size_t
    return option->val_labels->elems[option->index].data;
 }
 
+/**
+ * core_option_manager_get_visible:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets whether option should be visible when displaying
+ * core options in the frontend
+ *
+ * Returns: 'true' if option should be displayed by the frontend.
+ **/
+bool core_option_manager_get_visible(core_option_manager_t *opt,
+      size_t idx)
+{
+   if (!opt)
+      return NULL;
+   if (idx >= opt->size)
+      return NULL;
+   return opt->opts[idx].visible;
+}
+
 void core_option_manager_set_val(core_option_manager_t *opt,
       size_t idx, size_t val_idx)
 {
@@ -2302,6 +2328,26 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
    return option_defs;
 }
 
+static void core_option_manager_set_display(core_option_manager_t *opt,
+      const char *key, bool visible)
+{
+   size_t i;
+
+   if (!opt || string_is_empty(key))
+      return;
+
+   for (i = 0; i < opt->size; i++)
+   {
+      if (string_is_empty(opt->opts[i].key))
+         continue;
+
+      if (string_is_equal(opt->opts[i].key, key))
+      {
+         opt->opts[i].visible = visible;
+         return;
+      }
+   }
+}
 
 /* DYNAMIC LIBRETRO CORE  */
 
@@ -2921,6 +2967,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT,    NULL);
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_INTL_INIT, data);
+
+         break;
+
+      case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
+         RARCH_LOG("Environ RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
+
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DISPLAY, data);
 
          break;
 
@@ -19015,6 +19068,22 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_core_options          = NULL;
          }
          break;
+
+      case RARCH_CTL_CORE_OPTIONS_DISPLAY:
+         {
+            const struct retro_core_option_display *core_options_display =
+               (const struct retro_core_option_display*)data;
+
+            if (!runloop_core_options || !core_options_display)
+               return false;
+
+            core_option_manager_set_display(
+                  runloop_core_options,
+                  core_options_display->key,
+                  core_options_display->visible);
+         }
+         break;
+
       case RARCH_CTL_KEY_EVENT_GET:
          {
             retro_keyboard_event_t **key_event =

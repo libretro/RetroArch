@@ -35,6 +35,7 @@ struct core_option
    struct string_list *vals;
    struct string_list *val_labels;
    size_t index;
+   bool visible;
 };
 
 struct core_option_manager
@@ -104,6 +105,19 @@ const char *core_option_manager_get_val(core_option_manager_t *opt,
  * Returns: Value label for an option.
  **/
 const char *core_option_manager_get_val_label(core_option_manager_t *opt,
+      size_t idx);
+
+/**
+ * core_option_manager_get_visible:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets whether option should be visible when displaying
+ * core options in the frontend
+ *
+ * Returns: 'true' if option should be displayed by the frontend.
+ **/
+bool core_option_manager_get_visible(core_option_manager_t *opt,
       size_t idx);
 
 void core_option_manager_set_val(core_option_manager_t *opt,
