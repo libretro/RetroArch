@@ -1725,6 +1725,11 @@ static bool core_option_manager_parse_variable(
    if (!option->val_labels)
       goto error;
 
+   /* Legacy core option interface always uses first
+    * defined value as the default */
+   option->default_index = 0;
+   option->index         = 0;
+
    if (config_get_string(opt->conf, option->key, &config_val))
    {
       size_t i;
@@ -1793,6 +1798,10 @@ static bool core_option_manager_parse_option(
    if (!option->vals || !option->val_labels)
       return false;
 
+   /* Initialse default value */
+   option->default_index = 0;
+   option->index         = 0;
+
    /* Extract value/label pairs */
    for (i = 0; i < num_vals; i++)
    {
@@ -1804,6 +1813,16 @@ static bool core_option_manager_parse_option(
          string_list_append(option->val_labels, values[i].label, attr);
       else
          string_list_append(option->val_labels, values[i].value, attr);
+
+      /* Check whether this value is the default setting */
+      if (!string_is_empty(option_def->default_value))
+      {
+         if (string_is_equal(option_def->default_value, values[i].value))
+         {
+            option->default_index = i;
+            option->index         = i;
+         }
+      }
    }
 
    /* Set current config value */
@@ -2189,7 +2208,7 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
    if (idx >= opt->size)
       return;
 
-   opt->opts[idx].index = 0;
+   opt->opts[idx].index = opt->opts[idx].default_index;
    opt->updated         = true;
 }
 
@@ -2245,6 +2264,9 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
 
       /* Key is always taken from us english defs */
       option_defs[i].key = key;
+
+      /* Default value is always taken from us english defs */
+      option_defs[i].default_value = option_defs_us[i].default_value;
 
       /* Try to find corresponding entry in local defs array */
       if (option_defs_local)

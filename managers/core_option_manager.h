@@ -34,6 +34,7 @@ struct core_option
    char *key;
    struct string_list *vals;
    struct string_list *val_labels;
+   size_t default_index;
    size_t index;
    bool visible;
 };
