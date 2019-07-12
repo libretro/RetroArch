@@ -1218,6 +1218,26 @@ enum retro_mod
                                             * instead.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY 55
+                                           /* struct retro_core_option_display * --
+                                            *
+                                            * Allows an implementation to signal the environment to show
+                                            * or hide a variable when displaying core options. This is
+                                            * considered a *suggestion*. The frontend is free to ignore
+                                            * this callback, and its implementation not considered mandatory.
+                                            *
+                                            * 'data' points to a retro_core_option_display struct
+                                            *
+                                            * retro_core_option_display::key is a variable identifier
+                                            * which has already been set by SET_VARIABLES/SET_CORE_OPTIONS.
+                                            *
+                                            * retro_core_option_display::visible is a boolean, specifying
+                                            * whether variable should be displayed
+                                            *
+                                            * Note that all core option variables will be set visible by
+                                            * default when calling SET_VARIABLES/SET_CORE_OPTIONS.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2461,6 +2481,16 @@ struct retro_variable
 
    /* Value to be obtained. If key does not exist, it is set to NULL. */
    const char *value;
+};
+
+struct retro_core_option_display
+{
+   /* Variable to configure in RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY */
+   const char *key;
+
+   /* Specifies whether variable should be displayed
+    * when presenting core options to the user */
+   bool visible;
 };
 
 /* Maximum number of values permitted for a core option
