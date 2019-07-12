@@ -217,16 +217,16 @@ static void udev_input_kb_free(void)
 #endif
 }
 
-static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port)
+static udev_input_mouse_t *udev_get_mouse(
+      struct udev_input *udev, unsigned port)
 {
    unsigned i;
    unsigned mouse_index      = 0;
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS || !video_driver_has_focus()) {
+   if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
-   }
 
    for (i = 0; i < udev->num_devices; ++i)
    {
@@ -655,7 +655,8 @@ end:
 #ifdef HAVE_X11
 static void udev_input_get_pointer_position(int *x, int *y)
 {
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11) {
+   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
+   {
       Window w;
       int p;
       unsigned m;
@@ -666,7 +667,9 @@ static void udev_input_get_pointer_position(int *x, int *y)
    }
 }
 
-static void udev_input_adopt_rel_pointer_position_from_mouse(int *x, int *y, udev_input_mouse_t *mouse) {
+static void udev_input_adopt_rel_pointer_position_from_mouse(
+      int *x, int *y, udev_input_mouse_t *mouse)
+{
    static int noX11DispX = 0;
    static int noX11DispY = 0;
 
@@ -674,7 +677,9 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(int *x, int *y, ude
    bool r = video_driver_get_viewport_info(&view);
    int dx = udev_mouse_get_x(mouse);
    int dy = udev_mouse_get_y(mouse);
-   if (r && (dx || dy) && video_driver_display_type_get() != RARCH_DISPLAY_X11) {
+   if (r && (dx || dy) && 
+         video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
       int minX = view.x;
       int maxX = view.x + view.width;
       int minY = view.y;
@@ -732,7 +737,8 @@ static void udev_input_poll(void *data)
 
       mouse = &udev->devices[i]->mouse;
 #ifdef HAVE_X11
-      udev_input_adopt_rel_pointer_position_from_mouse(&udev->pointer_x, &udev->pointer_y, mouse);
+      udev_input_adopt_rel_pointer_position_from_mouse(
+            &udev->pointer_x, &udev->pointer_y, mouse);
 #else
       mouse->x_rel = 0;
       mouse->y_rel = 0;
