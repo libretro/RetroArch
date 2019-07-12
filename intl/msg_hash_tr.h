@@ -1613,9 +1613,9 @@ MSG_HASH(
     "İçerik yükle"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "Disk'i Yükle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "Disk'i Yazdır")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "Kayıtlı Konumu Yükle"
@@ -1806,7 +1806,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-    "Netplay host'u başlat"
+    "Netplay kurucu olarak başlat"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
@@ -3004,7 +3004,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
-    "Show Playlist Thumbnails"
+    "Oynatma Listesini Küçük Resimlerini Göster"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
@@ -3040,11 +3040,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-    "None"
+    "Yok"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-    "Auto"
+    "Otomatik"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
@@ -3088,7 +3088,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
-    "16:9 (Centered)"
+    "16:9 (Ortalanmış)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
@@ -3096,11 +3096,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
-    "16:10 (Centered)"
+    "16:10 (Ortalanmış)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-    "OFF"
+    "KAPALI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
@@ -3408,7 +3408,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-    "Core Bilgi Dosyalarını Güncelle"
+    "Core Bilgileri Güncelle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -3424,7 +3424,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-    "Güncelle Overlays"
+    "Kaplamaları Güncelle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
@@ -4076,7 +4076,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-    "RetroArch için eklentileri, bileşenleri ve içeriği indirin."
+    "RetroArch için eklentiler, bileşenler ve içerikler indirin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
@@ -5326,7 +5326,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-    "Hangi içeriğin başlayacağını seçin."
+    "Hangi içeriğin başlatılacağını seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
@@ -7375,19 +7375,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-    "Input"
+    "Girdi"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MIDI_INPUT,
-    "Select input device."
+    "Giriş cihazı seçin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-    "Output"
+    "Çıktı"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-    "Select output device."
+    "Çıkış cihazı seçin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -7395,7 +7395,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-    "Set output volume (%)."
+    "Çıkış sesini ayarla (%)."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -7447,7 +7447,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-    "Code"
+    "Kod"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
