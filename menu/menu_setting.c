@@ -4166,10 +4166,10 @@ static int setting_uint_action_left_custom_viewport_height(
    return 0;
 }
 
+#if !defined(RARCH_CONSOLE)
 static int setting_string_action_left_audio_device(
       rarch_setting_t *setting, bool wraparound)
 {
-#if !defined(RARCH_CONSOLE)
    int audio_device_index;
    struct string_list *ptr  = NULL;
 
@@ -4189,10 +4189,10 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
-#endif
 
    return 0;
 }
+#endif
 
 static int setting_string_action_left_driver(rarch_setting_t *setting,
       bool wraparound)

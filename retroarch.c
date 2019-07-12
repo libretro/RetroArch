@@ -1357,7 +1357,9 @@ typedef struct input_remote_state
    uint64_t buttons[MAX_USERS];
 } input_remote_state_t;
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static input_remote_state_t remote_st_ptr;
+#endif
 
 /* INPUT OVERLAY GLOBAL VARIABLES */
 #ifdef HAVE_OVERLAY
@@ -14804,10 +14806,6 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
-   bool is_perfcnt_enable            = false;
-   bool is_paused                    = false;
-   bool is_idle                      = false;
-   bool is_slowmotion                = false;
    video_viewport_t *custom_vp       = NULL;
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context_internal();
@@ -18153,7 +18151,9 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          settings_t *settings              = configuration_settings;
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
+#ifdef HAVE_IMAGEVIEWER
          bool builtin_imageviewer          = settings ? settings->bools.multimedia_builtin_imageviewer_enable : false;
+#endif
          bool builtin_mediaplayer          = settings ? settings->bools.multimedia_builtin_mediaplayer_enable : false;
 
          switch (cont_type)

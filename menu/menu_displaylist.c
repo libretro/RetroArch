@@ -6562,7 +6562,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       }
       case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
          {
+#ifdef HAVE_AUDIOMIXER
             unsigned i;
+#endif
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
 #ifdef HAVE_AUDIOMIXER

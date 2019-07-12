@@ -909,6 +909,8 @@ bool video_shader_is_supported(enum rarch_shader_type type)
    gfx_ctx_flags_t flags;
    enum display_flags testflag;
 
+   flags.flags     = 0;
+
    switch (type)
    {
       case RARCH_SHADER_SLANG:

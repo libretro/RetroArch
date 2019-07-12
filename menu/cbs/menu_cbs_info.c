@@ -37,7 +37,9 @@ static int action_info_default(unsigned type, const char *label)
    menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
+#ifdef HAVE_AUDIOMIXER
    settings_t *settings         = config_get_ptr();
+#endif
 
    menu_displaylist_info_init(&info);
 
