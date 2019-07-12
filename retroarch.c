@@ -2199,7 +2199,8 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
     * > One extra entry required for terminating NULL entry
     * > Note that calloc() sets terminating NULL entry and
     *   correctly 'nullifies' each values array */
-   option_defs = calloc(num_options + 1, sizeof(struct retro_core_option_definition));
+   option_defs = (struct retro_core_option_definition *)calloc(
+         num_options + 1, sizeof(struct retro_core_option_definition));
 
    if (!option_defs)
       return NULL;
