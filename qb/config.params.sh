@@ -144,4 +144,4 @@ HAVE_VIDEOPROCESSOR=auto   # Enable video processor core
 HAVE_VIDEOCORE=auto        # Broadcom Videocore 4 support
 HAVE_DRMINGW=no            # DrMingw exception handler
 HAVE_EASTEREGG=yes         # Easter egg
-HAVE_CDROM=no
+HAVE_CDROM=auto            # CD-ROM support
