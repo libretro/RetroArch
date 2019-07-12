@@ -224,8 +224,9 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
-   if (port >= MAX_USERS || !video_driver_has_focus())
+   if (port >= MAX_USERS || !video_driver_has_focus()) {
       return NULL;
+   }
 
    for (i = 0; i < udev->num_devices; ++i)
    {
@@ -654,13 +655,47 @@ end:
 #ifdef HAVE_X11
 static void udev_input_get_pointer_position(int *x, int *y)
 {
-   Window w;
-   int p;
-   unsigned m;
-   Display *display = (Display*)video_driver_display_get();
-   Window window    = (Window)video_driver_window_get();
+   if (video_driver_display_type_get() == RARCH_DISPLAY_X11) {
+      Window w;
+      int p;
+      unsigned m;
+      Display *display = (Display*)video_driver_display_get();
+      Window window    = (Window)video_driver_window_get();
 
-   XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+      XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+   }
+}
+
+static void udev_input_adopt_rel_pointer_position_from_mouse(int *x, int *y, udev_input_mouse_t *mouse) {
+   static int noX11DispX = 0;
+   static int noX11DispY = 0;
+
+   struct video_viewport view;
+   bool r = video_driver_get_viewport_info(&view);
+   int dx = udev_mouse_get_x(mouse);
+   int dy = udev_mouse_get_y(mouse);
+   if (r && (dx || dy) && video_driver_display_type_get() != RARCH_DISPLAY_X11) {
+      int minX = view.x;
+      int maxX = view.x + view.width;
+      int minY = view.y;
+      int maxY = view.y + view.height;
+
+      /* Not running in a window. */
+      noX11DispX = noX11DispX + dx;
+      if (noX11DispX < minX)
+         noX11DispX = minX;
+      if (noX11DispX > maxX)
+         noX11DispX = maxX;
+      noX11DispY = noX11DispY + dy;
+      if (noX11DispY < minY)
+         noX11DispY = minY;
+      if (noX11DispY > maxY)
+         noX11DispY = maxY;
+      *x = noX11DispX;
+      *y = noX11DispY;
+   }
+   mouse->x_rel = 0;
+   mouse->y_rel = 0;
 }
 #endif
 
@@ -687,8 +722,7 @@ static void udev_input_poll(void *data)
    udev_input_t *udev        = (udev_input_t*)data;
 
 #ifdef HAVE_X11
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-      udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
+   udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
 #endif
 
    for (i = 0; i < udev->num_devices; ++i)
@@ -697,9 +731,12 @@ static void udev_input_poll(void *data)
          continue;
 
       mouse = &udev->devices[i]->mouse;
-
+#ifdef HAVE_X11
+      udev_input_adopt_rel_pointer_position_from_mouse(&udev->pointer_x, &udev->pointer_y, mouse);
+#else
       mouse->x_rel = 0;
       mouse->y_rel = 0;
+#endif
       mouse->wu    = false;
       mouse->wd    = false;
       mouse->whu   = false;
@@ -759,7 +796,6 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
           udev->pointer_x >= view.x + view.width ||
           udev->pointer_y < view.y ||
           udev->pointer_y >= view.y + view.height;
-
    return r;
 #else
    return false;
