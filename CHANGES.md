@@ -1,4 +1,5 @@
 # 1.7.8 (future)
+- ANDROID: Implemented multi-touch touchscreen support.
 - BLISS-BOX: Add 4 new pad types from firmware 3.0.
 - COMMON: Add optional 'on demand' thumbnail downloads.
 - COMMON: Add new playlist-based thumbnail downloader. Hide the legacy thumbnail pack version by default.
@@ -13,6 +14,7 @@
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - INPUT: Menu toggle hotkey can now be bound to another keyboard key and it will toggle properly.
 - IOS: Correctly centers screen on iPhone X landscape.
+- IOS: Implemented multi-touch touchscreen support.
 - LOCALIZATION: Update Korean translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
