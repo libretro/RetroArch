@@ -1142,7 +1142,7 @@ enum retro_mod
                                             * options must not change from the number in the initial call.
                                             *
                                             * 'data' points to an array of retro_core_option_definition structs
-                                            * terminated by a { NULL, NULL, NULL, {{0}} } element.
+                                            * terminated by a { NULL, NULL, NULL, {{0}}, NULL } element.
                                             * retro_core_option_definition::key should be namespaced to not collide
                                             * with other implementations' keys. e.g. A core called
                                             * 'foo' should use keys named as 'foo_option'.
@@ -1151,13 +1151,18 @@ enum retro_mod
                                             * retro_core_option_definition::info should contain any additional human
                                             * readable information text that a typical user may need to
                                             * understand the functionality of the option.
-                                            * retro_variable::values is an array of retro_core_option_value
+                                            * retro_core_option_definition::values is an array of retro_core_option_value
                                             * structs terminated by a { NULL, NULL } element.
-                                            * > retro_variable::values[index].value is an expected option
+                                            * > retro_core_option_definition::values[index].value is an expected option
                                             *   value.
-                                            * > retro_variable::values[index].label is a human readable
+                                            * > retro_core_option_definition::values[index].label is a human readable
                                             *   label used when displaying the value on screen. If NULL,
                                             *   the value itself is used.
+                                            * retro_core_option_definition::default_value is the default core option
+                                            * setting. It must match one of the expected option values in the
+                                            * retro_core_option_definition::values array. If it does not, or the
+                                            * default value is NULL, the first entry in the
+                                            * retro_core_option_definition::values array is treated as the default.
                                             *
                                             * The number of possible options should be very limited,
                                             * and must be less than RETRO_NUM_CORE_OPTION_VALUES_MAX.
@@ -1176,7 +1181,8 @@ enum retro_mod
                                             *         { "true",     NULL },
                                             *         { "unstable", "Turbo (Unstable)" },
                                             *         { NULL, NULL },
-                                            *     }
+                                            *     },
+                                            *     "false"
                                             * }
                                             *
                                             * Only strings are operated on. The possible values will
@@ -1216,6 +1222,10 @@ enum retro_mod
                                             * retro_core_options_intl::us is used by the frontend). Any items
                                             * missing from this array will be read from retro_core_options_intl::us
                                             * instead.
+                                            *
+                                            * NOTE: Default core option values are always taken from the
+                                            * retro_core_options_intl::us array. Any default values in
+                                            * retro_core_options_intl::local array will be ignored.
                                             */
 
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY 55
@@ -2521,6 +2531,11 @@ struct retro_core_option_definition
 
    /* Array of retro_core_option_value structs, terminated by NULL */
    struct retro_core_option_value values[RETRO_NUM_CORE_OPTION_VALUES_MAX];
+
+   /* Default core option value. Must match one of the values
+    * in the retro_core_option_value array, otherwise will be
+    * ignored */
+   const char *default_value;
 };
 
 struct retro_core_options_intl
