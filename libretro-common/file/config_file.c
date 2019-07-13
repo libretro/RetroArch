@@ -510,10 +510,12 @@ void config_file_free(config_file_t *conf)
    while (inc_tmp)
    {
       struct config_include_list *hold = NULL;
-      free(inc_tmp->path);
+      if (inc_tmp->path)
+         free(inc_tmp->path);
       hold    = (struct config_include_list*)inc_tmp;
       inc_tmp = inc_tmp->next;
-      free(hold);
+      if (hold)
+         free(hold);
    }
 
    if (conf->path)
@@ -841,7 +843,8 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
    if (entry && !entry->readonly)
    {
-      free(entry->value);
+      if (entry->value)
+         free(entry->value);
       entry->value = strdup(val);
       return;
    }
@@ -971,7 +974,6 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
    if (!string_is_empty(path))
    {
-      void* buf  = NULL;
 #ifdef ORBIS
       int fd     = orbisOpen(path,O_RDWR|O_CREAT,0644);
       if (fd < 0)
@@ -979,6 +981,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
       config_file_dump_orbis(conf,fd);
       orbisClose(fd);
 #else
+      void* buf  = NULL;
       FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
          return false;
@@ -993,7 +996,8 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 
       if (file != stdout)
          fclose(file);
-      free(buf);
+      if (buf)
+         free(buf);
 #endif
    }
    else
