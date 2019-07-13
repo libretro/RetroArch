@@ -1020,10 +1020,19 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
 {
    const char *path     = NULL;
    const struct playlist_entry *entry = NULL;
+#ifdef HAVE_COCOATOUCH
+   char expanded_path[PATH_MAX_LENGTH];
+#endif
 
    playlist_get_index(playlist, idx, &entry);
 
    path = entry->path;
+
+#ifdef HAVE_COCOATOUCH
+   expanded_path[0] = '\0';
+   fill_pathname_expand_special(expanded_path, entry->path, sizeof(expanded_path));
+   path = expanded_path;
+#endif
 
    if (!string_is_empty(path))
    {
@@ -1586,6 +1595,15 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
+#ifdef HAVE_COCOATOUCH
+         // For iOS, set the path using realpath because the path name
+         // can start with /private and this ensures the path starts with it.
+         // This will allow the path to be properly substituted when fill_pathname_expand_special
+         // is called.
+         char real_action_path[PATH_MAX_LENGTH] = {0};
+         realpath(action_path, real_action_path);
+         strlcpy(action_path, real_action_path, sizeof(action_path));
+#endif
          ret        = set_path_generic(menu->filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_VIDEO_FILTER:
@@ -1780,11 +1798,21 @@ static int action_ok_playlist_entry_collection(const char *path,
    const struct playlist_entry *entry  = NULL;
    unsigned i                          = 0;
 
+#ifdef HAVE_COCOATOUCH
+   char expanded_path[PATH_MAX_LENGTH];
+   char expanded_core_path[PATH_MAX_LENGTH] = {0};
+#endif
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    new_core_path[0]                    = '\0';
    tmp_playlist                        = playlist_get_cached();
+
+#ifdef HAVE_COCOATOUCH
+   expanded_path[0]                    = '\0';
+   expanded_core_path[0]               = '\0';
+#endif
 
    if (!tmp_playlist)
    {
@@ -1878,7 +1906,13 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
    }
    else
+   {
       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+#ifdef HAVE_COCOATOUCH
+      fill_pathname_expand_special(expanded_core_path, new_core_path, sizeof(expanded_core_path));
+      strlcpy(new_core_path, expanded_core_path, sizeof(new_core_path));
+#endif
+   }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
@@ -1893,8 +1927,14 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    playlist_get_index(playlist, selection_ptr, &entry);
 
-   return default_action_ok_load_content_from_playlist_from_menu(
-         new_core_path, entry->path, entry->label);
+#ifdef HAVE_COCOATOUCH
+   fill_pathname_expand_special(expanded_path, entry->path, sizeof(expanded_path));
+    return default_action_ok_load_content_from_playlist_from_menu(
+            new_core_path, expanded_path, entry->label);
+#else
+    return default_action_ok_load_content_from_playlist_from_menu(
+            new_core_path, entry->path, entry->label);
+#endif
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1908,6 +1948,11 @@ static int action_ok_playlist_entry(const char *path,
    const char *entry_label             = NULL;
 
    new_core_path[0] = '\0';
+
+#ifdef HAVE_COCOATOUCH
+   char expanded_core_path[PATH_MAX_LENGTH];
+   expanded_core_path[0]               = '\0';
+#endif
 
    if (!playlist ||
        !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -1957,8 +2002,13 @@ static int action_ok_playlist_entry(const char *path,
       }
 
    }
-   else if (!string_is_empty(entry->core_path))
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+   else if (!string_is_empty(entry->core_path)) {
+       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+#ifdef HAVE_COCOATOUCH
+      fill_pathname_expand_special(expanded_core_path, new_core_path, sizeof(expanded_core_path));
+      strlcpy(new_core_path, expanded_core_path, sizeof(new_core_path));
+#endif
+   }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
