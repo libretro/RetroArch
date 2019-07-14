@@ -265,7 +265,8 @@ inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, 
    return lhs.value("name").toLower() < rhs.value("name").toLower();
 }
 
-bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions)
+bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
+      QStringList &list, QDir &dir, QStringList &extensions)
 {
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
    QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
@@ -312,16 +313,18 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &l
             {
                if (path_is_compressed_file(pathData))
                {
-                  struct string_list *list = file_archive_get_file_list(pathData, NULL);
+                  struct string_list *archive_list = 
+                     file_archive_get_file_list(pathData, NULL);
 
-                  if (list)
+                  if (archive_list)
                   {
-                     if (list->size == 1)
+                     if (archive_list->size == 1)
                      {
                         /* Assume archives with one file should have that file loaded directly.
                          * Don't just extend this to add all files in a zip, because we might hit
                          * something like MAME/FBA where only the archives themselves are valid content. */
-                        pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
+                        pathArray = (QString(pathData) + "#" 
+                              + archive_list->elems[0].data).toUtf8();
                         pathData = pathArray.constData();
 
                         if (!extensions.isEmpty() && playlistDialog->filterInArchive())
@@ -333,7 +336,7 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &l
                         }
                      }
 
-                     string_list_free(list);
+                     string_list_free(archive_list);
                   }
                }
             }
