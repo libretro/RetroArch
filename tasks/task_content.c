@@ -1363,18 +1363,14 @@ static void task_push_to_history_list(
                break;
             default:
             {
-#ifdef HAVE_MENU
-               menu_handle_t *menu = NULL;
-#endif
                core_info_t *core_info = NULL;
-
-               /* Set core path */
-               core_path            = path_get(RARCH_PATH_CORE);
-
                /* Set core display name
                 * (As far as I can tell, core_info_get_current_core()
                 * should always provide a valid pointer here...) */
                core_info_get_current_core(&core_info);
+
+               /* Set core path */
+               core_path            = path_get(RARCH_PATH_CORE);
 
                if (core_info)
                   core_name         = core_info->display_name;
@@ -1383,15 +1379,18 @@ static void task_push_to_history_list(
                   core_name         = info->library_name;
 
 #ifdef HAVE_MENU
-               /* Set database name + checksum */
-               if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
                {
-                  playlist_t *playlist_curr = playlist_get_cached();
-
-                  if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, tmp, core_path))
+                  menu_handle_t *menu = NULL;
+                  /* Set database name + checksum */
+                  if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
                   {
-                     playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
-                     playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+                     playlist_t *playlist_curr = playlist_get_cached();
+
+                     if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, tmp, core_path))
+                     {
+                        playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr,   &crc32);
+                        playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+                     }
                   }
                }
 #endif

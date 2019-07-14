@@ -15357,7 +15357,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
       if (refresh_rate)
          refresh_holder  =
              current_video_context.get_refresh_rate(video_context_data);
-      if (refresh_holder != video_driver_core_hz) /* Fix for incorrect interlace detsction -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
+      if (refresh_holder != video_driver_core_hz) /* Fix for incorrect interlacing detection -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
          *refresh_rate = video_driver_core_hz;
    }
 
