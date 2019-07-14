@@ -3654,20 +3654,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
       "Video Shaders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-      "Scan without core match")
+      "Scansione senza core principale")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-      "When disabled, content is only added to playlists if you have a core installed that supports its extension. By enabling this, it will add to playlist regardless. This way, you can install the core you need later on after scanning.")
+      "Se disabilitato, il contenuto viene aggiunto alle playlist solo se hai un core installato che supporta la sua estensione. Abilitando questo, verrà aggiunto alla playlist indipendentemente. In questo modo, è possibile installare il core di cui si ha bisogno in seguito dopo la scansione.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-      "Animation Horizontal Icon Highlight")
+      "Evidenziazione dell'icona orizzontale dell'animazione")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-      "Animation Move Up/Down")
+      "Animazione Sposta su/giù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-      "Animation Main Menu Opens/Closes")
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
-    )
+      "Menu principale Animazione Apri/Chiudi")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Informazioni sul disco")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "Visualizza le informazioni sui dischi multimediali inseriti.")
