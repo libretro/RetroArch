@@ -1299,8 +1299,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 static void task_push_to_history_list(
       content_information_ctx_t *content_ctx,
       bool launched_from_menu,
-      bool launched_from_cli,
-      char **error_string)
+      bool launched_from_cli)
 {
    bool contentless = false;
    bool is_inited   = false;
@@ -1463,7 +1462,7 @@ static bool command_event_cmd_exec(const char *data,
    if (!content_load(&content_info))
       return false;
    task_push_to_history_list(content_ctx,
-         true, launched_from_cli, error_string);
+         true, launched_from_cli);
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1601,7 +1600,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    }
    else
       task_push_to_history_list(&content_ctx,
-            false, false, &error_string);
+            false, false);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -1792,7 +1791,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    }
    else
       task_push_to_history_list(&content_ctx,
-            true, false, &error_string);
+            true, false);
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1919,7 +1918,7 @@ bool task_push_load_content_with_new_core_from_menu(
    }
    else
       task_push_to_history_list(&content_ctx,
-            true, false, &error_string);
+            true, false);
 
 #else
    command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
@@ -2031,7 +2030,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    ret = content_load(content_info);
 
    if (ret)
-      task_push_to_history_list(&content_ctx, true, loading_from_cli, &error_string);
+      task_push_to_history_list(&content_ctx, true, loading_from_cli);
 
 end:
    if (content_ctx.name_ips)
