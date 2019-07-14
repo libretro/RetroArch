@@ -2169,9 +2169,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    return 0;
 }
 
-static int menu_displaylist_parse_information_list(
+static unsigned menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
+   unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
    struct retro_system_info *system = runloop_get_libretro_system_info();
 
@@ -2184,65 +2185,73 @@ static int menu_displaylist_parse_information_list(
          )
          && core_info && core_info->config_data
       )
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
             MENU_ENUM_LABEL_CORE_INFORMATION,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
 #ifdef HAVE_CDROM
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
          MENU_ENUM_LABEL_DISC_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
          MENU_ENUM_LABEL_NETWORK_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 #endif
 
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION),
          MENU_ENUM_LABEL_SYSTEM_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 
 #ifdef HAVE_LIBRETRODB
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST),
          MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST),
          MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 
    if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_FRONTEND_COUNTERS),
             MENU_ENUM_LABEL_FRONTEND_COUNTERS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_COUNTERS),
             MENU_ENUM_LABEL_CORE_COUNTERS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
    }
 
-   return 0;
+   return count;
 }
 
 static unsigned menu_displaylist_parse_playlists(
@@ -6836,7 +6845,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_INFORMATION_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_information_list(info);
+         count              = menu_displaylist_parse_information_list(info);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         ret                = 0;
 
          info->need_push    = true;
          info->need_refresh = true;
