@@ -339,8 +339,8 @@ static bool parse_line(config_file_t *conf,
       comment++;
       if (strstr(comment, "include ") == comment)
       {
-         char *line = comment + STRLEN_CONST("include ");
-         char *path = extract_value(line, false);
+         char *include_line = comment + STRLEN_CONST("include ");
+         char *path         = extract_value(include_line, false);
 
          if (!path)
             return false;
