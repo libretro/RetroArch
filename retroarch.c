@@ -3407,12 +3407,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
-         rarch_ctl(RARCH_CTL_CAMERA_SET_CB, cb);
+         camera_cb                        = *cb;
 
          if (cb->caps != 0)
-            rarch_ctl(RARCH_CTL_CAMERA_SET_ACTIVE, NULL);
+            camera_driver_active = true;
          else
-            rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
+            camera_driver_active = false;
          break;
       }
 
@@ -3430,7 +3430,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (system)
             system->location_cb    = *cb;
 
-         rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+         location_driver_active    = false;
          break;
       }
 
@@ -4232,8 +4232,8 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
    rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
-   rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
-   rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+   camera_driver_active      = false;
+   location_driver_active    = false;
 
    /* Performance counters no longer valid. */
    performance_counters_clear();
@@ -15799,7 +15799,7 @@ static void init_location(void)
    if (!location_data)
    {
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      rarch_ctl(RARCH_CTL_LOCATION_UNSET_ACTIVE, NULL);
+      location_driver_active = false;
    }
 
    if (system->location_cb.initialized)
@@ -16284,7 +16284,7 @@ void drivers_init(int flags)
                if (!camera_data)
                {
                   RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-                  rarch_ctl(RARCH_CTL_CAMERA_UNSET_ACTIVE, NULL);
+                  camera_driver_active = false;
                }
 
                if (camera_cb.initialized)
@@ -18515,12 +18515,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_CTL_LOCATION_SET_ACTIVE:
-         location_driver_active = true;
-         break;
-      case RARCH_CTL_LOCATION_UNSET_ACTIVE:
-         location_driver_active = false;
-         break;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
@@ -19128,19 +19122,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_HTTPSERVER_DESTROY:
          break;
-      case RARCH_CTL_CAMERA_SET_ACTIVE:
-         camera_driver_active = true;
-         break;
-      case RARCH_CTL_CAMERA_UNSET_ACTIVE:
-         camera_driver_active = false;
-         break;
-      case RARCH_CTL_CAMERA_SET_CB:
-        {
-           struct retro_camera_callback *cb =
-              (struct retro_camera_callback*)data;
-           camera_cb          = *cb;
-        }
-        break;
       case RARCH_CTL_NONE:
       default:
          return false;
