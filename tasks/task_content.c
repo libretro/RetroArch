@@ -197,9 +197,6 @@ static bool pending_content_rom_crc                           = false;
 static char pending_content_rom_crc_path[PATH_MAX_LENGTH]     = {0};
 
 static char pending_subsystem_ident[255];
-#if 0
-static char pending_subsystem_extensions[PATH_MAX_LENGTH];
-#endif
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 #ifdef HAVE_CDROM
