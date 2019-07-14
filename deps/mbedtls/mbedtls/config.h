@@ -1077,7 +1077,9 @@
  *
  * Enable the checkup functions (*_self_test).
  */
-//#define MBEDTLS_SELF_TEST
+#if 0
+#define MBEDTLS_SELF_TEST
+#endif
 
 /**
  * \def MBEDTLS_SHA256_SMALLER
@@ -1469,7 +1471,9 @@
  *
  * Comment this to disable run-time checking and save ROM space
  */
+#if 0
 #define MBEDTLS_VERSION_FEATURES
+#endif
 
 /**
  * \def MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3
