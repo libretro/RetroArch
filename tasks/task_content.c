@@ -171,7 +171,6 @@ struct content_information_ctx
    bool is_ips_pref;
    bool is_bps_pref;
    bool is_ups_pref;
-   bool history_list_enable;
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
@@ -1293,14 +1292,11 @@ static void menu_content_environment_get(int *argc, char *argv[],
 }
 
 /**
- * task_load_content:
+ * task_push_to_history_list:
  *
- * Loads content into currently selected core.
- * Will also optionally push the content entry to the history playlist.
- *
- * Returns: true (1) if successful, otherwise false (0).
+ * Will push the content entry to the history playlist.
  **/
-static bool task_load_content(content_ctx_info_t *content_info,
+static void task_push_to_history_list(
       content_information_ctx_t *content_ctx,
       bool launched_from_menu,
       bool launched_from_cli,
@@ -1308,9 +1304,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    bool contentless = false;
    bool is_inited   = false;
-
-   if (!content_load(content_info))
-      return false;
 
    content_get_status(&contentless, &is_inited);
 
@@ -1346,6 +1339,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          const char *crc32          = NULL;
          const char *db_name        = NULL;
          playlist_t *playlist_hist  = g_defaults.content_history;
+         settings_t *settings       = config_get_ptr();
          global_t *global           = global_get_ptr();
 
          switch (path_is_media_type(tmp))
@@ -1407,17 +1401,11 @@ static bool task_load_content(content_ctx_info_t *content_info,
             }
          }
 
-         if (launched_from_cli)
-         {
-            settings_t *settings             = config_get_ptr();
-            content_ctx->history_list_enable = settings->bools.history_list_enable;
-         }
-
          if (global && !string_is_empty(global->name.label))
             label = global->name.label;
 
          if (
-               content_ctx->history_list_enable
+              settings && settings->bools.history_list_enable 
                && playlist_hist)
          {
             char subsystem_name[PATH_MAX_LENGTH];
@@ -1445,8 +1433,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
       free(tmp);
    }
-
-   return true;
 }
 
 #ifdef HAVE_MENU
@@ -1473,9 +1459,11 @@ static bool command_event_cmd_exec(const char *data,
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!task_load_content(&content_info, content_ctx,
-            true, launched_from_cli, error_string))
+   /* Loads content into currently selected core. */
+   if (!content_load(&content_info))
       return false;
+   task_push_to_history_list(content_ctx,
+         true, launched_from_cli, error_string);
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1573,8 +1561,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->bools.history_list_enable;
-
    if (global)
    {
       if (!string_is_empty(global->name.ips))
@@ -1601,9 +1587,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
 
-   /* Load content */
-   if (!task_load_content(content_info, &content_ctx,
-            false, false, &error_string))
+   /* Loads content into currently selected core. */
+   if (!content_load(content_info))
    {
       if (error_string)
       {
@@ -1614,6 +1599,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
       ret =  false;
    }
+   else
+      task_push_to_history_list(&content_ctx,
+            false, false, &error_string);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -1663,8 +1651,6 @@ bool task_push_load_content_from_playlist_from_menu(
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
-
-   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (global)
    {
@@ -1762,8 +1748,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->bools.history_list_enable;
-
    if (global)
    {
       if (!string_is_empty(global->name.ips))
@@ -1791,8 +1775,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (firmware_update_status(&content_ctx))
       goto end;
 
-   if (!task_load_content(content_info, &content_ctx,
-            true, false, &error_string))
+   /* Loads content into currently selected core. */
+   if (!content_load(content_info))
    {
       if (error_string)
       {
@@ -1806,6 +1790,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       ret = false;
       goto end;
    }
+   else
+      task_push_to_history_list(&content_ctx,
+            true, false, &error_string);
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1886,8 +1873,6 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->bools.history_list_enable;
-
    if (global)
    {
       if (!string_is_empty(global->name.ips))
@@ -1917,8 +1902,8 @@ bool task_push_load_content_with_new_core_from_menu(
    if (firmware_update_status(&content_ctx))
       goto end;
 
-   if (!task_load_content(content_info, &content_ctx,
-            true, false, &error_string))
+   /* Loads content into currently selected core. */
+   if (!content_load(content_info))
    {
       if (error_string)
       {
@@ -1932,6 +1917,9 @@ bool task_push_load_content_with_new_core_from_menu(
       ret = false;
       goto end;
    }
+   else
+      task_push_to_history_list(&content_ctx,
+            true, false, &error_string);
 
 #else
    command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
@@ -1993,7 +1981,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    {
       struct retro_system_info *system        = runloop_get_libretro_system_info();
 
-      content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
       if (!string_is_empty(settings->paths.directory_system))
@@ -2009,8 +1996,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;
    }
-
-   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (global)
    {
@@ -2042,7 +2027,11 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    }
 #endif
 
-   ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
+   /* Loads content into currently selected core. */
+   ret = content_load(content_info);
+
+   if (ret)
+      task_push_to_history_list(&content_ctx, true, loading_from_cli, &error_string);
 
 end:
    if (content_ctx.name_ips)
@@ -2451,7 +2440,6 @@ bool content_init(void)
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.temporary_content              = temporary_content;
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2479,7 +2467,6 @@ bool content_init(void)
    {
       struct retro_system_info *system        = runloop_get_libretro_system_info();
 
-      content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
       if (!string_is_empty(settings->paths.directory_system))
