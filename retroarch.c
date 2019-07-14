@@ -15712,7 +15712,7 @@ static void find_location_driver(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool driver_location_start(void)
+static bool driver_location_start(void)
 {
    if (location_driver && location_data && location_driver->start)
    {
@@ -15733,7 +15733,7 @@ bool driver_location_start(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-void driver_location_stop(void)
+static void driver_location_stop(void)
 {
    if (location_driver && location_driver->stop && location_data)
       location_driver->stop(location_data);
@@ -15747,7 +15747,7 @@ void driver_location_stop(void)
  * Sets interval update time for location driver interface.
  * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
  **/
-void driver_location_set_interval(unsigned interval_msecs,
+static void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance)
 {
    if (location_driver && location_driver->set_interval
@@ -15769,7 +15769,7 @@ void driver_location_set_interval(unsigned interval_msecs,
  *
  * Returns: bool (1) if successful, otherwise false (0).
  **/
-bool driver_location_get_position(double *lat, double *lon,
+static bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy)
 {
    if (location_driver && location_driver->get_position
