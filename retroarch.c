@@ -2775,7 +2775,7 @@ static void rarch_log_libretro(enum retro_log_level level,
 
 static void core_performance_counter_start(struct retro_perf_counter *perf)
 {
-   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (runloop_perfcnt_enable)
    {
       perf->call_cnt++;
       perf->start      = cpu_features_get_perf_counter();
@@ -2784,7 +2784,7 @@ static void core_performance_counter_start(struct retro_perf_counter *perf)
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (runloop_perfcnt_enable)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -13409,7 +13409,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.width         = width;
    video.height        = height;
    video.fullscreen    = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
-   video.vsync         = settings->bools.video_vsync && !rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL);
+   video.vsync         = settings->bools.video_vsync && !runloop_force_nonblock;
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
    video.swap_interval = settings->uints.video_swap_interval;
@@ -13821,7 +13821,7 @@ static void video_driver_monitor_adjust_system_rates(void)
    float timing_skew_hz                   = video_refresh_rate;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
-   rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
+   runloop_force_nonblock                 = false;
 
    if (!info || info->fps <= 0.0)
       return;
@@ -13850,7 +13850,7 @@ static void video_driver_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   rarch_ctl(RARCH_CTL_SET_NONBLOCK_FORCED, NULL);
+   runloop_force_nonblock = true;
    RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
@@ -18624,7 +18624,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             for (i = 0; i < MAX_USERS; i++)
                input_config_set_device(i, RETRO_DEVICE_JOYPAD);
          }
-         rarch_ctl(RARCH_CTL_HTTPSERVER_INIT, NULL);
          retroarch_msg_queue_init();
          break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
@@ -18864,14 +18863,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_PERFCNT_ENABLE:
          return runloop_perfcnt_enable;
-      case RARCH_CTL_SET_NONBLOCK_FORCED:
-         runloop_force_nonblock = true;
-         break;
-      case RARCH_CTL_UNSET_NONBLOCK_FORCED:
-         runloop_force_nonblock = false;
-         break;
-      case RARCH_CTL_IS_NONBLOCK_FORCED:
-         return runloop_force_nonblock;
       case RARCH_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -19117,10 +19108,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                return false;
             *key_event = &runloop_frontend_key_event;
          }
-         break;
-      case RARCH_CTL_HTTPSERVER_INIT:
-         break;
-      case RARCH_CTL_HTTPSERVER_DESTROY:
          break;
       case RARCH_CTL_NONE:
       default:
