@@ -1625,6 +1625,12 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static bool driver_location_get_position(double *lat, double *lon,
+      double *horiz_accuracy, double *vert_accuracy);
+static void driver_location_set_interval(unsigned interval_msecs,
+      unsigned interval_distance);
+static void driver_location_stop(void);
+static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
