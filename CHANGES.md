@@ -41,6 +41,7 @@
 - VULKAN: Add option to select which GPU to render with.
 - WII: Add default video/audio filter directories.
 - WII: Fix RGUI display corruption.
+- WII: Fix HID joypad drivers.
 - WIIU/SLANG: Added "FrameDirection" slang semantic.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
 - X11/UDEV: Mouse pointer should work now in X11 environment with no Display.
