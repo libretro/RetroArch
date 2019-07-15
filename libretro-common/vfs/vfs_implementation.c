@@ -198,34 +198,32 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-/* VC2005 and up have a special 64-bit fseek */
-#ifdef ATLEAST_VC2005
 #ifdef HAVE_CDROM
       if (stream->scheme == VFS_SCHEME_CDROM)
          return retro_vfs_file_seek_cdrom(stream, offset, whence);
-      else
 #endif
+/* VC2005 and up have a special 64-bit fseek */
+#ifdef ATLEAST_VC2005
       return _fseeki64(stream->fp, offset, whence);
 #elif defined(__CELLOS_LV2__) || defined(_MSC_VER) && _MSC_VER <= 1310
       return fseek(stream->fp, (long)offset, whence);
 #elif defined(PS2)
-      int64_t ret = fileXioLseek(fileno(stream->fp), (off_t)offset, whence);
-      /* fileXioLseek could return positive numbers */
-      if (ret > 0)
-         return 0;
-      return ret;
+      {
+         int64_t ret = fileXioLseek(fileno(stream->fp), (off_t)offset, whence);
+         /* fileXioLseek could return positive numbers */
+         if (ret > 0)
+            return 0;
+         return ret;
+      }
 #elif defined(ORBIS)
-      int ret = orbisLseek(stream->fd, offset, whence);
-      if (ret < 0)
-         return -1;
-      return 0;
+      {
+         int ret = orbisLseek(stream->fd, offset, whence);
+         if (ret < 0)
+            return -1;
+         return 0;
+      }
 #else
-#ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_seek_cdrom(stream, offset, whence);
-      else
-#endif
-         return fseeko(stream->fp, (off_t)offset, whence);
+      return fseeko(stream->fp, (off_t)offset, whence);
 #endif
    }
 #ifdef HAVE_MMAP
@@ -576,15 +574,16 @@ end:
 
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 {
-#ifdef ORBIS
-   /* TODO/FIXME - implement this? */
-   return 0;
-#endif
 #ifdef HAVE_CDROM
    if (stream->scheme == VFS_SCHEME_CDROM)
       return retro_vfs_file_error_cdrom(stream);
 #endif
+#ifdef ORBIS
+   /* TODO/FIXME - implement this? */
+   return 0;
+#else
    return ferror(stream->fp);
+#endif
 }
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
@@ -622,16 +621,18 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
          return retro_vfs_file_tell_cdrom(stream);
 #endif
 #ifdef ORBIS
-      int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
-      if (ret < 0)
-         return -1;
-      return ret;
+      {
+         int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
+         if (ret < 0)
+            return -1;
+         return ret;
+      }
 #else
-/* VC2005 and up have a special 64-bit ftell */
+      /* VC2005 and up have a special 64-bit ftell */
 #ifdef ATLEAST_VC2005
       return _ftelli64(stream->fp);
 #else
-         return ftell(stream->fp);
+      return ftell(stream->fp);
 #endif
 #endif
    }
@@ -675,17 +676,16 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+         return retro_vfs_file_read_cdrom(stream, s, len);
+#endif
 #ifdef ORBIS
       if (orbisRead(stream->fd, s, (size_t)len) < 0)
          return -1;
       return 0;
 #else
-#ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_read_cdrom(stream, s, len);
-      else
-#endif
-         return fread(s, 1, (size_t)len, stream->fp);
+      return fread(s, 1, (size_t)len, stream->fp);
 #endif
    }
 #ifdef HAVE_MMAP
