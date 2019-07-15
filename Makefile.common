@@ -188,6 +188,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o \
+       $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \

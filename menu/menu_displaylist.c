@@ -61,7 +61,8 @@
 #endif
 
 #ifdef HAVE_CDROM
-#include <cdrom/cdrom.h>
+#include <vfs/vfs_implementation_cdrom.h>
+#include <media/media_detect_cd.h>
 #endif
 
 #include "menu_cbs.h"
@@ -4951,8 +4952,188 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    {
 #ifdef HAVE_CDROM
       case DISPLAYLIST_CDROM_DETAIL_INFO:
+      {
+         media_detect_cd_info_t cd_info = {0};
+         char file_path[PATH_MAX_LENGTH];
+         RFILE *file;
+         char drive = info->path[0];
+         bool atip = false;
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
+         file_path[0] = '\0';
+
+         if (cdrom_drive_has_media(drive))
+         {
+            cdrom_device_fillpath(file_path, sizeof(file_path), drive, 0, true);
+
+            /* opening the cue triggers storing of TOC info internally */
+            file = filestream_open(file_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+
+            if (file)
+            {
+               const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+
+               atip = cdrom_has_atip(filestream_get_vfs_handle(file));
+
+               filestream_close(file);
+
+               /* open first track */
+               cdrom_device_fillpath(file_path, sizeof(file_path), drive, 1, false);
+
+               if (media_detect_cd_info(file_path, &cd_info))
+               {
+                  if (!string_is_empty(cd_info.title))
+                  {
+                     char title[256];
+
+                     count++;
+
+                     title[0] = '\0';
+
+                     strlcpy(title, "Title: ", sizeof(title));
+                     strlcat(title, cd_info.title, sizeof(title));
+
+                     menu_entries_append_enum(info->list,
+                           title,
+                           "",
+                           0,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.system))
+                  {
+                     char system[256];
+
+                     count++;
+
+                     system[0] = '\0';
+
+                     strlcpy(system, "System: ", sizeof(system));
+                     strlcat(system, cd_info.system, sizeof(system));
+
+                     menu_entries_append_enum(info->list,
+                           system,
+                           "",
+                           0,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.serial))
+                  {
+                     char serial[256];
+
+                     count++;
+
+                     serial[0] = '\0';
+
+                     strlcpy(serial, "Serial#: ", sizeof(serial));
+                     strlcat(serial, cd_info.serial, sizeof(serial));
+
+                     menu_entries_append_enum(info->list,
+                           serial,
+                           "",
+                           0,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     char atip_string[16] = {"Genuine CD: "};
+
+                     if (atip)
+                        strlcat(atip_string, "No", sizeof(atip_string));
+                     else
+                        strlcat(atip_string, "Yes", sizeof(atip_string));
+
+                     menu_entries_append_enum(info->list,
+                           atip_string,
+                           "",
+                           0,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     char tracks_string[32] = {"Number of tracks: "};
+
+                     snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
+
+                     menu_entries_append_enum(info->list,
+                           tracks_string,
+                           "",
+                           0,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     int i;
+
+                     for (i = 0; i < toc->num_tracks; i++)
+                     {
+                        char track_string[16] = {"Track "};
+                        char mode_string[16] = {" - Mode: "};
+                        char size_string[32] = {" - Size: "};
+                        char length_string[32] = {" - Length: "};
+
+                        snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
+
+                        menu_entries_append_enum(info->list,
+                              track_string,
+                              "",
+                              0,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        if (toc->track[i].audio)
+                           snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Audio");
+                        else
+                           snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
+
+                        menu_entries_append_enum(info->list,
+                              mode_string,
+                              "",
+                              0,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
+
+                        menu_entries_append_enum(info->list,
+                              size_string,
+                              "",
+                              0,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        {
+                           unsigned char min = 0;
+                           unsigned char sec = 0;
+                           unsigned char frame = 0;
+
+                           cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
+
+                           snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d:%02d", min, sec, frame);
+
+                           menu_entries_append_enum(info->list,
+                                 length_string,
+                                 "",
+                                 0,
+                                 FILE_TYPE_NONE, 0, 0);
+                        }
+                     }
+                  }
+               }
+               else
+                  RARCH_ERR("[CDROM]: Could not detect any disc info.\n");
+            }
+            else
+               RARCH_ERR("[CDROM]: Error opening file for reading: %s\n", file_path);
+         }
+         else
+         {
+            RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NO_DISC_INSERTED),
+                  1, 100, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -4965,6 +5146,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_clear   = true;
          break;
+      }
       case DISPLAYLIST_DISC_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_parse_disc_info(info,
