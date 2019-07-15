@@ -69,11 +69,12 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
       unsigned sector_size = 0;
       unsigned buf_size = 17 * 2352;
       char *buf = (char*)calloc(1, buf_size);
+      int64_t read_bytes = 0;
 
       if (!buf)
          return false;
 
-      int64_t read_bytes = filestream_read(file, buf, buf_size);
+      read_bytes = filestream_read(file, buf, buf_size);
 
       if (read_bytes != buf_size)
       {
