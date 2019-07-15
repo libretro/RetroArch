@@ -1373,7 +1373,6 @@ MENU
 
 #ifdef HAVE_RUNAHEAD
 #include "../runahead/mem_util.c"
-#include "../runahead/copy_load_info.c"
 #include "../runahead/mylist.c"
 #endif
 

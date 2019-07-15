@@ -216,10 +216,6 @@ bool core_has_set_input_descriptor(void);
 
 void core_uninit_symbols(void);
 
-bool core_is_symbols_inited(void);
-
-bool core_is_inited(void);
-
 void core_free_retro_game_info(struct retro_game_info *dest);
 
 RETRO_END_DECLS

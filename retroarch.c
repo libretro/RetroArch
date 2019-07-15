@@ -186,7 +186,6 @@
 #include "retroarch.h"
 
 #ifdef HAVE_RUNAHEAD
-#include "runahead/copy_load_info.h"
 #include "runahead/mylist.h"
 #include "runahead/mem_util.h"
 #endif
@@ -1613,8 +1612,8 @@ static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 
-extern retro_ctx_load_content_info_t *load_content_info;
-extern enum rarch_core_type last_core_type;
+retro_ctx_load_content_info_t *load_content_info;
+enum rarch_core_type last_core_type;
 
 /* RUNAHEAD - SECONDARY CORE GLOBAL VARIABLES */
 static int port_map[16];
@@ -4355,7 +4354,7 @@ static bool init_libretro_symbols(enum rarch_core_type type, struct retro_core_t
 #ifdef HAVE_RUNAHEAD
    /* remember last core type created, so creating a
     * secondary core will know what core type to use. */
-   set_last_core_type(type);
+   last_core_type = type;
 #endif
    return true;
 }
@@ -4399,6 +4398,85 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
 #if defined(HAVE_RUNAHEAD)
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static struct retro_game_info* clone_retro_game_info(const
+      struct retro_game_info *src)
+{
+   void *data                   = NULL;
+   struct retro_game_info *dest = NULL;
+
+   if (!src)
+      return NULL;
+
+   dest       = (struct retro_game_info*)calloc(1,
+         sizeof(struct retro_game_info));
+   if (!dest)
+      return NULL;
+
+   dest->data    = NULL;
+   dest->path    = strcpy_alloc(src->path);
+
+   if (src->size && src->data)
+   {
+      data = malloc(src->size);
+
+      if (data)
+      {
+         memcpy(data, src->data, src->size);
+         dest->data = data;
+      }
+   }
+
+   dest->size    = src->size;
+   dest->meta    = strcpy_alloc(src->meta);
+
+   return dest;
+}
+
+static void free_retro_ctx_load_content_info(struct
+      retro_ctx_load_content_info *dest)
+{
+   if (!dest)
+      return;
+
+   core_free_retro_game_info(dest->info);
+   string_list_free((struct string_list*)dest->content);
+   if (dest->info)
+      free(dest->info);
+
+   dest->info    = NULL;
+   dest->content = NULL;
+}
+
+static struct retro_ctx_load_content_info
+*clone_retro_ctx_load_content_info(
+      const struct retro_ctx_load_content_info *src)
+{
+   struct retro_ctx_load_content_info *dest = NULL;
+   if (!src || src->special != NULL)
+      return NULL;   /* refuse to deal with the Special field */
+
+   dest          = (struct retro_ctx_load_content_info*)
+      calloc(1, sizeof(*dest));
+
+   if (!dest)
+      return NULL;
+
+   dest->info       = clone_retro_game_info(src->info);
+   dest->content    = NULL;
+   dest->special    = NULL;
+
+   if (src->content)
+      dest->content = string_list_clone(src->content);
+   return dest;
+}
+
+static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
+{
+   free_retro_ctx_load_content_info(load_content_info);
+   free(load_content_info);
+   load_content_info = clone_retro_ctx_load_content_info(ctx);
+}
+
 static void secondary_core_destroy(void)
 {
    if (!secondary_module)
@@ -22337,16 +22415,6 @@ bool core_get_region(retro_ctx_region_info_t *info)
 bool core_has_set_input_descriptor(void)
 {
    return current_core.has_set_input_descriptors;
-}
-
-bool core_is_inited(void)
-{
-  return current_core.inited;
-}
-
-bool core_is_symbols_inited(void)
-{
-  return current_core.symbols_inited;
 }
 
 void core_free_retro_game_info(struct retro_game_info *dest)
