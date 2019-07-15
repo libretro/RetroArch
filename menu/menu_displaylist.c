@@ -5037,6 +5037,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
+                  if (!string_is_empty(cd_info.version))
+                  {
+                     char version[256];
+
+                     count++;
+
+                     version[0] = '\0';
+
+                     strlcpy(version, "Version: ", sizeof(version));
+                     strlcat(version, cd_info.version, sizeof(version));
+
+                     menu_entries_append_enum(info->list,
+                           version,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.release_date))
+                  {
+                     char release_date[256];
+
+                     count++;
+
+                     release_date[0] = '\0';
+
+                     strlcpy(release_date, "Release Date: ", sizeof(release_date));
+                     strlcat(release_date, cd_info.release_date, sizeof(release_date));
+
+                     menu_entries_append_enum(info->list,
+                           release_date,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
                   {
                      char atip_string[32] = {"Genuine Disc: "};
 

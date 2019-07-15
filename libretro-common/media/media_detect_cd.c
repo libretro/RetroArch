@@ -24,6 +24,19 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+static void media_zero_trailing_spaces(char *buf, size_t len)
+{
+   int i;
+
+   for (i = len - 1; i >= 0; i--)
+   {
+      if (buf[i] == ' ')
+         buf[i] = '\0';
+      else if (buf[i] != '\0')
+         break;
+   }
+}
+
 static bool media_skip_spaces(const char **buf, size_t len)
 {
    bool found = false;
@@ -129,7 +142,10 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          title_pos = buf + offset + 0x150;
 
          if (media_skip_spaces(&title_pos, 48))
+         {
             memcpy(info->title, title_pos, 48 - (title_pos - (buf + offset + 0x150)));
+            media_zero_trailing_spaces(info->title, sizeof(info->title));
+         }
          else
             strlcpy(info->title, "N/A", sizeof(info->title));
 
@@ -144,6 +160,8 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
       {
          const char *title_pos;
          const char *serial_pos;
+         const char *version_pos;
+         const char *release_date_pos;
          bool title_found = false;
 
          info->system_id = MEDIA_CD_SYSTEM_SATURN;
@@ -153,7 +171,10 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          title_pos = buf + offset + 0x60;
 
          if (media_skip_spaces(&title_pos, 112))
+         {
             memcpy(info->title, title_pos, 112 - (title_pos - (buf + offset + 0x60)));
+            media_zero_trailing_spaces(info->title, sizeof(info->title));
+         }
          else
             strlcpy(info->title, "N/A", sizeof(info->title));
 
@@ -163,6 +184,63 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
             memcpy(info->serial, serial_pos, 10 - (serial_pos - (buf + offset + 0x20)));
          else
             strlcpy(info->serial, "N/A", sizeof(info->title));
+
+         version_pos = buf + offset + 0x2a;
+
+         if (media_skip_spaces(&version_pos, 6))
+            memcpy(info->version, version_pos, 6 - (version_pos - (buf + offset + 0x2a)));
+         else
+            strlcpy(info->version, "N/A", sizeof(info->title));
+
+         release_date_pos = buf + offset + 0x30;
+
+         if (media_skip_spaces(&release_date_pos, 8))
+            memcpy(info->release_date, release_date_pos, 8 - (release_date_pos - (buf + offset + 0x30)));
+         else
+            strlcpy(info->release_date, "N/A", sizeof(info->title));
+      }
+      else if (!memcmp(buf + offset, "SEGA SEGAKATANA", strlen("SEGA SEGAKATANA")))
+      {
+         const char *title_pos;
+         const char *serial_pos;
+         const char *version_pos;
+         const char *release_date_pos;
+         bool title_found = false;
+
+         info->system_id = MEDIA_CD_SYSTEM_DREAMCAST;
+
+         strlcpy(info->system, "Sega Dreamcast", sizeof(info->system));
+
+         title_pos = buf + offset + 0x80;
+
+         if (media_skip_spaces(&title_pos, 96))
+         {
+            memcpy(info->title, title_pos, 96 - (title_pos - (buf + offset + 0x80)));
+            media_zero_trailing_spaces(info->title, sizeof(info->title));
+         }
+         else
+            strlcpy(info->title, "N/A", sizeof(info->title));
+
+         serial_pos = buf + offset + 0x40;
+
+         if (media_skip_spaces(&serial_pos, 10))
+            memcpy(info->serial, serial_pos, 10 - (serial_pos - (buf + offset + 0x40)));
+         else
+            strlcpy(info->serial, "N/A", sizeof(info->title));
+
+         version_pos = buf + offset + 0x4a;
+
+         if (media_skip_spaces(&version_pos, 6))
+            memcpy(info->version, version_pos, 6 - (version_pos - (buf + offset + 0x4a)));
+         else
+            strlcpy(info->version, "N/A", sizeof(info->title));
+
+         release_date_pos = buf + offset + 0x50;
+
+         if (media_skip_spaces(&release_date_pos, 8))
+            memcpy(info->release_date, release_date_pos, 8 - (release_date_pos - (buf + offset + 0x50)));
+         else
+            strlcpy(info->release_date, "N/A", sizeof(info->title));
       }
       /* Primary Volume Descriptor fields of ISO9660 */
       else if (!memcmp(buf + offset + (16 * sector_size), "\1CD001\1\0PLAYSTATION", 19))
