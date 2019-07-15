@@ -35,6 +35,9 @@
 #endif
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <objbase.h>
+#endif
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -1686,6 +1689,156 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
    return video_driver_get_ptr_internal(force_nonthreaded_data);
 }
+
+/* FRONTEND */
+
+/* Griffin hack */
+#ifdef HAVE_QT
+#ifndef HAVE_MAIN
+#define HAVE_MAIN
+#endif
+#endif
+
+/**
+ * main_exit:
+ *
+ * Cleanly exit RetroArch.
+ *
+ * Also saves configuration files to disk,
+ * and (optionally) autosave state.
+ **/
+void main_exit(void *args)
+{
+   settings_t *settings = configuration_settings;
+
+   if (settings->bools.config_save_on_exit)
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+#ifdef HAVE_MENU
+   /* Do not want menu context to live any more. */
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
+#endif
+   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+
+   command_event(CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG, NULL);
+
+#if defined(HAVE_LOGGER) && !defined(ANDROID)
+   logger_shutdown();
+#endif
+
+   frontend_driver_deinit(args);
+   frontend_driver_exitspawn(
+         path_get_ptr(RARCH_PATH_CORE),
+         path_get_realsize(RARCH_PATH_CORE));
+
+   rarch_ctl(RARCH_CTL_DESTROY, NULL);
+
+   ui_companion_driver_deinit();
+
+   frontend_driver_shutdown(false);
+
+   driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
+   ui_companion_driver_free();
+   frontend_driver_free();
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
+#endif
+}
+
+/**
+ * main_entry:
+ *
+ * Main function of RetroArch.
+ *
+ * If HAVE_MAIN is not defined, will contain main loop and will not
+ * be exited from until we exit the program. Otherwise, will
+ * just do initialization.
+ *
+ * Returns: varies per platform.
+ **/
+int rarch_main(int argc, char *argv[], void *data)
+{
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (FAILED(CoInitialize(NULL)))
+   {
+      RARCH_ERR("FATAL: Failed to initialize the COM interface\n");
+      return 1;
+   }
+#endif
+
+   rarch_ctl(RARCH_CTL_PREINIT, NULL);
+   frontend_driver_init_first(data);
+   rarch_ctl(RARCH_CTL_INIT, NULL);
+
+   if (frontend_driver_is_inited())
+   {
+      content_ctx_info_t info;
+
+      info.argc            = argc;
+      info.argv            = argv;
+      info.args            = data;
+      info.environ_get     = frontend_driver_environment_get_ptr();
+
+      if (!task_push_load_content_from_cli(
+               NULL,
+               NULL,
+               &info,
+               CORE_TYPE_PLAIN,
+               NULL,
+               NULL))
+         return 1;
+   }
+
+   ui_companion_driver_init_first();
+
+#if !defined(HAVE_MAIN) || defined(HAVE_QT)
+   do
+   {
+      int ret;
+      bool app_exit     = false;
+      unsigned sleep_ms = 0;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      ui_companion_win32.application->process_events();
+#endif
+#ifdef HAVE_QT
+      ui_companion_qt.application->process_events();
+#endif
+      ret = runloop_iterate(&sleep_ms);
+
+      if (ret == 1 && sleep_ms > 0)
+         retro_sleep(sleep_ms);
+
+      task_queue_check();
+
+#ifdef HAVE_QT
+      app_exit = ui_companion_qt.application->exiting;
+#endif
+
+      if (ret == -1 || app_exit)
+      {
+#ifdef HAVE_QT
+         ui_companion_qt.application->quit();
+#endif
+         break;
+      }
+   }while(1);
+
+   main_exit(data);
+#endif
+
+   return 0;
+}
+
+#ifndef HAVE_MAIN
+#ifdef __cplusplus
+extern "C"
+#endif
+int main(int argc, char *argv[])
+{
+   return rarch_main(argc, argv, NULL);
+}
+#endif
 
 /* CORE OPTIONS */
 static bool core_option_manager_parse_variable(

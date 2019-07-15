@@ -156,8 +156,7 @@ endif
 DEFINES += -DHAVE_DR_MP3
 DEF_FLAGS += -DHAVE_DR_MP3
 
-OBJ += frontend/frontend.o \
-       frontend/frontend_driver.o \
+OBJ += frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
        retroarch.o \
        paths.o \
