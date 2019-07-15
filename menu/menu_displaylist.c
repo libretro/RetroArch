@@ -5038,7 +5038,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
 
                   {
-                     char atip_string[16] = {"Genuine CD: "};
+                     char atip_string[32] = {"Genuine Disc: "};
 
                      if (atip)
                         strlcat(atip_string, "No", sizeof(atip_string));

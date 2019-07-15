@@ -138,7 +138,7 @@ check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
 if [ "$OS" = 'Linux' ]; then
-   check_header CDROM stropts.h scsi/sg.h
+   check_header CDROM sys/ioctl.h scsi/sg.h
 fi
 
 check_platform 'Linux Win32' CDROM 'CD-ROM is' user

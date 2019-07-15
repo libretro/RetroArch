@@ -47,7 +47,7 @@
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
-#include <stropts.h>
+#include <sys/ioctl.h>
 #include <scsi/sg.h>
 #endif
 
