@@ -2178,9 +2178,9 @@ bool core_option_manager_get_visible(core_option_manager_t *opt,
       size_t idx)
 {
    if (!opt)
-      return false;
+      return NULL;
    if (idx >= opt->size)
-      return false;
+      return NULL;
    return opt->opts[idx].visible;
 }
 
