@@ -159,11 +159,6 @@ DEF_FLAGS += -DHAVE_DR_MP3
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
-       ui/drivers/ui_null.o \
-       ui/drivers/null/ui_null_window.o \
-       ui/drivers/null/ui_null_browser_window.o \
-       ui/drivers/null/ui_null_msg_window.o \
-       ui/drivers/null/ui_null_application.o \
        retroarch.o \
        paths.o \
        command.o \

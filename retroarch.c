@@ -645,7 +645,6 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #ifdef HAVE_COCOATOUCH
    &ui_companion_cocoatouch,
 #endif
-   &ui_companion_null,
    NULL
 };
 
@@ -4958,18 +4957,14 @@ void ui_companion_driver_notify_refresh(void)
 void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list)
 {
    const ui_companion_driver_t *ui = ui_companion;
-   if (!ui)
-      return;
-   if (ui->notify_list_loaded)
+   if (ui && ui->notify_list_loaded)
       ui->notify_list_loaded(ui_companion_data, list, menu_list);
 }
 
 void ui_companion_driver_notify_content_loaded(void)
 {
    const ui_companion_driver_t *ui = ui_companion;
-   if (!ui)
-      return;
-   if (ui->notify_content_loaded)
+   if (ui && ui->notify_content_loaded)
       ui->notify_content_loaded(ui_companion_data);
 }
 

@@ -1057,12 +1057,6 @@ FRONTEND
 /*============================================================
 UI
 ============================================================ */
-#include "../ui/drivers/ui_null.c"
-#include "../ui/drivers/null/ui_null_window.c"
-#include "../ui/drivers/null/ui_null_browser_window.c"
-#include "../ui/drivers/null/ui_null_msg_window.c"
-#include "../ui/drivers/null/ui_null_application.c"
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
 #include "../ui/drivers/win32/ui_win32_window.c"
