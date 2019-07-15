@@ -5015,7 +5015,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      menu_entries_append_enum(info->list,
                            system,
                            "",
-                           0,
+                           MSG_UNKNOWN,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
@@ -5033,7 +5033,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      menu_entries_append_enum(info->list,
                            serial,
                            "",
-                           0,
+                           MSG_UNKNOWN,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
@@ -5048,7 +5048,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      menu_entries_append_enum(info->list,
                            atip_string,
                            "",
-                           0,
+                           MSG_UNKNOWN,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
@@ -5060,18 +5060,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      menu_entries_append_enum(info->list,
                            tracks_string,
                            "",
-                           0,
+                           MSG_UNKNOWN,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
                   {
-                     int i;
+                     unsigned i;
 
                      for (i = 0; i < toc->num_tracks; i++)
                      {
-                        char track_string[16] = {"Track "};
-                        char mode_string[16] = {" - Mode: "};
-                        char size_string[32] = {" - Size: "};
+                        char track_string[16]  = {"Track "};
+                        char mode_string[16]   = {" - Mode: "};
+                        char size_string[32]   = {" - Size: "};
                         char length_string[32] = {" - Length: "};
 
                         snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
@@ -5079,7 +5079,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         menu_entries_append_enum(info->list,
                               track_string,
                               "",
-                              0,
+                              MSG_UNKNOWN,
                               FILE_TYPE_NONE, 0, 0);
 
                         if (toc->track[i].audio)
@@ -5090,7 +5090,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         menu_entries_append_enum(info->list,
                               mode_string,
                               "",
-                              0,
+                              MSG_UNKNOWN,
                               FILE_TYPE_NONE, 0, 0);
 
                         snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
@@ -5098,7 +5098,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         menu_entries_append_enum(info->list,
                               size_string,
                               "",
-                              0,
+                              MSG_UNKNOWN,
                               FILE_TYPE_NONE, 0, 0);
 
                         {
@@ -5113,7 +5113,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            menu_entries_append_enum(info->list,
                                  length_string,
                                  "",
-                                 0,
+                                 MSG_UNKNOWN,
                                  FILE_TYPE_NONE, 0, 0);
                         }
                      }

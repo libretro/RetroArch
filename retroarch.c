@@ -3389,8 +3389,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
          if (!current_input->get_capabilities || !current_input_data)
             return false;
-         else
-            *mask = input_driver_get_capabilities();
+         *mask = input_driver_get_capabilities();
          break;
       }
 
