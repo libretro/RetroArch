@@ -5144,7 +5144,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
 
-                           snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d:%02d", min, sec, frame);
+                           snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d.%02d", min, sec, frame);
 
                            menu_entries_append_enum(info->list,
                                  length_string,

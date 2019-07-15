@@ -838,7 +838,6 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
    /* MMC Command: READ TRACK INFORMATION */
    unsigned char cdb[] = {0x52, 0x1, 0, 0, 0, 0, 0, 0x1, 0x80, 0};
    unsigned char buf[384] = {0};
-   unsigned char mode = 0;
    unsigned lba = 0;
    unsigned track_size = 0;
    int rv;
@@ -869,7 +868,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 #ifdef CDROM_DEBUG
    printf("[CDROM] Track %d Info: ", track);
    printf("[CDROM] Copy: %d ", (buf[5] & 0x10) > 0);
-   printf("[CDROM] Data Mode: %d ", mode);
+   printf("[CDROM] Data Mode: %d ", toc->track[track - 1].mode);
    printf("[CDROM] LBA Start: %d (%d) ", lba, toc->track[track - 1].lba);
    printf("[CDROM] Track Size: %d\n", track_size);
    fflush(stdout);
@@ -1482,7 +1481,7 @@ bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool e
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts)
 {
    /* MMC Command: MODE SENSE (10) */
-   int rv, i;
+   int rv;
    unsigned char cdb[]   = {0x5A, 0, 0x1D, 0, 0, 0, 0, 0, 0x14, 0};
    unsigned char buf[20] = {0};
    unsigned short g1     = 0;
@@ -1507,20 +1506,24 @@ bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_ti
    g3 = buf[18] << 8 | buf[19];
 
 #ifdef CDROM_DEBUG
-   printf("Mode sense data for timeout groups: ");
-
-   for (i = 0; i < (int)sizeof(buf); i++)
    {
-      printf("%02X ", buf[i]);
+      int i;
+
+      printf("Mode sense data for timeout groups: ");
+
+      for (i = 0; i < (int)sizeof(buf); i++)
+      {
+         printf("%02X ", buf[i]);
+      }
+
+      printf("\n");
+
+      printf("Group 1 Timeout: %d\n", g1);
+      printf("Group 2 Timeout: %d\n", g2);
+      printf("Group 3 Timeout: %d\n", g3);
+
+      fflush(stdout);
    }
-
-   printf("\n");
-
-   printf("Group 1 Timeout: %d\n", g1);
-   printf("Group 2 Timeout: %d\n", g2);
-   printf("Group 3 Timeout: %d\n", g3);
-
-   fflush(stdout);
 #endif
 
    timeouts->g1_timeout = g1;
