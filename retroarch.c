@@ -4846,27 +4846,6 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 
 /* UI COMPANION */
 
-/**
- * ui_companion_find_driver:
- * @ident               : Identifier name of driver to find.
- *
- * Finds driver with @ident. Does not initialize.
- *
- * Returns: pointer to driver if successful, otherwise NULL.
- **/
-const ui_companion_driver_t *ui_companion_find_driver(const char *ident)
-{
-   unsigned i;
-
-   for (i = 0; ui_companion_drivers[i]; i++)
-   {
-      if (string_is_equal(ui_companion_drivers[i]->ident, ident))
-         return ui_companion_drivers[i];
-   }
-
-   return NULL;
-}
-
 void ui_companion_set_foreground(unsigned enable)
 {
    main_ui_companion_is_on_foreground = enable;
@@ -4875,18 +4854,6 @@ void ui_companion_set_foreground(unsigned enable)
 bool ui_companion_is_on_foreground(void)
 {
    return main_ui_companion_is_on_foreground;
-}
-
-/**
- * ui_companion_init_first:
- *
- * Finds first suitable driver and initialize.
- *
- * Returns: pointer to first suitable driver, otherwise NULL.
- **/
-const ui_companion_driver_t *ui_companion_init_first(void)
-{
-   return ui_companion_drivers[0];
 }
 
 void ui_companion_event_command(enum event_command action)
@@ -4924,7 +4891,7 @@ void ui_companion_driver_init_first(void)
 {
    settings_t *settings       = configuration_settings;
 
-   ui_companion               = (ui_companion_driver_t*)ui_companion_init_first();
+   ui_companion               = (ui_companion_driver_t*)ui_companion_drivers[0];
 
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
