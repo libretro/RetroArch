@@ -4997,7 +4997,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      menu_entries_append_enum(info->list,
                            title,
                            "",
-                           0,
+                           MSG_UNKNOWN,
                            FILE_TYPE_NONE, 0, 0);
                   }
 
