@@ -906,7 +906,9 @@
  * Disable if you run into name conflicts and want to really remove the
  * mbedtls_strerror()
  */
+#if 0
 #define MBEDTLS_ERROR_STRERROR_DUMMY
+#endif
 
 /**
  * \def MBEDTLS_GENPRIME
