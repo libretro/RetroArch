@@ -24,6 +24,7 @@
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_LIBUSB
@@ -321,12 +322,15 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 {
    size_t i;
    char path[PATH_MAX_LENGTH];
+   char best_path[PATH_MAX_LENGTH];
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
    config_file_t *best_conf   = NULL;
    struct string_list *list   = NULL;
+   struct retro_perf_counter perf;
 
+   best_path[0]               = '\0';
    path[0]                    = '\0';
 
    fill_pathname_application_special(path, sizeof(path),
@@ -357,7 +361,21 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       int res;
-      config_file_t *conf = config_file_new(list->elems[i].data);
+      int64_t length      = 0;
+      uint8_t *ret_buf    = NULL;
+      config_file_t *conf = NULL;
+      
+      if (!filestream_read_file(list->elems[i].data, (void**)&ret_buf, &length))
+         continue;
+
+      if (length < 0)
+      {
+         free((void*)ret_buf);
+         continue;
+      }
+
+      conf                = config_file_new_from_string((const char*)ret_buf);
+      free((void*)ret_buf);
 
       if (!conf)
          continue;
@@ -370,6 +388,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
          current_best = res;
          if (best_conf)
             config_file_free(best_conf);
+         strlcpy(best_path, list->elems[i].data, sizeof(best_path));
          best_conf    = NULL;
          best_conf    = conf;
       }
@@ -379,13 +398,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0 && best_conf)
    {
-      char conf_path[PATH_MAX_LENGTH];
-
-      conf_path[0] = '\0';
-
-      config_get_config_path(best_conf, conf_path, sizeof(conf_path));
-
-      RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
+      RARCH_LOG("[Auoconf]: selected configuration: %s\n", best_path);
       input_autoconfigure_joypad_add(best_conf, params, task);
       ret = 1;
    }
