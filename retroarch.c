@@ -4739,82 +4739,80 @@ static bool secondary_core_create(void)
       return false;
 
    /* Load Core */
-   if (init_libretro_symbols_custom(
+   if (!init_libretro_symbols_custom(
             CORE_TYPE_PLAIN, &secondary_core,
             secondary_library_path, &secondary_module))
-   {
-      secondary_core.symbols_inited = true;
-      secondary_core.retro_set_environment(
-            rarch_environment_secondary_core_hook);
+      return false;
+
+   secondary_core.symbols_inited = true;
+   secondary_core.retro_set_environment(
+         rarch_environment_secondary_core_hook);
 #ifdef HAVE_RUNAHEAD
-      has_variable_update = true;
+   has_variable_update = true;
 #endif
 
-      secondary_core.retro_init();
+   secondary_core.retro_init();
 
-      content_get_status(&contentless, &is_inited);
-      secondary_core.inited = is_inited;
+   content_get_status(&contentless, &is_inited);
+   secondary_core.inited = is_inited;
 
-      /* Load Content */
-      if (!load_content_info || load_content_info->special)
-      {
-         /* disabled due to crashes */
-         return false;
+   /* Load Content */
+   if (!load_content_info || load_content_info->special)
+   {
+      /* disabled due to crashes */
+      return false;
 #if 0
-         secondary_core.game_loaded = secondary_core.retro_load_game_special(
-               loadContentInfo.special->id, loadContentInfo.info, loadContentInfo.content->size);
-         if (!secondary_core.game_loaded)
-         {
-            secondary_core_destroy();
-            return false;
-         }
-#endif
-      }
-      else if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data)
-      {
-         secondary_core.game_loaded = secondary_core.retro_load_game(load_content_info->info);
-         if (!secondary_core.game_loaded)
-         {
-            secondary_core_destroy();
-            return false;
-         }
-      }
-      else if (contentless)
-      {
-         secondary_core.game_loaded = secondary_core.retro_load_game(NULL);
-         if (!secondary_core.game_loaded)
-         {
-            secondary_core_destroy();
-            return false;
-         }
-      }
-      else
-         secondary_core.game_loaded = false;
-
-      if (!secondary_core.inited)
+      secondary_core.game_loaded = secondary_core.retro_load_game_special(
+            loadContentInfo.special->id, loadContentInfo.info, loadContentInfo.content->size);
+      if (!secondary_core.game_loaded)
       {
          secondary_core_destroy();
          return false;
       }
-
-      core_set_default_callbacks(&secondary_callbacks);
-      secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
-      secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
-      secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
-      secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
-      secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
-
-      for (port = 0; port < 16; port++)
+#endif
+   }
+   else if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data)
+   {
+      secondary_core.game_loaded = secondary_core.retro_load_game(load_content_info->info);
+      if (!secondary_core.game_loaded)
       {
-         device = port_map[port];
-         if (device >= 0)
-            secondary_core.retro_set_controller_port_device(
-                  (unsigned)port, (unsigned)device);
+         secondary_core_destroy();
+         return false;
       }
-      clear_controller_port_map();
+   }
+   else if (contentless)
+   {
+      secondary_core.game_loaded = secondary_core.retro_load_game(NULL);
+      if (!secondary_core.game_loaded)
+      {
+         secondary_core_destroy();
+         return false;
+      }
    }
    else
+      secondary_core.game_loaded = false;
+
+   if (!secondary_core.inited)
+   {
+      secondary_core_destroy();
       return false;
+   }
+
+   core_set_default_callbacks(&secondary_callbacks);
+   secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
+   secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
+   secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
+   secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
+   secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
+
+   for (port = 0; port < 16; port++)
+   {
+      device = port_map[port];
+      if (device >= 0)
+         secondary_core.retro_set_controller_port_device(
+               (unsigned)port, (unsigned)device);
+   }
+   clear_controller_port_map();
 
    return true;
 }
