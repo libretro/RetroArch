@@ -42,15 +42,14 @@ static const char *ctr_joypad_name(unsigned pad)
 
 static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if (!input_autoconfigure_connect(
-            ctr_joypad_name(autoconf_pad),
-            NULL,
-            ctr_joypad.ident,
-            autoconf_pad,
-            0,
-            0
-            ))
-      input_config_set_device_name(autoconf_pad, ctr_joypad_name(autoconf_pad));
+   input_autoconfigure_connect(
+         ctr_joypad_name(autoconf_pad),
+         NULL,
+         ctr_joypad.ident,
+         autoconf_pad,
+         0,
+         0
+         );
 }
 
 static bool ctr_joypad_init(void *data)

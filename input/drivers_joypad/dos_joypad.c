@@ -151,15 +151,14 @@ static const char *dos_joypad_name(unsigned pad)
 
 static void dos_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
          dos_joypad_name(autoconf_pad),
          NULL,
          dos_joypad.ident,
          autoconf_pad,
          0,
          0
-         ))
-      input_config_set_device_name(autoconf_pad, dos_joypad_name(autoconf_pad));
+         );
 }
 
 static bool dos_joypad_init(void *data)

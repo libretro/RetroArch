@@ -66,14 +66,12 @@ static bool ps2_joypad_init(void *data)
 
    for (port = 0; port < PS2_MAX_PADS; port++)
    {
-      bool auto_configure = input_autoconfigure_connect( ps2_joypad_name(port),
-                                                         NULL,
-                                                         ps2_joypad.ident,
-                                                         port,
-                                                         0,
-                                                         0);
-      if (!auto_configure)
-         input_config_set_device_name(port, ps2_joypad_name(port));
+      input_autoconfigure_connect( ps2_joypad_name(port),
+            NULL,
+            ps2_joypad.ident,
+            port,
+            0,
+            0);
 
       /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
       if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)

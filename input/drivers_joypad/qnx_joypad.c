@@ -30,17 +30,14 @@ static bool qnx_joypad_init(void *data)
    (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
             qnx_joypad_name(autoconf_pad),
             NULL,
             qnx_joypad.ident,
             autoconf_pad,
             0,
             0
-            ))
-         input_config_set_device_name(autoconf_pad, qnx_joypad_name(autoconf_pad));
-   }
+            );
 
    return true;
 }

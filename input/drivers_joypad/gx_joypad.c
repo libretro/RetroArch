@@ -142,17 +142,14 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
    pad_type[port] = ptype;
 
    if (ptype != WPAD_EXP_NOCONTROLLER)
-   {
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
             gx_joypad_name(port),
             NULL,
             gx_joypad.ident,
             port,
             0,
             0
-            ))
-         input_config_set_device_name(port, gx_joypad_name(port));
-   }
+            );
 }
 
 static bool gx_joypad_button(unsigned port, uint16_t key)

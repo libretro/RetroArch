@@ -9544,9 +9544,8 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 
    fire_connection_listener(port, driver);
 
-   if (!input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
-          port, 0, 0))
-      input_config_set_device_name(port, driver->name(port));
+   input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+          port, 0, 0);
 }
 
 #ifdef HAVE_HID

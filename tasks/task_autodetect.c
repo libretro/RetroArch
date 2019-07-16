@@ -971,7 +971,7 @@ unsigned input_autoconfigure_get_device_name_index(unsigned i)
    return input_device_name_index[i];
 }
 
-bool input_autoconfigure_connect(
+void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
@@ -987,7 +987,18 @@ bool input_autoconfigure_connect(
    bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
 
    if (!task || !state || !autodetect_enable)
-      goto error;
+   {
+      if (state)
+      {
+         input_autoconfigure_params_free(state);
+         free(state);
+      }
+      if (task)
+         free(task);
+
+      input_config_set_device_name(idx, name);
+      return;
+   }
 
    if (!string_is_empty(name))
       state->name                 = strdup(name);
@@ -1004,7 +1015,7 @@ bool input_autoconfigure_connect(
    input_autoconfigure_override_handler(state);
 
    if (!string_is_empty(state->name))
-         input_config_set_device_name(state->idx, state->name);
+      input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
    input_config_set_vid(state->idx, state->vid);
 
@@ -1013,10 +1024,10 @@ bool input_autoconfigure_connect(
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
       if (
-          !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
+            !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
          free(input_autoconf_binds[state->idx][i].joykey_label);
       if (
-          !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
+            !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
          free(input_autoconf_binds[state->idx][i].joyaxis_label);
       input_autoconf_binds[state->idx][i].joykey_label      = NULL;
       input_autoconf_binds[state->idx][i].joyaxis_label     = NULL;
@@ -1028,17 +1039,4 @@ bool input_autoconfigure_connect(
    task->handler                    = input_autoconfigure_connect_handler;
 
    task_queue_push(task);
-
-   return true;
-
-error:
-   if (state)
-   {
-      input_autoconfigure_params_free(state);
-      free(state);
-   }
-   if (task)
-      free(task);
-
-   return false;
 }

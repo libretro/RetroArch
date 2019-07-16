@@ -48,22 +48,16 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
    }
 
    if (event_type == EMSCRIPTEN_EVENT_GAMEPADCONNECTED)
-   {
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
                gamepad_event->id,    /* name */
                NULL,                 /* display name */
                rwebpad_joypad.ident, /* driver */
                gamepad_event->index, /* idx */
                vid,                  /* vid */
-               pid))                 /* pid */
-         input_config_set_device_name(gamepad_event->index,
-            gamepad_event->id);
-   }
+               pid);                 /* pid */
    else if (event_type == EMSCRIPTEN_EVENT_GAMEPADDISCONNECTED)
-   {
       input_autoconfigure_disconnect(gamepad_event->index,
          rwebpad_joypad.ident);
-   }
 
    return EM_TRUE;
 }

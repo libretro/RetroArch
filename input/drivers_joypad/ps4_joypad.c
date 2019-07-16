@@ -112,15 +112,13 @@ static bool ps4_joypad_init(void *data)
                   ds_joypad_states[num_players].userId = userId;
                   RARCH_LOG("NEW PAD: num_players %x \n", num_players);
 
-                  bool auto_configure = input_autoconfigure_connect(
+                  input_autoconfigure_connect(
                         ps4_joypad_name(num_players),
                         NULL,
                         ps4_joypad.ident,
                         num_players,
                         0,
                         0);
-                  if (!auto_configure)
-                     input_config_set_device_name(num_players, ps4_joypad_name(num_players));
                   num_players++;
                }
             }

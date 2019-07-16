@@ -295,9 +295,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
 
 static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
 {
-    if ( !input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0) ) {
-        input_config_set_device(autoconf_pad, "mFi Controller");
-    }
+   input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
 }
 
 bool apple_gamecontroller_joypad_init(void *data)

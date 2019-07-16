@@ -49,15 +49,13 @@ static const char *switch_joypad_name(unsigned pad)
 
 static void switch_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
             switch_joypad_name(autoconf_pad), /* name */
             NULL,                             /* display name */
             switch_joypad.ident,              /* driver */
             autoconf_pad,                     /* idx */
             0,                                /* vid */
-            0))                               /* pid */
-      input_config_set_device_name(autoconf_pad,
-            switch_joypad_name(autoconf_pad));
+            0);                               /* pid */
 }
 
 static bool switch_joypad_init(void *data)
