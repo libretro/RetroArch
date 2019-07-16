@@ -1424,21 +1424,6 @@ struct input_bind_map
    uint8_t retro_key;
 };
 
-static const uint8_t buttons[] = {
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_B,
-};
-
 static pad_connection_listener_t *pad_connection_listener = NULL;
 
 static uint16_t input_config_vid[MAX_USERS];
@@ -1605,16 +1590,15 @@ static const void *hid_data                       = NULL;
 #endif
 
 #if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static enum rarch_core_type last_core_type;
 
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 /* Forward declarations */
 static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 
 retro_ctx_load_content_info_t *load_content_info;
-enum rarch_core_type last_core_type;
-
 /* RUNAHEAD - SECONDARY CORE GLOBAL VARIABLES */
 static int port_map[16];
 
@@ -4396,8 +4380,21 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
 }
 
 #if defined(HAVE_RUNAHEAD)
-/* RUNAHEAD - SECONDARY CORE  */
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static void free_retro_ctx_load_content_info(struct
+      retro_ctx_load_content_info *dest)
+{
+   if (!dest)
+      return;
+
+   core_free_retro_game_info(dest->info);
+   string_list_free((struct string_list*)dest->content);
+   if (dest->info)
+      free(dest->info);
+
+   dest->info    = NULL;
+   dest->content = NULL;
+}
+
 static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
@@ -4432,20 +4429,6 @@ static struct retro_game_info* clone_retro_game_info(const
    return dest;
 }
 
-static void free_retro_ctx_load_content_info(struct
-      retro_ctx_load_content_info *dest)
-{
-   if (!dest)
-      return;
-
-   core_free_retro_game_info(dest->info);
-   string_list_free((struct string_list*)dest->content);
-   if (dest->info)
-      free(dest->info);
-
-   dest->info    = NULL;
-   dest->content = NULL;
-}
 
 static struct retro_ctx_load_content_info
 *clone_retro_ctx_load_content_info(
@@ -4470,6 +4453,7 @@ static struct retro_ctx_load_content_info
    return dest;
 }
 
+
 static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
 {
    free_retro_ctx_load_content_info(load_content_info);
@@ -4477,6 +4461,8 @@ static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
    load_content_info = clone_retro_ctx_load_content_info(ctx);
 }
 
+/* RUNAHEAD - SECONDARY CORE  */
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void secondary_core_destroy(void)
 {
    if (!secondary_module)
