@@ -167,7 +167,7 @@ bool core_set_netplay_callbacks(void);
 bool core_unset_netplay_callbacks(void);
 #endif
 
-bool core_set_poll_type(unsigned *type);
+bool core_set_poll_type(unsigned type);
 
 /* Runs the core for one frame. */
 bool core_run(void);

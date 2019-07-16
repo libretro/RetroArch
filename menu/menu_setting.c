@@ -5717,7 +5717,7 @@ void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         core_set_poll_type((unsigned int*)setting->value.target.integer);
+         core_set_poll_type(*setting->value.target.integer);
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {

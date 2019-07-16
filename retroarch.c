@@ -22159,9 +22159,9 @@ bool core_api_version(retro_ctx_api_info_t *api)
    return true;
 }
 
-bool core_set_poll_type(unsigned *type)
+bool core_set_poll_type(unsigned type)
 {
-   current_core.poll_type = *type;
+   current_core.poll_type = type;
    return true;
 }
 
