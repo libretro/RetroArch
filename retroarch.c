@@ -7734,30 +7734,23 @@ static int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
    ret     = current_input->input_state(
-         current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+         current_input_data, joypad_info,
+         libretro_input_binds, port, device, idx, id);
 
    if (  (device == RETRO_DEVICE_JOYPAD) &&
          (id == RETRO_DEVICE_ID_JOYPAD_MASK))
    {
       unsigned i;
-      int16_t res = 0;
 
       if (     !input_driver_flushing_input
             && !input_driver_block_libretro_input)
       {
          for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             if (input_state_device(ret, port, device, idx, i, true))
-               res |= (1 << i);
+               result |= (1 << i);
       }
-      if (BSV_MOVIE_IS_PLAYBACK_OFF())
-      {
-         res = swap_if_big16(res);
-         intfstream_write(bsv_movie_state_handle->file, &res, 1);
-      }
-      return res;
    }
-
-   if (     !input_driver_flushing_input
+   else if (     !input_driver_flushing_input
          && !input_driver_block_libretro_input)
       result = input_state_device(ret, port, device, idx, id, false);
 
