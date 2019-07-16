@@ -65,11 +65,14 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
     buttons            = &mfi_buttons[slot];
 
     /* retain the values from the paused controller handler and pass them through */
-    if (@available(iOS 13, *)) {
+    if (@available(iOS 13, *))
+    {
         // The menu button can be pressed/unpressed like any other button in iOS 13
         // so no need to passthrough anything
         *buttons = 0;
-    } else {
+    }
+    else
+    {
         // Use the paused controller handler for iOS versions below 13
         pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
         select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
@@ -103,7 +106,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
 #endif
 
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
-        if (@available(iOS 13, *)) {
+        if (@available(iOS 13, *))
+        {
             // Support "Options" button present in PS4 / XBox One controllers
             *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
             
