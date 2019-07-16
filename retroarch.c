@@ -21996,23 +21996,33 @@ static void retro_input_poll_null(void)
 {
 }
 
+static int16_t core_input_state_poll(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   return input_state(port, device, idx, id);
+}
+
+static int16_t core_input_state_poll_late(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   if (!current_core.input_polled)
+      input_driver_poll();
+
+   current_core.input_polled = true;
+   return input_state(port, device, idx, id);
+}
+
+static retro_input_state_t core_input_state_poll_return_cb(void)
+{
+   if (current_core.poll_type == POLL_TYPE_LATE)
+      return core_input_state_poll_late;
+   return core_input_state_poll;
+}
+
 static void core_input_state_poll_maybe(void)
 {
    if (current_core.poll_type == POLL_TYPE_NORMAL)
       input_driver_poll();
-}
-
-static int16_t core_input_state_poll(unsigned port,
-      unsigned device, unsigned idx, unsigned id)
-{
-   if (current_core.poll_type == POLL_TYPE_LATE)
-   {
-      if (!current_core.input_polled)
-         input_driver_poll();
-
-      current_core.input_polled = true;
-   }
-   return input_state(port, device, idx, id);
 }
 
 /**
@@ -22024,10 +22034,12 @@ static int16_t core_input_state_poll(unsigned port,
  **/
 static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
 {
+   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+
    current_core.retro_set_video_refresh(video_driver_frame);
    current_core.retro_set_audio_sample(audio_driver_sample);
    current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   current_core.retro_set_input_state(core_input_state_poll);
+   current_core.retro_set_input_state(state_cb);
    current_core.retro_set_input_poll(core_input_state_poll_maybe);
 
    core_set_default_callbacks(cbs);
@@ -22050,10 +22062,12 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
  **/
 bool core_set_default_callbacks(struct retro_callbacks *cbs)
 {
+   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = core_input_state_poll;
+   cbs->state_cb        = state_cb;
    cbs->poll_cb         = input_driver_poll;
 
    return true;
