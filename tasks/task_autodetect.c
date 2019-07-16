@@ -324,6 +324,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
+   config_file_t *best_conf   = NULL;
    struct string_list *list   = NULL;
 
    path[0]                    = '\0';
@@ -355,39 +356,42 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    for (i = 0; i < list->size; i++)
    {
+      int res;
       config_file_t *conf = config_file_new(list->elems[i].data);
 
-      if (conf)
-         ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
+      if (!conf)
+         continue;
 
-      if (ret >= current_best)
+      res  = input_autoconfigure_joypad_try_from_conf(conf, params);
+
+      if (res >= current_best)
       {
          index        = (int)i;
-         current_best = ret;
+         current_best = res;
+         if (best_conf)
+            config_file_free(best_conf);
+         best_conf    = NULL;
+         best_conf    = conf;
       }
-      config_file_free(conf);
-   }
-
-   if (index >= 0 && current_best > 0)
-   {
-      config_file_t *conf = config_file_new(list->elems[index].data);
-
-      if (conf)
-      {
-         char conf_path[PATH_MAX_LENGTH];
-
-         conf_path[0] = '\0';
-
-         config_get_config_path(conf, conf_path, sizeof(conf_path));
-
-         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
-         input_autoconfigure_joypad_add(conf, params, task);
+      else
          config_file_free(conf);
-         ret = 1;
-      }
    }
-   else
-      ret = 0;
+
+   if (index >= 0 && current_best > 0 && best_conf)
+   {
+      char conf_path[PATH_MAX_LENGTH];
+
+      conf_path[0] = '\0';
+
+      config_get_config_path(best_conf, conf_path, sizeof(conf_path));
+
+      RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
+      input_autoconfigure_joypad_add(best_conf, params, task);
+      ret = 1;
+   }
+
+   if (best_conf)
+      config_file_free(best_conf);
 
    string_list_free(list);
 
@@ -690,9 +694,7 @@ done:
 
    return NULL;
 }
-#endif
-
-#ifndef _WIN32
+#else
 static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
 {
 #ifdef HAVE_LIBUSB
