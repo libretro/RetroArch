@@ -44,9 +44,8 @@ static bool is_analog_enabled(struct padButtonStatus buttons)
 {
    bool enabled = false;
 
-   if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v) {
+   if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v)
       enabled = true;
-   }
 
    return enabled;
 }
@@ -73,12 +72,12 @@ static bool ps2_joypad_init(void *data)
                                                          port,
                                                          0,
                                                          0);
-      if (!auto_configure) {
+      if (!auto_configure)
          input_config_set_device_name(port, ps2_joypad_name(port));
-      }
 
       /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
-      if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0) {
+      if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)
+      {
          printf("padOpenPort failed: %d\n", ret);
          init = false;
          break;
@@ -151,11 +150,14 @@ static void ps2_joypad_poll(void)
    unsigned player;
    struct padButtonStatus buttons;
 
-   for (player = 0; player < PS2_MAX_PADS; player++) {
+   for (player = 0; player < PS2_MAX_PADS; player++)
+   {
       int state = padGetState(player, PS2_PAD_SLOT);
-      if (state == PAD_STATE_STABLE) {
+      if (state == PAD_STATE_STABLE)
+      {
          int ret = padRead(player, PS2_PAD_SLOT, &buttons); /* port, slot, buttons */
-         if (ret != 0) {
+         if (ret != 0)
+         {
             int32_t state_tmp = 0xffff ^ buttons.btns;
             pad_state[player] = 0;
 
@@ -177,7 +179,8 @@ static void ps2_joypad_poll(void)
             pad_state[player] |= (state_tmp & PAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
 
             /* Analog */
-            if (is_analog_enabled(buttons)) {
+            if (is_analog_enabled(buttons))
+            {
                analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
                analog_state[player][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
                analog_state[player][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rjoy_h);;
@@ -204,9 +207,8 @@ static bool ps2_joypad_rumble(unsigned pad,
 static void ps2_joypad_destroy(void)
 {
    unsigned port;
-   for (port = 0; port < PS2_MAX_PADS; port++) {
+   for (port = 0; port < PS2_MAX_PADS; port++)
       padPortClose(port, PS2_PAD_SLOT);
-   }
 }
 
 input_device_driver_t ps2_joypad = {

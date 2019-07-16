@@ -49,14 +49,15 @@ static const char *switch_joypad_name(unsigned pad)
 
 static void switch_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if(!input_autoconfigure_connect(
+   if (!input_autoconfigure_connect(
             switch_joypad_name(autoconf_pad), /* name */
             NULL,                             /* display name */
             switch_joypad.ident,              /* driver */
             autoconf_pad,                     /* idx */
             0,                                /* vid */
             0))                               /* pid */
-      input_config_set_device_name(autoconf_pad, switch_joypad_name(autoconf_pad));
+      input_config_set_device_name(autoconf_pad,
+            switch_joypad_name(autoconf_pad));
 }
 
 static bool switch_joypad_init(void *data)
@@ -65,7 +66,8 @@ static bool switch_joypad_init(void *data)
    unsigned i;
    hidScanInput();
 
-   // Switch like stop behavior with muted band channels and frequencies set to default.
+   /* Switch like stop behavior with muted band channels 
+    * and frequencies set to default. */
    vibration_stop.amp_low   = 0.0f;
    vibration_stop.freq_low  = 160.0f;
    vibration_stop.amp_high  = 0.0f;
@@ -90,7 +92,7 @@ static bool switch_joypad_init(void *data)
 
 static bool switch_joypad_button(unsigned port_num, uint16_t key)
 {
-   if(port_num >= MAX_PADS)
+   if (port_num >= MAX_PADS)
       return false;
 
 #if 0
@@ -102,7 +104,7 @@ static bool switch_joypad_button(unsigned port_num, uint16_t key)
 
 static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-   if(port_num < MAX_PADS)
+   if (port_num < MAX_PADS)
    {
       BITS_COPY16_PTR(state, pad_state[port_num]);
    }
@@ -114,22 +116,22 @@ static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 
 static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val = 0;
-   int axis = -1;
+   int val     = 0;
+   int axis    = -1;
    bool is_neg = false;
    bool is_pos = false;
 
-   if(joyaxis == AXIS_NONE || port_num >= MAX_PADS)
-   {
-      /* TODO/FIXME - implement */
-   }
+#if 0
+   /* TODO/FIXME - implement */
+   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS) { }
+#endif
 
-   if(AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < 4)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
@@ -151,9 +153,9 @@ static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
          break;
    }
 
-   if(is_neg && val > 0)
+   if (is_neg && val > 0)
       val = 0;
-   else if(is_pos && val < 0)
+   else if (is_pos && val < 0)
       val = 0;
 
    return val;
@@ -170,8 +172,10 @@ static void switch_joypad_destroy(void)
    unsigned i;
    for (i = 0; i < MAX_PADS; i++)
    {
-      memcpy(&vibration_values[i][0], &vibration_stop, sizeof(HidVibrationValue));
-      memcpy(&vibration_values[i][1], &vibration_stop, sizeof(HidVibrationValue));
+      memcpy(&vibration_values[i][0],
+            &vibration_stop, sizeof(HidVibrationValue));
+      memcpy(&vibration_values[i][1],
+            &vibration_stop, sizeof(HidVibrationValue));
       hidSendVibrationValues(vibration_handles[i], vibration_values[i], 2);
    }
    hidSendVibrationValues(vibration_handleheld, vibration_values[0], 2);
@@ -181,7 +185,7 @@ static void switch_joypad_destroy(void)
 }
 
 #ifdef HAVE_LIBNX
-int lastMode = 0; // 0 = handheld, 1 = whatever
+int lastMode = 0; /* 0 = handheld, 1 = whatever */
 static void switch_joypad_poll(void)
 {
    settings_t *settings = config_get_ptr();
@@ -192,9 +196,11 @@ static void switch_joypad_poll(void)
    {
       if (lastMode != 1)
       {
-         int i = 0;
-         for(i = 0; i < MAX_USERS; i += 2){
-            if(settings->uints.input_split_joycon[i]) // CONTROLLER_PLAYER_X, X == i++
+         unsigned i = 0;
+         for(i = 0; i < MAX_USERS; i += 2)
+         {
+            /* CONTROLLER_PLAYER_X, X == i++ */
+            if (settings->uints.input_split_joycon[i])
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
@@ -209,8 +215,10 @@ static void switch_joypad_poll(void)
       if (lastMode != 0)
       {
          int i = 0;
-         for(i = 0; i < MAX_USERS; i += 2){
-            if(settings->uints.input_split_joycon[i]) // CONTROLLER_PLAYER_X, X == i++
+         for(i = 0; i < MAX_USERS; i += 2)
+         {
+            /* CONTROLLER_PLAYER_X, X == i++ */
+            if (settings->uints.input_split_joycon[i]) 
             {
                hidSetNpadJoyAssignmentModeDual(i);
                hidSetNpadJoyAssignmentModeDual(i + 1);
@@ -281,7 +289,7 @@ bool switch_joypad_set_rumble(unsigned pad,
       return false;
 
    amp = (float)strength / 65535.0f;
-   amp *= 0.5f; // Max strength is too strong
+   amp *= 0.5f; /* Max strength is too strong */
    if (type == RETRO_RUMBLE_STRONG)
    {
       vibration_values[pad][0].amp_low = amp;
