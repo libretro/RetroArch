@@ -397,9 +397,9 @@ retry:
    {
       cdrom_print_sense_data(sense, sizeof(sense));
 
-      /* INQUIRY/TEST should never fail, don't retry. */
+      /* INQUIRY/TEST/SENSE should never fail, don't retry. */
       /* READ ATIP seems to fail outright on some drives (BW-16D1HT) with pressed discs, skip retries. */
-      if (cmd[0] != 0x0 && cmd[0] != 0x12 && !(cmd[0] == 0x43 && cmd[2] == 0x4))
+      if (cmd[0] != 0x0 && cmd[0] != 0x12 && cmd[0] != 0x5A && !(cmd[0] == 0x43 && cmd[2] == 0x4))
       {
          unsigned char key = sense[2] & 0xF;
 
