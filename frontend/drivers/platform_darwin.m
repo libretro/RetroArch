@@ -358,6 +358,13 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
             resolved_home_dir_buf,
             sizeof(home_dir_buf)) < sizeof(home_dir_buf));
    }
+    char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
+    {
+        retro_assert(strlcpy(bundle_path_buf,
+                             resolved_bundle_dir_buf,
+                             sizeof(bundle_path_buf)) < sizeof(bundle_path_buf));
+    }
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
