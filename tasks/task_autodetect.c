@@ -328,7 +328,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int current_best           = 0;
    config_file_t *best_conf   = NULL;
    struct string_list *list   = NULL;
-   struct retro_perf_counter perf;
 
    best_path[0]               = '\0';
    path[0]                    = '\0';
