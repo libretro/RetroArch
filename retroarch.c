@@ -2072,7 +2072,19 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
       return NULL;
 
    if (!string_is_empty(conf_path))
-      opt->conf                     = config_file_new(conf_path);
+   {
+      int64_t length                = 0;
+      uint8_t *ret_buf              = NULL;
+
+      if (filestream_read_file(conf_path, (void**)&ret_buf, &length))
+      {
+         if (length >= 0)
+            if ((opt->conf = config_file_new_from_string((const char*)ret_buf)))
+               opt->conf->path = strdup(conf_path);
+         free((void*)ret_buf);
+      }
+   }
+
    if (!opt->conf)
       opt->conf                     = config_file_new(NULL);
 
@@ -2128,7 +2140,19 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
       return NULL;
 
    if (!string_is_empty(conf_path))
-      opt->conf                     = config_file_new(conf_path);
+   {
+      int64_t length                = 0;
+      uint8_t *ret_buf              = NULL;
+
+      if (filestream_read_file(conf_path, (void**)&ret_buf, &length))
+      {
+         if (length >= 0)
+            if ((opt->conf = config_file_new_from_string((const char*)ret_buf)))
+               opt->conf->path = strdup(conf_path);
+         free((void*)ret_buf);
+      }
+   }
+
    if (!opt->conf)
       opt->conf                     = config_file_new(NULL);
 
