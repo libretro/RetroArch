@@ -3958,7 +3958,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
             result |= 4;
 #endif
-         if (data != NULL)
+         if (data)
          {
             int* result_p = (int*)data;
             *result_p = result;
@@ -4435,7 +4435,7 @@ static struct retro_ctx_load_content_info
       const struct retro_ctx_load_content_info *src)
 {
    struct retro_ctx_load_content_info *dest = NULL;
-   if (!src || src->special != NULL)
+   if (!src || src->special)
       return NULL;   /* refuse to deal with the Special field */
 
    dest          = (struct retro_ctx_load_content_info*)
@@ -5412,7 +5412,7 @@ static void recording_dump_frame(const void *data, unsigned width,
    ffemu_data.pitch    = (int)pitch;
    ffemu_data.is_dupe  = false;
 
-   if (video_driver_record_gpu_buffer != NULL)
+   if (video_driver_record_gpu_buffer)
    {
       struct video_viewport vp;
 
@@ -9729,7 +9729,7 @@ static bool input_keyboard_line_event(
       word     = array;
    }
 
-   if (word != NULL)
+   if (word)
    {
       /* OSK - update last character */
       if (word[0] == 0)
@@ -11026,7 +11026,7 @@ bool midi_driver_init(void)
             err_str = "driver init failed";
          else
          {
-            midi_drv_input_enabled = input != NULL;
+            midi_drv_input_enabled  = input  != NULL;
             midi_drv_output_enabled = output != NULL;
 
             if (!midi_driver_init_io_buffers())
