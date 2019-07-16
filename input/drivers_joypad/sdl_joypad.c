@@ -105,7 +105,7 @@ static void sdl_pad_connect(unsigned id)
 
 #ifdef HAVE_SDL2
    SDL_JoystickGUID guid;
-   uint16_t *guid_ptr;
+   uint16_t *guid_ptr         = NULL;
 
    if (SDL_IsGameController(id))
    {
