@@ -1589,6 +1589,8 @@ static const void *hid_data                       = NULL;
 #define video_driver_get_ptr_internal(force) (video_driver_data)
 #endif
 
+retro_ctx_load_content_info_t *load_content_info;
+
 #if defined(HAVE_RUNAHEAD)
 static enum rarch_core_type last_core_type;
 
@@ -1598,7 +1600,6 @@ static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 
-retro_ctx_load_content_info_t *load_content_info;
 /* RUNAHEAD - SECONDARY CORE GLOBAL VARIABLES */
 static int port_map[16];
 
