@@ -692,14 +692,13 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
    }
 
-   if (!video_shader_read_conf_preset(conf, cg->shader))
+   if (!video_shader_read_conf_preset(conf, cg->shader, path))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
       config_file_free(conf);
       return false;
    }
 
-   video_shader_resolve_relative(cg->shader, path);
    video_shader_resolve_parameters(conf, cg->shader);
    config_file_free(conf);
 

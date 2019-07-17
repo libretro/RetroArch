@@ -138,12 +138,9 @@ bool menu_shader_manager_init(void)
 
    if (
          !string_is_empty(new_path) && conf &&
-         video_shader_read_conf_preset(conf, menu_driver_shader)
+         video_shader_read_conf_preset(conf, menu_driver_shader, new_path)
       )
-   {
-      video_shader_resolve_relative(menu_driver_shader, new_path);
       video_shader_resolve_parameters(conf, menu_driver_shader);
-   }
 
    if (new_path)
       free(new_path);
@@ -194,11 +191,9 @@ bool menu_shader_manager_set_preset(void *data,
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
-   if (video_shader_read_conf_preset(conf, shader))
-   {
-      video_shader_resolve_relative(shader, preset_path);
+   if (video_shader_read_conf_preset(conf, shader, preset_path))
       video_shader_resolve_parameters(conf, shader);
-   }
+
    config_file_free(conf);
 
 #ifdef HAVE_MENU
