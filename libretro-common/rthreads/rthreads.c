@@ -386,6 +386,24 @@ void slock_lock(slock_t *lock)
 }
 
 /**
+ * slock_try_lock:
+ * @lock                    : pointer to mutex object
+ *
+ * Attempts to lock a mutex. If a mutex is already locked by
+ * another thread, return false.  If the lock is acquired, return true.
+**/
+bool slock_try_lock(slock_t *lock)
+{
+   if (!lock)
+      return false;
+#ifdef USE_WIN32_THREADS
+   return TryEnterCriticalSection(&lock->lock);
+#else
+   return pthread_mutex_trylock(&lock->lock)==0;
+#endif
+}
+
+/**
  * slock_unlock:
  * @lock                    : pointer to mutex object
  *

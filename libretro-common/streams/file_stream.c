@@ -204,9 +204,9 @@ int filestream_getc(RFILE *stream)
 {
    char c = 0;
    if (!stream)
-      return 0;
-   if(filestream_read(stream, &c, 1) == 1)
-      return (int)c;
+      return EOF;
+   if (filestream_read(stream, &c, 1) == 1)
+      return (int)(unsigned char)c;
    return EOF;
 }
 
@@ -427,7 +427,7 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-   return filestream_write(stream, &c_char, 1)==1 ? c : EOF;
+   return filestream_write(stream, &c_char, 1)==1 ? (int)(unsigned char)c : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
