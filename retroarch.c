@@ -1591,6 +1591,7 @@ static const void *hid_data                       = NULL;
 
 #if defined(HAVE_RUNAHEAD)
 static enum rarch_core_type last_core_type;
+static retro_ctx_load_content_info_t *load_content_info;
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 /* Forward declarations */
@@ -1598,7 +1599,6 @@ static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 
-retro_ctx_load_content_info_t *load_content_info;
 /* RUNAHEAD - SECONDARY CORE GLOBAL VARIABLES */
 static int port_map[16];
 
