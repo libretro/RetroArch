@@ -31,10 +31,15 @@ static void* ui_application_win32_initialize(void)
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+   while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
    {
-      TranslateMessage(&msg);
-      DispatchMessage (&msg);
+      MSG msg;
+
+      if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+      {
+         TranslateMessage(&msg);
+         DispatchMessage (&msg);
+      }
    }
 }
 
