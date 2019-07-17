@@ -86,7 +86,7 @@ typedef struct config_file_cb config_file_cb_t ;
  * NULL path will create an empty config file. */
 config_file_t *config_file_new(const char *path);
 
-config_file_t *config_file_new_null(void);
+config_file_t *config_file_new_alloc(void);
 
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file.

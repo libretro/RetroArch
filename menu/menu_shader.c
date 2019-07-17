@@ -357,7 +357,7 @@ bool menu_shader_manager_save_preset(
       dirs[2]              = config_directory;
    }
 
-   if (!(conf = (config_file_t*)config_file_new_null()))
+   if (!(conf = (config_file_t*)config_file_new_alloc()))
       return false;
 
    if (fullpath)

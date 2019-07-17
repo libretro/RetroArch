@@ -2086,12 +2086,10 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
    }
 
    if (!opt->conf)
-      opt->conf                     = config_file_new_null();
+      if (!(opt->conf = config_file_new_alloc()))
+         goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
-
-   if (!opt->conf)
-      goto error;
 
    for (var = vars; var->key && var->value; var++)
       size++;
@@ -2154,12 +2152,10 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
    }
 
    if (!opt->conf)
-      opt->conf                     = config_file_new_null();
+      if (!(opt->conf = config_file_new_alloc()))
+         goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
-
-   if (!opt->conf)
-      goto error;
 
    /* Note: 'option_def->info == NULL' is valid */
    for (option_def = option_defs;

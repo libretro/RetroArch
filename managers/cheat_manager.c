@@ -168,7 +168,7 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
       conf = config_file_new(cheats_file);
 
    if (!conf)
-      if (!(conf = config_file_new_null()))
+      if (!(conf = config_file_new_alloc()))
          return false;
 
    conf->guaranteed_no_duplicates = true;
