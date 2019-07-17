@@ -37,15 +37,10 @@ static bool ui_application_win32_pending_events(void)
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-   while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
    {
-      MSG msg;
-
-      if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-      {
-         TranslateMessage(&msg);
-         DispatchMessage (&msg);
-      }
+      TranslateMessage(&msg);
+      DispatchMessage (&msg);
    }
 }
 
