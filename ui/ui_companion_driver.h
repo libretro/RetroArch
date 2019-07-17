@@ -105,7 +105,6 @@ typedef struct ui_msg_window
 typedef struct ui_application
 {
    void* (*initialize)(void);
-   bool (*pending_events)(void);
    void (*process_events)(void);
    void (*quit)(void);
    bool exiting;

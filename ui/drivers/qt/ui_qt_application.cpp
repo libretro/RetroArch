@@ -128,19 +128,10 @@ static void* ui_application_qt_initialize(void)
    return &ui_application;
 }
 
-static bool ui_application_qt_pending_events(void)
-{
-   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
-
-   if (dispatcher)
-      return dispatcher->hasPendingEvents();
-
-   return false;
-}
-
 static void ui_application_qt_process_events(void)
 {
-   if (ui_application_qt_pending_events())
+   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
+   if (dispatcher && dispatcher->hasPendingEvents())
       QApplication::processEvents();
 }
 
@@ -162,7 +153,6 @@ int main(int argc, char *argv[])
 
 ui_application_t ui_application_qt = {
    ui_application_qt_initialize,
-   ui_application_qt_pending_events,
    ui_application_qt_process_events,
    ui_application_qt_quit,
    false,

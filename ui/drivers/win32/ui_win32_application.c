@@ -28,12 +28,6 @@ static void* ui_application_win32_initialize(void)
    return NULL;
 }
 
-static bool ui_application_win32_pending_events(void)
-{
-   MSG msg;
-   return PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
-}
-
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
@@ -46,7 +40,6 @@ static void ui_application_win32_process_events(void)
 
 ui_application_t ui_application_win32 = {
    ui_application_win32_initialize,
-   ui_application_win32_pending_events,
    ui_application_win32_process_events,
    NULL,
    false,
