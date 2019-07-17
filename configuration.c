@@ -2391,10 +2391,9 @@ static config_file_t *open_default_config_file(void)
    config_file_t *conf                    = NULL;
 
    (void)has_application_data;
+   (void)path_size;
 
    application_data[0] = conf_path[0] = app_path[0] = '\0';
-
-   (void)path_size;
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -2505,9 +2504,10 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf && has_application_data)
    {
-      char *basedir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      bool dir_created = false;
+      char *basedir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      basedir[0]    = '\0';
+      basedir[0]       = '\0';
 
       /* Try to create a new config file. */
 
@@ -2518,16 +2518,18 @@ static config_file_t *open_default_config_file(void)
       fill_pathname_join(conf_path, conf_path,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
-      if (path_mkdir(basedir))
+      dir_created = path_mkdir(basedir);
+      free(basedir);
+
+      if (dir_created)
       {
          char *skeleton_conf = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
          bool saved          = false;
 
          skeleton_conf[0] = '\0';
 
-         free(basedir);
-
-         /* Build a retroarch.cfg path from the global config directory (/etc). */
+         /* Build a retroarch.cfg path from the 
+          * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
@@ -2541,7 +2543,8 @@ static config_file_t *open_default_config_file(void)
 
          if (conf)
          {
-            /* Since this is a clean config file, we can safely use config_save_on_exit. */
+            /* Since this is a clean config file, we can 
+             * safely use config_save_on_exit. */
             config_set_bool(conf, "config_save_on_exit", true);
             saved = config_file_write(conf, conf_path, true);
          }
@@ -2554,10 +2557,6 @@ static config_file_t *open_default_config_file(void)
          }
 
          RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
-      }
-      else
-      {
-         free(basedir);
       }
    }
 #endif
