@@ -29,20 +29,24 @@ RETRO_BEGIN_DECLS
 
 struct core_option
 {
-  char *desc;
-  char *key;
-  struct string_list *vals;
-  size_t index;
+   char *desc;
+   char *info;
+   char *key;
+   struct string_list *vals;
+   struct string_list *val_labels;
+   size_t default_index;
+   size_t index;
+   bool visible;
 };
 
 struct core_option_manager
 {
-  config_file_t *conf;
-  char conf_path[PATH_MAX_LENGTH];
+   config_file_t *conf;
+   char conf_path[PATH_MAX_LENGTH];
 
-  struct core_option *opts;
-  size_t size;
-  bool updated;
+   struct core_option *opts;
+   size_t size;
+   bool updated;
 };
 
 typedef struct core_option_manager core_option_manager_t;
@@ -69,6 +73,18 @@ const char *core_option_manager_get_desc(core_option_manager_t *opt,
       size_t idx);
 
 /**
+ * core_option_manager_get_info:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets information text for an option.
+ *
+ * Returns: Information text for an option.
+ **/
+const char *core_option_manager_get_info(core_option_manager_t *opt,
+      size_t idx);
+
+/**
  * core_option_manager_get_val:
  * @opt              : options manager handle
  * @idx              : idx identifier of the option
@@ -78,6 +94,31 @@ const char *core_option_manager_get_desc(core_option_manager_t *opt,
  * Returns: Value for an option.
  **/
 const char *core_option_manager_get_val(core_option_manager_t *opt,
+      size_t idx);
+
+/**
+ * core_option_manager_get_val_label:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets value label for an option.
+ *
+ * Returns: Value label for an option.
+ **/
+const char *core_option_manager_get_val_label(core_option_manager_t *opt,
+      size_t idx);
+
+/**
+ * core_option_manager_get_visible:
+ * @opt              : options manager handle
+ * @idx              : idx identifier of the option
+ *
+ * Gets whether option should be visible when displaying
+ * core options in the frontend
+ *
+ * Returns: 'true' if option should be displayed by the frontend.
+ **/
+bool core_option_manager_get_visible(core_option_manager_t *opt,
       size_t idx);
 
 void core_option_manager_set_val(core_option_manager_t *opt,

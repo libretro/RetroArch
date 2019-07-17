@@ -28,30 +28,18 @@ static void* ui_application_win32_initialize(void)
    return NULL;
 }
 
-static bool ui_application_win32_pending_events(void)
-{
-   MSG msg;
-   return PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
-}
-
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-   while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
    {
-      MSG msg;
-
-      if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-      {
-         TranslateMessage(&msg);
-         DispatchMessage (&msg);
-      }
+      TranslateMessage(&msg);
+      DispatchMessage (&msg);
    }
 }
 
 ui_application_t ui_application_win32 = {
    ui_application_win32_initialize,
-   ui_application_win32_pending_events,
    ui_application_win32_process_events,
    NULL,
    false,

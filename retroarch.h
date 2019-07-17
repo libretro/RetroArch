@@ -147,10 +147,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_GAME_OPTIONS_ACTIVE,
 
-   RARCH_CTL_IS_NONBLOCK_FORCED,
-   RARCH_CTL_SET_NONBLOCK_FORCED,
-   RARCH_CTL_UNSET_NONBLOCK_FORCED,
-
    RARCH_CTL_IS_PAUSED,
    RARCH_CTL_SET_PAUSED,
 
@@ -180,31 +176,21 @@ enum rarch_ctl_state
    RARCH_CTL_CORE_OPTIONS_LIST_GET,
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
+   RARCH_CTL_CORE_VARIABLES_INIT,
    RARCH_CTL_CORE_OPTIONS_INIT,
+   RARCH_CTL_CORE_OPTIONS_INTL_INIT,
    RARCH_CTL_CORE_OPTIONS_DEINIT,
+   RARCH_CTL_CORE_OPTIONS_DISPLAY,
 
    /* System info */
    RARCH_CTL_SYSTEM_INFO_INIT,
    RARCH_CTL_SYSTEM_INFO_FREE,
 
-   /* HTTP server */
-   RARCH_CTL_HTTPSERVER_INIT,
-   RARCH_CTL_HTTPSERVER_DESTROY,
-
    RARCH_CTL_CONTENT_RUNTIME_LOG_INIT,
    RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT,
 
-   /* Camera */
-   RARCH_CTL_CAMERA_SET_ACTIVE,
-   RARCH_CTL_CAMERA_UNSET_ACTIVE,
-   RARCH_CTL_CAMERA_SET_CB,
-
    /* BSV Movie */
-   RARCH_CTL_BSV_MOVIE_IS_INITED,
-
-   /* Location */
-   RARCH_CTL_LOCATION_SET_ACTIVE,
-   RARCH_CTL_LOCATION_UNSET_ACTIVE
+   RARCH_CTL_BSV_MOVIE_IS_INITED
 };
 
 enum rarch_capabilities
@@ -2083,53 +2069,6 @@ typedef struct location_driver
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
 extern location_driver_t location_null;
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_location_start(void);
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_location_stop(void);
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
 
 /**
  * config_get_location_driver_options:

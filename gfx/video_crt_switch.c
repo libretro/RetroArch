@@ -247,12 +247,12 @@ int crt_compute_dynamic_width(int width)
 #if defined(HAVE_VIDEOCORE)
    p_clock             = 32000000;
 #else
-   p_clock             = 15000000;
+   p_clock             = 21000000;
 #endif
 
    for (i = 0; i < 10; i++)
    {
-      dynamic_width = (width*1.5)*i;
+      dynamic_width = width*i;
       if ((dynamic_width * min_height * ra_core_hz) > p_clock)
          break;
 

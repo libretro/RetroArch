@@ -96,7 +96,8 @@ static bool ps4_joypad_init(void *data)
          {
             int index = 0;
 
-            while(index < num_players){
+            while (index < num_players)
+            {
                ds_joypad_states[index].userId = userId;
                index++;
             }
@@ -105,22 +106,21 @@ static bool ps4_joypad_init(void *data)
             {
                ds_joypad_states[num_players].handle = scePadOpen(userId, 0, 0, NULL);
                RARCH_LOG("USER %x HANDLE %x\n", userId, ds_joypad_states[num_players].handle);
-               if (ds_joypad_states[num_players].handle > 0){
+               if (ds_joypad_states[num_players].handle > 0)
+               {
                   ds_joypad_states[num_players].connected = true;
                   ds_joypad_states[num_players].userId = userId;
                   RARCH_LOG("NEW PAD: num_players %x \n", num_players);
 
-                  bool auto_configure = input_autoconfigure_connect( ps4_joypad_name(num_players),
-                                                         NULL,
-                                                         ps4_joypad.ident,
-                                                         num_players,
-                                                         0,
-                                                         0);
-                  if (!auto_configure) {
-                     input_config_set_device_name(num_players, ps4_joypad_name(num_players));
-                  }
+                  input_autoconfigure_connect(
+                        ps4_joypad_name(num_players),
+                        NULL,
+                        ps4_joypad.ident,
+                        num_players,
+                        0,
+                        0);
                   num_players++;
-         		}
+               }
             }
          }
 
@@ -164,8 +164,8 @@ static void ps4_joypad_poll(void)
       unsigned j, k;
       unsigned i  = player;
       unsigned p  = player;
+      int ret     = scePadReadState(ds_joypad_states[player].handle,&buttons);
 
-      int ret = scePadReadState(ds_joypad_states[player].handle,&buttons);
       if (ret == 0)
       {
          int32_t state_tmp = buttons.buttons;

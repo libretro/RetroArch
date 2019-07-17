@@ -167,7 +167,7 @@ bool core_set_netplay_callbacks(void);
 bool core_unset_netplay_callbacks(void);
 #endif
 
-bool core_set_poll_type(unsigned *type);
+bool core_set_poll_type(unsigned type);
 
 /* Runs the core for one frame. */
 bool core_run(void);
@@ -215,10 +215,6 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
 bool core_has_set_input_descriptor(void);
 
 void core_uninit_symbols(void);
-
-bool core_is_symbols_inited(void);
-
-bool core_is_inited(void);
 
 void core_free_retro_game_info(struct retro_game_info *dest);
 

@@ -225,7 +225,16 @@ static config_file_t *core_info_list_iterate(
    info_path_base = NULL;
 
    if (path_is_valid(info_path))
-      conf = config_file_new(info_path);
+   {
+      int64_t length      = 0;
+      uint8_t *ret_buf    = NULL;
+      if (filestream_read_file(info_path, (void**)&ret_buf, &length))
+      {
+         if (length >= 0)
+            conf = config_file_new_from_string((const char*)ret_buf);
+         free((void*)ret_buf);
+      }
+   }
    free(info_path);
 
    return conf;
@@ -914,8 +923,16 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   char       *tmp          = NULL;
-   config_file_t *conf      = config_file_new(path);
+   int64_t length      = 0;
+   char       *tmp     = NULL;
+   config_file_t *conf = NULL;
+   uint8_t *ret_buf    = NULL;
+   if (filestream_read_file(path, (void**)&ret_buf, &length))
+   {
+      if (length >= 0)
+         conf = config_file_new_from_string((const char*)ret_buf);
+      free((void*)ret_buf);
+   }
 
    if (!conf)
       return false;

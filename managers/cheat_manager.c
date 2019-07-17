@@ -168,10 +168,8 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
       conf = config_file_new(cheats_file);
 
    if (!conf)
-      conf = config_file_new(NULL);
-
-   if (!conf)
-      return false;
+      if (!(conf = config_file_new_alloc()))
+         return false;
 
    conf->guaranteed_no_duplicates = true;
 
@@ -303,11 +301,9 @@ static void cheat_manager_new(unsigned size)
       cheat_manager_state.cheats[i].repeat_add_to_value = 0;
       cheat_manager_state.cheats[i].repeat_add_to_address = 1;
    }
-
-   return;
 }
 
-void cheat_manager_load_cb_first_pass(char *key, char *value)
+static void cheat_manager_load_cb_first_pass(char *key, char *value)
 {
    errno = 0;
 
@@ -320,7 +316,7 @@ void cheat_manager_load_cb_first_pass(char *key, char *value)
    }
 }
 
-void cheat_manager_load_cb_second_pass(char *key, char *value)
+static void cheat_manager_load_cb_second_pass(char *key, char *value)
 {
    char cheat_num_str[20];
    unsigned cheat_num;
@@ -391,7 +387,6 @@ void cheat_manager_load_cb_second_pass(char *key, char *value)
       cheat_manager_state.cheats[cheat_idx].rumble_value = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "value"))
       cheat_manager_state.cheats[cheat_idx].value = (unsigned)strtoul(value, NULL, 0);
-
 }
 
 bool cheat_manager_load(const char *path, bool append)
@@ -602,7 +597,6 @@ void cheat_manager_toggle_index(unsigned i)
 
 void cheat_manager_toggle(void)
 {
-
    if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
       return;
 
@@ -1213,38 +1207,38 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
 
    switch (cheat->rumble_type)
    {
-   case RUMBLE_TYPE_DISABLED:
-      return;
-   case RUMBLE_TYPE_CHANGES:
-      rumble = (curr_value != cheat->rumble_prev_value);
-      break;
-   case RUMBLE_TYPE_DOES_NOT_CHANGE:
-      rumble = (curr_value == cheat->rumble_prev_value);
-      break;
-   case RUMBLE_TYPE_INCREASE:
-      rumble = (curr_value > cheat->rumble_prev_value);
-      break;
-   case RUMBLE_TYPE_DECREASE:
-      rumble = (curr_value < cheat->rumble_prev_value);
-      break;
-   case RUMBLE_TYPE_EQ_VALUE:
-      rumble = (curr_value == cheat->rumble_value);
-      break;
-   case RUMBLE_TYPE_NEQ_VALUE:
-      rumble = (curr_value != cheat->rumble_value);
-      break;
-   case RUMBLE_TYPE_LT_VALUE:
-      rumble = (curr_value < cheat->rumble_value);
-      break;
-   case RUMBLE_TYPE_GT_VALUE:
-      rumble = (curr_value > cheat->rumble_value);
-      break;
-   case RUMBLE_TYPE_INCREASE_BY_VALUE:
-      rumble = (curr_value == cheat->rumble_prev_value + cheat->rumble_value);
-      break;
-   case RUMBLE_TYPE_DECREASE_BY_VALUE:
-      rumble = (curr_value == cheat->rumble_prev_value - cheat->rumble_value);
-      break;
+      case RUMBLE_TYPE_DISABLED:
+         return;
+      case RUMBLE_TYPE_CHANGES:
+         rumble = (curr_value != cheat->rumble_prev_value);
+         break;
+      case RUMBLE_TYPE_DOES_NOT_CHANGE:
+         rumble = (curr_value == cheat->rumble_prev_value);
+         break;
+      case RUMBLE_TYPE_INCREASE:
+         rumble = (curr_value > cheat->rumble_prev_value);
+         break;
+      case RUMBLE_TYPE_DECREASE:
+         rumble = (curr_value < cheat->rumble_prev_value);
+         break;
+      case RUMBLE_TYPE_EQ_VALUE:
+         rumble = (curr_value == cheat->rumble_value);
+         break;
+      case RUMBLE_TYPE_NEQ_VALUE:
+         rumble = (curr_value != cheat->rumble_value);
+         break;
+      case RUMBLE_TYPE_LT_VALUE:
+         rumble = (curr_value < cheat->rumble_value);
+         break;
+      case RUMBLE_TYPE_GT_VALUE:
+         rumble = (curr_value > cheat->rumble_value);
+         break;
+      case RUMBLE_TYPE_INCREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value + cheat->rumble_value);
+         break;
+      case RUMBLE_TYPE_DECREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value - cheat->rumble_value);
+         break;
    }
 
    cheat->rumble_prev_value = curr_value;

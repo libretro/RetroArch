@@ -41,3 +41,19 @@ exists()
 	done
 	return $v
 }
+
+# match:
+# Compares a variable against a list of variables
+# $1 = variable
+# $@ = list of variables
+match()
+{
+	var="$1"
+	shift
+	for string do
+		case "$string" in
+			"$var" ) return 0 ;;
+		esac
+	done
+	return 1
+}

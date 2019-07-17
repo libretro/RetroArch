@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <rhash.h>
 
@@ -734,6 +735,8 @@ bool task_push_overlay_load_default(
       void *user_data)
 {
    task_finder_data_t find_data;
+   int64_t length           = 0;
+   uint8_t *ret_buf         = NULL;
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = NULL;
@@ -753,13 +756,20 @@ bool task_push_overlay_load_default(
    if (!loader)
       return false;
 
-   conf = config_file_new(overlay_path);
+   if (filestream_read_file(overlay_path, (void**)&ret_buf, &length))
+   {
+      if (length >= 0)
+         conf = config_file_new_from_string((const char*)ret_buf);
+      free((void*)ret_buf);
+   }
 
    if (!conf)
    {
       free(loader);
       return false;
    }
+
+   conf->path = strdup(overlay_path);
 
    if (!config_get_uint(conf, "overlays", &loader->size))
    {

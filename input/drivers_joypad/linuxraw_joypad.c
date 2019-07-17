@@ -191,14 +191,13 @@ retry:
                      linuxraw_pads[idx].fd = -1;
                      *linuxraw_pads[idx].ident = '\0';
 
-                     if (!input_autoconfigure_connect(
-                              NULL,
-                              NULL,
-                              linuxraw_joypad_name(idx),
-                              idx,
-                              0,
-                              0))
-                        input_config_set_device_name(idx, NULL);
+                     input_autoconfigure_connect(
+                           NULL,
+                           NULL,
+                           linuxraw_joypad_name(idx),
+                           idx,
+                           0,
+                           0);
                   }
                }
                /* Sometimes, device will be created before
@@ -213,17 +212,13 @@ retry:
 
                   if (     !string_is_empty(linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
-                  {
-                     if (!input_autoconfigure_connect(
-                              linuxraw_pads[idx].ident,
-                              NULL,
-                              linuxraw_joypad.ident,
-                              idx,
-                              0,
-                              0))
-                        input_config_set_device_name(idx,
-                              linuxraw_joypad_name(idx));
-                  }
+                     input_autoconfigure_connect(
+                           linuxraw_pads[idx].ident,
+                           NULL,
+                           linuxraw_joypad.ident,
+                           idx,
+                           0,
+                           0);
                }
             }
          }
@@ -255,14 +250,13 @@ static bool linuxraw_joypad_init(void *data)
 
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
             pad->ident,
             NULL,
             "linuxraw",
             i,
             0,
-            0))
-         input_config_set_device_name(i, pad->ident);
+            0);
 
       if (linuxraw_joypad_init_pad(path, pad))
          linuxraw_poll_pad(pad);

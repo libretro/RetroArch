@@ -61,7 +61,8 @@
 #endif
 
 #ifdef HAVE_CDROM
-#include <cdrom/cdrom.h>
+#include <vfs/vfs_implementation_cdrom.h>
+#include <media/media_detect_cd.h>
 #endif
 
 #include "menu_cbs.h"
@@ -2169,9 +2170,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    return 0;
 }
 
-static int menu_displaylist_parse_information_list(
+static unsigned menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
+   unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
    struct retro_system_info *system = runloop_get_libretro_system_info();
 
@@ -2184,63 +2186,73 @@ static int menu_displaylist_parse_information_list(
          )
          && core_info && core_info->config_data
       )
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
             MENU_ENUM_LABEL_CORE_INFORMATION,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
-   menu_entries_append_enum(info->list,
+#ifdef HAVE_CDROM
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
          MENU_ENUM_LABEL_DISC_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
+#endif
 
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
          MENU_ENUM_LABEL_NETWORK_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 #endif
 
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION),
          MENU_ENUM_LABEL_SYSTEM_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 
 #ifdef HAVE_LIBRETRODB
-   menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST),
          MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
+   if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST),
          MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 #endif
 
    if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_FRONTEND_COUNTERS),
             MENU_ENUM_LABEL_FRONTEND_COUNTERS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_COUNTERS),
             MENU_ENUM_LABEL_CORE_COUNTERS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
    }
 
-   return 0;
+   return count;
 }
 
 static unsigned menu_displaylist_parse_playlists(
@@ -4940,8 +4952,224 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    {
 #ifdef HAVE_CDROM
       case DISPLAYLIST_CDROM_DETAIL_INFO:
+      {
+         media_detect_cd_info_t cd_info = {0};
+         char file_path[PATH_MAX_LENGTH];
+         RFILE *file;
+         char drive = info->path[0];
+         bool atip = false;
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
+         file_path[0] = '\0';
+
+         if (cdrom_drive_has_media(drive))
+         {
+            cdrom_device_fillpath(file_path, sizeof(file_path), drive, 0, true);
+
+            /* opening the cue triggers storing of TOC info internally */
+            file = filestream_open(file_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+
+            if (file)
+            {
+               const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+
+               atip = cdrom_has_atip(filestream_get_vfs_handle(file));
+
+               filestream_close(file);
+
+               /* open first track */
+               cdrom_device_fillpath(file_path, sizeof(file_path), drive, 1, false);
+
+               if (media_detect_cd_info(file_path, &cd_info))
+               {
+                  if (!string_is_empty(cd_info.title))
+                  {
+                     char title[256];
+
+                     count++;
+
+                     title[0] = '\0';
+
+                     strlcpy(title, "Title: ", sizeof(title));
+                     strlcat(title, cd_info.title, sizeof(title));
+
+                     menu_entries_append_enum(info->list,
+                           title,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.system))
+                  {
+                     char system[256];
+
+                     count++;
+
+                     system[0] = '\0';
+
+                     strlcpy(system, "System: ", sizeof(system));
+                     strlcat(system, cd_info.system, sizeof(system));
+
+                     menu_entries_append_enum(info->list,
+                           system,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.serial))
+                  {
+                     char serial[256];
+
+                     count++;
+
+                     serial[0] = '\0';
+
+                     strlcpy(serial, "Serial#: ", sizeof(serial));
+                     strlcat(serial, cd_info.serial, sizeof(serial));
+
+                     menu_entries_append_enum(info->list,
+                           serial,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.version))
+                  {
+                     char version[256];
+
+                     count++;
+
+                     version[0] = '\0';
+
+                     strlcpy(version, "Version: ", sizeof(version));
+                     strlcat(version, cd_info.version, sizeof(version));
+
+                     menu_entries_append_enum(info->list,
+                           version,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  if (!string_is_empty(cd_info.release_date))
+                  {
+                     char release_date[256];
+
+                     count++;
+
+                     release_date[0] = '\0';
+
+                     strlcpy(release_date, "Release Date: ", sizeof(release_date));
+                     strlcat(release_date, cd_info.release_date, sizeof(release_date));
+
+                     menu_entries_append_enum(info->list,
+                           release_date,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     char atip_string[32] = {"Genuine Disc: "};
+
+                     if (atip)
+                        strlcat(atip_string, "No", sizeof(atip_string));
+                     else
+                        strlcat(atip_string, "Yes", sizeof(atip_string));
+
+                     menu_entries_append_enum(info->list,
+                           atip_string,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     char tracks_string[32] = {"Number of tracks: "};
+
+                     snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
+
+                     menu_entries_append_enum(info->list,
+                           tracks_string,
+                           "",
+                           MSG_UNKNOWN,
+                           FILE_TYPE_NONE, 0, 0);
+                  }
+
+                  {
+                     unsigned i;
+
+                     for (i = 0; i < toc->num_tracks; i++)
+                     {
+                        char track_string[16]  = {"Track "};
+                        char mode_string[16]   = {" - Mode: "};
+                        char size_string[32]   = {" - Size: "};
+                        char length_string[32] = {" - Length: "};
+
+                        snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
+
+                        menu_entries_append_enum(info->list,
+                              track_string,
+                              "",
+                              MSG_UNKNOWN,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        if (toc->track[i].audio)
+                           snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Audio");
+                        else
+                           snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
+
+                        menu_entries_append_enum(info->list,
+                              mode_string,
+                              "",
+                              MSG_UNKNOWN,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
+
+                        menu_entries_append_enum(info->list,
+                              size_string,
+                              "",
+                              MSG_UNKNOWN,
+                              FILE_TYPE_NONE, 0, 0);
+
+                        {
+                           unsigned char min = 0;
+                           unsigned char sec = 0;
+                           unsigned char frame = 0;
+
+                           cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
+
+                           snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d.%02d", min, sec, frame);
+
+                           menu_entries_append_enum(info->list,
+                                 length_string,
+                                 "",
+                                 MSG_UNKNOWN,
+                                 FILE_TYPE_NONE, 0, 0);
+                        }
+                     }
+                  }
+               }
+               else
+                  RARCH_ERR("[CDROM]: Could not detect any disc info.\n");
+            }
+            else
+               RARCH_ERR("[CDROM]: Error opening file for reading: %s\n", file_path);
+         }
+         else
+         {
+            RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_NO_DISC_INSERTED),
+                  1, 100, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -4954,6 +5182,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_refresh = true;
          info->need_clear   = true;
          break;
+      }
       case DISPLAYLIST_DISC_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_parse_disc_info(info,
@@ -6068,63 +6297,86 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
          {
-            size_t                   opts = 0;
-            settings_t      *settings     = config_get_ptr();
+            /* Number of displayed options is dynamic. If user opens
+             * 'Quick Menu > Core Options', toggles something
+             * that changes the number of displayed items, then
+             * toggles the Quick Menu off and on again (returning
+             * to the Core Options menu) the menu must be refreshed
+             * (or undefined behaviour occurs).
+             * The only way to check whether the number of visible
+             * options has changed is to cache the last set menu size,
+             * and compare this with the new size after processing
+             * the current core_option_manager_t struct */
+            size_t prev_count = info->list->size;
 
-            rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (settings->bools.game_specific_options)
+            if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               size_t                   opts = 0;
+               settings_t      *settings     = config_get_ptr();
+
+               rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+
+               if (settings->bools.game_specific_options)
                {
-                  if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
-                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
-                        MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                     count++;
+                  if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+                  {
+                     if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
+                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
+                        count++;
+                  }
+                  else
+                     if (menu_entries_append_enum(info->list,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
+                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
+                        count++;
                }
-               else
-                  if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
-                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
-                        MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                     count++;
+
+               if (opts != 0)
+               {
+                  core_option_manager_t *coreopts = NULL;
+
+                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+                  for (i = 0; i < opts; i++)
+                  {
+                     if (core_option_manager_get_visible(coreopts, i))
+                     {
+                        menu_entries_append_enum(info->list,
+                              core_option_manager_get_desc(coreopts, i), "",
+                              MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
+                              (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
+                        count++;
+                     }
+                  }
+               }
             }
 
-            if (opts != 0)
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
+                     MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
+                     MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+
+            if (count != prev_count)
             {
-               core_option_manager_t *coreopts = NULL;
-
-               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-               for (i = 0; i < opts; i++)
-               {
-                  menu_entries_append_enum(info->list,
-                        core_option_manager_get_desc(coreopts, i), "",
-                        MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
-                        (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
-                  count++;
-               }
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
             }
+            info->need_push                = true;
          }
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
-                  MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
-         info->need_push = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6562,7 +6814,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       }
       case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
          {
+#ifdef HAVE_AUDIOMIXER
             unsigned i;
+#endif
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
 #ifdef HAVE_AUDIOMIXER
@@ -6809,7 +7063,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_INFORMATION_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_information_list(info);
+         count              = menu_displaylist_parse_information_list(info);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         ret                = 0;
 
          info->need_push    = true;
          info->need_refresh = true;
@@ -8045,39 +8308,68 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      settings_t *settings            = config_get_ptr();
                      unsigned size                   = (unsigned)tmp_str_list->size;
-                     unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                     unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                     unsigned visible_index          = 0;
+                     unsigned option_index           = 0;
+                     bool option_found               = false;
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
+                     unsigned i;
 
+                     /* Note: Although we display value labels here,
+                      * most logic is performed using values. This seems
+                      * more appropriate somehow... */
+
+                     /* Convert menu index to option index */
                      if (settings->bools.game_specific_options)
-                     {
-                        val = core_option_manager_get_val(coreopts, i-1);
-                        i--;
-                     }
-                     else
-                        val = core_option_manager_get_val(coreopts, i);
+                        menu_index--;
 
-                     option                          = (struct core_option*)&coreopts->opts[i];
+                     for (i = 0; i < coreopts->size; i++)
+                     {
+                        if (core_option_manager_get_visible(coreopts, i))
+                        {
+                           if (visible_index == menu_index)
+                           {
+                              option_found = true;
+                              option_index = i;
+                              break;
+                           }
+                           visible_index++;
+                        }
+                     }
+
+                     if (option_found)
+                     {
+                        val    = core_option_manager_get_val(coreopts, option_index);
+                        option = (struct core_option*)&coreopts->opts[option_index];
+                     }
 
                      if (option)
                      {
                         unsigned k;
                         for (k = 0; k < option->vals->size; k++)
                         {
-                           const char *str = option->vals->elems[k].data;
+                           const char *val_str       = option->vals->elems[k].data;
+                           const char *val_label_str = option->val_labels->elems[k].data;
 
-                           if (!string_is_empty(str))
+                           if (!string_is_empty(val_label_str))
                            {
                               char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", i);
+                              snprintf(val_d, sizeof(val_d), "%d", option_index);
+
+                              if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+                              else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
                               menu_entries_append_enum(info->list,
-                                    str,
+                                    val_label_str,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
                                     MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
 
-                              if (!checked_found && string_is_equal(str, val))
+                              if (!checked_found && string_is_equal(val_str, val))
                               {
                                  checked = k;
                                  checked_found = true;
@@ -8093,6 +8385,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
 
+               if (tmp_str_list)
+                  string_list_free(tmp_str_list);
             }
             else
             {
@@ -8135,6 +8429,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               if (checked_found)
                                  menu_entries_set_checked(info->list, checked, true);
                            }
+
+                           if (tmp_str_list)
+                              string_list_free(tmp_str_list);
                         }
                         break;
                      case ST_INT:
@@ -8361,41 +8658,74 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (tmp_str_list && tmp_str_list->size > 0)
             {
                core_option_manager_t *coreopts = NULL;
+               const char *val                 = NULL;
 
                rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                if (coreopts)
                {
                   unsigned size                   = (unsigned)tmp_str_list->size;
-                  unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                  unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
+                  unsigned visible_index          = 0;
+                  unsigned option_index           = 0;
+                  bool option_found               = false;
                   struct core_option *option      = NULL;
                   bool checked_found              = false;
                   unsigned checked                = 0;
-                  const char *val                 = core_option_manager_get_val(coreopts, i-1);
+                  unsigned i;
 
-                  i--;
+                  /* Note: Although we display value labels here,
+                   * most logic is performed using values. This seems
+                   * more appropriate somehow... */
 
-                  option                          = (struct core_option*)&coreopts->opts[i];
+                  /* Convert menu index to option index */
+                  menu_index--;
+
+                  for (i = 0; i < coreopts->size; i++)
+                  {
+                     if (core_option_manager_get_visible(coreopts, i))
+                     {
+                        if (visible_index == menu_index)
+                        {
+                           option_found = true;
+                           option_index = i;
+                           break;
+                        }
+                        visible_index++;
+                     }
+                  }
+
+                  if (option_found)
+                  {
+                     val    = core_option_manager_get_val(coreopts, option_index);
+                     option = (struct core_option*)&coreopts->opts[option_index];
+                  }
 
                   if (option)
                   {
                      unsigned k;
                      for (k = 0; k < option->vals->size; k++)
                      {
-                        const char *str = option->vals->elems[k].data;
+                        const char *val_str       = option->vals->elems[k].data;
+                        const char *val_label_str = option->val_labels->elems[k].data;
 
-                        if (!string_is_empty(str))
+                        if (!string_is_empty(val_label_str))
                         {
                            char val_d[256];
-                           snprintf(val_d, sizeof(val_d), "%d", i);
-                           
+                           snprintf(val_d, sizeof(val_d), "%d", option_index);
+
+                           if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+                           else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
                            menu_entries_append_enum(info->list,
-                                 str,
+                                 val_label_str,
                                  val_d,
                                  MENU_ENUM_LABEL_NO_ITEMS,
                                  MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
 
-                           if (!checked_found && string_is_equal(str, val))
+                           if (!checked_found && string_is_equal(val_str, val))
                            {
                               checked = k;
                               checked_found = true;
@@ -8409,6 +8739,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
+            if (tmp_str_list)
+               string_list_free(tmp_str_list);
          }
          else
          {
@@ -8450,6 +8782,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            if (checked_found)
                               menu_entries_set_checked(info->list, checked, true);
                         }
+
+                        if (tmp_str_list)
+                           string_list_free(tmp_str_list);
                      }
                      break;
                   case ST_INT:

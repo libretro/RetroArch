@@ -906,7 +906,9 @@
  * Disable if you run into name conflicts and want to really remove the
  * mbedtls_strerror()
  */
+#if 0
 #define MBEDTLS_ERROR_STRERROR_DUMMY
+#endif
 
 /**
  * \def MBEDTLS_GENPRIME
@@ -1077,7 +1079,9 @@
  *
  * Enable the checkup functions (*_self_test).
  */
+#if 0
 #define MBEDTLS_SELF_TEST
+#endif
 
 /**
  * \def MBEDTLS_SHA256_SMALLER
@@ -1469,7 +1473,9 @@
  *
  * Comment this to disable run-time checking and save ROM space
  */
+#if 0
 #define MBEDTLS_VERSION_FEATURES
+#endif
 
 /**
  * \def MBEDTLS_X509_ALLOW_EXTENSIONS_NON_V3

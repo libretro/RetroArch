@@ -342,14 +342,13 @@ static bool xinput_joypad_init(void *data)
                   vid, pid, dinput_index, xinput_joypad_name(j), j);
 #endif
 
-         if (!input_autoconfigure_connect(
+         input_autoconfigure_connect(
                xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
                j,
                vid,
-               pid))
-            input_config_set_device_name(j, xinput_joypad_name(j));
+               pid);
       }
    }
 

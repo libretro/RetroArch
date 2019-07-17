@@ -20,6 +20,7 @@
 #include <retro_assert.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -77,7 +78,20 @@ bool menu_shader_manager_init(void)
 
    if (is_preset)
    {
-      conf     = config_file_new(path_shader);
+      int64_t length              = 0;
+      uint8_t *ret_buf            = NULL;
+
+      if (path_is_valid(path_shader))
+      {
+         if (filestream_read_file(path_shader, (void**)&ret_buf, &length))
+         {
+            if (length >= 0)
+               if ((conf = config_file_new_from_string((const char*)ret_buf)))
+                  conf->path = strdup(path_shader);
+            free((void*)ret_buf);
+         }
+      }
+
       new_path = strdup(path_shader);
    }
    else
@@ -99,23 +113,62 @@ bool menu_shader_manager_init(void)
 
          preset_path[0] = '\0';
 
+#ifdef HAVE_GLSL
          fill_pathname_join(preset_path, shader_dir,
                "menu.glslp", sizeof(preset_path));
-         conf = config_file_new(preset_path);
 
+         if (path_is_valid(preset_path))
+         {
+            int64_t length              = 0;
+            uint8_t *ret_buf            = NULL;
+            if (filestream_read_file(preset_path, (void**)&ret_buf, &length))
+            {
+               if (length >= 0)
+                  conf = config_file_new_from_string((const char*)ret_buf);
+               free((void*)ret_buf);
+            }
+         }
+#endif
+
+#ifdef HAVE_CG
          if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.cgp", sizeof(preset_path));
-            conf = config_file_new(preset_path);
-         }
 
+            if (path_is_valid(preset_path))
+            {
+               int64_t length              = 0;
+               uint8_t *ret_buf            = NULL;
+               if (filestream_read_file(preset_path, (void**)&ret_buf, &length))
+               {
+                  if (length >= 0)
+                     conf = config_file_new_from_string((const char*)ret_buf);
+                  free((void*)ret_buf);
+               }
+            }
+         }
+#endif
+
+#ifdef HAVE_SLANG
          if (!conf)
          {
             fill_pathname_join(preset_path, shader_dir,
                   "menu.slangp", sizeof(preset_path));
-            conf = config_file_new(preset_path);
+
+            if (path_is_valid(preset_path))
+            {
+               int64_t length              = 0;
+               uint8_t *ret_buf            = NULL;
+               if (filestream_read_file(preset_path, (void**)&ret_buf, &length))
+               {
+                  if (length >= 0)
+                     conf = config_file_new_from_string((const char*)ret_buf);
+                  free((void*)ret_buf);
+               }
+            }
          }
+#endif
 
          new_path = strdup(preset_path);
       }
@@ -149,6 +202,8 @@ bool menu_shader_manager_init(void)
 bool menu_shader_manager_set_preset(void *data,
       enum rarch_shader_type type, const char *preset_path)
 {
+   int64_t length                = 0;
+   uint8_t *ret_buf              = NULL;
    struct video_shader *shader   = (struct video_shader*)data;
    config_file_t *conf           = NULL;
    bool refresh                  = false;
@@ -174,11 +229,17 @@ bool menu_shader_manager_set_preset(void *data,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   conf = config_file_new(preset_path);
+   if (filestream_read_file(preset_path, (void**)&ret_buf, &length))
+   {
+      if (length >= 0)
+         conf = config_file_new_from_string((const char*)ret_buf);
+      free((void*)ret_buf);
+   }
 
    if (!conf)
       return false;
 
+   conf->path = strdup(preset_path);
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
    if (video_shader_read_conf_preset(conf, shader))
@@ -296,9 +357,7 @@ bool menu_shader_manager_save_preset(
       dirs[2]              = config_directory;
    }
 
-   conf = (config_file_t*)config_file_new(NULL);
-
-   if (!conf)
+   if (!(conf = (config_file_t*)config_file_new_alloc()))
       return false;
 
    if (fullpath)

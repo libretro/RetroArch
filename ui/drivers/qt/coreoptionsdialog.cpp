@@ -137,9 +137,7 @@ void CoreOptionsDialog::onSaveGameSpecificOptions()
 
    if (!conf)
    {
-      conf = config_file_new(NULL);
-
-      if (!conf)
+      if (!(conf = config_file_new_alloc()))
       {
          QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
          return;

@@ -639,8 +639,18 @@ bool playlist_push(playlist_t *playlist,
    const char *core_name = entry->core_name;
    bool entry_updated    = false;
 
+#ifdef HAVE_COCOATOUCH
+    char abbreviated_path[PATH_MAX_LENGTH];
+    char abbreviated_core_path[PATH_MAX_LENGTH];
+#endif
+
    real_path[0] = '\0';
    real_core_path[0] = '\0';
+
+#ifdef HAVE_COCOATOUCH
+   abbreviated_path[0] = '\0';
+   abbreviated_core_path[0] = '\0';
+#endif
 
    if (!playlist || !entry)
       return false;
@@ -656,6 +666,11 @@ bool playlist_push(playlist_t *playlist,
    {
       strlcpy(real_path, entry->path, sizeof(real_path));
       path_resolve_realpath(real_path, sizeof(real_path));
+#ifdef HAVE_COCOATOUCH
+      strlcpy(abbreviated_path, real_path, sizeof(abbreviated_path));
+      fill_pathname_abbreviate_special(abbreviated_path, real_path, sizeof(abbreviated_path));
+      strlcpy(real_path, abbreviated_path, sizeof(real_path));
+#endif
    }
 
    /* Get 'real' core path */
@@ -668,6 +683,11 @@ bool playlist_push(playlist_t *playlist,
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
       return false;
    }
+#ifdef HAVE_COCOATOUCH
+   strlcpy(abbreviated_core_path, real_core_path, sizeof(abbreviated_core_path));
+   fill_pathname_abbreviate_special(abbreviated_core_path, real_core_path, sizeof(abbreviated_core_path));
+   strlcpy(real_core_path, abbreviated_core_path, sizeof(real_core_path));
+#endif
 
    if (string_is_empty(core_name))
    {
@@ -797,10 +817,11 @@ bool playlist_push(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      struct playlist_entry *entry = &playlist->entries[playlist->cap - 1];
+      struct playlist_entry *last_entry = 
+         &playlist->entries[playlist->cap - 1];
 
-      if (entry)
-         playlist_free_entry(entry);
+      if (last_entry)
+         playlist_free_entry(last_entry);
       playlist->size--;
    }
 

@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (fopen_utf8.c).
+ * The following license statement only applies to this file (media_detect_cd.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,39 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <compat/fopen_utf8.h>
-#include <encodings/utf.h>
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef __LIBRETRO_SDK_MEDIA_DETECT_CD_H
+#define __LIBRETRO_SDK_MEDIA_DETECT_CD_H
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-#endif
+#include <retro_common_api.h>
+#include <boolean.h>
 
-#ifdef _WIN32
-#undef fopen
+RETRO_BEGIN_DECLS
 
-void *fopen_utf8(const char * filename, const char * mode)
+enum media_detect_cd_system
 {
-#if defined(LEGACY_WIN32)
-   FILE             *ret = NULL;
-   char * filename_local = utf8_to_local_string_alloc(filename);
+   MEDIA_CD_SYSTEM_MEGA_CD,
+   MEDIA_CD_SYSTEM_SATURN,
+   MEDIA_CD_SYSTEM_DREAMCAST,
+   MEDIA_CD_SYSTEM_PSX,
+   MEDIA_CD_SYSTEM_3DO
+};
 
-   if (!filename_local)
-      return NULL;
-   ret = fopen(filename_local, mode);
-   if (filename_local)
-      free(filename_local);
-   return ret;
-#else
-   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
-   wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
-   FILE* ret = _wfopen(filename_w, mode_w);
-   free(filename_w);
-   free(mode_w);
-   return ret;
-#endif
-}
+typedef struct
+{
+   char title[256];
+   char system[128];
+   char region[128];
+   char serial[64];
+   char maker[64];
+   char version[32];
+   char release_date[32];
+   enum media_detect_cd_system system_id;
+} media_detect_cd_info_t;
+
+bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info);
+
+RETRO_END_DECLS
+
 #endif

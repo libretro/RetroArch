@@ -376,14 +376,13 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (!is_xinput_pad)
 #endif
    {
-      if (!input_autoconfigure_connect(
-               dinput_joypad_name(g_joypad_cnt),
-               dinput_joypad_friendly_name(g_joypad_cnt),
-               dinput_joypad.ident,
-               g_joypad_cnt,
-               dinput_joypad_vid(g_joypad_cnt),
-               dinput_joypad_pid(g_joypad_cnt)))
-         input_config_set_device_name(g_joypad_cnt, dinput_joypad_name(g_joypad_cnt));
+      input_autoconfigure_connect(
+            dinput_joypad_name(g_joypad_cnt),
+            dinput_joypad_friendly_name(g_joypad_cnt),
+            dinput_joypad.ident,
+            g_joypad_cnt,
+            dinput_joypad_vid(g_joypad_cnt),
+            dinput_joypad_pid(g_joypad_cnt));
    }
 
 #ifdef HAVE_XINPUT

@@ -341,38 +341,38 @@ static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
 static float menu_ticker_speed           = 1.0f;
 
 #if defined(HAVE_THREADS)
-static bool menu_savestate_resume        = true;
+static bool menu_savestate_resume     = true;
 #else
-static bool menu_savestate_resume        = false;
+static bool menu_savestate_resume     = false;
 #endif
 
-static bool content_show_settings    = true;
-static bool content_show_favorites   = true;
+static bool content_show_settings     = true;
+static bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
-static bool content_show_images      = true;
+static bool content_show_images       = true;
 #endif
-static bool content_show_music       = true;
+static bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-static bool content_show_video       = true;
+static bool content_show_video        = true;
 #endif
 #ifdef HAVE_NETWORKING
-static bool content_show_netplay     = true;
+static bool content_show_netplay      = true;
 #endif
-static bool content_show_history     = true;
+static bool content_show_history      = true;
 #ifdef HAVE_LIBRETRODB
-static bool content_show_add     	 = true;
+static bool content_show_add     	  = true;
 #endif
-static bool content_show_playlists   = true;
+static bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
-static unsigned xmb_scale_factor = 100;
-static unsigned xmb_alpha_factor = 75;
-static unsigned menu_font_color_red = 255;
+static unsigned xmb_scale_factor      = 100;
+static unsigned xmb_alpha_factor      = 75;
+static unsigned menu_font_color_red   = 255;
 static unsigned menu_font_color_green = 255;
-static unsigned menu_font_color_blue = 255;
-static unsigned xmb_menu_layout  = 0;
-static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
-static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
+static unsigned menu_font_color_blue  = 255;
+static unsigned xmb_menu_layout       = 0;
+static unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
+static unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 #define DEFAULT_XMB_SHADOWS_ENABLE false
@@ -796,15 +796,15 @@ static const unsigned libretro_log_level = 1;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold = 0.5f;
+static const float axis_threshold         = 0.5f;
 
-static const float analog_deadzone = 0.0f;
+static const float analog_deadzone        = 0.0f;
 
-static const float analog_sensitivity = 1.0f;
+static const float analog_sensitivity     = 1.0f;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
-static const unsigned turbo_period = 6;
-static const unsigned turbo_duty_cycle = 3;
+static const unsigned turbo_period        = 6;
+static const unsigned turbo_duty_cycle    = 3;
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
