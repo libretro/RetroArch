@@ -145,22 +145,18 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
-extern ui_browser_window_t   ui_browser_window_null;
 extern ui_browser_window_t   ui_browser_window_cocoa;
 extern ui_browser_window_t   ui_browser_window_qt;
 extern ui_browser_window_t   ui_browser_window_win32;
 
-extern ui_window_t           ui_window_null;
 extern ui_window_t           ui_window_cocoa;
 extern ui_window_t           ui_window_qt;
 extern ui_window_t           ui_window_win32;
 
-extern ui_msg_window_t       ui_msg_window_null;
 extern ui_msg_window_t       ui_msg_window_win32;
 extern ui_msg_window_t       ui_msg_window_qt;
 extern ui_msg_window_t       ui_msg_window_cocoa;
 
-extern ui_application_t      ui_application_null;
 extern ui_application_t      ui_application_cocoa;
 extern ui_application_t      ui_application_qt;
 extern ui_application_t      ui_application_win32;
