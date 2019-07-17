@@ -4037,11 +4037,8 @@ static int action_ok_option_create(const char *path,
    conf = config_file_new(game_path);
 
    if (!conf)
-   {
-      conf = config_file_new(NULL);
-      if (!conf)
+      if (!(conf = config_file_new_null()))
          return false;
-   }
 
    if (config_file_write(conf, game_path, true))
    {

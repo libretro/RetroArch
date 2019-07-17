@@ -2424,7 +2424,7 @@ static config_file_t *open_default_config_file(void)
       bool saved = false;
 
       /* Try to create a new config file. */
-      conf = config_file_new(NULL);
+      conf = config_file_new_null();
 
       if (conf)
       {
@@ -2463,7 +2463,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
    {
       bool saved = false;
-      conf       = config_file_new(NULL);
+      conf       = config_file_new_null();
 
       if (conf)
       {
@@ -2535,7 +2535,7 @@ static config_file_t *open_default_config_file(void)
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
-            conf = config_file_new(NULL);
+            conf = config_file_new_null();
 
          free(skeleton_conf);
 
@@ -3639,7 +3639,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    if (!conf)
    {
-      conf = config_file_new(NULL);
+      conf = config_file_new_null();
       if (!conf)
       {
          free(autoconf_file);
@@ -3710,7 +3710,7 @@ bool config_save_file(const char *path)
    int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
 
    if (!conf)
-      conf = config_file_new(NULL);
+      conf = config_file_new_null();
 
    if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
@@ -3993,7 +3993,7 @@ bool config_save_overrides(int override_type)
          path_size);
 
    if (!conf)
-      conf = config_file_new(NULL);
+      conf = config_file_new_null();
 
    /* Load the original config file in memory */
    config_load_file(path_get(RARCH_PATH_CONFIG), settings);

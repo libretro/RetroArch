@@ -2086,7 +2086,7 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
    }
 
    if (!opt->conf)
-      opt->conf                     = config_file_new(NULL);
+      opt->conf                     = config_file_new_null();
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
 
@@ -2154,7 +2154,7 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
    }
 
    if (!opt->conf)
-      opt->conf                     = config_file_new(NULL);
+      opt->conf                     = config_file_new_null();
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
 
