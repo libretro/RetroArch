@@ -970,6 +970,7 @@ FILE
 #ifdef HAVE_CDROM
 #include "../libretro-common/cdrom/cdrom.c"
 #include "../libretro-common/vfs/vfs_implementation_cdrom.c"
+#include "../libretro-common/media/media_detect_cd.c"
 #endif
 
 #include "../list_special.c"
