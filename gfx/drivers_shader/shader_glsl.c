@@ -682,6 +682,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
          continue;
 
       glDeleteProgram(glsl->prg[i].id);
+      glsl->prg[i].id = 0;
    }
 
    if (glsl->shader && glsl->shader->luts)
