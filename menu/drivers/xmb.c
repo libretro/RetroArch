@@ -2850,6 +2850,7 @@ static int xmb_draw_item(
    uintptr_t texture_switch          = 0;
    bool do_draw_text                 = false;
    unsigned ticker_limit             = 35 * scale_mod[0];
+   unsigned line_ticker_width        = 45 * scale_mod[3];
    xmb_node_t *   node               = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
@@ -2951,16 +2952,27 @@ static int xmb_draw_item(
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
       {
-         ticker_limit = 40 * scale_mod[1];
+         ticker_limit      = 40 * scale_mod[1];
+         line_ticker_width = 50 * scale_mod[3];
 
          /* Can increase text length if thumbnail is downscaled */
          if (settings->uints.menu_xmb_thumbnail_scale_factor < 100)
+         {
+            float ticker_scale_factor =
+                  1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
+
             ticker_limit +=
-                  (unsigned)((1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f)) *
-                             15.0f * scale_mod[1]);
+                  (unsigned)(ticker_scale_factor * 15.0f * scale_mod[1]);
+
+            line_ticker_width +=
+                  (unsigned)(ticker_scale_factor * 10.0f * scale_mod[3]);
+         }
       }
       else
-         ticker_limit = 70 * scale_mod[2];
+      {
+         ticker_limit      = 70 * scale_mod[2];
+         line_ticker_width = 60 * scale_mod[3];
+      }
    }
 
    menu_entry_get_rich_label(entry, &ticker_str);
@@ -2981,11 +2993,26 @@ static int xmb_draw_item(
       if (i == current && width > 320 && height > 240
             && !string_is_empty(entry->sublabel))
       {
+         menu_animation_ctx_line_ticker_t line_ticker;
          char entry_sublabel[512] = {0};
 
-         label_offset      = - xmb->margins_label_top;
+         line_ticker.type_enum  = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         line_ticker.idx        = menu_animation_get_ticker_idx();
 
-         word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true, 0);
+         line_ticker.line_width = (size_t)(line_ticker_width);
+         /* Note: max_lines should be calculated at runtime,
+          * but this is a nuisance. There is room for 4 lines
+          * to be displayed when using all existing XMB themes,
+          * so leave this value hard coded for now. */
+         line_ticker.max_lines  = 4;
+
+         line_ticker.s          = entry_sublabel;
+         line_ticker.len        = sizeof(entry_sublabel);
+         line_ticker.str        = entry->sublabel;
+
+         menu_animation_line_ticker(&line_ticker);
+
+         label_offset = - xmb->margins_label_top;
 
          xmb_draw_text(video_info, xmb, entry_sublabel,
                node->x + xmb->margins_screen_left +
