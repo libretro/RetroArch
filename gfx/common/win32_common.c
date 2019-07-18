@@ -1140,6 +1140,8 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)
+   if (video_driver_is_threaded())
+      ui_companion_win32.application->process_events();
    *quit                  = g_win32_quit;
 
    if (g_win32_resized)
