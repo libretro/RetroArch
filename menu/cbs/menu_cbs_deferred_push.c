@@ -219,12 +219,11 @@ static int deferred_push_cursor_manager_list_deferred(
    int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;
-   settings_t *settings           = config_get_ptr();
    const char *path               = info->path;
-   config_file_t *conf            = path ? config_file_new(path) : NULL;
-
-   if (!conf || !settings)
-      goto end;
+   config_file_t *conf            = NULL;
+   
+   if (!(conf = config_file_new_from_path_to_string(path)))
+      return -1;
 
    if (!config_get_string(conf, "query", &query))
       goto end;
@@ -234,9 +233,13 @@ static int deferred_push_cursor_manager_list_deferred(
 
    rdb_path[0] = '\0';
 
-   fill_pathname_join(rdb_path,
-         settings->paths.path_content_database,
-         rdb, sizeof(rdb_path));
+   {
+      settings_t *settings           = config_get_ptr();
+      if (settings)
+         fill_pathname_join(rdb_path,
+               settings->paths.path_content_database,
+               rdb, sizeof(rdb_path));
+   }
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
@@ -255,8 +258,7 @@ static int deferred_push_cursor_manager_list_deferred(
    ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
-   if (conf)
-      config_file_free(conf);
+   config_file_free(conf);
    free(rdb);
    free(query);
    return ret;

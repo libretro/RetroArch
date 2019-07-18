@@ -4034,9 +4034,7 @@ static int action_ok_option_create(const char *path,
       return 0;
    }
 
-   conf = config_file_new(game_path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(game_path)))
       if (!(conf = config_file_new_alloc()))
          return false;
 

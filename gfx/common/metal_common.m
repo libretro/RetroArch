@@ -1137,7 +1137,7 @@ typedef struct MTLALIGN(16)
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t         *conf = config_file_new(path.UTF8String);
+   config_file_t         *conf = config_file_new_from_path_to_string(path.UTF8String);
    struct video_shader *shader = (struct video_shader *)calloc(1, sizeof(*shader));
 
    @try
