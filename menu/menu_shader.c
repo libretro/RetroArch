@@ -164,8 +164,6 @@ bool menu_shader_manager_init(void)
 bool menu_shader_manager_set_preset(void *data,
       enum rarch_shader_type type, const char *preset_path)
 {
-   int64_t length                = 0;
-   uint8_t *ret_buf              = NULL;
    struct video_shader *shader   = (struct video_shader*)data;
    config_file_t *conf           = NULL;
    bool refresh                  = false;
