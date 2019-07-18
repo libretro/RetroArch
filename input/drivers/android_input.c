@@ -1714,79 +1714,88 @@ static void android_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static void android_input_set_rumble_internal(
+      uint16_t strength,
+      uint16_t *last_strength_strong,
+      uint16_t *last_strength_weak,
+      uint16_t *last_strength,
+      int8_t   id,
+      enum retro_rumble_effect effect
+      )
+{
+   JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
+   uint16_t new_strength = 0;
+
+   if (!env)
+      return;
+
+   if (effect == RETRO_RUMBLE_STRONG)
+   {
+      new_strength          = strength | *last_strength_weak;
+      *last_strength_strong = strength;
+   }
+   else if (effect == RETRO_RUMBLE_WEAK)
+   {
+      new_strength         = strength | *last_strength_strong;
+      *last_strength_weak  = strength;
+   }
+
+   if (new_strength != *last_strength)
+   {
+      /* trying to send this value as a JNI param without 
+       * storing it first was causing 0 to be seen on the other side ?? */
+      int strength_final   = (255.0f / 65535.0f) * (float)new_strength;
+
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
+
+      *last_strength = new_strength;
+   }
+}
+
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   android_input_t *android = (android_input_t*)data;
    settings_t *settings = config_get_ptr();
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
-   if (!android || !env || !g_android || !g_android->doVibrate)
+   if (!g_android || !g_android->doVibrate)
       return false;
 
    if (settings->bools.enable_device_vibration)
    {
       static uint16_t last_strength_strong = 0;
-      static uint16_t last_strength_weak = 0;
-      static uint16_t last_strength = 0;
-      uint16_t new_strength = 0;
+      static uint16_t last_strength_weak   = 0;
+      static uint16_t last_strength        = 0;
 
       if (port != 0)
          return false;
-
-      if (effect == RETRO_RUMBLE_STRONG)
-      {
-         new_strength = strength | last_strength_weak;
-         last_strength_strong = strength;
-      }
-      else if (effect == RETRO_RUMBLE_WEAK)
-      {
-         new_strength = strength | last_strength_strong;
-         last_strength_weak = strength;
-      }
-
-      if (new_strength != last_strength)
-      {
-         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
-         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
-
-         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-               g_android->doVibrate, (jint)-1, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
-
-         last_strength = new_strength;
-      }
+      
+      android_input_set_rumble_internal(
+            strength,
+            &last_strength_strong,
+            &last_strength_weak,
+            &last_strength,
+            -1,
+            effect);
 
       return true;
    }
    else
    {
-      uint16_t new_strength = 0;
-      state_device_t *state = &android->pad_states[port];
+      android_input_t *android = (android_input_t*)data;
+      state_device_t *state    = android ? &android->pad_states[port] : NULL;
 
-      if (effect == RETRO_RUMBLE_STRONG)
+      if (state)
       {
-         new_strength = strength | state->rumble_last_strength_weak;
-         state->rumble_last_strength_strong = strength;
+         android_input_set_rumble_internal(
+               strength,
+               &state->rumble_last_strength_strong,
+               &state->rumble_last_strength_weak,
+               &state->rumble_last_strength,
+               state->id,
+               effect);
+         return true;
       }
-      else if (effect == RETRO_RUMBLE_WEAK)
-      {
-         new_strength = strength | state->rumble_last_strength_strong;
-         state->rumble_last_strength_weak = strength;
-      }
-
-      if (new_strength != state->rumble_last_strength)
-      {
-         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
-         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
-         int id = state->id;
-
-         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-               g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
-
-         state->rumble_last_strength = new_strength;
-      }
-
-      return true;
    }
 
    return false;
