@@ -207,10 +207,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_STATE_SLOT_PLUS:
           case RARCH_STATE_SLOT_MINUS:
              snprintf(s, len,
-                   "Konum Yuvaları \n"
+                   "Konum Kayıtları \n"
                    " \n"
                    "Yuva 0 olarak ayarlanmış durumdayken, \n"
-                   "kaydetme adı * .state (ya da komut satırında tanımlanmışsa) olur. \n"
+                   "kaydetme adı *.state (ya da komut satırında ne tanımlanmışsa) olur. \n"
                    " \n"
                    "Alan 0 değilse, yol <dizin> olduğu yerde, \n"
                    "<dizin><d> olur.");
