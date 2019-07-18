@@ -44,7 +44,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NATIVE,
-    "Native")
+    "Özgün")
 MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Cihaz bağlantı noktasından çıkarıldı"
@@ -303,7 +303,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-    "Block Frames"
+    "Blok Kareleri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -471,7 +471,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-    "Buildbot Varlıkları URL’si"
+    "Buildbot İçerikleri URL’si"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -699,7 +699,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
-    "Çekirdek kurulumu başarılı"
+    "Core kurulumu başarılı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -719,7 +719,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-    "Corelar için Buildbot URL"
+    "Corelar için Buildbot URL'si"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
@@ -815,7 +815,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-    "İçerik İndirici"
+    "İçerik İndir"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
@@ -3116,7 +3116,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-    "Küçük resim Güncelleyici"
+    "Küçük Resim Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+    "Seçilen sistem için komple küçük resim paketini indirin."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Küçük Resim Güncelleyici"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Seçilen çalma listesinin her girişi için ayrı ayrı küçük resimler indirin."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
@@ -5677,7 +5689,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-    "Filebrowser'da desteklenen uzantılarla gösterilen dosyaları filtreleyin."
+    "Dosya Gezgininde desteklenen uzantılarla gösterilen dosyaları filtreleyin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
@@ -5881,7 +5893,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-    "Filebrowser ayarlarını düzenler."
+    "Dosya Gezgini ayarlarını düzenler."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -6013,7 +6025,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-    "Filebrowser için başlangıç dizinini ayarlar."
+    "Dosya Gezgini için başlangıç dizinini ayarlar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_DIR,
@@ -6834,11 +6846,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
-    "Watch shader files for changes"
+    "Gölgelendirici dosyalarını değişiklikleri izleyin"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-    "Auto-apply changes made to shader files on disk."
+    "Diskteki gölgelendirici dosyalarında yapılan değişiklikleri otomatik uygulayın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -7038,7 +7050,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
-    "Dark"
+    "Karanlık"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
@@ -7050,7 +7062,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
-    "&Tools"
+    "&Araçlar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
@@ -7094,11 +7106,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
-    "Top"
+    "En üst"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
-    "Up"
+    "Yukarı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
@@ -7168,12 +7180,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
     "Tarama bitti.<br><br>\n"
-    "In order for content to be correctly scanned, you must:\n"
-    "<ul><li>have a compatible core already downloaded</li>\n"
-    "<li>have \"Core Info Files\" updated via Online Updater</li>\n"
-    "<li>have \"Databases\" updated via Online Updater</li>\n"
-    "<li>restart RetroArch if any of the above was just done</li></ul>\n"
-    "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
+    "İçeriğin doğru şekilde taranmış olması için, dikkat edilmesi gerekenler:\n"
+    "<ul><li>Uyumlu Core önceden indirilmiş olmalı</li>\n"
+    "<li>have \"Core Bilgi Dosyaları\" Çevrimiçi Güncelleyici ile güncellenmiş olmalı</li>\n"
+    "<li>have \"Veritabanı\" Çevrimiçi Güncelleyici ile güncellenmiş olmalı</li>\n"
+    "<li>Yukarıdakilerden herhangi biri yeni yapıldıysa RetroArch'ı yeniden başlatın</li></ul>\n"
+    "Son olarak, içeriğin <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">buradaki</a> varolan veritabanlarıyla eşleşmesi gerekir. Hala çalışmıyorsa, <a href=\"https://www.github.com/libretro/RetroArch/issues\"> bir hata raporu göndermeyi düşünün</a>."
     )
 #endif
 MSG_HASH(
@@ -7182,7 +7194,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHOW_WIMP,
-    "Kapalıysa, masaüstü menüsünü açar."
+    "Masaüstü menüsünü açar."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
@@ -7419,7 +7431,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-    "View Match #"
+    "Eşleşmeyi Göster #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
@@ -7427,11 +7439,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
-    "Create Code Match #"
+    "Kod Eşleşmesi Yaratın #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
-    "Delete Match #"
+    "Eşleşmeyi Sil #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
@@ -7503,35 +7515,35 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
-    "Number of Iterations"
+    "İterasyon Sayısı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
-    "Value Increase Each Iteration"
+    "Her Tekrarlamada Değer Artırma"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
-    "Address Increase Each Iteration"
+    "Her İterasyonda Adresin Arttırılması"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-    "Add New Cheat After This One"
+    "Bundan Sonra Yeni Hile Ekleyin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-    "Add New Cheat Before This One"
+    "Bundan Önce Yeni Hile Ekleyin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
-    "Copy This Cheat After"
+    "Bu Hileyi Sonrasına Kopyala"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
-    "Copy This Cheat Before"
+    "Bu Hile Öncesinde Kopyala"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
-    "Delete This Cheat"
+    "Bu Hileyi Sil"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -7543,19 +7555,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
-    "<Disabled>"
+    "<Devre dışı bırakıldı>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-    "Set To Value"
+    "Değere Ayarla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-    "Increase By Value"
+    "Değere Göre Arttır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-    "Decrease By Value"
+    "Değere Göre Düşür"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
@@ -7575,7 +7587,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
-    "<Disabled>"
+    "<Devre dışı bırakıldı>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -7583,15 +7595,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-    "Does Not Change"
+    "Değiştirmez"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-    "Increases"
+    "Arttırır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-    "Decreases"
+    "Azalttırır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
@@ -7707,7 +7719,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_PORT_16,
-    "All"
+    "Hepsi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
@@ -7771,11 +7783,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
-    "Add New Code to Top"
+    "Yukarıya Yeni Kod Ekleyin"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
-    "Add New Code to Bottom"
+    "Dibe Yeni Kod Ekleme"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
@@ -7943,7 +7955,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_QUESTION,
-    "Question"
+    "Soru"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
@@ -7963,7 +7975,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
-    "Playlist Entry"
+    "Oynatma Listesi Girişi"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
@@ -7987,15 +7999,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
-    "(space-separated; includes all by default)"
+    "(boşlukla ayrılmış; varsayılan olarak tümünü içerir)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
-    "Filter inside archives"
+    "Arşivlerin içini filtrele"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
-    "(used to find thumbnails)"
+    "(küçük resimleri bulmak için kullanılır)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
@@ -8015,7 +8027,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
-    "Dosya(lar) ekle..."
+    "Dosya(ları) ekle..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER,
@@ -8035,7 +8047,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
-    "<multiple>"
+    "<birden fazla>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
@@ -8051,7 +8063,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-    "RetroArch başarıyla güncellendi. Değişikliklerin etkili olması için lütfen uygulamayı yeniden başlatın."
+    "RetroArch başarıyla güncellendi. Değişikliklerin etkili olması için lütfen yeniden başlatın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -8067,11 +8079,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
-    "Move Down"
+    "Aşağı Taşı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
-    "Move Up"
+    "Yukarı Taşı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_LOAD,
@@ -8091,23 +8103,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
-    "Add Pass"
+    "Geçiş Ekle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
-    "Clear All Passes"
+    "Tüm Geçişleri Temizle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-    "No shader passes."
+    "Gölgelendirici geçişi yok."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
-    "Reset Pass"
+    "Geçişi Sıfırla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
-    "Reset All Passes"
+    "Tüm Geçişleri Sıfırla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
@@ -8155,11 +8167,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DEVICE_CONFIGURED_IN_PORT,
-    "Configured in port:"
+    "Yapılandırılan port:"
     )
 MSG_HASH(
     MSG_FAILED_TO_SET_DISK,
-    "Failed to set disk"
+    "Disk ayarlanamadı"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
@@ -8248,7 +8260,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+    "Bir konum kaydı yüklendi, geçerli oturum için Hardcore Mode'un Başarımları devre dışı bırakıldı. Hardcore Modu etkinleştirmek için yeniden başlatın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
@@ -8292,7 +8304,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
+    "Joy-Con'u böl"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -8528,7 +8540,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SENDING_DEBUG_INFO,
-    "Hata ayıklama bilgisi gönderiliyor ..."
+    "Hata ayıklama bilgisi gönderiliyor..."
     )
 MSG_HASH(
     MSG_SENT_DEBUG_INFO,
@@ -8563,13 +8575,13 @@ MSG_HASH(
     "Sistem olay günlüğü dosyalarını bu dizine kaydedin."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-      "Menu Widgets")
+      "Menü Araçları")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-      "Video Shaders")
+      "Video Gölgelendiricileri")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-      "Scan without core match")
+      "Core eşleşmesi olmadan tara")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-      "When disabled, content is only added to playlists if you have a core installed that supports its extension. By enabling this, it will add to playlist regardless. This way, you can install the core you need later on after scanning.")
+      "Devre dışı bırakıldığında, içerik yalnızca uzantılarını destekleyen bir Core varsa oynatma listelerine eklenir. Bunu etkinleştirerek, ne olursa olsun oynatma listesine ekleyecektir. Bu sayede, tarama işleminden sonra ihtiyacınız olan Core'u yükleyebilirsiniz.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
       "Animation Horizontal Icon Highlight")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
@@ -8578,9 +8590,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Animation Main Menu Opens/Closes")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
+    "Disk Bilgisi"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
+    "Takılan medya diskleri hakkındaki bilgileri görüntüleyin."
     )
