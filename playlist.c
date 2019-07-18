@@ -625,6 +625,53 @@ success:
 }
 
 /**
+ * playlist_resolve_path:
+ * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
+ * @path        : The path to be modified
+ *
+ * Resolves the path of an item, such as the content path or path to the core, to a format
+ * appropriate for saving or loading depending on the @mode parameter
+ *
+ * Can be platform specific. File paths for saving can be abbreviated to avoid saving absolute
+ * paths, as the base directory (home or application dir) may change after each subsequent
+ * install (iOS)
+**/
+void playlist_resolve_path(enum playlist_file_mode mode, char *path, size_t size)
+{
+    char tmp[PATH_MAX_LENGTH];
+    tmp[0] = '\0';
+#ifdef HAVE_COCOATOUCH
+    char resolved_path[PATH_MAX_LENGTH] = {0};
+    strlcpy(tmp, path, sizeof(tmp));
+    if ( mode == PLAYLIST_LOAD )
+    {
+        strlcpy(resolved_path, tmp, sizeof(resolved_path));
+        fill_pathname_expand_special(tmp, resolved_path, sizeof(tmp));
+    }
+    else
+    {
+        // iOS needs to call realpath here since the call above fails due to possibly
+        // buffer related issues
+        realpath(tmp, resolved_path);
+        fill_pathname_abbreviate_special(tmp, resolved_path, sizeof(tmp));
+    }
+    strlcpy(path, tmp, size);
+    return;
+#else
+    if ( mode == PLAYLIST_LOAD)
+    {
+        return;
+    }
+    else
+    {
+        strlcpy(tmp, path, sizeof(tmp));
+        path_resolve_realpath(tmp, sizeof(tmp));
+        strlcpy(path, tmp, size);
+    }
+#endif
+}
+
+/**
  * playlist_push:
  * @playlist        	   : Playlist handle.
  *
@@ -639,18 +686,8 @@ bool playlist_push(playlist_t *playlist,
    const char *core_name = entry->core_name;
    bool entry_updated    = false;
 
-#ifdef HAVE_COCOATOUCH
-    char abbreviated_path[PATH_MAX_LENGTH];
-    char abbreviated_core_path[PATH_MAX_LENGTH];
-#endif
-
    real_path[0] = '\0';
    real_core_path[0] = '\0';
-
-#ifdef HAVE_COCOATOUCH
-   abbreviated_path[0] = '\0';
-   abbreviated_core_path[0] = '\0';
-#endif
 
    if (!playlist || !entry)
       return false;
@@ -665,29 +702,19 @@ bool playlist_push(playlist_t *playlist,
    if (!string_is_empty(entry->path))
    {
       strlcpy(real_path, entry->path, sizeof(real_path));
-      path_resolve_realpath(real_path, sizeof(real_path));
-#ifdef HAVE_COCOATOUCH
-      strlcpy(abbreviated_path, real_path, sizeof(abbreviated_path));
-      fill_pathname_abbreviate_special(abbreviated_path, real_path, sizeof(abbreviated_path));
-      strlcpy(real_path, abbreviated_path, sizeof(real_path));
-#endif
+      playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
    }
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
-      path_resolve_realpath(real_core_path, sizeof(real_core_path));
+       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
    {
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
       return false;
    }
-#ifdef HAVE_COCOATOUCH
-   strlcpy(abbreviated_core_path, real_core_path, sizeof(abbreviated_core_path));
-   fill_pathname_abbreviate_special(abbreviated_core_path, real_core_path, sizeof(abbreviated_core_path));
-   strlcpy(real_core_path, abbreviated_core_path, sizeof(real_core_path));
-#endif
 
    if (string_is_empty(core_name))
    {
@@ -2330,7 +2357,7 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
-      path_resolve_realpath(real_core_path, sizeof(real_core_path));
+       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
       return;

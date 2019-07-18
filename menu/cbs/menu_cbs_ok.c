@@ -69,6 +69,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
+#include "../../playlist.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
@@ -1018,21 +1019,14 @@ end:
  **/
 static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
 {
-   const char *path     = NULL;
+   char path[PATH_MAX_LENGTH];
    const struct playlist_entry *entry = NULL;
-#ifdef HAVE_COCOATOUCH
-   char expanded_path[PATH_MAX_LENGTH];
-#endif
 
    playlist_get_index(playlist, idx, &entry);
 
-   path = entry->path;
-
-#ifdef HAVE_COCOATOUCH
-   expanded_path[0] = '\0';
-   fill_pathname_expand_special(expanded_path, entry->path, sizeof(expanded_path));
-   path = expanded_path;
-#endif
+   path[0] = '\0';
+   strlcpy(path, entry->path, sizeof(path));
+   playlist_resolve_path(PLAYLIST_LOAD, path, sizeof(path));
 
    if (!string_is_empty(path))
    {
@@ -1789,6 +1783,7 @@ static int action_ok_file_load(const char *path,
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char new_path[PATH_MAX_LENGTH];
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
@@ -1798,21 +1793,12 @@ static int action_ok_playlist_entry_collection(const char *path,
    const struct playlist_entry *entry  = NULL;
    unsigned i                          = 0;
 
-#ifdef HAVE_COCOATOUCH
-   char expanded_path[PATH_MAX_LENGTH];
-   char expanded_core_path[PATH_MAX_LENGTH] = {0};
-#endif
-
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
+   new_path[0]                         = '\0';
    new_core_path[0]                    = '\0';
    tmp_playlist                        = playlist_get_cached();
-
-#ifdef HAVE_COCOATOUCH
-   expanded_path[0]                    = '\0';
-   expanded_core_path[0]               = '\0';
-#endif
 
    if (!tmp_playlist)
    {
@@ -1870,6 +1856,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       if (!string_is_empty(default_core_path))
       {
          strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
          found_associated_core = true;
       }
 
@@ -1908,10 +1895,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    else
    {
       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
-#ifdef HAVE_COCOATOUCH
-      fill_pathname_expand_special(expanded_core_path, new_core_path, sizeof(expanded_core_path));
-      strlcpy(new_core_path, expanded_core_path, sizeof(new_core_path));
-#endif
+       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
    }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
@@ -1927,14 +1911,10 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    playlist_get_index(playlist, selection_ptr, &entry);
 
-#ifdef HAVE_COCOATOUCH
-   fill_pathname_expand_special(expanded_path, entry->path, sizeof(expanded_path));
-    return default_action_ok_load_content_from_playlist_from_menu(
-            new_core_path, expanded_path, entry->label);
-#else
-    return default_action_ok_load_content_from_playlist_from_menu(
-            new_core_path, entry->path, entry->label);
-#endif
+   strlcpy(new_path, entry->path, sizeof(new_path));
+   playlist_resolve_path(PLAYLIST_LOAD, new_path, sizeof(new_path));
+   return default_action_ok_load_content_from_playlist_from_menu(
+            new_core_path, new_path, entry->label);
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -2918,6 +2898,13 @@ static int action_ok_core_deferred_set(const char *new_core_path,
     * as const, so these casts are safe */
    entry.core_path = (char*)new_core_path;
    entry.core_name = core_display_name;
+
+#ifdef HAVE_COCOATOUCH
+    // for iOS, change abbreviate the bundle path with ":" because bundle path changes on each install
+    char abbreviated_core_path[PATH_MAX_LENGTH] = {0};
+    fill_pathname_abbreviate_special(abbreviated_core_path, new_core_path, sizeof(abbreviated_core_path));
+    entry.core_path = abbreviated_core_path;
+#endif
 
    command_playlist_update_write(
          NULL,
