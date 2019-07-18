@@ -163,12 +163,11 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
-
-   if (egl->dpy  == EGL_NO_DISPLAY)
-      return;
-   if (egl->surf == EGL_NO_SURFACE)
-      return;
-   eglSwapBuffers(egl->dpy, egl->surf);
+   if (  egl                         &&
+         egl->dpy  != EGL_NO_DISPLAY &&
+         egl->surf != EGL_NO_SURFACE
+         )
+      eglSwapBuffers(egl->dpy, egl->surf);
 }
 
 void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
