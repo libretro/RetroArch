@@ -593,6 +593,23 @@ config_file_t *config_file_new_from_string(const char *from_string)
    return conf;
 }
 
+config_file_t *config_file_new_from_path_to_string(const char *path)
+{
+   int64_t length                = 0;
+   uint8_t *ret_buf              = NULL;
+   config_file_t *conf           = NULL;
+
+   if (filestream_read_file(path, (void**)&ret_buf, &length))
+   {
+      if (length >= 0)
+         if ((conf = config_file_new_from_string((const char*)ret_buf)))
+            conf->path = strdup(path);
+      free((void*)ret_buf);
+   }
+
+   return conf;
+}
+
 config_file_t *config_file_new_with_callback(
       const char *path, config_file_cb_t *cb)
 {

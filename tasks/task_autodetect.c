@@ -360,22 +360,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       int res;
-      int64_t length      = 0;
-      uint8_t *ret_buf    = NULL;
-      config_file_t *conf = NULL;
+      config_file_t *conf = config_file_new_from_path_to_string(list->elems[i].data);
       
-      if (!filestream_read_file(list->elems[i].data, (void**)&ret_buf, &length))
-         continue;
-
-      if (length < 0)
-      {
-         free((void*)ret_buf);
-         continue;
-      }
-
-      conf                = config_file_new_from_string((const char*)ret_buf);
-      free((void*)ret_buf);
-
       if (!conf)
          continue;
 

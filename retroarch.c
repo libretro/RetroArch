@@ -2072,22 +2072,9 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
       return NULL;
 
    if (!string_is_empty(conf_path))
-   {
-      int64_t length                = 0;
-      uint8_t *ret_buf              = NULL;
-
-      if (filestream_read_file(conf_path, (void**)&ret_buf, &length))
-      {
-         if (length >= 0)
-            if ((opt->conf = config_file_new_from_string((const char*)ret_buf)))
-               opt->conf->path = strdup(conf_path);
-         free((void*)ret_buf);
-      }
-   }
-
-   if (!opt->conf)
-      if (!(opt->conf = config_file_new_alloc()))
-         goto error;
+      if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
+         if (!(opt->conf = config_file_new_alloc()))
+            goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
 
@@ -2138,22 +2125,9 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
       return NULL;
 
    if (!string_is_empty(conf_path))
-   {
-      int64_t length                = 0;
-      uint8_t *ret_buf              = NULL;
-
-      if (filestream_read_file(conf_path, (void**)&ret_buf, &length))
-      {
-         if (length >= 0)
-            if ((opt->conf = config_file_new_from_string((const char*)ret_buf)))
-               opt->conf->path = strdup(conf_path);
-         free((void*)ret_buf);
-      }
-   }
-
-   if (!opt->conf)
-      if (!(opt->conf = config_file_new_alloc()))
-         goto error;
+      if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
+         if (!(opt->conf = config_file_new_alloc()))
+            goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
 

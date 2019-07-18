@@ -735,8 +735,6 @@ bool task_push_overlay_load_default(
       void *user_data)
 {
    task_finder_data_t find_data;
-   int64_t length           = 0;
-   uint8_t *ret_buf         = NULL;
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = NULL;
@@ -756,14 +754,7 @@ bool task_push_overlay_load_default(
    if (!loader)
       return false;
 
-   if (filestream_read_file(overlay_path, (void**)&ret_buf, &length))
-   {
-      if (length >= 0)
-         conf = config_file_new_from_string((const char*)ret_buf);
-      free((void*)ret_buf);
-   }
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(overlay_path)))
    {
       free(loader);
       return false;

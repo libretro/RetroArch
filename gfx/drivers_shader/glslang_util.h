@@ -110,4 +110,6 @@ bool glslang_read_shader_file(const char *path, std::vector<std::string> *output
 bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *meta);
 #endif
 
+void *config_file_new_wrapper(const char *path);
+
 #endif
