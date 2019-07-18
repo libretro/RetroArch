@@ -1359,20 +1359,27 @@ static void android_input_poll_memcpy(android_input_t *android)
 
 static bool android_input_key_pressed(android_input_t *android, int key)
 {
+   uint16_t joykey;
+   uint32_t joyaxis;
    rarch_joypad_info_t joypad_info;
-   const uint16_t joykey  = (input_config_binds[0][key].joykey != NO_BTN)
-      ? input_config_binds[0][key].joykey : joypad_info.auto_binds[key].joykey;
-   const uint32_t joyaxis = (input_config_binds[0][key].joyaxis != AXIS_NONE)
-      ? input_config_binds[0][key].joyaxis : joypad_info.auto_binds[key].joyaxis;
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = input_autoconf_binds[0];
+   joypad_info.axis_threshold = *
+      (input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
    if((key < RARCH_BIND_LIST_END)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
 
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
+   joykey                     = 
+      (input_config_binds[0][key].joykey != NO_BTN)
+      ? input_config_binds[0][key].joykey 
+      : joypad_info.auto_binds[key].joykey;
+   joyaxis                    = 
+      (input_config_binds[0][key].joyaxis != AXIS_NONE)
+      ? input_config_binds[0][key].joyaxis 
+      : joypad_info.auto_binds[key].joyaxis;
 
    if (joykey != NO_BTN && android->joypad->button(joypad_info.joy_idx, joykey))
       return true;
