@@ -515,7 +515,7 @@ void config_file_free(config_file_t *conf)
 
 bool config_append_file(config_file_t *conf, const char *path)
 {
-   config_file_t *new_conf = config_file_new(path);
+   config_file_t *new_conf = config_file_new_from_path_to_string(path);
    if (!new_conf)
       return false;
 

@@ -166,9 +166,7 @@ bool input_remapping_save_file(const char *path)
 
    free(buf);
 
-   conf = config_file_new(remap_file);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
       if (!(conf = config_file_new_alloc()))
       {

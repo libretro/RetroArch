@@ -2158,8 +2158,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Open config file */
-   conf = config_file_new(theme_path);
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(theme_path)))
       goto end;
 
    /* Parse config file */
