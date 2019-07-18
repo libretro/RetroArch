@@ -1098,6 +1098,24 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
+static void menu_action_setting_disp_set_label_playlist_label_display_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   playlist_t *playlist  = playlist_get_cached();
+   enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
+
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + label_display_mode * 3), len);
+}
+
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1344,6 +1362,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_playlist_associations);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_playlist_label_display_mode);
             break;
          default:
             return - 1;

@@ -68,6 +68,7 @@ typedef struct
    struct string_list **current_entry_string_list_val;
    char *current_meta_string;
    char **current_meta_val;
+   int *current_meta_int_val;
    char *current_items_string;
    bool in_items;
    bool in_subsystem_roms;
@@ -1211,9 +1212,10 @@ void playlist_write_file(playlist_t *playlist)
       if (!string_is_empty(playlist->default_core_path) &&
           !string_is_empty(playlist->default_core_name))
       {
-         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\n",
+         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\nlabel_display_mode = \"%d\"\n",
                   playlist->default_core_path,
-                  playlist->default_core_name
+                  playlist->default_core_name,
+                  playlist->label_display_mode
                   );
       }
    }
@@ -1242,8 +1244,8 @@ void playlist_write_file(playlist_t *playlist)
             STRLEN_CONST("version"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, "1.1",
-            STRLEN_CONST("1.1"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "1.2",
+            STRLEN_CONST("1.2"), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1276,6 +1278,19 @@ void playlist_write_file(playlist_t *playlist)
             ? strlen(playlist->default_core_name)
             : 0,
             JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      char label_display_mode[4];
+      snprintf(label_display_mode, sizeof(label_display_mode), "%u", playlist->label_display_mode);
+
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "label_display_mode",
+            STRLEN_CONST("label_display_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, label_display_mode,
+            strlen(label_display_mode), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1729,6 +1744,8 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
 
             free(pCtx->current_meta_string);
             pCtx->current_meta_string = NULL;
+
+            *pCtx->current_meta_int_val = (int)strtoul(pValue, NULL, 10);
          }
       }
    }
@@ -1828,6 +1845,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_meta_val = &pCtx->playlist->default_core_path;
             else if (string_is_equal(pValue, "default_core_name"))
                pCtx->current_meta_val = &pCtx->playlist->default_core_name;
+            else if (string_is_equal(pValue, "label_display_mode"))
+               pCtx->current_meta_int_val = (int*)&pCtx->playlist->label_display_mode;
             else
             {
                /* ignore unknown members */
@@ -2017,8 +2036,8 @@ json_cleanup:
          metadata_char = filestream_getc(file);
       }
 
-      /* Search backwards for the next two newlines */
-      while (metadata_counter < 2)
+      /* Search backwards for the next three newlines */
+      while (metadata_counter < 3)
       {
          filestream_seek(file, -2, SEEK_CUR);
          if (filestream_error(file))
@@ -2048,6 +2067,26 @@ json_cleanup:
                STRLEN_CONST("default_core_name")) == 0)
          get_old_format_metadata_value(
                metadata_line, default_core_name, sizeof(default_core_name));
+
+      /* > Get label_display_mode */
+      if (!filestream_gets(file, metadata_line, sizeof(metadata_line)))
+         goto end;
+
+      if (strncmp("label_display_mode",
+               metadata_line,
+               STRLEN_CONST("label_display_mode")) == 0)
+      {
+         char *start = NULL;
+         start = strchr(metadata_line, '\"');
+
+         if (start)
+         {
+            start++;
+
+            if (*start >= '0' && *start <= '9')
+               playlist->label_display_mode = *start - '0';
+         }
+      }
 
       /* > Populate playlist fields, if required */
       if (!string_is_empty(default_core_path) &&
