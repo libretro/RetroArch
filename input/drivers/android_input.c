@@ -151,9 +151,9 @@ typedef struct android_input
    bool blocked;
    const input_device_driver_t *joypad;
 
-   state_device_t pad_states[MAX_PADS];
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
-   int8_t hat_state[MAX_PADS][2];
+   state_device_t pad_states[MAX_USERS];
+   int16_t analog_state[MAX_USERS][MAX_AXIS];
+   int8_t hat_state[MAX_USERS][2];
 
    unsigned pads_connected;
    sensor_t accelerometer_state;
