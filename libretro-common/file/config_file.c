@@ -515,7 +515,7 @@ void config_file_free(config_file_t *conf)
 
 bool config_append_file(config_file_t *conf, const char *path)
 {
-   config_file_t *new_conf = config_file_new(path);
+   config_file_t *new_conf = config_file_new_from_path_to_string(path);
    if (!new_conf)
       return false;
 
@@ -589,6 +589,23 @@ config_file_t *config_file_new_from_string(const char *from_string)
    }
 
    string_list_free(lines);
+
+   return conf;
+}
+
+config_file_t *config_file_new_from_path_to_string(const char *path)
+{
+   int64_t length                = 0;
+   uint8_t *ret_buf              = NULL;
+   config_file_t *conf           = NULL;
+
+   if (filestream_read_file(path, (void**)&ret_buf, &length))
+   {
+      if (length >= 0)
+         if ((conf = config_file_new_from_string((const char*)ret_buf)))
+            conf->path = strdup(path);
+      free((void*)ret_buf);
+   }
 
    return conf;
 }

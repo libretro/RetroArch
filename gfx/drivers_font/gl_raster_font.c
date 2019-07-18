@@ -69,7 +69,11 @@ static void gl_raster_font_free_font(void *data,
    if (is_threaded)
       video_context_driver_make_current(true);
 
-   glDeleteTextures(1, &font->tex);
+   if (font->tex)
+   {
+      glDeleteTextures(1, &font->tex);
+      font->tex = 0;
+   }
 
    free(font);
 }

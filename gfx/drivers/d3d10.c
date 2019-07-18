@@ -360,9 +360,7 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(path)))
       return false;
 
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));

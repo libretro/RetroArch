@@ -682,6 +682,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
          continue;
 
       glDeleteProgram(glsl->prg[i].id);
+      glsl->prg[i].id = 0;
    }
 
    if (glsl->shader && glsl->shader->luts)
@@ -899,7 +900,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
          if (is_preset)
          {
-            conf = config_file_new(path);
+            conf = config_file_new_from_path_to_string(path);
             if (conf)
             {
                ret = video_shader_read_conf_preset(conf, glsl->shader);

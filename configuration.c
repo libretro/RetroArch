@@ -2405,7 +2405,7 @@ static config_file_t *open_default_config_file(void)
    fill_pathname_resolve_relative(conf_path, app_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
-   conf = config_file_new(conf_path);
+   conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
    {
@@ -2414,7 +2414,7 @@ static config_file_t *open_default_config_file(void)
       {
          fill_pathname_join(conf_path, application_data,
                file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
-         conf = config_file_new(conf_path);
+         conf = config_file_new_from_path_to_string(conf_path);
       }
    }
 
@@ -2457,7 +2457,7 @@ static config_file_t *open_default_config_file(void)
 
    fill_pathname_join(conf_path, application_data,
          file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
-   conf = config_file_new(conf_path);
+   conf = config_file_new_from_path_to_string(conf_path);
 
    if (!conf)
    {
@@ -2490,7 +2490,7 @@ static config_file_t *open_default_config_file(void)
       fill_pathname_join(conf_path, application_data,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
-      conf = config_file_new(conf_path);
+      conf = config_file_new_from_path_to_string(conf_path);
    }
 
    /* Fallback to $HOME/.retroarch.cfg. */
@@ -2499,7 +2499,7 @@ static config_file_t *open_default_config_file(void)
       fill_pathname_join(conf_path, getenv("HOME"),
             ".retroarch.cfg", path_size);
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
-      conf = config_file_new(conf_path);
+      conf = config_file_new_from_path_to_string(conf_path);
    }
 
    if (!conf && has_application_data)
@@ -2533,7 +2533,7 @@ static config_file_t *open_default_config_file(void)
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
-         conf = config_file_new(skeleton_conf);
+         conf = config_file_new_from_path_to_string(skeleton_conf);
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
@@ -2652,7 +2652,7 @@ static bool config_load_file(const char *path, settings_t *settings)
    struct config_size_setting *size_settings       = populate_settings_size  (settings, &size_settings_size);
    struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
    struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
-   config_file_t *conf                             = path ? config_file_new(path) : open_default_config_file();
+   config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
 
    tmp_str[0] = '\0';
 
@@ -3452,7 +3452,7 @@ bool config_load_remap(void)
          path_size);
 
    /* Create a new config file from game_path */
-   new_conf = config_file_new(game_path);
+   new_conf = config_file_new_from_path_to_string(game_path);
 
    /* If a game remap file exists, load it. */
    if (new_conf)
@@ -3474,7 +3474,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from content_path */
-   new_conf = config_file_new(content_path);
+   new_conf = config_file_new_from_path_to_string(content_path);
 
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
@@ -3496,7 +3496,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from core_path */
-   new_conf = config_file_new(core_path);
+   new_conf = config_file_new_from_path_to_string(core_path);
 
    /* If a core remap file exists, load it. */
    if (new_conf)
@@ -3634,7 +3634,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    free(buf);
    free(path_new);
 
-   conf = config_file_new(autoconf_file);
+   conf = config_file_new_from_path_to_string(autoconf_file);
 
    if (!conf)
    {
@@ -3698,7 +3698,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
-   config_file_t                              *conf  = config_file_new(path);
+   config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);

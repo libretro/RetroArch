@@ -678,7 +678,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
 
    RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
-   conf = config_file_new(path);
+   conf = config_file_new_from_path_to_string(path);
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");

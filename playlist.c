@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <libretro.h>
 #include <boolean.h>
@@ -1843,21 +1844,18 @@ static bool playlist_read_file(
 
    /* Detect format of playlist */
    {
-      char test_char = 0;
+      int test_char;
 
-      /* Read file until we find the first non-whitespace
+      /* Read file until we find the first printable non-whitespace
        * ASCII character */
-      while ((test_char <= 0x20) || (test_char >= 0x7F))
+      do
       {
          test_char = filestream_getc(file);
 
-         /* Sanity check:
-          * - If filestream_getc() returns 0, stream is invalid
-          * - If filestream_getc() returns EOF, then no non-whitespace
-          *   ASCII characters were found */
-         if ((test_char == 0) || (test_char == EOF))
+         if (test_char == EOF) /* read error or end of file */
             goto end;
       }
+      while (!isgraph(test_char) || test_char > 0x7F);
 
       if (test_char == '{')
       {
@@ -1989,7 +1987,7 @@ static bool playlist_read_file(
       }
 
       /* Search backwards for the next two newlines */
-      while(metadata_counter < 2)
+      while (metadata_counter < 2)
       {
          filestream_seek(file, -2, SEEK_CUR);
          if (filestream_error(file))

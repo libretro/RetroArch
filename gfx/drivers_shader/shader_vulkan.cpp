@@ -2348,7 +2348,7 @@ void Pass::build_commands(
    }
    else
    {
-      const VkViewport vp = {
+      const VkViewport _vp = {
          0.0f, 0.0f,
          float(current_framebuffer_size.width),
          float(current_framebuffer_size.height),
@@ -2362,7 +2362,7 @@ void Pass::build_commands(
          },
       };
 
-      vkCmdSetViewport(cmd, 0, 1, &vp);
+      vkCmdSetViewport(cmd, 0, 1, &_vp);
       vkCmdSetScissor(cmd, 0, 1, &sci);
    }
 
@@ -2886,7 +2886,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, ConfigDeleter> conf{ config_file_new(path) };
+   unique_ptr<config_file_t, ConfigDeleter> conf{ config_file_new_from_path_to_string(path) };
    if (!conf)
       return nullptr;
 

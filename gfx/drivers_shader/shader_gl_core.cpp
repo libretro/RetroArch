@@ -2409,7 +2409,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, gl_core::ConfigDeleter> conf{ config_file_new(path) };
+   unique_ptr<config_file_t, gl_core::ConfigDeleter> conf{ config_file_new_from_path_to_string(path) };
    if (!conf)
       return nullptr;
 
