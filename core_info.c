@@ -284,8 +284,8 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    for (i = 0; i < contents->size; i++)
    {
-      const char *path      = contents->elems[i].data;
-      config_file_t *conf   = core_info_list_iterate(path,
+      const char *base_path = contents->elems[i].data;
+      config_file_t *conf   = core_info_list_iterate(base_path,
             path_basedir);
 
       if (conf)
@@ -438,8 +438,8 @@ static core_info_list_t *core_info_list_new(const char *path,
          core_info[i].config_data = conf;
       }
 
-      if (!string_is_empty(path))
-         core_info[i].path = strdup(path);
+      if (!string_is_empty(base_path))
+         core_info[i].path = strdup(base_path);
 
       if (!core_info[i].display_name)
          core_info[i].display_name =
