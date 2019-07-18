@@ -43,6 +43,7 @@
 struct content_playlist
 {
    bool modified;
+   enum playlist_label_display_mode label_display_mode;
    size_t size;
    size_t cap;
 
@@ -222,6 +223,13 @@ char *playlist_get_conf_path(playlist_t *playlist)
    if (!playlist)
       return NULL;
    return playlist->conf_path;
+}
+
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return LABEL_DISPLAY_MODE_DEFAULT;
+   return playlist->label_display_mode;
 }
 
 /**
@@ -743,29 +751,29 @@ bool playlist_push(playlist_t *playlist,
       if (!playlist_core_path_equal(real_core_path, playlist->entries[i].core_path))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_ident) 
-            && !string_is_empty(playlist->entries[i].subsystem_ident) 
+      if (     !string_is_empty(entry->subsystem_ident)
+            && !string_is_empty(playlist->entries[i].subsystem_ident)
             && !string_is_equal(playlist->entries[i].subsystem_ident, entry->subsystem_ident))
          continue;
 
-      if (      string_is_empty(entry->subsystem_ident) 
+      if (      string_is_empty(entry->subsystem_ident)
             && !string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (    !string_is_empty(entry->subsystem_ident) 
+      if (    !string_is_empty(entry->subsystem_ident)
             && string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_name) 
-            && !string_is_empty(playlist->entries[i].subsystem_name) 
+      if (     !string_is_empty(entry->subsystem_name)
+            && !string_is_empty(playlist->entries[i].subsystem_name)
             && !string_is_equal(playlist->entries[i].subsystem_name, entry->subsystem_name))
          continue;
 
-      if (      string_is_empty(entry->subsystem_name) 
+      if (      string_is_empty(entry->subsystem_name)
             && !string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_name) 
+      if (     !string_is_empty(entry->subsystem_name)
             &&  string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
@@ -842,7 +850,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      struct playlist_entry *last_entry = 
+      struct playlist_entry *last_entry =
          &playlist->entries[playlist->cap - 1];
 
       if (last_entry)
@@ -1000,11 +1008,11 @@ void playlist_write_runtime_file(playlist_t *playlist)
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteString(context.writer,
-            playlist->entries[i].path 
-            ? playlist->entries[i].path 
+            playlist->entries[i].path
+            ? playlist->entries[i].path
             : "",
-            playlist->entries[i].path 
-            ? strlen(playlist->entries[i].path) 
+            playlist->entries[i].path
+            ? strlen(playlist->entries[i].path)
             : 0,
             JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
@@ -1291,11 +1299,11 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].path 
-               ? playlist->entries[i].path 
+               playlist->entries[i].path
+               ? playlist->entries[i].path
                : "",
-               playlist->entries[i].path 
-               ? strlen(playlist->entries[i].path) 
+               playlist->entries[i].path
+               ? strlen(playlist->entries[i].path)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1307,11 +1315,11 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].label 
-               ? playlist->entries[i].label 
+               playlist->entries[i].label
+               ? playlist->entries[i].label
                : "",
-               playlist->entries[i].label 
-               ? strlen(playlist->entries[i].label) 
+               playlist->entries[i].label
+               ? strlen(playlist->entries[i].label)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1345,8 +1353,8 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
-               playlist->entries[i].crc32 
-               ? strlen(playlist->entries[i].crc32) 
+               playlist->entries[i].crc32
+               ? strlen(playlist->entries[i].crc32)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1358,8 +1366,8 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "",
-               playlist->entries[i].db_name 
-               ? strlen(playlist->entries[i].db_name) 
+               playlist->entries[i].db_name
+               ? strlen(playlist->entries[i].db_name)
                : 0,
                JSON_UTF8);
 
@@ -1373,8 +1381,8 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
             JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "",
-                  playlist->entries[i].subsystem_ident 
-                  ? strlen(playlist->entries[i].subsystem_ident) 
+                  playlist->entries[i].subsystem_ident
+                  ? strlen(playlist->entries[i].subsystem_ident)
                   : 0,
                   JSON_UTF8);
          }
@@ -1389,15 +1397,15 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
             JSON_Writer_WriteString(context.writer,
-                  playlist->entries[i].subsystem_name 
-                  ? playlist->entries[i].subsystem_name 
+                  playlist->entries[i].subsystem_name
+                  ? playlist->entries[i].subsystem_name
                   : "",
-                  playlist->entries[i].subsystem_name 
-                  ? strlen(playlist->entries[i].subsystem_name) 
+                  playlist->entries[i].subsystem_name
+                  ? strlen(playlist->entries[i].subsystem_name)
                   : 0, JSON_UTF8);
          }
 
-         if (  playlist->entries[i].subsystem_roms && 
+         if (  playlist->entries[i].subsystem_roms &&
                playlist->entries[i].subsystem_roms->size > 0)
          {
             unsigned j;
@@ -1417,11 +1425,11 @@ void playlist_write_file(playlist_t *playlist)
                const struct string_list *roms = playlist->entries[i].subsystem_roms;
                JSON_Writer_WriteSpace(context.writer, 8);
                JSON_Writer_WriteString(context.writer,
-                     !string_is_empty(roms->elems[j].data) 
-                     ? roms->elems[j].data 
+                     !string_is_empty(roms->elems[j].data)
+                     ? roms->elems[j].data
                      : "",
-                     !string_is_empty(roms->elems[j].data) 
-                     ? strlen(roms->elems[j].data) 
+                     !string_is_empty(roms->elems[j].data)
+                     ? strlen(roms->elems[j].data)
                      : 0,
                      JSON_UTF8);
 
@@ -2146,13 +2154,14 @@ playlist_t *playlist_init(const char *path, size_t size)
       return NULL;
    }
 
-   playlist->modified          = false;
-   playlist->size              = 0;
-   playlist->cap               = size;
-   playlist->conf_path         = strdup(path);
-   playlist->default_core_name = NULL;
-   playlist->default_core_path = NULL;
-   playlist->entries           = entries;
+   playlist->modified           = false;
+   playlist->size               = 0;
+   playlist->cap                = size;
+   playlist->conf_path          = strdup(path);
+   playlist->default_core_name  = NULL;
+   playlist->default_core_path  = NULL;
+   playlist->entries            = entries;
+   playlist->label_display_mode = LABEL_DISPLAY_MODE_DEFAULT;
 
    playlist_read_file(playlist, path);
 
@@ -2375,6 +2384,17 @@ void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
       if (playlist->default_core_name)
          free(playlist->default_core_name);
       playlist->default_core_name = strdup(core_name);
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode)
+{
+   if (!playlist)
+      return;
+
+   if (playlist->label_display_mode != label_display_mode) {
+      playlist->label_display_mode = label_display_mode;
       playlist->modified = true;
    }
 }

@@ -41,6 +41,17 @@ enum playlist_file_mode
     PLAYLIST_SAVE
 };
 
+enum playlist_label_display_mode
+{
+   LABEL_DISPLAY_MODE_DEFAULT = 0,
+   LABEL_DISPLAY_MODE_REMOVE_PARENTHESES,
+   LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   LABEL_DISPLAY_MODE_REMOVE_PARENTHESES_AND_BRACKETS,
+   LABEL_DISPLAY_MODE_KEEP_REGION,
+   LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX
+};
+
 struct playlist_entry
 {
    char *path;
@@ -213,9 +224,11 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
 
 char *playlist_get_default_core_path(playlist_t *playlist);
 char *playlist_get_default_core_name(playlist_t *playlist);
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
+void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode);
 
 RETRO_END_DECLS
 
