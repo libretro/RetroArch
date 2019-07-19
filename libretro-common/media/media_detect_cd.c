@@ -190,7 +190,7 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          if (media_skip_spaces(&version_pos, 6))
             memcpy(info->version, version_pos, 6 - (version_pos - (buf + offset + 0x2a)));
          else
-            strlcpy(info->version, "N/A", sizeof(info->title));
+            strlcpy(info->version, "N/A", sizeof(info->version));
 
          release_date_pos = buf + offset + 0x30;
 
