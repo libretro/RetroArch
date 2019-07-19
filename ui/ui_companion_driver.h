@@ -127,7 +127,6 @@ typedef struct ui_companion_driver
 {
    void *(*init)(void);
    void (*deinit)(void *data);
-   int  (*iterate)(void *data, unsigned action);
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);

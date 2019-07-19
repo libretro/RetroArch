@@ -781,6 +781,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
       case MENU_ENTRY_ENUM:
          me = [RAMenuItemEnum new];
          break;
+       case MENU_ENTRY_SIZE:
+         /* TODO/FIXME - implement this */
+         break;
    };
 
    [me initialize:self idx:i];

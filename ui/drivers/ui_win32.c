@@ -290,14 +290,6 @@ static void *ui_companion_win32_init(void)
    return handle;
 }
 
-static int ui_companion_win32_iterate(void *data, unsigned action)
-{
-   (void)data;
-   (void)action;
-
-   return 0;
-}
-
 static void ui_companion_win32_notify_content_loaded(void *data)
 {
    (void)data;
@@ -327,7 +319,6 @@ static void ui_companion_win32_notify_list_pushed(void *data,
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
-   ui_companion_win32_iterate,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,

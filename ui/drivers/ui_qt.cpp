@@ -645,13 +645,6 @@ static void* ui_companion_qt_init(void)
    return handle;
 }
 
-static int ui_companion_qt_iterate(void *data, unsigned action)
-{
-   (void)data;
-   (void)action;
-   return 0;
-}
-
 static void ui_companion_qt_notify_content_loaded(void *data)
 {
    (void)data;
@@ -747,7 +740,6 @@ void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priori
 ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
-   ui_companion_qt_iterate,
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,

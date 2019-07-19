@@ -580,18 +580,6 @@ static void ui_companion_cocoatouch_toggle(void *data, bool force)
       [ap toggleUI];
 }
 
-static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
-{
-   RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
-
-   (void)data;
-
-   if (ap)
-      [ap showPauseMenu:ap];
-
-   return 0;
-}
-
 static void ui_companion_cocoatouch_deinit(void *data)
 {
    ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
@@ -679,7 +667,6 @@ static void ui_companion_cocoatouch_msg_queue_push(void *data, const char *msg,
 ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
-   ui_companion_cocoatouch_iterate,
    ui_companion_cocoatouch_toggle,
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
