@@ -154,7 +154,7 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          if (media_skip_spaces(&serial_pos, 8))
             memcpy(info->serial, serial_pos, 8 - (serial_pos - (buf + offset + 0x183)));
          else
-            strlcpy(info->serial, "N/A", sizeof(info->title));
+            strlcpy(info->serial, "N/A", sizeof(info->serial));
       }
       else if (!memcmp(buf + offset, "SEGA SEGASATURN", strlen("SEGA SEGASATURN")))
       {
@@ -183,7 +183,7 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          if (media_skip_spaces(&serial_pos, 10))
             memcpy(info->serial, serial_pos, 10 - (serial_pos - (buf + offset + 0x20)));
          else
-            strlcpy(info->serial, "N/A", sizeof(info->title));
+            strlcpy(info->serial, "N/A", sizeof(info->serial));
 
          version_pos = buf + offset + 0x2a;
 
@@ -197,7 +197,7 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          if (media_skip_spaces(&release_date_pos, 8))
             memcpy(info->release_date, release_date_pos, 8 - (release_date_pos - (buf + offset + 0x30)));
          else
-            strlcpy(info->release_date, "N/A", sizeof(info->title));
+            strlcpy(info->release_date, "N/A", sizeof(info->release_date));
       }
       else if (!memcmp(buf + offset, "SEGA SEGAKATANA", strlen("SEGA SEGAKATANA")))
       {
@@ -226,21 +226,21 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
          if (media_skip_spaces(&serial_pos, 10))
             memcpy(info->serial, serial_pos, 10 - (serial_pos - (buf + offset + 0x40)));
          else
-            strlcpy(info->serial, "N/A", sizeof(info->title));
+            strlcpy(info->serial, "N/A", sizeof(info->serial));
 
          version_pos = buf + offset + 0x4a;
 
          if (media_skip_spaces(&version_pos, 6))
             memcpy(info->version, version_pos, 6 - (version_pos - (buf + offset + 0x4a)));
          else
-            strlcpy(info->version, "N/A", sizeof(info->title));
+            strlcpy(info->version, "N/A", sizeof(info->version));
 
          release_date_pos = buf + offset + 0x50;
 
          if (media_skip_spaces(&release_date_pos, 8))
             memcpy(info->release_date, release_date_pos, 8 - (release_date_pos - (buf + offset + 0x50)));
          else
-            strlcpy(info->release_date, "N/A", sizeof(info->title));
+            strlcpy(info->release_date, "N/A", sizeof(info->release_date));
       }
       /* Primary Volume Descriptor fields of ISO9660 */
       else if (!memcmp(buf + offset + (16 * sector_size), "\1CD001\1\0PLAYSTATION", 19))
