@@ -2034,9 +2034,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ext_count);
 
-   app.pApplicationName              = msg_hash_to_str(MSG_PROGRAM);
+   app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
-   app.pEngineName                   = msg_hash_to_str(MSG_PROGRAM);
+   app.pEngineName                   = "RetroArch";
    app.engineVersion                 = 0;
    app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
 

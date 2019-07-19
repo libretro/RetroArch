@@ -1000,8 +1000,7 @@ bool win32_window_create(void *data, unsigned style,
       user_height= g_win32_pos_height;
    }
    main_window.hwnd = CreateWindowEx(0,
-         msg_hash_to_str(MSG_PROGRAM),
-         msg_hash_to_str(MSG_PROGRAM),
+         "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
@@ -1442,7 +1441,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass(msg_hash_to_str(MSG_PROGRAM), GetModuleHandle(NULL));
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
 #endif
