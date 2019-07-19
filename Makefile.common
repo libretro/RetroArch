@@ -357,13 +357,9 @@ ifeq ($(HAVE_QT), 1)
        OBJ += ui/drivers/qt/settingswidgets.o \
               ui/drivers/qt/options/achievements.o \
               ui/drivers/qt/options/audio.o \
-              ui/drivers/qt/options/configuration.o \
-              ui/drivers/qt/options/core.o \
-              ui/drivers/qt/options/directory.o \
-              ui/drivers/qt/options/drivers.o \
+              ui/drivers/qt/options/generic.o \
               ui/drivers/qt/options/input.o \
               ui/drivers/qt/options/latency.o \
-              ui/drivers/qt/options/logging.o \
               ui/drivers/qt/options/network.o \
               ui/drivers/qt/options/osd.o \
               ui/drivers/qt/options/playlists.o \
