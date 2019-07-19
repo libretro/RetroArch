@@ -1231,7 +1231,9 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 
+#if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
+#endif
 
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
