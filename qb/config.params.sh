@@ -18,6 +18,7 @@ HAVE_OZONE=auto            # Ozone menu
 HAVE_STRIPES=no            # Stripes menu
 HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_SSL=auto              # SSL/mbedtls support
+HAVE_DSOUND=auto           # DirectSound support
 C89_SSL=no
 HAVE_BUILTINMBEDTLS=auto   # Bake in the mbedtls library
 C89_BUILTINMBEDTLS=no
