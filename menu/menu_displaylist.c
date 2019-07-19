@@ -7296,6 +7296,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
+#ifdef HAVE_COMPRESSION
             if (settings->bools.menu_show_core_updater)
             {
                if (menu_entries_append_enum(info->list,
@@ -7376,6 +7377,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
+#endif
 #endif
          }
 
