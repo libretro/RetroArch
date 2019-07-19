@@ -898,6 +898,8 @@ static const bool content_runtime_log = false;
 /* Keep track of how long each content has been running for over time (ignores core) */
 static const bool content_runtime_log_aggregate = false;
 
+#define DEFAULT_UI_MENUBAR_ENABLE true
+
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2)
