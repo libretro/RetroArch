@@ -30,7 +30,7 @@
 #include "3ds.h"
 
 static uint32_t pad_state;
-static int16_t analog_state[1][2][2];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
 
 static const char *ctr_joypad_name(unsigned pad)

@@ -82,36 +82,26 @@ int LockCode(void *a, int size)
 static void keyb_int(void)
 {
    static unsigned char buffer = 0;
-   unsigned char rawcode;
-   unsigned char make_break;
-   int scancode;
-
-   rawcode = inp(0x60); /* read scancode from keyboard controller */
-   make_break = !(rawcode & 0x80); /* bit 7: 0 = make, 1 = break */
-   scancode = rawcode & 0x7F;
+   unsigned char rawcode       = inp(0x60);
+   /* read scancode from keyboard controller */
+   unsigned char make_break    = !(rawcode & 0x80);
+   /* bit 7: 0 = make, 1 = break */
+   int scancode                = rawcode & 0x7F;
 
    if (buffer == 0xE0)
    {
       /* second byte of an extended key */
       if (scancode < 0x60)
-      {
          normal_keys[scancode | (1 << 8)] = make_break;
-      }
 
       buffer = 0;
    }
    else if (buffer >= 0xE1 && buffer <= 0xE2)
-   {
       buffer = 0; /* ignore these extended keys */
-   }
    else if (rawcode >= 0xE0 && rawcode <= 0xE2)
-   {
       buffer = rawcode; /* first byte of an extended key */
-   }
    else if (scancode < 0x60)
-   {
       normal_keys[scancode] = make_break;
-   }
 
    outp(0x20, 0x20); /* must send EOI to finish interrupt */
 }
@@ -214,8 +204,8 @@ static void dos_joypad_poll(void)
 
    for (i = 0; i <= DEFAULT_MAX_PADS; i++)
    {
-      uint16_t *cur_state = dos_keyboard_state_get(i);
       uint32_t key;
+      uint16_t *cur_state = dos_keyboard_state_get(i);
 
       for (key = 0; key < LAST_KEYCODE; key++)
       {
