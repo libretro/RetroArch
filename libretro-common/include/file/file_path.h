@@ -147,14 +147,20 @@ void path_parent_dir(char *path);
 
 /**
  * path_resolve_realpath:
- * @buf                : buffer for path
+ * @buf                : input and output buffer for path
  * @size               : size of buffer
  *
- * Turns relative paths into absolute paths and
- * resolves use of "." and ".." in absolute paths.
- * If relative, rebases on current working dir.
+ * Resolves use of ".", "..", multiple slashes etc in absolute paths.
+ *
+ * Relative paths are rebased on the current working dir.
+ *
+ * Returns: @buf if successful, NULL otherwise.
+ * Note: Not implemented on consoles
+ * Note: The current working dir might not be what you expect,
+ *       e.g. on Android it is "/"
+ *       Use of fill_pathname_resolve_relative() should be prefered
  **/
-void path_resolve_realpath(char *buf, size_t size);
+char *path_resolve_realpath(char *buf, size_t size);
 
 /**
  * path_relative_to:
