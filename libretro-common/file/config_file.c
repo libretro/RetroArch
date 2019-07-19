@@ -530,7 +530,8 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-config_file_t *config_file_new_from_string(const char *from_string)
+config_file_t *config_file_new_from_string(const char *from_string,
+      const char *path)
 {
    size_t i;
    struct string_list *lines = NULL;
@@ -548,6 +549,9 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false ;
+
+   if (!string_is_empty(path))
+      conf->path                  = strdup(path);
 
    lines                          = string_split(from_string, "\n");
    if (!lines)
@@ -602,9 +606,9 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
    if (filestream_read_file(path, (void**)&ret_buf, &length))
    {
       if (length >= 0)
-         if ((conf = config_file_new_from_string((const char*)ret_buf)))
-            conf->path = strdup(path);
-      free((void*)ret_buf);
+         conf = config_file_new_from_string((const char*)ret_buf, path);
+      if ((void*)ret_buf)
+         free((void*)ret_buf);
    }
 
    return conf;
@@ -1142,7 +1146,7 @@ static void test_config_file_parse_contains(
       const char * cfgtext,
       const char *key, const char *val)
 {
-   config_file_t *cfg = config_file_new_from_string(cfgtext);
+   config_file_t *cfg = config_file_new_from_string(cfgtext, NULL);
    char          *out = NULL;
    bool            ok = false;
 
