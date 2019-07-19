@@ -29,6 +29,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -81,7 +83,7 @@ enum {
 
 /* First ports are used to keep track of gamepad states. 
  * Last port is used for keyboard state */
-static uint8_t android_key_state[MAX_PADS+1][MAX_KEYS];
+static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
 
 #define android_keyboard_port_input_pressed(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
 
@@ -96,7 +98,7 @@ static void android_keyboard_free(void)
 {
    unsigned i, j;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
       for (j = 0; j < MAX_KEYS; j++)
          android_key_state[i][j] = 0;
 }
@@ -956,7 +958,7 @@ static void handle_hotplug(android_input_t *android,
 
    RARCH_LOG("Device model: (%s).\n", device_model);
 
-   if (*port > MAX_PADS)
+   if (*port > DEFAULT_MAX_PADS)
    {
       RARCH_ERR("Max number of pads reached.\n");
       return;
@@ -1348,7 +1350,7 @@ static void android_input_poll_memcpy(android_input_t *android)
    unsigned i, j;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
          android_app->hat_state[i][j]    = android->hat_state[i][j];

@@ -36,10 +36,6 @@
 #endif
 #endif
 
-#ifndef __PSL1GHT__
-#define MAX_PADS 7
-#endif
-
 /* TODO/FIXME -
  * fix game focus toggle */
 

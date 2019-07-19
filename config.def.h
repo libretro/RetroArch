@@ -53,6 +53,46 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
+#if defined(ANDROID)
+#define DEFAULT_MAX_PADS 8
+#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(_3DS)
+#define DEFAULT_MAX_PADS 1
+#elif defined(SWITCH) || defined(HAVE_LIBNX)
+#define DEFAULT_MAX_PADS 8
+#elif defined(WIIU)
+#ifdef WIIU_HID
+#define DEFAULT_MAX_PADS 16
+#else
+#define DEFAULT_MAX_PADS 5
+#endif
+#elif defined(DJGPP)
+#define DEFAULT_MAX_PADS 1
+#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(XENON)
+#define DEFAULT_MAX_PADS 4
+#elif defined(VITA) || defined(SN_TARGET_PSP2)
+#define DEFAULT_MAX_PADS 4
+#elif defined(PSP)
+#define DEFAULT_MAX_PADS 1
+#elif defined(PS2)
+#define DEFAULT_MAX_PADS 2
+#elif defined(GEKKO) || defined(HW_RVL)
+#define DEFAULT_MAX_PADS 4
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#define DEFAULT_MAX_PADS 8
+#elif defined(__QNX__)
+#define DEFAULT_MAX_PADS 8
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_MAX_PADS 7
+#elif defined(_XBOX)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
+#define DEFAULT_MAX_PADS 4
+#else
+#define DEFAULT_MAX_PADS 16
+#endif
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
 #define DEFAULT_POINTER_ENABLE true
 #else

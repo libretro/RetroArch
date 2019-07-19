@@ -20,6 +20,8 @@
 
 #include <retro_miscellaneous.h>
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
@@ -35,7 +37,7 @@ typedef struct dos_input
 #define MAX_KEYS LAST_KEYCODE + 1
 
 /* First ports are used to keeping track of gamepad states. Last port is used for keyboard state */
-static uint16_t dos_key_state[MAX_PADS+1][MAX_KEYS];
+static uint16_t dos_key_state[DEFAULT_MAX_PADS+1][MAX_KEYS];
 
 static bool dos_keyboard_port_input_pressed(
       const struct retro_keybind *binds, unsigned id)
@@ -54,7 +56,7 @@ static void dos_keyboard_free(void)
 {
    unsigned i, j;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
       for (j = 0; j < MAX_KEYS; j++)
          dos_key_state[i][j] = 0;
 }

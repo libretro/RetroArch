@@ -26,6 +26,8 @@
 
 #include <libretro.h>
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../tasks/tasks_internal.h"
@@ -176,7 +178,7 @@ static bool dos_joypad_button(unsigned port_num, uint16_t key)
 {
    uint16_t *buf = dos_keyboard_state_get(port_num);
 
-   if (port_num >= MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
    switch (key)
@@ -210,7 +212,7 @@ static void dos_joypad_poll(void)
 {
    uint32_t i;
 
-   for (i = 0; i <= MAX_PADS; i++)
+   for (i = 0; i <= DEFAULT_MAX_PADS; i++)
    {
       uint16_t *cur_state = dos_keyboard_state_get(i);
       uint32_t key;

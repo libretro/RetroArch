@@ -35,6 +35,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
@@ -144,7 +146,8 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 #ifdef HAVE_DINPUT
    return g_xinput_pad_indexes[pad];
 #else
-   return pad < MAX_PADS && g_xinput_states[pad].connected ? pad : -1;
+   return pad < DEFAULT_MAX_PADS 
+      && g_xinput_states[pad].connected ? pad : -1;
 #endif
 }
 

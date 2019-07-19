@@ -25,11 +25,9 @@
 
 #include <libretro.h>
 
-#include "../input_driver.h"
+#include "../../config.def.h"
 
-#ifndef MAX_PADS
-#define MAX_PADS 4
-#endif
+#include "../input_driver.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -49,7 +47,7 @@ static int16_t gx_input_state(void *data,
    gx_input_t *gx             = (gx_input_t*)data;
    int16_t ret                = 0;
 
-   if (port >= MAX_PADS || !gx)
+   if (port >= DEFAULT_MAX_PADS || !gx)
       return 0;
 
    switch (device)

@@ -33,10 +33,9 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/ctrl.h>
 #include <psp2/touch.h>
-#define PSP_MAX_PADS 4
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
-static SceCtrlActuator actuators[PSP_MAX_PADS] = {0};
+static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 #define AREA(lx, ly, rx, ry, x, y) (lx <= x && x < rx && ly <= y && y < ry)
@@ -51,13 +50,8 @@ static SceCtrlActuator actuators[PSP_MAX_PADS] = {0};
 #define SW_AREA(x, y) AREA(0, SCREEN_HALF_HEIGHT, SCREEN_HALF_WIDTH, SCREEN_HEIGHT, (x), (y))
 #define SE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, (x), (y))
 
-#elif defined(SN_TARGET_PSP2)
-#define PSP_MAX_PADS 4
-#else
-#define PSP_MAX_PADS 1
-#endif
-static uint64_t pad_state[PSP_MAX_PADS];
-static int16_t analog_state[PSP_MAX_PADS][2][2];
+static uint64_t pad_state[DEFAULT_MAX_PADS];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 
 extern uint64_t lifecycle_state;
 
@@ -84,7 +78,7 @@ static const char *psp_joypad_name(unsigned pad)
 static bool psp_joypad_init(void *data)
 {
    unsigned i;
-   unsigned players_count = PSP_MAX_PADS;
+   unsigned players_count = DEFAULT_MAX_PADS;
 
    (void)data;
 
@@ -115,7 +109,7 @@ static bool psp_joypad_init(void *data)
 
 static bool psp_joypad_button(unsigned port_num, uint16_t key)
 {
-   if (port_num >= PSP_MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
    return (pad_state[port_num] & (UINT64_C(1) << key));
@@ -123,7 +117,7 @@ static bool psp_joypad_button(unsigned port_num, uint16_t key)
 
 static void psp_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < PSP_MAX_PADS)
+	if (port_num < DEFAULT_MAX_PADS)
    {
 		BITS_COPY16_PTR( state, pad_state[port_num] );
 	}
@@ -138,7 +132,7 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port_num >= PSP_MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -179,7 +173,7 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void psp_joypad_poll(void)
 {
    unsigned player;
-   unsigned players_count = PSP_MAX_PADS;
+   unsigned players_count = DEFAULT_MAX_PADS;
 #if defined(VITA)
    settings_t *settings = config_get_ptr();
 #endif
@@ -319,7 +313,7 @@ static void psp_joypad_poll(void)
 
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   return pad < PSP_MAX_PADS && pad_state[pad];
+   return pad < DEFAULT_MAX_PADS && pad_state[pad];
 }
 
 static bool psp_joypad_rumble(unsigned pad,

@@ -27,14 +27,14 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
-
-#define MAX_PADS 8
 
 #ifdef HAVE_BB10
 #define MAX_TOUCH 16
@@ -72,6 +72,10 @@ struct input_pointer
    int map;
 };
 
+#define QNX_MAX_KEYS (65535 + 7) / 8
+#define TRACKPAD_CPI 500
+#define TRACKPAD_THRESHOLD TRACKPAD_CPI / 2
+
 typedef struct qnx_input
 {
    bool blocked;
@@ -86,16 +90,13 @@ typedef struct qnx_input
    unsigned pointer_count;
    int touch_map[MAX_TOUCH];
 
-   qnx_input_device_t devices[MAX_PADS];
+   qnx_input_device_t devices[DEFAULT_MAX_PADS];
    const input_device_driver_t *joypad;
 
-#define QNX_MAX_KEYS (65535 + 7) / 8
    uint8_t keyboard_state[QNX_MAX_KEYS];
 
-   uint64_t pad_state[MAX_PADS];
+   uint64_t pad_state[DEFAULT_MAX_PADS];
 
-#define TRACKPAD_CPI 500
-#define TRACKPAD_THRESHOLD TRACKPAD_CPI / 2
    int trackpad_acc[2];
 } qnx_input_t;
 
@@ -143,7 +144,7 @@ static void qnx_process_gamepad_event(
    screen_get_event_property_pv(screen_event,
          SCREEN_PROPERTY_DEVICE, (void**)&device);
 
-   for (i = 0; i < MAX_PADS; ++i)
+   for (i = 0; i < DEFAULT_MAX_PADS; ++i)
    {
       if (device == qnx->devices[i].handle)
       {
@@ -343,7 +344,7 @@ static void qnx_discover_controllers(qnx_input_t *qnx)
          qnx->devices[qnx->pads_connected].index = qnx->pads_connected;
          qnx_handle_device(qnx, &qnx->devices[qnx->pads_connected]);
 
-         if (qnx->pads_connected == MAX_PADS)
+         if (qnx->pads_connected == DEFAULT_MAX_PADS)
             break;
       }
    }
@@ -563,7 +564,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                    type == SCREEN_EVENT_KEYBOARD)
                )
             {
-               for (i = 0; i < MAX_PADS; ++i)
+               for (i = 0; i < DEFAULT_MAX_PADS; ++i)
                {
                   if (!qnx->devices[i].handle)
                   {
@@ -575,7 +576,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
             }
             else
             {
-               for (i = 0; i < MAX_PADS; ++i)
+               for (i = 0; i < DEFAULT_MAX_PADS; ++i)
                {
                   if (device == qnx->devices[i].handle)
                   {
@@ -679,10 +680,8 @@ static void *qnx_input_init(const char *joypad_driver)
 
    qnx->joypad = input_joypad_init_driver(joypad_driver, qnx);
 
-   for (i = 0; i < MAX_PADS; ++i)
-   {
+   for (i = 0; i < DEFAULT_MAX_PADS; ++i)
       qnx_init_controller(qnx, &qnx->devices[i]);
-   }
 
 #ifdef HAVE_BB10
    qnx_discover_controllers(qnx);

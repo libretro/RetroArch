@@ -28,16 +28,12 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "wiiu_dbg.h"
-
-#ifdef WIIU_HID
-#define MAX_PADS 16
-#else
-#define MAX_PADS 5
-#endif
 
 static uint8_t keyboardChannel = 0x00;
 static bool keyboardState[RETROK_LAST] = { 0 };
@@ -136,7 +132,7 @@ static int16_t wiiu_input_state(void *data,
    int16_t ret                = 0;
    wiiu_input_t *wiiu         = (wiiu_input_t*)data;
 
-   if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
+   if(!wiiu || !(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
       return 0;
 
    switch (device)

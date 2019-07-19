@@ -22,9 +22,7 @@
 
 #include <boolean.h>
 
-#ifndef MAX_PADS
-#define MAX_PADS 8
-#endif
+#include "../../config.def.h"
 
 #ifndef MAX_AXIS
 #define MAX_AXIS 10
@@ -42,6 +40,8 @@
 #include <android/sensor.h>
 
 #include <rthreads/rthreads.h>
+
+#include "../../config.def.h"
 
 bool test_permissions(const char *path);
 
@@ -144,8 +144,8 @@ struct android_app
    uint64_t sensor_state_mask;
    char current_ime[PATH_MAX_LENGTH];
    bool input_alive;
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
-   int8_t hat_state[MAX_PADS][2];
+   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
+   int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
    jmethodID getStringExtra;

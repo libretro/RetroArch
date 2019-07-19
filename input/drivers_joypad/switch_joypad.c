@@ -2,6 +2,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #ifdef HAVE_LIBNX
 #include <switch.h>
 #else
@@ -17,28 +19,14 @@
 #include "../../command.h"
 #include "string.h"
 
-#ifdef HAVE_LIBNX
-
-#ifndef MAX_PADS
-#define MAX_PADS 8
-#endif
-
-#else
-
-#ifndef MAX_PADS
-#define MAX_PADS 10
-#endif
-
-#endif
-
-static uint16_t pad_state[MAX_PADS];
-static int16_t analog_state[MAX_PADS][2][2];
+static uint16_t pad_state[DEFAULT_MAX_PADS];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
 
 #ifdef HAVE_LIBNX
-static u32 vibration_handles[MAX_PADS][2];
+static u32 vibration_handles[DEFAULT_MAX_PADS][2];
 static u32 vibration_handleheld[2];
-static HidVibrationValue vibration_values[MAX_PADS][2];
+static HidVibrationValue vibration_values[DEFAULT_MAX_PADS][2];
 static HidVibrationValue vibration_stop;
 #endif
 
@@ -71,7 +59,7 @@ static bool switch_joypad_init(void *data)
    vibration_stop.amp_high  = 0.0f;
    vibration_stop.freq_high = 320.0f;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       switch_joypad_autodetect_add(i);
       hidInitializeVibrationDevices(vibration_handles[i], 2, i, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
@@ -90,7 +78,7 @@ static bool switch_joypad_init(void *data)
 
 static bool switch_joypad_button(unsigned port_num, uint16_t key)
 {
-   if (port_num >= MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
 #if 0
@@ -102,7 +90,7 @@ static bool switch_joypad_button(unsigned port_num, uint16_t key)
 
 static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-   if (port_num < MAX_PADS)
+   if (port_num < DEFAULT_MAX_PADS)
    {
       BITS_COPY16_PTR(state, pad_state[port_num]);
    }
@@ -121,7 +109,7 @@ static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 #if 0
    /* TODO/FIXME - implement */
-   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS) { }
+   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS) { }
 #endif
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -161,14 +149,14 @@ static int16_t switch_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static bool switch_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PADS && pad_state[pad];
+   return pad < DEFAULT_MAX_PADS && pad_state[pad];
 }
 
 static void switch_joypad_destroy(void)
 {
 #ifdef HAVE_LIBNX
    unsigned i;
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       memcpy(&vibration_values[i][0],
             &vibration_stop, sizeof(HidVibrationValue));
@@ -227,7 +215,7 @@ static void switch_joypad_poll(void)
       }
    }
 
-   for (int i = 0; i < MAX_PADS; i++)
+   for (int i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       HidControllerID target = (i == 0) ? CONTROLLER_P1_AUTO : i;
       pad_state[i] = hidKeysDown(target) | hidKeysHeld(target);
@@ -283,7 +271,7 @@ bool switch_joypad_set_rumble(unsigned pad,
    u32* handle;
    float amp;
 
-   if (pad >= MAX_PADS || !vibration_handles[pad])
+   if (pad >= DEFAULT_MAX_PADS || !vibration_handles[pad])
       return false;
 
    amp = (float)strength / 65535.0f;

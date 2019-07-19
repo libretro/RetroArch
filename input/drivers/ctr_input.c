@@ -27,8 +27,6 @@
 
 #include "../input_driver.h"
 
-#define MAX_PADS 1
-
 /* TODO/FIXME -
  * fix game focus toggle */
 

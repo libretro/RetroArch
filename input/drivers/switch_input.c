@@ -9,6 +9,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../../retroarch.h"
 
 #ifdef HAVE_LIBNX
@@ -80,8 +82,6 @@ typedef struct
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-
-#define MAX_PADS 10
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -376,7 +376,7 @@ static int16_t switch_input_state(void *data,
    int16_t ret = 0;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if (port > MAX_PADS-1)
+   if (port > DEFAULT_MAX_PADS - 1)
       return 0;
 
    switch (device)
