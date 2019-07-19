@@ -201,8 +201,11 @@ else ifneq ($(findstring Darwin,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
 endif
 
+ifeq ($(TARGET), retroarch_orbis)
+	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o
+endif
+
 OBJ += \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        file_path_special.o \
