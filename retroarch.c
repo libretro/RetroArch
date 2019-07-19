@@ -5536,7 +5536,7 @@ bool recording_init(void)
 
    output[0] = '\0';
 
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (current_core_type == CORE_TYPE_DUMMY)
    {
       RARCH_WARN("[recording] %s\n",
             msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
@@ -5560,7 +5560,7 @@ bool recording_init(void)
       strlcpy(output, global->record.path, sizeof(output));
    else
    {
-      if (streaming_is_enabled())
+      if (streaming_enable)
          if (!string_is_empty(settings->paths.path_stream_url))
             strlcpy(output, settings->paths.path_stream_url, sizeof(output));
          else
@@ -5614,7 +5614,7 @@ bool recording_init(void)
       params.config = global->record.config;
    else
    {
-      if (streaming_is_enabled())
+      if (streaming_enable)
       {
          params.config = settings->paths.path_stream_config;
          params.preset = (enum record_config_type)
@@ -5656,8 +5656,8 @@ bool recording_init(void)
       params.fb_height  = next_pow2(vp.height);
 
       if (settings->bools.video_force_aspect &&
-            (video_driver_get_aspect_ratio() > 0.0f))
-         params.aspect_ratio  = video_driver_get_aspect_ratio();
+            (video_driver_aspect_ratio > 0.0f))
+         params.aspect_ratio  = video_driver_aspect_ratio;
       else
          params.aspect_ratio  = (float)vp.width / vp.height;
 
@@ -5681,8 +5681,8 @@ bool recording_init(void)
       }
 
       if (settings->bools.video_force_aspect &&
-            (video_driver_get_aspect_ratio() > 0.0f))
-         params.aspect_ratio = video_driver_get_aspect_ratio();
+            (video_driver_aspect_ratio > 0.0f))
+         params.aspect_ratio = video_driver_aspect_ratio;
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
@@ -5736,8 +5736,9 @@ void recording_driver_update_streaming_url(void)
    {
       case STREAMING_MODE_TWITCH:
          if (!string_is_empty(settings->arrays.twitch_stream_key))
-            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-               "%s%s", twitch_url, settings->arrays.twitch_stream_key);
+            snprintf(settings->paths.path_stream_url,
+                  sizeof(settings->paths.path_stream_url),
+                  "%s%s", twitch_url, settings->arrays.twitch_stream_key);
          else
          {
             /* TODO: Show input box for twitch_stream_key*/
@@ -5746,10 +5747,9 @@ void recording_driver_update_streaming_url(void)
          break;
       case STREAMING_MODE_YOUTUBE:
          if (!string_is_empty(settings->arrays.youtube_stream_key))
-         {
-            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-               "%s%s", youtube_url, settings->arrays.youtube_stream_key);
-         }
+            snprintf(settings->paths.path_stream_url,
+                  sizeof(settings->paths.path_stream_url),
+                  "%s%s", youtube_url, settings->arrays.youtube_stream_key);
          else
          {
             /* TODO: Show input box for youtube_stream_key*/
@@ -13289,15 +13289,11 @@ static void video_driver_init_input(const input_driver_t *tmp)
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (!current_input)
-      goto error;
-
-   if (input_driver_init())
-      return;
-
-error:
-   RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
-   retroarch_fail(1, "video_driver_init_input()");
+   if (!current_input || !input_driver_init())
+   {
+      RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
+      retroarch_fail(1, "video_driver_init_input()");
+   }
 }
 
 /**
@@ -13331,9 +13327,6 @@ static void video_driver_monitor_compute_fps_statistics(void)
 
 static void video_driver_pixel_converter_free(void)
 {
-   if (!video_driver_scaler_ptr)
-      return;
-
    scaler_ctx_gen_reset(video_driver_scaler_ptr->scaler);
 
    if (video_driver_scaler_ptr->scaler)
@@ -13390,7 +13383,8 @@ static void video_driver_free_internal(void)
       )
          current_video->free(video_driver_data);
 
-   video_driver_pixel_converter_free();
+   if (video_driver_scaler_ptr)
+      video_driver_pixel_converter_free();
    video_driver_filter_free();
 
    command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
@@ -13456,7 +13450,8 @@ static bool video_driver_pixel_converter_init(unsigned size)
    return true;
 
 error:
-   video_driver_pixel_converter_free();
+   if (video_driver_scaler_ptr)
+      video_driver_pixel_converter_free();
    video_driver_filter_free();
 
    return false;
@@ -13523,7 +13518,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          {
             /* Do rounding here to simplify integer scale correctness. */
             unsigned base_width =
-               roundf(geom->base_height * video_driver_get_aspect_ratio());
+               roundf(geom->base_height * video_driver_aspect_ratio);
             width  = roundf(base_width * settings->floats.video_scale);
          }
          else
@@ -13837,7 +13832,8 @@ void video_monitor_set_refresh_rate(float hz)
 
    snprintf(msg, sizeof(msg),
          "Setting refresh rate to: %.3f Hz.", hz);
-   runloop_msg_queue_push(msg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg);
 
    configuration_set_float(settings,
@@ -14088,10 +14084,8 @@ void video_driver_set_viewport_config(void)
       }
    }
    else
-   {
       aspectratio_lut[ASPECT_RATIO_CONFIG].value =
          settings->floats.video_aspect_ratio;
-   }
 }
 
 void video_driver_set_viewport_square_pixel(void)
@@ -14230,7 +14224,8 @@ void video_driver_set_aspect_ratio(void)
          video_driver_data, aspect_ratio_idx);
 }
 
-void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect)
+void video_driver_update_viewport(
+      struct video_viewport* vp, bool force_full, bool keep_aspect)
 {
    gfx_ctx_aspect_t aspect_data;
    float            device_aspect = (float)vp->full_width / vp->full_height;
@@ -14249,10 +14244,10 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
 
    if (settings->bools.video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(
-            vp, vp->full_width, vp->full_height, video_driver_get_aspect_ratio(), keep_aspect);
+            vp, vp->full_width, vp->full_height, video_driver_aspect_ratio, keep_aspect);
    else if (keep_aspect && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
+      float desired_aspect = video_driver_aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -14330,8 +14325,8 @@ static bool video_driver_find_driver(void)
 
    if (video_driver_is_hw_context())
    {
-      struct retro_hw_render_callback *hwr = video_driver_get_hw_context_internal();
-
+      struct retro_hw_render_callback *hwr = 
+         video_driver_get_hw_context_internal();
       current_video                        = NULL;
 
       (void)hwr;
@@ -14350,7 +14345,7 @@ static bool video_driver_find_driver(void)
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
 
          /* If we have configured one of the HW render capable GL drivers, go with that. */
-         if (!string_is_equal(settings->arrays.video_driver, "gl") &&
+         if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
 #if defined(HAVE_OPENGL_CORE)
