@@ -562,15 +562,13 @@ static const float message_bgcolor_opacity = 1.0f;
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
-static const float refresh_rate     = (32730.0 * 8192.0) / 4481134.0 ;
-static const float crt_refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+#define DEFAULT_REFRESH_RATE ((32730.0 * 8192.0) / 4481134.0)
 #elif defined(RARCH_CONSOLE)
-static const float refresh_rate     = 60/1.001;
-static const float crt_refresh_rate = 60/1.001;
+#define DEFAULT_REFRESH_RATE (60/1.001)
 #else
-static const float refresh_rate     = 60;
-static const float crt_refresh_rate = 60;
+#define DEFAULT_REFRESH_RATE (60)
 #endif
+#define DEFAULT_CRT_REFRESH_RATE (DEFAULT_REFRESH_RATE)
 
 /* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.
