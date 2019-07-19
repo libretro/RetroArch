@@ -320,7 +320,10 @@ if [ "$OS" = 'Win32' ]; then
    fi
 
    HAVE_XAUDIO=yes
-   HAVE_WINMM=yes
+
+   if [ "$HAVE_WINMM" != 'no' ]; then
+      HAVE_WINMM=yes
+   fi
 fi
 
 check_platform Win32 D3D8 'Direct3D 8 is' true
