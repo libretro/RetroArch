@@ -315,7 +315,10 @@ if [ "$OS" = 'Win32' ]; then
       HAVE_XINPUT=yes
    fi
 
-   HAVE_WASAPI=yes
+   if [ "$HAVE_WASAPI" != 'no' ]; then
+      HAVE_WASAPI=yes
+   fi
+
    HAVE_XAUDIO=yes
    HAVE_WINMM=yes
 fi
