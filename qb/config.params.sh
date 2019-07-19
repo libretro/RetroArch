@@ -18,6 +18,7 @@ HAVE_OZONE=auto            # Ozone menu
 HAVE_STRIPES=no            # Stripes menu
 HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_DSOUND=auto           # DirectSound support
+HAVE_XAUDIO=auto           # XAudio support
 HAVE_WASAPI=auto           # WASAPI support
 HAVE_WINMM=auto            # WinMM support
 HAVE_CC_RESAMPLER=yes      # CC Resampler
