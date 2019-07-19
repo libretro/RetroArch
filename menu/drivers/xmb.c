@@ -2994,7 +2994,9 @@ static int xmb_draw_item(
             && !string_is_empty(entry->sublabel))
       {
          menu_animation_ctx_line_ticker_t line_ticker;
-         char entry_sublabel[512] = {0};
+         char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+
+         entry_sublabel[0] = '\0';
 
          line_ticker.type_enum  = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
          line_ticker.idx        = menu_animation_get_ticker_idx();
