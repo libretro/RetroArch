@@ -458,7 +458,7 @@ static bool rgui_extended_ascii = false;
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
 
-static bool automatically_add_content_to_playlist = false;
+#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
@@ -497,15 +497,16 @@ static unsigned input_backtouch_toggle       = false;
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 
 #if defined(ANDROID) || defined(_WIN32)
-static bool menu_swap_ok_cancel_buttons = true;
+#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
-static bool menu_swap_ok_cancel_buttons = false;
+#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
 #endif
 
-static bool quit_press_twice = true;
+#define DEFAULT_QUIT_PRESS_TWICE true
 
-static bool default_log_to_file = false;
-static bool log_to_file_timestamp = false;
+#define DEFAULT_LOG_TO_FILE false
+
+#define DEFAULT_LOG_TO_FILE_TIMESTAMP false
 
 /* Crop overscanned frames. */
 #define DEFAULT_CROP_OVERSCAN true
