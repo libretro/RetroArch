@@ -545,7 +545,7 @@ typedef struct
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
-   char menu_sublabel[255]; /* Must be a fixed length array... */
+   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
    unsigned menu_aspect_ratio;
    unsigned menu_aspect_ratio_lock;
    bool aspect_update_pending;
@@ -3537,7 +3537,7 @@ static void rgui_render(void *data, bool is_idle)
       /* Print menu sublabel/core name (if required) */
       if (settings->bools.menu_show_sublabels && !string_is_empty(rgui->menu_sublabel))
       {
-         char sublabel_buf[255];
+         char sublabel_buf[MENU_SUBLABEL_MAX_LENGTH];
          sublabel_buf[0] = '\0';
 
          ticker.s        = sublabel_buf;

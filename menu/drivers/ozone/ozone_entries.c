@@ -197,8 +197,9 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
    unsigned lines;
    size_t i, entries_end;
 
-   file_list_t *selection_buf = NULL;
-   int entry_padding          = ozone_get_entries_padding(ozone, false);
+   file_list_t *selection_buf    = NULL;
+   int entry_padding             = ozone_get_entries_padding(ozone, false);
+   unsigned sublabel_line_height = font_driver_get_line_height(ozone->fonts.entries_sublabel, 1.0f);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -250,7 +251,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
       if (!string_is_empty(sublabel_str))
       {
          int sublabel_max_width;
-         char wrapped_sublabel_str[512];
+         char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
          wrapped_sublabel_str[0] = '\0';
 
          node->height += ozone->dimensions.entry_spacing + 40;
@@ -270,7 +271,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
 
          if (lines > 1)
          {
-            node->height += lines * 15;
+            node->height += (lines - 1) * sublabel_line_height;
             node->wrap = true;
          }
       }
@@ -476,7 +477,7 @@ border_iterate:
       static const char* const ticker_spacer = OZONE_TICKER_SPACER;
       char rich_label[255];
       char entry_value_ticker[255];
-      char wrapped_sublabel_str[512];
+      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
       const char *sublabel_str     = NULL;
       ozone_node_t *node           = NULL;
       const char *entry_rich_label = NULL;
