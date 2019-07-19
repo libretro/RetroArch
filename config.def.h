@@ -564,9 +564,12 @@ static const float message_bgcolor_opacity = 1.0f;
 #ifdef _3DS
 static const float refresh_rate     = (32730.0 * 8192.0) / 4481134.0 ;
 static const float crt_refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
-#else
+#elif defined(RARCH_CONSOLE)
 static const float refresh_rate     = 60/1.001;
 static const float crt_refresh_rate = 60/1.001;
+#else
+static const float refresh_rate     = 60;
+static const float crt_refresh_rate = 60;
 #endif
 
 /* Allow games to set rotation. If false, rotation requests are
