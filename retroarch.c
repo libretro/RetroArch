@@ -16493,7 +16493,8 @@ void drivers_init(int flags)
  **/
 
 /**
- * Driver ownership - set this to true if the platform in question needs to 'own'
+ * Driver ownership - set this to true if the platform in 
+ * question needs to 'own'
  * the respective handle and therefore skip regular RetroArch
  * driver teardown/reiniting procedure.
  *
@@ -18177,7 +18178,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       rarch_log_file_init();
 
 #ifdef HAVE_GIT_VERSION
-   RARCH_LOG("RetroArch %s (Git %s)\n",
+   RARCH_LOG("%s %s (Git %s)\n",
+         msg_hash_to_str(MSG_PROGRAM),
          PACKAGE_VERSION, retroarch_git_version);
 #endif
 
@@ -21172,7 +21174,8 @@ bool rarch_write_debug_info(void)
       filestream_printf(file, "Log Date/Time: %s\n", timedate);
    }
 #endif
-   filestream_printf(file, "RetroArch Version: %s\n", PACKAGE_VERSION);
+   filestream_printf(file, "%s Version: %s\n",
+         msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 
 #ifdef HAVE_LAKKA
    if (frontend->get_lakka_version)
@@ -21183,9 +21186,13 @@ bool rarch_write_debug_info(void)
    }
 #endif
 
-   filestream_printf(file, "RetroArch Build Date: %s\n", __DATE__);
+   filestream_printf(file, "%s Build Date: %s\n", 
+         msg_hash_to_str(MSG_PROGRAM),
+         __DATE__);
 #ifdef HAVE_GIT_VERSION
-   filestream_printf(file, "RetroArch Git Commit: %s\n", retroarch_git_version);
+   filestream_printf(file, "%s Git Commit: %s\n",
+         msg_hash_to_str(MSG_PROGRAM),
+         retroarch_git_version);
 #endif
 
    filestream_printf(file, "\n");
