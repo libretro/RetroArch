@@ -812,18 +812,18 @@ static const bool playlist_fuzzy_archive_match = false;
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
-static const bool menu_dpi_override_enable = false;
+#define DEFAULT_MENU_DPI_OVERRIDE_ENABLE false
 
 #ifdef RARCH_MOBILE
-static const unsigned menu_dpi_override_value = 72;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 72
 #elif defined(__CELLOS_LV2__)
-static const unsigned menu_dpi_override_value = 360;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 360
 #else
-static const unsigned menu_dpi_override_value = 200;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 200
 #endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
-static const unsigned libretro_log_level = 1;
+#define DEFAULT_LIBRETRO_LOG_LEVEL 1
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
