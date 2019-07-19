@@ -285,6 +285,10 @@ endif
 ifeq ($(HAVE_CC_RESAMPLER), 1)
    DEFINES += -DHAVE_CC_RESAMPLER
    OBJ += audio/drivers_resampler/cc_resampler.o
+
+ifeq ($(HAVE_NEON),1)
+   OBJ += audio/drivers_resampler/cc_resampler_neon.o
+endif
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
@@ -662,7 +666,6 @@ endif
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
-          audio/drivers_resampler/cc_resampler_neon.o \
           memory/neon/memcpy-neon.o
 
    DEFINES   += -DHAVE_NEON

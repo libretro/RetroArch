@@ -20,6 +20,7 @@ HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_DSOUND=auto           # DirectSound support
 HAVE_WASAPI=auto           # WASAPI support
 HAVE_WINMM=auto            # WinMM support
+HAVE_CC_RESAMPLER=yes      # CC Resampler
 HAVE_SSL=auto              # SSL/mbedtls support
 C89_SSL=no
 HAVE_BUILTINMBEDTLS=auto   # Bake in the mbedtls library
