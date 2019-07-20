@@ -4943,9 +4943,9 @@ static bool secondary_core_create(void)
    bool contentless       = false;
    bool is_inited         = false;
 
-   if (  last_core_type != CORE_TYPE_PLAIN ||
-         !load_content_info                ||
-         load_content_info->special)
+   if (   last_core_type != CORE_TYPE_PLAIN ||
+         !load_content_info                 ||
+          load_content_info->special)
       return false;
 
    if (secondary_library_path)
@@ -7226,7 +7226,7 @@ void retroarch_overlay_init(void)
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    uint64_t memory_used       = frontend_driver_get_used_memory();
-   if(memory_used > (72 * 1024 * 1024))
+   if (memory_used > (72 * 1024 * 1024))
       return;
 #endif
 
@@ -7372,7 +7372,7 @@ void fire_connection_listener(unsigned port, input_device_driver_t *driver)
       || ((normal_bind)->mbutton   != NO_BTN) \
       || ((normal_bind)->joykey    != NO_BTN) \
       || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
       || ((autoconf_bind)->joykey  != NO_BTN) \
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
@@ -10554,7 +10554,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    /*empty?*/
    if (*key != '\0')
    {
-      if (delim )
+      if (delim)
          strlcat(buf, ", ", size);
       snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
       strlcat(buf, keybuf, size);
@@ -10600,7 +10600,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       {
          if (delim)
             strlcat(buf, ", ", size);
-         strlcat(buf, msg_hash_to_str((enum msg_hash_enums)tag), size );
+         strlcat(buf, msg_hash_to_str((enum msg_hash_enums)tag), size);
       }
    }
 
@@ -11947,9 +11947,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    }
 
    if (new_rate != 0)
-   {
       configuration_set_int(settings, settings->uints.audio_out_rate, new_rate);
-   }
 
    if (!audio_driver_context_audio_data)
    {
@@ -12784,8 +12782,7 @@ void audio_driver_load_menu_sounds(void)
          sounds_fallback_path,
          settings->paths.directory_assets,
          "sounds",
-         PATH_MAX_LENGTH * sizeof(char)
-   );
+         PATH_MAX_LENGTH * sizeof(char));
 
    fill_pathname_application_special(
          sounds_path,
@@ -13588,9 +13585,8 @@ static void video_driver_free_internal(void)
    }
 
    if (video_driver_data
-         && current_video && current_video->free
-      )
-         current_video->free(video_driver_data);
+         && current_video && current_video->free)
+      current_video->free(video_driver_data);
 
    if (video_driver_scaler_ptr)
       video_driver_pixel_converter_free();
@@ -15006,8 +15002,7 @@ void video_driver_frame(const void *data, unsigned width,
           || !data
           || video_driver_record_gpu_buffer
          ) && recording_data
-           && recording_driver && recording_driver->push_video
-      )
+           && recording_driver && recording_driver->push_video)
       recording_dump_frame(data, width, height,
             pitch, video_info.runloop_is_idle);
 
