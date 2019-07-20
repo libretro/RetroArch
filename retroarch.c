@@ -3409,7 +3409,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
 
          rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
-         rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
+         runloop_core_shutdown_initiated = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -19182,14 +19182,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             task_queue_init(threaded_enable, runloop_task_msg_queue_push);
          }
          break;
-      case RARCH_CTL_SET_CORE_SHUTDOWN:
-         runloop_core_shutdown_initiated = true;
-         break;
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
-         break;
-      case RARCH_CTL_UNSET_SHUTDOWN:
-         runloop_shutdown_initiated = false;
          break;
       case RARCH_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
@@ -20146,7 +20140,7 @@ static enum runloop_state runloop_check_state(
             {
                /* Loads dummy core instead of exiting RetroArch completely.
                 * Aborts core shutdown if invoked. */
-               rarch_ctl(RARCH_CTL_UNSET_SHUTDOWN, NULL);
+               runloop_shutdown_initiated      = false;
                runloop_core_shutdown_initiated = false;
             }
             else
