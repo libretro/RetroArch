@@ -2023,9 +2023,6 @@ int rarch_main(int argc, char *argv[], void *data)
       int ret;
       bool app_exit     = false;
       unsigned sleep_ms = 0;
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      ui_companion_win32.application->process_events();
-#endif
 #ifdef HAVE_QT
       ui_companion_qt.application->process_events();
 #endif
