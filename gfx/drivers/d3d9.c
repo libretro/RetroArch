@@ -335,7 +335,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
 
-   if (!video_shader_read_conf_preset(conf, &d3d->shader))
+   if (!video_shader_read_conf_preset(conf, &d3d->shader, shader_path))
    {
       config_file_free(conf);
       RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
@@ -344,8 +344,6 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    config_file_free(conf);
 
-   if (!string_is_empty(shader_path))
-      video_shader_resolve_relative(&d3d->shader, shader_path);
    RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)

@@ -804,7 +804,7 @@ void path_resolve_realpath(char *buf, size_t size)
 void path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   unsigned i;
+   size_t i;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
@@ -813,8 +813,8 @@ void path_relative_to(char *out,
          && path[1] == ':' && base[1] == ':'
          && path[0] != base[0])
    {
-      out[0] = '\0';
-      strlcat(out, path, size);
+      strlcpy(out, path, size);
+      return;
    }
 #endif
 
@@ -827,8 +827,8 @@ void path_relative_to(char *out,
    /* Each segment of base turns into ".." */
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
-      if (trimmed_base[i] == '/' || trimmed_base[i] == '\\')
-         strlcat(out, "../", size); /* Use '/' as universal separator */
+      if (trimmed_base[i] == path_default_slash_c())
+         strlcat(out, ".." path_default_slash(), size);
    strlcat(out, trimmed_path, size);
 }
 

@@ -1458,14 +1458,12 @@ static bool wiiu_gfx_set_shader(void *data,
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, wiiu->shader_preset))
+   if (!video_shader_read_conf_preset(conf, wiiu->shader_preset, path))
    {
       free(wiiu->shader_preset);
       wiiu->shader_preset = NULL;
       return false;
    }
-
-   video_shader_resolve_relative(wiiu->shader_preset, path);
 
 #if 0
    video_shader_resolve_parameters(conf, wiiu->shader_preset);

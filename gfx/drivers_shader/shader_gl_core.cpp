@@ -2413,10 +2413,8 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    if (!conf)
       return nullptr;
 
-   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
+   if (!video_shader_read_conf_preset(conf.get(), shader.get(), path))
       return nullptr;
-
-   video_shader_resolve_relative(shader.get(), path);
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
 

@@ -365,10 +365,8 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, d3d10->shader_preset))
+   if (!video_shader_read_conf_preset(conf, d3d10->shader_preset, path))
       goto error;
-
-   video_shader_resolve_relative(d3d10->shader_preset, path);
 
    source = &d3d10->frame.texture[0];
    for (i = 0; i < d3d10->shader_preset->passes; source = &d3d10->pass[i++].rt)
