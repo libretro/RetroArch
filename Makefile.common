@@ -241,7 +241,6 @@ OBJ += \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
-       gfx/video_shader_parse.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
@@ -1317,9 +1316,26 @@ ifeq ($(HAVE_XVIDEO), 1)
 endif
 
 ifeq ($(HAVE_CG), 1)
+   HAVE_SHADERS_COMMON = 1
    DEFINES += -DHAVE_CG
    OBJ += gfx/drivers_shader/shader_gl_cg.o
    LIBS += $(CG_LIBS)
+endif
+
+ifeq ($(HAVE_GLSL), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+
+ifeq ($(HAVE_HLSL),1)
+   HAVE_SHADERS_COMMON = 1
+endif
+
+ifeq ($(HAVE_SLANG),1)
+   HAVE_SHADERS_COMMON = 1
+endif
+
+ifeq ($(HAVE_SHADERS_COMMON), 1)
+   OBJ += gfx/video_shader_parse.o
 endif
 
 ifeq ($(HAVE_D3D9), 1)

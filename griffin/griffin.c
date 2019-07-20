@@ -297,7 +297,9 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../gfx/video_shader_parse.c"
+#endif
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
