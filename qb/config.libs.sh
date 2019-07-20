@@ -518,6 +518,43 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
+if [ "$HAVE_SLANG" = 'no' ] ||
+   [ "$HAVE_GLSLANG" = 'no' ] ||
+   [ "$HAVE_SPIRV_CROSS" = 'no' ]; then
+   die : 'Notice: slang/glslang/SPIRV Cross disabled, disabling video drivers:'
+
+if [ "$HAVE_SLANG" != "no" ]; then
+   HAVE_SLANG=no
+fi
+if [ "$HAVE_GLSLANG" != "no" ]; then
+   HAVE_GLSLANG=no
+fi
+if [ "$HAVE_SPIRV_CROSS" != "no" ]; then
+   HAVE_SPIRV_CROSS=no
+fi
+
+if [ "$HAVE_D3D10" != "no" ]; then
+   die : 'd3d10'
+   HAVE_D3D10=no
+fi
+if [ "$HAVE_D3D11" != "no" ]; then
+   die : 'd3d11'
+   HAVE_D3D11=no
+fi
+if [ "$HAVE_D3D12" != "no" ]; then
+   die : 'd3d12'
+   HAVE_D3D12=no
+fi
+if [ "$HAVE_OPENGL_CORE" != "no" ]; then
+   die : 'glcore'
+   HAVE_OPENGL_CORE=no
+fi
+if [ "$HAVE_VULKAN" != "no" ]; then
+   die : 'vulkan'
+   HAVE_VULKAN=no
+fi
+fi
+
 check_macro NEON __ARM_NEON__
 
 add_define MAKEFILE OS "$OS"
