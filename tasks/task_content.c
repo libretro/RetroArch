@@ -1684,7 +1684,7 @@ bool task_push_load_content_from_playlist_from_menu(
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -1700,7 +1700,7 @@ bool task_push_load_content_from_playlist_from_menu(
 #endif
 #else
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   rarch_menu_running_finished(true);
+   retroarch_menu_running_finished(true);
 #endif
 
 end:
@@ -1785,7 +1785,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -1911,7 +1911,7 @@ bool task_push_load_content_with_new_core_from_menu(
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -2128,7 +2128,7 @@ bool task_push_start_builtin_core(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 
@@ -2174,7 +2174,7 @@ bool task_push_load_content_with_core_from_menu(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 
@@ -2199,7 +2199,7 @@ bool task_push_load_subsystem_with_core_from_menu(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 

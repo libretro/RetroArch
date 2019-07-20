@@ -18657,7 +18657,7 @@ bool retroarch_is_on_main_thread(void)
    return true;
 }
 
-void rarch_menu_running(void)
+void retroarch_menu_running(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings = configuration_settings;
@@ -18680,7 +18680,7 @@ void rarch_menu_running(void)
 #endif
 }
 
-void rarch_menu_running_finished(bool quit)
+void retroarch_menu_running_finished(bool quit)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings = configuration_settings;
@@ -19743,7 +19743,7 @@ bool retroarch_main_quit(void)
    }
 
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   rarch_menu_running_finished(true);
+   retroarch_menu_running_finished(true);
 
    return true;
 }
@@ -20235,7 +20235,7 @@ static enum runloop_state runloop_check_state(
       }
 
       if (!menu_driver_iterate(&iter))
-         rarch_menu_running_finished(false);
+         retroarch_menu_running_finished(false);
 
       if (focused || !runloop_idle)
       {
@@ -20319,7 +20319,7 @@ static enum runloop_state runloop_check_state(
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
-               rarch_menu_running_finished(false);
+               retroarch_menu_running_finished(false);
                menu_event_kb_set(false, RETROK_F1);
             }
          }
@@ -20331,12 +20331,12 @@ static enum runloop_state runloop_check_state(
          if (menu_driver_is_alive())
          {
             if (rarch_is_initialized && !core_type_is_dummy)
-               rarch_menu_running_finished(false);
+               retroarch_menu_running_finished(false);
          }
          else
          {
             menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-            rarch_menu_running();
+            retroarch_menu_running();
          }
       }
       else
@@ -21023,7 +21023,7 @@ char *get_retroarch_launch_arguments(void)
    return launch_arguments;
 }
 
-void rarch_force_video_driver_fallback(const char *driver)
+void retroarch_force_video_driver_fallback(const char *driver)
 {
    settings_t *settings        = configuration_settings;
    ui_msg_window_t *msg_window = NULL;

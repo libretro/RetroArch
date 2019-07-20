@@ -261,7 +261,7 @@ static void handle_discord_join_response(void *ignore, const char *line)
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
-   rarch_menu_running_finished(false);
+   retroarch_menu_running_finished(false);
 #endif
 */
 }
@@ -286,7 +286,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 #ifdef HAVE_MENU
    discord_download_avatar(request->userId, request->avatar);
    /* To-Do: needs in-game widgets
-      rarch_menu_running();
+      retroarch_menu_running();
       */
 
    memset(&line, 0, sizeof(line));

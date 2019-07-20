@@ -3743,9 +3743,9 @@ static void *gl2_init(const video_info_t *video,
    if (string_is_equal(vendor, "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         rarch_force_video_driver_fallback("gl1");
+         retroarch_force_video_driver_fallback("gl1");
 #else
-         rarch_force_video_driver_fallback("gdi");
+         retroarch_force_video_driver_fallback("gdi");
 #endif
 #endif
 

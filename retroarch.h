@@ -391,9 +391,9 @@ void runloop_set(enum runloop_action action);
 
 void runloop_unset(enum runloop_action action);
 
-void rarch_menu_running(void);
+void retroarch_menu_running(void);
 
-void rarch_menu_running_finished(bool quit);
+void retroarch_menu_running_finished(bool quit);
 
 bool retroarch_is_on_main_thread(void);
 
@@ -403,7 +403,7 @@ rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
 
-void rarch_force_video_driver_fallback(const char *driver);
+void retroarch_force_video_driver_fallback(const char *driver);
 
 void rarch_core_runtime_tick(void);
 

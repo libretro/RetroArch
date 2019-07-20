@@ -1923,9 +1923,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
-            rarch_menu_running_finished(false);
+            retroarch_menu_running_finished(false);
          else
-            rarch_menu_running();
+            retroarch_menu_running();
 #endif
          break;
       case CMD_EVENT_CONTROLLERS_INIT:
@@ -2421,7 +2421,7 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       case CMD_EVENT_RESUME:
-         rarch_menu_running_finished(false);
+         retroarch_menu_running_finished(false);
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle(false);
          break;
