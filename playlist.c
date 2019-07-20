@@ -637,7 +637,8 @@ success:
  * paths, as the base directory (home or application dir) may change after each subsequent
  * install (iOS)
 **/
-void playlist_resolve_path(enum playlist_file_mode mode, char *path, size_t size)
+void playlist_resolve_path(enum playlist_file_mode mode,
+      char *path, size_t size)
 {
     char tmp[PATH_MAX_LENGTH];
     tmp[0] = '\0';
@@ -646,29 +647,25 @@ void playlist_resolve_path(enum playlist_file_mode mode, char *path, size_t size
     strlcpy(tmp, path, sizeof(tmp));
     if ( mode == PLAYLIST_LOAD )
     {
-        strlcpy(resolved_path, tmp, sizeof(resolved_path));
-        fill_pathname_expand_special(tmp, resolved_path, sizeof(tmp));
+       strlcpy(resolved_path, tmp, sizeof(resolved_path));
+       fill_pathname_expand_special(tmp, resolved_path, sizeof(tmp));
     }
     else
     {
-        // iOS needs to call realpath here since the call above fails due to possibly
-        // buffer related issues
-        realpath(tmp, resolved_path);
-        fill_pathname_abbreviate_special(tmp, resolved_path, sizeof(tmp));
+       /* iOS needs to call realpath here since the call 
+        * above fails due to possibly buffer related issues. */
+       realpath(tmp, resolved_path);
+       fill_pathname_abbreviate_special(tmp, resolved_path, sizeof(tmp));
     }
     strlcpy(path, tmp, size);
     return;
 #else
     if ( mode == PLAYLIST_LOAD)
-    {
-        return;
-    }
-    else
-    {
-        strlcpy(tmp, path, sizeof(tmp));
-        path_resolve_realpath(tmp, sizeof(tmp));
-        strlcpy(path, tmp, size);
-    }
+       return;
+
+    strlcpy(tmp, path, sizeof(tmp));
+    path_resolve_realpath(tmp, sizeof(tmp));
+    strlcpy(path, tmp, size);
 #endif
 }
 
