@@ -686,7 +686,7 @@ static void win32_save_position(void)
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
          settings->uints.window_position_width  = g_win32_pos_width - border_thickness * 2;
-         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - ((settings->bools.ui_menubar_enable && !video_driver_is_threaded()) ? menu_bar_height : 0);
+         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - (settings->bools.ui_menubar_enable ? menu_bar_height : 0);
       }
    }
 }
@@ -1300,7 +1300,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->bools.ui_menubar_enable && !video_driver_is_threaded())
+      if (!fullscreen && settings->bools.ui_menubar_enable)
       {
          RECT rc_temp;
          rc_temp.left   = 0;
