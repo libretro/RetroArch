@@ -1943,6 +1943,7 @@ static void d3d9_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
+#ifdef HAVE_THREADS
 static int d3d9_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
@@ -1952,6 +1953,7 @@ static int d3d9_video_texture_load_wrap_d3d(void *data)
    d3d9_video_texture_load_d3d(info, &id);
    return id;
 }
+#endif
 
 static uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
@@ -1963,9 +1965,11 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    info.data     = data;
    info.type     = filter_type;
 
+#ifdef HAVE_THREADS
    if (threaded)
       return video_thread_texture_load(&info,
             d3d9_video_texture_load_wrap_d3d);
+#endif
 
    d3d9_video_texture_load_d3d(&info, &id);
    return id;

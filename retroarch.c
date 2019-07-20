@@ -73,7 +73,9 @@
 #include <compat/getopt.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
+#ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
+#endif
 #include <audio/dsp_filter.h>
 #include <compat/posix_string.h>
 #include <streams/file_stream.h>
@@ -84,7 +86,9 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 #include <lists/dir_list.h>
+#ifdef HAVE_NETWORKING
 #include <net/net_http.h>
+#endif
 
 #include "config.def.h"
 #include "config.def.keybinds.h"
@@ -190,7 +194,9 @@
 #include "runahead/mem_util.h"
 #endif
 
+#ifdef HAVE_THREADS
 #include "audio/audio_thread_wrapper.h"
+#endif
 
 /* DRIVERS */
 
