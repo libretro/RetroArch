@@ -156,3 +156,5 @@ HAVE_GLSLANG=yes           # glslang support (requires C++11)
 C89_GLSLANG=no
 HAVE_SPIRV_CROSS=yes       # SPIRV-Cross support (requires C++11)
 C89_SPIRV_CROSS=no
+HAVE_METAL=no              # Metal support (macOS-only)
+C89_METAL=no
