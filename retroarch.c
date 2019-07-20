@@ -768,6 +768,8 @@ static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAI
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 static char error_string[255]                                   = {0};
 static char runtime_shader_preset[255]                          = {0};
+
+static bool has_set_username                                    = false;
 static bool shader_presets_need_reload                          = true;
 
 #ifdef HAVE_THREAD_STORAGE
@@ -1673,6 +1675,37 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    return video_driver_get_ptr_internal(force_nonthreaded_data);
 }
 
+/* MESSAGE QUEUE */
+
+static void retroarch_msg_queue_deinit(void)
+{
+   runloop_msg_queue_lock();
+
+   if (!runloop_msg_queue)
+      return;
+
+   msg_queue_free(runloop_msg_queue);
+
+   runloop_msg_queue_unlock();
+#ifdef HAVE_THREADS
+   slock_free(_runloop_msg_queue_lock);
+   _runloop_msg_queue_lock = NULL;
+#endif
+
+   runloop_msg_queue = NULL;
+}
+
+static void retroarch_msg_queue_init(void)
+{
+   retroarch_msg_queue_deinit();
+   runloop_msg_queue       = msg_queue_new(8);
+
+#ifdef HAVE_THREADS
+   _runloop_msg_queue_lock = slock_new();
+#endif
+}
+
+
 /* FRONTEND */
 
 /* Griffin hack */
@@ -1681,6 +1714,188 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
 #define HAVE_MAIN
 #endif
 #endif
+
+void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data)
+{
+   switch (enum_idx)
+   {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
+         {
+            unsigned *val = (unsigned*)data;
+            if (val)
+            {
+               unsigned bit = *val;
+               BIT256_SET(has_set_libretro_device, bit);
+            }
+         }
+         break;
+      case RARCH_OVERRIDE_SETTING_VERBOSITY:
+         has_set_verbosity = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO:
+         has_set_libretro = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
+         has_set_libretro_directory = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
+         has_set_save_path = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_STATE_PATH:
+         has_set_state_path = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
+         has_set_netplay_mode = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
+         has_set_netplay_ip_address = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
+         has_set_netplay_ip_port = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
+         has_set_netplay_check_frames = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_UPS_PREF:
+         has_set_ups_pref = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_BPS_PREF:
+         has_set_bps_pref = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_IPS_PREF:
+         has_set_ips_pref = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
+         has_set_log_to_file = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NONE:
+      default:
+         break;
+   }
+}
+
+void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data)
+{
+   switch (enum_idx)
+   {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
+         {
+            unsigned *val = (unsigned*)data;
+            if (val)
+            {
+               unsigned bit = *val;
+               BIT256_CLEAR(has_set_libretro_device, bit);
+            }
+         }
+         break;
+      case RARCH_OVERRIDE_SETTING_VERBOSITY:
+         has_set_verbosity = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO:
+         has_set_libretro = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
+         has_set_libretro_directory = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
+         has_set_save_path = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_STATE_PATH:
+         has_set_state_path = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
+         has_set_netplay_mode = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
+         has_set_netplay_ip_address = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
+         has_set_netplay_ip_port = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
+         has_set_netplay_check_frames = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_UPS_PREF:
+         has_set_ups_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_BPS_PREF:
+         has_set_bps_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_IPS_PREF:
+         has_set_ips_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
+         has_set_log_to_file = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NONE:
+      default:
+         break;
+   }
+}
+
+
+static void retroarch_override_setting_free_state(void)
+{
+   unsigned i;
+   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
+   {
+      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
+      {
+         unsigned j;
+         for (j = 0; j < MAX_USERS; j++)
+            retroarch_override_setting_unset(
+                  (enum rarch_override_setting)(i), &j);
+      }
+      else
+         retroarch_override_setting_unset(
+               (enum rarch_override_setting)(i), NULL);
+   }
+}
+
+
+static void global_free(void)
+{
+   global_t *global = NULL;
+
+   content_deinit();
+
+   path_deinit_subsystem();
+   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   rarch_is_sram_load_disabled           = false;
+   rarch_is_sram_save_disabled           = false;
+   rarch_use_sram                        = false;
+   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
+   runloop_overrides_active              = false;
+   runloop_remaps_core_active            = false;
+   runloop_remaps_game_active            = false;
+   runloop_remaps_content_dir_active     = false;
+
+   current_core.has_set_input_descriptors = false;
+
+   global = &g_extern;
+   path_clear_all();
+   dir_clear_all();
+   if (global)
+   {
+      if (!string_is_empty(global->name.remapfile))
+         free(global->name.remapfile);
+      memset(global, 0, sizeof(struct global));
+   }
+   retroarch_override_setting_free_state();
+}
+
 
 /**
  * main_exit:
@@ -1714,7 +1929,22 @@ void main_exit(void *args)
          path_get_ptr(RARCH_PATH_CORE),
          path_get_realsize(RARCH_PATH_CORE));
 
-   rarch_ctl(RARCH_CTL_DESTROY, NULL);
+   has_set_username        = false;
+   rarch_is_inited         = false;
+   rarch_error_on_init     = false;
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+
+   retroarch_msg_queue_deinit();
+   driver_uninit(DRIVERS_CMD_ALL);
+   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+
+   rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
+   global_free();
+   rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
+
+   if (configuration_settings)
+      free(configuration_settings);
+   configuration_settings = NULL;
 
    ui_companion_driver_deinit();
 
@@ -1750,7 +1980,15 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 #endif
 
-   rarch_ctl(RARCH_CTL_PREINIT, NULL);
+   libretro_free_system_info(&runloop_system.info);
+   command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+
+   configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
+
+   driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
+   rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
+   global_free();
+
    frontend_driver_init_first(data);
    rarch_ctl(RARCH_CTL_INIT, NULL);
 
@@ -4847,35 +5085,6 @@ static void clear_controller_port_map(void)
 #endif
 
 #endif
-
-/* MESSAGE QUEUE */
-static void retroarch_msg_queue_deinit(void)
-{
-   runloop_msg_queue_lock();
-
-   if (!runloop_msg_queue)
-      return;
-
-   msg_queue_free(runloop_msg_queue);
-
-   runloop_msg_queue_unlock();
-#ifdef HAVE_THREADS
-   slock_free(_runloop_msg_queue_lock);
-   _runloop_msg_queue_lock = NULL;
-#endif
-
-   runloop_msg_queue = NULL;
-}
-
-static void retroarch_msg_queue_init(void)
-{
-   retroarch_msg_queue_deinit();
-   runloop_msg_queue       = msg_queue_new(8);
-
-#ifdef HAVE_THREADS
-   _runloop_msg_queue_lock = slock_new();
-#endif
-}
 
 /* WIFI DRIVER  */
 
@@ -17312,62 +17521,6 @@ static void update_runtime_log(bool log_per_core)
    free(runtime_log);
 }
 
-
-static void retroarch_override_setting_free_state(void)
-{
-   unsigned i;
-   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
-   {
-      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
-      {
-         unsigned j;
-         for (j = 0; j < MAX_USERS; j++)
-            retroarch_override_setting_unset(
-                  (enum rarch_override_setting)(i), &j);
-      }
-      else
-         retroarch_override_setting_unset(
-               (enum rarch_override_setting)(i), NULL);
-   }
-}
-
-static void global_free(void)
-{
-   global_t *global = NULL;
-
-   content_deinit();
-
-   path_deinit_subsystem();
-   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
-
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-   rarch_is_sram_load_disabled           = false;
-   rarch_is_sram_save_disabled           = false;
-   rarch_use_sram                        = false;
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
-   runloop_overrides_active              = false;
-   runloop_remaps_core_active            = false;
-   runloop_remaps_game_active            = false;
-   runloop_remaps_content_dir_active     = false;
-
-   current_core.has_set_input_descriptors = false;
-
-   global = &g_extern;
-   path_clear_all();
-   dir_clear_all();
-   if (global)
-   {
-      if (!string_is_empty(global->name.remapfile))
-         free(global->name.remapfile);
-      memset(global, 0, sizeof(struct global));
-   }
-   retroarch_override_setting_free_state();
-}
-
 static void retroarch_print_features(void)
 {
    frontend_driver_attach_console();
@@ -17716,7 +17869,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
    retroarch_override_setting_free_state();
 
-   rarch_ctl(RARCH_CTL_USERNAME_UNSET, NULL);
+   has_set_username                      = false;
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
@@ -18082,7 +18235,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                {
                   settings_t *settings = configuration_settings;
 
-                  rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
+                  has_set_username = true;
 
                   strlcpy(settings->paths.username, optarg,
                         sizeof(settings->paths.username));
@@ -18644,7 +18797,6 @@ static void rarch_init_core_options(
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool has_set_username        = false;
    static bool rarch_patch_blocked     = false;
    static bool runloop_missing_bios    = false;
    /* TODO/FIXME - not used right now? */
@@ -18678,42 +18830,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_DUMMY_CORE:
          return (current_core_type == CORE_TYPE_DUMMY);
-      case RARCH_CTL_USERNAME_SET:
-         has_set_username = true;
-         break;
-      case RARCH_CTL_USERNAME_UNSET:
-         has_set_username = false;
-         break;
       case RARCH_CTL_HAS_SET_USERNAME:
          return has_set_username;
       case RARCH_CTL_IS_INITED:
          return rarch_is_inited;
-      case RARCH_CTL_DESTROY:
-         has_set_username        = false;
-         rarch_is_inited         = false;
-         rarch_error_on_init     = false;
-         rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-
-         retroarch_msg_queue_deinit();
-         driver_uninit(DRIVERS_CMD_ALL);
-         command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
-
-         rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
-         global_free();
-         rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
-         free(configuration_settings);
-         configuration_settings = NULL;
-         break;
-      case RARCH_CTL_PREINIT:
-         libretro_free_system_info(&runloop_system.info);
-         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-
-         configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
-
-         driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
-         rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
-         global_free();
-         break;
       case RARCH_CTL_MAIN_DEINIT:
          if (!rarch_is_inited)
             return false;
@@ -19488,130 +19608,6 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
    }
 
    return false;
-}
-
-void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data)
-{
-   switch (enum_idx)
-   {
-      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
-         {
-            unsigned *val = (unsigned*)data;
-            if (val)
-            {
-               unsigned bit = *val;
-               BIT256_SET(has_set_libretro_device, bit);
-            }
-         }
-         break;
-      case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         has_set_verbosity = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         has_set_libretro = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         has_set_libretro_directory = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         has_set_save_path = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         has_set_state_path = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         has_set_netplay_mode = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         has_set_netplay_ip_address = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         has_set_netplay_ip_port = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         has_set_netplay_stateless_mode = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         has_set_netplay_check_frames = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_UPS_PREF:
-         has_set_ups_pref = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_BPS_PREF:
-         has_set_bps_pref = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_IPS_PREF:
-         has_set_ips_pref = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         has_set_log_to_file = true;
-         break;
-      case RARCH_OVERRIDE_SETTING_NONE:
-      default:
-         break;
-   }
-}
-
-void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data)
-{
-   switch (enum_idx)
-   {
-      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
-         {
-            unsigned *val = (unsigned*)data;
-            if (val)
-            {
-               unsigned bit = *val;
-               BIT256_CLEAR(has_set_libretro_device, bit);
-            }
-         }
-         break;
-      case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         has_set_verbosity = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         has_set_libretro = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         has_set_libretro_directory = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         has_set_save_path = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         has_set_state_path = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         has_set_netplay_mode = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         has_set_netplay_ip_address = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         has_set_netplay_ip_port = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
-         has_set_netplay_stateless_mode = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         has_set_netplay_check_frames = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_UPS_PREF:
-         has_set_ups_pref = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_BPS_PREF:
-         has_set_bps_pref = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_IPS_PREF:
-         has_set_ips_pref = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         has_set_log_to_file = false;
-         break;
-      case RARCH_OVERRIDE_SETTING_NONE:
-      default:
-         break;
-   }
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
