@@ -11964,7 +11964,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    if (!settings->bools.audio_sync && audio_driver_active)
    {
-      command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
+      audio_driver_set_nonblocking_state(true);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
    }
 
@@ -16474,7 +16474,7 @@ static void driver_adjust_system_rates(void)
       return;
 
    if (runloop_force_nonblock)
-      command_event(CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE, NULL);
+      video_driver_set_nonblock_state(true);
    else
       driver_set_nonblock_state();
 }

@@ -2359,16 +2359,12 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:
          video_driver_apply_state_changes();
          break;
-      case CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE:
-         boolean = true; /* fall-through */
       case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
          video_driver_set_nonblock_state(boolean);
          break;
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
          video_driver_set_aspect_ratio();
          break;
-      case CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE:
-         boolean = true; /* fall-through */
       case CMD_EVENT_AUDIO_SET_BLOCKING_STATE:
          audio_driver_set_nonblocking_state(boolean);
          break;

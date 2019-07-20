@@ -123,14 +123,10 @@ enum event_command
    CMD_EVENT_CORE_INIT,
    /* Set audio blocking state. */
    CMD_EVENT_AUDIO_SET_BLOCKING_STATE,
-   /* Set audio nonblocking state. */
-   CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE,
    /* Apply video state changes. */
    CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
    /* Set video blocking state. */
    CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
-   /* Set video nonblocking state. */
-   CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE,
    /* Sets current aspect ratio index. */
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
    CMD_EVENT_RESET_CONTEXT,
