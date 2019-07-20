@@ -499,7 +499,15 @@ else
 fi
 
 if [ "$HAVE_MENU" != 'no' ]; then
-   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ]      && 
+      [ "$HAVE_OPENGL1" = 'no' ]     &&
+      [ "$HAVE_OPENGLES" = 'no' ]    && 
+      [ "$HAVE_OPENGL_CORE" = 'no' ] &&
+      [ "$HAVE_VULKAN" = 'no' ]      && 
+      [ "$HAVE_D3D10" = 'no' ]       && 
+      [ "$HAVE_D3D11" = 'no' ]       && 
+      [ "$HAVE_D3D12" = 'no' ]       && 
+      [ "$HAVE_METAL" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
