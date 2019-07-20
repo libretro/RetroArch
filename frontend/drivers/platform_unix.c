@@ -411,28 +411,7 @@ static void android_app_entry(void *data)
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
 
-   if (rarch_main(argc, argv, data) != 0)
-      goto end;
-#ifndef HAVE_MAIN
-   do
-   {
-      unsigned sleep_ms = 0;
-      int           ret = runloop_iterate(&sleep_ms);
-
-      if (ret == 1 && sleep_ms > 0)
-         retro_sleep(sleep_ms);
-
-      task_queue_check();
-
-      if (ret == -1)
-         break;
-   }while(1);
-
-   main_exit(data);
-#endif
-
-end:
-   exit(0);
+   rarch_main(argc, argv, data);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
