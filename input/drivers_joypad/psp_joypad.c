@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -49,6 +51,7 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 #define NE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, 0, SCREEN_WIDTH, SCREEN_HALF_HEIGHT, (x), (y))
 #define SW_AREA(x, y) AREA(0, SCREEN_HALF_HEIGHT, SCREEN_HALF_WIDTH, SCREEN_HEIGHT, (x), (y))
 #define SE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, (x), (y))
+#endif
 
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
