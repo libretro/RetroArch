@@ -118,6 +118,7 @@ HAVE_CHD=yes               # Compile in chd support
 CXX_CHD=no
 HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_FLAC=auto             # Compile in flac support
+HAVE_DR_MP3=yes            # Compile in Dr. MP3 support
 HAVE_BUILTINFLAC=auto      # Bake in flac support
 HAVE_UPDATE_ASSETS=yes     # Disable downloading assets with online updater
 HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support

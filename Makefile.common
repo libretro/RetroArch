@@ -153,8 +153,10 @@ ifneq ($(GIT_VERSION),)
 endif
 
 # General object files
-DEFINES += -DHAVE_DR_MP3
+ifeq ($(HAVE_DR_MP3), 1)
+DEFINES   += -DHAVE_DR_MP3
 DEF_FLAGS += -DHAVE_DR_MP3
+endif
 
 OBJ += frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
