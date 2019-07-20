@@ -541,6 +541,18 @@ if [ "$HAVE_SPIRV_CROSS" != "no" ]; then
    HAVE_SPIRV_CROSS=no
 fi
 
+if [ "$HAVE_D3D10" != "no" ]; then
+   die : 'd3d10'
+   HAVE_D3D10=no
+fi
+if [ "$HAVE_D3D11" != "no" ]; then
+   die : 'd3d11'
+   HAVE_D3D11=no
+fi
+if [ "$HAVE_D3D12" != "no" ]; then
+   die : 'd3d12'
+   HAVE_D3D12=no
+fi
 if [ "$HAVE_OPENGL_CORE" != "no" ]; then
    die : 'glcore'
    HAVE_OPENGL_CORE=no
