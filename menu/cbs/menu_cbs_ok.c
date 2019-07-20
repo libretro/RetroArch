@@ -1893,8 +1893,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       if (tmp_playlist)
       {
          struct playlist_entry entry = {0};
-
-         entry.core_path = new_core_path;
+         entry.core_path = (char*)default_core_path;
          entry.core_name = core_info.inf->display_name;
 
          command_playlist_update_write(
@@ -1940,11 +1939,6 @@ static int action_ok_playlist_entry(const char *path,
 
    new_core_path[0] = '\0';
 
-#ifdef HAVE_COCOATOUCH
-   char expanded_core_path[PATH_MAX_LENGTH];
-   expanded_core_path[0]               = '\0';
-#endif
-
    if (!playlist ||
        !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1966,6 +1960,7 @@ static int action_ok_playlist_entry(const char *path,
       if (!string_is_empty(default_core_path))
       {
          strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
          found_associated_core = true;
       }
 
@@ -1984,7 +1979,7 @@ static int action_ok_playlist_entry(const char *path,
       {
          struct playlist_entry entry = {0};
 
-         entry.core_path = new_core_path;
+         entry.core_path = (char*)default_core_path;
          entry.core_name = core_info.inf->display_name;
 
          command_playlist_update_write(NULL,
@@ -1995,10 +1990,7 @@ static int action_ok_playlist_entry(const char *path,
    }
    else if (!string_is_empty(entry->core_path)) {
        strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
-#ifdef HAVE_COCOATOUCH
-      fill_pathname_expand_special(expanded_core_path, new_core_path, sizeof(expanded_core_path));
-      strlcpy(new_core_path, expanded_core_path, sizeof(new_core_path));
-#endif
+       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
    }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
@@ -2887,6 +2879,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
 {
    char ext_name[255];
    char core_display_name[PATH_MAX_LENGTH];
+   char resolved_core_path[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
    settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
@@ -2895,6 +2888,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
 
    ext_name[0]                             = '\0';
    core_display_name[0]                    = '\0';
+   resolved_core_path[0]                   = '\0';
    msg[0]                                  = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -2911,17 +2905,13 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files,
          true);
 
+    strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
+    playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
+
    /* the update function reads our entry 
     * as const, so these casts are safe */
-   entry.core_path = (char*)new_core_path;
+   entry.core_path = (char*)resolved_core_path;
    entry.core_name = core_display_name;
-
-#ifdef HAVE_COCOATOUCH
-    // for iOS, change abbreviate the bundle path with ":" because bundle path changes on each install
-    char abbreviated_core_path[PATH_MAX_LENGTH] = {0};
-    fill_pathname_abbreviate_special(abbreviated_core_path, new_core_path, sizeof(abbreviated_core_path));
-    entry.core_path = abbreviated_core_path;
-#endif
 
    command_playlist_update_write(
          NULL,
