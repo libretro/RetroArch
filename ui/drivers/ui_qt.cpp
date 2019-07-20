@@ -118,9 +118,8 @@ void ThumbnailWidget::dropEvent(QDropEvent *event)
          emit(filesDropped(image, m_thumbnailType));
       else
       {
-         QByteArray stringArray = QDir::toNativeSeparators(imageString).toUtf8();
-         const char *stringData = stringArray.constData();
-         RARCH_ERR("[Qt]: Could not read image: %s\n", stringData);
+         const char *string_data = QDir::toNativeSeparators(imageString).toUtf8().constData();
+         RARCH_ERR("[Qt]: Could not read image: %s\n", string_data);
       }
    }
 }
@@ -652,9 +651,9 @@ static void ui_companion_qt_notify_content_loaded(void *data)
 
 static void ui_companion_qt_toggle(void *data, bool force)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (settings->bools.ui_companion_toggle || force)
    {
@@ -681,7 +680,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
 
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    if (!handle)
@@ -709,7 +708,7 @@ static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
 
 static void ui_companion_qt_notify_refresh(void *data)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    win_handle->qtWindow->deferReloadPlaylists();
@@ -717,7 +716,7 @@ static void ui_companion_qt_notify_refresh(void *data)
 
 static void ui_companion_qt_log_msg(void *data, const char *msg)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    win_handle->qtWindow->appendLogMessage(msg);
@@ -725,7 +724,7 @@ static void ui_companion_qt_log_msg(void *data, const char *msg)
 
 void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priority, unsigned duration, bool flush)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = NULL;
 
    if (!handle)
