@@ -529,32 +529,25 @@ fi
 if [ "$HAVE_SLANG" = 'no' ] ||
    [ "$HAVE_GLSLANG" = 'no' ] ||
    [ "$HAVE_SPIRV_CROSS" = 'no' ]; then
-   die : 'Notice: slang/glslang/SPIRV Cross disabled, disabling video drivers:'
 
 if [ "$HAVE_SLANG" != "no" ]; then
+   die : 'Notice: slang disabled.'
    HAVE_SLANG=no
 fi
 if [ "$HAVE_GLSLANG" != "no" ]; then
+   die : 'Notice: glslang disabled.'
    HAVE_GLSLANG=no
 fi
 if [ "$HAVE_SPIRV_CROSS" != "no" ]; then
+   die : 'Notice: SPIRV-Cross disabled.'
    HAVE_SPIRV_CROSS=no
 fi
-
-if [ "$HAVE_D3D11" != "no" ]; then
-   die : 'd3d11'
-   HAVE_D3D11=no
-fi
-if [ "$HAVE_D3D12" != "no" ]; then
-   die : 'd3d12'
-   HAVE_D3D12=no
-fi
 if [ "$HAVE_OPENGL_CORE" != "no" ]; then
-   die : 'glcore'
+   die : 'Notice: glcore disabled.'
    HAVE_OPENGL_CORE=no
 fi
 if [ "$HAVE_VULKAN" != "no" ]; then
-   die : 'vulkan'
+   die : 'Notice: vulkan disabled.'
    HAVE_VULKAN=no
 fi
 fi

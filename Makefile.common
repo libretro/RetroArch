@@ -1264,8 +1264,11 @@ ifeq ($(HAVE_VULKAN), 1)
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
-          gfx/drivers_font/vulkan_raster_font.o \
-          gfx/drivers_shader/shader_vulkan.o
+          gfx/drivers_font/vulkan_raster_font.o
+
+   ifeq ($(HAVE_SLANG), 1)
+      OBJ += gfx/drivers_shader/shader_vulkan.o
+   endif
 
    ifeq ($(HAVE_VULKAN_DISPLAY), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
@@ -1281,7 +1284,7 @@ endif
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl_core.o \
           gfx/drivers_font/gl_core_raster_font.o \
-          gfx/drivers_shader/shader_gl_core.o
+			 gfx/drivers_shader/shader_gl_core.o
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl_core.o
    endif
