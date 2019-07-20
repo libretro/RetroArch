@@ -56,7 +56,9 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu/menu_shader.h"
+#endif
 #include "menu/widgets/menu_dialog.h"
 #ifdef HAVE_MENU_WIDGETS
 #include "menu/widgets/menu_widgets.h"
@@ -247,6 +249,7 @@ static const struct cmd_map map[] = {
 
 bool command_set_shader(const char *arg)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char msg[256];
    bool is_preset                  = false;
    settings_t *settings            = NULL;
@@ -276,6 +279,9 @@ bool command_set_shader(const char *arg)
    if (settings && !settings->bools.video_shader_enable)
       settings->bools.video_shader_enable = true;
    return true;
+#else
+   return false;
+#endif
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
@@ -2500,7 +2506,9 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_apply_changes();
+#endif
 #endif
          ui_companion_event_command(cmd);
          break;

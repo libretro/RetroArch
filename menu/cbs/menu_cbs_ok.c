@@ -44,7 +44,9 @@
 #include "../menu_cbs.h"
 #include "../menu_entries.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
@@ -52,7 +54,6 @@
 #include "../menu_input.h"
 #include "../menu_networking.h"
 #include "../menu_content.h"
-#include "../menu_shader.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -472,12 +473,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
          break;
       case ACTION_OK_DL_SHADER_PARAMETERS:
          info.type          = MENU_SETTING_ACTION;
@@ -523,12 +526,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
          break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = FILE_TYPE_DIRECTORY;
@@ -1499,6 +1504,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
@@ -1506,8 +1512,10 @@ static int generic_action_ok(const char *path,
                   video_shader_parse_type(action_path),
                   action_path);
          }
+#endif
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             struct video_shader *shader           = menu_shader_get();
             struct video_shader_pass *shader_pass = shader ? &shader->pass[menu->scratchpad.unsigned_var] : NULL;
@@ -1522,6 +1530,7 @@ static int generic_action_ok(const char *path,
                video_shader_resolve_parameters(NULL, shader);
             }
          }
+#endif
          break;
       case ACTION_OK_LOAD_STREAM_CONFIGFILE:
          {
@@ -1689,8 +1698,10 @@ default_action_ok_set(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEA
 default_action_ok_set(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
+#endif
 default_action_ok_set(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
 
 static int action_ok_file_load(const char *path,
@@ -2506,6 +2517,7 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
    menu_input_dialog_end();
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -2540,6 +2552,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 
    menu_input_dialog_end();
 }
+#endif
 
 static void menu_input_st_string_cb_cheat_file_save_as(
       void *userdata, const char *str)
@@ -2579,10 +2592,12 @@ static int (funcname)(const char *path, const char *label_setting, unsigned type
    return 0; \
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_dialog_start(action_ok_shader_preset_save_as,
    msg_hash_to_str(MSG_INPUT_PRESET_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_save_preset)
+#endif
 default_action_dialog_start(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
@@ -2604,6 +2619,7 @@ default_action_dialog_start(action_ok_rename_entry,
    (unsigned)entry_idx,
    menu_input_st_string_cb_rename_entry)
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
@@ -2692,6 +2708,7 @@ static int action_ok_shader_preset_save_parent(const char *path,
    return generic_action_ok_shader_preset_save(path, label, type,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
 }
+#endif
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3730,6 +3747,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             static char shaderdir[PATH_MAX_LENGTH]       = {0};
             const char *dirname                          = NULL;
@@ -3751,6 +3769,7 @@ void cb_generic_download(retro_task_t *task,
 
             dir_path = shaderdir;
          }
+#endif
          break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
@@ -3996,9 +4015,11 @@ default_action_ok_download(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DO
 default_action_ok_download(action_ok_update_assets, MENU_ENUM_LABEL_CB_UPDATE_ASSETS)
 default_action_ok_download(action_ok_update_core_info_files, MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES)
 default_action_ok_download(action_ok_update_overlays, MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_download(action_ok_update_shaders_cg, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
 default_action_ok_download(action_ok_update_shaders_glsl, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
 default_action_ok_download(action_ok_update_shaders_slang, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
+#endif
 default_action_ok_download(action_ok_update_databases, MENU_ENUM_LABEL_CB_UPDATE_DATABASES)
 default_action_ok_download(action_ok_update_cheats, MENU_ENUM_LABEL_CB_UPDATE_CHEATS)
 default_action_ok_download(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES)
@@ -4058,7 +4079,9 @@ default_action_ok_cmd_func(action_ok_resume_content,           CMD_EVENT_RESUME)
 default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
+#endif
 default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
 
 static int action_ok_set_core_association(const char *path,
@@ -4440,7 +4463,9 @@ default_action_ok_func(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
 default_action_ok_func(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
 default_action_ok_func(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 default_action_ok_func(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_func(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
+#endif
 default_action_ok_func(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
@@ -4494,7 +4519,9 @@ default_action_ok_func(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD
 default_action_ok_func(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 default_action_ok_func(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFILE)
 default_action_ok_func(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_func(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
+#endif
 default_action_ok_func(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
 default_action_ok_func(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP_PLUGIN)
 default_action_ok_func(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
@@ -4560,6 +4587,7 @@ static int action_ok_open_picker(const char *path,
    return ret;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4572,6 +4600,7 @@ static int action_ok_shader_pass(const char *path,
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PASS);
 }
+#endif
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5986,10 +6015,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_help_load_content);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
@@ -6037,7 +6070,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+#endif
             break;
          case MENU_ENUM_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
@@ -6172,22 +6207,32 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
@@ -6342,13 +6387,19 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_update_databases);
             break;
          case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_glsl);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_cg);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_slang);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_CHEATS:
             BIND_ACTION_OK(cbs, action_ok_update_cheats);
@@ -6396,10 +6447,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
+#endif
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset);
+#endif
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
@@ -6429,7 +6484,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+#endif
             break;
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
@@ -6447,13 +6504,17 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
             break;
          case MENU_LABEL_SHADER_APPLY_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+#endif
             break;
          case MENU_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+#endif
             break;
          case MENU_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
@@ -6663,12 +6724,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
             break;
          case FILE_TYPE_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_shader_preset_load);
+#endif
             break;
          case FILE_TYPE_SHADER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_shader_pass_load);
+#endif
             break;
          case FILE_TYPE_IMAGE:
             /* TODO/FIXME - handle scan case */

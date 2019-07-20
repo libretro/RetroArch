@@ -65,7 +65,9 @@
 #include "menu_driver.h"
 #include "menu_animation.h"
 #include "menu_input.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_input_bind_dialog.h"
 
@@ -3695,6 +3697,7 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
@@ -3740,6 +3743,7 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
          break;
    }
 }
+#endif
 #endif
 
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
@@ -5687,6 +5691,7 @@ void general_write_handler(rarch_setting_t *setting)
    switch (setting->enum_idx)
    {
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             if (*setting->value.target.boolean)
             {
@@ -5708,6 +5713,8 @@ void general_write_handler(rarch_setting_t *setting)
                settings->bools.video_shader_enable = false;
             }
          }
+         /* TODO/FIXME - fallthrough here intentional? */
+#endif
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)
@@ -11782,6 +11789,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_SHADERPIPELINE
             if (video_shader_any_supported())
             {
@@ -11802,6 +11810,7 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
+#endif
 #endif
 
             CONFIG_UINT(
@@ -13047,6 +13056,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          if (video_shader_any_supported())
          {
             CONFIG_BOOL(
@@ -13064,6 +13074,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -14525,6 +14536,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          CONFIG_DIR(
                list, list_info,
                settings->paths.directory_video_shader,
@@ -14539,6 +14551,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+#endif
 
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {

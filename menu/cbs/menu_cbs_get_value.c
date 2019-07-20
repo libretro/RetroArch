@@ -25,7 +25,9 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_cbs.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_driver.h"
@@ -186,6 +188,7 @@ static void menu_action_setting_disp_set_label_configurations(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_action_setting_disp_set_label_shader_filter_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -220,6 +223,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
         break;
   }
 }
+#endif
 
 #ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_mitm_server(
@@ -252,6 +256,7 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -420,6 +425,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    else
       snprintf(s, len, "%ux", scale_value);
 }
+#endif
 
 static void menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
@@ -1265,28 +1271,40 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_remap_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_filter_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_scale_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_watch_for_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_default_filter);
+#endif
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_GET_VALUE(cbs,
@@ -1621,6 +1639,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -1635,6 +1654,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
          menu_action_setting_disp_set_label_shader_preset_parameter);
       return 0;
    }
+#endif
 
    if (menu_cbs_init_bind_get_string_representation_compare_label(cbs) == 0)
       return 0;

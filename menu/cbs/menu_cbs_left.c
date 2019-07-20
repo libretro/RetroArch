@@ -28,7 +28,9 @@
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../core.h"
@@ -50,6 +52,7 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
@@ -83,6 +86,7 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
 
    return ret;
 }
+#endif
 
 #ifdef HAVE_AUDIOMIXER
 static int audio_mixer_stream_volume_left(unsigned type, const char *label,
@@ -268,6 +272,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_left_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
@@ -315,6 +320,7 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
    return menu_action_handle_setting(setting,
          setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
 }
+#endif
 
 static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
@@ -331,6 +337,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
@@ -358,6 +365,7 @@ static int action_left_shader_watch_for_changes(unsigned type, const char *label
    settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
    return 0;
 }
+#endif
 
 static int action_left_video_resolution(unsigned type, const char *label,
       bool wraparound)
@@ -590,19 +598,29 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_scale_pass);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_pass);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_default);
+#endif
                break;
             case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_watch_for_changes);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_num_passes);
+#endif
                break;
             case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
                BIND_ACTION_LEFT(cbs, action_left_cheat_num_passes);
@@ -687,6 +705,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
       BIND_ACTION_LEFT(cbs, audio_mixer_stream_volume_left);
    }
 #endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -697,6 +716,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, shader_action_parameter_left);
    }
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {

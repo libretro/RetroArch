@@ -351,7 +351,9 @@ static void* ui_companion_qt_init(void)
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+#endif
 
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
@@ -690,8 +692,10 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    {
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          RARCH_LOG("[Qt]: Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();
+#endif
          break;
       default:
          break;

@@ -69,7 +69,9 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_entries.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
 #include "menu_networking.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_filebrowser.h"
@@ -1936,6 +1938,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_DISK_OPTIONS,
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       if (video_shader_any_supported())
       {
          if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
@@ -1947,6 +1950,7 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_SETTING_ACTION, 0, 0);
          }
       }
+#endif
 
       if ((settings->bools.quick_menu_show_save_core_overrides ||
          settings->bools.quick_menu_show_save_game_overrides) &&
@@ -4593,6 +4597,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
          }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          if (video_shader_any_supported())
          {
             if (menu_displaylist_parse_settings_enum(list,
@@ -4600,6 +4605,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ONLY_BOOL, false) == 0)
                count++;
          }
+#endif
 
          {
             menu_displaylist_build_info_t build_list[] = {
@@ -5620,6 +5626,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_OPTIONS_SHADERS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             unsigned i;
             struct video_shader *shader = menu_shader_get();
@@ -5724,6 +5731,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
          }
+#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -7348,6 +7356,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             if (video_shader_is_supported(RARCH_SHADER_CG))
             {
                if (menu_entries_append_enum(info->list,
@@ -7377,6 +7386,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
+#endif
 #endif
 #endif
          }
@@ -7623,6 +7633,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             video_shader_ctx_t shader_info;
 
@@ -7642,6 +7653,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
             }
          }
+#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -8003,6 +8015,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
@@ -8050,6 +8063,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             string_list_free(str_list);
             use_filebrowser    = true;
          }
+#endif
          break;
       case DISPLAYLIST_IMAGES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);

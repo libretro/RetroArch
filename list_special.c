@@ -46,7 +46,9 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char ext_shaders[255];
+#endif
    char ext_name[255];
    const char *exts                  = NULL;
    bool recursive                    = false;
@@ -87,6 +89,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
        }
        break;
       case DIR_LIST_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
@@ -120,6 +123,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
             string_list_free(str_list);
             exts = ext_shaders;
          }
+#endif
          break;
       case DIR_LIST_COLLECTIONS:
          exts = "lpl";

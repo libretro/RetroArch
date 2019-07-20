@@ -773,10 +773,12 @@ static settings_t *configuration_settings                       = NULL;
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 static char error_string[255]                                   = {0};
-static char runtime_shader_preset[255]                          = {0};
 
 static bool has_set_username                                    = false;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static char runtime_shader_preset[255]                          = {0};
 static bool shader_presets_need_reload                          = true;
+#endif
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -19376,18 +19378,23 @@ void retroarch_unset_switching_display_mode(void)
 /* set a runtime shader preset without overwriting the settings value */
 void retroarch_set_shader_preset(const char* preset)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!string_is_empty(preset))
       strlcpy(runtime_shader_preset, preset, sizeof(runtime_shader_preset));
    else
       runtime_shader_preset[0] = '\0';
+#endif
 }
 
 /* unset a runtime shader preset */
 void retroarch_unset_shader_preset(void)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runtime_shader_preset[0] = '\0';
+#endif
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool retroarch_load_shader_preset_internal(
       const char *shader_directory,
       const char *core_name,
@@ -19507,15 +19514,19 @@ success:
    free(shader_directory);
    return true;
 }
+#endif
 
 void retroarch_shader_presets_set_need_reload(void)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    shader_presets_need_reload = true;
+#endif
 }
 
 /* get the name of the current shader preset */
 char* retroarch_get_shader_preset(void)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    settings_t *settings = configuration_settings;
    if (!settings->bools.video_shader_enable)
       return NULL;
@@ -19531,6 +19542,7 @@ char* retroarch_get_shader_preset(void)
 
    if (!string_is_empty(settings->paths.path_shader))
       return settings->paths.path_shader;
+#endif
 
    return NULL;
 }
@@ -20685,6 +20697,7 @@ static enum runloop_state runloop_check_state(
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
    {
       static rarch_timer_t timer = {0};
@@ -20724,6 +20737,7 @@ static enum runloop_state runloop_check_state(
          }
       }
    }
+#endif
 
    return RUNLOOP_STATE_ITERATE;
 }

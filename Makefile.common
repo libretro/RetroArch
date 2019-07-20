@@ -335,6 +335,20 @@ ifeq ($(HAVE_IMAGEVIEWER), 1)
    OBJ += cores/libretro-imageviewer/image_core.o
 endif
 
+ifeq ($(HAVE_CG), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_GLSL), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_HLSL), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_SLANG), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+
+
 # Qt WIMP GUI
 
 ifeq ($(HAVE_OPENSSL), 1)
@@ -350,7 +364,6 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/ui_qt_load_core_window.o \
           ui/drivers/qt/ui_qt_msg_window.o \
           ui/drivers/qt/gridview.o \
-          ui/drivers/qt/shaderparamsdialog.o \
           ui/drivers/qt/coreoptionsdialog.o \
           ui/drivers/qt/filedropwidget.o \
           ui/drivers/qt/coreinfodialog.o \
@@ -361,6 +374,9 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
+    ifeq ($(HAVE_SHADERS_COMMON),1)
+       OBJ += ui/drivers/qt/shaderparamsdialog.o
+    endif
     ifeq ($(HAVE_MENU), 1)
        OBJ += ui/drivers/qt/settingswidgets.o \
               ui/drivers/qt/options/achievements.o \
@@ -382,12 +398,14 @@ ifeq ($(HAVE_QT), 1)
    MOC_HEADERS += ui/drivers/ui_qt.h \
                   ui/drivers/qt/ui_qt_load_core_window.h \
                   ui/drivers/qt/gridview.h \
-                  ui/drivers/qt/shaderparamsdialog.h \
                   ui/drivers/qt/coreoptionsdialog.h \
                   ui/drivers/qt/filedropwidget.h \
                   ui/drivers/qt/coreinfodialog.h \
                   ui/drivers/qt/playlistentrydialog.h \
                   ui/drivers/qt/viewoptionsdialog.h
+   ifeq ($(HAVE_SHADERS_COMMON), 1)
+      MOC_HEADERS += ui/drivers/qt/shaderparamsdialog.h
+   endif
    ifeq ($(HAVE_MENU), 1)
       MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
                      ui/drivers/qt/options/options.h
@@ -771,23 +789,6 @@ endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-endif
-
-ifeq ($(HAVE_GL_MODERN), 1)
-	HAVE_GLSL=1
-endif
-
-ifeq ($(HAVE_CG), 1)
-   HAVE_SHADERS_COMMON = 1
-endif
-ifeq ($(HAVE_GLSL), 1)
-   HAVE_SHADERS_COMMON = 1
-endif
-ifeq ($(HAVE_GLSL), 1)
-   HAVE_SHADERS_COMMON = 1
-endif
-ifeq ($(HAVE_SLANG), 1)
-   HAVE_SHADERS_COMMON = 1
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -1352,6 +1353,7 @@ ifeq ($(HAVE_D3D9), 1)
 endif
 
 ifeq ($(HAVE_D3D10), 1)
+   HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d10.o \
           gfx/common/d3d10_common.o \
           gfx/drivers_font/d3d10_font.o
@@ -1362,6 +1364,7 @@ ifeq ($(HAVE_D3D10), 1)
 endif
 
 ifeq ($(HAVE_D3D11), 1)
+   HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_common.o \
           gfx/drivers_font/d3d11_font.o
@@ -1372,6 +1375,7 @@ ifeq ($(HAVE_D3D11), 1)
 endif
 
 ifeq ($(HAVE_D3D12), 1)
+   HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/d3d12_common.o \
           gfx/drivers_font/d3d12_font.o

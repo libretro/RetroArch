@@ -48,7 +48,9 @@ UI
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
 #include "../ui/drivers/qt/gridview.cpp"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../ui/drivers/qt/shaderparamsdialog.cpp"
+#endif
 #include "../ui/drivers/qt/coreoptionsdialog.cpp"
 #include "../ui/drivers/qt/filedropwidget.cpp"
 #include "../ui/drivers/qt/coreinfodialog.cpp"
@@ -84,7 +86,9 @@ UI
 #include "../ui/drivers/qt/moc_filedropwidget.cpp"
 #include "../ui/drivers/qt/moc_gridview.cpp"
 #include "../ui/drivers/qt/moc_playlistentrydialog.cpp"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../ui/drivers/qt/moc_shaderparamsdialog.cpp"
+#endif
 #include "../ui/drivers/qt/moc_ui_qt_load_core_window.cpp"
 #include "../ui/drivers/qt/moc_viewoptionsdialog.cpp"
 #endif

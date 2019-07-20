@@ -26,7 +26,9 @@
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../core.h"
@@ -130,6 +132,7 @@ static int action_start_input_desc(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_action_parameter(
       unsigned type, const char *label)
 {
@@ -178,6 +181,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    return menu_shader_manager_clear_pass_filter(pass);
 }
+#endif
 
 static int action_start_netplay_mitm_server(unsigned type, const char *label)
 {
@@ -186,6 +190,7 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
@@ -197,6 +202,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
 {
    return menu_shader_manager_clear_num_passes();
 }
+#endif
 
 static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
@@ -278,19 +284,29 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_scale_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_watch_for_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
@@ -315,6 +331,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -325,7 +342,9 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_shader_action_parameter);
    }
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+   else
+#endif
+   if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_core);

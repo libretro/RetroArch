@@ -971,9 +971,11 @@ d3d10_gfx_init(const video_info_t* video,
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
       video_context_driver_set(&d3d10_fake_context); 
+#ifdef HAVE_SLANG
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d10_gfx_set_shader(d3d10, type, shader_preset);
+#endif
    }
 
 #if 0

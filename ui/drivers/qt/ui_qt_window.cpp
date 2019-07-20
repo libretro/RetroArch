@@ -41,7 +41,6 @@
 #include "ui_qt_load_core_window.h"
 #include "ui_qt_themes.h"
 #include "gridview.h"
-#include "shaderparamsdialog.h"
 #include "coreoptionsdialog.h"
 #include "filedropwidget.h"
 #include "coreinfodialog.h"
@@ -50,6 +49,10 @@
 
 #ifndef CXX_BUILD
 extern "C" {
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
 #endif
 
 #include "../../../version.h"
@@ -86,6 +89,7 @@ extern "C" {
 }
 #endif
 
+#include "shaderparamsdialog.h"
 #include "../../../AUTHORS.h"
 
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
@@ -327,7 +331,9 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_allPlaylistsGridMaxCount(0)
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    ,m_shaderParamsDialog(new ShaderParamsDialog())
+#endif
    ,m_coreOptionsDialog(new CoreOptionsDialog())
    ,m_networkManager(new QNetworkAccessManager(this))
    ,m_updateProgressDialog(new QProgressDialog())
@@ -672,7 +678,9 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    connect(this, SIGNAL(gotReloadShaderParams()), this, SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
+#endif
    connect(this, SIGNAL(gotReloadCoreOptions()), this, SLOT(onGotReloadCoreOptions()), Qt::AutoConnection);
 
    /* these are always queued */
@@ -1109,17 +1117,29 @@ void MainWindow::onGotStatusMessage(QString msg, unsigned priority, unsigned dur
 
 void MainWindow::deferReloadShaderParams()
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    emit gotReloadShaderParams();
+#endif
 }
 
 void MainWindow::onShaderParamsClicked()
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!m_shaderParamsDialog)
       return;
 
    m_shaderParamsDialog->show();
 
    onGotReloadShaderParams();
+#endif
+}
+
+void MainWindow::onGotReloadShaderParams()
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
+      m_shaderParamsDialog->reload();
+#endif
 }
 
 void MainWindow::onCoreOptionsClicked()
@@ -1130,12 +1150,6 @@ void MainWindow::onCoreOptionsClicked()
    m_coreOptionsDialog->show();
 
    onGotReloadCoreOptions();
-}
-
-void MainWindow::onGotReloadShaderParams()
-{
-   if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
-      m_shaderParamsDialog->reload();
 }
 
 void MainWindow::onGotReloadCoreOptions()
