@@ -1,4 +1,3 @@
-ROOT_DIR          := .
 DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
@@ -773,7 +772,22 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
-OBJ += menu/menu_shader.o
+ifeq ($(HAVE_GL_MODERN), 1)
+	HAVE_GLSL=1
+endif
+
+ifeq ($(HAVE_CG), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_GLSL), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_GLSL), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
+ifeq ($(HAVE_SLANG), 1)
+   HAVE_SHADERS_COMMON = 1
+endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
@@ -807,10 +821,11 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_animation.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o \
-          menu/menu_thumbnail_path.o
+          menu/menu_thumbnail_path.o \
+			 menu/drivers_display/menu_display_null.o
 
-   ifeq ($(HAVE_MENU_COMMON),1)
-      OBJ += menu/drivers_display/menu_display_null.o
+   ifeq ($(HAVE_SHADERS_COMMON),1)
+      OBJ += menu/menu_shader.o
    endif
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
@@ -1200,10 +1215,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       LIBS += $(GL_LIBS)
    endif
 
-   ifeq ($(HAVE_GL_MODERN), 1)
-      DEFINES += -DHAVE_GLSL
-      OBJ += gfx/drivers_shader/shader_glsl.o
-   endif
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -1315,29 +1326,6 @@ ifeq ($(HAVE_XVIDEO), 1)
    DEFINES += $(XVIDEO_CFLAGS)
 endif
 
-ifeq ($(HAVE_CG), 1)
-   HAVE_SHADERS_COMMON = 1
-   DEFINES += -DHAVE_CG
-   OBJ += gfx/drivers_shader/shader_gl_cg.o
-   LIBS += $(CG_LIBS)
-endif
-
-ifeq ($(HAVE_GLSL), 1)
-   HAVE_SHADERS_COMMON = 1
-endif
-
-ifeq ($(HAVE_HLSL),1)
-   HAVE_SHADERS_COMMON = 1
-endif
-
-ifeq ($(HAVE_SLANG),1)
-   HAVE_SHADERS_COMMON = 1
-endif
-
-ifeq ($(HAVE_SHADERS_COMMON), 1)
-   OBJ += gfx/video_shader_parse.o
-endif
-
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
    DEFINES += -DHAVE_D3D9
@@ -1356,10 +1344,7 @@ ifeq ($(HAVE_D3D9), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
    endif
-
-   ifeq ($(HAVE_HLSL), 1)
-      OBJ  += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
-   endif
+	HAVE_HLSL=1
 endif
 
 ifeq ($(HAVE_D3D10), 1)
@@ -1447,12 +1432,32 @@ ifeq ($(HAVE_D3D_COMMON), 1)
    OBJ     += gfx/common/d3d_common.o
 endif
 
+ifeq ($(HAVE_CG), 1)
+   DEFINES += -DHAVE_CG
+   OBJ += gfx/drivers_shader/shader_gl_cg.o
+   LIBS += $(CG_LIBS)
+endif
+
+ifeq ($(HAVE_GLSL), 1)
+   DEFINES += -DHAVE_GLSL
+   OBJ += gfx/drivers_shader/shader_glsl.o
+endif
+
+ifeq ($(HAVE_HLSL),1)
+   DEFINES += -DHAVE_HLSL
+   OBJ += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
+endif
+
 ifeq ($(HAVE_SLANG),1)
    DEFINES += -DHAVE_SLANG
    OBJ += gfx/drivers_shader/slang_process.o
    OBJ += gfx/drivers_shader/slang_preprocess.o
    OBJ += gfx/drivers_shader/glslang_util.o
    OBJ += gfx/drivers_shader/slang_reflection.o
+endif
+
+ifeq ($(HAVE_SHADERS_COMMON), 1)
+   OBJ += gfx/video_shader_parse.o
 endif
 
 ifeq ($(HAVE_GLSLANG), 1)

@@ -1224,7 +1224,9 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../menu/menu_shader.c"
+#endif
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
