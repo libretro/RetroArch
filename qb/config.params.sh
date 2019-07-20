@@ -151,6 +151,7 @@ HAVE_DRMINGW=no            # DrMingw exception handler
 HAVE_EASTEREGG=yes         # Easter egg
 HAVE_CDROM=auto            # CD-ROM support
 HAVE_SLANG=yes             # slang support
+C89_SLANG=no
 HAVE_GLSLANG=yes           # glslang support (requires C++11)
 C89_GLSLANG=no
 HAVE_SPIRV_CROSS=yes       # SPIRV-Cross support (requires C++11)
