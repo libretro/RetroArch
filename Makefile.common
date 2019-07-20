@@ -1,3 +1,4 @@
+ROOT_DIR          := .
 DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
