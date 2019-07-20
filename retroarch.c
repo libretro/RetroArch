@@ -1632,8 +1632,6 @@ static bool video_driver_find_driver(void);
 static bool core_uninit_libretro_callbacks(void);
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
-static bool driver_update_system_av_info(
-      const struct retro_system_av_info *info);
 
 /* GLOBAL POINTER GETTERS */
 #define video_driver_get_hw_context_internal() (&hw_render)
@@ -3856,10 +3854,34 @@ bool rarch_environment_cb(unsigned cmd, void *data)
        **/
       {
          const struct retro_system_av_info **info = (const struct retro_system_av_info**)&data;
-         if (info)
+         struct retro_system_av_info *av_info     = &video_driver_av_info;
+         if (info && av_info)
          {
+            settings_t *settings                  = configuration_settings;
+
             RARCH_LOG("Environ SET_SYSTEM_AV_INFO.\n");
-            return driver_update_system_av_info(*info);
+
+            memcpy(av_info, *info, sizeof(*av_info));
+            command_event(CMD_EVENT_REINIT, NULL);
+
+            /* Cannot continue recording with different parameters.
+             * Take the easiest route out and just restart the recording. */
+            if (recording_data)
+            {
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
+                     2, 180, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+               command_event(CMD_EVENT_RECORD_INIT, NULL);
+            }
+
+            /* Hide mouse cursor in fullscreen after
+             * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
+            if (settings->bools.video_fullscreen)
+               video_driver_hide_mouse();
+
+            return true;
          }
          return false;
       }
@@ -16504,45 +16526,6 @@ void driver_set_nonblock_state(void)
    }
 
    audio_driver_set_nonblocking_state(enable);
-}
-
-/**
- * driver_update_system_av_info:
- * @data               : pointer to new A/V info
- *
- * Update the system Audio/Video information.
- * Will reinitialize audio/video drivers.
- * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool driver_update_system_av_info(
-      const struct retro_system_av_info *info)
-{
-   struct retro_system_av_info *av_info  = &video_driver_av_info;
-   settings_t *settings                  = configuration_settings;
-
-   memcpy(av_info, info, sizeof(*av_info));
-   command_event(CMD_EVENT_REINIT, NULL);
-
-   /* Cannot continue recording with different parameters.
-    * Take the easiest route out and just restart the recording. */
-   if (recording_data)
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
-            2, 180, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-      command_event(CMD_EVENT_RECORD_INIT, NULL);
-   }
-
-   /* Hide mouse cursor in fullscreen after
-    * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
-   if (settings->bools.video_fullscreen)
-      video_driver_hide_mouse();
-
-   return true;
 }
 
 bool audio_driver_new_devices_list(void)
