@@ -23,6 +23,10 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif
+
 #include <math.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
