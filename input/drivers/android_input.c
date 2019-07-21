@@ -1384,7 +1384,7 @@ static bool android_input_key_pressed(android_input_t *android, int key)
 
    if ((uint16_t)joykey != NO_BTN && android->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
       return true;
-   else if (((float)abs(android->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+   if (((float)abs(android->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
       return true;
    return false;
 }
@@ -1466,7 +1466,6 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret                        = 0;
    android_input_t *android           = (android_input_t*)data;
 
    switch (device)
@@ -1475,9 +1474,9 @@ static int16_t android_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               bool res               = false;
                /* Auto-binds are per joypad, not per user. */
                const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
                   ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
@@ -1485,19 +1484,23 @@ static int16_t android_input_state(void *data,
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
                if ((uint16_t)joykey != NO_BTN && android->joypad->button(
                         joypad_info.joy_idx, (uint16_t)joykey))
-                  res = true;
-               else if (((float)abs(android->joypad->axis(
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+               if (((float)abs(android->joypad->axis(
                               joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-                  res = true;
-               if (!res)
-                  res = android_keyboard_port_input_pressed(binds[port], i);
-               if (res)
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+               if (android_keyboard_port_input_pressed(binds[port], i))
                   ret |= (1 << i);
             }
+            return ret;
          }
          else
          {
-            bool res               = false;
             /* Auto-binds are per joypad, not per user. */
             const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
                ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
@@ -1505,16 +1508,14 @@ static int16_t android_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
             if ((uint16_t)joykey != NO_BTN && android->joypad->button(
                      joypad_info.joy_idx, (uint16_t)joykey))
-               res = true;
-            else if (((float)abs(android->joypad->axis(
+               return true;
+            if (((float)abs(android->joypad->axis(
                            joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               res = true;
-            if (!res)
-               res = android_keyboard_port_input_pressed(binds[port], id);
-            if (res)
-               ret |= (1 << id);
+               return true;
+            if (android_keyboard_port_input_pressed(binds[port], id))
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(android->joypad, joypad_info,
@@ -1523,8 +1524,7 @@ static int16_t android_input_state(void *data,
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
-         ret = android_mouse_state(android, id);
-         return ret;
+         return android_mouse_state(android, id);
       case RETRO_DEVICE_LIGHTGUN:
          return android_lightgun_device_state(android, id);
       case RETRO_DEVICE_POINTER:
