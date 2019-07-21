@@ -335,6 +335,10 @@ ifeq ($(HAVE_IMAGEVIEWER), 1)
    OBJ += cores/libretro-imageviewer/image_core.o
 endif
 
+ifeq ($(HAVE_D3D9), 1)
+	HAVE_HLSL = 1
+endif
+
 ifeq ($(HAVE_CG), 1)
    HAVE_SHADERS_COMMON = 1
 endif
@@ -373,7 +377,7 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
-    ifeq ($(HAVE_SHADERS_COMMON),1)
+    ifeq ($(HAVE_SHADERS_COMMON), 1)
        OBJ += ui/drivers/qt/shaderparamsdialog.o
     endif
     ifeq ($(HAVE_MENU), 1)
@@ -791,7 +795,7 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
 endif
 
 # Does not depend on HAVE_MENU
-ifeq ($(HAVE_SHADERS_COMMON),1)
+ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += menu/menu_shader.o
 endif
 
@@ -1349,7 +1353,6 @@ ifeq ($(HAVE_D3D9), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
    endif
-	HAVE_HLSL=1
 endif
 
 ifeq ($(HAVE_D3D10), 1)

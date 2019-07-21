@@ -31,6 +31,10 @@
 
 #include <d3d9.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
@@ -1231,16 +1235,17 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       return false;
 
    {
-      const char *shader_preset;
-      enum rarch_shader_type type;
 
       d3d9_fake_context.get_flags = d3d9_get_flags;
       video_context_driver_set(&d3d9_fake_context); 
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+      {
+         const char *shader_preset   = retroarch_get_shader_preset();
+         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-      shader_preset = retroarch_get_shader_preset();
-      type = video_shader_parse_type(shader_preset);
-
-      d3d9_set_shader(d3d, type, shader_preset);
+         d3d9_set_shader(d3d, type, shader_preset);
+      }
+#endif
    }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
@@ -1752,6 +1757,7 @@ end:
 static bool d3d9_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
@@ -1790,6 +1796,9 @@ static bool d3d9_set_shader(void *data,
    }
 
    return true;
+#else
+   return false;
+#endif
 }
 
 static void d3d9_set_menu_texture_frame(void *data,
