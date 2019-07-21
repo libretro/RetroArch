@@ -362,6 +362,10 @@ static bool menu_horizontal_animation    = true;
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
+#ifdef HAVE_CDROM
+static bool menu_show_load_disc          = true;
+static bool menu_show_dump_disc          = true;
+#endif
 static bool menu_show_information        = true;
 static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
