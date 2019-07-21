@@ -79,11 +79,6 @@ static INLINE unsigned write_avail(unsigned read_ptr,
    return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
 
-static INLINE void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
-{
-   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
-}
-
 #define CHUNK_SIZE 256
 
 struct audio_lock
@@ -136,12 +131,6 @@ static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
    return false;
 }
 
-static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
-{
-   IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1,
-         region->size1, region->chunk2, region->size2);
-}
-
 #ifdef HAVE_THREADS
 static void dsound_thread(void *data)
 #else
@@ -153,14 +142,14 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   get_positions(ds, NULL, &write_ptr);
+   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, NULL, &write_ptr);
    write_ptr = (write_ptr + ds->buffer_size / 2) % ds->buffer_size;
 
    while (ds->thread_alive)
    {
       struct audio_lock region;
       DWORD read_ptr, avail, fifo_avail;
-      get_positions(ds, &read_ptr, NULL);
+      IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
 
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
@@ -196,7 +185,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
 
-         release_region(ds, &region);
+         IDirectSoundBuffer_Unlock(ds->dsb, &region.chunk1,
+               region.size1, &region.chunk2, region.size2);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
       else
@@ -210,7 +200,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
             fifo_read(ds->buffer, region.chunk2, region.size2);
          LeaveCriticalSection(&ds->crit);
 
-         release_region(ds, &region);
+         IDirectSoundBuffer_Unlock(ds->dsb, &region.chunk1,
+               region.size1, &region.chunk2, region.size2);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
 
          SetEvent(ds->event);
