@@ -13135,27 +13135,6 @@ void audio_driver_frame_is_reverse(void)
             runloop_slowmotion);
 }
 
-static void audio_driver_destroy(void)
-{
-   audio_driver_active   = false;
-   current_audio         = NULL;
-}
-
-void audio_set_bool(enum audio_action action, bool val)
-{
-   switch (action)
-   {
-      case AUDIO_ACTION_MIXER:
-#ifdef HAVE_AUDIOMIXER
-         audio_mixer_active = val;
-#endif
-         break;
-      case AUDIO_ACTION_NONE:
-      default:
-         break;
-   }
-}
-
 void audio_set_float(enum audio_action action, float val)
 {
    switch (action)
@@ -14235,20 +14214,6 @@ static void video_driver_lock_new(void)
       context_lock = slock_new();
    retro_assert(context_lock);
 #endif
-}
-
-static void video_driver_destroy(void)
-{
-   video_display_server_destroy();
-   crt_video_restore();
-
-   video_driver_use_rgba          = false;
-   video_driver_active            = false;
-   video_driver_cache_context     = false;
-   video_driver_cache_context_ack = false;
-   video_driver_record_gpu_buffer = NULL;
-   current_video                  = NULL;
-   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_set_cached_frame_ptr(const void *data)
@@ -16776,8 +16741,22 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          menu_widgets_context_destroy();
          menu_widgets_free();
 #endif
-         video_driver_destroy();
-         audio_driver_destroy();
+
+         /* Video */
+         video_display_server_destroy();
+         crt_video_restore();
+
+         video_driver_use_rgba          = false;
+         video_driver_active            = false;
+         video_driver_cache_context     = false;
+         video_driver_cache_context_ack = false;
+         video_driver_record_gpu_buffer = NULL;
+         current_video                  = NULL;
+         video_driver_set_cached_frame_ptr(NULL);
+
+         /* Audio */
+         audio_driver_active   = false;
+         current_audio         = NULL;
 
          /* Input */
          input_driver_keyboard_linefeed_enable = false;

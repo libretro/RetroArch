@@ -592,10 +592,6 @@ void audio_driver_frame_is_reverse(void);
 
 void audio_set_float(enum audio_action action, float val);
 
-void audio_set_bool(enum audio_action action, bool val);
-
-void audio_unset_bool(enum audio_action action, bool val);
-
 float *audio_get_float_ptr(enum audio_action action);
 
 bool *audio_get_bool_ptr(enum audio_action action);
