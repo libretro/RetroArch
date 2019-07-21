@@ -378,14 +378,8 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    HAVE_OPENGL_CORE='no'
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] || [ "$HAVE_OPENGLES" != 'no' ] || [ "$HAVE_OPENGLES3" != 'no' ]; then
-   HAVE_GLSL='yes'
-else
-if [ "$HAVE_GLSL" != "no" ]; then
-   die : 'Notice: glsl disabled.'
-   HAVE_GLSL='no'
-fi
-fi
+check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
+   'OpenGL and OpenGLES are' false
 
 check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
