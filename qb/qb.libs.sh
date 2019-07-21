@@ -52,14 +52,14 @@ check_compiler()
 # $2 = USER_$2 [Enabled feature]
 # $3 = lib
 # $4 = feature
-# $5 = enable lib when true [checked only if non-empty]
+# $5 = enable lib when true, disable errors with 'user' [checked only if non-empty]
 check_enabled()
 {	setval="$(eval "printf %s \"\$HAVE_$2\"")"
 
 	for val in $(printf %s "$1"); do
 		tmpvar="$(eval "printf %s \"\$HAVE_$val\"")"
 		if [ "$tmpvar" != 'no' ]; then
-			if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+			if [ "$setval" != 'no' ] && match "${5:-}" true user; then
 				eval "HAVE_$2=yes"
 			fi
 			return 0
@@ -71,14 +71,16 @@ check_enabled()
 	if [ "$tmpval" != 'yes' ]; then
 		if [ "$setval" != 'no' ]; then
 			eval "HAVE_$2=no"
-			if [ "${5:-}" != 'true' ]; then
+			if ! match "${5:-}" true user; then
 				die : "Notice: $4 disabled, $3 support will also be disabled."
 			fi
 		fi
 		return 0
 	fi
 
-	die 1 "Error: $4 disabled and forced to build with $3 support."
+	if [ "${5:-}" != 'user' ]; then
+		die 1 "Error: $4 disabled and forced to build with $3 support."
+	fi
 }
 
 # check_platform:

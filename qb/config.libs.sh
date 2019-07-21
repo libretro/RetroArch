@@ -525,16 +525,23 @@ check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
 check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
 check_enabled SLANG VULKAN vulkan 'slang is' false
+check_enabled SLANG METAL metal 'slang is' false
 
 check_enabled GLSLANG SLANG slang 'glslang is' false
 check_enabled GLSLANG SPIRV_CROSS SPIRV-Cross 'glslang is' false
 check_enabled GLSLANG OPENGL_CORE 'OpenGL core' 'glslang is' false
 check_enabled GLSLANG VULKAN vulkan 'glslang is' false
+check_enabled GLSLANG METAL metal 'glslang is' false
 
 check_enabled SPIRV_CROSS SLANG slang 'SPIRV-Cross is' false
 check_enabled SPIRV_CROSS GLSLANG glslang 'SPIRV-Cross is' false
 check_enabled SPIRV_CROSS OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' false
 check_enabled SPIRV_CROSS VULKAN vulkan 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS METAL metal 'SPIRV-Cross is' false
+
+check_enabled 'OPENGL_CORE METAL VULKAN' SLANG slang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' GLSLANG glslang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' SPIRV_CROSS SPIRV-Cross '' user
 
 check_macro NEON __ARM_NEON__
 
