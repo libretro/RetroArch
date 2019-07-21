@@ -13138,94 +13138,82 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 #endif
 
-         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_companion_enable,
-                  MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-                  ui_companion_enable,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_enable,
+               MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+               ui_companion_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_companion_start_on_boot,
-                  MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
-                  MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-                  ui_companion_start_on_boot,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
-         }
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_start_on_boot,
+               MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+               ui_companion_start_on_boot,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#else
-         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
-#endif
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_menubar_enable,
-                  MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-                  DEFAULT_UI_MENUBAR_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-         }
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_menubar_enable,
+               MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+               DEFAULT_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
-         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
-         {
 #ifdef HAVE_QT
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.desktop_menu_enable,
-                  MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-                  desktop_menu_enable,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.desktop_menu_enable,
+               MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
+               MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+               desktop_menu_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_companion_toggle,
-                  MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
-                  MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-                  ui_companion_toggle,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_toggle,
+               MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+               ui_companion_toggle,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 #endif
-         }
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

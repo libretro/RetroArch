@@ -3455,6 +3455,12 @@ typedef struct menu_displaylist_build_info {
    enum menu_displaylist_parse_type parse_type;
 } menu_displaylist_build_info_t; 
 
+typedef struct menu_displaylist_build_info_selective {
+   enum msg_hash_enums enum_idx;
+   enum menu_displaylist_parse_type parse_type;
+   bool checked;
+} menu_displaylist_build_info_selective_t; 
+
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
@@ -4079,7 +4085,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION     },
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION     },
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL  },
@@ -4094,10 +4100,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,                             PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_UI_COMPANION_ENABLE,                                   PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_UI_COMPANION_ENABLE,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,                                     PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,                                     PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT  },
                {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,                                  PARSE_ONLY_BOOL  },
@@ -4105,7 +4111,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (menu_displaylist_parse_settings_enum(list,
+               bool parse_setting = true;
+               if (build_list[i].checked && 
+                     string_is_equal(ui_companion_driver_get_ident(), "null"))
+                  parse_setting = false;
+               if (parse_setting &&
+                     menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
