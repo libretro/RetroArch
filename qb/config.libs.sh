@@ -300,6 +300,7 @@ if [ "$HAVE_SSL" != 'no' ]; then
 fi
 
 check_enabled THREADS LIBUSB libusb 'Threads are' false
+check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 check_lib '' DINPUT -ldinput8

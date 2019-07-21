@@ -39,10 +39,6 @@ ifeq ($(HAVE_SOCKET_LEGACY), 1)
    DEFINES += -DHAVE_SOCKET_LEGACY
 endif
 
-ifeq ($(HAVE_HID), 1)
-   DEFINES += -DHAVE_HID
-endif
-
 ifeq ($(HAVE_LIBRETRODB), 1)
    DEFINES += -DHAVE_LIBRETRODB
 endif
@@ -1014,17 +1010,10 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
-   ifeq ($(HAVE_THREADS), 1)
-      ifeq ($(HAVE_HID), 1)
-         DEFINES += -DHAVE_LIBUSB
-         OBJ += input/drivers_hid/libusb_hid.o
-         ifneq ($(findstring BSD,$(OS)),)
-            LIBS += -lusb
-         else
-            LIBS += -lusb-1.0
-         endif
-      endif
-   endif
+   DEFINES += -DHAVE_LIBUSB
+   OBJ += input/drivers_hid/libusb_hid.o
+   DEF_FLAGS += $(LIBUSB_CFLAGS)
+   LIBS += $(LIBUSB_LIBS)
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
