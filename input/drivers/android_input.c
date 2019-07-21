@@ -1397,13 +1397,12 @@ static void android_input_poll(void *data)
 {
    settings_t *settings = config_get_ptr();
    int ident;
-   unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
 
    while ((ident =
-            ALooper_pollAll((input_config_binds[0][key].valid 
-               && android_input_key_pressed(android, key))
+            ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
+               && android_input_key_pressed(android, RARCH_PAUSE_TOGGLE))
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
