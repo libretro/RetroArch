@@ -152,6 +152,7 @@ HAVE_VIDEOCORE=auto        # Broadcom Videocore 4 support
 HAVE_DRMINGW=no            # DrMingw exception handler
 HAVE_EASTEREGG=yes         # Easter egg
 HAVE_CDROM=auto            # CD-ROM support
+HAVE_GLSL=yes              # GLSL shaders support
 HAVE_SLANG=yes             # slang support
 C89_SLANG=no
 HAVE_GLSLANG=yes           # glslang support (requires C++11)
