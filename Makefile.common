@@ -55,7 +55,7 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(HAVE_PRESERVE_DYLIB),1)
+ifeq ($(HAVE_PRESERVE_DYLIB), 1)
    DEFINES += -DNO_DLCLOSE
 endif
 
@@ -188,19 +188,19 @@ OBJ += frontend/frontend_driver.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
 ifneq ($(findstring Linux,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
 endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o
 endif
 ifneq ($(findstring BSD,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
 else ifneq ($(findstring Darwin,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
 endif
 
 ifeq ($(TARGET), retroarch_orbis)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o
 endif
 
 OBJ += \
@@ -266,11 +266,11 @@ OBJ += \
 
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
-	DEFINES += -DHAVE_AUDIOMIXER
-	OBJ += \
-			 tasks/task_audio_mixer.o \
-			 $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
-			 $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
+   DEFINES += -DHAVE_AUDIOMIXER
+   OBJ += \
+          tasks/task_audio_mixer.o \
+          $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
+          $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
@@ -283,7 +283,7 @@ ifeq ($(HAVE_CC_RESAMPLER), 1)
    DEFINES += -DHAVE_CC_RESAMPLER
    OBJ += audio/drivers_resampler/cc_resampler.o
 
-ifeq ($(HAVE_NEON),1)
+ifeq ($(HAVE_NEON), 1)
    OBJ += audio/drivers_resampler/cc_resampler_neon.o
 endif
 endif
@@ -332,7 +332,7 @@ ifeq ($(HAVE_IMAGEVIEWER), 1)
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-	HAVE_HLSL = 1
+   HAVE_HLSL = 1
 endif
 
 ifeq ($(HAVE_CG), 1)
@@ -421,11 +421,11 @@ ifeq ($(HAVE_QT), 1)
    endif
 endif
 
-ifeq ($(HAVE_SSA),1)
+ifeq ($(HAVE_SSA), 1)
    LIBS += $(SSA_LIBS)
 endif
 
-ifeq ($(HAVE_SSE),1)
+ifeq ($(HAVE_SSE), 1)
    DEF_FLAGS += $(SSE_LIBS)
 endif
 
@@ -622,7 +622,7 @@ endif
 
 ifeq ($(HAVE_AL), 1)
    OBJ += audio/drivers/openal.o
-   ifeq ($(OSX),1)
+   ifeq ($(OSX), 1)
       LIBS += -framework OpenAL
    else
       LIBS += $(AL_LIBS)
@@ -633,7 +633,7 @@ ifneq ($(findstring Darwin,$(OS)),)
    OBJ += frontend/drivers/platform_darwin.o
 endif
 
-ifeq ($(HAVE_JACK),1)
+ifeq ($(HAVE_JACK), 1)
    OBJ += audio/drivers/jack.o
    LIBS += $(JACK_LIBS)
    DEFINES += $(JACK_CFLAGS)
@@ -682,7 +682,7 @@ endif
 
 # Audio Resamplers
 
-ifeq ($(HAVE_NEON),1)
+ifeq ($(HAVE_NEON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           memory/neon/memcpy-neon.o
 
@@ -695,7 +695,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
        $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 
-ifeq ($(HAVE_NEON),1)
+ifeq ($(HAVE_NEON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
           $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
@@ -703,10 +703,10 @@ endif
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_MENU)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
-   ifeq ($(HAVE_GL_CONTEXT),1)
+   ifeq ($(HAVE_GL_CONTEXT), 1)
       HW_CONTEXT_MENU_DRIVERS=1
    endif
-   ifeq ($(HAVE_VULKAN),1)
+   ifeq ($(HAVE_VULKAN), 1)
       HW_CONTEXT_MENU_DRIVERS=1
    endif
 endif
@@ -838,7 +838,7 @@ endif
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
    OBJ += tasks/task_overlay.o \
-			 led/drivers/led_overlay.o
+          led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
@@ -866,7 +866,7 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
-			 $(LIBRETRO_COMM_DIR)/rthreads/rsemaphore.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/rsemaphore.o \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
@@ -893,7 +893,7 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-   ifeq ($(HAVE_MENU_COMMON),1)
+   ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vita2d.o
    endif
 
@@ -977,7 +977,7 @@ ifeq ($(HAVE_X11), 1)
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS) $(XRANDR_LIBS)
    DEFINES += -DHAVE_X11 $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
-   ifeq ($(HAVE_XCB),1)
+   ifeq ($(HAVE_XCB), 1)
       LIBS    += -lX11-xcb
    endif
    ifneq ($(HAVE_OPENGLES), 1)
@@ -985,7 +985,7 @@ ifeq ($(HAVE_X11), 1)
    endif
 endif
 
-ifeq ($(HAVE_XCB),1)
+ifeq ($(HAVE_XCB), 1)
    DEFINES += $(XCB_CFLAGS)
    LIBS    += $(XCB_LIBS)
 endif
@@ -1278,7 +1278,7 @@ endif
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl_core.o \
           gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o
+          gfx/drivers_shader/shader_gl_core.o
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl_core.o
    endif
@@ -1518,7 +1518,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
-ifeq ($(HAVE_7ZIP),1)
+ifeq ($(HAVE_7ZIP), 1)
    DEF_FLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
@@ -1545,7 +1545,7 @@ ifeq ($(HAVE_IBXM), 1)
    OBJ += $(DEPS_DIR)/ibxm/ibxm.o
 endif
 
-ifeq ($(HAVE_BUILTINFLAC),1)
+ifeq ($(HAVE_BUILTINFLAC), 1)
    HAVE_FLAC = 1
    DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
    DEF_FLAGS += -DHAVE_DR_FLAC
@@ -1574,7 +1574,7 @@ ifeq ($(HAVE_BUILTINFLAC),1)
       FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
    endif
    OBJ += $(FLACOBJ)
-else ifeq ($(HAVE_FLAC),1)
+else ifeq ($(HAVE_FLAC), 1)
    DEFINES += -DHAVE_FLAC
    LIBS    += $(FLAC_LIBS)
 endif
@@ -1597,7 +1597,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
    DEFINES += -DWANT_ZLIB
-else ifeq ($(HAVE_ZLIB),1)
+else ifeq ($(HAVE_ZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    LIBS += $(ZLIB_LIBS)
 endif
@@ -1618,7 +1618,7 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
                  $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
 
-      ifeq ($(HAVE_FLAC),1)
+      ifeq ($(HAVE_FLAC), 1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
       endif
@@ -1667,16 +1667,16 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
 # Easter Egg
-ifeq ($(HAVE_EASTEREGG),1)
+ifeq ($(HAVE_EASTEREGG), 1)
   DEFINES += -DHAVE_EASTEREGG
   OBJ += cores/libretro-gong/gong.o
 endif
 
 # Video4Linux 2
 
-ifeq ($(HAVE_V4L2),1)
+ifeq ($(HAVE_V4L2), 1)
    OBJ += camera/drivers/video4linux2.o
-   ifeq ($(HAVE_VIDEOPROCESSOR),1)
+   ifeq ($(HAVE_VIDEOPROCESSOR), 1)
       DEFINES += -DHAVE_VIDEOPROCESSOR
       OBJ += cores/libretro-video-processor/video_processor_v4l2.o
    endif
@@ -1702,14 +1702,14 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_pl_thumbnail_download.o \
-				 menu/menu_networking.o
+             menu/menu_networking.o
    endif
 
    ifeq ($(HAVE_SSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
    endif
 
-   ifneq ($(HAVE_SOCKET_LEGACY),1)
+   ifneq ($(HAVE_SOCKET_LEGACY), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
@@ -1870,9 +1870,9 @@ ifneq ($(findstring Win32,$(OS)),)
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o \
-				 gfx/drivers_context/gdi_ctx.o \
-				 gfx/drivers_font/gdi_font.o
-		LIBS += -lmsimg32
+             gfx/drivers_context/gdi_ctx.o \
+             gfx/drivers_font/gdi_font.o
+      LIBS += -lmsimg32
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gdi.o
    endif
@@ -1896,7 +1896,7 @@ ifeq ($(HAVE_COMPRESSION), 1)
    OBJ     += tasks/task_decompress.o
 endif
 
-ifeq ($(HAVE_COCOA),1)
+ifeq ($(HAVE_COCOA), 1)
    DEFINES += -DHAVE_MAIN
    OBJ += input/drivers/cocoa_input.o \
           input/drivers_keyboard/keyboard_event_apple.o \
