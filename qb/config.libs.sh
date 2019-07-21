@@ -210,6 +210,8 @@ fi
 check_platform Linux TINYALSA 'Tinyalsa is' true
 check_platform Linux RPILED 'The RPI led driver is' true
 
+check_platform Darwin METAL 'Metal is' true
+
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
