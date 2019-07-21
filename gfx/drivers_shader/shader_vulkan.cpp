@@ -2890,7 +2890,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (!conf)
       return nullptr;
 
-   if (!video_shader_read_conf_preset(conf.get(), shader.get(), path))
+   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
       return nullptr;
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;

@@ -1144,7 +1144,7 @@ typedef struct MTLALIGN(16)
    {
       unsigned i;
       texture_t *source = NULL;
-      if (!video_shader_read_conf_preset(conf, shader, path.UTF8String))
+      if (!video_shader_read_conf_preset(conf, shader))
          return NO;
 
       source = &_engine.frame.texture[0];

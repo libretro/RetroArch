@@ -102,14 +102,13 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
  * @conf              : Preset file to read from.
  * @pass              : Shader passes handle.
  * @i                 : Index of shader pass.
- * @ref_path          : Base path used to resolve relative paths
  *
  * Parses shader pass from preset file.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool video_shader_parse_pass(config_file_t *conf,
-      struct video_shader_pass *pass, unsigned i, const char *ref_path)
+      struct video_shader_pass *pass, unsigned i)
 {
    char shader_name[64];
    char filter_name_buf[64];
@@ -152,7 +151,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    fill_pathname_resolve_relative(pass->source.path,
-         ref_path, tmp_path, sizeof(pass->source.path));
+         conf->path, tmp_path, sizeof(pass->source.path));
    free(tmp_path);
 
    /* Smooth */
@@ -307,14 +306,13 @@ static bool video_shader_parse_pass(config_file_t *conf,
  * video_shader_parse_textures:
  * @conf              : Preset file to read from.
  * @shader            : Shader pass handle.
- * @ref_path          : Base path used to resolve relative paths
  *
  * Parses shader textures.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool video_shader_parse_textures(config_file_t *conf,
-      struct video_shader *shader, const char *ref_path)
+      struct video_shader *shader)
 {
    size_t path_size     = PATH_MAX_LENGTH;
    const char *id       = NULL;
@@ -354,7 +352,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
       }
 
       fill_pathname_resolve_relative(shader->lut[shader->luts].path,
-            ref_path, tmp_path, sizeof(shader->lut[shader->luts].path));
+            conf->path, tmp_path, sizeof(shader->lut[shader->luts].path));
 
 
       strlcpy(shader->lut[shader->luts].id, id,
@@ -563,7 +561,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
- * @ref_path          : Base path used to resolve relative paths
  *
  * Loads preset file and all associated state (passes,
  * textures, imports, etc).
@@ -571,7 +568,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_read_conf_preset(config_file_t *conf,
-      struct video_shader *shader, const char* ref_path)
+      struct video_shader *shader)
 {
    unsigned i;
    union string_list_elem_attr attr;
@@ -618,7 +615,7 @@ bool video_shader_read_conf_preset(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      if (!video_shader_parse_pass(conf, &shader->pass[i], i, ref_path))
+      if (!video_shader_parse_pass(conf, &shader->pass[i], i))
       {
          if (file_list)
          {
@@ -648,7 +645,7 @@ bool video_shader_read_conf_preset(config_file_t *conf,
 
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
 
-   if (!video_shader_parse_textures(conf, shader, ref_path))
+   if (!video_shader_parse_textures(conf, shader))
       return false;
 
    return true;
