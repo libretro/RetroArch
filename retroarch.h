@@ -822,6 +822,7 @@ void recording_driver_update_streaming_url(void);
 #include "gfx/video_filter.h"
 #include "gfx/video_shader_parse.h"
 
+#include "input/input_driver.h"
 #include "input/input_types.h"
 
 #define RARCH_SCALE_BASE 256

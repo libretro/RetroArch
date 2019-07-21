@@ -45,7 +45,6 @@
 
 #include <string/stdstring.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"

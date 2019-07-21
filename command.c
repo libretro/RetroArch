@@ -74,7 +74,6 @@
 
 #include "defaults.h"
 #include "driver.h"
-#include "input/input_driver.h"
 #include "frontend/frontend_driver.h"
 #include "file_path_special.h"
 #include "autosave.h"

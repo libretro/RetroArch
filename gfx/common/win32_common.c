@@ -57,7 +57,6 @@
 
 #include <commdlg.h>
 #include <dbt.h>
-#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"

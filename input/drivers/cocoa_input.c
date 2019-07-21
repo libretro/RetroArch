@@ -23,7 +23,6 @@
 #include "../../config.h"
 #endif
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "cocoa_input.h"

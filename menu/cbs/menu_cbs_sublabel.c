@@ -47,7 +47,6 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
-#include "../input/input_driver.h"
 #include "../tasks/tasks_internal.h"
 
 #include "../../playlist.h"

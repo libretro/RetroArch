@@ -37,7 +37,6 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../common/linux_common.h"

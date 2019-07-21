@@ -69,7 +69,6 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #endif
 #endif
 
-#include "../input/input_driver.h"
 #include "../input/include/blissbox.h"
 
 #include "../configuration.h"

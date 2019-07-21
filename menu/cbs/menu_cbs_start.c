@@ -39,7 +39,6 @@
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 
-#include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 
 #include "../../config.def.h"

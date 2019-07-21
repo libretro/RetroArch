@@ -25,7 +25,6 @@
 #include <queues/task_queue.h>
 
 #include "cocoa_common.h"
-#include "../../../input/input_driver.h"
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
