@@ -613,7 +613,7 @@ char *filestream_getline(RFILE *stream)
    return newline;
 }
 
-const libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream)
+libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream)
 {
-   return (const libretro_vfs_implementation_file*)stream->hfile;
+   return (libretro_vfs_implementation_file*)stream->hfile;
 }

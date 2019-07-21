@@ -107,7 +107,7 @@ bool filestream_exists(const char *path);
 
 char *filestream_getline(RFILE *stream);
 
-const libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
+libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
 
 RETRO_END_DECLS
 

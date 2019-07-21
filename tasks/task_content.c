@@ -131,7 +131,7 @@ typedef struct
 {
    RFILE *file;
    RFILE *output_file;
-   const libretro_vfs_implementation_file *stream;
+   libretro_vfs_implementation_file *stream;
    const cdrom_toc_t *toc;
    char cdrom_path[64];
    char drive_letter[2];

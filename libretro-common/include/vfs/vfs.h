@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_VFS_H
 
 #include <retro_common_api.h>
+#include <boolean.h>
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -49,6 +50,9 @@ typedef struct
    unsigned char cur_frame;
    unsigned char cur_track;
    unsigned cur_lba;
+   unsigned last_frame_lba;
+   unsigned char last_frame[2352];
+   bool last_frame_valid;
 } vfs_cdrom_t;
 #endif
 
