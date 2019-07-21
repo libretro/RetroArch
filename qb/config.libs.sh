@@ -300,40 +300,25 @@ fi
 check_enabled THREADS LIBUSB libusb 'Threads are' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
-if [ "$OS" = 'Win32' ]; then
-   check_lib '' DINPUT -ldinput8
-   check_lib '' D3D8 -ld3d8
-   check_lib '' D3D9 -ld3d9
-   check_lib '' DSOUND -ldsound
+check_lib '' DINPUT -ldinput8
+check_lib '' D3D8 -ld3d8
+check_lib '' D3D9 -ld3d9
+check_lib '' DSOUND -ldsound
 
-   if [ "$HAVE_D3DX" != 'no' ]; then
-      check_lib '' D3DX8 -ld3dx8
-      check_lib '' D3DX9 -ld3dx9
-   fi
+check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-   if [ "$HAVE_DINPUT" != 'no' ]; then
-      HAVE_XINPUT=yes
-   fi
-
-   if [ "$HAVE_WASAPI" != 'no' ]; then
-      HAVE_WASAPI=yes
-   fi
-
-   if [ "$HAVE_XAUDIO" != 'no' ]; then
-      HAVE_XAUDIO=yes
-   fi
-
-   if [ "$HAVE_WINMM" != 'no' ]; then
-      HAVE_WINMM=yes
-   fi
+if [ "$HAVE_D3DX" != 'no' ]; then
+   check_lib '' D3DX8 -ld3dx8
+   check_lib '' D3DX9 -ld3dx9
 fi
 
-check_platform Win32 D3D8 'Direct3D 8 is' true
-check_platform Win32 D3D9 'Direct3D 9 is' true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
 check_platform Win32 D3DX 'Direct3DX is' true
+check_platform Win32 WASAPI 'WASAPI is' true
+check_platform Win32 XAUDIO 'XAudio is' true
+check_platform Win32 WINMM 'WinMM is' true
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
