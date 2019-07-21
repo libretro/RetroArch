@@ -535,31 +535,24 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
-if [ "$HAVE_SLANG" = 'no' ] ||
-   [ "$HAVE_GLSLANG" = 'no' ] ||
-   [ "$HAVE_SPIRV_CROSS" = 'no' ]; then
+check_enabled CXX SLANG slang 'The C++ compiler is' false
+check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
+check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
-if [ "$HAVE_SLANG" != "no" ]; then
-   die : 'Notice: slang disabled.'
-   HAVE_SLANG=no
-fi
-if [ "$HAVE_GLSLANG" != "no" ]; then
-   die : 'Notice: glslang disabled.'
-   HAVE_GLSLANG=no
-fi
-if [ "$HAVE_SPIRV_CROSS" != "no" ]; then
-   die : 'Notice: SPIRV-Cross disabled.'
-   HAVE_SPIRV_CROSS=no
-fi
-if [ "$HAVE_OPENGL_CORE" != "no" ]; then
-   die : 'Notice: glcore disabled.'
-   HAVE_OPENGL_CORE=no
-fi
-if [ "$HAVE_VULKAN" != "no" ]; then
-   die : 'Notice: vulkan disabled.'
-   HAVE_VULKAN=no
-fi
-fi
+check_enabled SLANG GLSLANG glslang 'slang is' false
+check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
+check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
+check_enabled SLANG VULKAN vulkan 'slang is' false
+
+check_enabled GLSLANG SLANG slang 'glslang is' false
+check_enabled GLSLANG SPIRV_CROSS SPIRV-Cross 'glslang is' false
+check_enabled GLSLANG OPENGL_CORE 'OpenGL core' 'glslang is' false
+check_enabled GLSLANG VULKAN vulkan 'glslang is' false
+
+check_enabled SPIRV_CROSS SLANG slang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS GLSLANG glslang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS VULKAN vulkan 'SPIRV-Cross is' false
 
 check_macro NEON __ARM_NEON__
 
