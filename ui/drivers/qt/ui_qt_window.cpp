@@ -41,6 +41,7 @@
 #include "ui_qt_load_core_window.h"
 #include "ui_qt_themes.h"
 #include "gridview.h"
+#include "shaderparamsdialog.h"
 #include "coreoptionsdialog.h"
 #include "filedropwidget.h"
 #include "coreinfodialog.h"
@@ -89,7 +90,6 @@ extern "C" {
 }
 #endif
 
-#include "shaderparamsdialog.h"
 #include "../../../AUTHORS.h"
 
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
