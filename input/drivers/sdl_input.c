@@ -98,7 +98,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       unsigned port, unsigned id, enum input_device_type *device)
 {
    /* Auto-binds are per joypad, not per user. */
-   const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
       ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
    const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
       ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
@@ -109,7 +109,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       return 1;
    }
 
-   if (joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, joykey))
+   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;

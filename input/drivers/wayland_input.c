@@ -301,11 +301,11 @@ static int16_t input_wl_state(void *data,
                if (!res && binds[port])
                {
                   /* Auto-binds are per joypad, not per user. */
-                  const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+                  const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
                      ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
                   const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                      ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
-                  if (joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, joykey))
+                  if ((uint16_t)joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
                      res = true;
                   else if (((float)abs(wl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
                      res = true;
@@ -321,11 +321,11 @@ static int16_t input_wl_state(void *data,
             if (!ret && binds[port])
             {
                /* Auto-binds are per joypad, not per user. */
-               const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+               const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
                   ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
                const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                   ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
-               if (joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, joykey))
+               if ((uint16_t)joykey != NO_BTN && wl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
                   ret = 1;
                else if (((float)abs(wl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
                   ret = 1;
