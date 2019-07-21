@@ -223,7 +223,6 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                 = 0;
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t            *sdl = (sdl_input_t*)data;
 
@@ -233,27 +232,35 @@ static int16_t sdl_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (sdl_joypad_device_state(
                         sdl, joypad_info, binds[port], port, i, &type))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = sdl_joypad_device_state(sdl,
-                     joypad_info, binds[port], port, id, &type);
+               if (sdl_joypad_device_state(sdl,
+                     joypad_info, binds[port], port, id, &type))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
             int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(sdl->joypad,
-                     joypad_info, port, idx, id, binds[port]);
+                        joypad_info, port, idx, id, binds[port]);
             return ret;
          }
          break;
@@ -262,7 +269,8 @@ static int16_t sdl_input_state(void *data,
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return sdl_pointer_device_state(sdl, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+            return sdl_pointer_device_state(sdl, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && sdl_key_pressed(id);

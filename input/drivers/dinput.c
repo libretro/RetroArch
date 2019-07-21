@@ -558,7 +558,6 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    struct dinput_input *di    = (struct dinput_input*)data;
 
    switch (device)
@@ -567,6 +566,7 @@ static int16_t dinput_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (binds[port][i].key < RETROK_LAST)
@@ -609,8 +609,10 @@ static int16_t dinput_input_state(void *data,
                   }
                }
             }
+            return ret;
          }
          else
+         {
             if (id < RARCH_BIND_LIST_END)
             {
                if (binds[port][id].key < RETROK_LAST)
@@ -636,13 +638,14 @@ static int16_t dinput_input_state(void *data,
                      return true;
                }
             }
-         return ret;
+         }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            ret = dinput_pressed_analog(di, binds[port], idx, id);
+            int16_t ret = dinput_pressed_analog(di, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(di->joypad, joypad_info,
                      port, idx, id, binds[port]);

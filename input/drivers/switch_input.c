@@ -372,7 +372,6 @@ static int16_t switch_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret = 0;
    switch_input_t *sw = (switch_input_t*) data;
 
    if (port > DEFAULT_MAX_PADS - 1)
@@ -384,6 +383,7 @@ static int16_t switch_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
@@ -393,10 +393,18 @@ static int16_t switch_input_state(void *data,
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
 
                if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
                   ret |= (1 << i);
-               else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  continue;
+               }
+               if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
                   ret |= (1 << 1);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
@@ -406,11 +414,11 @@ static int16_t switch_input_state(void *data,
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
             if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-               ret = 1;
-            else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               ret = 1;
+               return true;
+            if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(sw->joypad,

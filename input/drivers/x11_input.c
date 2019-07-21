@@ -311,7 +311,6 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    x11_input_t *x11           = (x11_input_t*)data;
 
    switch (device)
@@ -320,26 +319,35 @@ static int16_t x_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (x_is_pressed(
                         x11, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = x_is_pressed(x11, joypad_info, binds[port], port, id);
+               if (x_is_pressed(x11, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = x_pressed_analog(x11, binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(x11->joypad, joypad_info,
-                  port, idx,
-                  id, binds[port]);
-         return ret;
+         {
+            int16_t ret = x_pressed_analog(x11, binds[port], idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(x11->joypad, joypad_info,
+                     port, idx,
+                     id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:

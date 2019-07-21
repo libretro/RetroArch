@@ -527,7 +527,6 @@ static int16_t rwebinput_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                   = 0;
    rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;
 
    switch (device)
@@ -536,27 +535,37 @@ static int16_t rwebinput_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (rwebinput_is_pressed(
                         rwebinput, joypad_info, port, binds[port], i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = rwebinput_is_pressed(rwebinput, joypad_info, binds[port],
-                     port, id);
+               if (rwebinput_is_pressed(rwebinput, joypad_info, binds[port],
+                     port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = rwebinput_analog_pressed(rwebinput, joypad_info, binds[port],
-            idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(rwebinput->joypad, joypad_info, port,
-               idx, id, binds[port]);
-         return ret;
+         {
+            int16_t ret = rwebinput_analog_pressed(
+                  rwebinput, joypad_info, binds[port],
+                  idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(rwebinput->joypad, joypad_info, port,
+                     idx, id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);
       case RETRO_DEVICE_MOUSE:

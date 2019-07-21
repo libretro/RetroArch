@@ -192,7 +192,6 @@ static int16_t uwp_input_state(void *data,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   int16_t ret                = 0;
    uwp_input_t *uwp           = (uwp_input_t*)data;
 
    switch (device)
@@ -201,23 +200,29 @@ static int16_t uwp_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (uwp_pressed_joypad(
                         uwp, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id);
+               if (uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return uwp_pressed_analog(uwp, joypad_info, binds[port], port, index, id);
-
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
 

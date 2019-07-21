@@ -1008,7 +1008,6 @@ static int16_t udev_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    udev_input_t *udev         = (udev_input_t*)data;
 
    switch (device)
@@ -1017,26 +1016,34 @@ static int16_t udev_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (udev_is_pressed(
                         udev, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = udev_is_pressed(udev, joypad_info, binds[port], port, id);
+               if (udev_is_pressed(udev, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = udev_analog_pressed(binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(udev->joypad,
-                  joypad_info, port, idx, id, binds[port]);
-         return ret;
-
+         {
+            int16_t ret = udev_analog_pressed(binds[port], idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(udev->joypad,
+                        joypad_info, port, idx, id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
 

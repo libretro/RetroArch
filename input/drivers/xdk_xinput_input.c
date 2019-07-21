@@ -55,7 +55,6 @@ static int16_t xdk_input_state(void *data,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   int16_t ret                = 0;
    xdk_input_t *xdk           = (xdk_input_t*)data;
 
    if (port >= DEFAULT_MAX_PADS)
@@ -67,6 +66,8 @@ static int16_t xdk_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
@@ -74,16 +75,20 @@ static int16_t xdk_input_state(void *data,
                   ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
-               bool res               = false;
 
                if ((uint16_t)joykey != NO_BTN && xdk->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-                  res = true;
-               else if (((float)abs(xdk->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-                  res = true;
-
-               if (res)
+               {
                   ret |= (1 << i);
+                  continue;
+               }
+               if (((float)abs(xdk->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
@@ -94,11 +99,11 @@ static int16_t xdk_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
             if ((uint16_t)joykey != NO_BTN && xdk->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-               ret = 1;
-            else if (((float)abs(xdk->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               ret = 1;
+               return true;
+            if (((float)abs(xdk->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(xdk->joypad, joypad_info, port, index, id, binds[port]);

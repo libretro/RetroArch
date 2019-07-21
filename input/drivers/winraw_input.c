@@ -703,7 +703,6 @@ static int16_t winraw_input_state(void *d,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   int16_t ret        = 0;
    winraw_input_t *wr = (winraw_input_t*)d;
 
    switch (device)
@@ -712,19 +711,25 @@ static int16_t winraw_input_state(void *d,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (winraw_is_pressed(
                         wr, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = winraw_is_pressed(wr, joypad_info, binds[port], port, id);
+               return winraw_is_pressed(wr, joypad_info, binds[port], port, id);
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,
