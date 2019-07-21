@@ -372,10 +372,9 @@ ifeq ($(HAVE_QT),1)
           ui/drivers/qt/updateretroarch.o \
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
-          ui/drivers/qt/playlistthumbnaildownload.o
-    ifeq ($(HAVE_SHADERS_COMMON),1)
-       OBJ += ui/drivers/qt/shaderparamsdialog.o
-    endif
+          ui/drivers/qt/playlistthumbnaildownload.o \
+			 ui/drivers/qt/shaderparamsdialog.o
+
     ifeq ($(HAVE_MENU),1)
        OBJ += ui/drivers/qt/settingswidgets.o \
               ui/drivers/qt/options/achievements.o \
@@ -401,10 +400,9 @@ ifeq ($(HAVE_QT),1)
                   ui/drivers/qt/filedropwidget.h \
                   ui/drivers/qt/coreinfodialog.h \
                   ui/drivers/qt/playlistentrydialog.h \
-                  ui/drivers/qt/viewoptionsdialog.h
-   ifeq ($(HAVE_SHADERS_COMMON),1)
-      MOC_HEADERS += ui/drivers/qt/shaderparamsdialog.h
-   endif
+                  ui/drivers/qt/viewoptionsdialog.h \
+                  ui/drivers/qt/shaderparamsdialog.h
+
    ifeq ($(HAVE_MENU),1)
       MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
                      ui/drivers/qt/options/options.h
