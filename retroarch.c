@@ -19264,28 +19264,26 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
 
       case RARCH_CTL_CORE_OPTIONS_DEINIT:
+         if (!runloop_core_options)
+            return false;
+
+         /* check if game options file was just created and flush
+            to that file instead */
+         if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
          {
-            if (!runloop_core_options)
-               return false;
-
-            /* check if game options file was just created and flush
-               to that file instead */
-            if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-            {
-               core_option_manager_flush_game_specific(runloop_core_options,
-                     path_get(RARCH_PATH_CORE_OPTIONS));
-               path_clear(RARCH_PATH_CORE_OPTIONS);
-            }
-            else
-               core_option_manager_flush(runloop_core_options);
-
-            if (runloop_game_options_active)
-               runloop_game_options_active = false;
-
-            if (runloop_core_options)
-               core_option_manager_free(runloop_core_options);
-            runloop_core_options          = NULL;
+            core_option_manager_flush_game_specific(runloop_core_options,
+                  path_get(RARCH_PATH_CORE_OPTIONS));
+            path_clear(RARCH_PATH_CORE_OPTIONS);
          }
+         else
+            core_option_manager_flush(runloop_core_options);
+
+         if (runloop_game_options_active)
+            runloop_game_options_active = false;
+
+         if (runloop_core_options)
+            core_option_manager_free(runloop_core_options);
+         runloop_core_options          = NULL;
          break;
 
       case RARCH_CTL_CORE_OPTIONS_DISPLAY:
@@ -19782,15 +19780,6 @@ void runloop_get_status(bool *is_paused, bool *is_idle,
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
 #define TIME_TO_EXIT(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
-
-#define RUNLOOP_CHECK_CHEEVOS() (settings->bools.cheevos_enable && rcheevos_loaded && (!rcheevos_cheats_are_enabled && !rcheevos_cheats_were_enabled))
-
-#ifdef HAVE_NETWORKING
-/* FIXME: This is an ugly way to tell Netplay this... */
-#define RUNLOOP_NETPLAY_PAUSE() netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL)
-#else
-#define RUNLOOP_NETPLAY_PAUSE() ((void)0)
-#endif
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
@@ -20697,10 +20686,13 @@ static enum runloop_state runloop_check_state(
          }
       }
 
-      /* If a file is modified atomically (moved/renamed from a different file), we have no idea how long that might take.
-       * If we're trying to re-apply shaders immediately after changes are made to the original file(s), the filesystem might be in an in-between
-       * state where the new file hasn't been moved over yet and the original file was already deleted. This leaves us no choice
-       * but to wait an arbitrary amount of time and hope for the best.
+      /* If a file is modified atomically (moved/renamed from a different file), 
+       * we have no idea how long that might take.
+       * If we're trying to re-apply shaders immediately after changes are made 
+       * to the original file(s), the filesystem might be in an in-between
+       * state where the new file hasn't been moved over yet and the original 
+       * file was already deleted. This leaves us no choice but to wait an
+       * arbitrary amount of time and hope for the best.
        */
       if (need_to_apply)
       {
@@ -20810,21 +20802,27 @@ int runloop_iterate(unsigned *sleep_ms)
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
-         RUNLOOP_NETPLAY_PAUSE();
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
          *sleep_ms = 10;
          return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
-               && settings->bools.menu_pause_libretro)
-            RUNLOOP_NETPLAY_PAUSE();
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         if (settings->bools.menu_pause_libretro &&
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
+            )
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
 #ifdef HAVE_NETWORKING
-         RUNLOOP_NETPLAY_PAUSE();
-         return 0;
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+         return 0;
       case RUNLOOP_STATE_ITERATE:
          break;
    }
@@ -20884,7 +20882,10 @@ int runloop_iterate(unsigned *sleep_ms)
    rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
-   if (RUNLOOP_CHECK_CHEEVOS())
+   if (  settings->bools.cheevos_enable && 
+         rcheevos_loaded                && 
+         (!rcheevos_cheats_are_enabled && !rcheevos_cheats_were_enabled)
+      )
       rcheevos_test();
 #endif
    cheat_manager_apply_retro_cheats();
