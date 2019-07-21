@@ -53,7 +53,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
    include_path[0] = tmp[0] = '\0';
 
    strlcpy(tmp_path, path, path_size);
-   path_resolve_realpath(tmp_path, path_size);
+   path_resolve_realpath(tmp_path, path_size, false);
 
    if (!path_is_valid(tmp_path))
       strlcpy(tmp_path, path, path_size);

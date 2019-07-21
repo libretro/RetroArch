@@ -758,6 +758,7 @@ bool path_is_absolute(const char *path)
  * path_resolve_realpath:
  * @buf                : input and output buffer for path
  * @size               : size of buffer
+ * @resolve_symlinks   : whether to resolve symlinks or not
  *
  * Resolves use of ".", "..", multiple slashes etc in absolute paths.
  *
@@ -765,11 +766,12 @@ bool path_is_absolute(const char *path)
  *
  * Returns: @buf if successful, NULL otherwise.
  * Note: Not implemented on consoles
+ * Note: Symlinks are only resolved on Unix-likes
  * Note: The current working dir might not be what you expect,
  *       e.g. on Android it is "/"
  *       Use of fill_pathname_resolve_relative() should be prefered
  **/
-char *path_resolve_realpath(char *buf, size_t size)
+char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
    char tmp[PATH_MAX_LENGTH];
@@ -782,10 +784,30 @@ char *path_resolve_realpath(char *buf, size_t size)
    }
    return buf;
 #else
-   size_t t = 0; /* length of output */
+   size_t t;
    char *p;
    const char *next;
-   const char *buf_end = buf + strlen(buf);
+   const char *buf_end;
+
+   if (resolve_symlinks)
+   {
+      strlcpy(tmp, buf, sizeof(tmp));
+
+      /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
+       * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
+       * POSIX 2008 can automatically allocate for you,
+       * but don't rely on that. */
+      if (!realpath(tmp, buf))
+      {
+         strlcpy(buf, tmp, size);
+         return NULL;
+      }
+
+      return buf;
+   }
+
+   t = 0; /* length of output */
+   buf_end = buf + strlen(buf);
 
    if (!path_is_absolute(buf))
    {
@@ -933,7 +955,7 @@ void fill_pathname_resolve_relative(char *out_path,
 
    fill_pathname_basedir(out_path, in_refpath, size);
    strlcat(out_path, in_path, size);
-   path_resolve_realpath(out_path, size);
+   path_resolve_realpath(out_path, size, false);
 }
 
 /**
