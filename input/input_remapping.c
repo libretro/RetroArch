@@ -20,7 +20,6 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "input_driver.h"
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"

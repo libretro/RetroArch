@@ -24,7 +24,6 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../common/input_x11_common.h"

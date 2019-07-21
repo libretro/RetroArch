@@ -33,7 +33,6 @@
 #endif
 
 #include "file_path_special.h"
-#include "input/input_driver.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"

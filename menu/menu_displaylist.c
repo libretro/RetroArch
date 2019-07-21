@@ -90,7 +90,6 @@
 #include "../gfx/video_display_server.h"
 #include "../config.features.h"
 #include "../version_git.h"
-#include "../input/input_driver.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
 #include "../core_info.h"

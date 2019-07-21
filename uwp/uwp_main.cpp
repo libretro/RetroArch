@@ -19,7 +19,6 @@
 #include "../retroarch.h"
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
-#include "../input/input_driver.h"
 #include "../verbosity.h"
 #include "../libretro-common/include/encodings/utf.h"
 #include "../libretro-common/include/lists/string_list.h"

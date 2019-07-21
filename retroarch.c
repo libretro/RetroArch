@@ -119,7 +119,6 @@
 #include "menu/widgets/menu_osk.h"
 #endif
 
-#include "input/input_driver.h"
 #include "input/input_mapper.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
@@ -155,7 +154,6 @@
 #include "core_info.h"
 #include "dynamic.h"
 #include "driver.h"
-#include "input/input_driver.h"
 #include "msg_hash.h"
 #include "paths.h"
 #include "file_path_special.h"

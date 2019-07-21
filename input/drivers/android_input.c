@@ -35,7 +35,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../input_driver.h"
 
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"

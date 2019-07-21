@@ -80,7 +80,6 @@ typedef struct
 /* end of touch mouse defines and types */
 #endif
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 /* TODO/FIXME -

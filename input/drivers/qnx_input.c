@@ -29,7 +29,6 @@
 
 #include "../../config.def.h"
 
-#include "../input_driver.h"
 
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"

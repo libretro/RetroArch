@@ -30,7 +30,6 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
