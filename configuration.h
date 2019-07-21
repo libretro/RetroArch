@@ -164,6 +164,8 @@ typedef struct settings
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;
+      bool menu_show_load_disc;
+      bool menu_show_dump_disc;
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
