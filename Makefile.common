@@ -1443,12 +1443,12 @@ ifeq ($(HAVE_GLSL), 1)
    OBJ += gfx/drivers_shader/shader_glsl.o
 endif
 
-ifeq ($(HAVE_HLSL),1)
+ifeq ($(HAVE_HLSL), 1)
    DEFINES += -DHAVE_HLSL
    OBJ += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o
 endif
 
-ifeq ($(HAVE_SLANG),1)
+ifeq ($(HAVE_SLANG), 1)
    DEFINES += -DHAVE_SLANG
    OBJ += gfx/drivers_shader/slang_process.o
    OBJ += gfx/drivers_shader/slang_preprocess.o
