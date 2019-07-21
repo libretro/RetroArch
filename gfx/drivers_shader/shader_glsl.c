@@ -903,7 +903,7 @@ static void *gl_glsl_init(void *data, const char *path)
             conf = config_file_new_from_path_to_string(path);
             if (conf)
             {
-               ret = video_shader_read_conf_preset(conf, glsl->shader, path);
+               ret = video_shader_read_conf_preset(conf, glsl->shader);
                glsl->shader->modern = true;
             }
          }

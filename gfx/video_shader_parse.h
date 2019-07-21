@@ -163,14 +163,13 @@ struct video_shader
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
- * @ref_path          : Base path used to resolve relative paths
  * Loads preset file and all associated state (passes,
  * textures, imports, etc).
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_read_conf_preset(config_file_t *conf,
-      struct video_shader *shader, const char* ref_path);
+      struct video_shader *shader);
 
 /**
  * video_shader_write_conf_preset:

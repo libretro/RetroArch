@@ -383,7 +383,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, d3d11->shader_preset, path))
+   if (!video_shader_read_conf_preset(conf, d3d11->shader_preset))
       goto error;
 
    source = &d3d11->frame.texture[0];
