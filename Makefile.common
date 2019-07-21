@@ -939,9 +939,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
- ifeq ($(HAVE_EGL), 1)
-   LIBS += $(EGL_LIBS)
- endif
  DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
@@ -964,8 +961,6 @@ endif
 
 ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
    OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
-   DEFINES += $(EGL_CFLAGS)
-   LIBS += $(EGL_LIBS)
 endif
 
 ifeq ($(HAVE_X11), 1)
@@ -1064,8 +1059,8 @@ OBJ += gfx/drivers_context/gfx_null_ctx.o
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
    OBJ += gfx/drivers_context/drm_ctx.o
-   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
-   LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS)
+   LIBS += $(GBM_LIBS) $(DRM_LIBS)
 endif
 
 ifeq ($(HAVE_CACA), 1)
@@ -1124,8 +1119,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_VIDEOCORE), 1)
       OBJ += gfx/drivers_context/vc_egl_ctx.o
-      DEFINES += $(EGL_CFLAGS)
-      LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -1134,21 +1127,15 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
       OBJ += gfx/drivers_context/mali_fbdev_ctx.o
-      DEFINES += $(EGL_CFLAGS)
-      LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIVANTE_FBDEV), 1)
       OBJ += gfx/drivers_context/vivante_fbdev_ctx.o
-      DEFINES += $(EGL_CFLAGS)
-      LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_X11), 1)
       ifeq ($(HAVE_EGL), 1)
          OBJ += gfx/drivers_context/xegl_ctx.o
-         DEFINES += $(EGL_CFLAGS)
-         LIBS += $(EGL_LIBS)
       endif
    endif
 
