@@ -629,10 +629,8 @@ static bool content_load(content_ctx_info_t *info)
       content_clear_subsystem();
    }
 
-#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
-#endif
 #endif
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);

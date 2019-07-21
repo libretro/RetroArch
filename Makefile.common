@@ -348,7 +348,6 @@ ifeq ($(HAVE_SLANG), 1)
    HAVE_SHADERS_COMMON = 1
 endif
 
-
 # Qt WIMP GUI
 
 ifeq ($(HAVE_OPENSSL), 1)
@@ -791,6 +790,11 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+# Does not depend on HAVE_MENU
+ifeq ($(HAVE_SHADERS_COMMON),1)
+   OBJ += menu/menu_shader.o
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
@@ -824,11 +828,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers/menu_generic.o \
           menu/drivers/null.o \
           menu/menu_thumbnail_path.o \
-			 menu/drivers_display/menu_display_null.o
-
-   ifeq ($(HAVE_SHADERS_COMMON),1)
-      OBJ += menu/menu_shader.o
-   endif
+          menu/drivers_display/menu_display_null.o
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o
