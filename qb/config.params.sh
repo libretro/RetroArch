@@ -63,6 +63,7 @@ C89_D3D11=no
 HAVE_D3D12=yes             # Direct3D 12 support
 C89_D3D12=no
 HAVE_D3DX=auto             # Direct3DX support
+HAVE_DINPUT=auto           # Dinput support
 HAVE_OPENGL=auto           # OpenGL 2.0 support
 HAVE_OPENGL_CORE=yes       # Modern OpenGL driver support (GLES3+/GL3.2 core+), requires OpenGL.
 C89_OPENGL_CORE=no
