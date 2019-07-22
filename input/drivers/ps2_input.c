@@ -88,9 +88,9 @@ static int16_t ps2_input_state(void *data,
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
             if ((uint16_t)joykey != NO_BTN && ps2->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
-               return ret;
+               return true;
             if (((float)abs(ps2->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               return ret;
+               return true;
          }
          break;
       case RETRO_DEVICE_ANALOG:
