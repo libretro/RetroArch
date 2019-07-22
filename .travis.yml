@@ -35,6 +35,8 @@ matrix:
     - compiler: gcc
       env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
