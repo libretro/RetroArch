@@ -92,6 +92,10 @@ script:
        ARGS="$ARGS --disable-overlay"
      fi
   - |
+     if [ -n "$DISABLE_CDROM" ]; then
+       ARGS="$ARGS --disable-cdrom"
+     fi
+  - |
      if [ -n "$ENABLE_GLES" ]; then
        ARGS="$ARGS --enable-opengles"
      fi
