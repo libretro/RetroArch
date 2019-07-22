@@ -3455,7 +3455,7 @@ bool config_load_remap(void)
          path_size);
 
    /* Create a new config file from game_path */
-   new_conf = config_file_new_from_path_to_string(game_path);
+   new_conf = config_file_new(game_path);
 
    /* If a game remap file exists, load it. */
    if (new_conf)
@@ -3477,7 +3477,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from content_path */
-   new_conf = config_file_new_from_path_to_string(content_path);
+   new_conf = config_file_new(content_path);
 
    /* If a content-dir remap file exists, load it. */
    if (new_conf)
@@ -3499,7 +3499,7 @@ bool config_load_remap(void)
    }
 
    /* Create a new config file from core_path */
-   new_conf = config_file_new_from_path_to_string(core_path);
+   new_conf = config_file_new(core_path);
 
    /* If a core remap file exists, load it. */
    if (new_conf)
