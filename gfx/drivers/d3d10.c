@@ -705,6 +705,7 @@ d3d10_gfx_init(const video_info_t* video,
    d3d10->viewport.Width  = d3d10->vp.full_width;
    d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->resize_viewport = true;
+   d3d10->keep_aspect     = video->force_aspect;
    d3d10->vsync           = video->vsync;
    d3d10->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
