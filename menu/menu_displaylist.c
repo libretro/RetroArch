@@ -4971,7 +4971,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_CDROM
       case DISPLAYLIST_CDROM_DETAIL_INFO:
       {
-         media_detect_cd_info_t cd_info = {0};
+         media_detect_cd_info_t cd_info = {{0}};
          char file_path[PATH_MAX_LENGTH];
          RFILE *file;
          char drive = info->path[0];
