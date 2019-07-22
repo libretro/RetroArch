@@ -826,7 +826,9 @@ static bool rarch_use_sram                                      = false;
 static bool rarch_ups_pref                                      = false;
 static bool rarch_bps_pref                                      = false;
 static bool rarch_ips_pref                                      = false;
+static bool rarch_patch_blocked                                 = false;
 
+static bool runloop_missing_bios                                = false;
 static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
 static bool runloop_idle                                        = false;
@@ -3060,6 +3062,18 @@ static void retroarch_system_info_init(void)
          sizeof(runloop_system.valid_extensions));
 }
 
+static void retroarch_set_frame_limit(void)
+{
+   settings_t                 *settings = configuration_settings;
+   struct retro_system_av_info *av_info = &video_driver_av_info;
+   float fastforward_ratio_orig         = settings->floats.fastforward_ratio;
+   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) ? 1.0f : fastforward_ratio_orig;
+
+   frame_limit_last_time                = cpu_features_get_time_usec();
+   frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f
+         / (av_info->timing.fps * fastforward_ratio));
+}
+
 
 static bool command_event_init_core(enum rarch_core_type *data)
 {
@@ -3105,7 +3119,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
+   retroarch_set_frame_limit();
    command_event_runtime_log_init();
    return true;
 }
@@ -3967,7 +3981,7 @@ TODO: Add a setting for these tweaks */
             return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         if (!audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL)))
+         if (!audio_driver_start(runloop_shutdown_initiated))
             return false;
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
@@ -4752,7 +4766,7 @@ TODO: Add a setting for these tweaks */
          command_event_set_mixer_volume(-0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
+         retroarch_set_frame_limit();
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -4965,7 +4979,7 @@ static void global_free(void)
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
+   rarch_patch_blocked                   = false;
    runloop_overrides_active              = false;
    runloop_remaps_core_active            = false;
    runloop_remaps_game_active            = false;
@@ -6509,7 +6523,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
           * been cleared (causing log to be skipped) */
          command_event_runtime_log_deinit();
 
-         rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
+         runloop_shutdown_initiated      = true;
          runloop_core_shutdown_initiated = true;
          break;
 
@@ -21233,7 +21247,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                break;
 
             case RA_OPT_NO_PATCH:
-               rarch_ctl(RARCH_CTL_SET_PATCH_BLOCKED, NULL);
+               rarch_patch_blocked = true;
                break;
 
             case 'D':
@@ -21814,22 +21828,12 @@ static void rarch_init_core_options(
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool rarch_patch_blocked     = false;
-   static bool runloop_missing_bios    = false;
-   /* TODO/FIXME - not used right now? */
-
    switch(state)
    {
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
          return rarch_patch_blocked;
-      case RARCH_CTL_SET_PATCH_BLOCKED:
-         rarch_patch_blocked = true;
-         break;
-      case RARCH_CTL_UNSET_PATCH_BLOCKED:
-         rarch_patch_blocked = false;
-         break;
       case RARCH_CTL_IS_BPS_PREF:
          return rarch_bps_pref;
       case RARCH_CTL_UNSET_BPS_PREF:
@@ -21971,18 +21975,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return runloop_missing_bios;
       case RARCH_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
-      case RARCH_CTL_SET_FRAME_LIMIT:
-         {
-            settings_t                 *settings = configuration_settings;
-            struct retro_system_av_info *av_info = &video_driver_av_info;
-            float fastforward_ratio_orig         = settings->floats.fastforward_ratio;
-            float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) ? 1.0f : fastforward_ratio_orig;
-
-            frame_limit_last_time                = cpu_features_get_time_usec();
-            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f
-                  / (av_info->timing.fps * fastforward_ratio));
-         }
-         break;
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -22609,7 +22601,7 @@ bool retroarch_main_quit(void)
    discord_is_inited          = false;
 #endif
 
-   if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
+   if (!runloop_shutdown_initiated)
    {
       command_event_save_auto_state();
       command_event_disable_overrides();
@@ -22621,7 +22613,7 @@ bool retroarch_main_quit(void)
          input_remapping_set_defaults(true);
    }
 
-   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   runloop_shutdown_initiated = true;
    retroarch_menu_running_finished(true);
 
    return true;
