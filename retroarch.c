@@ -781,6 +781,9 @@ static settings_t *configuration_settings                       = NULL;
 
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
+static char current_library_name[1024]                          = {0};
+static char current_library_version[1024]                       = {0};
+static char current_valid_extensions[1024]                      = {0};
 static char error_string[255]                                   = {0};
 
 static bool has_set_username                                    = false;
@@ -4972,7 +4975,7 @@ static void global_free(void)
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   rarch_block_config_read               = false;
    rarch_is_sram_load_disabled           = false;
    rarch_is_sram_save_disabled           = false;
    rarch_use_sram                        = false;
@@ -5035,7 +5038,7 @@ void main_exit(void *args)
    has_set_username        = false;
    rarch_is_inited         = false;
    rarch_error_on_init     = false;
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   rarch_block_config_read = false;
 
    retroarch_msg_queue_deinit();
    driver_uninit(DRIVERS_CMD_ALL);
@@ -6726,13 +6729,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
       {
-         retro_keyboard_event_t *frontend_key_event = NULL;
-         retro_keyboard_event_t *key_event          = NULL;
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
-
-         rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-         rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
+         retro_keyboard_event_t *frontend_key_event = &runloop_frontend_key_event;
+         retro_keyboard_event_t *key_event          = &runloop_key_event;
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
@@ -7344,11 +7344,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (midi_interface)
          {
-            midi_interface->input_enabled = midi_driver_input_enabled;
+            midi_interface->input_enabled  = midi_driver_input_enabled;
             midi_interface->output_enabled = midi_driver_output_enabled;
-            midi_interface->read = midi_driver_read;
-            midi_interface->write = midi_driver_write;
-            midi_interface->flush = midi_driver_flush;
+            midi_interface->read           = midi_driver_read;
+            midi_interface->write          = midi_driver_write;
+            midi_interface->flush          = midi_driver_flush;
          }
          break;
       }
@@ -7489,10 +7489,6 @@ static dylib_t libretro_get_system_info_lib(const char *path,
    return lib;
 }
 #endif
-
-static char current_library_name[1024];
-static char current_library_version[1024];
-static char current_valid_extensions[1024];
 
 /**
  * libretro_get_system_info:
