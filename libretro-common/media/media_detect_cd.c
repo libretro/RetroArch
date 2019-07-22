@@ -40,7 +40,7 @@ static void media_zero_trailing_spaces(char *buf, size_t len)
 static bool media_skip_spaces(const char **buf, size_t len)
 {
    bool found = false;
-   int i;
+   unsigned i;
 
    if (!buf || !*buf)
       return false;
@@ -245,9 +245,8 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
       /* Primary Volume Descriptor fields of ISO9660 */
       else if (!memcmp(buf + offset + (16 * sector_size), "\1CD001\1\0PLAYSTATION", 19))
       {
-         const char *title_pos;
-         const char *serial_pos;
-         bool title_found = false;
+         const char *title_pos = NULL;
+         bool title_found      = false;
 
          info->system_id = MEDIA_CD_SYSTEM_PSX;
 

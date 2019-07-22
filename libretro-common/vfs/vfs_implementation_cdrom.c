@@ -340,7 +340,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
    if (string_is_equal_noncase(ext, "cue"))
    {
-      if (len < stream->cdrom.cue_len - stream->cdrom.byte_pos)
+      if (len < (unsigned)(stream->cdrom.cue_len - stream->cdrom.byte_pos))
       {
 #ifdef CDROM_DEBUG
          printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom.byte_pos);

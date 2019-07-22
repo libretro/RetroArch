@@ -290,7 +290,6 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
-   size_t ret;
    unsigned bytes;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
