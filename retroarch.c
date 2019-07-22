@@ -1720,6 +1720,14 @@ static void retroarch_msg_queue_init(void)
 #endif
 }
 
+static void retroarch_autosave_deinit(void)
+{
+#ifdef HAVE_THREADS
+   if (rarch_use_sram)
+      autosave_deinit();
+#endif
+}
+
 /* COMMAND */
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
@@ -2476,7 +2484,7 @@ static bool command_event_disk_control_append_image(const char *path)
    RARCH_LOG("%s\n", msg);
    runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
+   retroarch_autosave_deinit();
 
    /* TODO: Need to figure out what to do with subsystems case. */
    if (path_is_empty(RARCH_PATH_SUBSYSTEM))
@@ -2702,6 +2710,17 @@ static void command_event_init_controllers(void)
    }
 }
 
+static void command_event_disable_overrides(void)
+{
+   if (!runloop_overrides_active)
+      return;
+
+   /* reload the original config */
+   config_unload_override();
+   runloop_overrides_active = false;
+}
+
+
 static void command_event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
@@ -2718,9 +2737,13 @@ static void command_event_deinit_core(bool reinit)
    if (reinit)
       driver_uninit(DRIVERS_CMD_ALL);
 
-   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
-   command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
+   command_event_disable_overrides();
+   retroarch_unset_shader_preset();
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+         rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
+         rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+      input_remapping_set_defaults(true);
 }
 
 static void command_event_init_cheats(void)
@@ -2732,7 +2755,7 @@ static void command_event_init_cheats(void)
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
-   allow_cheats &= !rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL);
+   allow_cheats &= !(bsv_movie_state_handle != NULL);
 
    if (!allow_cheats)
       return;
@@ -2868,7 +2891,7 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (current_core_type == CORE_TYPE_DUMMY)
       return true;
 
    content_set_subsystem_info();
@@ -2904,11 +2927,139 @@ static bool event_init_content(void)
    command_event_load_auto_state();
 #endif
 
-   command_event(CMD_EVENT_BSV_MOVIE_INIT, NULL);
+   bsv_movie_deinit();
+   bsv_movie_init();
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
    return true;
 }
+
+static void update_runtime_log(bool log_per_core)
+{
+   /* Initialise runtime log file */
+   runtime_log_t *runtime_log = runtime_log_init(
+         runtime_content_path, runtime_core_path, log_per_core);
+
+   if (!runtime_log)
+      return;
+
+   /* Add additional runtime */
+   runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
+
+   /* Update 'last played' entry */
+   runtime_log_set_last_played_now(runtime_log);
+
+   /* Save runtime log file */
+   runtime_log_save(runtime_log);
+
+   /* Clean up */
+   free(runtime_log);
+}
+
+
+static void command_event_runtime_log_deinit(void)
+{
+   unsigned hours            = 0;
+   unsigned minutes          = 0;
+   unsigned seconds          = 0;
+   char log[PATH_MAX_LENGTH] = {0};
+   int n                     = 0;
+
+   runtime_log_convert_usec2hms(
+         libretro_core_runtime_usec, &hours, &minutes, &seconds);
+
+   n = snprintf(log, sizeof(log),
+         "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
+         hours, minutes, seconds);
+   if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      n = 0; /* Just silence any potential gcc warnings... */
+   RARCH_LOG("%s\n",log);
+
+   /* Only write to file if content has run for a non-zero length of time */
+   if (libretro_core_runtime_usec > 0)
+   {
+      settings_t *settings = configuration_settings;
+
+      /* Per core logging */
+      if (settings->bools.content_runtime_log)
+         update_runtime_log(true);
+
+      /* Aggregate logging */
+      if (settings->bools.content_runtime_log_aggregate)
+         update_runtime_log(false);
+   }
+
+   /* Reset runtime + content/core paths, to prevent any
+    * possibility of duplicate logging */
+   libretro_core_runtime_usec = 0;
+   memset(runtime_content_path, 0, sizeof(runtime_content_path));
+   memset(runtime_core_path, 0, sizeof(runtime_core_path));
+}
+
+static void command_event_runtime_log_init(void)
+{
+   const char *content_path   = path_get(RARCH_PATH_CONTENT);
+   const char *core_path      = path_get(RARCH_PATH_CORE);
+
+   libretro_core_runtime_last = cpu_features_get_time_usec();
+   libretro_core_runtime_usec = 0;
+
+   /* Have to cache content and core path here, otherwise
+    * logging fails if new content is loaded without
+    * closing existing content
+    * i.e. RARCH_PATH_CONTENT and RARCH_PATH_CORE get
+    * updated when the new content is loaded, which
+    * happens *before* command_event_runtime_log_deinit
+    * -> using RARCH_PATH_CONTENT and RARCH_PATH_CORE
+    *    directly in command_event_runtime_log_deinit
+    *    can therefore lead to the runtime of the currently
+    *    loaded content getting written to the *new*
+    *    content's log file... */
+   memset(runtime_content_path, 0, sizeof(runtime_content_path));
+   memset(runtime_core_path,    0, sizeof(runtime_core_path));
+
+   if (!string_is_empty(content_path))
+      strlcpy(runtime_content_path, content_path, sizeof(runtime_content_path));
+
+   if (!string_is_empty(core_path))
+      strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
+}
+
+static void video_driver_set_title_buf(void)
+{
+   struct retro_system_info info;
+   current_core.retro_get_system_info(&info);
+
+   fill_pathname_join_concat_noext(
+         video_driver_title_buf,
+         msg_hash_to_str(MSG_PROGRAM),
+         " ",
+         info.library_name,
+         sizeof(video_driver_title_buf));
+   strlcat(video_driver_title_buf, " ",
+         sizeof(video_driver_title_buf));
+   strlcat(video_driver_title_buf, info.library_version,
+         sizeof(video_driver_title_buf));
+}
+
+
+static void retroarch_system_info_init(void)
+{
+   current_core.retro_get_system_info(&runloop_system.info);
+
+   if (!runloop_system.info.library_name)
+      runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+   if (!runloop_system.info.library_version)
+      runloop_system.info.library_version = "v0";
+
+   video_driver_set_title_buf();
+
+   strlcpy(runloop_system.valid_extensions,
+         runloop_system.info.valid_extensions ?
+         runloop_system.info.valid_extensions : DEFAULT_EXT,
+         sizeof(runloop_system.valid_extensions));
+}
+
 
 static bool command_event_init_core(enum rarch_core_type *data)
 {
@@ -2918,15 +3069,15 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_init_symbols(data))
       return false;
 
-   rarch_ctl(RARCH_CTL_SYSTEM_INFO_INIT, NULL);
+   retroarch_system_info_init();
 
    /* auto overrides: apply overrides */
    if(settings->bools.auto_overrides_enable)
    {
       if (config_load_override())
-         rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
+         runloop_overrides_active = true;
       else
-         rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+         runloop_overrides_active = false;
    }
 
    /* Load auto-shaders on the next occasion */
@@ -2955,31 +3106,8 @@ static bool command_event_init_core(enum rarch_core_type *data)
       return false;
 
    rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
-   rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_INIT, NULL);
+   command_event_runtime_log_init();
    return true;
-}
-
-static void command_event_disable_overrides(void)
-{
-   if (!rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
-      return;
-
-   /* reload the original config */
-   config_unload_override();
-   rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-}
-
-static void command_event_restore_default_shader_preset(void)
-{
-   retroarch_unset_shader_preset();
-}
-
-static void command_event_restore_remaps(void)
-{
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
-       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
-       rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-      input_remapping_set_defaults(true);
 }
 
 static bool command_event_save_auto_state(void)
@@ -2995,7 +3123,7 @@ static bool command_event_save_auto_state(void)
 
    if (!global || !settings || !settings->bools.savestate_auto_save)
       return false;
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (current_core_type == CORE_TYPE_DUMMY)
       return false;
 
    content_get_status(&contentless, &is_inited);
@@ -3151,13 +3279,13 @@ static bool command_event_save_core_config(void)
             config_size);
    }
 
-   if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (runloop_overrides_active)
    {
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-      overrides_active = true;
+      runloop_overrides_active = false;
+      overrides_active         = true;
    }
 
    command_event_save_config(config_path, msg, sizeof(msg));
@@ -3166,9 +3294,9 @@ static bool command_event_save_core_config(void)
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (overrides_active)
-      rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
+      runloop_overrides_active = true;
    else
-      rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+      runloop_overrides_active = false;
 
    free(config_dir);
    free(config_name);
@@ -3207,7 +3335,7 @@ static void command_event_save_current_config(enum override_type type)
 
             /* set overrides to active so the original config can be
                restored after closing content */
-            rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
+            runloop_overrides_active = true;
          }
          else
          {
@@ -3339,16 +3467,13 @@ static bool command_event_main_state(unsigned cmd)
 static bool command_event_resize_windowed_scale(void)
 {
    unsigned idx           = 0;
-   unsigned *window_scale = NULL;
    settings_t *settings   = configuration_settings;
+   unsigned window_scale  = runloop_pending_windowed_scale;
 
-   if (rarch_ctl(RARCH_CTL_GET_WINDOWED_SCALE, &window_scale))
-   {
-      if (!window_scale || *window_scale == 0)
-         return false;
+   if (window_scale == 0)
+      return false;
 
-      configuration_set_float(settings, settings->floats.video_scale, *window_scale);
-   }
+   configuration_set_float(settings, settings->floats.video_scale, (float)window_scale);
 
    if (!settings->bools.video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
@@ -3356,6 +3481,86 @@ static bool command_event_resize_windowed_scale(void)
    rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
 
    return true;
+}
+
+static void retroarch_pause_checks(void)
+{
+#ifdef HAVE_DISCORD
+   discord_userdata_t userdata;
+#endif
+   bool is_paused            = runloop_paused;
+   bool is_idle              = runloop_idle;
+   bool is_slowmotion        = runloop_slowmotion;
+   bool is_perfcnt_enable    = runloop_perfcnt_enable;
+
+   if (is_paused)
+   {
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
+      command_event(CMD_EVENT_AUDIO_STOP, NULL);
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!menu_widgets_set_paused(is_paused))
+#endif
+         runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
+               1, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      if (!is_idle)
+         video_driver_cached_frame();
+
+#ifdef HAVE_DISCORD
+      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
+   }
+   else
+   {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_set_paused(is_paused);
+#endif
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
+      command_event(CMD_EVENT_AUDIO_START, NULL);
+   }
+}
+
+static void retroarch_frame_time_free(void)
+{
+   memset(&runloop_frame_time, 0,
+         sizeof(struct retro_frame_time_callback));
+   runloop_frame_time_last           = 0;
+   runloop_max_frames                = 0;
+}
+
+static void retroarch_system_info_free(void)
+{
+   if (runloop_system.subsystem.data)
+      free(runloop_system.subsystem.data);
+   runloop_system.subsystem.data = NULL;
+   runloop_system.subsystem.size = 0;
+
+   if (runloop_system.ports.data)
+      free(runloop_system.ports.data);
+   runloop_system.ports.data = NULL;
+   runloop_system.ports.size = 0;
+
+   if (runloop_system.mmaps.descriptors)
+      free((void *)runloop_system.mmaps.descriptors);
+   runloop_system.mmaps.descriptors          = NULL;
+   runloop_system.mmaps.num_descriptors      = 0;
+
+   runloop_key_event                         = NULL;
+   runloop_frontend_key_event                = NULL;
+
+   audio_callback.callback                   = NULL;
+   audio_callback.set_state                  = NULL;
+
+   runloop_system.info.library_name          = NULL;
+   runloop_system.info.library_version       = NULL;
+   runloop_system.info.valid_extensions      = NULL;
+   runloop_system.info.need_fullpath         = false;
+   runloop_system.info.block_extract         = false;
+
+   memset(&runloop_system, 0, sizeof(rarch_system_info_t));
 }
 
 /**
@@ -3411,7 +3616,7 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->uints.ai_service_mode == 0)
          {
             /* Default mode - pause on call, unpause on second press. */
-            if (!rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+            if (!runloop_paused)
             {
                command_event(CMD_EVENT_PAUSE, NULL);
                command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
@@ -3526,7 +3731,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
-         if (rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
+         if (bsv_movie_state_handle != NULL)
             return false;
 
 #ifdef HAVE_CHEEVOS
@@ -3626,11 +3831,15 @@ bool command_event(enum event_command cmd, void *data)
 
             content_get_status(&contentless, &is_inited);
 
-            rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
-            command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-            command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-            command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
-            command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
+            command_event_runtime_log_deinit();
+            command_event_save_auto_state();
+            command_event_disable_overrides();
+            retroarch_unset_shader_preset();
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+                  rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
+                  rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               input_remapping_set_defaults(true);
 
             if (is_inited)
             {
@@ -3649,7 +3858,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+            retroarch_system_info_free();
 #endif
             if (is_inited)
             {
@@ -3693,13 +3902,6 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      case CMD_EVENT_CHEATS_DEINIT:
-         cheat_manager_state_free();
-         break;
-      case CMD_EVENT_CHEATS_INIT:
-         command_event(CMD_EVENT_CHEATS_DEINIT, NULL);
-         command_event_init_cheats();
-         break;
       case CMD_EVENT_CHEATS_APPLY:
          cheat_manager_apply_cheats();
          break;
@@ -3739,15 +3941,8 @@ TODO: Add a setting for these tweaks */
                command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          }
          break;
-      case CMD_EVENT_AUTOSAVE_DEINIT:
-#ifdef HAVE_THREADS
-         if (!rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
-            return false;
-         autosave_deinit();
-#endif
-         break;
       case CMD_EVENT_AUTOSAVE_INIT:
-         command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
+         retroarch_autosave_deinit();
 #ifdef HAVE_THREADS
          {
 #ifdef HAVE_NETWORKING
@@ -3765,9 +3960,6 @@ TODO: Add a setting for these tweaks */
             }
          }
 #endif
-         break;
-      case CMD_EVENT_AUTOSAVE_STATE:
-         command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off();
@@ -3813,13 +4005,10 @@ TODO: Add a setting for these tweaks */
          retroarch_overlay_next();
 #endif
          break;
-      case CMD_EVENT_DSP_FILTER_DEINIT:
-         audio_driver_dsp_filter_free();
-         break;
       case CMD_EVENT_DSP_FILTER_INIT:
          {
             settings_t *settings      = configuration_settings;
-            command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
+            audio_driver_dsp_filter_free();
             if (string_is_empty(settings->paths.path_audio_dsp_plugin))
                break;
             if (!audio_driver_dsp_filter_init(
@@ -3829,9 +4018,6 @@ TODO: Add a setting for these tweaks */
                      settings->paths.path_audio_dsp_plugin);
             }
          }
-         break;
-      case CMD_EVENT_GPU_RECORD_DEINIT:
-         video_driver_gpu_record_deinit();
          break;
       case CMD_EVENT_RECORD_DEINIT:
          {
@@ -3969,7 +4155,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
-            rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
+            command_event_runtime_log_deinit();
             content_reset_savestate_backups();
             hwr = video_driver_get_hw_context();
             command_event_deinit_core(true);
@@ -4134,67 +4320,21 @@ TODO: Add a setting for these tweaks */
 #endif
          ui_companion_event_command(cmd);
          break;
-      case CMD_EVENT_PAUSE_CHECKS:
-         {
-            bool is_paused            = false;
-            bool is_idle              = false;
-            bool is_slowmotion        = false;
-            bool is_perfcnt_enable    = false;
-
-#ifdef HAVE_DISCORD
-            discord_userdata_t userdata;
-#endif
-
-            runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
-                  &is_perfcnt_enable);
-
-            if (is_paused)
-            {
-               RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
-               command_event(CMD_EVENT_AUDIO_STOP, NULL);
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               if (!menu_widgets_set_paused(is_paused))
-#endif
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
-                        1, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-               if (!is_idle)
-                  video_driver_cached_frame();
-
-#ifdef HAVE_DISCORD
-               userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-            }
-            else
-            {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-               menu_widgets_set_paused(is_paused);
-#endif
-               RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-               command_event(CMD_EVENT_AUDIO_START, NULL);
-            }
-         }
-         break;
       case CMD_EVENT_PAUSE_TOGGLE:
-         boolean = rarch_ctl(RARCH_CTL_IS_PAUSED,  NULL);
-         boolean = !boolean;
-         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-         command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
+         boolean        = runloop_paused;
+         boolean        = !boolean;
+         runloop_paused = boolean;
+         retroarch_pause_checks();
          break;
       case CMD_EVENT_UNPAUSE:
-         boolean = false;
-
-         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-         command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
+         boolean        = false;
+         runloop_paused = boolean;
+         retroarch_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
-         boolean = true;
-
-         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-         command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
+         boolean        = true;
+         runloop_paused = boolean;
+         retroarch_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
@@ -4213,22 +4353,6 @@ TODO: Add a setting for these tweaks */
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
-         break;
-      case CMD_EVENT_SHADER_DIR_DEINIT:
-         dir_free_shader();
-         break;
-      case CMD_EVENT_SHADER_DIR_INIT:
-         command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
-
-         if (!dir_init_shader())
-            return false;
-         break;
-      case CMD_EVENT_BSV_MOVIE_DEINIT:
-         bsv_movie_deinit();
-         break;
-      case CMD_EVENT_BSV_MOVIE_INIT:
-         command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-         bsv_movie_init();
          break;
 #ifdef HAVE_NETWORKING
       case CMD_EVENT_NETPLAY_GAME_WATCH:
@@ -4449,27 +4573,6 @@ TODO: Add a setting for these tweaks */
                video_driver_cached_frame();
          }
          break;
-      case CMD_EVENT_COMMAND_DEINIT:
-         input_driver_deinit_command();
-         break;
-      case CMD_EVENT_COMMAND_INIT:
-         command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
-         input_driver_init_command();
-         break;
-      case CMD_EVENT_REMOTE_DEINIT:
-         input_driver_deinit_remote();
-         break;
-      case CMD_EVENT_REMOTE_INIT:
-         command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
-         input_driver_init_remote();
-         break;
-      case CMD_EVENT_MAPPER_DEINIT:
-         input_driver_deinit_mapper();
-         break;
-      case CMD_EVENT_MAPPER_INIT:
-         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
-         input_driver_init_mapper();
-         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
@@ -4636,9 +4739,6 @@ TODO: Add a setting for these tweaks */
 
          }
          break;
-      case CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG:
-         rarch_perf_log();
-         break;
       case CMD_EVENT_VOLUME_UP:
          command_event_set_volume(0.5f);
          break;
@@ -4654,15 +4754,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_SET_FRAME_LIMIT:
          rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
          break;
-      case CMD_EVENT_DISABLE_OVERRIDES:
-         command_event_disable_overrides();
-         break;
-      case CMD_EVENT_RESTORE_REMAPS:
-         command_event_restore_remaps();
-         break;
-      case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
-         command_event_restore_default_shader_preset();
-         break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {
@@ -4677,14 +4768,6 @@ TODO: Add a setting for these tweaks */
 
             discord_init();
          }
-#endif
-         break;
-      case CMD_EVENT_DISCORD_DEINIT:
-#ifdef HAVE_DISCORD
-         if (!discord_is_ready())
-            return false;
-
-         discord_shutdown();
 #endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
@@ -4924,7 +5007,7 @@ void main_exit(void *args)
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   command_event(CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG, NULL);
+   rarch_perf_log();
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -4996,7 +5079,22 @@ int rarch_main(int argc, char *argv[], void *data)
    global_free();
 
    frontend_driver_init_first(data);
-   rarch_ctl(RARCH_CTL_INIT, NULL);
+
+   if (rarch_is_inited)
+      driver_uninit(DRIVERS_CMD_ALL);
+
+#ifdef HAVE_THREAD_STORAGE
+   sthread_tls_create(&rarch_tls);
+   sthread_tls_set(&rarch_tls, MAGIC_POINTER);
+#endif
+   video_driver_active = true;
+   audio_driver_active = true;
+   {
+      uint8_t i;
+      for (i = 0; i < MAX_USERS; i++)
+         input_config_set_device(i, RETRO_DEVICE_JOYPAD);
+   }
+   retroarch_msg_queue_init();
 
    if (frontend_driver_is_inited())
    {
@@ -6409,7 +6507,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
           * since normal command.c CMD_EVENT_CORE_DEINIT event
           * will not occur until after the current content has
           * been cleared (causing log to be skipped) */
-         rarch_ctl(RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT, NULL);
+         command_event_runtime_log_deinit();
 
          rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
          runloop_core_shutdown_initiated = true;
@@ -7629,8 +7727,8 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
    core_set_shared_context = false;
 
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
-   rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
-   rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
+   retroarch_system_info_free();
+   retroarch_frame_time_free();
    camera_driver_active      = false;
    location_driver_active    = false;
 
@@ -8659,8 +8757,7 @@ static void recording_dump_frame(const void *data, unsigned width,
       {
          RARCH_WARN("[recording] %s \n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
-         command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
-
+         video_driver_gpu_record_deinit();
          recording_dump_frame(data, width, height, pitch, is_idle);
          return;
       }
@@ -8712,7 +8809,7 @@ bool recording_deinit(void)
    recording_data            = NULL;
    recording_driver          = NULL;
 
-   command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
+   video_driver_gpu_record_deinit();
 
    return true;
 }
@@ -8951,7 +9048,7 @@ bool recording_init(void)
    if (!record_driver_init_first(&recording_driver, &recording_data, &params))
    {
       RARCH_ERR("[recording] %s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
-      command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
+      video_driver_gpu_record_deinit();
 
       return false;
    }
@@ -9399,7 +9496,7 @@ bool bsv_movie_check(void)
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
-      command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+      bsv_movie_deinit();
 
       bsv_movie_state.movie_end      = false;
       bsv_movie_state.movie_playback = false;
@@ -9416,7 +9513,7 @@ bool bsv_movie_check(void)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
-   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+   bsv_movie_deinit();
 
    return true;
 }
@@ -14826,8 +14923,7 @@ static bool audio_driver_deinit_internal(void)
       free(audio_driver_output_samples_buf);
    audio_driver_output_samples_buf = NULL;
 
-   command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
-
+   audio_driver_dsp_filter_free();
    report_audio_buffer_statistics();
 
    return true;
@@ -16105,12 +16201,6 @@ bool audio_driver_stop(void)
    return current_audio->stop(audio_driver_context_audio_data);
 }
 
-static void audio_driver_unset_callback(void)
-{
-   audio_callback.callback  = NULL;
-   audio_callback.set_state = NULL;
-}
-
 void audio_driver_frame_is_reverse(void)
 {
    /* We just rewound. Flush rewind audio buffer. */
@@ -16597,8 +16687,7 @@ static void video_driver_free_internal(void)
    if (video_driver_scaler_ptr)
       video_driver_pixel_converter_free();
    video_driver_filter_free();
-
-   command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
+   dir_free_shader();
 
 #ifdef HAVE_THREADS
    if (is_threaded)
@@ -16863,7 +16952,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
-   command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
+   dir_free_shader();
+   dir_init_shader();
 
    return true;
 
@@ -17754,23 +17844,6 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
       return false;
    current_video->viewport_info(video_driver_data, viewport);
    return true;
-}
-
-static void video_driver_set_title_buf(void)
-{
-   struct retro_system_info info;
-   current_core.retro_get_system_info(&info);
-
-   fill_pathname_join_concat_noext(
-         video_driver_title_buf,
-         msg_hash_to_str(MSG_PROGRAM),
-         " ",
-         info.library_name,
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, " ",
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, info.library_version,
-         sizeof(video_driver_title_buf));
 }
 
 /**
@@ -20461,28 +20534,6 @@ void rarch_core_runtime_tick(void)
    }
 }
 
-static void update_runtime_log(bool log_per_core)
-{
-   /* Initialise runtime log file */
-   runtime_log_t *runtime_log = runtime_log_init(
-         runtime_content_path, runtime_core_path, log_per_core);
-
-   if (!runtime_log)
-      return;
-
-   /* Add additional runtime */
-   runtime_log_add_runtime_usec(runtime_log, libretro_core_runtime_usec);
-
-   /* Update 'last played' entry */
-   runtime_log_set_last_played_now(runtime_log);
-
-   /* Save runtime log file */
-   runtime_log_save(runtime_log);
-
-   /* Clean up */
-   free(runtime_log);
-}
-
 static void retroarch_print_features(void)
 {
    frontend_driver_attach_console();
@@ -20839,7 +20890,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
 
-   rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+   runloop_overrides_active              = false;
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
@@ -21566,11 +21617,15 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
-   command_event(CMD_EVENT_CHEATS_INIT, NULL);
+   cheat_manager_state_free();
+   command_event_init_cheats();
    drivers_init(DRIVERS_CMD_ALL);
-   command_event(CMD_EVENT_COMMAND_INIT, NULL);
-   command_event(CMD_EVENT_REMOTE_INIT, NULL);
-   command_event(CMD_EVENT_MAPPER_INIT, NULL);
+   input_driver_deinit_command();
+   input_driver_init_command();
+   input_driver_deinit_remote();
+   input_driver_init_remote();
+   input_driver_deinit_mapper();
+   input_driver_init_mapper();
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
    if (!string_is_empty(global->record.path))
@@ -21800,19 +21855,19 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!rarch_is_inited)
             return false;
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-         command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
-         command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
-         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
+         input_driver_deinit_command();
+         input_driver_deinit_remote();
+         input_driver_deinit_mapper();
 
-         command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
+         retroarch_autosave_deinit();
 
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
          event_save_files();
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
-         command_event(CMD_EVENT_CHEATS_DEINIT, NULL);
-         command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+         cheat_manager_state_free();
+         bsv_movie_deinit();
 
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
@@ -21826,23 +21881,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_THREAD_STORAGE
          sthread_tls_delete(&rarch_tls);
 #endif
-         break;
-      case RARCH_CTL_INIT:
-         if (rarch_is_inited)
-            driver_uninit(DRIVERS_CMD_ALL);
-
-#ifdef HAVE_THREAD_STORAGE
-         sthread_tls_create(&rarch_tls);
-         sthread_tls_set(&rarch_tls, MAGIC_POINTER);
-#endif
-         video_driver_active = true;
-         audio_driver_active = true;
-         {
-            uint8_t i;
-            for (i = 0; i < MAX_USERS; i++)
-               input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-         }
-         retroarch_msg_queue_init();
          break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
          return rarch_is_sram_load_disabled;
@@ -21873,21 +21911,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
-      case RARCH_CTL_SYSTEM_INFO_INIT:
-         current_core.retro_get_system_info(&runloop_system.info);
-
-         if (!runloop_system.info.library_name)
-            runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
-         if (!runloop_system.info.library_version)
-            runloop_system.info.library_version = "v0";
-
-         video_driver_set_title_buf();
-
-         strlcpy(runloop_system.valid_extensions,
-               runloop_system.info.valid_extensions ?
-               runloop_system.info.valid_extensions : DEFAULT_EXT,
-               sizeof(runloop_system.valid_extensions));
-         break;
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
          {
             unsigned *idx = (unsigned*)data;
@@ -21909,43 +21932,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             *coreopts = runloop_core_options;
          }
          break;
-      case RARCH_CTL_SYSTEM_INFO_FREE:
-         if (runloop_system.subsystem.data)
-            free(runloop_system.subsystem.data);
-         runloop_system.subsystem.data = NULL;
-         runloop_system.subsystem.size = 0;
-
-         if (runloop_system.ports.data)
-            free(runloop_system.ports.data);
-         runloop_system.ports.data = NULL;
-         runloop_system.ports.size = 0;
-
-         if (runloop_system.mmaps.descriptors)
-            free((void *)runloop_system.mmaps.descriptors);
-         runloop_system.mmaps.descriptors          = NULL;
-         runloop_system.mmaps.num_descriptors      = 0;
-
-         runloop_key_event                         = NULL;
-         runloop_frontend_key_event                = NULL;
-
-         audio_driver_unset_callback();
-
-         runloop_system.info.library_name          = NULL;
-         runloop_system.info.library_version       = NULL;
-         runloop_system.info.valid_extensions      = NULL;
-         runloop_system.info.need_fullpath         = false;
-         runloop_system.info.block_extract         = false;
-
-         memset(&runloop_system, 0, sizeof(rarch_system_info_t));
-         break;
       case RARCH_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last        = 0;
-         break;
-      case RARCH_CTL_SET_OVERRIDES_ACTIVE:
-         runloop_overrides_active = true;
-         break;
-      case RARCH_CTL_UNSET_OVERRIDES_ACTIVE:
-         runloop_overrides_active = false;
          break;
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
@@ -21995,76 +21983,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                   / (av_info->timing.fps * fastforward_ratio));
          }
          break;
-      case RARCH_CTL_CONTENT_RUNTIME_LOG_INIT:
-      {
-         const char *content_path = path_get(RARCH_PATH_CONTENT);
-         const char *core_path = path_get(RARCH_PATH_CORE);
-
-         libretro_core_runtime_last = cpu_features_get_time_usec();
-         libretro_core_runtime_usec = 0;
-
-         /* Have to cache content and core path here, otherwise
-          * logging fails if new content is loaded without
-          * closing existing content
-          * i.e. RARCH_PATH_CONTENT and RARCH_PATH_CORE get
-          * updated when the new content is loaded, which
-          * happens *before* RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
-          * -> using RARCH_PATH_CONTENT and RARCH_PATH_CORE
-          *    directly in RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT
-          *    can therefore lead to the runtime of the currently
-          *    loaded content getting written to the *new*
-          *    content's log file... */
-         memset(runtime_content_path, 0, sizeof(runtime_content_path));
-         memset(runtime_core_path, 0, sizeof(runtime_core_path));
-
-         if (!string_is_empty(content_path))
-            strlcpy(runtime_content_path, content_path, sizeof(runtime_content_path));
-
-         if (!string_is_empty(core_path))
-            strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
-
-         break;
-      }
-      case RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT:
-      {
-         unsigned hours            = 0;
-         unsigned minutes          = 0;
-         unsigned seconds          = 0;
-         char log[PATH_MAX_LENGTH] = {0};
-         int n                     = 0;
-
-         runtime_log_convert_usec2hms(
-               libretro_core_runtime_usec, &hours, &minutes, &seconds);
-
-         n = snprintf(log, sizeof(log),
-               "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
-               hours, minutes, seconds);
-         if ((n < 0) || (n >= PATH_MAX_LENGTH))
-            n = 0; /* Just silence any potential gcc warnings... */
-         RARCH_LOG("%s\n",log);
-
-         /* Only write to file if content has run for a non-zero length of time */
-         if (libretro_core_runtime_usec > 0)
-         {
-            settings_t *settings = configuration_settings;
-
-            /* Per core logging */
-            if (settings->bools.content_runtime_log)
-               update_runtime_log(true);
-
-            /* Aggregate logging */
-            if (settings->bools.content_runtime_log_aggregate)
-               update_runtime_log(false);
-         }
-
-         /* Reset runtime + content/core paths, to prevent any
-          * possibility of duplicate logging */
-         libretro_core_runtime_usec = 0;
-         memset(runtime_content_path, 0, sizeof(runtime_content_path));
-         memset(runtime_core_path, 0, sizeof(runtime_core_path));
-
-         break;
-      }
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -22081,14 +21999,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_PERFCNT_ENABLE:
          return runloop_perfcnt_enable;
-      case RARCH_CTL_GET_WINDOWED_SCALE:
-         {
-            unsigned **scale = (unsigned**)data;
-            if (!scale)
-               return false;
-            *scale       = (unsigned*)&runloop_pending_windowed_scale;
-         }
-         break;
       case RARCH_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;
@@ -22097,12 +22007,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_pending_windowed_scale = *idx;
          }
          break;
-      case RARCH_CTL_FRAME_TIME_FREE:
-         memset(&runloop_frame_time, 0,
-               sizeof(struct retro_frame_time_callback));
-         runloop_frame_time_last           = 0;
-         runloop_max_frames                = 0;
-         break;
       case RARCH_CTL_STATE_FREE:
          runloop_perfcnt_enable            = false;
          runloop_idle                      = false;
@@ -22110,7 +22014,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_slowmotion                = false;
          runloop_overrides_active          = false;
          runloop_autosave                  = false;
-         rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
+         retroarch_frame_time_free();
          break;
       case RARCH_CTL_IS_IDLE:
          return runloop_idle;
@@ -22700,16 +22604,21 @@ bool retroarch_main_quit(void)
       userdata.status = DISCORD_PRESENCE_SHUTDOWN;
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
    }
-   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
+   if (discord_is_ready())
+      discord_shutdown();
    discord_is_inited          = false;
 #endif
 
    if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
    {
-      command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-      command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-      command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
-      command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
+      command_event_save_auto_state();
+      command_event_disable_overrides();
+      retroarch_unset_shader_preset();
+
+      if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+            rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
+            rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+         input_remapping_set_defaults(true);
    }
 
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);

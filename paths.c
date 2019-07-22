@@ -821,7 +821,7 @@ bool dir_init_shader(void)
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
-      command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
+      dir_free_shader();
       return false;
    }
 
