@@ -19734,16 +19734,6 @@ static void drivers_init(int flags)
 }
 
 /**
- * uninit_drivers:
- * @flags              : Bitmask of drivers to deinitialize.
- *
- * Deinitializes drivers.
- *
- *
- * @flags determines which drivers get deinitialized.
- **/
-
-/**
  * Driver ownership - set this to true if the platform in question needs to 'own'
  * the respective handle and therefore skip regular RetroArch
  * driver teardown/reiniting procedure.
