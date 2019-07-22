@@ -1698,7 +1698,8 @@ bool task_push_load_content_from_playlist_from_menu(
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #ifdef HAVE_COCOATOUCH
-    // this seems to needed for iOS for some reason to show the quick menu after the menu is shown
+    /* This seems to be needed for iOS for some reason to show the 
+     * quick menu after the menu is shown */
    menu_entries_flush_stack(NULL, MENU_SETTINGS);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
