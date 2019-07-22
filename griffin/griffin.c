@@ -1372,8 +1372,6 @@ MENU
 
 #include "../input/input_mapper.c"
 
-#include "../command.c"
-
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
 #endif
