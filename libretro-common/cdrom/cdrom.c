@@ -175,7 +175,7 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
          break;
    }
 
-   printf("[CDROM] Sense Key: %02X (%s)\n", key, sense_key_text);
+   printf("[CDROM] Sense Key: %02X (%s)\n", key, sense_key_text ? sense_key_text : "null");
    printf("[CDROM] ASC: %02X\n", asc);
    printf("[CDROM] ASCQ: %02X\n", ascq);
 
