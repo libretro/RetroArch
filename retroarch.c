@@ -209,6 +209,31 @@
 
 /* DRIVERS */
 
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVER_MENU_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+#define DRIVERS_CMD_ALL_BUT_MENU \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+
+
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
@@ -1634,6 +1659,8 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static void driver_uninit(int flags);
+static void drivers_init(int flags);
 static void core_free_retro_game_info(struct retro_game_info *dest);
 static void core_uninit_symbols(void);
 static bool core_unload(void);
@@ -19609,7 +19636,7 @@ bool audio_driver_new_devices_list(void)
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-void drivers_init(int flags)
+static void drivers_init(int flags)
 {
    bool video_is_threaded = false;
    settings_t *settings   = configuration_settings;
@@ -19755,7 +19782,7 @@ void drivers_init(int flags)
  * Typically, if a driver intends to make use of this, it should
  * set this to true at the end of its 'init' function.
  **/
-void driver_uninit(int flags)
+static void driver_uninit(int flags)
 {
    core_info_deinit_list();
    core_info_free_current_core();
