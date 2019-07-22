@@ -60,11 +60,11 @@ ifeq ($(HAVE_PRESERVE_DYLIB),1)
 endif
 
 ifeq ($(GL_DEBUG), 1)
-   DEF_FLAGS += -DGL_DEBUG
+   DEFINES += -DGL_DEBUG
 endif
 
 ifeq ($(VULKAN_DEBUG), 1)
-   DEF_FLAGS += -DVULKAN_DEBUG
+   DEFINES += -DVULKAN_DEBUG
 endif
 
 ifeq ($(HAVE_FLOATHARD), 1)
@@ -82,23 +82,22 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-   DEF_FLAGS += -DHAVE_FILE_LOGGER
+   DEFINES += -DHAVE_FILE_LOGGER
 endif
 
 ifeq ($(HAVE_SHADERPIPELINE), 1)
-   DEF_FLAGS += -DHAVE_SHADERPIPELINE
+   DEFINES += -DHAVE_SHADERPIPELINE
 endif
 
-DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
+INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
 #
 ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
-   DEF_FLAGS += -DHAVE_NETPLAYDISCOVERY
+   DEFINES += -DHAVE_NETPLAYDISCOVERY
 endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
-   DEF_FLAGS += -DHAVE_LOGGER
    DEFINES += -DHAVE_LOGGER
    OBJ += network/net_logger.o
 endif
@@ -150,8 +149,7 @@ endif
 
 # General object files
 ifeq ($(HAVE_DR_MP3), 1)
-DEFINES   += -DHAVE_DR_MP3
-DEF_FLAGS += -DHAVE_DR_MP3
+   DEFINES += -DHAVE_DR_MP3
 endif
 
 OBJ += frontend/frontend_driver.o \
@@ -266,11 +264,10 @@ OBJ += \
 
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
-	DEFINES += -DHAVE_AUDIOMIXER
-	OBJ += \
-			 tasks/task_audio_mixer.o \
-			 $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
-			 $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
+   DEFINES += -DHAVE_AUDIOMIXER
+   OBJ += tasks/task_audio_mixer.o \
+          $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
+          $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
@@ -290,7 +287,7 @@ endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
-   DEFINES += -finput-charset=UTF-8
+   DEF_FLAGS += -finput-charset=UTF-8
 
    OBJ += intl/msg_hash_de.o \
           intl/msg_hash_eo.o \
@@ -351,7 +348,7 @@ endif
 # Qt WIMP GUI
 
 ifeq ($(HAVE_OPENSSL), 1)
-   DEFINES += $(OPENSSL_CFLAGS)
+   DEF_FLAGS += $(OPENSSL_CFLAGS)
    LIBS += $(OPENSSL_LIBS)
 endif
 
@@ -410,14 +407,15 @@ ifeq ($(HAVE_QT), 1)
                      ui/drivers/qt/options/options.h
    endif
 
-   DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS) -DHAVE_MAIN
-   #DEFINES += $(QT5WEBENGINE_CFLAGS)
+   DEFINES += -DHAVE_MAIN
+   DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS)
+   #DEF_FLAGS += $(QT5WEBENGINE_CFLAGS)
    LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
    #LIBS += $(QT5WEBENGINE_LIBS)
    NEED_CXX_LINKER = 1
 
    ifneq ($(findstring Linux,$(OS)),)
-      DEFINES += -fPIC
+      DEF_FLAGS += -fPIC
    endif
 endif
 
@@ -606,7 +604,7 @@ ifeq ($(HAVE_ALSA), 1)
    endif
 
    LIBS += $(ALSA_LIBS)
-   DEFINES += $(ALSA_CFLAGS)
+   DEF_FLAGS += $(ALSA_CFLAGS)
 endif
 
 ifeq ($(HAVE_TINYALSA), 1)
@@ -617,7 +615,7 @@ endif
 ifeq ($(HAVE_ROAR), 1)
    OBJ += audio/drivers/roar.o
    LIBS += $(ROAR_LIBS)
-   DEFINES += $(ROAR_CFLAGS)
+   DEF_FLAGS += $(ROAR_CFLAGS)
 endif
 
 ifeq ($(HAVE_AL), 1)
@@ -636,13 +634,13 @@ endif
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/drivers/jack.o
    LIBS += $(JACK_LIBS)
-   DEFINES += $(JACK_CFLAGS)
+   DEF_FLAGS += $(JACK_CFLAGS)
 endif
 
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
-   DEFINES += $(PULSE_CFLAGS)
+   DEF_FLAGS += $(PULSE_CFLAGS)
 endif
 
 ifeq ($(HAVE_OSS_LIB), 1)
@@ -651,7 +649,7 @@ endif
 
 ifeq ($(HAVE_RSOUND), 1)
    OBJ += audio/drivers/rsound.o
-   DEFINES += $(RSOUND_CFLAGS)
+   DEF_FLAGS += $(RSOUND_CFLAGS)
    LIBS += $(RSOUND_LIBS)
 endif
 
@@ -838,7 +836,7 @@ endif
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
    OBJ += tasks/task_overlay.o \
-			 led/drivers/led_overlay.o
+          led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_VIDEO_LAYOUT), 1)
@@ -861,7 +859,7 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/drivers_font_renderer/freetype.o
    LIBS += $(FREETYPE_LIBS)
-   DEFINES += $(FREETYPE_CFLAGS)
+   DEF_FLAGS += $(FREETYPE_CFLAGS)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -900,7 +898,7 @@ ifeq ($(HAVE_VITA2D), 1)
    OBJ += gfx/drivers/vita2d_gfx.o \
           gfx/drivers_font/vita2d_font.o
 
-   DEF_FLAGS += -I$(DEPS_DIR)/libvita2d/include
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -939,7 +937,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
- DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
+ DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
 endif
@@ -971,9 +969,10 @@ ifeq ($(HAVE_X11), 1)
           gfx/display_servers/dispserv_x11.o
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS) $(XRANDR_LIBS)
-   DEFINES += -DHAVE_X11 $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
+   DEFINES += -DHAVE_X11
+   DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
-      LIBS    += -lX11-xcb
+      LIBS += -lX11-xcb
    endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
@@ -981,12 +980,12 @@ ifeq ($(HAVE_X11), 1)
 endif
 
 ifeq ($(HAVE_XCB),1)
-   DEFINES += $(XCB_CFLAGS)
-   LIBS    += $(XCB_LIBS)
+   DEF_FLAGS += $(XCB_CFLAGS)
+   LIBS      += $(XCB_LIBS)
 endif
 
 ifeq ($(HAVE_XKBCOMMON), 1)
-   DEFINES += $(XKBCOMMON_CFLAGS)
+   DEF_FLAGS += $(XKBCOMMON_CFLAGS)
    OBJ += input/drivers_keyboard/keyboard_event_xkb.o
    LIBS += $(XKBCOMMON_LIBS)
 endif
@@ -998,7 +997,7 @@ ifeq ($(HAVE_DBUS), 1)
 endif
 
 ifeq ($(HAVE_UDEV), 1)
-   DEFINES += $(UDEV_CFLAGS)
+   DEF_FLAGS += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
           input/drivers_joypad/udev_joypad.o
@@ -1059,7 +1058,7 @@ OBJ += gfx/drivers_context/gfx_null_ctx.o
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
    OBJ += gfx/drivers_context/drm_ctx.o
-   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS)
+   DEF_FLAGS += $(GBM_CFLAGS) $(DRM_CFLAGS)
    LIBS += $(GBM_LIBS) $(DRM_LIBS)
 endif
 
@@ -1075,10 +1074,10 @@ endif
 
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
-   DEF_FLAGS += -I/usr/include/sixel
+   INCLUDE_DIRS += -I/usr/include/sixel
    OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
           gfx/drivers_context/sixel_ctx.o
-   LIBS += -lsixel
+   LIBS += $(SIXEL_LIBS)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_sixel.o
@@ -1087,7 +1086,7 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   DEF_FLAGS += -I/usr/include/libdrm
+   INCLUDE_DIRS += -I/usr/include/libdrm
    LIBS += -ldrm
 endif
 
@@ -1147,7 +1146,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_FFMPEG), 1)
       ifneq ($(HAVE_OPENGLES), 1)
          OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
-         DEFINES += -I$(DEPS_DIR) -DHAVE_GL_FFT
+         DEFINES += -DHAVE_GL_FFT
+         INCLUDE_DIRS += -I$(DEPS_DIR)
       endif
    endif
 
@@ -1170,13 +1170,15 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_MPV), 1)
       OBJ += cores/libretro-mpv/mpv-libretro.o
-      DEFINES += -I$(DEPS_DIR) -DHAVE_MPV
+      DEFINES += -DHAVE_MPV
+      INCLUDE_DIRS += -I$(DEPS_DIR)
       LIBS += -lmpv
    endif
 
    ifeq ($(HAVE_OPENGLES), 1)
+      DEFINES += -DHAVE_OPENGLES
       LIBS += $(OPENGLES_LIBS)
-      DEFINES += $(OPENGLES_CFLAGS) -DHAVE_OPENGLES
+      DEF_FLAGS += $(OPENGLES_CFLAGS)
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
       else
@@ -1200,7 +1202,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 endif
 
 ifeq ($(HAVE_EGL), 1)
-   DEFINES += -DHAVE_EGL $(EGL_CFLAGS)
+   DEFINES += -DHAVE_EGL
+   DEF_FLAGS += $(EGL_CFLAGS)
    LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
 endif
@@ -1208,12 +1211,12 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o
-   DEFINES += $(SDL2_CFLAGS)
+   DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
-   DEFINES += $(SDL_CFLAGS)
+   DEF_FLAGS += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
 endif
 
@@ -1226,7 +1229,7 @@ ifeq ($(HAVE_SDL_COMMON), 1)
       OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
-   DEFINES += $(BSD_LOCAL_INC)
+   INCLUDE_DIRS += $(BSD_LOCAL_INC)
 endif
 
 ifeq ($(HAVE_XSHM), 1)
@@ -1281,7 +1284,7 @@ endif
 ifeq ($(HAVE_EXYNOS), 1)
    OBJ += gfx/drivers/exynos_gfx.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
-   DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
+   DEF_FLAGS += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
    HAVE_AND_WILL_USE_DRM = 1
 endif
 
@@ -1301,14 +1304,14 @@ endif
 
 ifeq ($(HAVE_VG), 1)
    OBJ += gfx/drivers/vg.o
-   DEFINES += $(VG_CFLAGS)
+   DEF_FLAGS += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/drivers/xvideo.o
    LIBS += $(XVIDEO_LIBS)
-   DEFINES += $(XVIDEO_CFLAGS)
+   DEF_FLAGS += $(XVIDEO_CFLAGS)
 endif
 
 ifeq ($(HAVE_D3D9), 1)
@@ -1506,7 +1509,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
-   DEF_FLAGS  += -I$(DEPS_DIR)/7zip
+   INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
@@ -1534,11 +1537,9 @@ endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
-   DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
-   DEF_FLAGS += -DHAVE_DR_FLAC
-   DEF_FLAGS += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
-   DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+   DEFINES += -DHAVE_FLAC -DHAVE_DR_FLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
+   INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
              $(DEPS_DIR)/libFLAC/bitreader.o \
              $(DEPS_DIR)/libFLAC/cpu.o \
@@ -1596,7 +1597,7 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
    HAVE_COMPRESSION = 1
 
    ifeq ($(HAVE_CHD), 1)
-      DEF_FLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
       DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
       OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
@@ -1724,8 +1725,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS \
-                 -Ideps/rcheevos/include
+      DEFINES += -DHAVE_CHEEVOS
+      INCLUDE_DIRS += -Ideps/rcheevos/include
 
       OBJ += cheevos-new/cheevos.o \
              cheevos-new/badges.o \
@@ -1748,8 +1749,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
-                    -DLUA_32BITS \
-                    -Ideps/lua/src
+                    -DLUA_32BITS
+         INCLUDE_DIRS += -Ideps/lua/src
          OBJ += deps/lua/src/lapi.o \
                 deps/lua/src/lcode.o \
                 deps/lua/src/lctype.o \
@@ -1792,7 +1793,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
-      DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
+      INCLUDE_DIRS += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
 
       ifneq ($(HAVE_THREADS), 1)
          DEFINES += -DDISCORD_DISABLE_IO_THREAD
@@ -1830,7 +1831,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
       HAVE_MINIUPNPC = 1
       DEFINES += -DHAVE_MINIUPNPC -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-      DEFINES += -I$(DEPS_DIR)
+      INCLUDE_DIRS += -I$(DEPS_DIR)
       OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
                  $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
                  $(DEPS_DIR)/miniupnpc/upnpcommands.o \
@@ -1874,8 +1875,10 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/ffmpeg_core.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
-   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
-   DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -DHAVE_FFMPEG
+   DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
+                -Wno-deprecated-declarations
+   INCLUDE_DIRS += -Iffmpeg
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
@@ -1925,7 +1928,7 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -DHAVE_IOSUHAX
-   DEF_FLAGS += -I$(DEPS_DIR)/libiosuhax
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax
    OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
           $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
@@ -1933,7 +1936,7 @@ endif
 
 ifeq ($(WANT_LIBFAT), 1)
    DEFINES += -DHAVE_LIBFAT
-   DEF_FLAGS += -I$(DEPS_DIR)/libfat/include
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libfat/include
    OBJ += $(DEPS_DIR)/libfat/cache.o \
           $(DEPS_DIR)/libfat/directory.o \
           $(DEPS_DIR)/libfat/disc.o \
@@ -1967,7 +1970,7 @@ endif
 # Help at https://modmyclassic.com/comp
 
 ifeq ($(HAVE_CLASSIC), 1)
-  DEF_FLAGS += -DHAVE_CLASSIC
+  DEFINES += -DHAVE_CLASSIC
 endif
 
 ifeq ($(HAVE_C_A7A7), 1)
@@ -1992,6 +1995,6 @@ ifeq ($(HAVE_C_A7A7), 1)
 endif
 
 ifeq ($(HAVE_HAKCHI), 1)
-   DEF_FLAGS += -DHAVE_HAKCHI
+   DEFINES += -DHAVE_HAKCHI
 endif
 ##################################
