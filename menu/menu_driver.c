@@ -2337,6 +2337,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
+         menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;
          break;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
