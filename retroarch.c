@@ -1634,6 +1634,16 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static void core_free_retro_game_info(struct retro_game_info *dest);
+static void core_uninit_symbols(void);
+static bool core_unload(void);
+static bool core_load(unsigned poll_type_behavior);
+static bool core_unload_game(void);
+static bool core_init(void);
+static bool core_set_environment(retro_ctx_environ_info_t *info);
+static bool core_init_symbols(enum rarch_core_type *type);
+static bool core_get_system_av_info(struct retro_system_av_info *av_info);
+
 static bool rarch_environment_cb(unsigned cmd, void *data);
 static bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
@@ -7251,7 +7261,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
       {
          uint64_t *quirks = (uint64_t *) data;
-         core_set_serialization_quirks(*quirks);
+         current_core.serialization_quirks_v = *quirks;
          break;
       }
 
@@ -24969,27 +24979,19 @@ bool core_reset_cheat(void)
    return true;
 }
 
-bool core_api_version(retro_ctx_api_info_t *api)
-{
-   if (!api)
-      return false;
-   api->version = current_core.retro_api_version();
-   return true;
-}
-
 bool core_set_poll_type(unsigned type)
 {
    current_core.poll_type = type;
    return true;
 }
 
-void core_uninit_symbols(void)
+static void core_uninit_symbols(void)
 {
    uninit_libretro_symbols(&current_core);
    current_core.symbols_inited = false;
 }
 
-bool core_init_symbols(enum rarch_core_type *type)
+static bool core_init_symbols(enum rarch_core_type *type)
 {
    if (!type || !init_libretro_symbols(*type, &current_core))
       return false;
@@ -25090,12 +25092,7 @@ uint64_t core_serialization_quirks(void)
    return current_core.serialization_quirks_v;
 }
 
-void core_set_serialization_quirks(uint64_t quirks)
-{
-   current_core.serialization_quirks_v = quirks;
-}
-
-bool core_set_environment(retro_ctx_environ_info_t *info)
+static bool core_set_environment(retro_ctx_environ_info_t *info)
 {
    if (!info)
       return false;
@@ -25103,7 +25100,7 @@ bool core_set_environment(retro_ctx_environ_info_t *info)
    return true;
 }
 
-bool core_get_system_av_info(struct retro_system_av_info *av_info)
+static bool core_get_system_av_info(struct retro_system_av_info *av_info)
 {
    if (!av_info)
       return false;
@@ -25119,7 +25116,7 @@ bool core_reset(void)
    return true;
 }
 
-bool core_init(void)
+static bool core_init(void)
 {
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -25128,7 +25125,7 @@ bool core_init(void)
    return true;
 }
 
-bool core_unload(void)
+static bool core_unload(void)
 {
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -25138,7 +25135,7 @@ bool core_unload(void)
    return true;
 }
 
-bool core_unload_game(void)
+static bool core_unload_game(void)
 {
    video_driver_free_hw_context();
 
@@ -25208,7 +25205,7 @@ static bool core_verify_api_version(void)
    return true;
 }
 
-bool core_load(unsigned poll_type_behavior)
+static bool core_load(unsigned poll_type_behavior)
 {
    current_core.poll_type = poll_type_behavior;
 
@@ -25222,20 +25219,12 @@ bool core_load(unsigned poll_type_behavior)
    return true;
 }
 
-bool core_get_region(retro_ctx_region_info_t *info)
-{
-  if (!info)
-    return false;
-  info->region = current_core.retro_get_region();
-  return true;
-}
-
 bool core_has_set_input_descriptor(void)
 {
    return current_core.has_set_input_descriptors;
 }
 
-void core_free_retro_game_info(struct retro_game_info *dest)
+static void core_free_retro_game_info(struct retro_game_info *dest)
 {
    if (!dest)
       return;
