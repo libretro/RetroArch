@@ -162,10 +162,10 @@
 
 #include "frontend/frontend_driver.h"
 #ifdef HAVE_THREADS
-#include "../gfx/video_thread_wrapper.h"
+#include "gfx/video_thread_wrapper.h"
 #endif
-#include "../gfx/video_display_server.h"
-#include "../gfx/video_crt_switch.h"
+#include "gfx/video_display_server.h"
+#include "gfx/video_crt_switch.h"
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
