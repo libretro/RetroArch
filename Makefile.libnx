@@ -114,7 +114,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
-          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
+          $(ARCH) $(DEFINES) $(INCLUDE_DIRS) -Ideps -Ideps/libz -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
 CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_STB_FONT #-DHAVE_FREETYPE
 
