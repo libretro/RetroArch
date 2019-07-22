@@ -834,7 +834,7 @@ else ifneq (,$(findstring unix,$(platform)))
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
-   CFLAGS += -W2 $(MACHDEP) $(PLATCFLAGS)
+   CFLAGS += -W3 $(MACHDEP) $(PLATCFLAGS)
 else
    CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
    INCLUDE += -I./libretro-common/include \
