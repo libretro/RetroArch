@@ -1897,7 +1897,7 @@ bool command_set_shader(const char *arg)
       return false;
 #endif
 #endif
-   settings            = config_get_ptr();
+   settings            = configuration_settings;
    if (settings && !settings->bools.video_shader_enable)
       settings->bools.video_shader_enable = true;
    return true;
@@ -2572,7 +2572,7 @@ static void command_event_check_disk_next(
 static void command_event_set_volume(float gain)
 {
    char msg[128];
-   settings_t *settings      = config_get_ptr();
+   settings_t *settings      = configuration_settings;
    float new_volume          = settings->floats.audio_volume + gain;
 
    new_volume                = MAX(new_volume, -80.0f);
@@ -2604,7 +2604,7 @@ static void command_event_set_volume(float gain)
 static void command_event_set_mixer_volume(float gain)
 {
    char msg[128];
-   settings_t *settings      = config_get_ptr();
+   settings_t *settings      = configuration_settings;
    float new_volume          = settings->floats.audio_mixer_volume + gain;
 
    new_volume                = MAX(new_volume, -80.0f);
@@ -2725,7 +2725,7 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   settings_t *settings          = config_get_ptr();
+   settings_t *settings          = configuration_settings;
    bool        allow_cheats      = true;
 
 #ifdef HAVE_NETWORKING
@@ -2750,8 +2750,8 @@ static void command_event_load_auto_state(void)
    char msg[128]                   = {0};
    char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings            = config_get_ptr();
-   global_t   *global              = global_get_ptr();
+   settings_t *settings            = configuration_settings;
+   global_t   *global              = &g_extern;
 
    if (!global || !settings->bools.savestate_auto_load)
       return;
@@ -2799,8 +2799,8 @@ static void command_event_set_savestate_auto_index(void)
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
-   settings_t *settings              = config_get_ptr();
-   global_t   *global                = global_get_ptr();
+   settings_t *settings              = configuration_settings;
+   global_t   *global                = &g_extern;
 
    if (!global || !settings->bools.savestate_auto_index)
       return;
@@ -2895,7 +2895,7 @@ static bool event_init_content(void)
 */
 #ifdef HAVE_CHEEVOS
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings = configuration_settings;
       if (  !settings->bools.cheevos_enable || 
             !settings->bools.cheevos_hardcore_mode_enable)
          command_event_load_auto_state();
@@ -2913,7 +2913,7 @@ static bool event_init_content(void)
 static bool command_event_init_core(enum rarch_core_type *data)
 {
    retro_ctx_environ_info_t info;
-   settings_t *settings            = config_get_ptr();
+   settings_t *settings            = configuration_settings;
 
    if (!core_init_symbols(data))
       return false;
@@ -2990,8 +2990,8 @@ static bool command_event_save_auto_state(void)
    char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   const settings_t *settings  = (const settings_t*)config_get_ptr();
-   global_t   *global          = global_get_ptr();
+   settings_t *settings        = configuration_settings;
+   global_t   *global          = &g_extern;
 
    if (!global || !settings || !settings->bools.savestate_auto_save)
       return false;
@@ -3074,7 +3074,7 @@ static bool command_event_save_core_config(void)
    char *config_path               = NULL;
    char *config_dir                = NULL;
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings            = config_get_ptr();
+   settings_t *settings            = configuration_settings;
 
    msg[0]                          = '\0';
 
@@ -3267,7 +3267,7 @@ static bool command_event_main_state(unsigned cmd)
    char msg[128];
    size_t state_path_size     = 16384 * sizeof(char);
    char *state_path           = (char*)malloc(state_path_size);
-   const global_t *global     = (const global_t*)global_get_ptr();
+   const global_t *global     = &g_extern;
    bool ret                   = false;
    bool push_msg              = true;
 
@@ -3275,7 +3275,7 @@ static bool command_event_main_state(unsigned cmd)
 
    if (global)
    {
-      settings_t *settings       = config_get_ptr();
+      settings_t *settings       = configuration_settings;
       int state_slot             = settings->ints.state_slot;
       const char *name_savestate = global->name.savestate;
 
@@ -3340,7 +3340,7 @@ static bool command_event_resize_windowed_scale(void)
 {
    unsigned idx           = 0;
    unsigned *window_scale = NULL;
-   settings_t *settings   = config_get_ptr();
+   settings_t *settings   = configuration_settings;
 
    if (rarch_ctl(RARCH_CTL_GET_WINDOWED_SCALE, &window_scale))
    {
@@ -3407,7 +3407,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AI_SERVICE_TOGGLE:
       {
 #ifdef HAVE_TRANSLATE
-         settings_t *settings      = config_get_ptr();
+         settings_t *settings      = configuration_settings;
          if (settings->uints.ai_service_mode == 0)
          {
             /* Default mode - pause on call, unpause on second press. */
@@ -3580,7 +3580,7 @@ bool command_event(enum event_command cmd, void *data)
          return false;
       case CMD_EVENT_SAVE_STATE:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
 
             if (settings->bools.savestate_auto_index)
             {
@@ -3593,7 +3593,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             /* Slot -1 is (auto) slot. */
             if (settings->ints.state_slot >= 0)
             {
@@ -3604,14 +3604,14 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SAVE_STATE_INCREMENT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             int new_state_slot        = settings->ints.state_slot + 1;
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             if (!take_screenshot(settings->paths.directory_screenshot,
                      path_get(RARCH_PATH_BASENAME), false,
                      video_driver_cached_frame_has_valid_framebuffer(), false, true))
@@ -3674,8 +3674,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REINIT:
          video_driver_reinit();
          {
-            const input_driver_t *input_drv = input_get_ptr();
-            void *input_data                = input_get_data();
+            const input_driver_t *input_drv = current_input;
+            void *input_data                = current_input_data;
             /* Poll input to avoid possibly stale data to corrupt things. */
             if (input_drv && input_drv->poll)
                input_drv->poll(input_data);
@@ -3683,7 +3683,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             menu_display_set_framebuffer_dirty_flag();
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
@@ -3712,7 +3712,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_INIT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active)
                return false;
@@ -3732,7 +3732,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_REWIND_TOGGLE:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             if (settings->bools.rewind_enable)
                command_event(CMD_EVENT_REWIND_INIT, NULL);
             else
@@ -3753,7 +3753,7 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_NETWORKING
             /* Only enable state manager if netplay is not underway
 TODO: Add a setting for these tweaks */
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             if (settings->uints.autosave_interval != 0
                   && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
@@ -3804,7 +3804,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_FPS_TOGGLE:
          {
-            settings_t *settings           = config_get_ptr();
+            settings_t *settings           = configuration_settings;
             settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          }
          break;
@@ -3818,7 +3818,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
             if (string_is_empty(settings->paths.path_audio_dsp_plugin))
                break;
@@ -3894,7 +3894,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_HISTORY_INIT:
          {
-            settings_t *settings          = config_get_ptr();
+            settings_t *settings          = configuration_settings;
             unsigned content_history_size = settings->uints.content_history_size;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
@@ -3949,7 +3949,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_INFO_INIT:
          {
             char ext_name[255];
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
 
             ext_name[0]               = '\0';
 
@@ -4200,16 +4200,16 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
          {
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
-            if (settings->bools.menu_pause_libretro)
+            settings_t *settings      = configuration_settings;
+            if (settings && settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
          else
          {
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
-            if (settings->bools.menu_pause_libretro)
+            settings_t *settings      = configuration_settings;
+            if (settings && settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
@@ -4247,7 +4247,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT:
          {
             char       *hostname = (char *) data;
-            settings_t *settings = config_get_ptr();
+            settings_t *settings = configuration_settings;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -4272,7 +4272,7 @@ TODO: Add a setting for these tweaks */
          {
             /* buf is expected to be address|port */
             static struct string_list *hostname = NULL;
-            settings_t *settings                = config_get_ptr();
+            settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
 
             RARCH_LOG("[netplay] buf %s\n", buf);
@@ -4309,7 +4309,7 @@ TODO: Add a setting for these tweaks */
          {
             static struct string_list *hostname = NULL;
             /* buf is expected to be address|port */
-            const settings_t *settings          = (const settings_t*)config_get_ptr();
+            settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
 
             RARCH_LOG("[netplay] buf %s\n", buf);
@@ -4376,13 +4376,16 @@ TODO: Add a setting for these tweaks */
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
             {
-               const settings_t *settings = (const settings_t*)config_get_ptr();
-               /* Re-enable rewind if it was enabled
-                * TODO: Add a setting for these tweaks */
-               if (settings->bools.rewind_enable)
-                  command_event(CMD_EVENT_REWIND_INIT, NULL);
-               if (settings->uints.autosave_interval != 0)
-                  command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+               settings_t *settings                = configuration_settings;
+               if (settings)
+               {
+                  /* Re-enable rewind if it was enabled
+                   * TODO: Add a setting for these tweaks */
+                  if (settings->bools.rewind_enable)
+                     command_event(CMD_EVENT_REWIND_INIT, NULL);
+                  if (settings->uints.autosave_interval != 0)
+                     command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+               }
             }
 
             break;
@@ -4415,7 +4418,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             bool *userdata            = (bool*)data;
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings      = configuration_settings;
             bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
 
@@ -4663,10 +4666,12 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {
-            const settings_t *settings      = (const settings_t*)config_get_ptr();
+            settings_t *settings      = configuration_settings;
 
-            if (!settings->bools.discord_enable)
-               return false;
+            if (settings)
+               if (!settings->bools.discord_enable)
+                  return false;
+
             if (discord_is_ready())
                return true;
 
