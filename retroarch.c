@@ -3580,6 +3580,9 @@ static void retroarch_system_info_free(void)
    memset(&runloop_system, 0, sizeof(rarch_system_info_t));
 }
 
+static bool libretro_get_system_info(const char *path,
+      struct retro_system_info *info, bool *load_no_content);
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -7502,7 +7505,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool libretro_get_system_info(const char *path,
+static bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
    struct retro_system_info dummy_info;

@@ -27,21 +27,6 @@
 RETRO_BEGIN_DECLS
 
 /**
- * libretro_get_system_info:
- * @path                         : Path to libretro library.
- * @info                         : System info information.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Gets system info from an arbitrary lib.
- * The struct returned must be freed as strings are allocated dynamically.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content);
-
-/**
  * libretro_free_system_info:
  * @info                         : Pointer to system info information.
  *
