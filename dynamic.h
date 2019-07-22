@@ -53,18 +53,6 @@ const struct retro_controller_description *
    libretro_find_controller_description(
          const struct retro_controller_info *info, unsigned id);
 
-/**
- * rarch_environment_cb:
- * @cmd                          : Identifier of command.
- * @data                         : Pointer to data.
- *
- * Environment callback function implementation.
- *
- * Returns: true (1) if environment callback command could
- * be performed, otherwise false (0).
- **/
-bool rarch_environment_cb(unsigned cmd, void *data);
-
 struct retro_core_t
 {
    void (*retro_init)(void);

@@ -1634,6 +1634,7 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static bool rarch_environment_cb(unsigned cmd, void *data);
 static bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
 static void driver_location_set_interval(unsigned interval_msecs,
@@ -6405,7 +6406,7 @@ static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
  * Returns: true (1) if environment callback command could
  * be performed, otherwise false (0).
  **/
-bool rarch_environment_cb(unsigned cmd, void *data)
+static bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    settings_t         *settings = configuration_settings;
