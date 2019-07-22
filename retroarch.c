@@ -4237,9 +4237,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
          video_driver_set_aspect_ratio();
          break;
-      case CMD_EVENT_AUDIO_SET_BLOCKING_STATE:
-         audio_driver_set_nonblocking_state(boolean);
-         break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
          retroarch_overlay_set_scale_factor();
@@ -15040,7 +15037,6 @@ static bool audio_driver_find_driver(void)
    return true;
 }
 
-
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    unsigned new_rate     = 0;
@@ -15136,7 +15132,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    if (!settings->bools.audio_sync && audio_driver_active)
    {
-      audio_driver_set_nonblocking_state(true);
+      if (audio_driver_active && audio_driver_context_audio_data)
+         current_audio->set_nonblock_state(audio_driver_context_audio_data, true);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
    }
 
@@ -15222,22 +15219,6 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
 error:
    return audio_driver_deinit();
-}
-
-#define audio_driver_set_nonblocking_state_internal(val, chunk_size) \
-   if (audio_driver_active && audio_driver_context_audio_data) \
-      current_audio->set_nonblock_state(audio_driver_context_audio_data, val); \
-   audio_driver_chunk_size = chunk_size;
-
-
-void audio_driver_set_nonblocking_state(bool enable)
-{
-   settings_t *settings  = configuration_settings;
-   audio_driver_set_nonblocking_state_internal(
-         settings->bools.audio_sync ? enable : true,
-         enable ?
-         audio_driver_chunk_nonblock_size :
-         audio_driver_chunk_block_size);
 }
 
 /**
@@ -19600,12 +19581,12 @@ static void driver_adjust_system_rates(void)
  **/
 void driver_set_nonblock_state(void)
 {
+   settings_t       *settings  = configuration_settings;
    bool                 enable = input_driver_nonblock_state;
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_active && video_driver_get_ptr_internal(false))
    {
-      settings_t *settings       = configuration_settings;
       bool video_nonblock        = enable;
 
       if (!settings->bools.video_vsync || runloop_force_nonblock)
@@ -19613,7 +19594,12 @@ void driver_set_nonblock_state(void)
       video_driver_set_nonblock_state(video_nonblock);
    }
 
-   audio_driver_set_nonblocking_state(enable);
+   if (audio_driver_active && audio_driver_context_audio_data)
+      current_audio->set_nonblock_state(audio_driver_context_audio_data,
+            settings->bools.audio_sync ? enable : true);
+   audio_driver_chunk_size = enable
+      ? audio_driver_chunk_nonblock_size
+      : audio_driver_chunk_block_size;
 }
 
 bool audio_driver_new_devices_list(void)
@@ -23876,9 +23862,9 @@ end:
          if (fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
-            audio_driver_set_nonblocking_state_internal(
-                  true,
-                  audio_driver_chunk_nonblock_size);
+            if (audio_driver_active && audio_driver_context_audio_data)
+               current_audio->set_nonblock_state(audio_driver_context_audio_data, true);
+            audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
          }
 
          fastforward_after_frames++;
@@ -23886,9 +23872,11 @@ end:
          if (fastforward_after_frames == 6)
          {
             /* Blocking audio */
-            audio_driver_set_nonblocking_state_internal(
-                  settings->bools.audio_sync ? false : true,
-                  audio_driver_chunk_block_size);
+            if (audio_driver_active && audio_driver_context_audio_data)
+               current_audio->set_nonblock_state(
+                     audio_driver_context_audio_data,
+                     settings->bools.audio_sync ? false : true);
+            audio_driver_chunk_size = audio_driver_chunk_block_size;
             fastforward_after_frames = 0;
          }
       }

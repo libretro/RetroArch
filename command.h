@@ -114,8 +114,6 @@ enum event_command
    CMD_EVENT_CORE_DEINIT,
    /* Initializes core. */
    CMD_EVENT_CORE_INIT,
-   /* Set audio blocking state. */
-   CMD_EVENT_AUDIO_SET_BLOCKING_STATE,
    /* Apply video state changes. */
    CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
    /* Set video blocking state. */
