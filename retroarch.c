@@ -3819,9 +3819,6 @@ bool command_event(enum event_command cmd, void *data)
             retroarch_menu_running();
 #endif
          break;
-      case CMD_EVENT_CONTROLLERS_INIT:
-         command_event_init_controllers();
-         break;
       case CMD_EVENT_RESET:
 #ifdef HAVE_CHEEVOS
          rcheevos_state_loaded_flag = false;
@@ -4078,21 +4075,17 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         {
-            recording_set_state(false);
-            streaming_set_state(false);
-            if (!recording_deinit())
-               return false;
-         }
+         recording_set_state(false);
+         streaming_set_state(false);
+         if (!recording_deinit())
+            return false;
          break;
       case CMD_EVENT_RECORD_INIT:
+         recording_set_state(true);
+         if (!recording_init())
          {
-            recording_set_state(true);
-            if (!recording_init())
-            {
-               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-               return false;
-            }
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+            return false;
          }
          break;
       case CMD_EVENT_HISTORY_DEINIT:
@@ -4416,9 +4409,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
          break;
-      case CMD_EVENT_NETWORK_DEINIT:
-         network_deinit();
-         break;
       case CMD_EVENT_NETWORK_INIT:
          network_init();
          break;
@@ -4583,7 +4573,6 @@ TODO: Add a setting for these tweaks */
          break;
 #else
       case CMD_EVENT_NETPLAY_DEINIT:
-      case CMD_EVENT_NETWORK_DEINIT:
       case CMD_EVENT_NETWORK_INIT:
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
@@ -21664,7 +21653,7 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_deinit_mapper();
    input_driver_init_mapper();
    command_event(CMD_EVENT_REWIND_INIT, NULL);
-   command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
+   command_event_init_controllers();
    if (!string_is_empty(global->record.path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 

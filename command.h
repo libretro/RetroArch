@@ -152,12 +152,8 @@ enum event_command
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
    CMD_EVENT_SHADER_PRESET_LOADED,
-   /* Initializes controllers. */
-   CMD_EVENT_CONTROLLERS_INIT,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
-   /* Deinitializes network system. */
-   CMD_EVENT_NETWORK_DEINIT,
    /* Initializes network system. */
    CMD_EVENT_NETWORK_INIT,
    /* Initializes netplay system with a string or no host specified. */
