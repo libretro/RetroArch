@@ -1945,16 +1945,14 @@ static bool playlist_read_file(
          if (!length && !filestream_eof(file))
          {
             RARCH_WARN("Could not read JSON input.\n");
-            JSON_Parser_Free(context.parser);
-            goto end;
+            goto json_cleanup;
          }
 
          if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
          {
             RARCH_WARN("Error parsing chunk:\n---snip---\n%s\n---snip---\n", chunk);
             JSONLogError(&context);
-            JSON_Parser_Free(context.parser);
-            goto end;
+            goto json_cleanup;
          }
       }
 
@@ -1962,9 +1960,10 @@ static bool playlist_read_file(
       {
          RARCH_WARN("Error parsing JSON.\n");
          JSONLogError(&context);
-         JSON_Parser_Free(context.parser);
-         goto end;
+         goto json_cleanup;
       }
+
+json_cleanup:
 
       JSON_Parser_Free(context.parser);
 
