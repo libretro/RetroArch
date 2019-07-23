@@ -46,7 +46,7 @@ static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
       int16_t to_min,   int16_t to_max, int16_t value )
 {
    int32_t from_range = from_max - from_min;
-   int32_t to_range = to_max - to_min;
+   int32_t to_range   = to_max - to_min;
 
    return (((value - from_min) * to_range) / from_range) + to_min;
 }
@@ -129,10 +129,9 @@ static void log_coords(int16_t x, int16_t y)
 
 static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatus *vpad)
 {
-   VPADTouchData point = {0};
+   VPADTouchData point            = {0};
    struct video_viewport viewport = {0};
-
-   bool touch_clamped = false;
+   bool touch_clamped             = false;
 
    if (!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
    {
@@ -232,8 +231,9 @@ static int16_t wpad_axis(unsigned pad, uint32_t axis)
    return pad_functions.get_axis_value(data.axis, analog_state, data.is_negative);
 }
 
-static const char *wpad_name(unsigned pad) {
-  return PAD_NAME_WIIU_GAMEPAD;
+static const char *wpad_name(unsigned pad)
+{
+   return PAD_NAME_WIIU_GAMEPAD;
 }
 
 input_device_driver_t wpad_driver =

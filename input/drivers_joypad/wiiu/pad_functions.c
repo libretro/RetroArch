@@ -64,8 +64,11 @@ static int16_t wiiu_pad_get_axis_value(int32_t axis,
    return clamp_axis(value, is_negative);
 }
 
-void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y,
-       int16_t right_x, int16_t right_y, int16_t touch_x, int16_t touch_y)
+void wiiu_pad_set_axis_value(
+      int16_t state[3][2],
+      int16_t left_x,  int16_t left_y,
+      int16_t right_x, int16_t right_y,
+      int16_t touch_x, int16_t touch_y)
 {
   state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = left_x;
   state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = left_y;

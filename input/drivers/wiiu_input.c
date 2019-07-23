@@ -46,7 +46,7 @@ typedef struct wiiu_input
 
 void kb_connection_callback(KBDKeyEvent *key)
 {
-	keyboardChannel = keyboardChannel + (key->channel + 0x01);
+   keyboardChannel = keyboardChannel + (key->channel + 0x01);
 }
 
 void kb_disconnection_callback(KBDKeyEvent *key)
@@ -116,10 +116,10 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if(!wiiu)
+   if (!wiiu)
      return;
 
-   if(wiiu->joypad)
+   if (wiiu->joypad)
      wiiu->joypad->poll();
 }
 
@@ -131,7 +131,7 @@ static int16_t wiiu_input_state(void *data,
 {
    wiiu_input_t *wiiu         = (wiiu_input_t*)data;
 
-   if(!wiiu || !(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
+   if (!wiiu || !(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
       return 0;
 
    switch (device)

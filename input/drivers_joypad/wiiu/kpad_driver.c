@@ -57,7 +57,7 @@ static int channel_slot_map[] = { -1, -1, -1, -1 };
 
 static int to_wiimote_channel(unsigned pad)
 {
-   int i;
+   unsigned i;
 
    for(i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
       if(channel_slot_map[i] == pad)
@@ -72,7 +72,7 @@ static int get_slot_for_channel(unsigned channel)
    if(slot >= 0)
    {
       RARCH_LOG("[kpad]: got slot %d\n", slot);
-      channel_slot_map[channel] = slot;
+      channel_slot_map[channel]             = slot;
       hid_instance.pad_list[slot].connected = true;
    }
 
@@ -99,10 +99,11 @@ static void kpad_destroy(void)
 
 static bool kpad_button(unsigned pad, uint16_t button_bit)
 {
+   int channel;
    if (!kpad_query_pad(pad))
       return false;
 
-   int channel = to_wiimote_channel(pad);
+   channel = to_wiimote_channel(pad);
    if(channel < 0)
       return false;
 
@@ -122,8 +123,9 @@ static void kpad_get_buttons(unsigned pad, input_bits_t *state)
 
 static int16_t kpad_axis(unsigned pad, uint32_t axis)
 {
-   int channel = to_wiimote_channel(pad);
    axis_data data;
+   int channel = to_wiimote_channel(pad);
+
    if (!kpad_query_pad(pad) || channel < 0 || axis == AXIS_NONE)
       return 0;
 
@@ -222,7 +224,8 @@ static void kpad_poll(void)
       /* this is a hack to prevent spurious disconnects */
       /* TODO: use KPADSetConnectCallback and use callbacks to detect */
       /*       pad disconnects properly. */
-      if (result == 0) {
+      if (result == 0)
+      {
          poll_failures[channel]++;
          if(poll_failures[channel] > 5)
             kpad_deregister(channel);
@@ -253,8 +256,10 @@ static const char *kpad_name(unsigned pad)
       case WIIMOTE_TYPE_NONE:
       default:
          RARCH_LOG("[kpad]: Unknown pad type %d\n", wiimotes[pad].type);
-         return "N/A";
+         break;
    }
+
+   return "N/A";
 }
 
 input_device_driver_t kpad_driver =
