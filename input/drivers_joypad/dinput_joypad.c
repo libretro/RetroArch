@@ -20,6 +20,7 @@
 #include <windowsx.h>
 
 #include <dinput.h>
+#include <mmsystem.h>
 
 #include <boolean.h>
 #include <compat/strl.h>

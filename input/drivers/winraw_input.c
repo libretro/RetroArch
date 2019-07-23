@@ -422,7 +422,7 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    return false;
 }
 
-static void winraw_init_mouse_xy_mapping()
+static void winraw_init_mouse_xy_mapping(void)
 {
    struct video_viewport viewport;
    int center_x;
