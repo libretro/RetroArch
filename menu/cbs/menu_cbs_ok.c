@@ -85,7 +85,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #endif
 
 #ifdef __WINRT__

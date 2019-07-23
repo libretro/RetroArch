@@ -18,7 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../configuration.h"
+#include "../../configuration.h"
 #include "../../msg_hash.h"
 #include "../../managers/cheat_manager.h"
 
