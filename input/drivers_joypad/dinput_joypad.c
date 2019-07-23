@@ -420,6 +420,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    unsigned hat_dir                     = 0;
    const struct dinput_joypad_data *pad = &g_pads[port_num];
+
    if (!pad || !pad->joypad)
       return false;
 
@@ -431,10 +432,8 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
    {
       unsigned pov;
       unsigned hat   = GET_HAT(joykey);
-      unsigned elems = sizeof(pad->joy_state.rgdwPOV) /
-         sizeof(pad->joy_state.rgdwPOV[0]);
 
-      if (hat >= elems)
+      if (hat >= ARRAY_SIZE(pad->joy_state.rgdwPOV))
          return false;
 
       pov = pad->joy_state.rgdwPOV[hat];
@@ -454,15 +453,10 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
                return (pov >= 22500) && (pov <= 31500);
          }
       }
-
-      return false;
    }
    else
    {
-      unsigned elems = sizeof(pad->joy_state.rgbButtons) /
-         sizeof(pad->joy_state.rgbButtons[0]);
-
-      if (joykey < elems)
+      if (joykey < ARRAY_SIZE(pad->joy_state.rgbButtons))
          return pad->joy_state.rgbButtons[joykey];
    }
 
