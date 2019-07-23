@@ -51,7 +51,10 @@
 
 #define UDEV_NUM_BUTTONS 32
 #define NUM_AXES 32
+
+#ifndef NUM_HATS
 #define NUM_HATS 4
+#endif
 
 #define test_bit(nr, addr) \
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
