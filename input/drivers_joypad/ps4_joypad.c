@@ -31,20 +31,20 @@
 #define SCE_USER_SERVICE_USER_ID_INVALID 0xFFFFFFFF
 #define SCE_ORBISPAD_ERROR_ALREADY_OPENED 0x80920004
 
-#define	ORBISPAD_L3		0x00000002
-#define	ORBISPAD_R3		0x00000004
-#define	ORBISPAD_OPTIONS	0x00000008
-#define	ORBISPAD_UP		0x00000010
-#define	ORBISPAD_RIGHT		0x00000020
-#define	ORBISPAD_DOWN		0x00000040
-#define	ORBISPAD_LEFT		0x00000080
-#define	ORBISPAD_L2		0x00000100
-#define	ORBISPAD_R2		0x00000200
-#define	ORBISPAD_L1		0x00000400
-#define	ORBISPAD_R1		0x00000800
-#define	ORBISPAD_TRIANGLE	0x00001000
+#define	ORBISPAD_L3		      0x00000002
+#define	ORBISPAD_R3		      0x00000004
+#define	ORBISPAD_OPTIONS	   0x00000008
+#define	ORBISPAD_UP		      0x00000010
+#define	ORBISPAD_RIGHT		   0x00000020
+#define	ORBISPAD_DOWN		   0x00000040
+#define	ORBISPAD_LEFT		   0x00000080
+#define	ORBISPAD_L2		      0x00000100
+#define	ORBISPAD_R2		      0x00000200
+#define	ORBISPAD_L1		      0x00000400
+#define	ORBISPAD_R1		      0x00000800
+#define	ORBISPAD_TRIANGLE	   0x00001000
 #define	ORBISPAD_CIRCLE		0x00002000
-#define	ORBISPAD_CROSS		0x00004000
+#define	ORBISPAD_CROSS		   0x00004000
 #define	ORBISPAD_SQUARE		0x00008000
 #define	ORBISPAD_TOUCH_PAD	0x00100000
 #define	ORBISPAD_INTERCEPTED	0x80000000
@@ -77,21 +77,26 @@ static const char *ps4_joypad_name(unsigned pad)
 
 static bool ps4_joypad_init(void *data)
 {
+   int result;
+   SceUserServiceLoginUserIdList userIdList;
+
    num_players = 0;
 
    scePadInit();
 
-   SceUserServiceLoginUserIdList userIdList;
+	result = sceUserServiceGetLoginUserIdList(&userIdList);
 
-	int result = sceUserServiceGetLoginUserIdList(&userIdList);
    RARCH_LOG("sceUserServiceGetLoginUserIdList %x ", result);
+
 	if (result == 0)
 	{
-
-      for (int i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
+      unsigned i;
+      for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          SceUserServiceUserId userId = userIdList.userId[i];
+
          RARCH_LOG("USER %d ID %x\n", i, userId);
+
          if (userId != SCE_USER_SERVICE_USER_ID_INVALID)
          {
             int index = 0;
@@ -150,6 +155,7 @@ static void ps4_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 
 static int16_t ps4_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
+   /* TODO/FIXME - implement */
    return 0;
 }
 

@@ -32,8 +32,6 @@ static unsigned char padBuf[2][256] ALIGNED(64);
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
 
-extern uint64_t lifecycle_state;
-
 static INLINE int16_t convert_u8_to_s16(uint8_t val)
 {
    if (val == 0)
