@@ -185,8 +185,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
 
-         IDirectSoundBuffer_Unlock(ds->dsb, &region.chunk1,
-               region.size1, &region.chunk2, region.size2);
+         IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
+               region.size1, region.chunk2, region.size2);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
       else
@@ -200,8 +200,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
             fifo_read(ds->buffer, region.chunk2, region.size2);
          LeaveCriticalSection(&ds->crit);
 
-         IDirectSoundBuffer_Unlock(ds->dsb, &region.chunk1,
-               region.size1, &region.chunk2, region.size2);
+         IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
+               region.size1, region.chunk2, region.size2);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
 
          SetEvent(ds->event);
