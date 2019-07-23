@@ -47,6 +47,11 @@ struct dinput_joypad_data
    DIEFFECT rumble_props;
 };
 
+/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
+#define ARRAY_SIZE_RGB_BUTTONS 128
+/* For DIJOYSTATE2 struct, rgdwPOV will always have 4 elements */
+#define ARRAY_SIZE_RGDWPOV     4
+
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
 static unsigned g_last_xinput_pad_idx;
@@ -433,7 +438,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
       unsigned pov;
       unsigned hat   = GET_HAT(joykey);
 
-      if (hat >= ARRAY_SIZE(pad->joy_state.rgdwPOV))
+      if (hat >= ARRAY_SIZE_RGDWPOV)
          return false;
 
       pov = pad->joy_state.rgdwPOV[hat];
@@ -453,14 +458,12 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
                return (pov >= 22500) && (pov <= 31500);
          }
       }
-   }
-   else
-   {
-      if (joykey < ARRAY_SIZE(pad->joy_state.rgbButtons))
-         return pad->joy_state.rgbButtons[joykey];
+
+      return false;
    }
 
-   return false;
+   return (joykey < ARRAY_SIZE_RGB_BUTTONS) 
+      && pad->joy_state.rgbButtons[joykey];
 }
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
