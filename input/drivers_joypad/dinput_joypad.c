@@ -443,20 +443,44 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 
       pov = pad->joy_state.rgdwPOV[hat];
 
-      /* Magic numbers I'm not sure where originate from. */
-      if (pov < 36000)
+      switch (hat_dir)
       {
-         switch (hat_dir)
-         {
-            case HAT_UP_MASK:
-               return (pov >= 31500) || (pov <= 4500);
-            case HAT_RIGHT_MASK:
-               return (pov >= 4500) && (pov <= 13500);
-            case HAT_DOWN_MASK:
-               return (pov >= 13500) && (pov <= 22500);
-            case HAT_LEFT_MASK:
-               return (pov >= 22500) && (pov <= 31500);
-         }
+         case HAT_UP_MASK:
+            {
+               static const unsigned check1 = (JOY_POVRIGHT/2);
+               static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+               return
+                  (pov == JOY_POVFORWARD) ||
+                  (pov == check1)         ||
+                  (pov == check2);
+            }
+         case HAT_RIGHT_MASK:
+            {
+               static const unsigned check1 = (JOY_POVRIGHT/2);
+               static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+               return
+                  (pov == JOY_POVRIGHT) ||
+                  (pov == check1)       ||
+                  (pov == check2);
+            }
+         case HAT_DOWN_MASK:
+            {
+               static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+               static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+               return 
+                  (pov == JOY_POVBACKWARD) ||
+                  (pov == check1)          ||
+                  (pov == check2);
+            }
+         case HAT_LEFT_MASK:
+            {
+               static const unsigned check1 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+               static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+               return 
+                  (pov == JOY_POVLEFT) || 
+                  (pov == check1)      || 
+                  (pov == check2);
+            }
       }
 
       return false;
