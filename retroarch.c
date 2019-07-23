@@ -794,11 +794,9 @@ typedef struct runloop_ctx_msg_info
    bool flush;
 } runloop_ctx_msg_info_t;
 
-static struct global g_extern;
-
-
-static struct                     retro_callbacks retro_ctx;
-static struct                     retro_core_t current_core;
+static struct global              g_extern;
+static struct retro_callbacks     retro_ctx;
+static struct retro_core_t        current_core;
 
 static jmp_buf error_sjlj_context;
 
@@ -806,16 +804,8 @@ static settings_t *configuration_settings                       = NULL;
 
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
-static char current_library_name[1024]                          = {0};
-static char current_library_version[1024]                       = {0};
-static char current_valid_extensions[1024]                      = {0};
-static char error_string[255]                                   = {0};
 
 static bool has_set_username                                    = false;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static char runtime_shader_preset[255]                          = {0};
-static bool shader_presets_need_reload                          = true;
-#endif
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -823,6 +813,23 @@ const void *MAGIC_POINTER                                       = (void*)(uintpt
 #endif
 
 static retro_bits_t has_set_libretro_device;
+
+static rarch_system_info_t runloop_system;
+static struct retro_frame_time_callback runloop_frame_time;
+static retro_keyboard_event_t runloop_key_event                 = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
+static core_option_manager_t *runloop_core_options              = NULL;
+static msg_queue_t *runloop_msg_queue                           = NULL;
+
+static unsigned runloop_pending_windowed_scale                  = 0;
+static unsigned runloop_max_frames                              = 0;
+static unsigned fastforward_after_frames                        = 0;
+
+static retro_usec_t runloop_frame_time_last                     = 0;
+static retro_time_t frame_limit_minimum_time                    = 0.0;
+static retro_time_t frame_limit_last_time                       = 0.0;
+static retro_time_t libretro_core_runtime_last                  = 0;
+static retro_time_t libretro_core_runtime_usec                  = 0;
 
 static bool has_set_core                                        = false;
 #ifdef HAVE_DISCORD
@@ -847,7 +854,6 @@ static bool has_set_ups_pref                                    = false;
 static bool has_set_bps_pref                                    = false;
 static bool has_set_ips_pref                                    = false;
 static bool has_set_log_to_file                                 = false;
-
 static bool rarch_is_sram_load_disabled                         = false;
 static bool rarch_is_sram_save_disabled                         = false;
 static bool rarch_use_sram                                      = false;
@@ -855,7 +861,6 @@ static bool rarch_ups_pref                                      = false;
 static bool rarch_bps_pref                                      = false;
 static bool rarch_ips_pref                                      = false;
 static bool rarch_patch_blocked                                 = false;
-
 static bool runloop_missing_bios                                = false;
 static bool runloop_force_nonblock                              = false;
 static bool runloop_paused                                      = false;
@@ -871,37 +876,28 @@ static bool runloop_remaps_game_active                          = false;
 static bool runloop_remaps_content_dir_active                   = false;
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
-static rarch_system_info_t runloop_system;
-static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event                 = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
-static core_option_manager_t *runloop_core_options              = NULL;
-static msg_queue_t *runloop_msg_queue                           = NULL;
-
-static unsigned runloop_pending_windowed_scale                  = 0;
-static unsigned runloop_max_frames                              = 0;
 static bool runloop_max_frames_screenshot                       = false;
+static bool log_file_created                                    = false;
+static bool log_file_override_active                            = false;
+static bool has_variable_update                                 = false;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static bool shader_presets_need_reload                          = true;
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static char runtime_shader_preset[255]                          = {0};
+#endif
 static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
-static unsigned fastforward_after_frames                        = 0;
-
-static retro_usec_t runloop_frame_time_last                     = 0;
-static retro_time_t frame_limit_minimum_time                    = 0.0;
-static retro_time_t frame_limit_last_time                       = 0.0;
-static retro_time_t libretro_core_runtime_last                  = 0;
-static retro_time_t libretro_core_runtime_usec                  = 0;
-
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
-
-static bool log_file_created                                    = false;
 static char timestamped_log_file_name[64]                       = {0};
-
-static bool log_file_override_active                            = false;
 static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
-
 static char launch_arguments[4096];
+static char current_library_name[1024]                          = {0};
+static char current_library_version[1024]                       = {0};
+static char current_valid_extensions[1024]                      = {0};
+static char error_string[255]                                   = {0};
 
-static bool has_variable_update                                 = false;
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
