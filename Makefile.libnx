@@ -133,6 +133,10 @@ ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
 endif
 
+# add things from Makefile.common
+CFLAGS += $(DEF_FLAGS)
+INCLUDES += $(INCLUDE_DIRS)
+
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
