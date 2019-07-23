@@ -170,61 +170,127 @@ static void switch_joypad_destroy(void)
 }
 
 #ifdef HAVE_LIBNX
-int lastMode = 0; /* 0 = handheld, 1 = whatever */
+static int previous_handheld = -1; /* 1 = handheld, 0 = docked, -1 = first use */
+static uint previous_split_joycon_setting[MAX_USERS] = { 0 };
+
 static void switch_joypad_poll(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings;
+   int i;
+   int handheld;
 
+   settings = config_get_ptr();
    hidScanInput();
-
-   if (!hidGetHandheldMode())
+   handheld = hidGetHandheldMode();
+   
+   if (previous_handheld == -1)
    {
-      if (lastMode != 1)
+      /* first call of this function, apply joycon settings according to prefs, init vars */
+      if (!handheld)
       {
-         unsigned i = 0;
          for(i = 0; i < MAX_USERS; i += 2)
          {
-            /* CONTROLLER_PLAYER_X, X == i++ */
             if (settings->uints.input_split_joycon[i])
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
                hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
-            }
-         }
-         lastMode = 1;
-      }
-   }
-   else
-   {
-      if (lastMode != 0)
-      {
-         int i = 0;
-         for(i = 0; i < MAX_USERS; i += 2)
-         {
-            /* CONTROLLER_PLAYER_X, X == i++ */
-            if (settings->uints.input_split_joycon[i]) 
+            } 
+            else if (!settings->uints.input_split_joycon[i])
             {
                hidSetNpadJoyAssignmentModeDual(i);
                hidSetNpadJoyAssignmentModeDual(i + 1);
                hidMergeSingleJoyAsDualJoy(i, i + 1);
             }
          }
-         lastMode = 0;
+      }
+      previous_handheld = handheld;
+      for(i = 0; i < MAX_USERS; i += 2)
+         previous_split_joycon_setting[i] = settings->uints.input_split_joycon[i];
+   }
+
+   if (!handheld && previous_handheld)
+   {
+      /* switching out of handheld, so make sure joycons are correctly split */
+      for(i = 0; i < MAX_USERS; i += 2)
+      {
+         /* CONTROLLER_PLAYER_X, X == i++ */
+         if (settings->uints.input_split_joycon[i])
+         {
+            hidSetNpadJoyAssignmentModeSingleByDefault(i);
+            hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+         }
+      }
+   }
+   else if (handheld && !previous_handheld)
+   {
+      /* switching into handheld, so make sure all split joycons are joined */
+      for(i = 0; i < MAX_USERS; i += 2)
+      {
+         /* find all left/right single JoyCon pairs and join them together */
+         int id;
+         int id_0;
+         int id_1;
+         int last_right_id = MAX_USERS;
+         for (id = 0; id < MAX_USERS; id++)
+            hidSetNpadJoyAssignmentModeDual(id);
+         for (id_0 = 0; id_0 < MAX_USERS; id_0++)
+         {
+            if (hidGetControllerType(id_0) & TYPE_JOYCON_LEFT)
+            {
+               for (id_1 = last_right_id - 1; id_1 >= 0; id_1--)
+               {
+                  if (hidGetControllerType(id_1) & TYPE_JOYCON_RIGHT)
+                  {
+                     /* prevent missing player numbers */
+                     last_right_id = id_1;
+                     if (id_0 < id_1)
+                        hidMergeSingleJoyAsDualJoy(id_0, id_1);
+                     else if (id_0 > id_1)
+                        hidMergeSingleJoyAsDualJoy(id_1, id_0);
+                     break;
+                  }
+               }
+            }
+         }
+      }
+   }
+   else if (!handheld)
+   {
+      /* split or join joycons every time the user changes a setting */
+      for(i = 0; i < MAX_USERS; i += 2)
+      {
+         if (settings->uints.input_split_joycon[i] && !previous_split_joycon_setting[i])
+         {
+            hidSetNpadJoyAssignmentModeSingleByDefault(i);
+            hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
+            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+         } 
+         else if (!settings->uints.input_split_joycon[i] && previous_split_joycon_setting[i])
+         {
+            hidSetNpadJoyAssignmentModeDual(i);
+            hidSetNpadJoyAssignmentModeDual(i + 1);
+            hidMergeSingleJoyAsDualJoy(i, i + 1);
+         }
       }
    }
 
+   for(i = 0; i < MAX_USERS; i += 2)
+      previous_split_joycon_setting[i] = settings->uints.input_split_joycon[i];
+   previous_handheld = handheld;
+
    for (int i = 0; i < DEFAULT_MAX_PADS; i++)
    {
+      JoystickPosition joy_position_left, joy_position_right;
       HidControllerID target = (i == 0) ? CONTROLLER_P1_AUTO : i;
       pad_state[i] = hidKeysDown(target) | hidKeysHeld(target);
-      JoystickPosition joyPositionLeft, joyPositionRight;
-      hidJoystickRead(&joyPositionLeft, target, JOYSTICK_LEFT);
-      hidJoystickRead(&joyPositionRight, target, JOYSTICK_RIGHT);
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = joyPositionLeft.dx;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = -joyPositionLeft.dy;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = joyPositionRight.dx;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -joyPositionRight.dy;
+      hidJoystickRead(&joy_position_left, target, JOYSTICK_LEFT);
+      hidJoystickRead(&joy_position_right, target, JOYSTICK_RIGHT);
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = joy_position_left.dx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = -joy_position_left.dy;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = joy_position_right.dx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -joy_position_right.dy;
    }
 }
 #else
