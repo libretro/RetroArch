@@ -50,7 +50,7 @@
 #include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 
-#include "../list_special.h"
+#include "list_special.h"
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
