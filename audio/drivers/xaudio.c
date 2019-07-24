@@ -219,16 +219,8 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
       goto error;
 
 #if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
-   {
-      /* Since Windows 8,
-       * device index is of type LPCWSTR instead of UINT32.
-       *
-       * MSDN note: Note that the DirectX SDK XAUDIO2 version of CreateMasteringVoice took a DeviceIndex argument instead of a szDeviceId  */
-      XAUDIO2_DEVICE_DETAILS dev_detail;
-      IXAudio2_GetDeviceDetails(handle->pXAudio2, device, &dev_detail);
-      if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, (LPCWSTR)dev_detail.DeviceID, NULL, AudioCategory_GameEffects)))
-         goto error;
-   }
+   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, (LPCWSTR)(uintptr_t)device, NULL, AudioCategory_GameEffects)))
+      goto error;
 #else
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
       goto error;
