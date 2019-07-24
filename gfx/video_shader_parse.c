@@ -756,7 +756,7 @@ void video_shader_write_conf_preset(config_file_t *conf,
       strlcpy(tmp_base, preset_path, tmp_size);
 
       /* ensure we use a clean base like the shader passes and texture paths do */
-      path_resolve_realpath(tmp_base, tmp_size);
+      path_resolve_realpath(tmp_base, tmp_size, false);
       path_basedir(tmp_base);
    }
 

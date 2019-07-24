@@ -104,7 +104,7 @@ static bool playlist_path_equal(const char *real_path, const char *entry_path)
 
    /* Get entry 'real' path */
    strlcpy(entry_real_path, entry_path, sizeof(entry_real_path));
-   path_resolve_realpath(entry_real_path, sizeof(entry_real_path));
+   path_resolve_realpath(entry_real_path, sizeof(entry_real_path), true);
 
    if (string_is_empty(entry_real_path))
       return false;
@@ -193,7 +193,7 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
    /* Get entry 'real' core path */
    strlcpy(entry_real_core_path, entry_core_path, sizeof(entry_real_core_path));
    if (!string_is_equal(entry_real_core_path, file_path_str(FILE_PATH_DETECT)))
-      path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path));
+      path_resolve_realpath(entry_real_core_path, sizeof(entry_real_core_path), true);
 
    if (string_is_empty(entry_real_core_path))
       return false;
@@ -279,7 +279,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
 
    /* Get 'real' search path */
    strlcpy(real_search_path, search_path, sizeof(real_search_path));
-   path_resolve_realpath(real_search_path, sizeof(real_search_path));
+   path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
    for (i = 0; i < playlist->size; i++)
    {
@@ -306,7 +306,7 @@ bool playlist_entry_exists(playlist_t *playlist,
 
    /* Get 'real' search path */
    strlcpy(real_search_path, path, sizeof(real_search_path));
-   path_resolve_realpath(real_search_path, sizeof(real_search_path));
+   path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
    for (i = 0; i < playlist->size; i++)
       if (playlist_path_equal(real_search_path, playlist->entries[i].path))
@@ -539,13 +539,13 @@ bool playlist_push_runtime(playlist_t *playlist,
    if (!string_is_empty(entry->path))
    {
       strlcpy(real_path, entry->path, sizeof(real_path));
-      path_resolve_realpath(real_path, sizeof(real_path));
+      path_resolve_realpath(real_path, sizeof(real_path), true);
    }
 
    /* Get 'real' core path */
    strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, file_path_str(FILE_PATH_DETECT)))
-      path_resolve_realpath(real_core_path, sizeof(real_core_path));
+      path_resolve_realpath(real_core_path, sizeof(real_core_path), true);
 
    if (string_is_empty(real_core_path))
    {
@@ -628,7 +628,7 @@ success:
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
- * @path        : The path to be modified
+ * @path      : The path to be modified
  *
  * Resolves the path of an item, such as the content path or path to the core, to a format
  * appropriate for saving or loading depending on the @mode parameter
@@ -640,32 +640,26 @@ success:
 void playlist_resolve_path(enum playlist_file_mode mode,
       char *path, size_t size)
 {
-    char tmp[PATH_MAX_LENGTH];
-    tmp[0] = '\0';
 #ifdef HAVE_COCOATOUCH
-    char resolved_path[PATH_MAX_LENGTH] = {0};
-    strlcpy(tmp, path, sizeof(tmp));
-    if ( mode == PLAYLIST_LOAD )
-    {
-       strlcpy(resolved_path, tmp, sizeof(resolved_path));
-       fill_pathname_expand_special(tmp, resolved_path, sizeof(tmp));
-    }
-    else
-    {
-       /* iOS needs to call realpath here since the call 
-        * above fails due to possibly buffer related issues. */
-       realpath(tmp, resolved_path);
-       fill_pathname_abbreviate_special(tmp, resolved_path, sizeof(tmp));
-    }
-    strlcpy(path, tmp, size);
-    return;
-#else
-    if ( mode == PLAYLIST_LOAD)
-       return;
+   char tmp[PATH_MAX_LENGTH];
 
-    strlcpy(tmp, path, sizeof(tmp));
-    path_resolve_realpath(tmp, sizeof(tmp));
-    strlcpy(path, tmp, size);
+   if (mode == PLAYLIST_LOAD)
+   {
+      fill_pathname_expand_special(tmp, path, sizeof(tmp));
+      strlcpy(path, tmp, size);
+   }
+   else
+   {
+      /* iOS needs to call realpath here since the call
+       * above fails due to possibly buffer related issues. */
+      realpath(path, tmp);
+      fill_pathname_abbreviate_special(path, tmp, size);
+   }
+#else
+   if (mode == PLAYLIST_LOAD)
+      return;
+
+   path_resolve_realpath(path, size, true);
 #endif
 }
 
@@ -787,7 +781,7 @@ bool playlist_push(playlist_t *playlist,
             if (!string_is_empty(entry->subsystem_roms->elems[j].data))
             {
                strlcpy(real_rom_path, entry->subsystem_roms->elems[j].data, sizeof(real_rom_path));
-               path_resolve_realpath(real_rom_path, sizeof(real_rom_path));
+               path_resolve_realpath(real_rom_path, sizeof(real_rom_path), true);
             }
 
             if (!playlist_path_equal(real_rom_path, roms->elems[j].data))

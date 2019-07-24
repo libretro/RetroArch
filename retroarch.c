@@ -7529,7 +7529,7 @@ static bool load_dynamic_core(const char *path, char *buf, size_t size)
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(buf, size);
+   path_resolve_realpath(buf, size, true);
    if ((lib_handle = dylib_load(path)))
       return true;
    return false;

@@ -1349,7 +1349,7 @@ static void task_push_to_history_list(
       /* Path can be relative here.
        * Ensure we're pushing absolute path. */
       if (!launched_from_menu && !string_is_empty(tmp))
-         path_resolve_realpath(tmp, tmp_size);
+         path_resolve_realpath(tmp, tmp_size, true);
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */

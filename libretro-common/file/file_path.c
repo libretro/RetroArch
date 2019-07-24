@@ -756,35 +756,135 @@ bool path_is_absolute(const char *path)
 
 /**
  * path_resolve_realpath:
- * @buf                : buffer for path
+ * @buf                : input and output buffer for path
  * @size               : size of buffer
+ * @resolve_symlinks   : whether to resolve symlinks or not
  *
- * Turns relative paths into absolute paths and
- * resolves use of "." and ".." in absolute paths.
- * If relative, rebases on current working dir.
+ * Resolves use of ".", "..", multiple slashes etc in absolute paths.
+ *
+ * Relative paths are rebased on the current working dir.
+ *
+ * Returns: @buf if successful, NULL otherwise.
+ * Note: Not implemented on consoles
+ * Note: Symlinks are only resolved on Unix-likes
+ * Note: The current working dir might not be what you expect,
+ *       e.g. on Android it is "/"
+ *       Use of fill_pathname_resolve_relative() should be prefered
  **/
-void path_resolve_realpath(char *buf, size_t size)
+char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
    char tmp[PATH_MAX_LENGTH];
-
-   tmp[0] = '\0';
-
-   strlcpy(tmp, buf, sizeof(tmp));
-
 #ifdef _WIN32
+   strlcpy(tmp, buf, sizeof(tmp));
    if (!_fullpath(buf, tmp, size))
+   {
       strlcpy(buf, tmp, size);
+      return NULL;
+   }
+   return buf;
 #else
+   size_t t;
+   char *p;
+   const char *next;
+   const char *buf_end;
 
-   /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
-    * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
-    * POSIX 2008 can automatically allocate for you,
-    * but don't rely on that. */
-   if (!realpath(tmp, buf))
-      strlcpy(buf, tmp, size);
+   if (resolve_symlinks)
+   {
+      strlcpy(tmp, buf, sizeof(tmp));
+
+      /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
+       * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
+       * POSIX 2008 can automatically allocate for you,
+       * but don't rely on that. */
+      if (!realpath(tmp, buf))
+      {
+         strlcpy(buf, tmp, size);
+         return NULL;
+      }
+
+      return buf;
+   }
+
+   t = 0; /* length of output */
+   buf_end = buf + strlen(buf);
+
+   if (!path_is_absolute(buf))
+   {
+      size_t len;
+      /* rebase on working directory */
+      if (!getcwd(tmp, PATH_MAX_LENGTH-1))
+         return NULL;
+
+      len = strlen(tmp);
+      t += len;
+
+      if (tmp[len-1] != '/')
+         tmp[t++] = '/';
+
+      if (string_is_empty(buf))
+         goto end;
+
+      p = buf;
+   }
+   else
+   {
+      /* UNIX paths can start with multiple '/', copy those */
+      for (p = buf; *p == '/'; p++)
+         tmp[t++] = '/';
+   }
+
+   /* p points to just after a slash while 'next' points to the next slash
+    * if there are no slashes, they point relative to where one would be */
+   do
+   {
+      next = strchr(p, '/');
+      if (!next)
+         next = buf_end;
+
+      if ((next - p == 2 && p[0] == '.' && p[1] == '.'))
+      {
+         p += 3;
+
+         /* fail for illegal /.., //.. etc */
+         if (t == 1 || tmp[t-2] == '/')
+            return NULL;
+
+         /* delete previous segment in tmp by adjusting size t
+          * tmp[t-1] == '/', find '/' before that */
+         t = t-2;
+         while (tmp[t] != '/')
+            t--;
+         t++;
+      }
+      else if (next - p == 1 && p[0] == '.')
+      {
+         p += 2;
+      }
+      else if (next - p == 0)
+      {
+         p += 1;
+      }
+      else
+      {
+         /* fail when truncating */
+         if (t + next-p+1 > PATH_MAX_LENGTH-1)
+            return NULL;
+
+         while (p <= next)
+            tmp[t++] = *p++;
+      }
+
+   }
+   while (next < buf_end);
+
+end:
+   tmp[t] = '\0';
+   strlcpy(buf, tmp, size);
+   return buf;
 #endif
 #endif
+   return NULL;
 }
 
 /**
@@ -855,7 +955,7 @@ void fill_pathname_resolve_relative(char *out_path,
 
    fill_pathname_basedir(out_path, in_refpath, size);
    strlcat(out_path, in_path, size);
-   path_resolve_realpath(out_path, size);
+   path_resolve_realpath(out_path, size, false);
 }
 
 /**
