@@ -1216,7 +1216,7 @@ bool core_info_hw_api_supported(core_info_t *info)
             (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
             (string_is_equal_noncase(api_str, "openglcompatibility") && sys_api == GFX_CTX_OPENGL_API))
       {
-         if (!(sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT)))
+         if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
          {
             /* system is running a core context while compat is requested */
             return false;
