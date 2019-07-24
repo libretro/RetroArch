@@ -1062,6 +1062,14 @@ static bool wifi_driver_active                   = false;
 
 /* VIDEO GLOBAL VARIABLES */
 
+/* unset a runtime shader preset */
+static void retroarch_unset_shader_preset(void)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   runtime_shader_preset[0] = '\0';
+#endif
+}
+
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
@@ -1661,15 +1669,21 @@ static bool audio_driver_start(bool is_shutdown);
 static bool recording_init(void);
 static bool recording_deinit(void);
 
-static void video_driver_gpu_record_deinit(void);
+static void retroarch_overlay_init(void);
+static void retroarch_overlay_deinit(void);
 
+static void video_driver_gpu_record_deinit(void);
 static void video_driver_set_nonblock_state(bool toggle);
+static retro_proc_address_t video_driver_get_proc_address(const char *sym);
+static uintptr_t video_driver_get_current_framebuffer(void);
+static bool video_driver_find_driver(void);
+
+static int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(input_overlay_t *ol, float opacity);
-static void retroarch_overlay_init(void);
-static void retroarch_overlay_deinit(void);
 
 static void bsv_movie_deinit(void);
 static bool bsv_movie_init(void);
@@ -1677,6 +1691,8 @@ static bool bsv_movie_check(void);
 
 static void driver_uninit(int flags);
 static void drivers_init(int flags);
+
+static bool core_uninit_libretro_callbacks(void);
 static void core_free_retro_game_info(struct retro_game_info *dest);
 static void core_uninit_symbols(void);
 static bool core_unload(void);
@@ -1687,7 +1703,12 @@ static bool core_set_environment(retro_ctx_environ_info_t *info);
 static bool core_init_symbols(enum rarch_core_type *type);
 static bool core_get_system_av_info(struct retro_system_av_info *av_info);
 
+static void rarch_send_debug_info(void);
 static bool rarch_environment_cb(unsigned cmd, void *data);
+
+static void runloop_unset(enum runloop_action action);
+static void runloop_set(enum runloop_action action);
+
 static bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
 static void driver_location_set_interval(unsigned interval_msecs,
@@ -1696,12 +1717,6 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
-static retro_proc_address_t video_driver_get_proc_address(const char *sym);
-static uintptr_t video_driver_get_current_framebuffer(void);
-static bool video_driver_find_driver(void);
-static bool core_uninit_libretro_callbacks(void);
-static int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
 
 /* GLOBAL POINTER GETTERS */
 #define video_driver_get_hw_context_internal() (&hw_render)
@@ -1939,7 +1954,7 @@ bool command_set_shader(const char *arg)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char msg[256];
    bool is_preset                  = false;
-   settings_t *settings            = NULL;
+   settings_t *settings            = configuration_settings;
    enum rarch_shader_type     type = video_shader_get_type_from_ext(
          path_get_extension(arg), &is_preset);
 
@@ -1957,14 +1972,16 @@ bool command_set_shader(const char *arg)
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
 
-   retroarch_set_shader_preset(arg);
-#ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      if (!string_is_empty(arg))
+         strlcpy(runtime_shader_preset, arg, sizeof(runtime_shader_preset));
+      else
+         runtime_shader_preset[0] = '\0';
+#ifdef HAVE_MENU
    if (!menu_shader_manager_set_preset(menu_shader_get(), type, arg))
       return false;
 #endif
 #endif
-   settings            = configuration_settings;
    if (settings && !settings->bools.video_shader_enable)
       settings->bools.video_shader_enable = true;
    return true;
@@ -3152,7 +3169,9 @@ static bool command_event_init_core(enum rarch_core_type *data)
    }
 
    /* Load auto-shaders on the next occasion */
-   retroarch_shader_presets_set_need_reload();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   shader_presets_need_reload = true;
+#endif
 
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
@@ -3947,10 +3966,10 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_toggle_hardcore_mode();
 #endif
          break;
+      case CMD_EVENT_REINIT_FROM_TOGGLE:
+         rarch_force_fullscreen = false;
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
-      case CMD_EVENT_REINIT_FROM_TOGGLE:
-         retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
          video_driver_reinit();
          {
@@ -4607,7 +4626,7 @@ TODO: Add a setting for these tweaks */
             if (!video_driver_has_windowed())
                return false;
 
-            retroarch_set_switching_display_mode();
+            rarch_is_switching_display_mode = true;
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -4615,7 +4634,7 @@ TODO: Add a setting for these tweaks */
 
             /* we toggled manually, the cli arg is irrelevant now */
             if (retroarch_is_forced_fullscreen())
-               retroarch_unset_forced_fullscreen();
+               rarch_force_fullscreen = false;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
@@ -4625,7 +4644,7 @@ TODO: Add a setting for these tweaks */
             else
                video_driver_show_mouse();
 
-            retroarch_unset_switching_display_mode();
+            rarch_is_switching_display_mode = false;
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -21675,7 +21694,8 @@ error:
    return false;
 }
 
-bool retroarch_is_on_main_thread(void)
+#if 0
+static bool retroarch_is_on_main_thread(void)
 {
 #ifdef HAVE_THREAD_STORAGE
    if (sthread_tls_get(&rarch_tls) != MAGIC_POINTER)
@@ -21683,6 +21703,7 @@ bool retroarch_is_on_main_thread(void)
 #endif
    return true;
 }
+#endif
 
 void retroarch_menu_running(void)
 {
@@ -22224,43 +22245,9 @@ bool retroarch_is_forced_fullscreen(void)
    return rarch_force_fullscreen;
 }
 
-void retroarch_unset_forced_fullscreen(void)
-{
-   rarch_force_fullscreen = false;
-}
-
 bool retroarch_is_switching_display_mode(void)
 {
    return rarch_is_switching_display_mode;
-}
-
-void retroarch_set_switching_display_mode(void)
-{
-   rarch_is_switching_display_mode = true;
-}
-
-void retroarch_unset_switching_display_mode(void)
-{
-   rarch_is_switching_display_mode = false;
-}
-
-/* set a runtime shader preset without overwriting the settings value */
-void retroarch_set_shader_preset(const char* preset)
-{
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   if (!string_is_empty(preset))
-      strlcpy(runtime_shader_preset, preset, sizeof(runtime_shader_preset));
-   else
-      runtime_shader_preset[0] = '\0';
-#endif
-}
-
-/* unset a runtime shader preset */
-void retroarch_unset_shader_preset(void)
-{
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   runtime_shader_preset[0] = '\0';
-#endif
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -22297,7 +22284,12 @@ static bool retroarch_load_shader_preset_internal(
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
-      retroarch_set_shader_preset(shader_path);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      if (!string_is_empty(shader_path))
+         strlcpy(runtime_shader_preset, shader_path, sizeof(runtime_shader_preset));
+      else
+         runtime_shader_preset[0] = '\0';
+#endif
       free(shader_path);
       return true;
    }
@@ -22384,13 +22376,6 @@ success:
    return true;
 }
 #endif
-
-void retroarch_shader_presets_set_need_reload(void)
-{
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   shader_presets_need_reload = true;
-#endif
-}
 
 /* get the name of the current shader preset */
 char* retroarch_get_shader_preset(void)
@@ -23610,7 +23595,7 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
-void runloop_set(enum runloop_action action)
+static void runloop_set(enum runloop_action action)
 {
    switch (action)
    {
@@ -23622,7 +23607,7 @@ void runloop_set(enum runloop_action action)
    }
 }
 
-void runloop_unset(enum runloop_action action)
+static void runloop_unset(enum runloop_action action)
 {
    switch (action)
    {
@@ -23978,7 +23963,7 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
    }
 }
 
-bool rarch_write_debug_info(void)
+static bool rarch_write_debug_info(void)
 {
    int i;
    char str[PATH_MAX_LENGTH];
@@ -24541,7 +24526,7 @@ static void send_debug_info_cb(retro_task_t *task,
 }
 #endif
 
-void rarch_send_debug_info(void)
+static void rarch_send_debug_info(void)
 {
 #ifdef HAVE_NETWORKING
    char debug_filepath[PATH_MAX_LENGTH];

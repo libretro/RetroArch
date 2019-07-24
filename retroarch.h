@@ -305,23 +305,12 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
 bool retroarch_is_forced_fullscreen(void);
 
-void retroarch_unset_forced_fullscreen(void);
-
-void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
-
-void retroarch_set_shader_preset(const char* preset);
-
-void retroarch_unset_shader_preset(void);
+void retroarch_set_current_core_type(
+      enum rarch_core_type type, bool explicitly_set);
 
 char* retroarch_get_shader_preset(void);
 
-void retroarch_shader_presets_set_need_reload(void);
-
 bool retroarch_is_switching_display_mode(void);
-
-void retroarch_set_switching_display_mode(void);
-
-void retroarch_unset_switching_display_mode(void);
 
 /**
  * retroarch_fail:
@@ -369,15 +358,9 @@ void runloop_msg_queue_push(const char *msg,
 void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
       bool *is_perfcnt_enable);
 
-void runloop_set(enum runloop_action action);
-
-void runloop_unset(enum runloop_action action);
-
 void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
-
-bool retroarch_is_on_main_thread(void);
 
 char *get_retroarch_launch_arguments(void);
 
@@ -388,10 +371,6 @@ struct retro_system_info *runloop_get_libretro_system_info(void);
 void retroarch_force_video_driver_fallback(const char *driver);
 
 void rarch_core_runtime_tick(void);
-
-void rarch_send_debug_info(void);
-
-bool rarch_write_debug_info(void);
 
 void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
 
