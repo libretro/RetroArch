@@ -1655,6 +1655,26 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static bool audio_driver_stop(void);
+static bool audio_driver_start(bool is_shutdown);
+
+static bool recording_init(void);
+static bool recording_deinit(void);
+
+static void video_driver_gpu_record_deinit(void);
+
+static void video_driver_set_nonblock_state(bool toggle);
+
+static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
+static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
+static void input_overlay_load_active(input_overlay_t *ol, float opacity);
+static void retroarch_overlay_init(void);
+static void retroarch_overlay_deinit(void);
+
+static void bsv_movie_deinit(void);
+static bool bsv_movie_init(void);
+static bool bsv_movie_check(void);
+
 static void driver_uninit(int flags);
 static void drivers_init(int flags);
 static void core_free_retro_game_info(struct retro_game_info *dest);
@@ -4028,12 +4048,7 @@ TODO: Add a setting for these tweaks */
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
-            if (!audio_driver_toggle_mute())
-            {
-               RARCH_ERR("%s.\n",
-                     msg_hash_to_str(MSG_FAILED_TO_UNMUTE_AUDIO));
-               return false;
-            }
+            audio_driver_mute_enable  = !audio_driver_mute_enable;
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
             if (!menu_widgets_volume_update_and_show())
@@ -4052,8 +4067,21 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_OVERLAY_NEXT:
+         /* Switch to the next available overlay screen. */
 #ifdef HAVE_OVERLAY
-         retroarch_overlay_next();
+         if (!overlay_ptr)
+            return false;
+
+         overlay_ptr->index      = overlay_ptr->next_index;
+         overlay_ptr->active     = &overlay_ptr->overlays[overlay_ptr->index];
+
+         {
+            settings_t *settings           = configuration_settings;
+            input_overlay_load_active(overlay_ptr, settings->floats.input_overlay_opacity);
+         }
+
+         overlay_ptr->blocked    = true;
+         overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
@@ -4071,13 +4099,13 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         recording_set_state(false);
+         recording_enable = false;
          streaming_set_state(false);
          if (!recording_deinit())
             return false;
          break;
       case CMD_EVENT_RECORD_INIT:
-         recording_set_state(true);
+         recording_enable = true;
          if (!recording_init())
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -4204,7 +4232,7 @@ TODO: Add a setting for these tweaks */
             struct retro_hw_render_callback *hwr = NULL;
             command_event_runtime_log_deinit();
             content_reset_savestate_backups();
-            hwr = video_driver_get_hw_context();
+            hwr = video_driver_get_hw_context_internal();
             command_event_deinit_core(true);
 
             if (hwr)
@@ -4228,35 +4256,25 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         retroarch_overlay_set_scale_factor();
+         {
+            settings_t *settings      = configuration_settings;
+            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
+         }
 #endif
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
+         /* Sets a modulating factor for alpha channel. Default is 1.0.
+          * The alpha factor is applied for all overlays. */
 #ifdef HAVE_OVERLAY
-         retroarch_overlay_set_alpha_mod();
+         {
+            settings_t *settings      = configuration_settings;
+            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
+         }
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK);
          drivers_init(DRIVER_AUDIO_MASK);
-         break;
-      case CMD_EVENT_RESET_CONTEXT:
-         {
-            /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
-             * need to make sure to keep a copy */
-            struct retro_hw_render_callback hwr_copy;
-            struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-            const struct retro_hw_render_context_negotiation_interface *iface =
-               video_driver_get_context_negotiation_interface();
-            memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
-
-            driver_uninit(DRIVERS_CMD_ALL);
-
-            memcpy(hwr, &hwr_copy, sizeof(*hwr));
-            video_driver_set_context_negotiation_interface(iface);
-
-            drivers_init(DRIVERS_CMD_ALL);
-         }
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
@@ -7263,7 +7281,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_hw_render_context_negotiation_interface *iface =
             (const struct retro_hw_render_context_negotiation_interface*)data;
          RARCH_LOG("Environ SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE.\n");
-         video_driver_set_context_negotiation_interface(iface);
+         hw_render_context_negotiation = iface;
          break;
       }
 
@@ -8828,7 +8846,7 @@ static void recording_dump_frame(const void *data, unsigned width,
    recording_driver->push_video(recording_data, &ffemu_data);
 }
 
-bool recording_deinit(void)
+static bool recording_deinit(void)
 {
    if (!recording_data || !recording_driver)
       return false;
@@ -8852,11 +8870,6 @@ bool recording_is_enabled(void)
    return recording_enable;
 }
 
-void recording_set_state(bool state)
-{
-   recording_enable = state;
-}
-
 bool streaming_is_enabled(void)
 {
    return streaming_enable;
@@ -8875,7 +8888,7 @@ static bool video_driver_gpu_record_init(unsigned size)
    return true;
 }
 
-void video_driver_gpu_record_deinit(void)
+static void video_driver_gpu_record_deinit(void)
 {
    free(video_driver_record_gpu_buffer);
    video_driver_record_gpu_buffer = NULL;
@@ -8888,7 +8901,7 @@ void video_driver_gpu_record_deinit(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool recording_init(void)
+static bool recording_init(void)
 {
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
@@ -9391,7 +9404,7 @@ static bool bsv_movie_init_handle(const char *path,
    return true;
 }
 
-bool bsv_movie_init(void)
+static bool bsv_movie_init(void)
 {
    bool set_granularity = false;
 
@@ -9460,7 +9473,7 @@ void bsv_movie_set_path(const char *path)
          path, sizeof(bsv_movie_state.movie_path));
 }
 
-void bsv_movie_deinit(void)
+static void bsv_movie_deinit(void)
 {
    if (!bsv_movie_state_handle)
       return;
@@ -9514,7 +9527,7 @@ static bool runloop_check_movie_init(void)
    return true;
 }
 
-bool bsv_movie_check(void)
+static bool bsv_movie_check(void)
 {
    if (!bsv_movie_state_handle)
       return runloop_check_movie_init();
@@ -10333,51 +10346,13 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       input_overlay_poll_clear(ol, opacity);
 }
 
-/**
- * retroarch_overlay_next:
- * @ol                    : Overlay handle.
- *
- * Switch to the next available overlay
- * screen.
- **/
-void retroarch_overlay_next(void)
-{
-   settings_t *settings      = configuration_settings;
-   float opacity             = settings->floats.input_overlay_opacity;
-
-   if (!overlay_ptr)
-      return;
-
-   overlay_ptr->index      = overlay_ptr->next_index;
-   overlay_ptr->active     = &overlay_ptr->overlays[overlay_ptr->index];
-
-   input_overlay_load_active(overlay_ptr, opacity);
-
-   overlay_ptr->blocked    = true;
-   overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
-}
-
-void retroarch_overlay_set_scale_factor(void)
-{
-   settings_t *settings      = configuration_settings;
-   input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
-}
-
-void retroarch_overlay_set_alpha_mod(void)
-{
-#ifdef HAVE_OVERLAY
-   settings_t *settings      = configuration_settings;
-   input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
-#endif
-}
-
-void retroarch_overlay_deinit(void)
+static void retroarch_overlay_deinit(void)
 {
    input_overlay_free(overlay_ptr);
    overlay_ptr = NULL;
 }
 
-void retroarch_overlay_init(void)
+static void retroarch_overlay_init(void)
 {
    settings_t *settings      = configuration_settings;
 #if defined(GEKKO)
@@ -16191,12 +16166,6 @@ bool audio_driver_has_callback(void)
    return false;
 }
 
-bool audio_driver_toggle_mute(void)
-{
-   audio_driver_mute_enable  = !audio_driver_mute_enable;
-   return true;
-}
-
 #ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_toggle_mute(void)
 {
@@ -16214,7 +16183,7 @@ static INLINE bool audio_driver_alive(void)
    return false;
 }
 
-bool audio_driver_start(bool is_shutdown)
+static bool audio_driver_start(bool is_shutdown)
 {
    if (!current_audio || !current_audio->start
          || !audio_driver_context_audio_data)
@@ -16231,7 +16200,7 @@ error:
    return false;
 }
 
-bool audio_driver_stop(void)
+static bool audio_driver_stop(void)
 {
    if (!current_audio || !current_audio->stop
          || !audio_driver_context_audio_data)
@@ -17638,7 +17607,7 @@ void video_driver_hide_mouse(void)
       video_driver_poke->show_mouse(video_driver_data, false);
 }
 
-void video_driver_set_nonblock_state(bool toggle)
+static void video_driver_set_nonblock_state(bool toggle)
 {
    if (current_video->set_nonblock_state)
       current_video->set_nonblock_state(video_driver_data, toggle);
@@ -17825,6 +17794,24 @@ void video_driver_save_settings(config_file_t *conf)
          global->console.screen.flicker_filter_index);
 }
 
+static void video_driver_reinit_context(void)
+{
+   /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
+    * need to make sure to keep a copy */
+   struct retro_hw_render_callback hwr_copy;
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context_internal();
+   const struct retro_hw_render_context_negotiation_interface *iface =
+      video_driver_get_context_negotiation_interface();
+   memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
+
+   driver_uninit(DRIVERS_CMD_ALL);
+
+   memcpy(hwr, &hwr_copy, sizeof(*hwr));
+   hw_render_context_negotiation = iface;
+
+   drivers_init(DRIVERS_CMD_ALL);
+}
+
 void video_driver_reinit(void)
 {
    struct retro_hw_render_callback *hwr =
@@ -17836,7 +17823,7 @@ void video_driver_reinit(void)
       video_driver_cache_context = false;
 
    video_driver_cache_context_ack = false;
-   command_event(CMD_EVENT_RESET_CONTEXT, NULL);
+   video_driver_reinit_context();
    video_driver_cache_context = false;
 }
 
@@ -17857,12 +17844,6 @@ const struct retro_hw_render_context_negotiation_interface *
    return hw_render_context_negotiation;
 }
 
-void video_driver_set_context_negotiation_interface(
-      const struct retro_hw_render_context_negotiation_interface *iface)
-{
-   hw_render_context_negotiation = iface;
-}
-
 bool video_driver_is_video_cache_context(void)
 {
    return video_driver_cache_context;
@@ -17871,11 +17852,6 @@ bool video_driver_is_video_cache_context(void)
 void video_driver_set_video_cache_context_ack(void)
 {
    video_driver_cache_context_ack = true;
-}
-
-void video_driver_unset_video_cache_context_ack(void)
-{
-   video_driver_cache_context_ack = false;
 }
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
@@ -19659,8 +19635,7 @@ static void drivers_init(int flags)
       if (!video_driver_cache_context_ack
             && hwr->context_reset)
          hwr->context_reset();
-      video_driver_unset_video_cache_context_ack();
-
+      video_driver_cache_context_ack = false;
       runloop_frame_time_last        = 0;
    }
 
@@ -21106,7 +21081,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                strlcpy(global->record.path, optarg,
                      sizeof(global->record.path));
                if (recording_enable)
-                  recording_set_state(true);
+                  recording_enable = true;
                break;
 
    #ifdef HAVE_DYNAMIC

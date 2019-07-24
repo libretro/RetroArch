@@ -120,7 +120,6 @@ enum event_command
    CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
    /* Sets current aspect ratio index. */
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
-   CMD_EVENT_RESET_CONTEXT,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
    /* Shutdown the OS */

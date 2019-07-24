@@ -537,8 +537,6 @@ const void *audio_driver_find_handle(int index);
  **/
 const char *audio_driver_find_ident(int index);
 
-void audio_driver_set_nonblocking_state(bool enable);
-
 /**
  * config_get_audio_driver_options:
  *
@@ -563,12 +561,6 @@ void audio_driver_setup_rewind(void);
 bool audio_driver_callback(void);
 
 bool audio_driver_has_callback(void);
-
-bool audio_driver_toggle_mute(void);
-
-bool audio_driver_start(bool is_shutdown);
-
-bool audio_driver_stop(void);
 
 void audio_driver_frame_is_reverse(void);
 
@@ -766,20 +758,7 @@ const void *record_driver_find_handle(int idx);
  **/
 const char *record_driver_find_ident(int idx);
 
-bool recording_deinit(void);
-
-/**
- * recording_init:
- *
- * Initializes recording.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool recording_init(void);
-
 bool recording_is_enabled(void);
-
-void recording_set_state(bool state);
 
 void streaming_set_state(bool state);
 
@@ -1582,44 +1561,63 @@ bool video_driver_has_focus(void);
 bool video_driver_cached_frame_has_valid_framebuffer(void);
 
 void video_driver_set_cached_frame_ptr(const void *data);
+
 void video_driver_set_stub_frame(void);
+
 void video_driver_unset_stub_frame(void);
 
 bool video_driver_supports_viewport_read(void);
 
 bool video_driver_prefer_viewport_read(void);
+
 bool video_driver_supports_read_frame_raw(void);
+
 void video_driver_set_viewport_config(void);
+
 void video_driver_set_viewport_square_pixel(void);
+
 void video_driver_set_viewport_core(void);
+
 void video_driver_reset_custom_viewport(void);
+
 void video_driver_set_rgba(void);
+
 void video_driver_unset_rgba(void);
+
 bool video_driver_supports_rgba(void);
+
 bool video_driver_get_next_video_out(void);
+
 bool video_driver_get_prev_video_out(void);
+
 void video_driver_monitor_reset(void);
+
 void video_driver_set_aspect_ratio(void);
+
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
+
 void video_driver_show_mouse(void);
+
 void video_driver_hide_mouse(void);
-void video_driver_set_nonblock_state(bool toggle);
+
 void video_driver_apply_state_changes(void);
+
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
+
 bool video_driver_cached_frame(void);
+
 void video_driver_default_settings(void);
+
 void video_driver_load_settings(config_file_t *conf);
+
 void video_driver_save_settings(config_file_t *conf);
+
 bool video_driver_is_hw_context(void);
+
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
 
 const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
-
-void video_driver_set_context_negotiation_interface(const struct
-      retro_hw_render_context_negotiation_interface *iface);
-
-void video_driver_gpu_record_deinit(void);
 
 bool video_driver_is_video_cache_context(void);
 
@@ -1700,8 +1698,6 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 void video_driver_get_size(unsigned *width, unsigned *height);
 
 void video_driver_set_size(unsigned *width, unsigned *height);
-
-void video_driver_unset_video_cache_context_ack(void);
 
 float video_driver_get_aspect_ratio(void);
 
@@ -2009,15 +2005,9 @@ extern const shader_backend_t gl_cg_backend;
 
 /* BSV Movie */
 
-void bsv_movie_deinit(void);
-
-bool bsv_movie_init(void);
-
 void bsv_movie_frame_rewind(void);
 
 void bsv_movie_set_path(const char *path);
-
-bool bsv_movie_check(void);
 
 /* Location */
 
@@ -2127,16 +2117,6 @@ const void *camera_driver_find_handle(int index);
  * if nothing found.
  **/
 const char *camera_driver_find_ident(int index);
-
-void retroarch_overlay_next(void);
-
-void retroarch_overlay_set_scale_factor(void);
-
-void retroarch_overlay_set_alpha_mod(void);
-
-void retroarch_overlay_deinit(void);
-
-void retroarch_overlay_init(void);
 
 RETRO_END_DECLS
 
