@@ -131,12 +131,6 @@ enum {
 
 #include <boolean.h>
 
-#ifndef MAX_PADS
-#define MAX_PADS 8
-#endif
-
-#define ANDROID_KEYBOARD_PORT MAX_PADS
-
 uint8_t *android_keyboard_state_get(unsigned port);
 
 #endif

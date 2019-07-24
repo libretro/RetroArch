@@ -102,7 +102,6 @@ struct defaults
    {
       int out_latency;
       float video_refresh_rate;
-      bool video_threaded_enable;
       char menu[32];
    } settings;
 

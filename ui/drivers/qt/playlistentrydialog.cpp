@@ -19,6 +19,7 @@ extern "C" {
 
 #include "../../../core_info.h"
 #include "../../../file_path_special.h"
+#include "../../../msg_hash.h"
 
 #ifndef CXX_BUILD
 }

@@ -105,7 +105,7 @@ static void sdl_pad_connect(unsigned id)
 
 #ifdef HAVE_SDL2
    SDL_JoystickGUID guid;
-   uint16_t *guid_ptr;
+   uint16_t *guid_ptr         = NULL;
 
    if (SDL_IsGameController(id))
    {
@@ -145,14 +145,13 @@ static void sdl_pad_connect(unsigned id)
 #endif
 #endif
 
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
          sdl_joypad_name(id),
          NULL,
          sdl_joypad.ident,
          id,
          vendor,
-         product))
-      input_config_set_device_name(id, sdl_joypad_name(id));
+         product);
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_joypad_name(id));

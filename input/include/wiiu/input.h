@@ -31,7 +31,6 @@
 #include <wiiu/pad_strings.h>
 #include "hid.h"
 
-#include "../../input_driver.h"
 #include "../../common/hid/hid_device_driver.h"
 #include "../../connect/joypad_connection.h"
 #include "../../../retroarch.h"

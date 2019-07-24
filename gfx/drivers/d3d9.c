@@ -31,6 +31,10 @@
 
 #include <d3d9.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
@@ -95,51 +99,6 @@ static bool d3d9_set_resize(d3d9_video_t *d3d,
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_size(&new_width, &new_height);
-
-   return true;
-}
-
-static bool d3d9_init_imports(d3d9_video_t *d3d)
-{
-   retro_ctx_memory_info_t    mem_info;
-   state_tracker_t *state_tracker         = NULL;
-   struct state_tracker_info tracker_info = {0};
-
-   if (!d3d->shader.variables)
-      return true;
-
-   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
-
-   core_get_memory(&mem_info);
-
-   tracker_info.script_class      = NULL;
-   tracker_info.wram              = (uint8_t*)mem_info.data;
-   tracker_info.info              = d3d->shader.variable;
-   tracker_info.info_elem         = d3d->shader.variables;
-   tracker_info.script            = NULL;
-   tracker_info.script_is_file    = false;
-
-#ifdef HAVE_PYTHON
-   if (*d3d->shader.script_path)
-   {
-      tracker_info.script         = d3d->shader.script_path;
-      tracker_info.script_is_file = true;
-   }
-
-   if (*d3d->shader.script_class)
-      tracker_info.script_class   = d3d->shader.script_class;
-#endif
-
-   state_tracker                  =
-      state_tracker_init(&tracker_info);
-
-   if (!state_tracker)
-   {
-      RARCH_ERR("[D3D9]: Failed to initialize state tracker.\n");
-      return false;
-   }
-
-   d3d->state_tracker = state_tracker;
 
    return true;
 }
@@ -334,12 +293,6 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
             }
          }
       }
-
-      if (!d3d9_init_imports(d3d))
-      {
-         RARCH_ERR("[D3D9]: Failed to init imports.\n");
-         return false;
-      }
    }
 
    return true;
@@ -376,7 +329,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    unsigned i;
    bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
-   config_file_t            *conf = config_file_new(shader_path);
+   config_file_t            *conf = config_file_new_from_path_to_string(shader_path);
 
    if (!conf)
    {
@@ -395,8 +348,6 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    config_file_free(conf);
 
-   if (!string_is_empty(shader_path))
-      video_shader_resolve_relative(&d3d->shader, shader_path);
    RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
@@ -473,6 +424,7 @@ void d3d9_set_mvp(void *data, const void *mat_data)
    d3d9_set_vertex_shader_constantf(dev, 0, (const float*)mat_data, 4);
 }
 
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 static void d3d9_overlay_render(d3d9_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay, bool force_linear)
@@ -590,6 +542,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    d3d9_disable_blend_func(dev);
    d3d9_set_viewports(dev, &d3d->final_viewport);
 }
+#endif
 
 static void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
 {
@@ -622,10 +575,6 @@ static void d3d9_deinitialize(d3d9_video_t *d3d)
    d3d9_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
 
-   if (d3d->state_tracker)
-      state_tracker_free(d3d->state_tracker);
-
-   d3d->state_tracker       = NULL;
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl = NULL;
 }
@@ -1286,16 +1235,17 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       return false;
 
    {
-      const char *shader_preset;
-      enum rarch_shader_type type;
 
       d3d9_fake_context.get_flags = d3d9_get_flags;
       video_context_driver_set(&d3d9_fake_context); 
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+      {
+         const char *shader_preset   = retroarch_get_shader_preset();
+         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-      shader_preset = retroarch_get_shader_preset();
-      type = video_shader_parse_type(shader_preset);
-
-      d3d9_set_shader(d3d, type, shader_preset);
+         d3d9_set_shader(d3d, type, shader_preset);
+      }
+#endif
    }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
@@ -1682,7 +1632,6 @@ static bool d3d9_frame(void *data, const void *frame,
 
    if (!d3d->renderchain_driver->render(
             d3d, video_info,
-            d3d->state_tracker,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
@@ -1808,6 +1757,7 @@ end:
 static bool d3d9_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
@@ -1846,6 +1796,9 @@ static bool d3d9_set_shader(void *data,
    }
 
    return true;
+#else
+   return false;
+#endif
 }
 
 static void d3d9_set_menu_texture_frame(void *data,
@@ -1997,6 +1950,7 @@ static void d3d9_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
+#ifdef HAVE_THREADS
 static int d3d9_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
@@ -2006,6 +1960,7 @@ static int d3d9_video_texture_load_wrap_d3d(void *data)
    d3d9_video_texture_load_d3d(info, &id);
    return id;
 }
+#endif
 
 static uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
@@ -2017,9 +1972,11 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    info.data     = data;
    info.type     = filter_type;
 
+#ifdef HAVE_THREADS
    if (threaded)
       return video_thread_texture_load(&info,
             d3d9_video_texture_load_wrap_d3d);
+#endif
 
    d3d9_video_texture_load_d3d(&info, &id);
    return id;

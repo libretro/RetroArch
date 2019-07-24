@@ -2323,6 +2323,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
@@ -2407,6 +2408,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
+      case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SCAN_FILE:
@@ -2848,6 +2850,7 @@ static int xmb_draw_item(
    uintptr_t texture_switch          = 0;
    bool do_draw_text                 = false;
    unsigned ticker_limit             = 35 * scale_mod[0];
+   unsigned line_ticker_width        = 45 * scale_mod[3];
    xmb_node_t *   node               = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
@@ -2949,16 +2952,27 @@ static int xmb_draw_item(
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
       {
-         ticker_limit = 40 * scale_mod[1];
+         ticker_limit      = 40 * scale_mod[1];
+         line_ticker_width = 50 * scale_mod[3];
 
          /* Can increase text length if thumbnail is downscaled */
          if (settings->uints.menu_xmb_thumbnail_scale_factor < 100)
+         {
+            float ticker_scale_factor =
+                  1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
+
             ticker_limit +=
-                  (unsigned)((1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f)) *
-                             15.0f * scale_mod[1]);
+                  (unsigned)(ticker_scale_factor * 15.0f * scale_mod[1]);
+
+            line_ticker_width +=
+                  (unsigned)(ticker_scale_factor * 10.0f * scale_mod[3]);
+         }
       }
       else
-         ticker_limit = 70 * scale_mod[2];
+      {
+         ticker_limit      = 70 * scale_mod[2];
+         line_ticker_width = 60 * scale_mod[3];
+      }
    }
 
    menu_entry_get_rich_label(entry, &ticker_str);
@@ -2979,11 +2993,28 @@ static int xmb_draw_item(
       if (i == current && width > 320 && height > 240
             && !string_is_empty(entry->sublabel))
       {
-         char entry_sublabel[512] = {0};
+         menu_animation_ctx_line_ticker_t line_ticker;
+         char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
 
-         label_offset      = - xmb->margins_label_top;
+         entry_sublabel[0] = '\0';
 
-         word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true, 0);
+         line_ticker.type_enum  = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         line_ticker.idx        = menu_animation_get_ticker_idx();
+
+         line_ticker.line_width = (size_t)(line_ticker_width);
+         /* Note: max_lines should be calculated at runtime,
+          * but this is a nuisance. There is room for 4 lines
+          * to be displayed when using all existing XMB themes,
+          * so leave this value hard coded for now. */
+         line_ticker.max_lines  = 4;
+
+         line_ticker.s          = entry_sublabel;
+         line_ticker.len        = sizeof(entry_sublabel);
+         line_ticker.str        = entry->sublabel;
+
+         menu_animation_line_ticker(&line_ticker);
+
+         label_offset = - xmb->margins_label_top;
 
          xmb_draw_text(video_info, xmb, entry_sublabel,
                node->x + xmb->margins_screen_left +
@@ -5686,6 +5717,18 @@ static int xmb_list_push(void *data, void *userdata,
                   subsystem = subsystem_data;
 
                menu_subsystem_populate(subsystem, info);
+            }
+
+            if (settings->bools.menu_show_load_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+               menu_displaylist_setting(&entry);
+            }
+
+            if (settings->bools.menu_show_dump_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+               menu_displaylist_setting(&entry);
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;

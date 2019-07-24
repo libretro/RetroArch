@@ -404,6 +404,8 @@ protected:
 		bool array_is_value_type = true;
 		bool comparison_image_samples_scalar = false;
 		bool native_pointers = false;
+		bool support_small_type_sampling_result = false;
+		bool support_case_fallthrough = true;
 	} backend;
 
 	void emit_struct(SPIRType &type);
@@ -432,6 +434,7 @@ protected:
 	bool flush_phi_required(uint32_t from, uint32_t to);
 	void flush_variable_declaration(uint32_t id);
 	void flush_undeclared_variables(SPIRBlock &block);
+	void emit_variable_temporary_copies(const SPIRVariable &var);
 
 	bool should_dereference(uint32_t id);
 	bool should_forward(uint32_t id);
@@ -499,6 +502,8 @@ protected:
 	SPIRExpression &emit_uninitialized_temporary_expression(uint32_t type, uint32_t id);
 	void append_global_func_args(const SPIRFunction &func, uint32_t index, SmallVector<std::string> &arglist);
 	std::string to_expression(uint32_t id, bool register_expression_read = true);
+	std::string to_composite_constructor_expression(uint32_t id);
+	std::string to_rerolled_array_expression(const std::string &expr, const SPIRType &type);
 	std::string to_enclosed_expression(uint32_t id, bool register_expression_read = true);
 	std::string to_unpacked_expression(uint32_t id, bool register_expression_read = true);
 	std::string to_enclosed_unpacked_expression(uint32_t id, bool register_expression_read = true);
@@ -668,6 +673,8 @@ protected:
 
 	void fixup_type_alias();
 	void reorder_type_alias();
+
+	void propagate_nonuniform_qualifier(uint32_t id);
 
 private:
 	void init();

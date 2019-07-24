@@ -2127,6 +2127,7 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
          return stripes->textures.list[STRIPES_TEXTURE_ADD_FAVORITE];
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
          return stripes->textures.list[STRIPES_TEXTURE_RENAME];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return stripes->textures.list[STRIPES_TEXTURE_INPUT_REMAPPING_OPTIONS];
@@ -2229,6 +2230,7 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_SETTING_ACTION_CORE_INFORMATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
+      case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
          return stripes->textures.list[STRIPES_TEXTURE_INPUT_REMAPPING_OPTIONS];
@@ -2470,7 +2472,7 @@ static int stripes_draw_item(
    if (i == current && width > 320 && height > 240
          && !string_is_empty(entry->sublabel))
    {
-      char entry_sublabel[255] = {0};
+      char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH] = {0};
 
       label_offset      = - stripes->margins_label_top;
 

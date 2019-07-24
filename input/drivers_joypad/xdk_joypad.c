@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -25,10 +27,10 @@ typedef struct
    bool connected;
 } xinput_joypad_state;
 
-static xinput_joypad_state g_xinput_states[MAX_PADS];
+static xinput_joypad_state g_xinput_states[DEFAULT_MAX_PADS];
 
 #ifdef _XBOX1
-static HANDLE gamepads[MAX_PADS];
+static HANDLE gamepads[DEFAULT_MAX_PADS];
 #endif
 
 static const char* const XBOX_CONTROLLER_NAMES[4] =
@@ -46,14 +48,13 @@ static const char *xdk_joypad_name(unsigned pad)
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
          xdk_joypad_name(autoconf_pad),
          NULL,
          xdk_joypad.ident,
          autoconf_pad,
          0,
-         0))
-      input_config_set_device_name(autoconf_pad, xdk_joypad_name(autoconf_pad));
+         0);
 }
 
 static bool xdk_joypad_init(void *data)
@@ -94,7 +95,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
    uint16_t btn_word  = 0;
    unsigned hat_dir   = 0;
 
-   if (port_num >= MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
    btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
@@ -163,7 +164,7 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_pos         = false;
    XINPUT_GAMEPAD *pad = NULL;
 
-   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) <= 3)
@@ -234,7 +235,7 @@ static void xdk_joypad_poll(void)
 #endif
 #endif
 
-   for (port = 0; port < MAX_PADS; port++)
+   for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
 #if defined(_XBOX1)
       bool device_removed    = false;
@@ -308,7 +309,7 @@ static void xdk_joypad_destroy(void)
 {
    unsigned i;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 #if defined(_XBOX1)

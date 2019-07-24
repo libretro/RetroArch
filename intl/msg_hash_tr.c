@@ -207,10 +207,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_STATE_SLOT_PLUS:
           case RARCH_STATE_SLOT_MINUS:
              snprintf(s, len,
-                   "Konum Yuvaları \n"
+                   "Konum Kayıtları \n"
                    " \n"
                    "Yuva 0 olarak ayarlanmış durumdayken, \n"
-                   "kaydetme adı * .state (ya da komut satırında tanımlanmışsa) olur. \n"
+                   "kaydetme adı *.state (ya da komut satırında ne tanımlanmışsa) olur. \n"
                    " \n"
                    "Alan 0 değilse, yol <dizin> olduğu yerde, \n"
                    "<dizin><d> olur.");
@@ -473,9 +473,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
             snprintf(s, len,
-                     "Libretro core. \n"
+                     "Libretro Core. \n"
                              " \n"
-                             "RetroArch'ın bu çekirdeği yüklemesi için bu dosyayı seçin.");
+                             "RetroArch'ın bu Core'u yüklemesi için bu dosyayı seçin.");
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
             snprintf(s, len,
@@ -1634,11 +1634,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
             snprintf(s, len,
-                     "Whether to start netplay in spectator mode. \n"
+                     "İzleyici modunda netplay başlatılıp başlatılmayacağı. \n"
                              " \n"
-                             "If set to true, netplay will be in spectator mode \n"
-                             "on start. It's always possible to change mode \n"
-                             "later.");
+                             "True olarak ayarlanırsa, netplay başlangıçta izleyici \n"
+                             "modunda olacaktır. Daha sonra modu değiştirmek her \n"
+                             "zaman mümkündür.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
             snprintf(s, len,

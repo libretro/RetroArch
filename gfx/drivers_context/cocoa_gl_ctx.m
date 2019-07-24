@@ -60,7 +60,6 @@ static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
 #if defined(HAVE_COCOATOUCH)
 static GLKView *g_view;
-UIView *g_pause_indicator_view;
 #endif
 
 static GLContextClass* g_hw_ctx;
@@ -157,16 +156,9 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
 void *glkitview_init(void)
 {
 #if defined(HAVE_COCOATOUCH)
-#if TARGET_OS_IOS
-   /* iOS Pause menu and lifecycle. */
-   UINib *xib = (UINib*)[UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
-   g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-#endif
-
    g_view = [GLKView new];
 #if TARGET_OS_IOS
    g_view.multipleTouchEnabled = YES;
-    [g_view addSubview:g_pause_indicator_view];
 #endif
    g_view.enableSetNeedsDisplay = NO;
 
@@ -695,9 +687,8 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 #endif
@@ -843,7 +834,10 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 #ifdef HAVE_VULKAN
          [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
          if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_MACOS))
-            goto error;
+         {
+            free(cocoa_ctx);
+            return NULL;
+         }
 #endif
          break;
       case GFX_CTX_NONE:
@@ -852,10 +846,6 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    }
 
    return cocoa_ctx;
-
-error:
-   free(cocoa_ctx);
-   return NULL;
 }
 
 #ifdef HAVE_COCOA_METAL

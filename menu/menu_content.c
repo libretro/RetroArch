@@ -33,36 +33,5 @@
 #include "../playlist.h"
 #include "../verbosity.h"
 
-bool menu_content_playlist_find_associated_core(const char *path, char *s, size_t len)
-{
-   unsigned j;
-   bool                                ret = false;
-   settings_t *settings                    = config_get_ptr();
-   struct string_list *existing_core_names =
-      string_split(settings->arrays.playlist_names, ";");
-   struct string_list *existing_core_paths =
-      string_split(settings->arrays.playlist_cores, ";");
-
-   for (j = 0; j < existing_core_names->size; j++)
-   {
-      if (!string_is_equal(path, existing_core_names->elems[j].data))
-         continue;
-
-      if (existing_core_paths)
-      {
-         const char *existing_core = existing_core_paths->elems[j].data;
-
-         if (existing_core)
-         {
-            strlcpy(s, existing_core, len);
-            ret = true;
-         }
-      }
-
-      break;
-   }
-
-   string_list_free(existing_core_names);
-   string_list_free(existing_core_paths);
-   return ret;
-}
+/* This file should probably be removed, but may need
+ * to add something to it in the future... */

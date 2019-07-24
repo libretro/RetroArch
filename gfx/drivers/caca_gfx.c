@@ -320,7 +320,7 @@ static void caca_gfx_get_poke_interface(void *data,
    *iface = &caca_poke_interface;
 }
 
-void caca_gfx_set_viewport(void *data, unsigned viewport_width,
+static void caca_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
 }

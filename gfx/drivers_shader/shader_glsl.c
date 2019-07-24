@@ -152,7 +152,6 @@ typedef struct glsl_shader_data
    struct cache_vbo vbo[GFX_MAX_SHADERS];
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
    struct video_shader *shader;
-   state_tracker_t *state_tracker;
 } glsl_shader_data_t;
 
 static bool glsl_core;
@@ -660,7 +659,6 @@ static void gl_glsl_deinit_shader(glsl_shader_data_t *glsl)
       free(glsl->shader->pass[i].source.string.fragment);
    }
 
-   free(glsl->shader->script);
    free(glsl->shader);
    glsl->shader = NULL;
 }
@@ -684,6 +682,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
          continue;
 
       glDeleteProgram(glsl->prg[i].id);
+      glsl->prg[i].id = 0;
    }
 
    if (glsl->shader && glsl->shader->luts)
@@ -694,10 +693,6 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    glsl->active_idx = 0;
 
    gl_glsl_deinit_shader(glsl);
-
-   if (glsl->state_tracker)
-      state_tracker_free(glsl->state_tracker);
-   glsl->state_tracker = NULL;
 
    gl_glsl_reset_attrib(glsl);
 
@@ -905,7 +900,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
          if (is_preset)
          {
-            conf = config_file_new(path);
+            conf = config_file_new_from_path_to_string(path);
             if (conf)
             {
                ret = video_shader_read_conf_preset(conf, glsl->shader);
@@ -939,8 +934,6 @@ static void *gl_glsl_init(void *data, const char *path)
       }
    }
 
-   if (!string_is_empty(path))
-      video_shader_resolve_relative(glsl->shader, path);
    video_shader_resolve_parameters(conf, glsl->shader);
 
    if (conf)
@@ -1021,34 +1014,6 @@ static void *gl_glsl_init(void *data, const char *path)
       RARCH_WARN("Detected GL error in GLSL.\n");
    }
 #endif
-
-   if (glsl->shader->variables)
-   {
-      retro_ctx_memory_info_t mem_info;
-      struct state_tracker_info info;
-
-      mem_info.id         = RETRO_MEMORY_SYSTEM_RAM;
-
-      core_get_memory(&mem_info);
-
-      info.wram           = (uint8_t*)mem_info.data;
-      info.info           = glsl->shader->variable;
-      info.info_elem      = glsl->shader->variables;
-
-      info.script         = NULL;
-      info.script_class   = NULL;
-#ifdef HAVE_PYTHON
-      info.script         = glsl->shader->script;
-      if (*glsl->shader->script_class)
-         info.script_class= glsl->shader->script_class;
-#endif
-      info.script_is_file = false;
-
-      glsl->state_tracker = state_tracker_init(&info);
-
-      if (!glsl->state_tracker)
-         RARCH_WARN("Failed to init state tracker.\n");
-   }
 
    glsl->prg[glsl->shader->passes  + 1]     = glsl->prg[0];
    glsl->uniforms[glsl->shader->passes + 1] = glsl->uniforms[0];
@@ -1398,25 +1363,6 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
             glsl->prg[glsl->active_idx].id,
             glsl->shader->parameters[i].id);
       glUniform1f(location, glsl->shader->parameters[i].current);
-   }
-
-   /* Set state parameters. */
-   if (glsl->state_tracker)
-   {
-      static struct state_tracker_uniform state_info[GFX_MAX_VARIABLES];
-      static unsigned cnt = 0;
-
-      if (glsl->active_idx == 1)
-         cnt = state_tracker_get_uniform(glsl->state_tracker, state_info,
-               GFX_MAX_VARIABLES, frame_count);
-
-      for (i = 0; i < cnt; i++)
-      {
-         int location = glGetUniformLocation(
-               glsl->prg[glsl->active_idx].id,
-               state_info[i].id);
-         glUniform1f(location, state_info[i].value);
-      }
    }
 }
 

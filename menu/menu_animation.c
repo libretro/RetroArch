@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <lists/string_list.h>
 
 #define DG_DYNARR_IMPLEMENTATION
 #include <stdio.h>
@@ -67,7 +68,7 @@ typedef struct menu_animation menu_animation_t;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim    = {0};
+static menu_animation_t anim    = {{0}};
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
@@ -384,6 +385,60 @@ static void menu_animation_ticker_loop(uint64_t idx,
     * symmetry... */
    *offset3 = 0;
    *width3  = width;
+}
+
+static size_t get_line_display_ticks(size_t line_width)
+{
+   /* Mean human reading speed for all western languages,
+    * characters per minute */
+   float cpm            = 1000.0f;
+   /* Base time for which a line should be shown, in ms */
+   float line_duration  = (line_width * 60.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_SPEED ms
+    * > Return base number of ticks for which line should be shown */
+   return (size_t)(line_duration / (float)TICKER_SPEED);
+}
+
+static void menu_animation_line_ticker_generic(uint64_t idx,
+      size_t line_width, size_t max_lines, size_t num_lines,
+      size_t *line_offset)
+{
+   size_t line_ticks    = get_line_display_ticks(line_width);
+   /* Note: This function is only called if num_lines > max_lines */
+   size_t excess_lines  = num_lines - max_lines;
+   /* Ticker will pause for one line duration when the first
+    * or last line is reached (this is mostly required for the
+    * case where num_lines == (max_lines + 1), since otherwise
+    * the text flicks rapidly up and down in disconcerting
+    * fashion...) */
+   size_t ticker_period = (excess_lines * 2) + 2;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+
+   /* Pause on first line */
+   if (phase > 0)
+      phase--;
+   /* Pause on last line */
+   if (phase > excess_lines)
+      phase--;
+
+   /* Lines scrolling upwards */
+   if (phase <= excess_lines)
+      *line_offset = phase;
+   /* Lines scrolling downwards */
+   else
+      *line_offset = (excess_lines * 2) - phase;
+}
+
+static void menu_animation_line_ticker_loop(uint64_t idx,
+      size_t line_width, size_t num_lines,
+      size_t *line_offset)
+{
+   size_t line_ticks    = get_line_display_ticks(line_width);
+   size_t ticker_period = num_lines + 1;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+
+   /* In this case, line_offset is simply equal to the phase */
+   *line_offset = phase;
 }
 
 static void menu_delayed_animation_cb(void *userdata)
@@ -769,6 +824,125 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    ticker_is_active = true;
 
    return true;
+}
+
+bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker)
+{
+   size_t i;
+   char *wrapped_str         = NULL;
+   struct string_list *lines = NULL;
+   size_t line_offset        = 0;
+   bool success              = false;
+   bool is_active            = false;
+
+   /* Sanity check */
+   if (!line_ticker)
+      return false;
+
+   if (string_is_empty(line_ticker->str) ||
+       (line_ticker->line_width < 1) ||
+       (line_ticker->max_lines < 1))
+      goto end;
+
+   /* Line wrap input string */
+   wrapped_str = (char*)malloc((strlen(line_ticker->str) + 1) * sizeof(char));
+   if (!wrapped_str)
+      goto end;
+
+   word_wrap(
+         wrapped_str,
+         line_ticker->str,
+         (int)line_ticker->line_width,
+         true, 0);
+
+   if (string_is_empty(wrapped_str))
+      goto end;
+
+   /* Split into component lines */
+   lines = string_split(wrapped_str, "\n");
+   if (!lines)
+      goto end;
+
+   /* Check whether total number of lines fits within
+    * the set limit */
+   if (lines->size <= line_ticker->max_lines)
+   {
+      strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
+      success = true;
+      goto end;
+   }
+
+   /* Determine offset of first line in wrapped string */
+   switch (line_ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+      {
+         menu_animation_line_ticker_loop(
+               line_ticker->idx,
+               line_ticker->line_width,
+               lines->size,
+               &line_offset);
+
+         break;
+      }
+      case TICKER_TYPE_BOUNCE:
+      default:
+      {
+         menu_animation_line_ticker_generic(
+               line_ticker->idx,
+               line_ticker->line_width,
+               line_ticker->max_lines,
+               lines->size,
+               &line_offset);
+
+         break;
+      }
+   }
+
+   /* Build output string from required lines */
+   for (i = 0; i < line_ticker->max_lines; i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = 0;
+      bool line_valid   = true;
+
+      if (offset < lines->size)
+         line_index = offset;
+      else if (offset > lines->size)
+         line_index = (offset - 1) - lines->size;
+      else
+         line_valid = false;
+
+      if (line_valid)
+         strlcat(line_ticker->s, lines->elems[line_index].data, line_ticker->len);
+
+      if (i < line_ticker->max_lines - 1)
+         strlcat(line_ticker->s, "\n", line_ticker->len);
+   }
+
+   success          = true;
+   is_active        = true;
+   ticker_is_active = true;
+
+end:
+
+   if (wrapped_str)
+   {
+      free(wrapped_str);
+      wrapped_str = NULL;
+   }
+
+   if (lines)
+   {
+      string_list_free(lines);
+      lines = NULL;
+   }
+
+   if (!success)
+      if (line_ticker->len > 0)
+         line_ticker->s[0] = '\0';
+
+   return is_active;
 }
 
 bool menu_animation_is_active(void)

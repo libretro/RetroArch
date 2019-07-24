@@ -1,16 +1,21 @@
 # 1.7.8 (future)
+- ANDROID: Implemented multi-touch touchscreen support.
 - BLISS-BOX: Add 4 new pad types from firmware 3.0.
 - COMMON: Add optional 'on demand' thumbnail downloads.
 - COMMON: Add new playlist-based thumbnail downloader. Hide the legacy thumbnail pack version by default.
 - COMMON: Show license per core (if available) inside 'Load Core'.
+- COMMON: Add option to load content from (and dump) CD-ROM discs.
+- COMMON: New core options interface, allows for localization, sublabels and more.
 - GAMECUBE: Add default video/audio filter directories.
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores.
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
 - D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though.
 - D3D10/11/12: Add option to select which GPU to render with.
+- D3D10/11: Fix maintaining aspect ratio when resizing window
 - GLCORE/SLANG: Added "FrameDirection" slang semantic.
 - INPUT: Menu toggle hotkey can now be bound to another keyboard key and it will toggle properly.
 - IOS: Correctly centers screen on iPhone X landscape.
+- IOS: Implemented multi-touch touchscreen support.
 - LOCALIZATION: Update Korean translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese Brazilian Translation.
@@ -37,8 +42,10 @@
 - VULKAN: Add option to select which GPU to render with.
 - WII: Add default video/audio filter directories.
 - WII: Fix RGUI display corruption.
+- WII: Fix HID joypad drivers.
 - WIIU/SLANG: Added "FrameDirection" slang semantic.
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11.
+- X11/UDEV: Mouse pointer should work now in X11 environment with no Display.
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other.

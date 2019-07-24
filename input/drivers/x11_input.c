@@ -24,7 +24,6 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../common/input_x11_common.h"
@@ -139,15 +138,15 @@ static bool x_is_pressed(x11_input_t *x11,
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
          ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
       if (x_mouse_button_pressed(x11, port, bind->mbutton))
          return true;
-      if (joykey != NO_BTN 
-            && x11->joypad->button(joypad_info.joy_idx, joykey))
+      if ((uint16_t)joykey != NO_BTN 
+            && x11->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
          return true;
       if (((float)abs(x11->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
@@ -312,7 +311,6 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    x11_input_t *x11           = (x11_input_t*)data;
 
    switch (device)
@@ -321,26 +319,35 @@ static int16_t x_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (x_is_pressed(
                         x11, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = x_is_pressed(x11, joypad_info, binds[port], port, id);
+               if (x_is_pressed(x11, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = x_pressed_analog(x11, binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(x11->joypad, joypad_info,
-                  port, idx,
-                  id, binds[port]);
-         return ret;
+         {
+            int16_t ret = x_pressed_analog(x11, binds[port], idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(x11->joypad, joypad_info,
+                     port, idx,
+                     id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_MOUSE:

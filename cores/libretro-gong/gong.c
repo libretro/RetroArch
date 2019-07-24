@@ -159,7 +159,7 @@ static void check_variables(void)
       int i;
       g_state->refresh = atoi(var.value);
 
-      for (i = 0; i < sizeof(g_state->g_input) / sizeof(g_state->g_input[0]); i++)
+      for (i = 0; i < (int)(sizeof(g_state->g_input) / sizeof(g_state->g_input[0])); i++)
          g_state->g_input[i].last_dt = 1.0f / g_state->refresh;
    }
 
@@ -386,7 +386,7 @@ void GONG_CORE_PREFIX(retro_init)(void)
    else
       GONG_CORE_PREFIX(log_cb) = NULL;
 
-   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned));
+   video_buf = (unsigned char*)calloc(1, WIDTH * HEIGHT * sizeof(unsigned char));
 
    game_buffer.width  = WIDTH;
    game_buffer.height = HEIGHT;

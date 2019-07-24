@@ -45,7 +45,6 @@
 
 #include <string/stdstring.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -270,7 +269,7 @@ static bool dinput_mouse_button_pressed(
 		return false;
 
 	/* the driver only supports one mouse */
-	if (settings->uints.input_mouse_index[ port ] != 0)
+	if ( settings->uints.input_mouse_index[ port ] != 0)
 		return false;
 
 	switch (key)
@@ -311,47 +310,13 @@ static bool dinput_mouse_button_pressed(
 	return false;
 }
 
-static bool dinput_is_pressed(struct dinput_input *di,
-      rarch_joypad_info_t joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id)
-{
-   if (binds[id].key < RETROK_LAST)
-   {
-      if (di->state[rarch_keysym_lut[(enum retro_key)binds[id].key]] & 0x80)
-         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
-            return true;
-   }
-
-   if (binds && binds[id].valid)
-   {
-      /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
-         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
-      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
-
-      if (dinput_mouse_button_pressed(di, port, binds[id].mbutton))
-         return true;
-      if (joykey != NO_BTN 
-            && di->joypad->button(joypad_info.joy_idx, joykey))
-         return true;
-      if (((float)abs(di->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-         return true;
-   }
-
-   return false;
-}
-
 static int16_t dinput_pressed_analog(struct dinput_input *di,
       const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
    const struct retro_keybind *bind_minus, *bind_plus;
-   int16_t pressed_minus = 0;
-   int16_t pressed_plus  = 0;
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
+   int16_t pressed_minus = 0, pressed_plus = 0;
+   unsigned id_minus = 0, id_plus = 0;
 
    input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
@@ -363,41 +328,43 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
 
    if (bind_minus->key < RETROK_LAST)
    {
-      if (di->state[rarch_keysym_lut[(enum retro_key)bind_minus->key]] & 0x80)
+      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_minus->key];
+      if (di->state[sym] & 0x80)
          pressed_minus = -0x7fff;
    }
    if (bind_plus->key  < RETROK_LAST)
    {
-      if (di->state[rarch_keysym_lut[(enum retro_key)bind_plus->key]] & 0x80)
+      unsigned sym = rarch_keysym_lut[(enum retro_key)bind_plus->key];
+      if (di->state[sym] & 0x80)
          pressed_plus  = 0x7fff;
    }
 
    return pressed_plus + pressed_minus;
 }
 
-static int16_t dinput_lightgun_aiming_state(
-      struct dinput_input *di, unsigned idx, unsigned id)
+static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id)
 {
+   const int edge_detect = 32700;
    struct video_viewport vp;
-   const int edge_detect            = 32700;
-   bool inside                      = false;
-   int x                            = 0;
-   int y                            = 0;
-   int16_t res_x                    = 0;
-   int16_t res_y                    = 0;
-   int16_t res_screen_x             = 0;
-   int16_t res_screen_y             = 0;
-   unsigned num                     = 0;
+   bool inside = false;
+   int x = 0;
+   int y = 0;
+   int16_t res_x = 0;
+   int16_t res_y = 0;
+   int16_t res_screen_x = 0;
+   int16_t res_screen_y = 0;
+   unsigned num = 0;
+
    struct pointer_status* check_pos = di->pointer_head.next;
 
-   vp.x                             = 0;
-   vp.y                             = 0;
-   vp.width                         = 0;
-   vp.height                        = 0;
-   vp.full_width                    = 0;
-   vp.full_height                   = 0;
+   vp.x = 0;
+   vp.y = 0;
+   vp.width = 0;
+   vp.height = 0;
+   vp.full_width = 0;
+   vp.full_height = 0;
 
-   while (check_pos && num < idx)
+   while ( check_pos && num < idx)
    {
       num++;
       check_pos = check_pos->next;
@@ -415,17 +382,11 @@ static int16_t dinput_lightgun_aiming_state(
       y = check_pos->pointer_y;
    }
 
-   if (!(video_driver_translate_coord_viewport_wrap(
+   if ( !( video_driver_translate_coord_viewport_wrap(
                &vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y)))
-   {
       return 0;
-   }
 
-   inside = 
-      (res_x >= -edge_detect) 
-      && (res_y >= -edge_detect)
-      && (res_x <=  edge_detect)
-      && (res_y <=  edge_detect);
+   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
 
    switch (id)
    {
@@ -442,8 +403,7 @@ static int16_t dinput_lightgun_aiming_state(
    return 0;
 }
 
-static int16_t dinput_mouse_state(struct dinput_input *di,
-      unsigned port, unsigned id)
+static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsigned id)
 {
    int16_t state = 0;
 
@@ -497,8 +457,7 @@ static int16_t dinput_mouse_state(struct dinput_input *di,
    return 0;
 }
 
-static int16_t dinput_mouse_state_screen(
-      struct dinput_input *di, unsigned port, unsigned id)
+static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned port, unsigned id)
 {
 	settings_t *settings = config_get_ptr();
 
@@ -599,7 +558,6 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    struct dinput_input *di    = (struct dinput_input*)data;
 
    switch (device)
@@ -608,26 +566,86 @@ static int16_t dinput_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (dinput_is_pressed(di, joypad_info, binds[port], port,
-                     i))
-                  ret |= (1 << i);
+               if (binds[port][i].key < RETROK_LAST)
+               {
+                  if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
+                     if ((i == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                     {
+                        ret |= (1 << i);
+                        continue;
+                     }
+               }
+
+               if (binds[port][i].valid)
+               {
+                  /* Auto-binds are per joypad, not per user. */
+                     const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
+                     ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                     ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+
+                  if (dinput_mouse_button_pressed(
+                           di, port, binds[port][i].mbutton))
+                  {
+                     ret |= (1 << i);
+                     continue;
+                  }
+
+                  if ((uint16_t)joykey != NO_BTN
+                        && di->joypad->button(
+                           joypad_info.joy_idx, (uint16_t)joykey))
+                  {
+                     ret |= (1 << i);
+                     continue;
+                  }
+
+                  if (((float)abs(di->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  {
+                     ret |= (1 << i);
+                     continue;
+                  }
+               }
             }
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = dinput_is_pressed(di, joypad_info, binds[port], port, id);
+            {
+               if (binds[port][id].key < RETROK_LAST)
+               {
+                  if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
+                     if ((id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                        return true;
+               }
+               if (binds[port][id].valid)
+               {
+                  /* Auto-binds are per joypad, not per user. */
+                     const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
+                     ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+                  const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+                     ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+                  if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
+                     return true;
+                  if ((uint16_t)joykey != NO_BTN
+                        && di->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+                     return true;
+                  if (((float)abs(di->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                     return true;
+               }
+            }
          }
-         return ret;
+         break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && di->state[
-            rarch_keysym_lut[(enum retro_key)id]] & 0x80;
+         return (id < RETROK_LAST) && di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            ret = dinput_pressed_analog(di, binds[port], idx, id);
+            int16_t ret = dinput_pressed_analog(di, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(di->joypad, joypad_info,
                      port, idx, id, binds[port]);
@@ -647,46 +665,98 @@ static int16_t dinput_input_state(void *data,
                device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
-			switch (id)
-			{
-				/*aiming*/
-				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-				case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-					return dinput_lightgun_aiming_state(di, idx, id);
-				/*buttons*/
-				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_TRIGGER);
-				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_RELOAD);
-				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_A);
-				case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_B);
-				case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_C);
-				case RETRO_DEVICE_ID_LIGHTGUN_START:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
-				case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_SELECT);
-				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_UP);
-				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_DOWN);
-				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_LEFT);
-				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_RIGHT);
+         switch (id)
+         {
+            /*aiming*/
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+               return dinput_lightgun_aiming_state( di, idx, id);
 
-				/*deprecated*/
-				case RETRO_DEVICE_ID_LIGHTGUN_X:
-					return di->mouse_rel_x;
-				case RETRO_DEVICE_ID_LIGHTGUN_Y:
-					return di->mouse_rel_y;
-				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-					return dinput_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
+               /*buttons*/
+            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+            case RETRO_DEVICE_ID_LIGHTGUN_START:
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+               {
+                  unsigned new_id = 0;
+                  switch (id)
+                  {
+                     case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+                        new_id = RARCH_LIGHTGUN_TRIGGER;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+                        new_id = RARCH_LIGHTGUN_RELOAD;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+                        new_id = RARCH_LIGHTGUN_AUX_A;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+                        new_id = RARCH_LIGHTGUN_AUX_B;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+                        new_id = RARCH_LIGHTGUN_AUX_C;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_START:
+                        new_id = RARCH_LIGHTGUN_START;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+                        new_id = RARCH_LIGHTGUN_SELECT;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+                        new_id = RARCH_LIGHTGUN_DPAD_UP;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+                        new_id = RARCH_LIGHTGUN_DPAD_DOWN;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+                        new_id = RARCH_LIGHTGUN_DPAD_LEFT;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+                        new_id = RARCH_LIGHTGUN_DPAD_RIGHT;
+                        break;
+                     case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+                        new_id = RARCH_LIGHTGUN_START;
+                        break;
+                  }
+                  if (binds[port][new_id].key < RETROK_LAST)
+                  {
+                     if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
+                        if ((new_id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                           return true;
+                  }
+                  if (binds[port][new_id].valid)
+                  {
+                     /* Auto-binds are per joypad, not per user. */
+                        const uint64_t joykey  = (binds[port][new_id].joykey != NO_BTN)
+                        ? binds[port][new_id].joykey : joypad_info.auto_binds[new_id].joykey;
+                     const uint32_t joyaxis = (binds[port][new_id].joyaxis != AXIS_NONE)
+                        ? binds[port][new_id].joyaxis : joypad_info.auto_binds[new_id].joyaxis;
 
-			}
+                     if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
+                        return true;
+                     if ((uint16_t)joykey != NO_BTN
+                           && di->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+                        return true;
+                     if (((float)abs(di->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                        return true;
+                  }
+               }
+               break;
+               /*deprecated*/
+            case RETRO_DEVICE_ID_LIGHTGUN_X:
+               return di->mouse_rel_x;
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:
+               return di->mouse_rel_y;
+         }
 			break;
    }
 
@@ -712,13 +782,13 @@ static int16_t dinput_input_state(void *data,
 #endif
 
 /* Stores x/y in client coordinates. */
-static void dinput_pointer_store_position(
+static void dinput_pointer_store_pos(
       struct pointer_status *pointer, WPARAM lParam)
 {
    POINT point;
 
-   point.x            = GET_X_LPARAM(lParam);
-   point.y            = GET_Y_LPARAM(lParam);
+   point.x = GET_X_LPARAM(lParam);
+   point.y = GET_Y_LPARAM(lParam);
    ScreenToClient((HWND)video_driver_window_get(), &point);
    pointer->pointer_x = point.x;
    pointer->pointer_y = point.y;
@@ -811,7 +881,7 @@ bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lPara
             }
 
             new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
-            dinput_pointer_store_position(new_pointer, lParam);
+            dinput_pointer_store_pos(new_pointer, lParam);
             dinput_add_pointer(di, new_pointer);
             return true;
          }
@@ -826,7 +896,7 @@ bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lPara
             int pointer_id = GET_POINTERID_WPARAM(wParam);
             struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
             if (pointer)
-               dinput_pointer_store_position(pointer, lParam);
+               dinput_pointer_store_pos(pointer, lParam);
             return true;
          }
       case WM_DEVICECHANGE:
@@ -836,7 +906,9 @@ bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lPara
                PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
                if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
                {
+#if 0
                   PDEV_BROADCAST_DEVICEINTERFACE pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
+#endif
 
                   /* To-Do: Don't destroy everything, lets just handle new devices gracefully */
                   if (di->joypad)

@@ -468,34 +468,9 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
    d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
-static void d3d9_hlsl_renderchain_set_params(
-      d3d9_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      state_tracker_t *tracker,
-      unsigned pass_index)
-{
-   unsigned i;
-   /* Set state parameters. */
-   /* Only query uniforms in first pass. */
-   static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
-   static unsigned cnt = 0;
-
-   if (pass_index == 1)
-      cnt = state_tracker_get_uniform(tracker, tracker_info,
-            GFX_MAX_VARIABLES, chain->frame_count);
-
-   for (i = 0; i < cnt; i++)
-   {
-      d3d9_hlsl_set_param_2f(pass->fprg, dev, tracker_info[i].id, &tracker_info[i].value);
-      d3d9_hlsl_set_param_2f(pass->vprg, dev, tracker_info[i].id, &tracker_info[i].value);
-   }
-}
-
 static void hlsl_d3d9_renderchain_render_pass(
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
-      state_tracker_t *tracker,
       unsigned pass_index)
 {
    unsigned i;
@@ -553,9 +528,6 @@ static void hlsl_d3d9_renderchain_render_pass(
       d3d9_hlsl_renderchain_bind_pass(chain, chain->chain.dev, pass, pass_index);
 
 #endif
-   if (tracker)
-      d3d9_hlsl_renderchain_set_params(&chain->chain,
-            chain->chain.dev, pass, tracker, pass_index);
 
    d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
@@ -570,7 +542,6 @@ static void hlsl_d3d9_renderchain_render_pass(
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const video_frame_info_t *video_info,
-      state_tracker_t *tracker,
       const void *frame,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
@@ -649,7 +620,7 @@ static bool hlsl_d3d9_renderchain_render(
             chain->chain.frame_count, 0);
 
       hlsl_d3d9_renderchain_render_pass(chain,
-            from_pass, tracker,
+            from_pass, 
             i + 1);
 
       current_width = out_width;
@@ -679,7 +650,6 @@ static bool hlsl_d3d9_renderchain_render(
          chain->chain.frame_count, rotation);
 
    hlsl_d3d9_renderchain_render_pass(chain, last_pass,
-         tracker,
          chain->chain.passes->count);
 
    chain->chain.frame_count++;

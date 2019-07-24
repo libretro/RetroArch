@@ -26,6 +26,11 @@
 #include "../../config.h"
 #endif
 
+#include <vfs/vfs_implementation.h>
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #ifdef HAVE_DISCORD
 #include "../../discord/discord.h"
 #endif
@@ -39,7 +44,9 @@
 #include "../menu_cbs.h"
 #include "../menu_entries.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
@@ -47,7 +54,6 @@
 #include "../menu_input.h"
 #include "../menu_networking.h"
 #include "../menu_content.h"
-#include "../menu_shader.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -56,12 +62,15 @@
 #include "../../defaults.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#ifdef HAVE_AUDIOMIXER
 #include "../../tasks/task_audio_mixer.h"
+#endif
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
+#include "../../playlist.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
@@ -76,7 +85,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #endif
 
 #ifdef __WINRT__
@@ -166,6 +175,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -254,10 +265,18 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST;
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST;
+      case ACTION_OK_DL_PLAYLIST_MANAGER_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST;
+      case ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS:
+         return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
+      case ACTION_OK_DL_DUMP_DISC_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
+      case ACTION_OK_DL_LOAD_DISC_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST;
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
@@ -270,6 +289,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
       case ACTION_OK_DL_IMAGES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
+      case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST;
       default:
          break;
    }
@@ -296,8 +317,10 @@ int generic_action_ok_displaylist_push(const char *path,
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    menu_displaylist_info_init(&info);
 
@@ -356,6 +379,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -441,12 +473,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
          break;
       case ACTION_OK_DL_SHADER_PARAMETERS:
          info.type          = MENU_SETTING_ACTION;
@@ -492,12 +526,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
          break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = FILE_TYPE_DIRECTORY;
@@ -915,6 +951,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
+      case ACTION_OK_DL_PLAYLIST_MANAGER_LIST:
+      case ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS:
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
@@ -923,7 +961,14 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_BROWSE_URL_LIST:
       case ACTION_OK_DL_MUSIC_LIST:
       case ACTION_OK_DL_IMAGES_LIST:
+      case ACTION_OK_DL_LOAD_DISC_LIST:
+      case ACTION_OK_DL_DUMP_DISC_LIST:
+      case ACTION_OK_DL_CDROM_INFO_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         break;
+      case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
+         action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         info_path          = label;
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          info.list          = menu_entries_get_selection_buf_ptr(0);
@@ -979,12 +1024,14 @@ end:
  **/
 static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
 {
-   const char *path     = NULL;
+   char path[PATH_MAX_LENGTH];
    const struct playlist_entry *entry = NULL;
 
    playlist_get_index(playlist, idx, &entry);
 
-   path = entry->path;
+   path[0] = '\0';
+   strlcpy(path, entry->path, sizeof(path));
+   playlist_resolve_path(PLAYLIST_LOAD, path, sizeof(path));
 
    if (!string_is_empty(path))
    {
@@ -1278,10 +1325,12 @@ static int set_path_generic(const char *label, const char *action_path)
 
 static int generic_action_ok_command(enum event_command cmd)
 {
+#ifdef HAVE_AUDIOMIXER
    settings_t *settings = config_get_ptr();
 
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
@@ -1354,10 +1403,12 @@ static int generic_action_ok(const char *path,
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
    menu_handle_t               *menu = NULL;
+#ifdef HAVE_AUDIOMIXER
    settings_t              *settings = config_get_ptr();
 
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -1453,6 +1504,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
@@ -1460,8 +1512,10 @@ static int generic_action_ok(const char *path,
                   video_shader_parse_type(action_path),
                   action_path);
          }
+#endif
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             struct video_shader *shader           = menu_shader_get();
             struct video_shader_pass *shader_pass = shader ? &shader->pass[menu->scratchpad.unsigned_var] : NULL;
@@ -1476,6 +1530,7 @@ static int generic_action_ok(const char *path,
                video_shader_resolve_parameters(NULL, shader);
             }
          }
+#endif
          break;
       case ACTION_OK_LOAD_STREAM_CONFIGFILE:
          {
@@ -1499,7 +1554,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
-            config_file_t *conf = config_file_new(action_path);
+            config_file_t *conf = config_file_new_from_path_to_string(action_path);
             flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
@@ -1543,6 +1598,15 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
+#ifdef HAVE_COCOATOUCH
+         // For iOS, set the path using realpath because the path name
+         // can start with /private and this ensures the path starts with it.
+         // This will allow the path to be properly substituted when fill_pathname_expand_special
+         // is called.
+         char real_action_path[PATH_MAX_LENGTH] = {0};
+         realpath(action_path, real_action_path);
+         strlcpy(action_path, real_action_path, sizeof(action_path));
+#endif
          ret        = set_path_generic(menu->filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_VIDEO_FILTER:
@@ -1634,8 +1698,10 @@ default_action_ok_set(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEA
 default_action_ok_set(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
+#endif
 default_action_ok_set(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
 
 static int action_ok_file_load(const char *path,
@@ -1728,6 +1794,7 @@ static int action_ok_file_load(const char *path,
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char new_path[PATH_MAX_LENGTH];
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
@@ -1740,6 +1807,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
+   new_path[0]                         = '\0';
    new_core_path[0]                    = '\0';
    tmp_playlist                        = playlist_get_cached();
 
@@ -1792,11 +1860,16 @@ static int action_ok_playlist_entry_collection(const char *path,
    {
       core_info_ctx_find_t core_info;
       const char *entry_path                 = NULL;
-      const char             *path_base      =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
+
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf       = NULL;
       core_info.path      = new_core_path;
@@ -1820,8 +1893,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       if (tmp_playlist)
       {
          struct playlist_entry entry = {0};
-
-         entry.core_path = new_core_path;
+         entry.core_path = (char*)default_core_path;
          entry.core_name = core_info.inf->display_name;
 
          command_playlist_update_write(
@@ -1831,7 +1903,10 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
    }
    else
+   {
       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+   }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
@@ -1846,8 +1921,10 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    playlist_get_index(playlist, selection_ptr, &entry);
 
+   strlcpy(new_path, entry->path, sizeof(new_path));
+   playlist_resolve_path(PLAYLIST_LOAD, new_path, sizeof(new_path));
    return default_action_ok_load_content_from_playlist_from_menu(
-         new_core_path, entry->path, entry->label);
+            new_core_path, new_path, entry->label);
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1855,14 +1932,15 @@ static int action_ok_playlist_entry(const char *path,
 {
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
-   playlist_t *playlist                = g_defaults.content_history;
+   playlist_t *playlist                = playlist_get_cached();
    menu_handle_t *menu                 = NULL;
    const struct playlist_entry *entry  = NULL;
    const char *entry_label             = NULL;
 
    new_core_path[0] = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!playlist ||
+       !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    selection_ptr = entry_idx;
@@ -1875,11 +1953,16 @@ static int action_ok_playlist_entry(const char *path,
          && string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      const char *path_base                  =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
+
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
@@ -1896,7 +1979,7 @@ static int action_ok_playlist_entry(const char *path,
       {
          struct playlist_entry entry = {0};
 
-         entry.core_path = new_core_path;
+         entry.core_path = (char*)default_core_path;
          entry.core_name = core_info.inf->display_name;
 
          command_playlist_update_write(NULL,
@@ -1905,8 +1988,10 @@ static int action_ok_playlist_entry(const char *path,
       }
 
    }
-   else if (!string_is_empty(entry->core_path))
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+   else if (!string_is_empty(entry->core_path)) {
+       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+   }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
@@ -1946,15 +2031,17 @@ static int action_ok_playlist_entry_start_content(const char *path,
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char             *path_base      =
-         path_basename(menu->db_playlist_file);
-      bool        found_associated_core      = false;
+      const char *default_core_path          =
+            playlist_get_default_core_path(playlist);
+      bool found_associated_core             = false;
 
       new_core_path[0]                       = '\0';
 
-      found_associated_core                  =
-         menu_content_playlist_find_associated_core(
-            path_base, new_core_path, sizeof(new_core_path));
+      if (!string_is_empty(default_core_path))
+      {
+         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+         found_associated_core = true;
+      }
 
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
@@ -1997,6 +2084,7 @@ error:
    return menu_cbs_exit();
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_ok_mixer_stream_action_play(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2096,6 +2184,93 @@ static int action_ok_mixer_stream_action_stop(const char *path,
    }
    return 0;
 }
+#endif
+
+static int action_ok_load_cdrom(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_CDROM
+   struct retro_system_info *system;
+
+   if (!cdrom_drive_has_media(label[0]))
+   {
+      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_NO_DISC_INSERTED),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
+   }
+
+   system = runloop_get_libretro_system_info();
+
+   if (system && !string_is_empty(system->library_name))
+   {
+      char cdrom_path[256];
+
+      cdrom_path[0] = '\0';
+
+      cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
+
+      RARCH_LOG("[CDROM]: Loading disc from path: %s\n", cdrom_path);
+
+      path_clear(RARCH_PATH_CONTENT);
+      path_set(RARCH_PATH_CONTENT, cdrom_path);
+
+#if defined(HAVE_DYNAMIC)
+      {
+         content_ctx_info_t content_info;
+
+         content_info.argc        = 0;
+         content_info.argv        = NULL;
+         content_info.args        = NULL;
+         content_info.environ_get = NULL;
+
+         task_push_load_content_with_core_from_menu(cdrom_path, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+      }
+#else
+      frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+#endif
+   }
+   else
+   {
+      RARCH_LOG("[CDROM]: Cannot load disc without a core.\n");
+
+      runloop_msg_queue_push(
+         msg_hash_to_str(MSG_LOAD_CORE_FIRST),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
+   }
+#endif
+   return 0;
+}
+
+static int action_ok_dump_cdrom(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   if (string_is_empty(label))
+      return -1;
+#ifdef HAVE_CDROM
+   if (!cdrom_drive_has_media(label[0]))
+   {
+      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_NO_DISC_INSERTED),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      return -1;
+   }
+
+   task_push_cdrom_dump(label);
+#endif
+   return 0;
+}
 
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2103,6 +2278,7 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, MENU_ACTION_OK, false);
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_ok_audio_add_to_mixer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2205,6 +2381,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    return 0;
 }
+#endif
 
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2332,6 +2509,7 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
    menu_input_dialog_end();
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -2366,6 +2544,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 
    menu_input_dialog_end();
 }
+#endif
 
 static void menu_input_st_string_cb_cheat_file_save_as(
       void *userdata, const char *str)
@@ -2405,10 +2584,12 @@ static int (funcname)(const char *path, const char *label_setting, unsigned type
    return 0; \
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_dialog_start(action_ok_shader_preset_save_as,
    msg_hash_to_str(MSG_INPUT_PRESET_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_save_preset)
+#endif
 default_action_dialog_start(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
@@ -2430,6 +2611,7 @@ default_action_dialog_start(action_ok_rename_entry,
    (unsigned)entry_idx,
    menu_input_st_string_cb_rename_entry)
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
@@ -2518,6 +2700,7 @@ static int action_ok_shader_preset_save_parent(const char *path,
    return generic_action_ok_shader_preset_save(path, label, type,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
 }
+#endif
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -2696,19 +2879,23 @@ static int action_ok_core_deferred_set(const char *new_core_path,
 {
    char ext_name[255];
    char core_display_name[PATH_MAX_LENGTH];
+   char resolved_core_path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
+   struct playlist_entry entry             = {0};
 
    ext_name[0]                             = '\0';
+   core_display_name[0]                    = '\0';
+   resolved_core_path[0]                   = '\0';
+   msg[0]                                  = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return menu_cbs_exit();
-
-   core_display_name[0] = '\0';
 
    core_info_get_name(new_core_path,
          core_display_name, sizeof(core_display_name),
@@ -2718,20 +2905,23 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files,
          true);
 
-   {
-      struct playlist_entry entry = {0};
+    strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
+    playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
 
-      /* the update function reads our entry 
-       * as const, so these casts are safe */
-      entry.label     = (char*)content_label;
-      entry.core_path = (char*)new_core_path;
-      entry.core_name = core_display_name;
+   /* the update function reads our entry 
+    * as const, so these casts are safe */
+   entry.core_path = (char*)resolved_core_path;
+   entry.core_name = core_display_name;
 
-      command_playlist_update_write(
-            NULL,
-            menu->scratchpad.unsigned_var,
-            &entry);
-   }
+   command_playlist_update_write(
+         NULL,
+         menu->scratchpad.unsigned_var,
+         &entry);
+
+   /* Provide visual feedback */
+   strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+   strlcat(msg, core_display_name, sizeof(msg));
+   runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
@@ -3276,27 +3466,37 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
+   bool resume          = true;
+
+   if (settings)
+      resume = settings->bools.menu_savestate_resume;
+
    if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
-   /* TODO/FIXME: Make this a user-configurable option */
-#if defined(HAVE_THREADS)
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-#else
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
    return 0;
-#endif
 }
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
+   bool resume          = true;
+
+   if (settings)
+      resume = settings->bools.menu_savestate_resume;
+
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
-   /* TODO/FIXME: Make this a user-configurable option */
-#if defined(HAVE_THREADS)
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-#else
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
    return 0;
-#endif
 }
 
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
@@ -3537,6 +3737,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             static char shaderdir[PATH_MAX_LENGTH]       = {0};
             const char *dirname                          = NULL;
@@ -3558,6 +3759,7 @@ void cb_generic_download(retro_task_t *task,
 
             dir_path = shaderdir;
          }
+#endif
          break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
@@ -3803,9 +4005,11 @@ default_action_ok_download(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DO
 default_action_ok_download(action_ok_update_assets, MENU_ENUM_LABEL_CB_UPDATE_ASSETS)
 default_action_ok_download(action_ok_update_core_info_files, MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES)
 default_action_ok_download(action_ok_update_overlays, MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_download(action_ok_update_shaders_cg, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
 default_action_ok_download(action_ok_update_shaders_glsl, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
 default_action_ok_download(action_ok_update_shaders_slang, MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
+#endif
 default_action_ok_download(action_ok_update_databases, MENU_ENUM_LABEL_CB_UPDATE_DATABASES)
 default_action_ok_download(action_ok_update_cheats, MENU_ENUM_LABEL_CB_UPDATE_CHEATS)
 default_action_ok_download(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES)
@@ -3828,14 +4032,9 @@ static int action_ok_option_create(const char *path,
       return 0;
    }
 
-   conf = config_file_new(game_path);
-
-   if (!conf)
-   {
-      conf = config_file_new(NULL);
-      if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(game_path)))
+      if (!(conf = config_file_new_alloc()))
          return false;
-   }
 
    if (config_file_write(conf, game_path, true))
    {
@@ -3870,8 +4069,23 @@ default_action_ok_cmd_func(action_ok_resume_content,           CMD_EVENT_RESUME)
 default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
+#endif
 default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
+
+static int action_ok_set_core_association(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu                 = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   return generic_action_ok_displaylist_push(path, NULL,
+         NULL, 0, menu->rpl_entry_selection_ptr, entry_idx,
+         ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+}
 
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4236,9 +4450,12 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
 default_action_ok_func(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
 default_action_ok_func(action_ok_goto_favorites, ACTION_OK_DL_FAVORITES_LIST)
 default_action_ok_func(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
+default_action_ok_func(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
 default_action_ok_func(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 default_action_ok_func(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_func(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
+#endif
 default_action_ok_func(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
@@ -4277,7 +4494,9 @@ default_action_ok_func(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS
 default_action_ok_func(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
 default_action_ok_func(action_ok_midi_list, ACTION_OK_DL_MIDI_SETTINGS_LIST)
 default_action_ok_func(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
+#ifdef HAVE_AUDIOMIXER
 default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
+#endif
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_sideload_core_list, ACTION_OK_DL_SIDELOAD_CORE_LIST)
@@ -4290,7 +4509,9 @@ default_action_ok_func(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD
 default_action_ok_func(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 default_action_ok_func(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFILE)
 default_action_ok_func(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_func(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
+#endif
 default_action_ok_func(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
 default_action_ok_func(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP_PLUGIN)
 default_action_ok_func(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
@@ -4303,16 +4524,22 @@ default_action_ok_func(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SE
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
+#ifdef HAVE_AUDIOMIXER
 default_action_ok_func(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
+#endif
 default_action_ok_func(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_playlist_manager_list, ACTION_OK_DL_PLAYLIST_MANAGER_LIST)
+default_action_ok_func(action_ok_push_playlist_manager_settings, ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS)
 default_action_ok_func(action_ok_push_input_hotkey_binds_list, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST)
 default_action_ok_func(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
+default_action_ok_func(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
+default_action_ok_func(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 default_action_ok_func(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
@@ -4350,6 +4577,7 @@ static int action_ok_open_picker(const char *path,
    return ret;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4362,6 +4590,7 @@ static int action_ok_shader_pass(const char *path,
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PASS);
 }
+#endif
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5065,6 +5294,71 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_info_list_t *core_info_list = NULL;
+   playlist_t *playlist             = playlist_get_cached();
+   const char* core_name            = path;
+
+   (void)label;
+   (void)type;
+   (void)idx;
+   (void)entry_idx;
+
+   /* Get core list */
+   core_info_get_list(&core_info_list);
+
+   if (!core_info_list || !playlist)
+      return -1;
+
+   /* Handle N/A or empty path input */
+   if (string_is_empty(core_name) ||
+       string_is_equal(core_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+   {
+      playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+      playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+   }
+   else
+   {
+      core_info_t *core_info = NULL;
+      bool found             = false;
+      size_t i;
+
+      /* Loop through cores until we find a match */
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info = NULL;
+         core_info = core_info_get(core_info_list, i);
+
+         if (core_info)
+         {
+            if (string_is_equal(core_name, core_info->display_name))
+            {
+               /* Update playlist */
+               playlist_set_default_core_path(playlist, core_info->path);
+               playlist_set_default_core_name(playlist, core_info->display_name);
+
+               found = true;
+               break;
+            }
+         }
+      }
+
+      /* Fallback... */
+      if (!found)
+      {
+         playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+         playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+      }
+   }
+
+   /* In all cases, update file on disk */
+   playlist_write_file(playlist);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5243,6 +5537,16 @@ static int action_ok_video_resolution(const char *path,
    return 0;
 }
 
+static int action_ok_playlist_default_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
+   return 0;
+}
+
 static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5291,7 +5595,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
    }
 
    menu_input_dialog_end();
-   rarch_menu_running_finished();
+   retroarch_menu_running_finished(false);
 }
 #endif
 
@@ -5412,6 +5716,25 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
 }
 #endif
 
+static int action_ok_playlist_reset_cores(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist      = playlist_get_cached();
+   const char *playlist_path = NULL;
+
+   if (!playlist)
+      return -1;
+
+   playlist_path = playlist_get_conf_path(playlist);
+
+   if (string_is_empty(playlist_path))
+      return -1;
+
+   task_push_pl_manager_reset_cores(playlist_path);
+
+   return 0;
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -5526,16 +5849,24 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_audio_run);
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection_and_play);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
+#endif
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_play);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
@@ -5610,6 +5941,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
             break;
+         case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
+            BIND_ACTION_OK(cbs, action_ok_set_core_association);
+            break;
          case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
             BIND_ACTION_OK(cbs, action_ok_reset_core_association);
             break;
@@ -5671,10 +6005,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_help_load_content);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
@@ -5722,7 +6060,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+#endif
             break;
          case MENU_ENUM_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
@@ -5743,7 +6083,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_audio_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_OK(cbs, action_ok_push_audio_mixer_settings_list);
+#endif
             break;
          case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_latency_settings_list);
@@ -5756,6 +6098,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_list);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_settings);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
+            BIND_ACTION_OK(cbs, action_ok_playlist_reset_cores);
             break;
          case MENU_ENUM_LABEL_RECORDING_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_recording_settings_list);
@@ -5772,11 +6123,18 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACCOUNTS_TWITCH:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_twitch_list);
             break;
+         case MENU_ENUM_LABEL_DUMP_DISC:
+            BIND_ACTION_OK(cbs, action_ok_push_dump_disc_list);
+            break;
+         case MENU_ENUM_LABEL_LOAD_DISC:
+            BIND_ACTION_OK(cbs, action_ok_push_load_disc_list);
+            break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTIONS:
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INFORMATION:
+         case MENU_ENUM_LABEL_DISC_INFORMATION:
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
          case MENU_ENUM_LABEL_NETWORK_INFORMATION:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
@@ -5839,22 +6197,32 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
@@ -5993,6 +6361,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
+            break;
          case MENU_ENUM_LABEL_UPDATE_ASSETS:
             BIND_ACTION_OK(cbs, action_ok_update_assets);
             break;
@@ -6006,13 +6377,19 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_update_databases);
             break;
          case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_glsl);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_cg);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_update_shaders_slang);
+#endif
             break;
          case MENU_ENUM_LABEL_UPDATE_CHEATS:
             BIND_ACTION_OK(cbs, action_ok_update_cheats);
@@ -6060,10 +6437,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
+#endif
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset);
+#endif
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
@@ -6093,7 +6474,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+#endif
             break;
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
@@ -6111,13 +6494,17 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
             break;
          case MENU_LABEL_SHADER_APPLY_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+#endif
             break;
          case MENU_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+#endif
             break;
          case MENU_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
@@ -6140,6 +6527,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
             break;
+         case MENU_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
+            break;
          default:
             return -1;
       }
@@ -6151,11 +6541,24 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
-   if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
+   if (type == MENU_SET_CDROM_LIST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
+   }
+   else if (type == MENU_SET_CDROM_INFO)
+   {
+      BIND_ACTION_OK(cbs, action_ok_cdrom_info_list);
+   }
+   else if (type == MENU_SET_LOAD_CDROM_LIST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_load_cdrom);
+   }
+   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
    }
+#ifdef HAVE_AUDIOMIXER
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
    {
@@ -6186,6 +6589,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_mixer_stream_actions);
    }
+#endif
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -6200,10 +6604,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
-   }
-   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
-   {
-      return -1;
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
@@ -6248,6 +6648,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_default_core);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
@@ -6311,12 +6714,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
             break;
          case FILE_TYPE_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_shader_preset_load);
+#endif
             break;
          case FILE_TYPE_SHADER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_shader_pass_load);
+#endif
             break;
          case FILE_TYPE_IMAGE:
             /* TODO/FIXME - handle scan case */

@@ -35,6 +35,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
@@ -127,7 +129,8 @@ typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
 static XInputSetState_t g_XInputSetState;
 
 /* Guide button may or may not be available */
-static bool g_xinput_guide_button_supported;
+static bool g_xinput_guide_button_supported = false;
+static unsigned g_xinput_num_buttons        = 0;
 
 typedef struct
 {
@@ -139,11 +142,15 @@ static XINPUT_VIBRATION g_xinput_rumble_states[4];
 
 static xinput_joypad_state g_xinput_states[4];
 
+static INLINE int pad_index_to_xuser_index(unsigned pad)
+{
 #ifdef HAVE_DINPUT
-#define pad_index_to_xuser_index(pad) g_xinput_pad_indexes[(pad)]
+   return g_xinput_pad_indexes[pad];
 #else
-#define pad_index_to_xuser_index(pad) ((pad) < MAX_PADS && g_xinput_states[(pad)].connected ? (pad) : -1)
+   return pad < DEFAULT_MAX_PADS 
+      && g_xinput_states[pad].connected ? pad : -1;
 #endif
+}
 
 /* Generic "XInput" instead of "Xbox 360", because there are
  * some other non-xbox third party PC controllers.
@@ -223,7 +230,7 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    if (!g_xinput_dll)
       if (!load_xinput_dll())
-         return false;
+         goto error;
 
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
@@ -258,7 +265,7 @@ static bool xinput_joypad_init(void *data)
          dylib_close(g_xinput_dll);
 #endif
          /* DLL was loaded but did not contain the correct function. */
-         return false; 
+         goto error;
       }
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
@@ -275,7 +282,7 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif
-      return false; /* DLL was loaded but did not contain the correct function. */
+      goto error; /* DLL was loaded but did not contain the correct function. */
    }
 
    /* Zero out the states. */
@@ -295,9 +302,9 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
 #ifdef __WINRT__
-      return true;
+      goto succeeded;
 #else
-      return false;
+      goto error;
 #endif
 
    RARCH_LOG("[XInput]: Pads connected: %d\n",
@@ -314,7 +321,7 @@ static bool xinput_joypad_init(void *data)
    if (!dinput_joypad.init(data))
    {
       g_xinput_block_pads = false;
-      return false;
+      goto error;
    }
 #endif
 
@@ -339,18 +346,27 @@ static bool xinput_joypad_init(void *data)
                   vid, pid, dinput_index, xinput_joypad_name(j), j);
 #endif
 
-         if (!input_autoconfigure_connect(
+         input_autoconfigure_connect(
                xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
                j,
                vid,
-               pid))
-            input_config_set_device_name(j, xinput_joypad_name(j));
+               pid);
       }
    }
 
+#ifdef __WINRT__
+succeeded:
+#endif
+   /* non-hat button. */
+   g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
    return true;
+
+error:
+   /* non-hat button. */
+   g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
+   return false;
 }
 
 static bool xinput_joypad_query_pad(unsigned pad)
@@ -408,7 +424,6 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word    = 0;
-   unsigned num_buttons = 0;
    unsigned hat_dir     = 0;
    int xuser            = pad_index_to_xuser_index(port_num);
 
@@ -440,16 +455,13 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false; /* hat requested and no hat button down. */
    }
 
-   /* non-hat button. */
-   num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-
-   if (joykey < num_buttons)
+   if (joykey < g_xinput_num_buttons)
       return btn_word & button_index_to_bitmap_code[joykey];
 
    return false;
 }
 
-static int16_t xinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
+static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 {
    int xuser;
    int16_t val         = 0;
@@ -508,12 +520,13 @@ static int16_t xinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      return 0;
+      val = 0;
    else if (is_pos && val < 0)
-      return 0;
+      val = 0;
+
    /* Clamp to avoid overflow error. */
-   else if (val == -32768)
-      return -32767;
+   if (val == -32768)
+      val = -32767;
 
    return val;
 }
@@ -549,7 +562,9 @@ static void xinput_joypad_poll(void)
             return;
          }
          else
+         {
             g_xinput_states[i].connected = new_connected;
+         }
       }
 #endif
    }

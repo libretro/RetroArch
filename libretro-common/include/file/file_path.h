@@ -376,8 +376,7 @@ void fill_pathname_join_special_ext(char *out_path,
       const char *last, const char *ext,
       size_t size);
 
-void fill_pathname_join_concat_noext(
-      char *out_path,
+void fill_pathname_join_concat_noext(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size);

@@ -49,7 +49,9 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 #include "widgets/menu_dialog.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
 
 #include "../config.def.h"
 #include "../content.h"
@@ -152,7 +154,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    &menu_display_ctx_wiiu,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
    &menu_display_ctx_gdi,
+#endif
 #endif
 #ifdef DJGPP
    &menu_display_ctx_vga,
@@ -1878,7 +1882,9 @@ static bool menu_init(menu_handle_t *menu_data)
 #endif
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 
    menu_disp_ca.allocated    =  0;
 
@@ -2331,6 +2337,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
+         menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;
          break;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
@@ -2411,7 +2418,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return true;
 
          playlist_free_cached();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
+#endif
 
          if (menu_driver_data)
          {

@@ -66,7 +66,6 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../common/linux_common.h"
@@ -217,7 +216,8 @@ static void udev_input_kb_free(void)
 #endif
 }
 
-static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port)
+static udev_input_mouse_t *udev_get_mouse(
+      struct udev_input *udev, unsigned port)
 {
    unsigned i;
    unsigned mouse_index      = 0;
@@ -654,13 +654,52 @@ end:
 #ifdef HAVE_X11
 static void udev_input_get_pointer_position(int *x, int *y)
 {
-   Window w;
-   int p;
-   unsigned m;
-   Display *display = (Display*)video_driver_display_get();
-   Window window    = (Window)video_driver_window_get();
+   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
+   {
+      Window w;
+      int p;
+      unsigned m;
+      Display *display = (Display*)video_driver_display_get();
+      Window window    = (Window)video_driver_window_get();
 
-   XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+      XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+   }
+}
+
+static void udev_input_adopt_rel_pointer_position_from_mouse(
+      int *x, int *y, udev_input_mouse_t *mouse)
+{
+   static int noX11DispX = 0;
+   static int noX11DispY = 0;
+
+   struct video_viewport view;
+   bool r = video_driver_get_viewport_info(&view);
+   int dx = udev_mouse_get_x(mouse);
+   int dy = udev_mouse_get_y(mouse);
+   if (r && (dx || dy) && 
+         video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      int minX = view.x;
+      int maxX = view.x + view.width;
+      int minY = view.y;
+      int maxY = view.y + view.height;
+
+      /* Not running in a window. */
+      noX11DispX = noX11DispX + dx;
+      if (noX11DispX < minX)
+         noX11DispX = minX;
+      if (noX11DispX > maxX)
+         noX11DispX = maxX;
+      noX11DispY = noX11DispY + dy;
+      if (noX11DispY < minY)
+         noX11DispY = minY;
+      if (noX11DispY > maxY)
+         noX11DispY = maxY;
+      *x = noX11DispX;
+      *y = noX11DispY;
+   }
+   mouse->x_rel = 0;
+   mouse->y_rel = 0;
 }
 #endif
 
@@ -687,8 +726,7 @@ static void udev_input_poll(void *data)
    udev_input_t *udev        = (udev_input_t*)data;
 
 #ifdef HAVE_X11
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-      udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
+   udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
 #endif
 
    for (i = 0; i < udev->num_devices; ++i)
@@ -697,9 +735,13 @@ static void udev_input_poll(void *data)
          continue;
 
       mouse = &udev->devices[i]->mouse;
-
+#ifdef HAVE_X11
+      udev_input_adopt_rel_pointer_position_from_mouse(
+            &udev->pointer_x, &udev->pointer_y, mouse);
+#else
       mouse->x_rel = 0;
       mouse->y_rel = 0;
+#endif
       mouse->wu    = false;
       mouse->wd    = false;
       mouse->whu   = false;
@@ -759,7 +801,6 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
           udev->pointer_x >= view.x + view.width ||
           udev->pointer_y < view.y ||
           udev->pointer_y >= view.y + view.height;
-
    return r;
 #else
    return false;
@@ -903,14 +944,14 @@ static bool udev_is_pressed(udev_input_t *udev,
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
          ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
       if (udev_mouse_button_pressed(udev, port, bind->mbutton))
          return true;
-      if (joykey != NO_BTN && udev->joypad->button(joypad_info.joy_idx, joykey))
+      if ((uint16_t)joykey != NO_BTN && udev->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
          return true;
       if (((float)abs(udev->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
@@ -967,7 +1008,6 @@ static int16_t udev_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    udev_input_t *udev         = (udev_input_t*)data;
 
    switch (device)
@@ -976,26 +1016,34 @@ static int16_t udev_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (udev_is_pressed(
                         udev, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = udev_is_pressed(udev, joypad_info, binds[port], port, id);
+               if (udev_is_pressed(udev, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = udev_analog_pressed(binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(udev->joypad,
-                  joypad_info, port, idx, id, binds[port]);
-         return ret;
-
+         {
+            int16_t ret = udev_analog_pressed(binds[port], idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(udev->joypad,
+                        joypad_info, port, idx, id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
 

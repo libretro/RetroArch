@@ -37,7 +37,9 @@ static int action_info_default(unsigned type, const char *label)
    menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
+#ifdef HAVE_AUDIOMIXER
    settings_t *settings         = config_get_ptr();
+#endif
 
    menu_displaylist_info_init(&info);
 
@@ -50,8 +52,10 @@ static int action_info_default(unsigned type, const char *label)
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       goto error;
 
+#ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_notice)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+#endif
 
    if (!menu_displaylist_process(&info))
       goto error;

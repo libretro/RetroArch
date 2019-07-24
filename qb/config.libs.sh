@@ -137,6 +137,12 @@ check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
+if [ "$OS" = 'Linux' ]; then
+   check_header CDROM sys/ioctl.h scsi/sg.h
+fi
+
+check_platform 'Linux Win32' CDROM 'CD-ROM is' user
+
 if [ "$OS" = 'Win32' ]; then
    HAVE_DYLIB=yes
 else
@@ -203,6 +209,8 @@ fi
 
 check_platform Linux TINYALSA 'Tinyalsa is' true
 check_platform Linux RPILED 'The RPI led driver is' true
+
+check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
@@ -292,34 +300,28 @@ if [ "$HAVE_SSL" != 'no' ]; then
 fi
 
 check_enabled THREADS LIBUSB libusb 'Threads are' false
+check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
-if [ "$OS" = 'Win32' ]; then
-   check_lib '' DINPUT -ldinput8
-   check_lib '' D3D8 -ld3d8
-   check_lib '' D3D9 -ld3d9
-   check_lib '' DSOUND -ldsound
+check_lib '' DINPUT -ldinput8
+check_lib '' D3D8 -ld3d8
+check_lib '' D3D9 -ld3d9
+check_lib '' DSOUND -ldsound
 
-   if [ "$HAVE_D3DX" != 'no' ]; then
-      check_lib '' D3DX8 -ld3dx8
-      check_lib '' D3DX9 -ld3dx9
-   fi
+check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-   if [ "$HAVE_DINPUT" != 'no' ]; then
-      HAVE_XINPUT=yes
-   fi
-
-   HAVE_WASAPI=yes
-   HAVE_XAUDIO=yes
-   HAVE_WINMM=yes
+if [ "$HAVE_D3DX" != 'no' ]; then
+   check_lib '' D3DX8 -ld3dx8
+   check_lib '' D3DX9 -ld3dx9
 fi
 
-check_platform Win32 D3D8 'Direct3D 8 is' true
-check_platform Win32 D3D9 'Direct3D 9 is' true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
 check_platform Win32 D3DX 'Direct3DX is' true
+check_platform Win32 WASAPI 'WASAPI is' true
+check_platform Win32 XAUDIO 'XAudio is' true
+check_platform Win32 WINMM 'WinMM is' true
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
@@ -363,6 +365,9 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    die : 'Notice: OpenGLES2 is enabled. Disabling the OpenGL core driver.'
    HAVE_OPENGL_CORE='no'
 fi
+
+check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
+   'OpenGL and OpenGLES are' false
 
 check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
@@ -484,10 +489,16 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
-check_pkgconf PYTHON 'python3 python3 python-3.7 python-3.6 python-3.5 python-3.4 python-3.3 python-3.2'
-
 if [ "$HAVE_MENU" != 'no' ]; then
-   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ]      && 
+      [ "$HAVE_OPENGL1" = 'no' ]     &&
+      [ "$HAVE_OPENGLES" = 'no' ]    && 
+      [ "$HAVE_OPENGL_CORE" = 'no' ] &&
+      [ "$HAVE_VULKAN" = 'no' ]      && 
+      [ "$HAVE_D3D10" = 'no' ]       && 
+      [ "$HAVE_D3D11" = 'no' ]       && 
+      [ "$HAVE_D3D12" = 'no' ]       && 
+      [ "$HAVE_METAL" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
@@ -505,6 +516,32 @@ if [ "$HAVE_MENU" != 'no' ]; then
       die : 'Notice: Hardware rendering context not available.'
    fi
 fi
+
+check_enabled CXX SLANG slang 'The C++ compiler is' false
+check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
+check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
+
+check_enabled SLANG GLSLANG glslang 'slang is' false
+check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
+check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
+check_enabled SLANG VULKAN vulkan 'slang is' false
+check_enabled SLANG METAL metal 'slang is' false
+
+check_enabled GLSLANG SLANG slang 'glslang is' false
+check_enabled GLSLANG SPIRV_CROSS SPIRV-Cross 'glslang is' false
+check_enabled GLSLANG OPENGL_CORE 'OpenGL core' 'glslang is' false
+check_enabled GLSLANG VULKAN vulkan 'glslang is' false
+check_enabled GLSLANG METAL metal 'glslang is' false
+
+check_enabled SPIRV_CROSS SLANG slang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS GLSLANG glslang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS VULKAN vulkan 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS METAL metal 'SPIRV-Cross is' false
+
+check_enabled 'OPENGL_CORE METAL VULKAN' SLANG slang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' GLSLANG glslang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' SPIRV_CROSS SPIRV-Cross '' user
 
 check_macro NEON __ARM_NEON__
 

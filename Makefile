@@ -1,5 +1,4 @@
 HAVE_FILE_LOGGER=1
-HAVE_CC_RESAMPLER=1
 NEED_CXX_LINKER=0
 MISSING_DECLS   =0
 
@@ -192,6 +191,8 @@ config.mk: configure qb/*
 	@exit 1
 endif
 endif
+
+SYMBOL_MAP := -Wl,-Map=output.map
 
 retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)

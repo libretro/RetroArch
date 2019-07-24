@@ -200,70 +200,11 @@ typedef struct
     struct overlay *active;
 } overlay_task_data_t;
 
-/**
- * input_overlay_free:
- *
- * Frees overlay handle.
- **/
-void input_overlay_free(input_overlay_t *ol);
-
 void input_overlay_free_overlay(struct overlay *overlay);
-
-/**
- * input_overlay_init
- *
- * Initializes the overlay system.
- */
-void input_overlay_init(void);
-/**
- * input_overlay_set_alpha_mod:
- * @mod                   : New modulating factor to apply.
- *
- * Sets a modulating factor for alpha channel. Default is 1.0.
- * The alpha factor is applied for all overlays.
- **/
-void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
-
-/**
- * input_overlay_set_scale_factor:
- * @scale                 : Factor of scale to apply.
- *
- * Scales the overlay by a factor of scale.
- **/
-void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
-
-/**
- * input_overlay_next:
- *
- * Switch to the next available overlay
- * screen.
- **/
-void input_overlay_next(input_overlay_t *ol, float opacity);
-
-/*
- * input_poll_overlay:
- * @ol : pointer to overlay
- *
- * Poll pressed buttons/keys on currently active overlay.
- **/
-void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad_mode,
-      float axis_threshold);
-
-void input_state_overlay(input_overlay_t *ol,
-      int16_t *ret, unsigned port, unsigned device, unsigned idx,
-      unsigned id);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
-bool input_overlay_is_alive(input_overlay_t *ol);
-
-void input_overlay_loaded(retro_task_t *task,
-      void *task_data, void *user_data, const char *err);
-
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
-
-/* FIXME - temporary. Globals are bad */
-extern input_overlay_t *overlay_ptr;
 
 RETRO_END_DECLS
 

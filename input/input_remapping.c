@@ -20,7 +20,6 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "input_driver.h"
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"
@@ -166,12 +165,9 @@ bool input_remapping_save_file(const char *path)
 
    free(buf);
 
-   conf = config_file_new(remap_file);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
-      conf = config_file_new(NULL);
-      if (!conf)
+      if (!(conf = config_file_new_alloc()))
       {
          free(remap_file);
          return false;

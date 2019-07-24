@@ -36,6 +36,10 @@
 #include "../config.h"
 #endif
 
+#ifdef HAVE_CDROM
+#include <vfs/vfs_implementation_cdrom.h>
+#endif
+
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 
@@ -61,7 +65,9 @@
 #include "menu_driver.h"
 #include "menu_animation.h"
 #include "menu_input.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_input_bind_dialog.h"
 
@@ -74,7 +80,6 @@
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../wifi/wifi_driver.h"
-#include "../input/input_driver.h"
 #include "../midi/midi_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
@@ -3691,6 +3696,7 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
@@ -3736,6 +3742,7 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
          break;
    }
 }
+#endif
 #endif
 
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
@@ -4162,10 +4169,10 @@ static int setting_uint_action_left_custom_viewport_height(
    return 0;
 }
 
+#if !defined(RARCH_CONSOLE)
 static int setting_string_action_left_audio_device(
       rarch_setting_t *setting, bool wraparound)
 {
-#if !defined(RARCH_CONSOLE)
    int audio_device_index;
    struct string_list *ptr  = NULL;
 
@@ -4185,10 +4192,10 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
-#endif
 
    return 0;
 }
+#endif
 
 static int setting_string_action_left_driver(rarch_setting_t *setting,
       bool wraparound)
@@ -5683,6 +5690,7 @@ void general_write_handler(rarch_setting_t *setting)
    switch (setting->enum_idx)
    {
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             if (*setting->value.target.boolean)
             {
@@ -5704,6 +5712,8 @@ void general_write_handler(rarch_setting_t *setting)
                settings->bools.video_shader_enable = false;
             }
          }
+         /* TODO/FIXME - fallthrough here intentional? */
+#endif
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)
@@ -5713,7 +5723,7 @@ void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         core_set_poll_type((unsigned int*)setting->value.target.integer);
+         core_set_poll_type(*setting->value.target.integer);
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
@@ -5867,7 +5877,9 @@ void general_write_handler(rarch_setting_t *setting)
          audio_set_float(AUDIO_ACTION_VOLUME_GAIN, *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+#ifdef HAVE_AUDIOMIXER
          audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
+#endif
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
@@ -5926,12 +5938,15 @@ void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
+#ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
             audio_driver_load_menu_sounds();
          else
             audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
          break;
       case MENU_ENUM_LABEL_MENU_SOUND_BGM:
+#ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
          {
             if (settings->bools.audio_enable_menu_bgm)
@@ -5939,6 +5954,7 @@ void general_write_handler(rarch_setting_t *setting)
             else
                audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
          }
+#endif
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
@@ -6649,6 +6665,38 @@ static bool setting_append_list(
                   parent_group);
          }
 
+#ifdef HAVE_CDROM
+         /* TODO/FIXME - add check seeing if CDROM is inserted into tray
+          */
+         {
+            struct string_list *drive_list = cdrom_get_available_drives();
+
+            if (drive_list)
+            {
+               if (drive_list->size)
+               {
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_LOAD_DISC,
+                        MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+
+                  CONFIG_ACTION(
+                        list, list_info,
+                        MENU_ENUM_LABEL_DUMP_DISC,
+                        MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+               }
+
+               string_list_free(drive_list);
+            }
+         }
+#endif
+
          if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_ACTION(
@@ -6896,6 +6944,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
@@ -6904,7 +6953,9 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_MENU_SOUNDS,
@@ -6912,6 +6963,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -7503,7 +7555,7 @@ static bool setting_append_list(
                   &settings->uints.libretro_log_level,
                   MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
                   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-                  libretro_log_level,
+                  DEFAULT_LIBRETRO_LOG_LEVEL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -7521,7 +7573,7 @@ static bool setting_append_list(
                   &settings->bools.log_to_file,
                   MENU_ENUM_LABEL_LOG_TO_FILE,
                   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-                  default_log_to_file,
+                  DEFAULT_LOG_TO_FILE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -7536,7 +7588,7 @@ static bool setting_append_list(
                   &settings->bools.log_to_file_timestamp,
                   MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP,
                   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-                  log_to_file_timestamp,
+                  DEFAULT_LOG_TO_FILE_TIMESTAMP,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8501,7 +8553,7 @@ static bool setting_append_list(
                   &settings->floats.video_refresh_rate,
                   MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
                   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-                  refresh_rate,
+                  DEFAULT_REFRESH_RATE,
                   "%.3f Hz",
                   &group_info,
                   &subgroup_info,
@@ -8516,7 +8568,7 @@ static bool setting_append_list(
                   &settings->floats.video_refresh_rate,
                   MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
                   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-                  refresh_rate,
+                  DEFAULT_REFRESH_RATE,
                   "%.3f Hz",
                   &group_info,
                   &subgroup_info,
@@ -9387,6 +9439,7 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_BOOL(
                list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE),
@@ -9402,6 +9455,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_LAKKA_ADVANCED
                );
+#endif
 
          CONFIG_FLOAT(
                list, list_info,
@@ -9418,6 +9472,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
 
+#ifdef HAVE_AUDIOMIXER
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.audio_mixer_volume,
@@ -9433,6 +9488,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -9892,7 +9948,7 @@ static bool setting_append_list(
                   &settings->bools.input_menu_swap_ok_cancel_buttons,
                   MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
                   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-                  menu_swap_ok_cancel_buttons,
+                  DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -11068,6 +11124,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.menu_savestate_resume,
+               MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,
+               MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+               menu_savestate_resume,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.menu_mouse_enable,
                MENU_ENUM_LABEL_MOUSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -11543,7 +11615,7 @@ static bool setting_append_list(
                   &settings->bools.menu_dpi_override_enable,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-                  menu_dpi_override_enable,
+                  DEFAULT_MENU_DPI_OVERRIDE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -11558,7 +11630,7 @@ static bool setting_append_list(
                   &settings->uints.menu_dpi_override_value,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
                   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-                  menu_dpi_override_value,
+                  DEFAULT_MENU_DPI_OVERRIDE_VALUE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -11716,6 +11788,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_SHADERPIPELINE
             if (video_shader_any_supported())
             {
@@ -11736,6 +11809,7 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
+#endif
 #endif
 
             CONFIG_UINT(
@@ -11803,6 +11877,38 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+#ifdef HAVE_CDROM
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_load_disc,
+                  MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+                  menu_show_load_disc,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_dump_disc,
+                  MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+                  menu_show_dump_disc,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
 
             CONFIG_BOOL(
                   list, list_info,
@@ -12876,6 +12982,21 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.quick_menu_show_set_core_association,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+               quick_menu_show_set_core_association,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.quick_menu_show_reset_core_association,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -12966,6 +13087,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          if (video_shader_any_supported())
          {
             CONFIG_BOOL(
@@ -12983,6 +13105,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -13046,53 +13169,51 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 #endif
 
-         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_companion_enable,
-                  MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-                  ui_companion_enable,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_enable,
+               MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+               ui_companion_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_companion_start_on_boot,
-                  MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
-                  MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-                  ui_companion_start_on_boot,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_start_on_boot,
+               MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+               ui_companion_start_on_boot,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.ui_menubar_enable,
-                  MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-                  true,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-         }
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_menubar_enable,
+               MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+               DEFAULT_UI_MENUBAR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
 #ifdef HAVE_QT
          CONFIG_BOOL(
                list, list_info,
@@ -13124,6 +13245,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 #endif
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -14433,6 +14555,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          CONFIG_DIR(
                list, list_info,
                settings->paths.directory_video_shader,
@@ -14447,6 +14570,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+#endif
 
          if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {

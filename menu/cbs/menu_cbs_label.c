@@ -15,11 +15,12 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../../file_path_special.h"
-#include "../managers/cheat_manager.h"
+#include "../../managers/cheat_manager.h"
 
 #ifndef BIND_ACTION_LABEL
 #define BIND_ACTION_LABEL(cbs, name) \
@@ -55,7 +56,8 @@ static int action_bind_label_playlist_collection_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+   if (string_is_equal_noncase(path_get_extension(path),
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
    {
       char path_base[PATH_MAX_LENGTH];
       path_base[0] = '\0';
@@ -91,6 +93,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
+            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
          case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:

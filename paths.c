@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2019 - Daniel De Matteis
  *  Copyright (C) 2017-2019 - Andrés Suárez
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -820,7 +821,7 @@ bool dir_init_shader(void)
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
-      command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
+      dir_free_shader();
       return false;
    }
 

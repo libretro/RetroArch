@@ -17,6 +17,7 @@
 #include <string/stdstring.h>
 
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
 #include "../../verbosity.h"
 
 #include "d3d_common.h"

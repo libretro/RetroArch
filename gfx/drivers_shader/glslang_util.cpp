@@ -21,6 +21,7 @@
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>

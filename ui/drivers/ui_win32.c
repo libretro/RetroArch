@@ -64,7 +64,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->hInstance     = GetModuleHandle(NULL);
    wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
+   wndclass->lpszClassName = (class_name != NULL) ? class_name : msg_hash_to_str(MSG_PROGRAM);
    wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
    wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
@@ -290,14 +290,6 @@ static void *ui_companion_win32_init(void)
    return handle;
 }
 
-static int ui_companion_win32_iterate(void *data, unsigned action)
-{
-   (void)data;
-   (void)action;
-
-   return 0;
-}
-
 static void ui_companion_win32_notify_content_loaded(void *data)
 {
    (void)data;
@@ -327,7 +319,6 @@ static void ui_companion_win32_notify_list_pushed(void *data,
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
-   ui_companion_win32_iterate,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,

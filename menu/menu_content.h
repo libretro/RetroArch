@@ -34,9 +34,6 @@ typedef struct menu_content_ctx_defer_info
    size_t len;
 } menu_content_ctx_defer_info_t;
 
-bool menu_content_playlist_find_associated_core(const char *path,
-      char *s, size_t len);
-
 RETRO_END_DECLS
 
 #endif

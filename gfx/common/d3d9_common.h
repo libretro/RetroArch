@@ -53,7 +53,6 @@ typedef struct d3d9_renderchain_driver
          bool smooth);
    bool (*render)(d3d9_video_t *d3d,
          const video_frame_info_t *video_info,
-         state_tracker_t *tracker,
          const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    const char *ident;
@@ -82,7 +81,6 @@ typedef struct d3d9_video
    math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
 
-   state_tracker_t *state_tracker;
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
