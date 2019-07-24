@@ -1,6 +1,6 @@
 #include <math.h>
-#include "vita2d.h"
-#include "shared.h"
+#include "../include/vita2d.h"
+#include "../include/shared.h"
 
 void vita2d_draw_pixel(float x, float y, unsigned int color)
 {

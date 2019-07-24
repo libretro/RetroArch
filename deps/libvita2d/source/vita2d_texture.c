@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "vita2d.h"
-#include "utils.h"
-#include "shared.h"
+#include "../include/vita2d.h"
+#include "../include/utils.h"
+#include "../include/shared.h"
 
 #define GXM_TEX_MAX_SIZE 4096
 static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW;
