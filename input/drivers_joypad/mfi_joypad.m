@@ -222,6 +222,11 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
     }
 }
 
+static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
+{
+    input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
+}
+
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
     signed desired_index = (int32_t)controller.playerIndex;
@@ -279,6 +284,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         }
 
         apple_gamecontroller_joypad_register(controller.gamepad);
+        mfi_joypad_autodetect_add(controller.playerIndex);
     }
 }
 
@@ -290,17 +296,15 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
         return;
 
     mfi_controllers[pad] = 0;
-    [mfiControllers removeObject:controller];
-}
-
-static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
-{
-   input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
+    if ( [mfiControllers containsObject:controller] )
+    {
+        [mfiControllers removeObject:controller];
+        input_autoconfigure_disconnect(pad, mfi_joypad.ident);
+    }
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
 {
-    mfi_joypad_autodetect_add(0);
     static bool inited = false;
     if (inited)
         return true;
