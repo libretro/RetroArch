@@ -152,31 +152,6 @@ endif
       include Makefile.common
       DEFINES += $(DEF_FLAGS)
       INCDIRS += $(INCLUDE_DIRS)
-
-      OBJ += gfx/drivers/gx2_gfx.o
-      OBJ += gfx/drivers_font/wiiu_font.o
-      OBJ += menu/drivers_display/menu_display_wiiu.o
-      OBJ += input/drivers/wiiu_input.o
-      OBJ += input/drivers_joypad/wiiu_joypad.o
-      OBJ += input/drivers_joypad/wiiu/wpad_driver.o
-      OBJ += input/drivers_joypad/wiiu/kpad_driver.o
-      OBJ += input/drivers_joypad/wiiu/pad_functions.o
-      INCDIRS += -Iinput/include
-
-      OBJ += audio/drivers/wiiu_audio.o
-      OBJ += frontend/drivers/platform_wiiu.o
-
-      ifeq ($(WIIU_HID),1)
-         DEFINES += -DWIIU_HID
-         OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
-         OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
-      endif
    endif
 endif
 

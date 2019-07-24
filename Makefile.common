@@ -913,6 +913,39 @@ ifeq ($(TARGET), retroarch_orbis)
 			  audio/drivers/psp_audio.o
 endif
 
+ifeq ($(TARGET), retroarch_vita)
+   OBJ +=  input/drivers/psp_input.o \
+			  input/drivers_joypad/psp_joypad.o \
+			  audio/drivers/psp_audio.o \
+			  frontend/drivers/platform_psp.o
+endif
+
+ifeq ($(TARGET), retroarch_wiiu)
+   OBJ +=  gfx/drivers/gx2_gfx.o \
+			  gfx/drivers_font/wiiu_font.o \
+			  menu/drivers_display/menu_display_wiiu.o \
+			  input/drivers/wiiu_input.o \
+			  input/drivers_joypad/wiiu_joypad.o \
+			  input/drivers_joypad/wiiu/wpad_driver.o \
+			  input/drivers_joypad/wiiu/kpad_driver.o \
+			  input/drivers_joypad/wiiu/pad_functions.o \
+			  audio/drivers/wiiu_audio.o \
+			  frontend/drivers/platform_wiiu.o
+
+      ifeq ($(WIIU_HID),1)
+         DEFINES += -DWIIU_HID
+			INCLUDE_DIRS += -Iinput/include
+         OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
+         OBJ += input/drivers_hid/wiiu_hid.o
+         OBJ += input/connect/joypad_connection.o \
+                input/common/hid/hid_device_driver.o \
+                input/common/hid/device_wiiu_gca.o \
+                input/common/hid/device_ds3.o \
+                input/common/hid/device_ds4.o \
+                input/common/hid/device_null.o
+      endif
+endif
+
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
       OBJ += menu/drivers_display/menu_display_switch.o \
