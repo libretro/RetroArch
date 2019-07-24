@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2019 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -23,6 +24,16 @@
 
 RETRO_BEGIN_DECLS
 
+enum rarch_dir_type
+{
+   RARCH_DIR_NONE = 0,
+   RARCH_DIR_SAVEFILE,
+   RARCH_DIR_SAVESTATE,
+   RARCH_DIR_CURRENT_SAVEFILE,
+   RARCH_DIR_CURRENT_SAVESTATE,
+   RARCH_DIR_SYSTEM
+};
+
 enum rarch_content_type
 {
    RARCH_CONTENT_NONE = 0,
@@ -45,6 +56,29 @@ enum rarch_path_type
    RARCH_PATH_BASENAME,
    RARCH_PATH_SUBSYSTEM
 };
+
+
+bool dir_init_shader(void);
+
+bool dir_free_shader(void);
+
+void dir_check_shader(bool pressed_next, bool pressed_prev);
+
+bool dir_is_empty(enum rarch_dir_type type);
+
+void dir_clear(enum rarch_dir_type type);
+
+void dir_clear_all(void);
+
+size_t dir_get_size(enum rarch_dir_type type);
+
+char *dir_get_ptr(enum rarch_dir_type type);
+
+const char *dir_get(enum rarch_dir_type type);
+
+void dir_set(enum rarch_dir_type type, const char *path);
+
+void dir_check_defaults(void);
 
 void path_deinit_subsystem(void);
 

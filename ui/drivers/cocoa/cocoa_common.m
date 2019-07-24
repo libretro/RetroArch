@@ -30,7 +30,6 @@
 #import "GCDWebUploader.h"
 #import "WebServer.h"
 
-extern UIView *g_pause_indicator_view;
 #endif
 
 #ifdef HAVE_METAL
@@ -112,7 +111,10 @@ void *glkitview_init(void);
 #elif defined(HAVE_COCOATOUCH)
    self.view = (BRIDGE GLKView*)glkitview_init();
 #if TARGET_OS_IOS
-   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
+    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
+    swipe.numberOfTouchesRequired = 4;
+    swipe.direction = UISwipeGestureRecognizerDirectionDown;
+    [self.view addGestureRecognizer:swipe];
 #endif
 #endif
 
@@ -178,6 +180,10 @@ void *glkitview_init(void);
 }
 
 #elif TARGET_OS_IOS
+-(void) showNativeMenu {
+    [[RetroArch_iOS get] toggleUI];
+}
+
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
 {
     return UIRectEdgeBottom;
@@ -217,13 +223,6 @@ void *glkitview_init(void);
     }
 }
 
-- (void)showPauseIndicator
-{
-   g_pause_indicator_view.alpha = 1.0f;
-   [NSObject cancelPreviousPerformRequestsWithTarget:g_instance];
-   [g_instance performSelector:@selector(hidePauseButton) withObject:g_instance afterDelay:3.0f];
-}
-
 - (void)viewWillLayoutSubviews
 {
    float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
@@ -247,19 +246,7 @@ void *glkitview_init(void);
    tenpctw          = width  / 10.0f;
    tenpcth          = height / 10.0f;
 
-   g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
-   [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
    [self adjustViewFrameForSafeArea];
-}
-
-#define ALMOST_INVISIBLE (.021f)
-
-- (void)hidePauseButton
-{
-   [UIView animateWithDuration:0.2
-      animations:^{ g_pause_indicator_view.alpha = ALMOST_INVISIBLE; }
-      completion:^(BOOL finished) { }
-   ];
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -294,8 +281,6 @@ void *glkitview_init(void);
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
-    /* Pause Menus. */
-    [self showPauseIndicator];
     if (@available(iOS 11.0, *)) {
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
     }

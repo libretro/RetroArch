@@ -678,6 +678,10 @@ MSG_HASH(
     "System name"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+    "Required graphics API"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
     "Controls"
     )
@@ -1612,6 +1616,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Load Content"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "Load Disc")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "Dump Disc")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "Load State"
@@ -2129,6 +2137,14 @@ MSG_HASH(
     "Pause when menu activated"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+    "Resume content after using save states"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+    "Automatically close menu and resume current content after selecting 'Save State' or 'Load State' from the Quick Menu. Disabling this can improve save state performance on very slow devices."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
     "Don't run in background"
     )
@@ -2147,6 +2163,38 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
     "Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+    "Playlist Management"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+    "Perform maintenance tasks on selected playlist (e.g. set/reset default core associations)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+    "Default Core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+    "Specify core to use when launching content via a playlist entry that does not have an existing core association."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+    "Reset Core Associations"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+    "Remove existing core associations for all playlist entries."
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+    "Resetting cores: "
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_CORES_RESET,
+    "Cores reset: "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -2509,6 +2557,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
     "Download screenshot/box art/title screen thumbnail images for current content. Updates any existing thumbnails."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
+    "Set Core Association"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -3464,7 +3516,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-    "Menubar"
+    "Menu Bar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
@@ -4326,6 +4378,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ADDED_TO_FAVORITES,
     "Added to favorites"
+    )
+MSG_HASH(
+    MSG_SET_CORE_ASSOCIATION,
+    "Core set: "
     )
 MSG_HASH(
     MSG_RESET_CORE_ASSOCIATION,
@@ -6741,6 +6797,22 @@ MSG_HASH(
     "Show/hide the 'Load Content' option."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+    "Show Load Disc"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
+    "Show/hide the 'Load Disc' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+    "Show Dump Disc"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+    "Show/hide the 'Dump Disc' option."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
     "Show Information"
     )
@@ -6862,6 +6934,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
     "Show/hide the 'Start Streaming' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Show Set Core Association"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Show/hide the 'Set Core Association' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -8879,3 +8959,27 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Animation Main Menu Opens/Closes")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
       "GPU Index")
+MSG_HASH(MSG_DUMPING_DISC,
+      "Dumping disc...")
+MSG_HASH(MSG_DRIVE_NUMBER,
+      "Drive %d")
+MSG_HASH(MSG_LOAD_CORE_FIRST,
+      "Please load a core first.")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+      "Failed to read from drive. Dump aborted.")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+      "Failed to write to disk. Dump aborted.")
+MSG_HASH(MSG_NO_DISC_INSERTED,
+      "No disc is inserted in the drive.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Disc Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "View information about inserted media discs."
+    )
+MSG_HASH(
+    MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
+    "This core is not compatible with the current video driver."
+    )

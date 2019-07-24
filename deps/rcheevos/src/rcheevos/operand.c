@@ -135,7 +135,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
     address = 0xffffffffU;
   }
 
-  self->value.memref = rc_alloc_memref_value(parse, address, size, is_bcd);
+  self->value.memref = rc_alloc_memref_value(parse, (unsigned)address, size, is_bcd);
   if (parse->offset < 0)
     return parse->offset;
 

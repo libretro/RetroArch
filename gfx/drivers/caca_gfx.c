@@ -286,7 +286,7 @@ static void caca_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {
@@ -320,7 +320,7 @@ static void caca_gfx_get_poke_interface(void *data,
    *iface = &caca_poke_interface;
 }
 
-void caca_gfx_set_viewport(void *data, unsigned viewport_width,
+static void caca_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
 }

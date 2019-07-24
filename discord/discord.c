@@ -65,8 +65,6 @@ static bool discord_ready         = false;
 static bool discord_avatar_ready  = false;
 static unsigned discord_status    = 0;
 
-struct netplay_room *room;
-
 /* The discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join
 - username ------- char[344]  - the username of the player asking to join
@@ -76,7 +74,6 @@ struct netplay_room *room;
 - partyId        - char[128] - the party you would be joining
 */
 
-static char user_id[24];
 static char user_name[344];
 static char self_party_id[128];
 static char peer_party_id[128];
@@ -206,8 +203,10 @@ static void handle_discord_join_cb(retro_task_t *task,
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
       snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
-         room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
+         room->host_method == NETPLAY_HOST_METHOD_MITM 
+         ? room->mitm_address : room->address,
+         room->host_method == NETPLAY_HOST_METHOD_MITM 
+         ? room->mitm_port : room->port);
 
       RARCH_LOG("[discord] joining lobby at: %s\n", join_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
@@ -253,6 +252,7 @@ static void handle_discord_spectate(const char* secret)
    RARCH_LOG("[discord] spectate (%s)\n", secret);
 }
 
+#ifdef HAVE_MENU
 static void handle_discord_join_response(void *ignore, const char *line)
 {
    /* To-Do: needs in-game widgets
@@ -261,10 +261,11 @@ static void handle_discord_join_response(void *ignore, const char *line)
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
-   rarch_menu_running_finished();
+   retroarch_menu_running_finished(false);
 #endif
 */
 }
+#endif
 
 static void handle_discord_join_request(const DiscordUser* request)
 {
@@ -285,7 +286,7 @@ static void handle_discord_join_request(const DiscordUser* request)
 #ifdef HAVE_MENU
    discord_download_avatar(request->userId, request->avatar);
    /* To-Do: needs in-game widgets
-      rarch_menu_running();
+      retroarch_menu_running();
       */
 
    memset(&line, 0, sizeof(line));
@@ -397,25 +398,34 @@ void discord_update(enum discord_presence presence)
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
-         room = netplay_get_host_room();
-         if (room->id == 0)
-            return;
-
-         RARCH_LOG("[discord] netplay room details: id=%d, nick=%s IP=%s port=%d\n",
-            room->id, room->nickname,
-            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
-            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
-
          {
             char join_secret[128];
+            struct netplay_room *room = netplay_get_host_room();
+            if (room->id == 0)
+               return;
 
-            snprintf(self_party_id, sizeof(self_party_id), "%d", room->id);
-            snprintf(join_secret, sizeof(join_secret), "%d|%" PRId64, room->id, cpu_features_get_time_usec());
-            discord_presence.joinSecret = strdup(join_secret);
-            /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
-            discord_presence.partyId    = strdup(self_party_id);
-            discord_presence.partyMax   = 2;
-            discord_presence.partySize  = 1;
+            RARCH_LOG("[discord] netplay room details: id=%d"
+                  ", nick=%s IP=%s port=%d\n",
+                  room->id, room->nickname,
+                  room->host_method == NETPLAY_HOST_METHOD_MITM 
+                  ? room->mitm_address : room->address,
+                  room->host_method == NETPLAY_HOST_METHOD_MITM 
+                  ? room->mitm_port : room->port);
+
+
+            snprintf(self_party_id,
+                  sizeof(self_party_id), "%d", room->id);
+            snprintf(join_secret,
+                  sizeof(join_secret), "%d|%" PRId64,
+                  room->id, cpu_features_get_time_usec());
+
+            discord_presence.joinSecret     = strdup(join_secret);
+#if 0
+            discord_presence.spectateSecret = "SPECSPECSPEC";
+#endif
+            discord_presence.partyId        = strdup(self_party_id);
+            discord_presence.partyMax       = 2;
+            discord_presence.partySize      = 1;
 
             RARCH_LOG("[discord] join secret: %s\n", join_secret);
             RARCH_LOG("[discord] party id: %s\n", self_party_id);
@@ -483,10 +493,12 @@ void discord_init(void)
    else
    {
       path_basedir(full_path);
-      snprintf(command, sizeof(command), "%s%s", full_path, get_retroarch_launch_arguments());
+      snprintf(command, sizeof(command), "%s%s",
+            full_path, get_retroarch_launch_arguments());
    }
 #else
-   snprintf(command, sizeof(command), "sh -c %s", get_retroarch_launch_arguments());
+   snprintf(command, sizeof(command), "sh -c %s",
+         get_retroarch_launch_arguments());
 #endif
    RARCH_LOG("[discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);

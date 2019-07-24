@@ -2257,7 +2257,7 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    RARCH_LOG("[TINYALSA]: Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
    RARCH_LOG("[TINYALSA]: Audio rate: %uHz.\n", config.rate);
    RARCH_LOG("[TINYALSA]: Buffer size: %u frames.\n", buffer_size);
-   RARCH_LOG("[TINYALSA]: Buffer size: %u bytes.\n", tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA]: Buffer size: %u bytes.\n", (unsigned int)tinyalsa->buffer_size);
    RARCH_LOG("[TINYALSA]: Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
    RARCH_LOG("[TINYALSA]: Latency: %ums.\n", buffer_size * 1000 / (rate * 4));
 

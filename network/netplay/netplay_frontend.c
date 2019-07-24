@@ -37,7 +37,6 @@
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
-#include "../../input/input_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
@@ -128,21 +127,20 @@ static bool netplay_can_poll(netplay_t *netplay)
 static bool get_self_input_state(netplay_t *netplay)
 {
    unsigned i;
-   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-   netplay_input_state_t istate = NULL;
+   struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
+   netplay_input_state_t istate   = NULL;
    uint32_t devices, used_devices = 0, devi, dev_type, local_device;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
       return false;
 
+   /* We've already read this frame! */
    if (ptr->have_local)
-   {
-      /* We've already read this frame! */
       return true;
-   }
 
-   devices = netplay->self_devices;
+   devices      = netplay->self_devices;
    used_devices = 0;
+
    for (devi = 0; devi < MAX_INPUT_DEVICES; devi++)
    {
       if (!(devices & (1<<devi)))
@@ -150,11 +148,15 @@ static bool get_self_input_state(netplay_t *netplay)
 
       /* Find an appropriate local device */
       dev_type = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
+
       for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
       {
-         if (used_devices & (1<<local_device)) continue;
-         if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type) break;
+         if (used_devices & (1<<local_device))
+            continue;
+         if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type)
+            break;
       }
+
       if (local_device == MAX_INPUT_DEVICES)
          local_device = 0;
       used_devices |= (1<<local_device);
@@ -171,9 +173,9 @@ static bool get_self_input_state(netplay_t *netplay)
        * input from first frame screws up when we use -F 0. */
       if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
       {
-         uint32_t *state = istate->data;
+         uint32_t *state        = istate->data;
          retro_input_state_t cb = netplay->cbs.state_cb;
-         unsigned dtype = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
+         unsigned dtype         = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
 
          switch (dtype)
          {
@@ -326,13 +328,13 @@ static bool netplay_poll(void)
    if (netplay_data->frame_run_time_avg || netplay_data->stateless_mode)
    {
       /* FIXME: Using fixed 60fps for this calculation */
-      unsigned frames_per_frame = netplay_data->frame_run_time_avg ?
-                                  (16666/netplay_data->frame_run_time_avg) :
-                                   0;
-      unsigned frames_ahead = (netplay_data->run_frame_count > netplay_data->unread_frame_count) ?
-                              (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
-                              0;
-      settings_t *settings  = config_get_ptr();
+      unsigned frames_per_frame    = netplay_data->frame_run_time_avg ?
+         (16666 / netplay_data->frame_run_time_avg) :
+         0;
+      unsigned frames_ahead        = (netplay_data->run_frame_count > netplay_data->unread_frame_count) ?
+         (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
+         0;
+      settings_t *settings         = config_get_ptr();
       int input_latency_frames_min = settings->uints.netplay_input_latency_frames_min -
             (settings->bools.run_ahead_enabled ? settings->uints.run_ahead_frames : 0);
       int input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
@@ -350,18 +352,13 @@ static bool netplay_poll(void)
          /* In stateless mode, we adjust up if we're "close" and down if we
           * have a lot of slack */
          if (netplay_data->input_latency_frames < input_latency_frames_min ||
-             (netplay_data->unread_frame_count == netplay_data->run_frame_count + 1 &&
-              netplay_data->input_latency_frames < input_latency_frames_max))
-         {
+               (netplay_data->unread_frame_count == netplay_data->run_frame_count + 1 &&
+                netplay_data->input_latency_frames < input_latency_frames_max))
             netplay_data->input_latency_frames++;
-         }
          else if (netplay_data->input_latency_frames > input_latency_frames_max ||
-                  (netplay_data->unread_frame_count > netplay_data->run_frame_count + 2 &&
-                   netplay_data->input_latency_frames > input_latency_frames_min))
-         {
+               (netplay_data->unread_frame_count > netplay_data->run_frame_count + 2 &&
+                netplay_data->input_latency_frames > input_latency_frames_min))
             netplay_data->input_latency_frames--;
-         }
-
       }
       else if (netplay_data->input_latency_frames < input_latency_frames_min ||
                (frames_per_frame < frames_ahead &&
@@ -384,20 +381,20 @@ static bool netplay_poll(void)
    switch (netplay_data->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
-      {
-         if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
-               > netplay_data->self_frame_count)
          {
-            netplay_data->stall = NETPLAY_STALL_NONE;
-            for (i = 0; i < netplay_data->connections_size; i++)
+            if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
+                  > netplay_data->self_frame_count)
             {
-               struct netplay_connection *connection = &netplay_data->connections[i];
-               if (connection->active && connection->stall)
-                  connection->stall = NETPLAY_STALL_NONE;
+               netplay_data->stall = NETPLAY_STALL_NONE;
+               for (i = 0; i < netplay_data->connections_size; i++)
+               {
+                  struct netplay_connection *connection = &netplay_data->connections[i];
+                  if (connection->active && connection->stall)
+                     connection->stall = NETPLAY_STALL_NONE;
+               }
             }
+            break;
          }
-         break;
-      }
 
       case NETPLAY_STALL_SPECTATOR_WAIT:
          if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING || netplay_data->unread_frame_count > netplay_data->self_frame_count)
@@ -410,7 +407,6 @@ static bool netplay_poll(void)
          break;
 
       case NETPLAY_STALL_SERVER_REQUESTED:
-      {
          /* See if the stall is done */
          if (netplay_data->connections[0].stall_frame == 0)
          {
@@ -419,16 +415,11 @@ static bool netplay_poll(void)
             netplay_data->stall = NETPLAY_STALL_NONE;
          }
          else
-         {
             netplay_data->connections[0].stall_frame--;
-         }
          break;
-      }
-
       case NETPLAY_STALL_NO_CONNECTION:
          /* We certainly haven't fixed this */
          break;
-
       default: /* not stalling */
          break;
    }
@@ -513,7 +504,8 @@ static bool netplay_poll(void)
                }
             }
 
-            if (fixed) {
+            if (fixed)
+            {
                /* Not stalled now :) */
                netplay_data->stall = NETPLAY_STALL_NONE;
                return true;
@@ -609,37 +601,33 @@ static int16_t netplay_input_state(netplay_t *netplay,
          return ((1 << id) & curr_input_state[0]) ? 1 : 0;
 
       case RETRO_DEVICE_ANALOG:
-      {
-         uint32_t state;
-         if (istate->size != 3)
-            return 0;
-         state = curr_input_state[1 + idx];
-         return (int16_t)(uint16_t)(state >> (id * 16));
-      }
+         {
+            uint32_t state;
+            if (istate->size != 3)
+               return 0;
+            state = curr_input_state[1 + idx];
+            return (int16_t)(uint16_t)(state >> (id * 16));
+         }
 
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
-      {
          if (istate->size != 2)
             return 0;
          if (id <= RETRO_DEVICE_ID_MOUSE_Y)
             return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
          return ((1 << id) & curr_input_state[0]) ? 1 : 0;
-      }
-
       case RETRO_DEVICE_KEYBOARD:
-      {
-         unsigned key, word, bit;
-         key = netplay_key_hton(id);
-         if (key == NETPLAY_KEY_UNKNOWN)
+         {
+            unsigned word, bit;
+            unsigned key = netplay_key_hton(id);
+            if (key == NETPLAY_KEY_UNKNOWN)
+               return 0;
+            word = key / 32;
+            bit  = key % 32;
+            if (word <= istate->size)
+               return ((1U<<bit) & curr_input_state[word]) ? 1 : 0;
             return 0;
-         word = key/32;
-         bit = key%32;
-         if (word <= istate->size)
-            return ((1U<<bit) & curr_input_state[word]) ? 1 : 0;
-         return 0;
-      }
-
+         }
       default:
          return 0;
    }
@@ -1051,21 +1039,17 @@ bool netplay_pre_frame(netplay_t *netplay)
       if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
          netplay_announce();
    }
+   /* Make sure that if announcement is turned on mid-game, it gets announced */
    else
-   {
-      /* Make sure that if announcement is turned on mid-game, it gets announced */
       reannounce = -1;
-   }
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
    if (netplay->local_paused)
       netplay_frontend_paused(netplay, false);
 
+   /* Are we ready now? */
    if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
-   {
-      /* Are we ready now? */
       netplay_try_init_serialization(netplay);
-   }
 
    if (netplay->is_server && !settings->bools.netplay_use_mitm_server)
    {
@@ -1151,18 +1135,21 @@ void netplay_post_frame(netplay_t *netplay)
 static void netplay_force_future(netplay_t *netplay)
 {
    /* Wherever we're inputting, that's where we consider our state to be loaded */
-   netplay->run_ptr = netplay->self_ptr;
+   netplay->run_ptr         = netplay->self_ptr;
    netplay->run_frame_count = netplay->self_frame_count;
 
    /* We need to ignore any intervening data from the other side,
     * and never rewind past this */
    netplay_update_unread_ptr(netplay);
+
    if (netplay->unread_frame_count < netplay->run_frame_count)
    {
       uint32_t client;
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client)))
+            continue;
+
          if (netplay->read_frame_count[client] < netplay->run_frame_count)
          {
             netplay->read_ptr[client] = netplay->run_ptr;
@@ -1271,17 +1258,13 @@ void netplay_load_savestate(netplay_t *netplay,
          else
          {
             if (serial_info->size <= netplay->state_size)
-            {
                memcpy(netplay->buffer[netplay->run_ptr].state,
                      serial_info->data_const, serial_info->size);
-            }
          }
       }
+      /* FIXME: This is a critical failure! */
       else
-      {
-         /* FIXME: This is a critical failure! */
          return;
-      }
    }
 
    /* Don't send it if we're expected to be desynced */

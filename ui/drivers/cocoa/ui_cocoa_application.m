@@ -20,24 +20,13 @@
 #include <string.h>
 
 #include <objc/objc-runtime.h>
+#include "cocoa_defines.h"
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
-
-#ifndef NSEventMaskAny
-#define NSEventMaskAny NSAnyEventMask
-#endif
 
 static void* ui_application_cocoa_initialize(void)
 {
    return NULL;
-}
-
-static bool ui_application_cocoa_pending_events(void)
-{
-   NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-   if (!event)
-      return false;
-   return true;
 }
 
 static void ui_application_cocoa_process_events(void)
@@ -57,16 +46,10 @@ static void ui_application_cocoa_process_events(void)
     }
 }
 
-static void ui_application_cocoa_run(void *args)
-{
-   (void)args;
-}
-
 ui_application_t ui_application_cocoa = {
    ui_application_cocoa_initialize,
-   ui_application_cocoa_pending_events,
    ui_application_cocoa_process_events,
-   ui_application_cocoa_run,
    NULL,
+   false,
    "cocoa"
 };

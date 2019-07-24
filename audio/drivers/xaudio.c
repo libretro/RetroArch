@@ -254,52 +254,6 @@ error:
    return NULL;
 }
 
-static size_t xaudio2_write(xaudio2_t *handle, const uint8_t *buffer, size_t bytes_)
-{
-   unsigned bytes        = bytes_;
-
-   while (bytes)
-   {
-      unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
-
-      memcpy(handle->buf + handle->write_buffer *
-            handle->bufsize + handle->bufptr,
-            buffer, need);
-
-      handle->bufptr += need;
-      buffer         += need;
-      bytes          -= need;
-
-      if (handle->bufptr == handle->bufsize)
-      {
-         XAUDIO2_BUFFER xa2buffer;
-
-         while (handle->buffers == MAX_BUFFERS - 1)
-            WaitForSingleObject(handle->hEvent, INFINITE);
-
-         xa2buffer.Flags      = 0;
-         xa2buffer.AudioBytes = handle->bufsize;
-         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
-         xa2buffer.PlayBegin  = 0;
-         xa2buffer.PlayLength = 0;
-         xa2buffer.LoopBegin  = 0;
-         xa2buffer.LoopLength = 0;
-         xa2buffer.LoopCount  = 0;
-         xa2buffer.pContext   = NULL;
-
-         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
-                     handle->pSourceVoice, &xa2buffer, NULL)))
-            return 0;
-
-         InterlockedIncrement((LONG volatile*)&handle->buffers);
-         handle->bufptr       = 0;
-         handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
-      }
-   }
-
-   return bytes_;
-}
-
 static void *xa_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
@@ -336,8 +290,10 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
-   size_t ret;
-   xa_t *xa = (xa_t*)data;
+   unsigned bytes;
+   xa_t *xa              = (xa_t*)data;
+   xaudio2_t *handle     = xa->xa;
+   const uint8_t *buffer = (const uint8_t*)buf;
 
    if (xa->nonblock)
    {
@@ -349,10 +305,52 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          size = avail;
    }
 
-   ret = xaudio2_write(xa->xa, (const uint8_t*)buf, size);
-   if (ret == 0 && size > 0)
-      return -1;
-   return ret;
+   bytes = size;
+
+   while (bytes)
+   {
+      unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
+
+      memcpy(handle->buf + handle->write_buffer *
+            handle->bufsize + handle->bufptr,
+            buffer, need);
+
+      handle->bufptr += need;
+      buffer         += need;
+      bytes          -= need;
+
+      if (handle->bufptr == handle->bufsize)
+      {
+         XAUDIO2_BUFFER xa2buffer;
+
+         while (handle->buffers == MAX_BUFFERS - 1)
+            WaitForSingleObject(handle->hEvent, INFINITE);
+
+         xa2buffer.Flags      = 0;
+         xa2buffer.AudioBytes = handle->bufsize;
+         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
+         xa2buffer.PlayBegin  = 0;
+         xa2buffer.PlayLength = 0;
+         xa2buffer.LoopBegin  = 0;
+         xa2buffer.LoopLength = 0;
+         xa2buffer.LoopCount  = 0;
+         xa2buffer.pContext   = NULL;
+
+         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
+                     handle->pSourceVoice, &xa2buffer, NULL)))
+         {
+            if (size > 0)
+               return -1;
+            return 0;
+         }
+
+         InterlockedIncrement((LONG volatile*)&handle->buffers);
+         handle->bufptr       = 0;
+         handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
+      }
+   }
+
+   return size;
 }
 
 static bool xa_stop(void *data)

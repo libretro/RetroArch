@@ -29,11 +29,12 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../input_driver.h"
 
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
@@ -72,6 +73,34 @@ enum {
 
 /* Use this to enable/disable using the touch screen as mouse */
 #define ENABLE_TOUCH_SCREEN_MOUSE 1
+
+#define AKEYCODE_ASSIST 219
+
+#define LAST_KEYCODE AKEYCODE_ASSIST
+
+#define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
+
+/* First ports are used to keep track of gamepad states. 
+ * Last port is used for keyboard state */
+static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
+
+#define android_keyboard_port_input_pressed(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
+
+#define android_keyboard_input_pressed(key) (BIT_GET(android_key_state[0], (key)))
+
+uint8_t *android_keyboard_state_get(unsigned port)
+{
+   return android_key_state[port];
+}
+
+static void android_keyboard_free(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
+      for (j = 0; j < MAX_KEYS; j++)
+         android_key_state[i][j] = 0;
+}
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -123,9 +152,9 @@ typedef struct android_input
    bool blocked;
    const input_device_driver_t *joypad;
 
-   state_device_t pad_states[MAX_PADS];
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
-   int8_t hat_state[MAX_PADS][2];
+   state_device_t pad_states[MAX_USERS];
+   int16_t analog_state[MAX_USERS][MAX_AXIS];
+   int8_t hat_state[MAX_USERS][2];
 
    unsigned pads_connected;
    sensor_t accelerometer_state;
@@ -853,8 +882,8 @@ static INLINE void android_input_poll_event_type_key(
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
-   uint8_t *buf = android_keyboard_state_get(port);
-   int action  = AKeyEvent_getAction(event);
+   uint8_t *buf = android_key_state[port];
+   int action   = AKeyEvent_getAction(event);
 
    /* some controllers send both the up and down events at once
     * when the button is released for "special" buttons, like menu buttons
@@ -928,7 +957,7 @@ static void handle_hotplug(android_input_t *android,
 
    RARCH_LOG("Device model: (%s).\n", device_model);
 
-   if (*port > MAX_PADS)
+   if (*port > DEFAULT_MAX_PADS)
    {
       RARCH_ERR("Max number of pads reached.\n");
       return;
@@ -1216,16 +1245,13 @@ static void handle_hotplug(android_input_t *android,
    if (*port < 0)
       *port = android->pads_connected;
 
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
          name_buf,
          NULL,
          android_joypad.ident,
          *port,
          vendorId,
-         productId))
-      input_config_set_device_name(*port, name_buf);
-
-   input_config_set_device_name(*port, name_buf);
+         productId);
 
    android->pad_states[android->pads_connected].id   = id;
    android->pad_states[android->pads_connected].port = *port;
@@ -1246,11 +1272,10 @@ static int android_input_get_id(AInputEvent *event)
    return id;
 }
 
-static void android_input_poll_input(void *data)
+static void android_input_poll_input(android_input_t *android)
 {
-   AInputEvent *event = NULL;
+   AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t    *android     = (android_input_t*)data;
 
    /* Read all pending events. */
    while (AInputQueue_hasEvents(android_app->inputQueue))
@@ -1301,10 +1326,9 @@ static void android_input_poll_input(void *data)
    }
 }
 
-static void android_input_poll_user(void *data)
+static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t    *android     = (android_input_t*)data;
 
    if ((android_app->sensor_state_mask & (UINT64_C(1) <<
                RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -1320,13 +1344,12 @@ static void android_input_poll_user(void *data)
    }
 }
 
-static void android_input_poll_memcpy(void *data)
+static void android_input_poll_memcpy(android_input_t *android)
 {
    unsigned i, j;
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
          android_app->hat_state[i][j]    = android->hat_state[i][j];
@@ -1335,27 +1358,34 @@ static void android_input_poll_memcpy(void *data)
    }
 }
 
-static bool android_input_key_pressed(void *data, int key)
+static bool android_input_key_pressed(android_input_t *android, int key)
 {
+   uint64_t joykey;
+   uint32_t joyaxis;
    rarch_joypad_info_t joypad_info;
-   android_input_t *android           = (android_input_t*)data;
-   const struct retro_keybind *keyptr = (const struct retro_keybind*)
-      &input_config_binds[0][key];
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = input_autoconf_binds[0];
+   joypad_info.axis_threshold = *
+      (input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
-   if(       keyptr->valid
+   if((key < RARCH_BIND_LIST_END)
          && android_keyboard_port_input_pressed(input_config_binds[0],
             key))
       return true;
 
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
+   joykey                     = 
+      (input_config_binds[0][key].joykey != NO_BTN)
+      ? input_config_binds[0][key].joykey 
+      : joypad_info.auto_binds[key].joykey;
+   joyaxis                    = 
+      (input_config_binds[0][key].joyaxis != AXIS_NONE)
+      ? input_config_binds[0][key].joyaxis 
+      : joypad_info.auto_binds[key].joyaxis;
 
-   if (keyptr->valid &&
-         input_joypad_pressed(android->joypad, joypad_info,
-            0, input_config_binds[0], key))
+   if ((uint16_t)joykey != NO_BTN && android->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
       return true;
-
+   if (((float)abs(android->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+      return true;
    return false;
 }
 
@@ -1366,21 +1396,22 @@ static void android_input_poll(void *data)
 {
    settings_t *settings = config_get_ptr();
    int ident;
-   unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t *android        = (android_input_t*)data;
 
    while ((ident =
-            ALooper_pollAll((android_input_key_pressed(data, key))
+            ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
+               && android_input_key_pressed(android, RARCH_PAUSE_TOGGLE))
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_poll_input(data);
+            android_input_poll_input(android);
             break;
          case LOOPER_ID_USER:
-            android_input_poll_user(data);
+            android_input_poll_user(android);
             break;
          case LOOPER_ID_MAIN:
             android_input_poll_main_cmd();
@@ -1403,7 +1434,7 @@ static void android_input_poll(void *data)
    }
 
    if (android_app->input_alive)
-      android_input_poll_memcpy(data);
+      android_input_poll_memcpy(android);
 }
 
 bool android_run_events(void *data)
@@ -1435,27 +1466,65 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret                        = 0;
    android_input_t *android           = (android_input_t*)data;
 
    switch (device)
    {
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && BIT_GET(android_keyboard_state_get(ANDROID_KEYBOARD_PORT), rarch_keysym_lut[id]);
       case RETRO_DEVICE_JOYPAD:
-         ret = input_joypad_pressed(android->joypad, joypad_info,
-               port, binds[port], id);
-         if (!ret)
-            ret = android_keyboard_port_input_pressed(binds[port],id);
-         return ret;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               /* Auto-binds are per joypad, not per user. */
+               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
+                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+               if ((uint16_t)joykey != NO_BTN && android->joypad->button(
+                        joypad_info.joy_idx, (uint16_t)joykey))
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+               if (((float)abs(android->joypad->axis(
+                              joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+               if (android_keyboard_port_input_pressed(binds[port], i))
+                  ret |= (1 << i);
+            }
+            return ret;
+         }
+         else
+         {
+            /* Auto-binds are per joypad, not per user. */
+            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
+               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+            if ((uint16_t)joykey != NO_BTN && android->joypad->button(
+                     joypad_info.joy_idx, (uint16_t)joykey))
+               return true;
+            if (((float)abs(android->joypad->axis(
+                           joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
+            if (android_keyboard_port_input_pressed(binds[port], id))
+               return true;
+         }
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(android->joypad, joypad_info,
                   port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_KEYBOARD:
+         return (id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
-         ret = android_mouse_state(android, id);
-         return ret;
+         return android_mouse_state(android, id);
       case RETRO_DEVICE_LIGHTGUN:
          return android_lightgun_device_state(android, id);
       case RETRO_DEVICE_POINTER:
@@ -1645,79 +1714,88 @@ static void android_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
+static void android_input_set_rumble_internal(
+      uint16_t strength,
+      uint16_t *last_strength_strong,
+      uint16_t *last_strength_weak,
+      uint16_t *last_strength,
+      int8_t   id,
+      enum retro_rumble_effect effect
+      )
+{
+   JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
+   uint16_t new_strength = 0;
+
+   if (!env)
+      return;
+
+   if (effect == RETRO_RUMBLE_STRONG)
+   {
+      new_strength          = strength | *last_strength_weak;
+      *last_strength_strong = strength;
+   }
+   else if (effect == RETRO_RUMBLE_WEAK)
+   {
+      new_strength         = strength | *last_strength_strong;
+      *last_strength_weak  = strength;
+   }
+
+   if (new_strength != *last_strength)
+   {
+      /* trying to send this value as a JNI param without 
+       * storing it first was causing 0 to be seen on the other side ?? */
+      int strength_final   = (255.0f / 65535.0f) * (float)new_strength;
+
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
+
+      *last_strength = new_strength;
+   }
+}
+
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   android_input_t *android = (android_input_t*)data;
    settings_t *settings = config_get_ptr();
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
-   if (!android || !env || !g_android || !g_android->doVibrate)
+   if (!g_android || !g_android->doVibrate)
       return false;
 
    if (settings->bools.enable_device_vibration)
    {
       static uint16_t last_strength_strong = 0;
-      static uint16_t last_strength_weak = 0;
-      static uint16_t last_strength = 0;
-      uint16_t new_strength = 0;
+      static uint16_t last_strength_weak   = 0;
+      static uint16_t last_strength        = 0;
 
       if (port != 0)
          return false;
-
-      if (effect == RETRO_RUMBLE_STRONG)
-      {
-         new_strength = strength | last_strength_weak;
-         last_strength_strong = strength;
-      }
-      else if (effect == RETRO_RUMBLE_WEAK)
-      {
-         new_strength = strength | last_strength_strong;
-         last_strength_weak = strength;
-      }
-
-      if (new_strength != last_strength)
-      {
-         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
-         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
-
-         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-               g_android->doVibrate, (jint)-1, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
-
-         last_strength = new_strength;
-      }
+      
+      android_input_set_rumble_internal(
+            strength,
+            &last_strength_strong,
+            &last_strength_weak,
+            &last_strength,
+            -1,
+            effect);
 
       return true;
    }
    else
    {
-      uint16_t new_strength = 0;
-      state_device_t *state = &android->pad_states[port];
+      android_input_t *android = (android_input_t*)data;
+      state_device_t *state    = android ? &android->pad_states[port] : NULL;
 
-      if (effect == RETRO_RUMBLE_STRONG)
+      if (state)
       {
-         new_strength = strength | state->rumble_last_strength_weak;
-         state->rumble_last_strength_strong = strength;
+         android_input_set_rumble_internal(
+               strength,
+               &state->rumble_last_strength_strong,
+               &state->rumble_last_strength_weak,
+               &state->rumble_last_strength,
+               state->id,
+               effect);
+         return true;
       }
-      else if (effect == RETRO_RUMBLE_WEAK)
-      {
-         new_strength = strength | state->rumble_last_strength_strong;
-         state->rumble_last_strength_weak = strength;
-      }
-
-      if (new_strength != state->rumble_last_strength)
-      {
-         /* trying to send this value as a JNI param without storing it first was causing 0 to be seen on the other side ?? */
-         int strength_final = (255.0f / 65535.0f) * (float)new_strength;
-         int id = state->id;
-
-         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-               g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
-
-         state->rumble_last_strength = new_strength;
-      }
-
-      return true;
    }
 
    return false;

@@ -29,6 +29,7 @@ extern "C" {
 #include <file/file_path.h>
 #include "../../../command.h"
 #include "../../../configuration.h"
+#include "../../../msg_hash.h"
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
@@ -132,13 +133,9 @@ void CoreOptionsDialog::onSaveGameSpecificOptions()
       return;
    }
 
-   conf = config_file_new(game_path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(game_path)))
    {
-      conf = config_file_new(NULL);
-
-      if (!conf)
+      if (!(conf = config_file_new_alloc()))
       {
          QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
          return;

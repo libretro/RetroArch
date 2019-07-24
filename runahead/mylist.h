@@ -8,23 +8,23 @@
 
 RETRO_BEGIN_DECLS
 
-typedef void* (*constructor_t)(void);
-typedef void(*destructor_t)(void*);
+typedef void *(*constructor_t)(void);
+typedef void  (*destructor_t )(void*);
 
 typedef struct MyList_t
 {
    void **data;
    int capacity;
    int size;
-   constructor_t Constructor;
-   destructor_t Destructor;
+   constructor_t constructor;
+   destructor_t destructor;
 } MyList;
 
 void *mylist_add_element(MyList *list);
 
-void mylist_resize(MyList *list, int newSize, bool runConstructor);
+void mylist_resize(MyList *list, int newSize, bool run_constructor);
 
-void mylist_create(MyList **list_p, int initialCapacity,
+void mylist_create(MyList **list_p, int initial_capacity,
       constructor_t constructor, destructor_t destructor);
 
 void mylist_destroy(MyList **list_p);

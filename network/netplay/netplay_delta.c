@@ -47,16 +47,18 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    size_t i;
    if (delta->used)
    {
-      if (delta->frame == frame) return true;
+      if (delta->frame == frame)
+         return true;
+      /* We haven't even replayed this frame yet,
+       * so we can't overwrite it! */
       if (netplay->other_frame_count <= delta->frame)
-      {
-         /* We haven't even replayed this frame yet, so we can't overwrite it! */
          return false;
-      }
    }
-   delta->used = true;
+
+   delta->used  = true;
    delta->frame = frame;
-   delta->crc = 0;
+   delta->crc   = 0;
+
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
       clear_input(delta->resolved_input[i]);
@@ -170,20 +172,35 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
 uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices)
 {
    uint32_t ret = 0, device;
+
    for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
-      if (!(devices & (1<<device))) continue;
+      if (!(devices & (1<<device)))
+         continue;
+
       switch (netplay->config_devices[device]&RETRO_DEVICE_MASK)
       {
          /* These are all essentially magic numbers, but each device has a
           * fixed size, documented in network/netplay/README */
-         case RETRO_DEVICE_JOYPAD:      ret += 1; break;
-         case RETRO_DEVICE_MOUSE:       ret += 2; break;
-         case RETRO_DEVICE_KEYBOARD:    ret += 5; break;
-         case RETRO_DEVICE_LIGHTGUN:    ret += 2; break;
-         case RETRO_DEVICE_ANALOG:      ret += 3; break;
-         default: break; /* Unsupported */
+         case RETRO_DEVICE_JOYPAD:
+            ret += 1;
+            break;
+         case RETRO_DEVICE_MOUSE:
+            ret += 2;
+            break;
+         case RETRO_DEVICE_KEYBOARD:
+            ret += 5;
+            break;
+         case RETRO_DEVICE_LIGHTGUN:
+            ret += 2;
+            break;
+         case RETRO_DEVICE_ANALOG:
+            ret += 3;
+            break;
+         default:
+            break; /* Unsupported */
       }
    }
+
    return ret;
 }

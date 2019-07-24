@@ -73,6 +73,8 @@ bool task_push_pl_entry_thumbnail_download(
 
 #endif
 
+bool task_push_pl_manager_reset_cores(const char *playlist_path);
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *userdata);
@@ -132,7 +134,7 @@ unsigned input_autoconfigure_get_device_name_index(unsigned i);
 
 void input_autoconfigure_reset(void);
 
-bool input_autoconfigure_connect(
+void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
@@ -147,6 +149,10 @@ bool input_autoconfigure_get_swap_override(void);
 void input_autoconfigure_joypad_reindex_devices(void);
 
 void set_save_state_in_background(bool state);
+
+#ifdef HAVE_CDROM
+void task_push_cdrom_dump(const char *drive);
+#endif
 
 extern const char* const input_builtin_autoconfs[];
 

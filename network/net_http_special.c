@@ -74,7 +74,7 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
       res = (char*)malloc(length + 1);
 
       /* Allocation error. */
-      if ( !res )
+      if (!res)
          goto error;
 
       memcpy((void*)res, (void*)data, length);
@@ -92,11 +92,11 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
       *size = length;
 
 error:
-   if ( http )
-      net_http_delete( http );
+   if (http)
+      net_http_delete(http);
 
-   if ( conn )
-      net_http_connection_free( conn );
+   if (conn)
+      net_http_connection_free(conn);
 
    if (timeout)
    {

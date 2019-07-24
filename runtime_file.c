@@ -32,7 +32,7 @@
 #include <string/stdstring.h>
 
 #include "file_path_special.h"
-#include "dirs.h"
+#include "paths.h"
 #include "core_info.h"
 #include "configuration.h"
 #include "verbosity.h"

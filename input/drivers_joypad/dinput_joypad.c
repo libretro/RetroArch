@@ -20,6 +20,7 @@
 #include <windowsx.h>
 
 #include <dinput.h>
+#include <mmsystem.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -30,7 +31,6 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -47,6 +47,13 @@ struct dinput_joypad_data
    LPDIRECTINPUTEFFECT rumble_iface[2];
    DIEFFECT rumble_props;
 };
+
+/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
+#define ARRAY_SIZE_RGB_BUTTONS 128
+
+#ifndef NUM_HATS
+#define NUM_HATS 4
+#endif
 
 static struct dinput_joypad_data g_pads[MAX_USERS];
 static unsigned g_joypad_cnt;
@@ -376,14 +383,13 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (!is_xinput_pad)
 #endif
    {
-      if (!input_autoconfigure_connect(
-               dinput_joypad_name(g_joypad_cnt),
-               dinput_joypad_friendly_name(g_joypad_cnt),
-               dinput_joypad.ident,
-               g_joypad_cnt,
-               dinput_joypad_vid(g_joypad_cnt),
-               dinput_joypad_pid(g_joypad_cnt)))
-         input_config_set_device_name(g_joypad_cnt, dinput_joypad_name(g_joypad_cnt));
+      input_autoconfigure_connect(
+            dinput_joypad_name(g_joypad_cnt),
+            dinput_joypad_friendly_name(g_joypad_cnt),
+            dinput_joypad.ident,
+            g_joypad_cnt,
+            dinput_joypad_vid(g_joypad_cnt),
+            dinput_joypad_pid(g_joypad_cnt));
    }
 
 #ifdef HAVE_XINPUT
@@ -420,55 +426,64 @@ static bool dinput_joypad_init(void *data)
 
 static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   unsigned hat_dir                     = 0;
    const struct dinput_joypad_data *pad = &g_pads[port_num];
+   unsigned hat_dir                     = 0;
+
    if (!pad || !pad->joypad)
       return false;
-
-   hat_dir = GET_HAT_DIR(joykey);
-
-   /* Check hat. */
+   
+   hat_dir                              = GET_HAT_DIR(joykey);
 
    if (hat_dir)
    {
-      unsigned pov;
-      unsigned hat   = GET_HAT(joykey);
-      unsigned elems = sizeof(pad->joy_state.rgdwPOV) /
-         sizeof(pad->joy_state.rgdwPOV[0]);
-
-      if (hat >= elems)
-         return false;
-
-      pov = pad->joy_state.rgdwPOV[hat];
-
-      /* Magic numbers I'm not sure where originate from. */
-      if (pov < 36000)
+      unsigned h = GET_HAT(joykey);
+      if (h < NUM_HATS)
       {
+         unsigned pov = pad->joy_state.rgdwPOV[h];
          switch (hat_dir)
          {
             case HAT_UP_MASK:
-               return (pov >= 31500) || (pov <= 4500);
+               {
+                  static const unsigned check1 = (JOY_POVRIGHT/2);
+                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+                  return
+                     (pov == JOY_POVFORWARD) ||
+                     (pov == check1)         ||
+                     (pov == check2);
+               }
             case HAT_RIGHT_MASK:
-               return (pov >= 4500) && (pov <= 13500);
+               {
+                  static const unsigned check1 = (JOY_POVRIGHT/2);
+                  static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+                  return
+                     (pov == JOY_POVRIGHT) ||
+                     (pov == check1)       ||
+                     (pov == check2);
+               }
             case HAT_DOWN_MASK:
-               return (pov >= 13500) && (pov <= 22500);
+               {
+                  static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
+                  static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+                  return 
+                     (pov == JOY_POVBACKWARD) ||
+                     (pov == check1)          ||
+                     (pov == check2);
+               }
             case HAT_LEFT_MASK:
-               return (pov >= 22500) && (pov <= 31500);
+               {
+                  static const unsigned check1 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
+                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+                  return 
+                     (pov == JOY_POVLEFT) || 
+                     (pov == check1)      || 
+                     (pov == check2);
+               }
          }
       }
 
       return false;
    }
-   else
-   {
-      unsigned elems = sizeof(pad->joy_state.rgbButtons) /
-         sizeof(pad->joy_state.rgbButtons[0]);
-
-      if (joykey < elems)
-         return pad->joy_state.rgbButtons[joykey];
-   }
-
-   return false;
+   return (joykey < ARRAY_SIZE_RGB_BUTTONS) && pad->joy_state.rgbButtons[joykey];
 }
 
 static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -526,9 +541,9 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
+      return 0;
 
    return val;
 }

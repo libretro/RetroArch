@@ -2494,7 +2494,7 @@ static void gl2_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static void gl2_show_mouse(void *data, bool state)
@@ -3743,9 +3743,9 @@ static void *gl2_init(const video_info_t *video,
    if (string_is_equal(vendor, "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         rarch_force_video_driver_fallback("gl1");
+         retroarch_force_video_driver_fallback("gl1");
 #else
-         rarch_force_video_driver_fallback("gdi");
+         retroarch_force_video_driver_fallback("gdi");
 #endif
 #endif
 
@@ -4070,15 +4070,6 @@ static bool gl2_set_shader(void *data,
 
    gl2_context_bind_hw_render(gl, false);
 
-   gl->shader->deinit(gl->shader_data);
-   gl->shader_data = NULL;
-
-   if (string_is_empty(path))
-   {
-      gl2_context_bind_hw_render(gl, true);
-      return true;
-   }
-
    fallback = gl2_get_fallback_shader_type(type);
 
    if (fallback == RARCH_SHADER_NONE)
@@ -4086,6 +4077,9 @@ static bool gl2_set_shader(void *data,
       RARCH_ERR("[GL]: No supported shader backend found!\n");
       goto error;
    }
+
+   gl->shader->deinit(gl->shader_data);
+   gl->shader_data = NULL;
 
    if (type != fallback)
    {

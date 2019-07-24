@@ -24,7 +24,6 @@
 
 #include "SDL.h"
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../retroarch.h"
@@ -61,12 +60,12 @@ static void *sdl_input_init(const char *joypad_driver)
 static bool sdl_key_pressed(int key)
 {
    int num_keys;
-   unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
 #ifdef HAVE_SDL2
    const uint8_t *keymap = SDL_GetKeyboardState(&num_keys);
-   sym                   = SDL_GetScancodeFromKey(sym);
+   unsigned sym          = SDL_GetScancodeFromKey(rarch_keysym_lut[(enum retro_key)key]);
 #else
    const uint8_t *keymap = SDL_GetKeyState(&num_keys);
+   unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
 #endif
 
    if (sym >= (unsigned)num_keys)
@@ -97,17 +96,30 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       const struct retro_keybind *binds,
       unsigned port, unsigned id, enum input_device_type *device)
 {
+   /* Auto-binds are per joypad, not per user. */
+   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
+      ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+   const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+      ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
    if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
    {
       *device = INPUT_DEVICE_TYPE_KEYBOARD;
       return 1;
    }
 
-   if (input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
+   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;
    }
+
+   if (((float)abs(sdl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+   {
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return 1;
+   }
+
    return 0;
 }
 
@@ -212,14 +224,35 @@ static int16_t sdl_input_state(void *data,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl_input_t            *sdl = (sdl_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return sdl_joypad_device_state(sdl,
-                  joypad_info, binds[port], port, id, &type);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (sdl_joypad_device_state(
+                        sdl, joypad_info, binds[port], port, i, &type))
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+            }
+
+            return ret;
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               if (sdl_joypad_device_state(sdl,
+                     joypad_info, binds[port], port, id, &type))
+                  return true;
+         }
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
@@ -227,7 +260,7 @@ static int16_t sdl_input_state(void *data,
             int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(sdl->joypad,
-                     joypad_info, port, idx, id, binds[port]);
+                        joypad_info, port, idx, id, binds[port]);
             return ret;
          }
          break;
@@ -236,7 +269,8 @@ static int16_t sdl_input_state(void *data,
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return sdl_pointer_device_state(sdl, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+            return sdl_pointer_device_state(sdl, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && sdl_key_pressed(id);

@@ -89,7 +89,7 @@ enum slang_constant_buffer
 {
    SLANG_CBUFFER_UBO = 0,
    SLANG_CBUFFER_PC,
-   SLANG_CBUFFER_MAX,
+   SLANG_CBUFFER_MAX
 };
 
 /* Vulkan minimum limit. */

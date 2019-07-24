@@ -138,9 +138,17 @@ static bool uwp_pressed_joypad(uwp_input_t *uwp,
    /* Then, process the joypad bindings */
    if (binds && binds[id].valid)
    {
+      /* Auto-binds are per joypad, not per user. */
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
+         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
+         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
       if (uwp_mouse_state(port, bind->mbutton, false))
          return true;
-      if (input_joypad_pressed(uwp->joypad, joypad_info, port, binds, id))
+      if ((uint16_t)joykey != NO_BTN && uwp->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+         return true;
+      if (((float)abs(uwp->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
    }
 
@@ -189,12 +197,32 @@ static int16_t uwp_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (uwp_pressed_joypad(
+                        uwp, joypad_info, binds[port], port, i))
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+            }
+
+            return ret;
+         }
+         else
+         {
+            if (id < RARCH_BIND_LIST_END)
+               if (uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id))
+                  return true;
+         }
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return uwp_pressed_analog(uwp, joypad_info, binds[port], port, index, id);
-
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
 

@@ -1,6 +1,7 @@
 /* RetroArch - A frontend for libretro.
 * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
 * Copyright (C) 2011-2017 - Daniel De Matteis
+* Copyright (C) 2016-2019 - Brad Parker
 *
 * RetroArch is free software: you can redistribute it and/or modify it under the terms
 * of the GNU General Public License as published by the Free Software Found-
@@ -13,6 +14,7 @@
 * You should have received a copy of the GNU General Public License along with RetroArch.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+#define VFS_FRONTEND
 #include <retro_environment.h>
 
 #define CINTERFACE
@@ -139,7 +141,6 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
-#include "../managers/core_option_manager.c"
 
 /*============================================================
 RUNTIME FILE
@@ -208,7 +209,12 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers_context/gdi_ctx.c"
+#endif
+#endif
+
 #include "../gfx/display_servers/dispserv_win32.c"
 
 #if defined(HAVE_FFMPEG)
@@ -291,7 +297,9 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../gfx/video_shader_parse.c"
+#endif
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
@@ -467,7 +475,9 @@ VIDEO DRIVER
 #include "../gfx/drivers/nullgfx.c"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers/gdi_gfx.c"
+#endif
 #endif
 
 #include "../deps/ibxm/ibxm.c"
@@ -551,7 +561,9 @@ FONTS
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../gfx/drivers_font/gdi_font.c"
+#endif
 #endif
 
 #if defined(HAVE_VULKAN)
@@ -574,12 +586,13 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
+#endif
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
 
 #ifdef HAVE_OVERLAY
-#include "../input/input_overlay.c"
 #include "../led/drivers/led_overlay.c"
 #include "../tasks/task_overlay.c"
 #endif
@@ -634,7 +647,6 @@ INPUT
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
-#include "../input/drivers_keyboard/keyboard_event_android.c"
 #include "../input/drivers_joypad/android_joypad.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
@@ -727,15 +739,6 @@ INPUT (HID)
 
 #ifdef HAVE_XKBCOMMON
 #include "../input/drivers_keyboard/keyboard_event_xkb.c"
-#endif
-
-/*============================================================
-STATE TRACKER
-============================================================ */
-#include "../gfx/video_state_tracker.c"
-
-#ifdef HAVE_PYTHON
-#include "../gfx/drivers_tracker/video_state_python.c"
 #endif
 
 /*============================================================
@@ -886,7 +889,9 @@ DRIVERS
 #include "../gfx/video_crt_switch.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
+#endif
 
 /*============================================================
 SCALERS
@@ -928,7 +933,6 @@ FILTERS
 DYNAMIC
 ============================================================ */
 #include "../libretro-common/dynamic/dylib.c"
-#include "../dynamic.c"
 #include "../gfx/video_filter.c"
 #include "../libretro-common/audio/dsp_filter.c"
 
@@ -964,13 +968,28 @@ FILE
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
 #endif
+
+#ifdef HAVE_CDROM
+#include "../libretro-common/cdrom/cdrom.c"
+#include "../libretro-common/vfs/vfs_implementation_cdrom.c"
+#include "../libretro-common/media/media_detect_cd.c"
+#endif
+
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
+#if defined(__linux__)
 #include "../libretro-common/file/nbio/nbio_linux.c"
+#endif
+#if defined(HAVE_MMAP) && defined(BSD)
 #include "../libretro-common/file/nbio/nbio_unixmmap.c"
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#endif
+#if defined(ORBIS)
 #include "../libretro-common/file/nbio/nbio_orbis.c"
+#endif
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
@@ -1041,12 +1060,6 @@ FRONTEND
 /*============================================================
 UI
 ============================================================ */
-#include "../ui/drivers/ui_null.c"
-#include "../ui/drivers/null/ui_null_window.c"
-#include "../ui/drivers/null/ui_null_browser_window.c"
-#include "../ui/drivers/null/ui_null_msg_window.c"
-#include "../ui/drivers/null/ui_null_application.c"
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
 #include "../ui/drivers/win32/ui_win32_window.c"
@@ -1054,11 +1067,6 @@ UI
 #include "../ui/drivers/win32/ui_win32_msg_window.c"
 #include "../ui/drivers/win32/ui_win32_application.c"
 #endif
-
-/*============================================================
-MAIN
-============================================================ */
-#include "../frontend/frontend.c"
 
 /*============================================================
 GIT
@@ -1072,7 +1080,6 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
-#include "../dirs.c"
 #include "../paths.c"
 #include "../libretro-common/queues/task_queue.c"
 
@@ -1192,6 +1199,7 @@ DATA RUNLOOP
 #include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
+#include "../tasks/task_playlist_manager.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1216,7 +1224,9 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../menu/menu_shader.c"
+#endif
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
@@ -1225,7 +1235,9 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 
+#if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
+#endif
 
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
@@ -1322,7 +1334,9 @@ MENU
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#ifdef HAVE_GDI
 #include "../menu/drivers_display/menu_display_gdi.c"
+#endif
 #endif
 
 #endif
@@ -1358,16 +1372,12 @@ MENU
 
 #include "../input/input_mapper.c"
 
-#include "../command.c"
-
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
 #endif
 
 #ifdef HAVE_RUNAHEAD
 #include "../runahead/mem_util.c"
-#include "../runahead/secondary_core.c"
-#include "../runahead/copy_load_info.c"
 #include "../runahead/mylist.c"
 #endif
 
@@ -1478,7 +1488,9 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mix.c"
+#endif
 
 /*============================================================
  LIBRETRODB
@@ -1511,11 +1523,6 @@ XML
 /*============================================================
 HTTP SERVER
 ============================================================ */
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "../deps/civetweb/civetweb.c"
-#include "network/httpserver/httpserver.c"
-#endif
-
 #if defined(HAVE_DISCORD)
 #include "../discord/discord.c"
 #endif

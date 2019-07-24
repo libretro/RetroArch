@@ -629,11 +629,20 @@ void fill_str_dated_filename(char *out_filename,
    const struct tm* tm_ = localtime(&cur_time);
 
    format[0]            = '\0';
-   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
 
-   fill_pathname_join_concat_noext(out_filename,
-         in_str, format, ext,
-         size);
+   if (string_is_empty(ext))
+   {
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", tm_);
+      fill_pathname_noext(out_filename, in_str, format, size);
+   }
+   else
+   {
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
+
+      fill_pathname_join_concat_noext(out_filename,
+            in_str, format, ext,
+            size);
+   }
 }
 
 /**
@@ -795,7 +804,7 @@ void path_resolve_realpath(char *buf, size_t size)
 void path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   unsigned i;
+   size_t i;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
@@ -804,8 +813,8 @@ void path_relative_to(char *out,
          && path[1] == ':' && base[1] == ':'
          && path[0] != base[0])
    {
-      out[0] = '\0';
-      strlcat(out, path, size);
+      strlcpy(out, path, size);
+      return;
    }
 #endif
 
@@ -818,8 +827,8 @@ void path_relative_to(char *out,
    /* Each segment of base turns into ".." */
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
-      if (trimmed_base[i] == '/' || trimmed_base[i] == '\\')
-         strlcat(out, "../", size); /* Use '/' as universal separator */
+      if (trimmed_base[i] == path_default_slash_c())
+         strlcat(out, ".." path_default_slash(), size);
    strlcat(out, trimmed_path, size);
 }
 
@@ -885,8 +894,7 @@ void fill_pathname_join_special_ext(char *out_path,
    strlcat(out_path, ext, size);
 }
 
-void fill_pathname_join_concat_noext(
-      char *out_path,
+void fill_pathname_join_concat_noext(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size)
@@ -1189,10 +1197,23 @@ void fill_pathname_application_path(char *s, size_t len)
       CFURLRef bundle_url     = CFBundleCopyBundleURL(bundle);
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
+#ifdef HAVE_COCOATOUCH
+       // This needs to be done so that the path becomes /private/var/... and this
+       // is used consistently throughout for the iOS bundle path
+       char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+       if (realpath(s, resolved_bundle_dir_buf))
+       {
+           strlcpy(s,resolved_bundle_dir_buf, len);
+           strlcat(s,"/",len);
+       }
+#endif
+
       CFRelease(bundle_path);
       CFRelease(bundle_url);
-
+#ifndef HAVE_COCOATOUCH
+      // Not sure what this does but it breaks stuff for iOS so skipping
       retro_assert(strlcat(s, "nobin", len) < len);
+#endif
       return;
    }
 #elif defined(__HAIKU__)

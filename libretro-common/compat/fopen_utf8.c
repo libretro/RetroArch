@@ -36,9 +36,7 @@
 
 void *fopen_utf8(const char * filename, const char * mode)
 {
-#if defined(_XBOX)
-   return fopen(filename, mode);
-#elif defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32)
    FILE             *ret = NULL;
    char * filename_local = utf8_to_local_string_alloc(filename);
 

@@ -1,5 +1,5 @@
-/gen
-/bin
-/libs/*/*.so
-/obj
-/jni/modules/*.so
+.gradle
+.externalNativeBuild
+build
+phoenix.iml
+

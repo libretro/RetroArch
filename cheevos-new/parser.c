@@ -467,7 +467,7 @@ static int rcheevos_read_number(void* userdata,
    }
    else if (ud->is_console_id)
    {
-      ud->patchdata->console_id = strtol(number, NULL, 10);
+      ud->patchdata->console_id = (unsigned)strtol(number, NULL, 10);
       ud->is_console_id         = 0;
    }
 

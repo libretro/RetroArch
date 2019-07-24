@@ -126,6 +126,17 @@ typedef struct menu_animation_ctx_ticker
    const char *spacer;
 } menu_animation_ctx_ticker_t;
 
+typedef struct menu_animation_ctx_line_ticker
+{
+   size_t line_width;
+   size_t max_lines;
+   uint64_t idx;
+   enum menu_animation_ticker_type type_enum;
+   char *s;
+   size_t len;
+   const char *str;
+} menu_animation_ctx_line_ticker_t;
+
 typedef float menu_timer_t;
 
 typedef struct menu_timer_ctx_entry
@@ -145,13 +156,11 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
-void menu_animation_init(void);
-
-void menu_animation_free(void);
-
 bool menu_animation_update(void);
 
 bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
+
+bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker);
 
 float menu_animation_get_delta_time(void);
 

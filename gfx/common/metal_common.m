@@ -1134,14 +1134,10 @@ typedef struct MTLALIGN(16)
 
 - (BOOL)setShaderFromPath:(NSString *)path
 {
-   /* TODO use stock shader if string_is_empty(path.UTF8String), this is just a safety guard: */
-   if (string_is_empty(path.UTF8String))
-      return YES;
-
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t         *conf = config_file_new(path.UTF8String);
+   config_file_t         *conf = config_file_new_from_path_to_string(path.UTF8String);
    struct video_shader *shader = (struct video_shader *)calloc(1, sizeof(*shader));
 
    @try
@@ -1150,8 +1146,6 @@ typedef struct MTLALIGN(16)
       texture_t *source = NULL;
       if (!video_shader_read_conf_preset(conf, shader))
          return NO;
-
-      video_shader_resolve_relative(shader, path.UTF8String);
 
       source = &_engine.frame.texture[0];
 

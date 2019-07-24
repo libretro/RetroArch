@@ -108,16 +108,114 @@ static const GLfloat gl1_white_color[] = {
    if (gl1_shared_context_use) \
       gl1->ctx_driver->bind_hw_render(gl1->ctx_data, enable)
 
-static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info);
-static void gl1_free_overlay(gl1_t *gl);
+#ifdef HAVE_OVERLAY
+static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info)
+{
+   unsigned i;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
+
+   glEnable(GL_BLEND);
+
+   if (gl->overlay_full_screen)
+      glViewport(0, 0, width, height);
+
+   gl->coords.vertex    = gl->overlay_vertex_coord;
+   gl->coords.tex_coord = gl->overlay_tex_coord;
+   gl->coords.color     = gl->overlay_color_coord;
+   gl->coords.vertices  = 4 * gl->overlays;
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadIdentity();
+
+   for (i = 0; i < gl->overlays; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
+   }
+
+   glDisable(GL_BLEND);
+   gl->coords.vertex    = gl->vertex_ptr;
+   gl->coords.tex_coord = gl->tex_info.coord;
+   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
+   if (gl->overlay_full_screen)
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+}
+
+static void gl1_free_overlay(gl1_t *gl)
+{
+   glDeleteTextures(gl->overlays, gl->overlay_tex);
+
+   free(gl->overlay_tex);
+   free(gl->overlay_vertex_coord);
+   free(gl->overlay_tex_coord);
+   free(gl->overlay_color_coord);
+   gl->overlay_tex          = NULL;
+   gl->overlay_vertex_coord = NULL;
+   gl->overlay_tex_coord    = NULL;
+   gl->overlay_color_coord  = NULL;
+   gl->overlays             = 0;
+}
+
 static void gl1_overlay_vertex_geom(void *data,
       unsigned image,
       float x, float y,
-      float w, float h);
+      float w, float h)
+{
+   GLfloat *vertex = NULL;
+   gl1_t *gl        = (gl1_t*)data;
+
+   if (!gl)
+      return;
+
+   if (image > gl->overlays)
+   {
+      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
+      return;
+   }
+
+   vertex          = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
+
+   /* Flipped, so we preserve top-down semantics. */
+   y               = 1.0f - y;
+   h               = -h;
+
+   vertex[0]       = x;
+   vertex[1]       = y;
+   vertex[2]       = x + w;
+   vertex[3]       = y;
+   vertex[4]       = x;
+   vertex[5]       = y + h;
+   vertex[6]       = x + w;
+   vertex[7]       = y + h;
+}
+
 static void gl1_overlay_tex_geom(void *data,
       unsigned image,
       GLfloat x, GLfloat y,
-      GLfloat w, GLfloat h);
+      GLfloat w, GLfloat h)
+{
+   GLfloat *tex = NULL;
+   gl1_t *gl     = (gl1_t*)data;
+
+   if (!gl)
+      return;
+
+   tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
+
+   tex[0]       = x;
+   tex[1]       = y;
+   tex[2]       = x + w;
+   tex[3]       = y;
+   tex[4]       = x;
+   tex[5]       = y + h;
+   tex[6]       = x + w;
+   tex[7]       = y + h;
+}
+
+#endif
 
 static bool is_pot(unsigned x)
 {
@@ -1415,114 +1513,6 @@ static void gl1_get_overlay_interface(void *data,
    *iface = &gl1_overlay_interface;
 }
 
-static void gl1_free_overlay(gl1_t *gl)
-{
-   glDeleteTextures(gl->overlays, gl->overlay_tex);
-
-   free(gl->overlay_tex);
-   free(gl->overlay_vertex_coord);
-   free(gl->overlay_tex_coord);
-   free(gl->overlay_color_coord);
-   gl->overlay_tex          = NULL;
-   gl->overlay_vertex_coord = NULL;
-   gl->overlay_tex_coord    = NULL;
-   gl->overlay_color_coord  = NULL;
-   gl->overlays             = 0;
-}
-
-static void gl1_overlay_vertex_geom(void *data,
-      unsigned image,
-      float x, float y,
-      float w, float h)
-{
-   GLfloat *vertex = NULL;
-   gl1_t *gl        = (gl1_t*)data;
-
-   if (!gl)
-      return;
-
-   if (image > gl->overlays)
-   {
-      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
-      return;
-   }
-
-   vertex          = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
-
-   /* Flipped, so we preserve top-down semantics. */
-   y               = 1.0f - y;
-   h               = -h;
-
-   vertex[0]       = x;
-   vertex[1]       = y;
-   vertex[2]       = x + w;
-   vertex[3]       = y;
-   vertex[4]       = x;
-   vertex[5]       = y + h;
-   vertex[6]       = x + w;
-   vertex[7]       = y + h;
-}
-
-static void gl1_overlay_tex_geom(void *data,
-      unsigned image,
-      GLfloat x, GLfloat y,
-      GLfloat w, GLfloat h)
-{
-   GLfloat *tex = NULL;
-   gl1_t *gl     = (gl1_t*)data;
-
-   if (!gl)
-      return;
-
-   tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
-
-   tex[0]       = x;
-   tex[1]       = y;
-   tex[2]       = x + w;
-   tex[3]       = y;
-   tex[4]       = x;
-   tex[5]       = y + h;
-   tex[6]       = x + w;
-   tex[7]       = y + h;
-}
-
-static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info)
-{
-   unsigned i;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
-
-   glEnable(GL_BLEND);
-
-   if (gl->overlay_full_screen)
-      glViewport(0, 0, width, height);
-
-   gl->coords.vertex    = gl->overlay_vertex_coord;
-   gl->coords.tex_coord = gl->overlay_tex_coord;
-   gl->coords.color     = gl->overlay_color_coord;
-   gl->coords.vertices  = 4 * gl->overlays;
-
-   /*gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);*/
-
-   glMatrixMode(GL_PROJECTION);
-   glPushMatrix();
-   glLoadIdentity();
-
-   for (i = 0; i < gl->overlays; i++)
-   {
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
-      glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
-   }
-
-   glDisable(GL_BLEND);
-   gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_info.coord;
-   gl->coords.color     = gl->white_color_ptr;
-   gl->coords.vertices  = 4;
-   if (gl->overlay_full_screen)
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
-}
 #endif
 
 video_driver_t video_gl1 = {

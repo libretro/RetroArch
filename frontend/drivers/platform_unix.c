@@ -411,28 +411,7 @@ static void android_app_entry(void *data)
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
 
-   if (rarch_main(argc, argv, data) != 0)
-      goto end;
-#ifndef HAVE_MAIN
-   do
-   {
-      unsigned sleep_ms = 0;
-      int           ret = runloop_iterate(&sleep_ms);
-
-      if (ret == 1 && sleep_ms > 0)
-         retro_sleep(sleep_ms);
-
-      task_queue_check();
-
-      if (ret == -1)
-         break;
-   }while(1);
-
-   main_exit(data);
-#endif
-
-end:
-   exit(0);
+   rarch_main(argc, argv, data);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
@@ -571,7 +550,6 @@ static bool device_is_xperia_play(const char *name)
          strstr(name, "R800a") ||
          strstr(name, "R800") ||
          strstr(name, "Xperia Play") ||
-         strstr(name, "Play") ||
          strstr(name, "SO-01D")
       )
       return true;
@@ -1665,15 +1643,9 @@ static void frontend_unix_get_env(int *argc,
    frontend_android_get_name(device_model, sizeof(device_model));
    system_property_get("getprop", "ro.product.id", device_id);
 
-   g_defaults.settings.video_threaded_enable = true;
-
    /* Set automatic default values per device */
    if (device_is_xperia_play(device_model))
-   {
       g_defaults.settings.out_latency = 128;
-      g_defaults.settings.video_refresh_rate = 59.19132938771038;
-      g_defaults.settings.video_threaded_enable = false;
-   }
    else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
    else if (strstr(device_model, "SHIELD"))

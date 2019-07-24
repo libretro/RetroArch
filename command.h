@@ -72,11 +72,8 @@ enum event_command
    CMD_EVENT_REWIND_INIT,
    /* Toggles rewind. */
    CMD_EVENT_REWIND_TOGGLE,
-   /* Deinitializes autosave. */
-   CMD_EVENT_AUTOSAVE_DEINIT,
    /* Initializes autosave. */
    CMD_EVENT_AUTOSAVE_INIT,
-   CMD_EVENT_AUTOSAVE_STATE,
    /* Stops audio. */
    CMD_EVENT_AUDIO_STOP,
    /* Starts audio. */
@@ -101,10 +98,6 @@ enum event_command
    CMD_EVENT_OVERLAY_NEXT,
    /* Deinitializes overlay. */
    CMD_EVENT_DSP_FILTER_INIT,
-   /* Deinitializes graphics filter. */
-   CMD_EVENT_DSP_FILTER_DEINIT,
-   /* Deinitializes GPU recoring. */
-   CMD_EVENT_GPU_RECORD_DEINIT,
    /* Initializes recording system. */
    CMD_EVENT_RECORD_INIT,
    /* Deinitializes recording system. */
@@ -121,19 +114,12 @@ enum event_command
    CMD_EVENT_CORE_DEINIT,
    /* Initializes core. */
    CMD_EVENT_CORE_INIT,
-   /* Set audio blocking state. */
-   CMD_EVENT_AUDIO_SET_BLOCKING_STATE,
-   /* Set audio nonblocking state. */
-   CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE,
    /* Apply video state changes. */
    CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
    /* Set video blocking state. */
    CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
-   /* Set video nonblocking state. */
-   CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE,
    /* Sets current aspect ratio index. */
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
-   CMD_EVENT_RESET_CONTEXT,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
    /* Shutdown the OS */
@@ -152,7 +138,6 @@ enum event_command
    CMD_EVENT_UNPAUSE,
    /* Unpauses retroArch. */
    CMD_EVENT_PAUSE,
-   CMD_EVENT_PAUSE_CHECKS,
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -166,20 +151,8 @@ enum event_command
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
    CMD_EVENT_SHADER_PRESET_LOADED,
-   /* Initializes shader directory. */
-   CMD_EVENT_SHADER_DIR_INIT,
-   /* Deinitializes shader directory. */
-   CMD_EVENT_SHADER_DIR_DEINIT,
-   /* Initializes controllers. */
-   CMD_EVENT_CONTROLLERS_INIT,
-   /* Initializes cheats. */
-   CMD_EVENT_CHEATS_INIT,
-   /* Deinitializes cheats. */
-   CMD_EVENT_CHEATS_DEINIT,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
-   /* Deinitializes network system. */
-   CMD_EVENT_NETWORK_DEINIT,
    /* Initializes network system. */
    CMD_EVENT_NETWORK_INIT,
    /* Initializes netplay system with a string or no host specified. */
@@ -196,22 +169,6 @@ enum event_command
    CMD_EVENT_NETPLAY_ENABLE_HOST,
    /* Disconnect from the netplay host. */
    CMD_EVENT_NETPLAY_DISCONNECT,
-   /* Initializes BSV movie. */
-   CMD_EVENT_BSV_MOVIE_INIT,
-   /* Deinitializes BSV movie. */
-   CMD_EVENT_BSV_MOVIE_DEINIT,
-   /* Initializes command interface. */
-   CMD_EVENT_COMMAND_INIT,
-   /* Deinitialize command interface. */
-   CMD_EVENT_COMMAND_DEINIT,
-   /* Initializes remote gamepad interface. */
-   CMD_EVENT_REMOTE_INIT,
-   /* Deinitializes remote gamepad interface. */
-   CMD_EVENT_REMOTE_DEINIT,
-   /* Initializes keyboard to gamepad mapper interface. */
-   CMD_EVENT_MAPPER_INIT,
-   /* Deinitializes keyboard to gamepad mapper interface. */
-   CMD_EVENT_MAPPER_DEINIT,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
@@ -235,16 +192,11 @@ enum event_command
    CMD_EVENT_UI_COMPANION_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
-   CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,
    CMD_EVENT_VOLUME_UP,
    CMD_EVENT_VOLUME_DOWN,
    CMD_EVENT_MIXER_VOLUME_UP,
    CMD_EVENT_MIXER_VOLUME_DOWN,
-   CMD_EVENT_DISABLE_OVERRIDES,
-   CMD_EVENT_RESTORE_REMAPS,
-   CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET,
    CMD_EVENT_DISCORD_INIT,
-   CMD_EVENT_DISCORD_DEINIT,
    CMD_EVENT_DISCORD_UPDATE,
    CMD_EVENT_OSK_TOGGLE,
    CMD_EVENT_RECORDING_TOGGLE,
@@ -255,7 +207,8 @@ enum event_command
    CMD_EVENT_SHADER_PREV,
    CMD_EVENT_CHEAT_INDEX_PLUS,
    CMD_EVENT_CHEAT_INDEX_MINUS,
-   CMD_EVENT_CHEAT_TOGGLE
+   CMD_EVENT_CHEAT_TOGGLE,
+   CMD_EVENT_AI_SERVICE_CALL
 };
 
 bool command_set_shader(const char *arg);

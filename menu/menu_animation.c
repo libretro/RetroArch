@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <lists/string_list.h>
 
 #define DG_DYNARR_IMPLEMENTATION
 #include <stdio.h>
@@ -55,6 +56,7 @@ struct menu_animation
 {
    tween_array_t list;
    tween_array_t pending;
+   bool initialized;
    bool pending_deletes;
    bool in_update;
 };
@@ -66,7 +68,7 @@ typedef struct menu_animation menu_animation_t;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim;
+static menu_animation_t anim    = {{0}};
 static retro_time_t cur_time    = 0;
 static retro_time_t old_time    = 0;
 static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
@@ -359,7 +361,7 @@ static void menu_animation_ticker_loop(uint64_t idx,
    offset   = (phase < (int)str_width) ? phase : 0;
    width    = (int)(str_width - phase);
    width    = (width < 0) ? 0 : width;
-   width    = (width > (int)max_width) ? max_width : width;
+   width    = (width > (int)max_width) ? (int)max_width : width;
    
    *offset1 = offset;
    *width1  = width;
@@ -368,14 +370,14 @@ static void menu_animation_ticker_loop(uint64_t idx,
    offset   = (int)(phase - str_width);
    offset   = offset < 0 ? 0 : offset;
    width    = (int)(max_width - *width1);
-   width    = (width > (int)spacer_width) ? spacer_width : width;
+   width    = (width > (int)spacer_width) ? (int)spacer_width : width;
    width    = width - offset;
    
    *offset2 = offset;
    *width2  = width;
    
    /* String 3 */
-   width    = max_width - (*width1 + *width2);
+   width    = (int)(max_width - (*width1 + *width2));
    width    = width < 0 ? 0 : width;
    
    /* Note: offset is always zero here so offset3 is
@@ -385,16 +387,58 @@ static void menu_animation_ticker_loop(uint64_t idx,
    *width3  = width;
 }
 
-void menu_animation_init(void)
+static size_t get_line_display_ticks(size_t line_width)
 {
-   da_init(anim.list);
-   da_init(anim.pending);
+   /* Mean human reading speed for all western languages,
+    * characters per minute */
+   float cpm            = 1000.0f;
+   /* Base time for which a line should be shown, in ms */
+   float line_duration  = (line_width * 60.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_SPEED ms
+    * > Return base number of ticks for which line should be shown */
+   return (size_t)(line_duration / (float)TICKER_SPEED);
 }
 
-void menu_animation_free(void)
+static void menu_animation_line_ticker_generic(uint64_t idx,
+      size_t line_width, size_t max_lines, size_t num_lines,
+      size_t *line_offset)
 {
-   da_free(anim.list);
-   da_free(anim.pending);
+   size_t line_ticks    = get_line_display_ticks(line_width);
+   /* Note: This function is only called if num_lines > max_lines */
+   size_t excess_lines  = num_lines - max_lines;
+   /* Ticker will pause for one line duration when the first
+    * or last line is reached (this is mostly required for the
+    * case where num_lines == (max_lines + 1), since otherwise
+    * the text flicks rapidly up and down in disconcerting
+    * fashion...) */
+   size_t ticker_period = (excess_lines * 2) + 2;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+
+   /* Pause on first line */
+   if (phase > 0)
+      phase--;
+   /* Pause on last line */
+   if (phase > excess_lines)
+      phase--;
+
+   /* Lines scrolling upwards */
+   if (phase <= excess_lines)
+      *line_offset = phase;
+   /* Lines scrolling downwards */
+   else
+      *line_offset = (excess_lines * 2) - phase;
+}
+
+static void menu_animation_line_ticker_loop(uint64_t idx,
+      size_t line_width, size_t num_lines,
+      size_t *line_offset)
+{
+   size_t line_ticks    = get_line_display_ticks(line_width);
+   size_t ticker_period = num_lines + 1;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+
+   /* In this case, line_offset is simply equal to the phase */
+   *line_offset = phase;
 }
 
 static void menu_delayed_animation_cb(void *userdata)
@@ -552,6 +596,13 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
+   if (!anim.initialized)
+   {
+      da_init(anim.list);
+      da_init(anim.pending);
+      anim.initialized = true;
+   }
+
    if (anim.in_update)
       da_push(anim.pending, t);
    else
@@ -612,9 +663,13 @@ bool menu_animation_update(void)
    anim.in_update       = true;
    anim.pending_deletes = false;
 
-   for(i = 0; i < da_count(anim.list); i++)
+   for (i = 0; i < da_count(anim.list); i++)
    {
       struct tween *tween   = da_getptr(anim.list, i);
+      
+      if (!tween)
+         continue;
+
       tween->running_since += delta_time;
 
       *tween->subject = tween->easing(
@@ -637,9 +692,11 @@ bool menu_animation_update(void)
 
    if (anim.pending_deletes)
    {
-      for(i = 0; i < da_count(anim.list); i++)
+      for (i = 0; i < da_count(anim.list); i++)
       {
          struct tween *tween = da_getptr(anim.list, i);
+         if (!tween)
+            continue;
          if (tween->deleted)
          {
             da_delete(anim.list, i);
@@ -769,6 +826,125 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    return true;
 }
 
+bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker)
+{
+   size_t i;
+   char *wrapped_str         = NULL;
+   struct string_list *lines = NULL;
+   size_t line_offset        = 0;
+   bool success              = false;
+   bool is_active            = false;
+
+   /* Sanity check */
+   if (!line_ticker)
+      return false;
+
+   if (string_is_empty(line_ticker->str) ||
+       (line_ticker->line_width < 1) ||
+       (line_ticker->max_lines < 1))
+      goto end;
+
+   /* Line wrap input string */
+   wrapped_str = (char*)malloc((strlen(line_ticker->str) + 1) * sizeof(char));
+   if (!wrapped_str)
+      goto end;
+
+   word_wrap(
+         wrapped_str,
+         line_ticker->str,
+         (int)line_ticker->line_width,
+         true, 0);
+
+   if (string_is_empty(wrapped_str))
+      goto end;
+
+   /* Split into component lines */
+   lines = string_split(wrapped_str, "\n");
+   if (!lines)
+      goto end;
+
+   /* Check whether total number of lines fits within
+    * the set limit */
+   if (lines->size <= line_ticker->max_lines)
+   {
+      strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
+      success = true;
+      goto end;
+   }
+
+   /* Determine offset of first line in wrapped string */
+   switch (line_ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+      {
+         menu_animation_line_ticker_loop(
+               line_ticker->idx,
+               line_ticker->line_width,
+               lines->size,
+               &line_offset);
+
+         break;
+      }
+      case TICKER_TYPE_BOUNCE:
+      default:
+      {
+         menu_animation_line_ticker_generic(
+               line_ticker->idx,
+               line_ticker->line_width,
+               line_ticker->max_lines,
+               lines->size,
+               &line_offset);
+
+         break;
+      }
+   }
+
+   /* Build output string from required lines */
+   for (i = 0; i < line_ticker->max_lines; i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = 0;
+      bool line_valid   = true;
+
+      if (offset < lines->size)
+         line_index = offset;
+      else if (offset > lines->size)
+         line_index = (offset - 1) - lines->size;
+      else
+         line_valid = false;
+
+      if (line_valid)
+         strlcat(line_ticker->s, lines->elems[line_index].data, line_ticker->len);
+
+      if (i < line_ticker->max_lines - 1)
+         strlcat(line_ticker->s, "\n", line_ticker->len);
+   }
+
+   success          = true;
+   is_active        = true;
+   ticker_is_active = true;
+
+end:
+
+   if (wrapped_str)
+   {
+      free(wrapped_str);
+      wrapped_str = NULL;
+   }
+
+   if (lines)
+   {
+      string_list_free(lines);
+      lines = NULL;
+   }
+
+   if (!success)
+      if (line_ticker->len > 0)
+         line_ticker->s[0] = '\0';
+
+   return is_active;
+}
+
 bool menu_animation_is_active(void)
 {
    return animation_is_active || ticker_is_active;
@@ -784,7 +960,7 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag)
    for (i = 0; i < da_count(anim.list); ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
-      if (t->tag != *tag)
+      if (!t || t->tag != *tag)
          continue;
 
       if (anim.in_update)
@@ -810,6 +986,8 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
    {
       struct tween *t = da_getptr(anim.list, i);
+      if (!t)
+         continue;
 
       for (j = 0; j < subject->count; ++j)
       {
@@ -849,11 +1027,15 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             for (i = 0; i < da_count(anim.list); i++)
             {
                struct tween *t = da_getptr(anim.list, i);
+               if (!t)
+                  continue;
+
                if (t->subject)
                   t->subject = NULL;
             }
 
             da_free(anim.list);
+            da_free(anim.pending);
 
             memset(&anim, 0, sizeof(menu_animation_t));
          }

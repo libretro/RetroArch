@@ -667,7 +667,7 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
         #define DRFLAC_NO_CPUID
         #endif
     #else
-        #if defined(__GNUC__) || defined(__clang__)
+        #if (defined(__GNUC__) || defined(__clang__)) && !defined(__ANDROID__)
             static void drflac__cpuid(int info[4], int fid)
             {
                 __asm__ __volatile__ (
@@ -1335,7 +1335,7 @@ static DRFLAC_INLINE drflac_bool32 drflac__read_uint32(drflac_bs* bs, unsigned i
     {
         if (bitCount < DRFLAC_CACHE_L1_SIZE_BITS(bs))
         {
-            *pResultOut = DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCount);
+            *pResultOut = (drflac_uint32)DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCount);
             bs->consumedBits += bitCount;
             bs->cache <<= bitCount;
         } else {
@@ -1348,12 +1348,12 @@ static DRFLAC_INLINE drflac_bool32 drflac__read_uint32(drflac_bs* bs, unsigned i
         /* It straddles the cached data. It will never cover more than the next chunk. We just read the number in two parts and combine them. */
         drflac_uint32 bitCountHi = DRFLAC_CACHE_L1_BITS_REMAINING(bs);
         drflac_uint32 bitCountLo = bitCount - bitCountHi;
-        drflac_uint32 resultHi = DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountHi);
+        drflac_uint32 resultHi   = (drflac_uint32)DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountHi);
 
         if (!drflac__reload_cache(bs))
             return DRFLAC_FALSE;
 
-        *pResultOut = (resultHi << bitCountLo) | DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
+        *pResultOut = (drflac_uint32)(resultHi << bitCountLo) | DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
         bs->consumedBits += bitCountLo;
         bs->cache <<= bitCountLo;
         return DRFLAC_TRUE;

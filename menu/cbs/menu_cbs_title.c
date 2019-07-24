@@ -78,6 +78,7 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
    return 0;
 }
 
+#ifdef HAVE_AUDIOMIXER
 static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
@@ -85,6 +86,7 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
    snprintf(s, len, "Mixer Stream #%d: %s", offset + 1, audio_driver_mixer_get_stream_name(offset));
    return 0;
 }
+#endif
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
@@ -119,12 +121,15 @@ default_title_macro(action_get_frontend_counters_list,          MENU_ENUM_LABEL_
 default_title_macro(action_get_core_counters_list,              MENU_ENUM_LABEL_VALUE_CORE_COUNTERS)
 default_title_macro(action_get_recording_settings_list,         MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS)
 default_title_macro(action_get_playlist_settings_list,          MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS)
+default_title_macro(action_get_playlist_manager_list,           MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)
 default_title_macro(action_get_input_hotkey_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)
 default_title_macro(action_get_driver_settings_list,            MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS)
 default_title_macro(action_get_core_settings_list,              MENU_ENUM_LABEL_VALUE_CORE_SETTINGS)
 default_title_macro(action_get_video_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
 default_title_macro(action_get_crt_switchres_settings_list,     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS)
 default_title_macro(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS)
+default_title_macro(action_get_load_disc_list,                  MENU_ENUM_LABEL_VALUE_LOAD_DISC)
+default_title_macro(action_get_dump_disc_list,                  MENU_ENUM_LABEL_VALUE_DUMP_DISC)
 default_title_macro(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
 default_title_macro(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 default_title_macro(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
@@ -155,7 +160,9 @@ default_title_macro(action_get_privacy_settings_list,           MENU_ENUM_LABEL_
 default_title_macro(action_get_midi_settings_list,              MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS)
 default_title_macro(action_get_updater_settings_list,           MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS)
 default_title_macro(action_get_audio_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
+#ifdef HAVE_AUDIOMIXER
 default_title_macro(action_get_audio_mixer_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS)
+#endif
 default_title_macro(action_get_input_settings_list,             MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 default_title_macro(action_get_latency_settings_list,           MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)
 default_title_macro(action_get_core_cheat_options_list,         MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
@@ -164,6 +171,7 @@ default_title_macro(action_get_load_content_special,            MENU_ENUM_LABEL_
 default_title_macro(action_get_cursor_manager_list,             MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER)
 default_title_macro(action_get_database_manager_list,           MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER)
 default_title_macro(action_get_system_information_list,         MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION)
+default_title_macro(action_get_disc_information_list,        MENU_ENUM_LABEL_VALUE_DISC_INFORMATION)
 default_title_macro(action_get_network_information_list,        MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION)
 default_title_macro(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 default_title_macro(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
@@ -173,6 +181,7 @@ default_title_macro(action_get_title_goto_image,                MENU_ENUM_LABEL_
 default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
+default_title_macro(action_get_title_deferred_core_list,        MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -185,7 +194,6 @@ default_fill_title_macro(action_get_title_core_directory,       MENU_ENUM_LABEL_
 default_fill_title_macro(action_get_title_core_info_directory,  MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH)
 default_fill_title_macro(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR)
 default_fill_title_macro(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
-default_fill_title_macro(action_get_title_deferred_core_list,   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 default_fill_title_macro(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
 default_fill_title_macro(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
 default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
@@ -374,6 +382,16 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_dump_disc_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_load_disc_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
@@ -556,11 +574,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_audio_settings_list);
       return 0;
    }
+#ifdef HAVE_AUDIOMIXER
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_audio_mixer_settings_list);
       return 0;
    }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_latency_settings_list);
@@ -569,6 +589,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_system_information_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_disc_information_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION)))
@@ -649,6 +674,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
+         case MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -865,12 +891,14 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_playlist_manager_list);
+            break;
          case MENU_ENUM_LABEL_MANAGEMENT:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         case MENU_ENUM_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
@@ -1000,6 +1028,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
+         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
          case MENU_LABEL_CONFIGURATIONS:
@@ -1181,8 +1210,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
-         case MENU_LABEL_PLAYLISTS_TAB:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
+         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_playlist_manager_list);
             break;
          case MENU_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheevos_list);
@@ -1305,12 +1334,14 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
 
+#ifdef HAVE_AUDIOMIXER
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_mixer_stream_actions);
       return 0;
    }
+#endif
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {
@@ -1329,6 +1360,12 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
          return 0;
    }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)))
+   {
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+         return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
@@ -1339,9 +1376,19 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
       return 0;
    }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
+      return 0;
+   }
    if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
       return 0;
    }
 

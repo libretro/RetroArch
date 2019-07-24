@@ -452,7 +452,7 @@ static void ozone_update_thumbnail_image(void *data)
 
          if (menu_thumbnail_get_system(ozone->thumbnail_path_data, &system))
             task_push_pl_entry_thumbnail_download(system,
-                  playlist_get_cached(), menu_navigation_get_selection(),
+                  playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
                   false, true);
       }
    }
@@ -1554,8 +1554,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Current list */
    ozone_draw_entries(ozone,
       video_info,
-      ozone->selection,
-      ozone->selection_old,
+      (unsigned)ozone->selection,
+      (unsigned)ozone->selection_old,
       menu_entries_get_selection_buf_ptr(0),
       ozone->animations.list_alpha,
       ozone->animations.scroll_y,
@@ -1566,8 +1566,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (ozone->draw_old_list)
       ozone_draw_entries(ozone,
          video_info,
-         ozone->selection_old_list,
-         ozone->selection_old_list,
+         (unsigned)ozone->selection_old_list,
+         (unsigned)ozone->selection_old_list,
          ozone->selection_buf_old,
          ozone->animations.list_alpha,
          ozone->scroll_old,
@@ -1814,7 +1814,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
       return generic_menu_iterate(menu, userdata, action);
 
    if (ozone->horizontal_list)
-      horizontal_list_size = ozone->horizontal_list->size;
+      horizontal_list_size    = (unsigned)ozone->horizontal_list->size;
 
    ozone->messagebox_state = false || menu_input_dialog_get_display_kb();
 
@@ -1831,7 +1831,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
             break;
 
          tag           = (uintptr_t)ozone;
-         new_selection = (ozone->categories_selection_ptr + 1);
+         new_selection = (int)(ozone->categories_selection_ptr + 1);
 
          if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
             new_selection = 0;
@@ -1846,7 +1846,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
             break;
 
          tag           = (uintptr_t)ozone;
-         new_selection = ozone->categories_selection_ptr - 1;
+         new_selection = (int)ozone->categories_selection_ptr - 1;
 
          if (new_selection < 0)
             new_selection = horizontal_list_size + ozone->system_tab_end;

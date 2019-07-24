@@ -211,30 +211,31 @@ enum frontend_powerstate frontend_uwp_get_powerstate(
       int *seconds, int *percent)
 {
    SYSTEM_POWER_STATUS status;
-	enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
-	if (!GetSystemPowerStatus(&status))
-		return ret;
+   if (!GetSystemPowerStatus(&status))
+      return ret;
 
-	if (status.BatteryFlag == 0xFF)
-		ret = FRONTEND_POWERSTATE_NONE;
-	if (status.BatteryFlag & (1 << 7))
-		ret = FRONTEND_POWERSTATE_NO_SOURCE;
-	else if (status.BatteryFlag & (1 << 3))
-		ret = FRONTEND_POWERSTATE_CHARGING;
-	else if (status.ACLineStatus == 1)
-		ret = FRONTEND_POWERSTATE_CHARGED;
-	else
-		ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+   if (status.BatteryFlag == 0xFF)
+      ret = FRONTEND_POWERSTATE_NONE;
+   else if (status.BatteryFlag & (1 << 7))
+      ret = FRONTEND_POWERSTATE_NO_SOURCE;
+   else if (status.BatteryFlag & (1 << 3))
+      ret = FRONTEND_POWERSTATE_CHARGING;
+   else if (status.ACLineStatus == 1)
+      ret = FRONTEND_POWERSTATE_CHARGED;
+   else
+      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-	*percent  = (int)status.BatteryLifePercent;
-	*seconds  = (int)status.BatteryLifeTime;
+   *percent  = (int)status.BatteryLifePercent;
+   *seconds  = (int)status.BatteryLifeTime;
 
 #ifdef _WIN32
-      if (*percent == 255)
-         *percent = 0;
+   if (*percent == 255)
+      *percent = 0;
 #endif
-	return ret;
+
+   return ret;
 }
 
 enum frontend_architecture frontend_uwp_get_architecture(void)
@@ -394,15 +395,15 @@ static uint64_t frontend_uwp_get_mem_total(void)
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
 #if _WIN32_WINNT >= 0x0500
-	MEMORYSTATUSEX mem_info;
-	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-	GlobalMemoryStatusEx(&mem_info);
-	return mem_info.ullTotalPhys;
+   MEMORYSTATUSEX mem_info;
+   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
+   GlobalMemoryStatusEx(&mem_info);
+   return mem_info.ullTotalPhys;
 #else
-	MEMORYSTATUS mem_info;
-	mem_info.dwLength = sizeof(MEMORYSTATUS);
-	GlobalMemoryStatus(&mem_info);
-	return mem_info.dwTotalPhys;
+   MEMORYSTATUS mem_info;
+   mem_info.dwLength = sizeof(MEMORYSTATUS);
+   GlobalMemoryStatus(&mem_info);
+   return mem_info.dwTotalPhys;
 #endif
 }
 
@@ -411,15 +412,15 @@ static uint64_t frontend_uwp_get_mem_used(void)
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
 #if _WIN32_WINNT >= 0x0500
-	MEMORYSTATUSEX mem_info;
-	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-	GlobalMemoryStatusEx(&mem_info);
-	return ((frontend_uwp_get_mem_total() - mem_info.ullAvailPhys));
+   MEMORYSTATUSEX mem_info;
+   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
+   GlobalMemoryStatusEx(&mem_info);
+   return ((frontend_uwp_get_mem_total() - mem_info.ullAvailPhys));
 #else
-	MEMORYSTATUS mem_info;
-	mem_info.dwLength = sizeof(MEMORYSTATUS);
-	GlobalMemoryStatus(&mem_info);
-	return ((frontend_uwp_get_mem_total() - mem_info.dwAvailPhys));
+   MEMORYSTATUS mem_info;
+   mem_info.dwLength = sizeof(MEMORYSTATUS);
+   GlobalMemoryStatus(&mem_info);
+   return ((frontend_uwp_get_mem_total() - mem_info.dwAvailPhys));
 #endif
 }
 

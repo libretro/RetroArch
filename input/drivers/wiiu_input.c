@@ -28,16 +28,12 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "wiiu_dbg.h"
-
-#ifdef WIIU_HID
-#define MAX_PADS 16
-#else
-#define MAX_PADS 5
-#endif
 
 static uint8_t keyboardChannel = 0x00;
 static bool keyboardState[RETROK_LAST] = { 0 };
@@ -50,7 +46,7 @@ typedef struct wiiu_input
 
 void kb_connection_callback(KBDKeyEvent *key)
 {
-	keyboardChannel = keyboardChannel + (key->channel + 0x01);
+   keyboardChannel = keyboardChannel + (key->channel + 0x01);
 }
 
 void kb_disconnection_callback(KBDKeyEvent *key)
@@ -120,24 +116,11 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if(!wiiu)
+   if (!wiiu)
      return;
 
-   if(wiiu->joypad)
+   if (wiiu->joypad)
      wiiu->joypad->poll();
-}
-
-static bool wiiu_key_pressed(int key)
-{
-   bool ret = false;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   if (keyboardState[key] && (keyboardChannel > 0))
-      ret = true;
-
-   return ret;
 }
 
 static int16_t wiiu_input_state(void *data,
@@ -148,16 +131,57 @@ static int16_t wiiu_input_state(void *data,
 {
    wiiu_input_t *wiiu         = (wiiu_input_t*)data;
 
-   if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
+   if (!wiiu || !(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
       return 0;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(wiiu->joypad,
-               joypad_info, port, binds[port], id);
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               /* Auto-binds are per joypad, not per user. */
+               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
+                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
+                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+
+               if ((uint16_t)joykey != NO_BTN && wiiu->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+               if (((float)abs(wiiu->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
+            }
+
+            return ret;
+         }
+         else
+         {
+            /* Auto-binds are per joypad, not per user. */
+            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
+               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
+               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+
+            if ((uint16_t)joykey != NO_BTN && wiiu->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               return true;
+            if (((float)abs(wiiu->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
+         }
+         break;
       case RETRO_DEVICE_KEYBOARD:
-         return wiiu_key_pressed(id);
+         if (id < RETROK_LAST && keyboardState[id] && (keyboardChannel > 0))
+            return true;
+         return false;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wiiu->joypad,

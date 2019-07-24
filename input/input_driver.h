@@ -244,72 +244,6 @@ bool input_sensor_set_state(unsigned port,
 
 float input_sensor_get_input(unsigned port, unsigned id);
 
-#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
-/**
- * input_pop_analog_dpad:
- * @binds                          : Binds to modify.
- *
- * Restores binds temporarily overridden by input_push_analog_dpad().
- **/
-#define input_pop_analog_dpad(binds) \
-{ \
-   unsigned j; \
-   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
-      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
-}
-
-/**
- * input_push_analog_dpad:
- * @binds                          : Binds to modify.
- * @mode                           : Which analog stick to bind D-Pad to.
- *                                   E.g:
- *                                   ANALOG_DPAD_LSTICK
- *                                   ANALOG_DPAD_RSTICK
- *
- * Push analog to D-Pad mappings to binds.
- **/
-#define input_push_analog_dpad(binds, mode) \
-{ \
-   unsigned k; \
-   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
-   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
-   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
-   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
-   if ((mode) == ANALOG_DPAD_LSTICK) \
-   { \
-      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
-      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
-      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
-      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
-   } \
-   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-   if (!inherit_joyaxis(binds)) \
-   { \
-      unsigned j = x_plus + 3; \
-      /* Inherit joyaxis from analogs. */ \
-      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
-   } \
-}
-
-/**
- * input_state:
- * @port                 : user number.
- * @device               : device identifier of user.
- * @idx                  : index value of user.
- * @id                   : identifier of key pressed by user.
- *
- * Input state callback function.
- *
- * Returns: Non-zero if the given key (identified by @id) 
- * was pressed by the user
- * (assigned to @port).
- **/
-int16_t input_state(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 void *input_driver_get_data(void);
 
 void input_get_state_for_port(
@@ -318,10 +252,6 @@ void input_get_state_for_port(
 const input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
-
-void **input_driver_get_data_ptr(void);
-
-bool input_driver_has_capabilities(void);
 
 void input_driver_set_flushing_input(void);
 
@@ -445,39 +375,6 @@ const input_device_driver_t *input_joypad_init_driver(
          ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
          break; \
    }
-
-/**
- * input_joypad_pressed:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @binds                   : Binds of user.
- * @key                     : Identifier of key.
- *
- * Checks if key (@key) was being pressed by user
- * with number @port with provided keybinds (@binds).
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-static INLINE bool input_joypad_pressed(
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t joypad_info,
-      unsigned port,
-      const struct retro_keybind *binds,
-      unsigned key)
-{
-   /* Auto-binds are per joypad, not per user. */
-   const uint64_t joykey  = (binds[key].joykey != NO_BTN)
-      ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-   const uint32_t joyaxis = (binds[key].joyaxis != AXIS_NONE)
-      ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
-
-   if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))
-      return true;
-
-   return ((float)abs(drv->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold;
-
-}
 
 /**
  * input_joypad_analog:

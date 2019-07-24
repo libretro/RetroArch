@@ -20,6 +20,8 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <retro_environment.h>
+
 #include <ppl.h>
 #include <ppltasks.h>
 #include <stdio.h>
@@ -42,6 +44,7 @@ using namespace Windows::Storage::FileProperties;
 #endif
 #endif
 
+#include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <encodings/utf.h>

@@ -54,6 +54,10 @@
 
 #import "../video_coord_array.h"
 
+/* Temporary workaround for metal not being able to poll flags during init */
+static gfx_ctx_driver_t metal_fake_context;
+static uint32_t metal_get_flags(void *data);
+
 static bool metal_set_shader(void *data,
                              enum rarch_shader_type type, const char *path);
 
@@ -70,8 +74,14 @@ static void *metal_init(const video_info_t *video,
    }
 
    {
-      const char *shader_path = retroarch_get_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_path);
+      const char *shader_path;
+      enum rarch_shader_type type;
+
+      metal_fake_context.get_flags = metal_get_flags;
+      video_context_driver_set(&metal_fake_context);
+
+      shader_path = retroarch_get_shader_preset();
+      type = video_shader_parse_type(shader_path);
       metal_set_shader((__bridge void *)md, type, shader_path);
    }
 
@@ -129,11 +139,16 @@ static bool metal_set_shader(void *data,
    if (!md)
       return false;
 
-   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
+      if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+         RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
       path = NULL;
    }
+
+   /* TODO actually return to stock */
+   if (string_is_empty(path))
+      return true;
 
    return [md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]];
 #else
@@ -316,6 +331,10 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
 
    return flags;
 }

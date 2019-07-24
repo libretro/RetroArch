@@ -204,9 +204,9 @@ int filestream_getc(RFILE *stream)
 {
    char c = 0;
    if (!stream)
-      return 0;
-   if(filestream_read(stream, &c, 1) == 1)
-      return (int)c;
+      return EOF;
+   if (filestream_read(stream, &c, 1) == 1)
+      return (int)(unsigned char)c;
    return EOF;
 }
 
@@ -220,6 +220,9 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    int64_t startpos     = filestream_tell(stream);
    int        ret       = 0;
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
+
+   if (maxlen <= 0)
+      return EOF;
 
    buf[maxlen] = '\0';
 
@@ -424,7 +427,7 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-   return filestream_write(stream, &c_char, 1)==1 ? c : EOF;
+   return filestream_write(stream, &c_char, 1)==1 ? (int)(unsigned char)c : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
@@ -608,4 +611,9 @@ char *filestream_getline(RFILE *stream)
 
    newline[idx]      = '\0';
    return newline;
+}
+
+libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream)
+{
+   return (libretro_vfs_implementation_file*)stream->hfile;
 }

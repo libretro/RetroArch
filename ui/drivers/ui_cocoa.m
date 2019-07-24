@@ -26,6 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
+#include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -103,66 +104,6 @@ static void app_terminate(void)
 @end
 
 @implementation RApplication
-#endif
-
-#ifndef NSEventModifierFlagCapsLock
-#define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
-#endif
-
-#ifndef NSEventModifierFlagShift
-#define NSEventModifierFlagShift NSShiftKeyMask
-#endif
-
-#ifndef NSEventModifierFlagControl
-#define NSEventModifierFlagControl NSControlKeyMask
-#endif
-
-#ifndef NSEventModifierFlagOption
-#define NSEventModifierFlagOption NSAlternateKeyMask
-#endif
-
-#ifndef NSEventModifierFlagCommand
-#define NSEventModifierFlagCommand NSCommandKeyMask
-#endif
-
-#ifndef NSEventModifierFlagNumericPad
-#define NSEventModifierFlagNumericPad NSNumericPadKeyMask
-#endif
-
-#ifndef NSEventTypeKeyDown
-#define NSEventTypeKeyDown NSKeyDown
-#endif
-
-#ifndef NSEventTypeKeyUp
-#define NSEventTypeKeyUp NSKeyUp
-#endif
-
-#ifndef NSEventTypeLeftMouseDragged
-#define NSEventTypeLeftMouseDragged NSLeftMouseDragged
-#endif
-
-#ifndef NSEventTypeRightMouseDragged
-#define NSEventTypeRightMouseDragged NSRightMouseDragged
-#endif
-
-#ifndef NSEventTypeOtherMouseDragged
-#define NSEventTypeOtherMouseDragged NSOtherMouseDragged
-#endif
-
-#ifndef NSEventTypeMouseMoved
-#define NSEventTypeMouseMoved  NSMouseMoved
-#endif
-
-#ifndef NSEventTypeLeftMouseUp
-#define NSEventTypeLeftMouseUp NSLeftMouseUp
-#endif
-
-#ifndef NSEventTypeRightMouseUp
-#define NSEventTypeRightMouseUp NSRightMouseUp
-#endif
-
-#ifndef NSEventTypeOtherMouseUp
-#define NSEventTypeOtherMouseUp NSOtherMouseUp
 #endif
 
 
@@ -476,7 +417,7 @@ static char** waiting_argv;
 #ifdef HAVE_QT
        const ui_application_t *application = &ui_application_qt;
 #else
-       const ui_application_t *application = ui_companion_driver_get_application_ptr();
+       const ui_application_t *application = &ui_application_cocoa;
 #endif
        if (application)
           application->process_events();
@@ -769,13 +710,6 @@ static void ui_companion_cocoa_toggle(void *data, bool force)
    (void)force;
 }
 
-static int ui_companion_cocoa_iterate(void *data, unsigned action)
-{
-   (void)data;
-
-   return 0;
-}
-
 static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
@@ -822,7 +756,6 @@ static void *ui_companion_cocoa_get_main_window(void *data)
 ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
-   ui_companion_cocoa_iterate,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,

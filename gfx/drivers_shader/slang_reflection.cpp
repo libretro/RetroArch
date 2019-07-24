@@ -330,8 +330,7 @@ static bool add_active_buffer_ranges(
 {
    unsigned i;
    /* Get which uniforms are actually in use by this shader. */
-   std::vector<spirv_cross::BufferRange> ranges = 
-      compiler.get_active_buffer_ranges(resource.id);
+   auto ranges = compiler.get_active_buffer_ranges(resource.id);
 
    for (i = 0; i < ranges.size(); i++)
    {

@@ -25,6 +25,8 @@
 #include <file/file_path.h>
 #include <encodings/utf.h>
 #include <lists/string_list.h>
+#include <formats/image.h>
+
 #include <dxgi.h>
 
 #ifdef HAVE_MENU
@@ -71,6 +73,19 @@ static struct string_list *d3d11_gpu_list = NULL;
 static IDXGIAdapter1 *d3d11_adapters[D3D11_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d11_current_adapter = NULL;
 
+static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
+{
+   D3D11_RECT scissor_rect;
+
+   scissor_rect.left   = 0;
+   scissor_rect.top    = 0;
+   scissor_rect.right  = video_info->width;
+   scissor_rect.bottom = video_info->height;
+
+   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
+}
+
+
 #ifdef HAVE_OVERLAY
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {
@@ -100,18 +115,6 @@ d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w,
       sprites[index].pos.h    = h;
    }
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
-}
-
-static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
-{
-   D3D11_RECT scissor_rect;
-
-   scissor_rect.left   = 0;
-   scissor_rect.top    = 0;
-   scissor_rect.right  = video_info->width;
-   scissor_rect.bottom = video_info->height;
-
-   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
 }
 
 static void d3d11_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
@@ -375,17 +378,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(path)))
       return false;
 
    d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
    if (!video_shader_read_conf_preset(conf, d3d11->shader_preset))
       goto error;
-
-   video_shader_resolve_relative(d3d11->shader_preset, path);
 
    source = &d3d11->frame.texture[0];
    for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
@@ -783,6 +782,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->viewport.Width  = d3d11->vp.full_width;
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
+   d3d11->keep_aspect     = video->force_aspect;
    d3d11->vsync           = video->vsync;
    d3d11->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;

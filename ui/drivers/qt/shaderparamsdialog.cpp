@@ -23,12 +23,17 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif
+
 #include <math.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 #include "../../../command.h"
 #include "../../../configuration.h"
+#include "../../../msg_hash.h"
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"

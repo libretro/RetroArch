@@ -1771,7 +1771,10 @@ found:
                               coro->json, coro->k))
                         CHEEVOS_ERR(RCHEEVOS_TAG "error writing badge %s\n", coro->badge_fullpath);
                      else
+                     {
                         CHEEVOS_FREE(coro->json);
+                        coro->json = NULL;
+                     }
                   }
                }
             }

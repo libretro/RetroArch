@@ -132,6 +132,15 @@ void slock_free(slock_t *lock);
 void slock_lock(slock_t *lock);
 
 /**
+ * slock_try_lock:
+ * @lock                    : pointer to mutex object
+ *
+ * Attempts to lock a mutex. If a mutex is already locked by
+ * another thread, return false.  If the lock is acquired, return true.
+**/
+bool slock_try_lock(slock_t *lock);
+
+/**
  * slock_unlock:
  * @lock                    : pointer to mutex object
  *

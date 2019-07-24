@@ -891,34 +891,9 @@ static void d3d9_cg_renderchain_set_vertices(
          vp_width, vp_height);
 }
 
-static void d3d9_cg_renderchain_set_params(
-      d3d9_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      state_tracker_t *tracker,
-      unsigned pass_index)
-{
-   unsigned i;
-   /* Set state parameters. */
-   /* Only query uniforms in first pass. */
-   static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
-   static unsigned cnt = 0;
-
-   if (pass_index == 1)
-      cnt = state_tracker_get_uniform(tracker, tracker_info,
-            GFX_MAX_VARIABLES, chain->frame_count);
-
-   for (i = 0; i < cnt; i++)
-   {
-      d3d9_cg_set_param_2f(pass->fprg, dev, tracker_info[i].id, &tracker_info[i].value);
-      d3d9_cg_set_param_2f(pass->vprg, dev, tracker_info[i].id, &tracker_info[i].value);
-   }
-}
-
 static void d3d9_cg_renderchain_render_pass(
       d3d9_renderchain_t *chain,
       struct shader_pass *pass,
-      state_tracker_t *tracker,
       unsigned pass_index)
 {
    unsigned i;
@@ -974,9 +949,6 @@ static void d3d9_cg_renderchain_render_pass(
    if (pass_index >= 3)
       d3d9_cg_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
 
-   if (tracker)
-      d3d9_cg_renderchain_set_params(chain, chain->dev, pass, tracker, pass_index);
-
    d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* So we don't render with linear filter into render targets,
@@ -990,7 +962,6 @@ static void d3d9_cg_renderchain_render_pass(
 static bool d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
       const video_frame_info_t *video_info,
-      state_tracker_t *tracker,
       const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
@@ -1036,7 +1007,7 @@ static bool d3d9_cg_renderchain_render(
 
       d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
-      d3d9_device_set_render_target(chain->dev, 0, (void*)target);
+      d3d9_device_set_render_target(chain->dev, 0, target);
 
       d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
@@ -1063,7 +1034,7 @@ static bool d3d9_cg_renderchain_render(
             out_width, out_height, 0);
 
       d3d9_cg_renderchain_render_pass(chain,
-            from_pass, tracker,
+            from_pass,
             i + 1);
 
       current_width = out_width;
@@ -1072,7 +1043,7 @@ static bool d3d9_cg_renderchain_render(
    }
 
    /* Final pass */
-   d3d9_device_set_render_target(chain->dev, 0, (void*)back_buffer);
+   d3d9_device_set_render_target(chain->dev, 0, back_buffer);
 
    last_pass = (struct shader_pass*)&chain->passes->
       data[chain->passes->count - 1];
@@ -1093,7 +1064,6 @@ static bool d3d9_cg_renderchain_render(
 
    d3d9_cg_renderchain_render_pass(chain,
          last_pass,
-         tracker,
          chain->passes->count);
 
    chain->frame_count++;

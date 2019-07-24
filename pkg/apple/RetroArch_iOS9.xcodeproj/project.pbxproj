@@ -43,10 +43,8 @@
 		0FDA2A841BE1AFA800F2B5DA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
 		0FDA2A851BE1AFA800F2B5DA /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		0FDA2A861BE1AFA800F2B5DA /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
-		0FDA2A881BE1AFA800F2B5DA /* iOS/Resources/ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */; };
 		0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
@@ -104,8 +102,6 @@
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
-		83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
-		83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
@@ -243,8 +239,6 @@
 			isa = PBXGroup;
 			children = (
 				83EB675F19EEAF050096F441 /* iOS/modules */,
-				83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */,
-				83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
 			name = Assets;
@@ -415,11 +409,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0FDA2A881BE1AFA800F2B5DA /* iOS/Resources/ic_pause.png in Resources */,
 				0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */,
 				0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */,
 				040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */,
-				0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -532,6 +524,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -620,6 +613,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -673,6 +667,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -761,6 +756,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -832,6 +828,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",

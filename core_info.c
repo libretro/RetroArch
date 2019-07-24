@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include "retroarch.h"
 #include "verbosity.h"
 
 #include "core_info.h"
@@ -40,6 +41,16 @@ static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;
 static core_info_t *core_info_current               = NULL;
 static core_info_list_t *core_info_curr_list        = NULL;
+
+enum compare_op
+{
+   COMPARE_OP_EQUAL,
+   COMPARE_OP_NOT_EQUAL,
+   COMPARE_OP_LESS,
+   COMPARE_OP_LESS_EQUAL,
+   COMPARE_OP_GREATER,
+   COMPARE_OP_GREATER_EQUAL
+};
 
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
@@ -163,6 +174,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->categories);
       free(info->databases);
       free(info->notes);
+      free(info->required_hw_api);
       string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
       string_list_free(info->note_list);
@@ -170,6 +182,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       string_list_free(info->licenses_list);
       string_list_free(info->categories_list);
       string_list_free(info->databases_list);
+      string_list_free(info->required_hw_api_list);
       config_file_free((config_file_t*)info->config_data);
 
       for (j = 0; j < info->firmware_count; j++)
@@ -225,7 +238,7 @@ static config_file_t *core_info_list_iterate(
    info_path_base = NULL;
 
    if (path_is_valid(info_path))
-      conf = config_file_new(info_path);
+      conf = config_file_new_from_path_to_string(info_path);
    free(info_path);
 
    return conf;
@@ -284,8 +297,8 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    for (i = 0; i < contents->size; i++)
    {
-      const char *path      = contents->elems[i].data;
-      config_file_t *conf   = core_info_list_iterate(path,
+      const char *base_path = contents->elems[i].data;
+      config_file_t *conf   = core_info_list_iterate(base_path,
             path_basedir);
 
       if (conf)
@@ -420,6 +433,16 @@ static core_info_list_t *core_info_list_new(const char *path,
             tmp = NULL;
          }
 
+         if (config_get_string(conf, "required_hw_api", &tmp)
+               && !string_is_empty(tmp))
+         {
+            core_info[i].required_hw_api = strdup(tmp);
+            core_info[i].required_hw_api_list = string_split(core_info[i].required_hw_api, "|");
+
+            free(tmp);
+            tmp = NULL;
+         }
+
          if (tmp)
             free(tmp);
          tmp    = NULL;
@@ -438,8 +461,8 @@ static core_info_list_t *core_info_list_new(const char *path,
          core_info[i].config_data = conf;
       }
 
-      if (!string_is_empty(path))
-         core_info[i].path = strdup(path);
+      if (!string_is_empty(base_path))
+         core_info[i].path = strdup(base_path);
 
       if (!core_info[i].display_name)
          core_info[i].display_name =
@@ -460,7 +483,7 @@ static core_info_list_t *core_info_list_new(const char *path,
  *
  * Data in *info is invalidated when the
  * core_info_list is freed. */
-static bool core_info_list_get_info(core_info_list_t *core_info_list,
+bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path)
 {
    size_t i;
@@ -914,8 +937,8 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   char       *tmp          = NULL;
-   config_file_t *conf      = config_file_new(path);
+   char       *tmp     = NULL;
+   config_file_t *conf = config_file_new_from_path_to_string(path);
 
    if (!conf)
       return false;
@@ -928,4 +951,351 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 
    config_file_free(conf);
    return true;
+}
+
+static int core_info_qsort_func_path(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->path) || string_is_empty(b->path))
+      return 0;
+
+   return strcasecmp(a->path, b->path);
+}
+
+static int core_info_qsort_func_display_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
+      return 0;
+
+   return strcasecmp(a->display_name, b->display_name);
+}
+
+static int core_info_qsort_func_core_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->core_name) || string_is_empty(b->core_name))
+      return 0;
+
+   return strcasecmp(a->core_name, b->core_name);
+}
+
+static int core_info_qsort_func_system_name(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   if (string_is_empty(a->systemname) || string_is_empty(b->systemname))
+      return 0;
+
+   return strcasecmp(a->systemname, b->systemname);
+}
+
+void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type)
+{
+   if (!core_info_list)
+      return;
+
+   if (core_info_list->count < 2)
+      return;
+
+   switch (qsort_type)
+   {
+      case CORE_INFO_LIST_SORT_PATH:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_path);
+         break;
+      case CORE_INFO_LIST_SORT_DISPLAY_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_display_name);
+         break;
+      case CORE_INFO_LIST_SORT_CORE_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_core_name);
+         break;
+      case CORE_INFO_LIST_SORT_SYSTEM_NAME:
+         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
+               (int (*)(const void *, const void *))core_info_qsort_func_system_name);
+         break;
+      default:
+         return;
+   }
+}
+
+static bool core_info_compare_api_version(int sys_major, int sys_minor, int major, int minor, enum compare_op op)
+{
+   switch (op)
+   {
+      case COMPARE_OP_EQUAL:
+         if (sys_major == major && sys_minor == minor)
+            return true;
+         break;
+      case COMPARE_OP_NOT_EQUAL:
+         if (!(sys_major == major && sys_minor == minor))
+            return true;
+         break;
+      case COMPARE_OP_LESS:
+         if (sys_major < major || (sys_major == major && sys_minor < minor))
+            return true;
+         break;
+      case COMPARE_OP_LESS_EQUAL:
+         if (sys_major < major || (sys_major == major && sys_minor <= minor))
+            return true;
+         break;
+      case COMPARE_OP_GREATER:
+         if (sys_major > major || (sys_major == major && sys_minor > minor))
+            return true;
+         break;
+      case COMPARE_OP_GREATER_EQUAL:
+         if (sys_major > major || (sys_major == major && sys_minor >= minor))
+            return true;
+         break;
+      default:
+         break;
+   }
+
+   return false;
+}
+
+bool core_info_hw_api_supported(core_info_t *info)
+{
+   enum gfx_ctx_api sys_api;
+   gfx_ctx_flags_t sys_flags = {0};
+   int i;
+   const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
+   int sys_api_version_major = 0;
+   int sys_api_version_minor = 0;
+
+   enum api_parse_state
+   {
+      STATE_API_NAME,
+      STATE_API_COMPARE_OP,
+      STATE_API_VERSION
+   };
+
+   if (!info || !info->required_hw_api_list || info->required_hw_api_list->size == 0)
+      return true;
+
+   sys_api = video_context_driver_get_api();
+   video_context_driver_get_flags(&sys_flags);
+
+   for (i = 0; i < info->required_hw_api_list->size; i++)
+   {
+      char api_str[32] = {0};
+      char version[16] = {0};
+      char major_str[16] = {0};
+      char minor_str[16] = {0};
+      const char *cur_api = info->required_hw_api_list->elems[i].data;
+      int api_pos = 0;
+      int major_str_pos = 0;
+      int minor_str_pos = 0;
+      int cur_api_len = 0;
+      int j = 0;
+      int major = 0;
+      int minor = 0;
+      bool found_major = false;
+      bool found_minor = false;
+      enum compare_op op = COMPARE_OP_GREATER_EQUAL;
+      enum api_parse_state state = STATE_API_NAME;
+
+      if (string_is_empty(cur_api))
+         continue;
+
+      cur_api_len = strlen(cur_api);
+
+      for (j = 0; j < cur_api_len; j++)
+      {
+         if (cur_api[j] == ' ')
+            continue;
+
+         switch (state)
+         {
+            case STATE_API_NAME:
+            {
+               if (isupper(cur_api[j]) || islower(cur_api[j]))
+                  api_str[api_pos++] = cur_api[j];
+               else
+               {
+                  j--;
+                  state = STATE_API_COMPARE_OP;
+                  break;
+               }
+
+               break;
+            }
+            case STATE_API_COMPARE_OP:
+            {
+               if (j < cur_api_len - 1 && !(cur_api[j] >= '0' && cur_api[j] <= '9'))
+               {
+                  if (cur_api[j] == '=' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '=')
+                  {
+                     op = COMPARE_OP_EQUAL;
+                  }
+                  else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_NOT_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '<' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_LESS_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '>' && cur_api[j + 1] == '=')
+                  {
+                     op = COMPARE_OP_GREATER_EQUAL;
+                     j++;
+                  }
+                  else if (cur_api[j] == '<')
+                  {
+                     op = COMPARE_OP_LESS;
+                  }
+                  else if (cur_api[j] == '>')
+                  {
+                     op = COMPARE_OP_GREATER;
+                  }
+               }
+
+               state = STATE_API_VERSION;
+
+               break;
+            }
+            case STATE_API_VERSION:
+            {
+               if (!found_minor && cur_api[j] >= '0' && cur_api[j] <= '9' && cur_api[j] != '.')
+               {
+                  found_major = true;
+
+                  if (major_str_pos < sizeof(major_str) - 1)
+                     major_str[major_str_pos++] = cur_api[j];
+               }
+               else if (found_major && found_minor && cur_api[j] >= '0' && cur_api[j] <= '9')
+               {
+                  if (minor_str_pos < sizeof(minor_str) - 1)
+                     minor_str[minor_str_pos++] = cur_api[j];
+               }
+               else if (cur_api[j] == '.')
+               {
+                  found_minor = true;
+               }
+
+               break;
+            }
+            default:
+               break;
+         }
+      }
+
+      sscanf(major_str, "%d", &major);
+      sscanf(minor_str, "%d", &minor);
+      snprintf(version, sizeof(version), "%d.%d", major, minor);
+#if 0
+      printf("Major: %d\n", major);
+      printf("Minor: %d\n", minor);
+      printf("API: %s\n", api_str);
+      printf("Version: %s\n", version);
+      fflush(stdout);
+#endif
+
+      if ((string_is_equal_noncase(api_str, "opengl") && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
+            (string_is_equal_noncase(api_str, "openglcompatibility") && sys_api == GFX_CTX_OPENGL_API))
+      {
+         if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+         {
+            /* system is running a core context while compat is requested */
+            return false;
+         }
+
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "openglcore") && sys_api == GFX_CTX_OPENGL_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "opengles") && sys_api == GFX_CTX_OPENGL_ES_API)
+      {
+         sscanf(sys_api_version_str, "OpenGL ES %d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d8") && sys_api == GFX_CTX_DIRECT3D8_API)
+      {
+         sys_api_version_major = 8;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d9") && sys_api == GFX_CTX_DIRECT3D9_API)
+      {
+         sys_api_version_major = 9;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d10") && sys_api == GFX_CTX_DIRECT3D10_API)
+      {
+         sys_api_version_major = 10;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d11") && sys_api == GFX_CTX_DIRECT3D11_API)
+      {
+         sys_api_version_major = 11;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "direct3d12") && sys_api == GFX_CTX_DIRECT3D12_API)
+      {
+         sys_api_version_major = 12;
+         sys_api_version_minor = 0;
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "vulkan") && sys_api == GFX_CTX_VULKAN_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+      else if (string_is_equal_noncase(api_str, "metal") && sys_api == GFX_CTX_METAL_API)
+      {
+         sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
+
+         if (core_info_compare_api_version(sys_api_version_major, sys_api_version_minor, major, minor, op))
+            return true;
+      }
+   }
+
+   return false;
 }

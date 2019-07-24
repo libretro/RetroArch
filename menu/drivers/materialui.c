@@ -605,7 +605,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    for (i = 0; i < entries_end; i++)
    {
       menu_entry_t entry;
-      char wrapped_sublabel_str[512];
+      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
       const char *sublabel_str  = NULL;
       unsigned lines            = 0;
       materialui_node_t *node   = (materialui_node_t*)
@@ -744,7 +744,7 @@ static void materialui_render_label_value(
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
    char value_str[255];
-   char wrapped_sublabel_str[512];
+   char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
    unsigned entry_type             = 0;
    const char *sublabel_str        = NULL;
    bool switch_is_on               = true;
@@ -2111,6 +2111,18 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
+            if (settings->bools.menu_show_load_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+               menu_displaylist_setting(&entry);
+            }
+
+            if (settings->bools.menu_show_dump_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+               menu_displaylist_setting(&entry);
+            }
+
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
             entry.enum_idx      = MENU_ENUM_LABEL_UPDATE_LAKKA;
@@ -2504,7 +2516,8 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES)))
             {
                node->texture_switch2_index = MUI_TEXTURE_RENAME;
                node->texture_switch2_set   = true;
@@ -2684,7 +2697,8 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS))        ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS))
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SET_CORE_ASSOCIATION))
                   )
                   {
                      node->texture_switch2_index = MUI_TEXTURE_SETTINGS;

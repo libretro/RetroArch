@@ -25,6 +25,7 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 
 #include "../../menu_animation.h"
 
@@ -126,7 +127,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       return;
 
    if (ozone->horizontal_list)
-      horizontal_list_size = ozone->horizontal_list->size;
+      horizontal_list_size = (unsigned)ozone->horizontal_list->size;
 
    menu_display_scissor_begin(video_info, 0, ozone->dimensions.header_height, (unsigned) ozone->dimensions.sidebar_width, video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
 
@@ -320,7 +321,7 @@ unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
 
 unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
 {
-   int entries = (ozone->system_tab_end + 1 + (ozone->horizontal_list ? ozone->horizontal_list->size : 0));
+   int entries = (int)(ozone->system_tab_end + 1 + (ozone->horizontal_list ? ozone->horizontal_list->size : 0));
    return entries * ozone->dimensions.sidebar_entry_height + (entries - 1) * ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.sidebar_padding_vertical +
          (ozone->horizontal_list && ozone->horizontal_list->size > 0 ? ozone->dimensions.sidebar_entry_padding_vertical + 1 : 0);
 }

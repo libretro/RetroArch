@@ -161,7 +161,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 
 bool d3d12_init_base(d3d12_video_t* d3d12)
 {
-
+   DXGIAdapter adapter = NULL;
 #ifdef DEBUG
    D3D12GetDebugInterface_(&d3d12->debugController);
    D3D12EnableDebugLayer(d3d12->debugController);
@@ -191,14 +191,14 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
          str[0] = '\0';
 
 #ifdef __WINRT__
-         if (FAILED(DXGIEnumAdapters2(d3d12->factory, i, &d3d12->adapter)))
-            return false;
+         if (FAILED(DXGIEnumAdapters2(d3d12->factory, i, &adapter)))
+            break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &d3d12->adapter)))
-            return false;
+         if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &adapter)))
+            break;
 #endif
 
-         IDXGIAdapter_GetDesc(d3d12->adapter, &desc);
+         IDXGIAdapter_GetDesc(adapter, &desc);
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
@@ -207,9 +207,16 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
          string_list_append(d3d12->gpu_list, str, attr);
 
          if (i < D3D12_MAX_GPU_COUNT)
-            d3d12->adapters[i] = d3d12->adapter;
+         {
+            AddRef(adapter);
+            d3d12->adapters[i] = adapter;
+         }
+         Release(adapter);
+         adapter = NULL;
 
          i++;
+         if (i >= D3D12_MAX_GPU_COUNT)
+            break;
       }
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D12_API, d3d12->gpu_list);
@@ -217,6 +224,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
       if (0 <= settings->ints.d3d12_gpu_index && settings->ints.d3d12_gpu_index <= i && settings->ints.d3d12_gpu_index < D3D12_MAX_GPU_COUNT)
       {
          d3d12->adapter = d3d12->adapters[settings->ints.d3d12_gpu_index];
+         AddRef(d3d12->adapter);
          RARCH_LOG("[D3D12]: Using GPU index %d.\n", settings->ints.d3d12_gpu_index);
          video_driver_set_gpu_device_string(d3d12->gpu_list->elems[settings->ints.d3d12_gpu_index].data);
       }
@@ -224,6 +232,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
       {
          RARCH_WARN("[D3D12]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d12_gpu_index);
          d3d12->adapter = d3d12->adapters[0];
+         AddRef(d3d12->adapter);
       }
 
       if (!SUCCEEDED(D3D12CreateDevice_(d3d12->adapter, D3D_FEATURE_LEVEL_11_0, &d3d12->device)))

@@ -780,6 +780,7 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -805,6 +806,7 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
          || string_is_equal_noncase(file_ext, "apk")
       )
       return &zlib_backend;
+#endif
 #endif
 
    return NULL;

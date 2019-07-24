@@ -1,0 +1,104 @@
+buildscript {
+  repositories {
+    google()
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'com.android.tools.build:gradle:3.4.2'
+  }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.application'
+
+android {
+  compileSdkVersion 28
+  buildToolsVersion "28.0.3"
+
+  flavorDimensions "variant"
+
+  defaultConfig {
+    minSdkVersion 16
+    externalNativeBuild {
+      ndkBuild {
+        arguments "-j${Runtime.runtime.availableProcessors()}"
+      }
+    }
+    targetSdkVersion 28
+  }
+
+  productFlavors {
+    normal {
+      dimension "variant"
+    }
+    aarch64 {
+      applicationIdSuffix '.aarch64'
+      resValue "string", "app_name", "RetroArch (AArch64)"
+
+      dimension "variant"
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64'
+      }
+    }
+    ra32 {
+      applicationIdSuffix '.ra32'
+      resValue "string", "app_name", "RetroArch (32-bit)"
+
+      dimension "variant"
+      ndk {
+        abiFilters 'armeabi-v7a', 'x86'
+      }
+    }
+  }
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      assets.srcDirs = ['assets']
+      java.srcDirs = ['src', '../phoenix-common/src']
+      jniLibs.srcDir '../phoenix-common/libs'
+      jni.srcDirs = []
+      res.srcDirs = ['../phoenix-common/res']
+    }
+    aarch64 {
+      res.srcDirs = ['res64']
+    }
+  }
+
+  externalNativeBuild {
+    ndkBuild {
+      path '../phoenix-common/jni/Android.mk'
+    }
+  }
+
+  signingConfigs {
+    if (project.hasProperty("RELEASE_STORE_FILE")) {
+      release {
+        storeFile file(RELEASE_STORE_FILE)
+        storePassword RELEASE_STORE_PASSWORD
+        keyAlias RELEASE_KEY_ALIAS
+        keyPassword RELEASE_KEY_PASSWORD
+      }
+    }
+  }
+
+  buildTypes {
+    if (project.hasProperty("RELEASE_STORE_FILE")) {
+      release {
+        signingConfig signingConfigs.release
+      }
+    }
+    else {
+      release {
+        signingConfig signingConfigs.debug
+      }
+    }
+  }
+}

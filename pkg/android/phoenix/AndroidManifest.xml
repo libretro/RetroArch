@@ -1,5 +1,6 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
     package="com.retroarch"
     android:versionCode="1556806339"
     android:versionName="1.7.7"
@@ -8,9 +9,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
-    <uses-sdk
-        android:minSdkVersion="9"
-        android:targetSdkVersion="26" />
+
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
@@ -22,8 +21,8 @@
         android:label="RetroArch"
         android:hasCode="true"
         android:isGame="true"
-        android:banner="@drawable/banner">
-        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+        android:banner="@drawable/banner"
+        tools:ignore="UnusedAttribute">
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,10 +32,6 @@
             </intent-filter>
         </activity>
         <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
-            <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
-            <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
-        </activity>
-        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityPast" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>

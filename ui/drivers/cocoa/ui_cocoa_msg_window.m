@@ -21,6 +21,7 @@
 
 #include <string/stdstring.h>
 
+#include "cocoa_defines.h"
 #include "cocoa_common.h"
 
 #if defined(HAVE_COCOA)
@@ -28,18 +29,6 @@ extern id apple_platform;
 #endif
 
 #include "../../ui_companion_driver.h"
-
-#ifndef NSAlertStyleCritical
-#define NSAlertStyleCritical NSCriticalAlertStyle
-#endif
-
-#ifndef NSAlertStyleWarning
-#define NSAlertStyleWarning NSWarningAlertStyle
-#endif
-
-#ifndef NSAlertStyleInformational
-#define NSAlertStyleInformational NSInformationalAlertStyle
-#endif
 
 static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
 {

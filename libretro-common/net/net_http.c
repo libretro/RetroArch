@@ -288,6 +288,9 @@ struct http_connection_t *net_http_connection_new(const char *url,
    else
       error = true;
 
+   if (string_is_empty(conn->scan))
+      goto error;
+
    /* Get the port here from the url if it's specified.
       does not work on username password urls: user:pass@domain.com
 
@@ -312,16 +315,18 @@ struct http_connection_t *net_http_connection_new(const char *url,
 
       strlcpy(new_domain, domain_port, sizeof(new_domain));
 
+      free(url_dup);
+
       if (uri != NULL)
       {
-         if (strchr(uri, (char) '/') == NULL) 
+         if (strchr(uri, (char) '/') == NULL)
             strlcat(new_domain, uri, sizeof(new_domain));
          else
-         { 
+         {
             strlcat(new_domain, "/", sizeof(new_domain));
             strlcat(new_domain, strchr(uri, (char) '/')+sizeof(char), sizeof(new_domain));
          }
-         strlcpy(conn->scan, new_domain, sizeof(new_domain));
+         strlcpy(conn->scan, new_domain, strlen(conn->scan) + 1);
       }
    }
    /* end of port-fetching from url  */
