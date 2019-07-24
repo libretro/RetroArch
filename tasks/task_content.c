@@ -590,7 +590,31 @@ static bool content_load(content_ctx_info_t *info)
    char *argv_copy [MAX_ARGS]        = {NULL};
    char **rarch_argv_ptr             = (char**)info->argv;
    int *rarch_argc_ptr               = (int*)&info->argc;
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
+   struct rarch_main_wrap *wrap_args;
+   core_info_t core_info = {0};
+   core_info_list_t *core_info_list = NULL;
+
+   core_info_get_list(&core_info_list);
+
+   if (core_info_list)
+   {
+      if (core_info_list_get_info(core_info_list, &core_info, path_get(RARCH_PATH_CORE)))
+      {
+         if (!core_info_hw_api_supported(&core_info))
+         {
+            RARCH_ERR("This core is not compatible with the current video driver.\n");
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER),
+                  100, 250, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            return false;
+         }
+         else
+            RARCH_LOG("This core is compatible with the current video driver.\n");
+      }
+   }
+
+   wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args));
 
    if (!wrap_args)
