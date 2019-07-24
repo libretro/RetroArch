@@ -3584,8 +3584,6 @@ static void retroarch_pause_checks(void)
 #endif
    bool is_paused            = runloop_paused;
    bool is_idle              = runloop_idle;
-   bool is_slowmotion        = runloop_slowmotion;
-   bool is_perfcnt_enable    = runloop_perfcnt_enable;
 
    if (is_paused)
    {
