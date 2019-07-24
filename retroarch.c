@@ -1665,11 +1665,13 @@ static void video_driver_gpu_record_deinit(void);
 
 static void video_driver_set_nonblock_state(bool toggle);
 
+#ifdef HAVE_OVERLAY
 static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(input_overlay_t *ol, float opacity);
 static void retroarch_overlay_init(void);
 static void retroarch_overlay_deinit(void);
+#endif
 
 static void bsv_movie_deinit(void);
 static bool bsv_movie_init(void);
