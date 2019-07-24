@@ -68,7 +68,6 @@ retroarch:
 
 	@echo "*********************************************************************"
 	@echo "*** Classic ARM7 Cortex A7 build and packages built successfully! ***"
-	@echo "****************** Winner, Winner, Chicken Dinner! ******************"
 	@echo "*********************************************************************"
 clean:
 	rm -rf obj-unix
