@@ -241,6 +241,18 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
+   if (core_info->required_hw_api)
+   {
+      fill_pathname_noext(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API),
+            ": ",
+            sizeof(tmp));
+      string_list_join_concat(tmp, sizeof(tmp),
+            core_info->required_hw_api_list, ", ");
+      menu_entries_append_enum(info->list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;

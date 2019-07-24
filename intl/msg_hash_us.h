@@ -678,6 +678,10 @@ MSG_HASH(
     "System name"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+    "Required graphics API"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
     "Controls"
     )
@@ -8974,4 +8978,8 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
     "View information about inserted media discs."
+    )
+MSG_HASH(
+    MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
+    "This core is not compatible with the current video driver."
     )

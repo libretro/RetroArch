@@ -55,6 +55,7 @@ typedef struct
    char *categories;
    char *databases;
    char *notes;
+   char *required_hw_api;
    struct string_list *categories_list;
    struct string_list *databases_list;
    struct string_list *note_list;
@@ -62,6 +63,7 @@ typedef struct
    struct string_list *authors_list;
    struct string_list *permissions_list;
    struct string_list *licenses_list;
+   struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
    void *userdata;
 } core_info_t;
@@ -141,6 +143,11 @@ bool core_info_database_match_archive_member(const char *database_path);
 bool core_info_unsupported_content_path(const char *path);
 
 void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type);
+
+bool core_info_list_get_info(core_info_list_t *core_info_list,
+      core_info_t *out_info, const char *path);
+
+bool core_info_hw_api_supported(core_info_t *info);
 
 RETRO_END_DECLS
 
