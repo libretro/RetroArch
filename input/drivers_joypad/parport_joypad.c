@@ -305,15 +305,14 @@ static bool parport_joypad_init(void *data)
          }
       }
 
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
             "Generic Parallel Port device",
             NULL,
             "parport",
             i,
             0,
             0
-            ))
-         input_config_set_device_name(i, "Generic Parallel Port device");
+            );
    }
 
    return true;

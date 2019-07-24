@@ -549,15 +549,14 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   if (!input_autoconfigure_connect(
+   input_autoconfigure_connect(
          device_name,
          NULL,
          driver_name,
          idx,
          dev_vid,
          dev_pid
-         ))
-      input_config_set_device_name(idx, device_name);
+         );
 
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }

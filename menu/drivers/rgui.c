@@ -29,6 +29,8 @@
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
+#include <formats/image.h>
+
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
@@ -543,7 +545,7 @@ typedef struct
    bool show_wallpaper;
    char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255]; /* Must be a fixed length array... */
-   char menu_sublabel[255]; /* Must be a fixed length array... */
+   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
    unsigned menu_aspect_ratio;
    unsigned menu_aspect_ratio_lock;
    bool aspect_update_pending;
@@ -2156,8 +2158,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Open config file */
-   conf = config_file_new(theme_path);
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(theme_path)))
       goto end;
 
    /* Parse config file */
@@ -2363,11 +2364,15 @@ static void blit_line_regular(unsigned fb_width, int x, int y,
 static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   uint16_t *frame_buf_data  = rgui_frame_buf.data;
-   uint32_t shadow_colour_32 = shadow_color;
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
 
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    while (!string_is_empty(message))
    {
@@ -2389,15 +2394,12 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-                  /* Text pixel */
-                  *frame_buf_ptr = color;
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-                  /* Shadow pixels */
-                  frame_buf_ptr++;
-                  *frame_buf_ptr = shadow_color;
-                  frame_buf_ptr += fb_width - 1;
-                  /* Small performance hack... */
-                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
                }
             }
          }
@@ -2454,11 +2456,15 @@ static void blit_line_extended(unsigned fb_width, int x, int y,
 static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   uint16_t *frame_buf_data  = rgui_frame_buf.data;
-   uint32_t shadow_colour_32 = shadow_color;
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
 
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    while (!string_is_empty(message))
    {
@@ -2493,15 +2499,12 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
                {
                   uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-                  /* Text pixel */
-                  *frame_buf_ptr = color;
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-                  /* Shadow pixels */
-                  frame_buf_ptr++;
-                  *frame_buf_ptr = shadow_color;
-                  frame_buf_ptr += fb_width - 1;
-                  /* Small performance hack... */
-                  *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
                }
             }
          }
@@ -2577,15 +2580,19 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
-   uint16_t *frame_buf_data   = rgui_frame_buf.data;
-   uint32_t shadow_colour_32  = shadow_color;
-   const uint8_t *symbol_data = rgui_get_symbol_data(symbol);
+   uint16_t *frame_buf_data     = rgui_frame_buf.data;
+   const uint8_t *symbol_data   = rgui_get_symbol_data(symbol);
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
 
    if (!symbol_data)
       return;
-
-   /* Small performance hack... */
-   shadow_colour_32 |= shadow_colour_32 << 16;
 
    for (j = 0; j < FONT_HEIGHT; j++)
    {
@@ -2597,15 +2604,12 @@ static void blit_symbol_shadow(unsigned fb_width, int x, int y,
          {
             uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
 
-            /* Symbol pixel */
-            *frame_buf_ptr = color;
+            /* Symbol pixel + right shadow */
+            memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
 
-            /* Shadow pixels */
-            frame_buf_ptr++;
-            *frame_buf_ptr = shadow_color;
-            frame_buf_ptr += fb_width - 1;
-            /* Small performance hack... */
-            *(uint32_t *)frame_buf_ptr = shadow_colour_32;
+            /* Bottom shadow */
+            frame_buf_ptr += fb_width;
+            memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
          }
       }
    }
@@ -3533,7 +3537,7 @@ static void rgui_render(void *data, bool is_idle)
       /* Print menu sublabel/core name (if required) */
       if (settings->bools.menu_show_sublabels && !string_is_empty(rgui->menu_sublabel))
       {
-         char sublabel_buf[255];
+         char sublabel_buf[MENU_SUBLABEL_MAX_LENGTH];
          sublabel_buf[0] = '\0';
 
          ticker.s        = sublabel_buf;

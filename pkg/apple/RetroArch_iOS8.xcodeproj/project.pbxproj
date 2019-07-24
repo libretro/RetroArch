@@ -38,8 +38,6 @@
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
 		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
 		69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		83D632E219ECFCC4009E3161 /* iOS/Resources/ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */; };
-		83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
@@ -103,8 +101,6 @@
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
-		83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
-		83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
@@ -243,8 +239,6 @@
 			isa = PBXGroup;
 			children = (
 				83EB675F19EEAF050096F441 /* iOS/modules */,
-				83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */,
-				83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
 			name = Assets;
@@ -414,11 +408,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				83D632E219ECFCC4009E3161 /* iOS/Resources/ic_pause.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 				69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */,
 				041939FC22A0F4E400684552 /* GCDWebUploader.bundle in Resources */,
-				83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				83EB676019EEAF050096F441 /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -515,6 +507,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -586,6 +579,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
@@ -664,6 +658,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -752,6 +747,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
@@ -805,6 +801,7 @@
 					"-DHAVE_MENU",
 					"-DHAVE_MENU_WIDGETS",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_AUDIOMIXER",
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",

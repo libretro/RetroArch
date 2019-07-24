@@ -9,6 +9,10 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
+#include "../../retroarch.h"
+
 #ifdef HAVE_LIBNX
 #include <switch.h>
 
@@ -76,10 +80,7 @@ typedef struct
 /* end of touch mouse defines and types */
 #endif
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
-
-#define MAX_PADS 10
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -91,16 +92,14 @@ typedef struct switch_input
 
 #ifdef HAVE_LIBNX
    /* pointer */
-   uint32_t touch_scale_x;
-   uint32_t touch_scale_y;
-
-   uint32_t touch_half_resolution_x;
-   uint32_t touch_half_resolution_y;
-
    bool touch_state[MULTITOUCH_LIMIT];
    bool previous_touch_state[MULTITOUCH_LIMIT];
-   uint32_t touch_x[MULTITOUCH_LIMIT];
-   uint32_t touch_y[MULTITOUCH_LIMIT];
+   int16_t touch_x_viewport[MULTITOUCH_LIMIT]; /* used for POINTER device */
+   int16_t touch_y_viewport[MULTITOUCH_LIMIT]; /* used for POINTER device */
+   int16_t touch_x_screen[MULTITOUCH_LIMIT]; /* used for POINTER_SCREEN device */
+   int16_t touch_y_screen[MULTITOUCH_LIMIT]; /* used for POINTER_SCREEN device */
+   uint32_t touch_x[MULTITOUCH_LIMIT]; /* used for touch mouse */
+   uint32_t touch_y[MULTITOUCH_LIMIT]; /* used for touch mouse */
    uint32_t touch_previous_x[MULTITOUCH_LIMIT];
    uint32_t touch_previous_y[MULTITOUCH_LIMIT];
    bool keyboard_state[SWITCH_MAX_SCANCODE + 1];
@@ -165,6 +164,7 @@ static void switch_input_poll(void *data)
 
       if (sw->touch_state[i])
       {
+         struct video_viewport vp;
          touchPosition touch_position;
          hidTouchRead(&touch_position, i);
 
@@ -172,6 +172,23 @@ static void switch_input_poll(void *data)
          sw->touch_previous_y[i] = sw->touch_y[i];
          sw->touch_x[i] = touch_position.px;
          sw->touch_y[i] = touch_position.py;
+
+         /* convert from event coordinates to core and screen coordinates */
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
+
+         video_driver_translate_coord_viewport_wrap(
+            &vp,
+            touch_position.px,
+            touch_position.py,
+            &sw->touch_x_viewport[i],
+            &sw->touch_y_viewport[i],
+            &sw->touch_x_screen[i],
+            &sw->touch_y_screen[i]);
       }
    }
 
@@ -259,13 +276,23 @@ static void switch_input_poll(void *data)
 }
 
 #ifdef HAVE_LIBNX
-void calc_touch_scaling(switch_input_t *sw, uint32_t x, uint32_t y, uint32_t axis_max)
+static int16_t switch_pointer_screen_device_state(switch_input_t *sw,
+      unsigned id, unsigned idx)
 {
-   sw->touch_half_resolution_x = x/2;
-   sw->touch_half_resolution_y = y/2;
+   if (idx >= MULTITOUCH_LIMIT)
+      return 0;
 
-   sw->touch_scale_x = axis_max / sw->touch_half_resolution_x;
-   sw->touch_scale_y = axis_max / sw->touch_half_resolution_y;
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return sw->touch_state[idx];
+      case RETRO_DEVICE_ID_POINTER_X:
+         return sw->touch_x_screen[idx];
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return sw->touch_y_screen[idx];
+   }
+
+   return 0;
 }
 
 static int16_t switch_pointer_device_state(switch_input_t *sw,
@@ -279,9 +306,9 @@ static int16_t switch_pointer_device_state(switch_input_t *sw,
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return sw->touch_state[idx];
       case RETRO_DEVICE_ID_POINTER_X:
-         return ((sw->touch_x[idx] - sw->touch_half_resolution_x) * sw->touch_scale_x);
+         return sw->touch_x_viewport[idx];
       case RETRO_DEVICE_ID_POINTER_Y:
-         return ((sw->touch_y[idx] - sw->touch_half_resolution_y) * sw->touch_scale_y);
+         return sw->touch_y_viewport[idx];
    }
 
    return 0;
@@ -345,10 +372,9 @@ static int16_t switch_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret = 0;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if (port > MAX_PADS-1)
+   if (port > DEFAULT_MAX_PADS - 1)
       return 0;
 
    switch (device)
@@ -357,33 +383,42 @@ static int16_t switch_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
-               const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
                   ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
 
-               if (joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, joykey))
+               if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
                   ret |= (1 << i);
-               else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  continue;
+               }
+               if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
                   ret |= (1 << 1);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             /* Auto-binds are per joypad, not per user. */
-            const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
                ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
-            if (joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, joykey))
-               ret = 1;
-            else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               ret = 1;
+            if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               return true;
+            if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(sw->joypad,
@@ -400,8 +435,11 @@ static int16_t switch_input_state(void *data,
          return switch_input_mouse_state(sw, id, true);
          break;
       case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
          return switch_pointer_device_state(sw, id, idx);
+         break;
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return switch_pointer_screen_device_state(sw, id, idx);
+         break;
 #endif
    }
 
@@ -797,8 +835,6 @@ static void* switch_input_init(const char *joypad_driver)
       Here we assume that the touch screen is always 1280x720
       Call me back when a Nintendo Switch XL is out
    */
-
-   calc_touch_scaling(sw, 1280, 720, TOUCH_AXIS_MAX);
 
    input_keymaps_init_keyboard_lut(rarch_key_map_switch);
    unsigned int i;

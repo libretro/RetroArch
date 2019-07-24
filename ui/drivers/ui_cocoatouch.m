@@ -56,7 +56,7 @@ static void rarch_enable_ui(void)
 
    rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
    rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   rarch_menu_running();
+   retroarch_menu_running();
 }
 
 static void rarch_disable_ui(void)
@@ -67,7 +67,7 @@ static void rarch_disable_ui(void)
 
    rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
    rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   rarch_menu_running_finished();
+   retroarch_menu_running_finished(false);
 }
 
 static void ui_companion_cocoatouch_event_command(
@@ -580,18 +580,6 @@ static void ui_companion_cocoatouch_toggle(void *data, bool force)
       [ap toggleUI];
 }
 
-static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
-{
-   RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
-
-   (void)data;
-
-   if (ap)
-      [ap showPauseMenu:ap];
-
-   return 0;
-}
-
 static void ui_companion_cocoatouch_deinit(void *data)
 {
    ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
@@ -679,7 +667,6 @@ static void ui_companion_cocoatouch_msg_queue_push(void *data, const char *msg,
 ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
-   ui_companion_cocoatouch_iterate,
    ui_companion_cocoatouch_toggle,
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
@@ -689,9 +676,9 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_render_messagebox,
    NULL, /* get_main_window */
    NULL, /* log_msg */
-   &ui_browser_window_null,
-   &ui_msg_window_null,
-   &ui_window_null,
-   &ui_application_null,
+   NULL, /* ui_browser_window_null */
+   NULL, /* ui_msg_window_null */
+   NULL, /* ui_window_null */
+   NULL, /* ui_application_null */
    "cocoatouch",
 };

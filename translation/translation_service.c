@@ -30,8 +30,9 @@ typedef struct nbio_buf
 bool g_translation_service_status = false;
 */
 
-static void form_bmp_header(uint8_t *header, unsigned width, unsigned height,
-                            bool is32bpp)
+static void form_bmp_header(uint8_t *header,
+      unsigned width, unsigned height,
+      bool is32bpp)
 {
    unsigned line_size  = (width * (is32bpp?4:3) + 3) & ~3;
    unsigned size       = line_size * height + 54;
@@ -112,6 +113,7 @@ static void form_bmp_header(uint8_t *header, unsigned width, unsigned height,
 static void handle_translation_cb(
       retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
+   char curr;
    char* body_copy                   = NULL;
    uint8_t* raw_output_data          = NULL;
    char* raw_bmp_data                = NULL;
@@ -141,8 +143,6 @@ static void handle_translation_cb(
    int start                         = -1;
    char* found_string                = NULL;
    int curr_state                    = 0;
-   char curr;
-
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
        &is_perfcnt_enable);
@@ -180,16 +180,15 @@ static void handle_translation_cb(
             if (curr_state == 1)/*image*/
             {
               raw_bmp_data = (void*) unbase64(found_string, 
-                                              strlen(found_string),
-                                              &new_image_size);
+                    strlen(found_string),
+                    &new_image_size);
               curr_state = 0;
             }
             else if (curr_state == 2)
             {
               raw_sound_data = (void*) unbase64(found_string, 
-                                                strlen(found_string),
-                                                &new_sound_size);           
-              curr_state = 0;
+                    strlen(found_string), &new_sound_size);           
+              curr_state     = 0;
             }
             else if (strcmp(found_string, "image")==0)
             {
@@ -202,35 +201,34 @@ static void handle_translation_cb(
               free(found_string);
             }
             else
-            {
               curr_state = 0;
-            }
             start = -1;
          }
       }
       i++;
    }
+
    if (found_string)
        free(found_string);
 
-   if (raw_bmp_data == NULL && raw_sound_data == NULL)
+   if (!raw_bmp_data && !raw_sound_data)
    {
       error = "Invalid JSON body.";
       goto finish;
    }
 
-   if (raw_bmp_data != NULL)
+   if (raw_bmp_data)
    { 
       /* Get the video frame dimensions reference */
       video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
   
       /* Get image data (24 bit), and conver to the emulated pixel format */
-      image_width = ((uint32_t) ((uint8_t) raw_bmp_data[21]) << 24) +
+      image_width    = ((uint32_t) ((uint8_t) raw_bmp_data[21]) << 24) +
                     ((uint32_t) ((uint8_t) raw_bmp_data[20]) << 16) +
                     ((uint32_t) ((uint8_t) raw_bmp_data[19]) << 8) +
                     ((uint32_t) ((uint8_t) raw_bmp_data[18]) << 0);
 
-      image_height = ((uint32_t) ((uint8_t) raw_bmp_data[25]) << 24) +
+      image_height   = ((uint32_t) ((uint8_t) raw_bmp_data[25]) << 24) +
                      ((uint32_t) ((uint8_t) raw_bmp_data[24]) << 16) +
                      ((uint32_t) ((uint8_t) raw_bmp_data[23]) << 8) +
                      ((uint32_t) ((uint8_t) raw_bmp_data[22]) << 0);
@@ -261,53 +259,54 @@ static void handle_translation_cb(
    
       if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
       {
-         raw_output_data = (uint8_t*) malloc(width*height*4*sizeof(uint8_t));
-         scaler->out_fmt = SCALER_FMT_ARGB8888;
-         pitch = width*4;
+         raw_output_data    = (uint8_t*) malloc(width*height*4*sizeof(uint8_t));
+         scaler->out_fmt    = SCALER_FMT_ARGB8888;
+         pitch              = width*4;
          scaler->out_stride = width*4;
       }
       else
       {
-         raw_output_data = (uint8_t*) malloc(width*height*2*sizeof(uint8_t));
-         scaler->out_fmt = SCALER_FMT_RGB565;
-         pitch = width*2;
+         raw_output_data    = (uint8_t*) malloc(width*height*2*sizeof(uint8_t));
+         scaler->out_fmt    = SCALER_FMT_RGB565;
+         pitch              = width*2;
          scaler->out_stride = width*1;
       }
    
       if (!raw_output_data)
          goto finish;
-      scaler->in_fmt = SCALER_FMT_BGR24;
-      scaler->in_width = image_width;
-      scaler->in_height = image_height;
-      scaler->out_width = width;
-      scaler->out_height = height;
+
+      scaler->in_fmt      = SCALER_FMT_BGR24;
+      scaler->in_width    = image_width;
+      scaler->in_height   = image_height;
+      scaler->out_width   = width;
+      scaler->out_height  = height;
       scaler->scaler_type = SCALER_TYPE_POINT;
       scaler_ctx_gen_filter(scaler);
-      scaler->in_stride = -1*width*3;
+      scaler->in_stride   = -1*width*3;
 
       scaler_ctx_scale_direct(scaler, raw_output_data, 
                               (uint8_t*)raw_image_data+(image_height-1)*width*3);
       video_driver_frame(raw_output_data, image_width, image_height, pitch);
    }
-   if (raw_sound_data != NULL)
+
+   if (raw_sound_data)
    {
-     
-      retro_task_t *t = task_init();
-      nbio_buf_t *task_data = (nbio_buf_t*)calloc(1, sizeof(nbio_buf_t));
-      task_data->buf = raw_sound_data;
-      task_data->bufsize = new_sound_size;
-      task_data->path=NULL;
-      
       audio_mixer_stream_params_t params;
-      nbio_buf_t *img = (nbio_buf_t*)task_data;
+      retro_task_t       *t       = task_init();
+      nbio_buf_t *task_data       = (nbio_buf_t*)calloc(1, sizeof(nbio_buf_t));
+      nbio_buf_t *img             = (nbio_buf_t*)task_data;
+
+      task_data->buf              = raw_sound_data;
+      task_data->bufsize          = new_sound_size;
+      task_data->path             = NULL;
   
       if (!img)
          return;
    
       params.volume               = 1.0f;
-      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;//user->slot_selection_type;
+      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC; /* user->slot_selection_type; */
       params.slot_selection_idx   = 10;
-      params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM;//user->stream_type;
+      params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM; /* user->stream_type; */
       params.type                 = AUDIO_MIXER_TYPE_WAV;
       params.state                = AUDIO_STREAM_STATE_PLAYING;
       params.buf                  = img->buf;
@@ -319,7 +318,7 @@ static void handle_translation_cb(
 
       if (img->path)
          free(img->path);
-      if (params.basename != NULL)
+      if (params.basename)
          free(params.basename);
       free(img);
 
@@ -453,8 +452,7 @@ bool run_translation_service(void)
 
       /* Rescale down to regular resolution */
 
-
-      /*
+#if 0
       scaler->in_fmt = SCALER_FMT_BGR24;
       scaler->in_width = vp.width;
       scaler->in_height = vp.height;
@@ -470,7 +468,8 @@ bool run_translation_service(void)
       scaler->out_stride = width*3;
 
       scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev)
-      */
+#endif
+
       bit24_image = bit24_image_prev;
       bit24_image_prev = NULL;
 

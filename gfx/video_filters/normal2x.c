@@ -18,6 +18,7 @@
 
 #include "softfilter.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation normal2x_get_implementation
@@ -118,17 +119,20 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       uint32_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint64_t colour = (uint64_t)*(input + x);
-         colour |= colour << 32;
+         uint32_t color = *(input + x);
+         uint32_t color_buf[2];
 
-         *(uint64_t *)(out_ptr) = colour;
-         *(uint64_t *)(out_ptr + out_stride) = colour;
+         color_buf[0] = color;
+         color_buf[1] = color;
+
+         memcpy(out_ptr,              color_buf, sizeof(color_buf));
+         memcpy(out_ptr + out_stride, color_buf, sizeof(color_buf));
 
          out_ptr += 2;
       }
 
-      input += in_stride;
-		output += out_stride << 1;
+      input  += in_stride;
+      output += out_stride << 1;
    }
 }
 
@@ -143,20 +147,23 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint16_t * out_ptr = output;
+      uint16_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint32_t colour = (uint32_t)*(input + x);
-         colour |= colour << 16;
+         uint16_t color = *(input + x);
+         uint16_t color_buf[2];
 
-         *(uint32_t *)(out_ptr) = colour;
-         *(uint32_t *)(out_ptr + out_stride) = colour;
+         color_buf[0] = color;
+         color_buf[1] = color;
+
+         memcpy(out_ptr,              color_buf, sizeof(color_buf));
+         memcpy(out_ptr + out_stride, color_buf, sizeof(color_buf));
 
          out_ptr += 2;
       }
 
-      input += in_stride;
-		output += out_stride << 1;
+      input  += in_stride;
+      output += out_stride << 1;
    }
 }
 

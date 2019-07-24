@@ -33,7 +33,9 @@
 
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
+#ifdef HAVE_AUDIOMIXER
 #include <audio/audio_mixer.h>
+#endif
 
 #include "audio/audio_defines.h"
 
@@ -65,9 +67,6 @@ enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,
 
-   /* Initialize all drivers. */
-   RARCH_CTL_INIT,
-
    /* Deinitializes RetroArch. */
    RARCH_CTL_MAIN_DEINIT,
 
@@ -75,16 +74,10 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_DUMMY_CORE,
 
-   RARCH_CTL_PREINIT,
-
-   RARCH_CTL_DESTROY,
-
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
 
    RARCH_CTL_IS_PATCH_BLOCKED,
-   RARCH_CTL_SET_PATCH_BLOCKED,
-   RARCH_CTL_UNSET_PATCH_BLOCKED,
 
    RARCH_CTL_IS_UPS_PREF,
    RARCH_CTL_UNSET_UPS_PREF,
@@ -107,26 +100,17 @@ enum rarch_ctl_state
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
-   RARCH_CTL_USERNAME_SET,
-   RARCH_CTL_USERNAME_UNSET,
-
-   RARCH_CTL_SET_FRAME_LIMIT,
 
    RARCH_CTL_TASK_INIT,
 
-   RARCH_CTL_FRAME_TIME_FREE,
    RARCH_CTL_SET_FRAME_TIME_LAST,
-   RARCH_CTL_SET_FRAME_TIME,
 
    RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
 
-   RARCH_CTL_GET_WINDOWED_SCALE,
    RARCH_CTL_SET_WINDOWED_SCALE,
 
    RARCH_CTL_IS_OVERRIDES_ACTIVE,
-   RARCH_CTL_SET_OVERRIDES_ACTIVE,
-   RARCH_CTL_UNSET_OVERRIDES_ACTIVE,
 
    RARCH_CTL_IS_REMAPS_CORE_ACTIVE,
    RARCH_CTL_SET_REMAPS_CORE_ACTIVE,
@@ -146,17 +130,10 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_GAME_OPTIONS_ACTIVE,
 
-   RARCH_CTL_IS_NONBLOCK_FORCED,
-   RARCH_CTL_SET_NONBLOCK_FORCED,
-   RARCH_CTL_UNSET_NONBLOCK_FORCED,
-
    RARCH_CTL_IS_PAUSED,
    RARCH_CTL_SET_PAUSED,
 
-   RARCH_CTL_SET_CORE_SHUTDOWN,
-
    RARCH_CTL_SET_SHUTDOWN,
-   RARCH_CTL_UNSET_SHUTDOWN,
    RARCH_CTL_IS_SHUTDOWN,
 
    /* Runloop state */
@@ -176,36 +153,17 @@ enum rarch_ctl_state
    /* Core options */
    RARCH_CTL_HAS_CORE_OPTIONS,
    RARCH_CTL_GET_CORE_OPTION_SIZE,
-   RARCH_CTL_IS_CORE_OPTION_UPDATED,
    RARCH_CTL_CORE_OPTIONS_LIST_GET,
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
-   RARCH_CTL_CORE_OPTIONS_GET,
+   RARCH_CTL_CORE_VARIABLES_INIT,
    RARCH_CTL_CORE_OPTIONS_INIT,
+   RARCH_CTL_CORE_OPTIONS_INTL_INIT,
    RARCH_CTL_CORE_OPTIONS_DEINIT,
-
-   /* System info */
-   RARCH_CTL_SYSTEM_INFO_INIT,
-   RARCH_CTL_SYSTEM_INFO_FREE,
-
-   /* HTTP server */
-   RARCH_CTL_HTTPSERVER_INIT,
-   RARCH_CTL_HTTPSERVER_DESTROY,
-
-   RARCH_CTL_CONTENT_RUNTIME_LOG_INIT,
-   RARCH_CTL_CONTENT_RUNTIME_LOG_DEINIT,
-
-   /* Camera */
-   RARCH_CTL_CAMERA_SET_ACTIVE,
-   RARCH_CTL_CAMERA_UNSET_ACTIVE,
-   RARCH_CTL_CAMERA_SET_CB,
+   RARCH_CTL_CORE_OPTIONS_DISPLAY,
 
    /* BSV Movie */
-   RARCH_CTL_BSV_MOVIE_IS_INITED,
-
-   /* Location */
-   RARCH_CTL_LOCATION_SET_ACTIVE,
-   RARCH_CTL_LOCATION_UNSET_ACTIVE
+   RARCH_CTL_BSV_MOVIE_IS_INITED
 };
 
 enum rarch_capabilities
@@ -415,9 +373,9 @@ void runloop_set(enum runloop_action action);
 
 void runloop_unset(enum runloop_action action);
 
-void rarch_menu_running(void);
+void retroarch_menu_running(void);
 
-void rarch_menu_running_finished(void);
+void retroarch_menu_running_finished(bool quit);
 
 bool retroarch_is_on_main_thread(void);
 
@@ -427,7 +385,7 @@ rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
 
-void rarch_force_video_driver_fallback(const char *driver);
+void retroarch_force_video_driver_fallback(const char *driver);
 
 void rarch_core_runtime_tick(void);
 
@@ -445,6 +403,7 @@ enum retro_language rarch_get_language_from_iso(const char *lang);
 
 /* Audio */
 
+#ifdef HAVE_AUDIOMIXER
 typedef struct audio_mixer_stream
 {
    audio_mixer_sound_t *handle;
@@ -472,6 +431,7 @@ typedef struct audio_mixer_stream_params
    size_t bufsize;
    audio_mixer_stop_cb_t cb;
 } audio_mixer_stream_params_t;
+#endif
 
 typedef struct audio_driver
 {
@@ -555,10 +515,6 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-bool audio_driver_is_suspended(void);
-
-bool audio_driver_is_active(void);
-
 bool audio_driver_enable_callback(void);
 
 bool audio_driver_disable_callback(void);
@@ -604,8 +560,6 @@ bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
 
-bool audio_driver_set_callback(const void *data);
-
 bool audio_driver_callback(void);
 
 bool audio_driver_has_callback(void);
@@ -620,14 +574,11 @@ void audio_driver_frame_is_reverse(void);
 
 void audio_set_float(enum audio_action action, float val);
 
-void audio_set_bool(enum audio_action action, bool val);
-
-void audio_unset_bool(enum audio_action action, bool val);
-
 float *audio_get_float_ptr(enum audio_action action);
 
 bool *audio_get_bool_ptr(enum audio_action action);
 
+#ifdef HAVE_AUDIOMIXER
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
@@ -655,6 +606,8 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 void audio_driver_load_menu_sounds(void);
+
+#endif
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;
@@ -830,8 +783,6 @@ void recording_set_state(bool state);
 
 void streaming_set_state(bool state);
 
-void *recording_driver_get_data_ptr(void);
-
 bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
@@ -853,6 +804,7 @@ void recording_driver_update_streaming_url(void);
 #include "gfx/video_filter.h"
 #include "gfx/video_shader_parse.h"
 
+#include "input/input_driver.h"
 #include "input/input_types.h"
 
 #define RARCH_SCALE_BASE 256
@@ -1632,8 +1584,9 @@ bool video_driver_cached_frame_has_valid_framebuffer(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
-bool video_driver_is_stub_frame(void);
+
 bool video_driver_supports_viewport_read(void);
+
 bool video_driver_prefer_viewport_read(void);
 bool video_driver_supports_read_frame_raw(void);
 void video_driver_set_viewport_config(void);
@@ -1651,12 +1604,9 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
 void video_driver_show_mouse(void);
 void video_driver_hide_mouse(void);
 void video_driver_set_nonblock_state(bool toggle);
-bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
-bool video_driver_frame_filter_alive(void);
-bool video_driver_frame_filter_is_32bit(void);
 void video_driver_default_settings(void);
 void video_driver_load_settings(config_file_t *conf);
 void video_driver_save_settings(config_file_t *conf);
@@ -1669,31 +1619,13 @@ const struct retro_hw_render_context_negotiation_interface
 void video_driver_set_context_negotiation_interface(const struct
       retro_hw_render_context_negotiation_interface *iface);
 
-bool video_driver_gpu_record_init(unsigned size);
-
 void video_driver_gpu_record_deinit(void);
 
 bool video_driver_is_video_cache_context(void);
 
 void video_driver_set_video_cache_context_ack(void);
 
-bool video_driver_is_video_cache_context_ack(void);
-
-bool video_driver_is_active(void);
-
-bool video_driver_get_current_software_framebuffer(struct
-      retro_framebuffer *fb);
-
-bool video_driver_get_hw_render_interface(const struct
-      retro_hw_render_interface **iface);
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
-
-void video_driver_set_title_buf(void);
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-bool video_driver_has_widgets(void);
-#endif
 
 /**
  * video_driver_find_handle:
@@ -1732,18 +1664,6 @@ const char* config_get_video_driver_options(void);
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data);
 
-/**
- * video_driver_get_current_framebuffer:
- *
- * Gets pointer to current hardware renderer framebuffer object.
- * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
- *
- * Returns: pointer to hardware framebuffer object, otherwise 0.
- **/
-uintptr_t video_driver_get_current_framebuffer(void);
-
-retro_proc_address_t video_driver_get_proc_address(const char *sym);
-
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *shader);
 
@@ -1762,11 +1682,6 @@ void video_driver_set_texture_enable(bool enable, bool full_screen);
 
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
-
-#ifdef HAVE_OVERLAY
-bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface);
-#endif
 
 #ifdef HAVE_VIDEO_LAYOUT
 const video_layout_render_interface_t *video_driver_layout_render_interface(void);
@@ -2094,12 +2009,6 @@ extern const shader_backend_t gl_cg_backend;
 
 /* BSV Movie */
 
-enum rarch_movie_type
-{
-   RARCH_MOVIE_PLAYBACK = 0,
-   RARCH_MOVIE_RECORD
-};
-
 void bsv_movie_deinit(void);
 
 bool bsv_movie_init(void);
@@ -2107,10 +2016,6 @@ bool bsv_movie_init(void);
 void bsv_movie_frame_rewind(void);
 
 void bsv_movie_set_path(const char *path);
-
-bool bsv_movie_get_input(int16_t *bsv_data);
-
-void bsv_movie_set_input(int16_t *bsv_data);
 
 bool bsv_movie_check(void);
 
@@ -2134,53 +2039,6 @@ typedef struct location_driver
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
 extern location_driver_t location_null;
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_location_start(void);
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_location_stop(void);
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
 
 /**
  * config_get_location_driver_options:
@@ -2270,9 +2128,15 @@ const void *camera_driver_find_handle(int index);
  **/
 const char *camera_driver_find_ident(int index);
 
-void driver_camera_stop(void);
+void retroarch_overlay_next(void);
 
-bool driver_camera_start(void);
+void retroarch_overlay_set_scale_factor(void);
+
+void retroarch_overlay_set_alpha_mod(void);
+
+void retroarch_overlay_deinit(void);
+
+void retroarch_overlay_init(void);
 
 RETRO_END_DECLS
 

@@ -1,4 +1,4 @@
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500)
+﻿#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500)
 #if (_MSC_VER >= 1700 && _MSC_VER < 1910)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
@@ -651,7 +651,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "コアの情報"
+   "コア情報"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
@@ -1628,6 +1628,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "コンテンツをロード"
 )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "ディスクをロード")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "ディスクをダンプ")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "ステートロード"
@@ -9003,3 +9007,27 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    "GPUインデックス"
 )
+MSG_HASH(MSG_DUMPING_DISC,
+      "ディスクをダンプ中...")
+MSG_HASH(MSG_DRIVE_NUMBER,
+      "ドライブ%d")
+MSG_HASH(MSG_LOAD_CORE_FIRST,
+      "コアをロードしてください。")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+      "ドライブからの読み込みに失敗しました。ダンプが中止されました。")
+MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+      "ディスクに書き込みに失敗しました。ダンプが中止されました。")
+MSG_HASH(MSG_NO_DISC_INSERTED,
+      "ドライブにディスクが挿入されていません。")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "ディスク情報"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "挿入されたディスクの情報を表示します。"
+    )
+MSG_HASH(
+    MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
+    "このコアは設定されたビデオドライバに対応しません。"
+    )

@@ -159,7 +159,7 @@ static INLINE HRESULT D3D12ResetCommandAllocator(D3D12CommandAllocator command_a
 static INLINE ULONG  D3D12ReleaseFence(D3D12Fence fence) { return fence->lpVtbl->Release(fence); }
 static INLINE UINT64 D3D12GetCompletedValue(D3D12Fence fence)
 {
-   return fence->lpVtbl->GetCompletedValue(fence);
+   return fence && fence->lpVtbl->GetCompletedValue(fence);
 }
 static INLINE HRESULT D3D12SetEventOnCompletion(D3D12Fence fence, UINT64 value, HANDLE h_event)
 {

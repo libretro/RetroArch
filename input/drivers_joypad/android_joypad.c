@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../config.def.h"
+
 #include "../input_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 
@@ -34,7 +36,7 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
    struct android_app *android_app = (struct android_app*)g_android;
    unsigned hat_dir                = GET_HAT_DIR(joykey);
 
-   if (port >= MAX_PADS)
+   if (port >= DEFAULT_MAX_PADS)
       return false;
 
    if (hat_dir)
@@ -99,7 +101,7 @@ static void android_joypad_destroy(void)
    unsigned i, j;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
          android_app->hat_state[i][j]    = 0;

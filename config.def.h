@@ -53,6 +53,46 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
+#if defined(ANDROID)
+#define DEFAULT_MAX_PADS 8
+#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(_3DS)
+#define DEFAULT_MAX_PADS 1
+#elif defined(SWITCH) || defined(HAVE_LIBNX)
+#define DEFAULT_MAX_PADS 8
+#elif defined(WIIU)
+#ifdef WIIU_HID
+#define DEFAULT_MAX_PADS 16
+#else
+#define DEFAULT_MAX_PADS 5
+#endif
+#elif defined(DJGPP)
+#define DEFAULT_MAX_PADS 1
+#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(XENON)
+#define DEFAULT_MAX_PADS 4
+#elif defined(VITA) || defined(SN_TARGET_PSP2)
+#define DEFAULT_MAX_PADS 4
+#elif defined(PSP)
+#define DEFAULT_MAX_PADS 1
+#elif defined(PS2)
+#define DEFAULT_MAX_PADS 2
+#elif defined(GEKKO) || defined(HW_RVL)
+#define DEFAULT_MAX_PADS 4
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#define DEFAULT_MAX_PADS 8
+#elif defined(__QNX__)
+#define DEFAULT_MAX_PADS 8
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_MAX_PADS 7
+#elif defined(_XBOX)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
+#define DEFAULT_MAX_PADS 4
+#else
+#define DEFAULT_MAX_PADS 16
+#endif
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
 #define DEFAULT_POINTER_ENABLE true
 #else
@@ -192,7 +232,7 @@
 /* Threaded video. Will possibly increase performance significantly
  * at the cost of worse synchronization and latency.
  */
-#if defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX) || defined(ANDROID)
 #define DEFAULT_VIDEO_THREADED true
 #else
 #define DEFAULT_VIDEO_THREADED false
@@ -300,6 +340,7 @@ static bool quick_menu_show_undo_save_load_state        = true;
 static bool quick_menu_show_add_to_favorites            = true;
 static bool quick_menu_show_start_recording             = true;
 static bool quick_menu_show_start_streaming             = true;
+static bool quick_menu_show_set_core_association        = true;
 static bool quick_menu_show_reset_core_association      = true;
 static bool quick_menu_show_options                     = true;
 static bool quick_menu_show_controls                    = true;
@@ -321,6 +362,10 @@ static bool menu_horizontal_animation    = true;
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
+#ifdef HAVE_CDROM
+static bool menu_show_load_disc          = true;
+static bool menu_show_dump_disc          = true;
+#endif
 static bool menu_show_information        = true;
 static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
@@ -339,33 +384,39 @@ static bool menu_show_sublabels          = true;
 static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
 static float menu_ticker_speed           = 1.0f;
 
-static bool content_show_settings    = true;
-static bool content_show_favorites   = true;
-#ifdef HAVE_IMAGEVIEWER
-static bool content_show_images      = true;
+#if defined(HAVE_THREADS)
+static bool menu_savestate_resume     = true;
+#else
+static bool menu_savestate_resume     = false;
 #endif
-static bool content_show_music       = true;
+
+static bool content_show_settings     = true;
+static bool content_show_favorites    = true;
+#ifdef HAVE_IMAGEVIEWER
+static bool content_show_images       = true;
+#endif
+static bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-static bool content_show_video       = true;
+static bool content_show_video        = true;
 #endif
 #ifdef HAVE_NETWORKING
-static bool content_show_netplay     = true;
+static bool content_show_netplay      = true;
 #endif
-static bool content_show_history     = true;
+static bool content_show_history      = true;
 #ifdef HAVE_LIBRETRODB
-static bool content_show_add     	 = true;
+static bool content_show_add     	  = true;
 #endif
-static bool content_show_playlists   = true;
+static bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
-static unsigned xmb_scale_factor = 100;
-static unsigned xmb_alpha_factor = 75;
-static unsigned menu_font_color_red = 255;
+static unsigned xmb_scale_factor      = 100;
+static unsigned xmb_alpha_factor      = 75;
+static unsigned menu_font_color_red   = 255;
 static unsigned menu_font_color_green = 255;
-static unsigned menu_font_color_blue = 255;
-static unsigned xmb_menu_layout  = 0;
-static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
-static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
+static unsigned menu_font_color_blue  = 255;
+static unsigned xmb_menu_layout       = 0;
+static unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
+static unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 #define DEFAULT_XMB_SHADOWS_ENABLE false
@@ -411,7 +462,7 @@ static bool rgui_extended_ascii = false;
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
 
-static bool automatically_add_content_to_playlist = false;
+#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
@@ -450,15 +501,16 @@ static unsigned input_backtouch_toggle       = false;
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 
 #if defined(ANDROID) || defined(_WIN32)
-static bool menu_swap_ok_cancel_buttons = true;
+#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
-static bool menu_swap_ok_cancel_buttons = false;
+#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
 #endif
 
-static bool quit_press_twice = false;
+#define DEFAULT_QUIT_PRESS_TWICE true
 
-static bool default_log_to_file = false;
-static bool log_to_file_timestamp = false;
+#define DEFAULT_LOG_TO_FILE false
+
+#define DEFAULT_LOG_TO_FILE_TIMESTAMP false
 
 /* Crop overscanned frames. */
 #define DEFAULT_CROP_OVERSCAN true
@@ -515,12 +567,13 @@ static const float message_bgcolor_opacity = 1.0f;
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
-static const float refresh_rate     = (32730.0 * 8192.0) / 4481134.0 ;
-static const float crt_refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+#define DEFAULT_REFRESH_RATE ((32730.0 * 8192.0) / 4481134.0)
+#elif defined(RARCH_CONSOLE)
+#define DEFAULT_REFRESH_RATE (60/1.001)
 #else
-static const float refresh_rate     = 60/1.001;
-static const float crt_refresh_rate = 60/1.001;
+#define DEFAULT_REFRESH_RATE (60)
 #endif
+#define DEFAULT_CRT_REFRESH_RATE (DEFAULT_REFRESH_RATE)
 
 /* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.
@@ -764,18 +817,18 @@ static const bool playlist_fuzzy_archive_match = false;
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
-static const bool menu_dpi_override_enable = false;
+#define DEFAULT_MENU_DPI_OVERRIDE_ENABLE false
 
 #ifdef RARCH_MOBILE
-static const unsigned menu_dpi_override_value = 72;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 72
 #elif defined(__CELLOS_LV2__)
-static const unsigned menu_dpi_override_value = 360;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 360
 #else
-static const unsigned menu_dpi_override_value = 200;
+#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 200
 #endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
-static const unsigned libretro_log_level = 1;
+#define DEFAULT_LIBRETRO_LOG_LEVEL 1
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
@@ -789,15 +842,15 @@ static const unsigned libretro_log_level = 1;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold = 0.5f;
+static const float axis_threshold         = 0.5f;
 
-static const float analog_deadzone = 0.0f;
+static const float analog_deadzone        = 0.0f;
 
-static const float analog_sensitivity = 1.0f;
+static const float analog_sensitivity     = 1.0f;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
-static const unsigned turbo_period = 6;
-static const unsigned turbo_duty_cycle = 3;
+static const unsigned turbo_period        = 6;
+static const unsigned turbo_duty_cycle    = 3;
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
@@ -848,6 +901,8 @@ static const bool content_runtime_log = false;
 
 /* Keep track of how long each content has been running for over time (ignores core) */
 static const bool content_runtime_log_aggregate = false;
+
+#define DEFAULT_UI_MENUBAR_ENABLE true
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;

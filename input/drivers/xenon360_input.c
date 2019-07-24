@@ -23,19 +23,19 @@
 
 #include <libretro.h>
 
-#include "../input_driver.h"
+#include "../../config.def.h"
 
-#define MAX_PADS 4
+#include "../input_driver.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
 
-static uint64_t state[MAX_PADS];
+static uint64_t state[DEFAULT_MAX_PADS];
 
 static void xenon360_input_poll(void *data)
 {
    (void)data;
-   for (unsigned i = 0; i < MAX_PADS; i++)
+   for (unsigned i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       struct controller_data_s pad;
       usb_do_poll();
@@ -64,10 +64,9 @@ static int16_t xenon360_input_state(void *data,
       bool port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    uint64_t button            = binds[port][id].joykey;
 
-   if (port >= MAX_PADS)
+   if (port >= DEFAULT_MAX_PADS)
       return 0;
 
    switch (device)
@@ -76,15 +75,20 @@ static int16_t xenon360_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (state[port] & binds[port][i].joykey)
                   ret |= (1 << i);
             }
+
+            return ret;
          }
          else
-            ret = (state[port] & binds[port][id].joykey) ? 1 : 0;
-         return ret;
+            if (state[port] & binds[port][id].joykey)
+               return true;
+         break;
       default:
          break;
    }

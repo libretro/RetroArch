@@ -2,6 +2,7 @@ package com.retroarch.browser.retroactivity;
 
 import com.retroarch.browser.preferences.util.UserPreferences;
 import android.annotation.TargetApi;
+import android.app.NativeActivity;
 import android.content.res.Configuration;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -26,7 +27,7 @@ import java.util.Locale;
 /**
  * Class which provides common methods for RetroActivity related classes.
  */
-public class RetroActivityCommon extends RetroActivityLocation
+public class RetroActivityCommon extends NativeActivity
 {
   public static int FRONTEND_POWERSTATE_NONE = 0;
   public static int FRONTEND_POWERSTATE_NO_SOURCE = 1;

@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include "../input_driver.h"
+
 /* Input responder */
 #define MAX_TOUCHES  16
 

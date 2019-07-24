@@ -17,8 +17,6 @@
 #ifndef __VIDEO_SHADER_PARSE_H
 #define __VIDEO_SHADER_PARSE_H
 
-#include "video_state_tracker.h"
-
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
@@ -142,11 +140,7 @@ struct video_shader_lut
 struct video_shader
 {
    char prefix[64];
-   char script_class[512];
-   char script_path[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   char *script; /* Dynamically allocated. Must be free'd. Only used by XML. */
-
    bool modern; /* Only used for XML shaders. */
 
    unsigned passes;
@@ -163,14 +157,12 @@ struct video_shader
    struct video_shader_lut lut[GFX_MAX_TEXTURES];
 
    struct video_shader_parameter parameters[GFX_MAX_PARAMETERS];
-   struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
 };
 
 /**
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
- *
  * Loads preset file and all associated state (passes,
  * textures, imports, etc).
  *
@@ -185,24 +177,13 @@ bool video_shader_read_conf_preset(config_file_t *conf,
  * @shader            : Shader passes handle.
  * @preset_path       : Optional path to where the preset will be written.
  *
- * Saves preset and all associated state (passes,
- * textures, imports, etc) to disk.
+ * Writes preset and all associated state (passes,
+ * textures, imports, etc) into @conf.
  * If @preset_path is not NULL, shader paths are saved
  * relative to it.
  **/
 void video_shader_write_conf_preset(config_file_t *conf,
       struct video_shader *shader, const char *preset_path);
-
-/**
- * video_shader_resolve_relative:
- * @shader            : Shader pass handle.
- * @ref_path          : Relative shader path.
- *
- * Resolves relative shader path (@ref_path) into absolute
- * shader paths.
- **/
-void video_shader_resolve_relative(struct video_shader *shader,
-      const char *ref_path);
 
 /**
  * video_shader_resolve_parameters:

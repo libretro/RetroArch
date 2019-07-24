@@ -25,16 +25,16 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_cbs.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../../input/input_driver.h"
 
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
-#include "../../input/input_driver.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../performance_counters.h"
@@ -42,9 +42,10 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
+#include "../../playlist.h"
 
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay.h"
+#include "../../network/netplay/netplay.h"
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -55,6 +56,7 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
+#ifdef HAVE_AUDIOMIXER
 static void menu_action_setting_audio_mixer_stream_name(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -92,6 +94,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
 
    snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
 }
+#endif
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -183,6 +186,7 @@ static void menu_action_setting_disp_set_label_configurations(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_action_setting_disp_set_label_shader_filter_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -217,6 +221,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
         break;
   }
 }
+#endif
 
 #ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_mitm_server(
@@ -249,6 +254,7 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -417,6 +423,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    else
       snprintf(s, len, "%ux", scale_value);
 }
+#endif
 
 static void menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
@@ -1071,54 +1078,24 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       const char *path,
       char *s2, size_t len2)
 {
-   char playlist_name_with_ext[255];
-   bool found_matching_core_association         = false;
-   settings_t         *settings                 = config_get_ptr();
-   struct string_list *str_list                 = string_split(settings->arrays.playlist_names, ";");
-   struct string_list *str_list2                = string_split(settings->arrays.playlist_cores, ";");
+   playlist_t *playlist  = playlist_get_cached();
+   const char *core_name = NULL;
 
-   strlcpy(s2, path, len2);
-
-   playlist_name_with_ext[0] = '\0';
    *s = '\0';
    *w = 19;
 
-   fill_pathname_noext(playlist_name_with_ext, path,
-         file_path_str(FILE_PATH_LPL_EXTENSION),
-         sizeof(playlist_name_with_ext));
-
-   for (i = 0; i < str_list->size; i++)
-   {
-      if (string_is_equal(str_list->elems[i].data, playlist_name_with_ext))
-      {
-         if (str_list->size != str_list2->size)
-            break;
-
-         if (!str_list2->elems[i].data)
-            break;
-
-         found_matching_core_association = true;
-         strlcpy(s, str_list2->elems[i].data, len);
-      }
-   }
-
-   string_list_free(str_list);
-   string_list_free(str_list2);
-
-   if (string_is_equal(s, file_path_str(FILE_PATH_DETECT)) || !found_matching_core_association)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
-   else
-   {
-      char buf[PATH_MAX_LENGTH];
-      core_info_list_t *list = NULL;
-
-      core_info_get_list(&list);
-
-      if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
-         strlcpy(s, buf, len);
-   }
-
    strlcpy(s2, path, len2);
+
+   if (!playlist)
+      return;
+
+   core_name = playlist_get_default_core_name(playlist);
+
+   if (!string_is_empty(core_name) &&
+       !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+      strlcpy(s, core_name, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
@@ -1136,13 +1113,19 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
 
    if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
-      core_opt = core_option_manager_get_val(coreopts,
+      core_opt = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
 
       strlcpy(s, "", len);
 
       if (core_opt)
+      {
+         if (string_is_equal(core_opt, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+            core_opt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+         else if (string_is_equal(core_opt, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+            core_opt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
          strlcpy(s, core_opt, len);
+      }
    }
 
    strlcpy(s2, path, len2);
@@ -1286,28 +1269,40 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_remap_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_filter_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_scale_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_watch_for_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_default_filter);
+#endif
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_GET_VALUE(cbs,
@@ -1346,6 +1341,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_playlist_associations);
+            break;
          default:
             return - 1;
       }
@@ -1361,6 +1360,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 static int menu_cbs_init_bind_get_string_representation_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
+#ifdef HAVE_AUDIOMIXER
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
    {
@@ -1374,7 +1374,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_audio_mixer_stream_volume);
    }
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   else
+#endif
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_GET_VALUE(cbs,
@@ -1628,12 +1630,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
-   {
-      BIND_ACTION_GET_VALUE(cbs,
-         menu_action_setting_disp_set_label_playlist_associations);
-      return 0;
-   }
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
       BIND_ACTION_GET_VALUE(cbs,
@@ -1641,6 +1637,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -1655,6 +1652,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
          menu_action_setting_disp_set_label_shader_preset_parameter);
       return 0;
    }
+#endif
 
    if (menu_cbs_init_bind_get_string_representation_compare_label(cbs) == 0)
       return 0;

@@ -449,7 +449,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                      cbs->action_sublabel_cache, sizeof(entry->sublabel));
          else if (cbs->action_sublabel)
          {
-            char tmp[512];
+            char tmp[MENU_SUBLABEL_MAX_LENGTH];
             tmp[0] = '\0';
 
             if (cbs->action_sublabel(list,

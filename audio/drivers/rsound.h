@@ -106,7 +106,7 @@ enum rsd_format
    RSD_S32_NE = 0x1000,
    RSD_U32_LE = 0x2000,
    RSD_U32_BE = 0x4000,
-   RSD_U32_NE = 0x8000,
+   RSD_U32_NE = 0x8000
 };
 
 /* Defines operations that can be used with rsd_set_param() */

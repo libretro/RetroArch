@@ -109,7 +109,6 @@ typedef struct cg_shader_data
    CGprofile cgFProf;
    struct shader_program_cg prg[GFX_MAX_SHADERS];
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   state_tracker_t *state_tracker;
    CGcontext cgCtx;
 } cg_shader_data_t;
 
@@ -397,28 +396,6 @@ static void gl_cg_set_params(void *dat, void *shader_data)
       cg_gl_set_param_1f(param_v, cg->shader->parameters[i].current);
       cg_gl_set_param_1f(param_f, cg->shader->parameters[i].current);
    }
-
-   /* Set state parameters. */
-   if (cg->state_tracker)
-   {
-      /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
-      static unsigned cnt = 0;
-
-      if (cg->active_idx == 1)
-         cnt = state_tracker_get_uniform(cg->state_tracker, tracker_info,
-               GFX_MAX_VARIABLES, frame_count);
-
-      for (i = 0; i < cnt; i++)
-      {
-         CGparameter param_v = cgGetNamedParameter(
-               cg->prg[cg->active_idx].vprg, tracker_info[i].id);
-         CGparameter param_f = cgGetNamedParameter(
-               cg->prg[cg->active_idx].fprg, tracker_info[i].id);
-         cg_gl_set_param_1f(param_v, tracker_info[i].value);
-         cg_gl_set_param_1f(param_f, tracker_info[i].value);
-      }
-   }
 }
 
 static void gl_cg_deinit_progs(void *data)
@@ -464,12 +441,6 @@ static void gl_cg_destroy_resources(void *data)
    {
       glDeleteTextures(cg->shader->luts, cg->lut_textures);
       memset(cg->lut_textures, 0, sizeof(cg->lut_textures));
-   }
-
-   if (cg->state_tracker)
-   {
-      state_tracker_free(cg->state_tracker);
-      cg->state_tracker = NULL;
    }
 
    free(cg->shader);
@@ -680,72 +651,6 @@ static bool gl_cg_load_plain(void *data, const char *path)
    return true;
 }
 
-static bool gl_cg_load_imports(void *data)
-{
-   unsigned i;
-   retro_ctx_memory_info_t mem_info;
-   struct state_tracker_info tracker_info;
-   cg_shader_data_t                   *cg = (cg_shader_data_t*)data;
-
-   if (!cg->shader->variables)
-      return true;
-
-   for (i = 0; i < cg->shader->variables; i++)
-   {
-      unsigned memtype;
-
-      switch (cg->shader->variable[i].ram_type)
-      {
-         case RARCH_STATE_WRAM:
-            memtype = RETRO_MEMORY_SYSTEM_RAM;
-            break;
-
-         default:
-            memtype = -1u;
-      }
-
-      mem_info.id = memtype;
-
-      core_get_memory(&mem_info);
-
-      if ((memtype != -1u) &&
-            (cg->shader->variable[i].addr >= mem_info.size))
-      {
-         RARCH_ERR("Address out of bounds.\n");
-         return false;
-      }
-   }
-
-   mem_info.data                  = NULL;
-   mem_info.size                  = 0;
-   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
-
-   core_get_memory(&mem_info);
-
-   tracker_info.wram              = (uint8_t*)mem_info.data;
-   tracker_info.info              = cg->shader->variable;
-   tracker_info.info_elem         = cg->shader->variables;
-   tracker_info.script            = NULL;
-   tracker_info.script_is_file    = false;
-
-#ifdef HAVE_PYTHON
-   if (*cg->shader->script_path)
-   {
-      tracker_info.script         = cg->shader->script_path;
-      tracker_info.script_is_file = true;
-   }
-
-   tracker_info.script_class =
-      *cg->shader->script_class ? cg->shader->script_class : NULL;
-#endif
-
-   cg->state_tracker = state_tracker_init(&tracker_info);
-   if (!cg->state_tracker)
-      RARCH_WARN("Failed to initialize state tracker.\n");
-
-   return true;
-}
-
 static bool gl_cg_load_shader(void *data, unsigned i)
 {
    struct shader_program_info program_info;
@@ -773,7 +678,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
 
    RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
-   conf = config_file_new(path);
+   conf = config_file_new_from_path_to_string(path);
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
@@ -794,7 +699,6 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
    }
 
-   video_shader_resolve_relative(cg->shader, path);
    video_shader_resolve_parameters(conf, cg->shader);
    config_file_free(conf);
 
@@ -826,12 +730,6 @@ static bool gl_cg_load_preset(void *data, const char *path)
    if (!gl_load_luts(cg->shader, cg->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
-      return false;
-   }
-
-   if (!gl_cg_load_imports(cg))
-   {
-      RARCH_ERR("Failed to load imports ...\n");
       return false;
    }
 

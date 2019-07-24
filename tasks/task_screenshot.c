@@ -310,7 +310,7 @@ static bool screenshot_dump(
 
    if (use_thread)
    {
-      retro_task_t *task= task_init();
+      retro_task_t *task = task_init();
 
       task->type        = TASK_TYPE_BLOCKING;
       task->state       = state;

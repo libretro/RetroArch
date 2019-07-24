@@ -19,7 +19,6 @@
 #include "../retroarch.h"
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
-#include "../input/input_driver.h"
 #include "../verbosity.h"
 #include "../libretro-common/include/encodings/utf.h"
 #include "../libretro-common/include/lists/string_list.h"
@@ -574,7 +573,14 @@ extern "C" {
 	bool uwp_keyboard_pressed(unsigned key)
 	{
 		unsigned sym = rarch_keysym_lut[(enum retro_key)key];
-		return (CoreWindow::GetForCurrentThread()->GetKeyState((VirtualKey)sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
+		CoreWindow^ window = CoreWindow::GetForCurrentThread();
+		if (!window)
+		{
+			// At times CoreWindow will return NULL while running Dolphin core
+			// Dolphin core runs on its own CPU thread separate from the UI-thread and so we must do a check for this.
+			return false;
+		}
+		return (window->GetKeyState((VirtualKey)sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
 	}
 
 	int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen)

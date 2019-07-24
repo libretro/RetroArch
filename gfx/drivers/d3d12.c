@@ -20,6 +20,7 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
@@ -358,17 +359,13 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(path)))
       return false;
 
    d3d12->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d12->shader_preset));
 
    if (!video_shader_read_conf_preset(conf, d3d12->shader_preset))
       goto error;
-
-   video_shader_resolve_relative(d3d12->shader_preset, path);
 
    source = &d3d12->frame.texture[0];
    for (i = 0; i < d3d12->shader_preset->passes; source = &d3d12->pass[i++].rt)

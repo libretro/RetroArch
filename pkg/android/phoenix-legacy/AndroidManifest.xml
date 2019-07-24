@@ -23,7 +23,6 @@
         android:hasCode="true"
         android:isGame="true"
         android:banner="@drawable/banner">
-        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

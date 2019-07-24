@@ -40,7 +40,6 @@ extern "C" {
 
 static AppHandler *appHandler;
 static ui_application_qt_t ui_application;
-static bool app_exiting = false;
 
 /* these must last for the lifetime of the QApplication */
 static int app_argc = 1;
@@ -78,7 +77,7 @@ AppHandler::~AppHandler()
 
 void AppHandler::exit()
 {
-   app_exiting = true;
+   ui_application_qt.exiting = true;
 
    if (qApp)
       qApp->closeAllWindows();
@@ -86,7 +85,7 @@ void AppHandler::exit()
 
 bool AppHandler::isExiting() const
 {
-   return app_exiting;
+   return ui_application_qt.exiting;
 }
 
 void AppHandler::onLastWindowClosed()
@@ -129,19 +128,10 @@ static void* ui_application_qt_initialize(void)
    return &ui_application;
 }
 
-static bool ui_application_qt_pending_events(void)
-{
-   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
-
-   if (dispatcher)
-      return dispatcher->hasPendingEvents();
-
-   return false;
-}
-
 static void ui_application_qt_process_events(void)
 {
-   if (ui_application_qt_pending_events())
+   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
+   if (dispatcher && dispatcher->hasPendingEvents())
       QApplication::processEvents();
 }
 
@@ -149,34 +139,6 @@ static void ui_application_qt_quit(void)
 {
    if (appHandler)
       appHandler->exit();
-}
-
-static void ui_application_qt_run(void *args)
-{
-#ifdef HAVE_MAIN
-   int ret;
-   unsigned sleep_ms = 0;
-
-   do
-   {
-      ui_application_qt_process_events();
-
-      ret = runloop_iterate(&sleep_ms);
-
-      if (ret == 1 && sleep_ms > 0)
-         retro_sleep(sleep_ms);
-
-      task_queue_check();
-
-      if (ret == -1 || app_exiting)
-      {
-         ui_application_qt_quit();
-         break;
-      }
-   }while(1);
-
-   main_exit(args);
-#endif
 }
 
 #ifdef HAVE_MAIN
@@ -191,9 +153,8 @@ int main(int argc, char *argv[])
 
 ui_application_t ui_application_qt = {
    ui_application_qt_initialize,
-   ui_application_qt_pending_events,
    ui_application_qt_process_events,
-   ui_application_qt_run,
    ui_application_qt_quit,
+   false,
    "qt"
 };

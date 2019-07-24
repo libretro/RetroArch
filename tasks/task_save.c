@@ -407,7 +407,7 @@ bool content_undo_load_state(void)
 
    RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
-         undo_load_buf.size,
+         (unsigned int)undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
    /* TODO/FIXME - This checking of SRAM overwrite,

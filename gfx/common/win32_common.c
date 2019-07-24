@@ -38,7 +38,11 @@
 #endif
 
 #include "win32_common.h"
+
+#ifdef HAVE_GDI
 #include "gdi_common.h"
+#endif
+
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -53,7 +57,6 @@
 
 #include <commdlg.h>
 #include <dbt.h>
-#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
@@ -94,15 +97,11 @@ static HDEVNOTIFY notification_handler;
 #ifdef HAVE_DINPUT
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
+#ifdef HAVE_GDI
 extern void *dinput_gdi;
+#endif
 extern void *dinput_wgl;
 extern void *dinput;
-#endif
-
-#if defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#ifndef MAX_PADS
-#define MAX_PADS 4
-#endif
 #endif
 
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
@@ -644,7 +643,6 @@ static void win32_set_position_from_config(void)
    settings_t *settings  = config_get_ptr();
    int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
    int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
-   int menu_bar_height   = GetSystemMetrics(SM_CYMENU);
 
    if (!settings->bools.video_window_save_positions)
       return;
@@ -687,7 +685,7 @@ static void win32_save_position(void)
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
          settings->uints.window_position_width  = g_win32_pos_width - border_thickness * 2;
-         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - ((settings->bools.ui_menubar_enable && !video_driver_is_threaded()) ? menu_bar_height : 0);
+         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - (settings->bools.ui_menubar_enable ? menu_bar_height : 0);
       }
    }
 }
@@ -882,6 +880,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 }
 #endif
 
+#ifdef HAVE_GDI
 LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -979,6 +978,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
@@ -999,7 +999,7 @@ bool win32_window_create(void *data, unsigned style,
       user_height= g_win32_pos_height;
    }
    main_window.hwnd = CreateWindowEx(0,
-         "RetroArch", "RetroArch",
+         msg_hash_to_str(MSG_PROGRAM), msg_hash_to_str(MSG_PROGRAM),
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
@@ -1134,13 +1134,8 @@ void win32_check_window(bool *quit, bool *resize,
 {
 #if !defined(_XBOX)
    if (video_driver_is_threaded())
-   {
-      const ui_application_t *application =
-         ui_companion_driver_get_application_ptr();
-      if (application)
-         application->process_events();
-   }
-   *quit            = g_win32_quit;
+      ui_companion_win32.application->process_events();
+   *quit                  = g_win32_quit;
 
    if (g_win32_resized)
    {
@@ -1304,7 +1299,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->bools.ui_menubar_enable && !video_driver_is_threaded())
+      if (!fullscreen && settings->bools.ui_menubar_enable)
       {
          RECT rc_temp;
          rc_temp.left   = 0;
@@ -1445,7 +1440,8 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+   UnregisterClass(msg_hash_to_str(MSG_PROGRAM), 
+         GetModuleHandle(NULL));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
 #endif

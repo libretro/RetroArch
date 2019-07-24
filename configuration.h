@@ -144,6 +144,7 @@ typedef struct settings
       bool menu_enable_widgets;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
+      bool menu_savestate_resume;
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
@@ -163,6 +164,8 @@ typedef struct settings
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;
+      bool menu_show_load_disc;
+      bool menu_show_dump_disc;
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
@@ -206,6 +209,7 @@ typedef struct settings
       bool quick_menu_show_add_to_favorites;
       bool quick_menu_show_start_recording;
       bool quick_menu_show_start_streaming;
+      bool quick_menu_show_set_core_association;
       bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
       bool quick_menu_show_controls;
@@ -566,8 +570,6 @@ typedef struct settings
       char audio_device[255];
       char camera_device[255];
 
-      char playlist_names[8192];
-      char playlist_cores[8192];
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
@@ -596,6 +598,7 @@ typedef struct settings
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
       char browse_url[4096];
+      char path_stream_url[8192];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];
@@ -608,7 +611,6 @@ typedef struct settings
 #endif
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
-      char path_stream_url[8192];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
@@ -747,12 +749,12 @@ const char *config_get_midi_driver_options(void);
 const char *config_get_default_record(void);
 
 /**
- * config_load:
+ * config_parse_file:
  *
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void);
+void config_parse_file(void);
 
 /**
  * config_load_override:

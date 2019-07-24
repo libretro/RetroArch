@@ -33,6 +33,10 @@ matrix:
     - compiler: gcc
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
+      env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
@@ -82,6 +86,14 @@ script:
   - |
      if [ -n "$DISABLE_MENU" ]; then
        ARGS="$ARGS --disable-menu"
+     fi
+  - |
+     if [ -n "$DISABLE_OVERLAY" ]; then
+       ARGS="$ARGS --disable-overlay"
+     fi
+  - |
+     if [ -n "$DISABLE_CDROM" ]; then
+       ARGS="$ARGS --disable-cdrom"
      fi
   - |
      if [ -n "$ENABLE_GLES" ]; then

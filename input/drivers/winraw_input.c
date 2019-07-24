@@ -15,7 +15,6 @@
 
 #include <windows.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -204,6 +203,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
    }
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
+   free(devs);
 
    *mice      = mice_r;
    *mouse_cnt = mouse_cnt_r;
@@ -406,14 +406,14 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
          ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
       if (winraw_mouse_button_pressed(wr, port, bind->mbutton))
          return true;
-      if (joykey != NO_BTN && 
-            wr->joypad->button(joypad_info.joy_idx, joykey))
+      if ((uint16_t)joykey != NO_BTN && 
+            wr->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
          return true;
       if (((float)abs(wr->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
@@ -422,7 +422,7 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    return false;
 }
 
-static void winraw_init_mouse_xy_mapping()
+static void winraw_init_mouse_xy_mapping(void)
 {
    struct video_viewport viewport;
    int center_x;
@@ -703,7 +703,6 @@ static int16_t winraw_input_state(void *d,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   int16_t ret        = 0;
    winraw_input_t *wr = (winraw_input_t*)d;
 
    switch (device)
@@ -712,19 +711,25 @@ static int16_t winraw_input_state(void *d,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (winraw_is_pressed(
                         wr, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = winraw_is_pressed(wr, joypad_info, binds[port], port, id);
+               return winraw_is_pressed(wr, joypad_info, binds[port], port, id);
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,

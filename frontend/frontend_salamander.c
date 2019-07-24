@@ -156,7 +156,7 @@ static void salamander_init(char *s, size_t len)
 
    if (!config_exists)
    {
-      config_file_t *conf = (config_file_t*)config_file_new(NULL);
+      config_file_t *conf = (config_file_t*)config_file_new_alloc();
 
       if (conf)
       {

@@ -26,7 +26,9 @@
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../core.h"
@@ -35,8 +37,8 @@
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
+#include "../../playlist.h"
 
-#include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 
 #include "../../config.def.h"
@@ -47,6 +49,7 @@
    cbs->action_start_ident = #name;
 #endif
 
+#ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
 {
    unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
@@ -58,6 +61,7 @@ static int action_start_audio_mixer_stream_volume(unsigned type, const char *lab
 
    return 0;
 }
+#endif
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
@@ -127,6 +131,7 @@ static int action_start_input_desc(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_action_parameter(
       unsigned type, const char *label)
 {
@@ -175,6 +180,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    return menu_shader_manager_clear_pass_filter(pass);
 }
+#endif
 
 static int action_start_netplay_mitm_server(unsigned type, const char *label)
 {
@@ -183,6 +189,7 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
@@ -194,6 +201,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
 {
    return menu_shader_manager_clear_num_passes();
 }
+#endif
 
 static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
@@ -221,36 +229,16 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_playlist_association(unsigned type, const char *label)
 {
-   struct string_list *stnames      = NULL;
-   struct string_list *stcores      = NULL;
-   core_info_list_t           *list = NULL;
-   settings_t *settings             = config_get_ptr();
-   const char *path                 = path_basename(label);
-   int found;
-   char new_playlist_cores[sizeof(settings->arrays.playlist_cores) / sizeof(settings->arrays.playlist_cores[0])];
+   playlist_t *playlist  = playlist_get_cached();
 
-   core_info_get_list(&list);
-   if (!list)
+   if (!playlist)
       return -1;
 
-   new_playlist_cores[0] = '\0';
+   /* Set default core path + name to DETECT */
+   playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
+   playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+   playlist_write_file(playlist);
 
-   stnames = string_split(settings->arrays.playlist_names, ";");
-   stcores = string_split(settings->arrays.playlist_cores, ";");
-   found   = string_list_find_elem(stnames, path);
-
-   if (found)
-      string_list_set(stcores, found-1,
-            file_path_str(FILE_PATH_DETECT));
-
-   string_list_join_concat(new_playlist_cores,
-         sizeof(new_playlist_cores), stcores, ";");
-
-   strlcpy(settings->arrays.playlist_cores,
-         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
-
-   string_list_free(stcores);
-   string_list_free(stnames);
    return 0;
 }
 
@@ -295,19 +283,29 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_scale_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_watch_for_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
@@ -317,6 +315,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
             BIND_ACTION_START(cbs, action_start_netplay_mitm_server);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
+            BIND_ACTION_START(cbs, action_start_playlist_association);
             break;
          default:
             return -1;
@@ -329,6 +330,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -339,7 +341,9 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_shader_action_parameter);
    }
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+   else
+#endif
+   if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_core);
@@ -353,10 +357,6 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
-   }
-   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
-   {
-      BIND_ACTION_START(cbs, action_start_playlist_association);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
@@ -378,12 +378,14 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
+#ifdef HAVE_AUDIOMIXER
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_START(cbs, action_start_audio_mixer_stream_volume);
       return 0;
    }
+#endif
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
 

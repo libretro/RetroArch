@@ -36,6 +36,7 @@
 #include <boolean.h>
 
 #include <stdarg.h>
+#include <vfs/vfs_implementation.h>
 
 #define FILESTREAM_REQUIRED_VFS_VERSION 2
 
@@ -105,6 +106,8 @@ const char *filestream_get_path(RFILE *stream);
 bool filestream_exists(const char *path);
 
 char *filestream_getline(RFILE *stream);
+
+libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
 
 RETRO_END_DECLS
 

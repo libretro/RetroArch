@@ -69,7 +69,12 @@ Usecase: Search for all games released on October 1995.
 
 `libretrodb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
 
-3) Names only search
+3) Hash matching query
+Usecase: Search for any game matching a given crc32, in this case Soul Blazer (USA) for the SNES.  Also works with serial, md5, and sha1.
+
+`libretrodb_tool <db file> find "{'crc':b'31B965DB'}"`
+
+4) Names only search
 Usecase: Search for all games released on October 1995, wont print checksums, filename or rom size, only the game name.
 
 `libretrodb_tool <db file> get-names "{'releasemonth':10,'releaseyear':1995}"`

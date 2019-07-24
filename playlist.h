@@ -35,6 +35,12 @@ enum playlist_runtime_status
    PLAYLIST_RUNTIME_VALID
 };
 
+enum playlist_file_mode
+{
+    PLAYLIST_LOAD,
+    PLAYLIST_SAVE
+};
+
 struct playlist_entry
 {
    char *path;
@@ -119,6 +125,21 @@ void playlist_delete_index(playlist_t *playlist,
       size_t idx);
 
 /**
+ * playlist_resolve_path:
+ * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
+ * @path        : The path to be modified
+ *
+ * Resolves the path of an item, such as the content path or path to the core, to a format
+ * appropriate for saving or loading depending on the @mode parameter
+ *
+ * Can be platform specific. File paths for saving can be abbreviated to avoid saving absolute
+ * paths, as the base directory (home or application dir) may change after each subsequent
+ * install (iOS)
+ **/
+void playlist_resolve_path(enum playlist_file_mode mode,
+      char *path, size_t size);
+
+/**
  * playlist_push:
  * @playlist        	   : Playlist handle.
  * @path                : Path of new playlist entry.
@@ -189,6 +210,12 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 /* If db_name is empty, 'returns' playlist file basename */
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name);
+
+char *playlist_get_default_core_path(playlist_t *playlist);
+char *playlist_get_default_core_name(playlist_t *playlist);
+
+void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
+void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
 
 RETRO_END_DECLS
 

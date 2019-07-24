@@ -116,13 +116,9 @@ enum {
 
 #include <boolean.h>
 
+#include "../../config.def.h"
+
 #define LAST_KEYCODE 0x1ff
-
-#ifndef MAX_PADS
-#define MAX_PADS 1
-#endif
-
-#define DOS_KEYBOARD_PORT MAX_PADS
 
 uint16_t *dos_keyboard_state_get(unsigned port);
 

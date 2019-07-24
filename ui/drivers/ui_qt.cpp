@@ -118,9 +118,8 @@ void ThumbnailWidget::dropEvent(QDropEvent *event)
          emit(filesDropped(image, m_thumbnailType));
       else
       {
-         QByteArray stringArray = QDir::toNativeSeparators(imageString).toUtf8();
-         const char *stringData = stringArray.constData();
-         RARCH_ERR("[Qt]: Could not read image: %s\n", stringData);
+         const char *string_data = QDir::toNativeSeparators(imageString).toUtf8().constData();
+         RARCH_ERR("[Qt]: Could not read image: %s\n", string_data);
       }
    }
 }
@@ -352,7 +351,9 @@ static void* ui_companion_qt_init(void)
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+#endif
 
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
@@ -645,13 +646,6 @@ static void* ui_companion_qt_init(void)
    return handle;
 }
 
-static int ui_companion_qt_iterate(void *data, unsigned action)
-{
-   (void)data;
-   (void)action;
-   return 0;
-}
-
 static void ui_companion_qt_notify_content_loaded(void *data)
 {
    (void)data;
@@ -659,9 +653,9 @@ static void ui_companion_qt_notify_content_loaded(void *data)
 
 static void ui_companion_qt_toggle(void *data, bool force)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (settings->bools.ui_companion_toggle || force)
    {
@@ -688,7 +682,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
 
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    if (!handle)
@@ -698,8 +692,10 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    {
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          RARCH_LOG("[Qt]: Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();
+#endif
          break;
       default:
          break;
@@ -716,7 +712,7 @@ static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
 
 static void ui_companion_qt_notify_refresh(void *data)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    win_handle->qtWindow->deferReloadPlaylists();
@@ -724,7 +720,7 @@ static void ui_companion_qt_notify_refresh(void *data)
 
 static void ui_companion_qt_log_msg(void *data, const char *msg)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    win_handle->qtWindow->appendLogMessage(msg);
@@ -732,7 +728,7 @@ static void ui_companion_qt_log_msg(void *data, const char *msg)
 
 void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priority, unsigned duration, bool flush)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = NULL;
 
    if (!handle)
@@ -747,7 +743,6 @@ void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priori
 ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
-   ui_companion_qt_iterate,
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,

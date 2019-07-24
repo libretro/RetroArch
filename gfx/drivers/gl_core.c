@@ -113,31 +113,6 @@ static void gl_core_deinit_pbo_readback(gl_core_t *gl)
    scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
 }
 
-#ifdef HAVE_OVERLAY
-static void gl_core_free_overlay(gl_core_t *gl)
-{
-   if (gl->overlay_tex)
-      glDeleteTextures(gl->overlays, gl->overlay_tex);
-
-   free(gl->overlay_tex);
-   free(gl->overlay_vertex_coord);
-   free(gl->overlay_tex_coord);
-   free(gl->overlay_color_coord);
-   gl->overlay_tex          = NULL;
-   gl->overlay_vertex_coord = NULL;
-   gl->overlay_tex_coord    = NULL;
-   gl->overlay_color_coord  = NULL;
-   gl->overlays             = 0;
-}
-
-static void gl_core_free_scratch_vbos(gl_core_t *gl)
-{
-   unsigned i;
-   for (i = 0; i < GL_CORE_NUM_VBOS; i++)
-      if (gl->scratch_vbos[i])
-         glDeleteBuffers(1, &gl->scratch_vbos[i]);
-}
-
 static void gl_core_slow_readback(gl_core_t *gl, void *buffer)
 {
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
@@ -205,6 +180,31 @@ void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size)
    gl->scratch_vbo_index++;
    if (gl->scratch_vbo_index >= GL_CORE_NUM_VBOS)
       gl->scratch_vbo_index = 0;
+}
+
+#ifdef HAVE_OVERLAY
+static void gl_core_free_overlay(gl_core_t *gl)
+{
+   if (gl->overlay_tex)
+      glDeleteTextures(gl->overlays, gl->overlay_tex);
+
+   free(gl->overlay_tex);
+   free(gl->overlay_vertex_coord);
+   free(gl->overlay_tex_coord);
+   free(gl->overlay_color_coord);
+   gl->overlay_tex          = NULL;
+   gl->overlay_vertex_coord = NULL;
+   gl->overlay_tex_coord    = NULL;
+   gl->overlay_color_coord  = NULL;
+   gl->overlays             = 0;
+}
+
+static void gl_core_free_scratch_vbos(gl_core_t *gl)
+{
+   unsigned i;
+   for (i = 0; i < GL_CORE_NUM_VBOS; i++)
+      if (gl->scratch_vbos[i])
+         glDeleteBuffers(1, &gl->scratch_vbos[i]);
 }
 
 static void gl_core_overlay_vertex_geom(void *data,
@@ -377,8 +377,10 @@ static void gl_core_destroy_resources(gl_core_t *gl)
    if (gl->pipelines.bokeh)
       glDeleteProgram(gl->pipelines.bokeh);
 
+#ifdef HAVE_OVERLAY
    gl_core_free_overlay(gl);
    gl_core_free_scratch_vbos(gl);
+#endif
    gl_core_deinit_fences(gl);
    gl_core_deinit_pbo_readback(gl);
    gl_core_deinit_hw_render(gl);
@@ -1046,9 +1048,9 @@ static void *gl_core_init(const video_info_t *video,
    if (string_is_equal(vendor, "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         rarch_force_video_driver_fallback("gl1");
+         retroarch_force_video_driver_fallback("gl1");
 #else
-         rarch_force_video_driver_fallback("gdi");
+         retroarch_force_video_driver_fallback("gdi");
 #endif
 #endif
 

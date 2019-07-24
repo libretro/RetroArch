@@ -1620,6 +1620,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "컨텐츠 불러오기"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "Load Disc")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "Dump Disc")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "상태저장 불러오기"
@@ -8898,4 +8902,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
     "메뉴 열기/닫기 애니메이션"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+    "Disc Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+    "View information about inserted media discs."
     )
