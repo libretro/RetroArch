@@ -6,8 +6,8 @@
 #include <psp2/sysmodule.h>
 #include <string.h>
 #include <stdlib.h>
-#include "vita2d.h"
-#include "utils.h"
+#include "../include/vita2d.h"
+#include "../include/utils.h"
 
 #ifdef DEBUG_BUILD
 #  include <stdio.h>
