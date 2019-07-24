@@ -92,42 +92,41 @@ struct audio_lock
 static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region)
 {
-   const char *err = NULL;
    HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
          &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
 
    if (res == DSERR_BUFFERLOST)
    {
-      res = IDirectSoundBuffer_Restore(ds->dsb);
-      if (res != DS_OK)
+      if ((res = IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
          return false;
-
-      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
-            &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
-      if (res != DS_OK)
+      if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+                  &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) != DS_OK)
          return false;
    }
 
+   if (res == DS_OK)
+      return true;
+
+#ifdef DEBUG
    switch (res)
    {
       case DSERR_BUFFERLOST:
-         err = "DSERR_BUFFERLOST";
+         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_BUFFERLOST");
          break;
       case DSERR_INVALIDCALL:
-         err = "DSERR_INVALIDCALL";
+         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_INVALIDCALL");
          break;
       case DSERR_INVALIDPARAM:
-         err = "DSERR_INVALIDPARAM";
+         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_INVALIDPARAM");
          break;
       case DSERR_PRIOLEVELNEEDED:
-         err = "DSERR_PRIOLEVELNEEDED";
+         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_PRIOLEVELNEEDED");
          break;
-
       default:
-         return true;
+         break;
    }
+#endif
 
-   RARCH_WARN("[DirectSound error]: %s\n", err);
    return false;
 }
 
@@ -147,10 +146,11 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    while (ds->thread_alive)
    {
+      bool is_pull = false;
       struct audio_lock region;
       DWORD read_ptr, avail, fifo_avail;
-      IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
 
+      IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
@@ -181,13 +181,8 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       {
          /* Got space to write, but nothing in FIFO (underrun),
           * fill block with silence. */
-
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
-
-         IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
-               region.size1, region.chunk2, region.size2);
-         write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
       else
       {
@@ -200,12 +195,16 @@ static DWORD CALLBACK dsound_thread(PVOID data)
             fifo_read(ds->buffer, region.chunk2, region.size2);
          LeaveCriticalSection(&ds->crit);
 
-         IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
-               region.size1, region.chunk2, region.size2);
-         write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
-
-         SetEvent(ds->event);
+         is_pull = true;
       }
+
+      IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
+            region.size1, region.chunk2, region.size2);
+      write_ptr = (write_ptr + region.size1 + region.size2) 
+         % ds->buffer_size;
+
+      if (is_pull)
+         SetEvent(ds->event);
    }
 
    ExitThread(0);
