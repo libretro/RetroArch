@@ -5623,16 +5623,32 @@ static bool core_option_manager_flush_game_specific(
       core_option_manager_t *opt, const char* path)
 {
    size_t i;
+   config_file_t *conf_tmp = NULL;
+   bool ret                = false;
+
+   /* We only need to save configuration settings for
+    * the current core, so create a temporary config_file
+    * object and populate the required values. */
+   conf_tmp = config_file_new_alloc();
+   if (!conf_tmp)
+      goto end;
+
    for (i = 0; i < opt->size; i++)
    {
       struct core_option *option = (struct core_option*)&opt->opts[i];
 
       if (option)
-         config_set_string(opt->conf, option->key,
+         config_set_string(conf_tmp, option->key,
                opt->opts[i].vals->elems[opt->opts[i].index].data);
    }
 
-   return config_file_write(opt->conf, path, true);
+   ret = config_file_write(conf_tmp, path, true);
+
+   config_file_free(conf_tmp);
+   conf_tmp = NULL;
+
+end:
+   return ret;
 }
 
 /**
@@ -21814,6 +21830,7 @@ static void rarch_init_core_options(
    if (settings->bools.game_specific_options &&
          rarch_game_specific_options(&game_options_path))
    {
+      path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
       runloop_game_options_active = true;
       runloop_core_options        =
          core_option_manager_new(game_options_path, option_defs);
@@ -22118,6 +22135,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (settings->bools.game_specific_options && 
                   rarch_game_specific_options(&game_options_path))
             {
+               path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
                runloop_game_options_active = true;
                runloop_core_options        =
                   core_option_manager_new_vars(game_options_path, vars);
