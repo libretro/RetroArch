@@ -60,11 +60,6 @@ else
 	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += input/drivers/ps4_input.o
-	OBJ += input/drivers_joypad/ps4_joypad.o
-	OBJ += audio/drivers/psp_audio.o
-	#OBJ += frontend/drivers/platform_orbis.o
 endif
 
 ifeq ($(strip $(PS4SDK)),)
