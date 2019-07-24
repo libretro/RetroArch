@@ -992,10 +992,10 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 
 #ifdef CDROM_DEBUG
    printf("[CDROM] Track %d Info: ", track);
-   printf("[CDROM] Copy: %d ", (buf[5] & 0x10) > 0);
-   printf("[CDROM] Data Mode: %d ", toc->track[track - 1].mode);
-   printf("[CDROM] LBA Start: %d (%d) ", lba, toc->track[track - 1].lba);
-   printf("[CDROM] Track Size: %d\n", track_size);
+   printf("Copy: %d ", (buf[5] & 0x10) > 0);
+   printf("Data Mode: %d ", toc->track[track - 1].mode);
+   printf("LBA Start: %d (%d) ", lba, toc->track[track - 1].lba);
+   printf("Track Size: %d\n", track_size);
    fflush(stdout);
 #endif
 
@@ -1005,7 +1005,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed)
 {
    /* MMC Command: SET CD SPEED */
-   unsigned char cmd[] = {0xBB, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+   unsigned char cmd[] = {0xBB, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
    cmd[2] = (speed >> 24) & 0xFF;
    cmd[3] = (speed >> 16) & 0xFF;

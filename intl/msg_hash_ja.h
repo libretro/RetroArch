@@ -651,7 +651,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "コアの情報"
+   "コア情報"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
@@ -9021,9 +9021,9 @@ MSG_HASH(MSG_NO_DISC_INSERTED,
       "ドライブにディスクが挿入されていません。")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
+    "ディスク情報"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
+    "挿入されたディスクの情報を表示します。"
     )
