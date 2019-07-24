@@ -1378,11 +1378,11 @@ static uint64_t runahead_last_frame_count       = 0;
 
 struct remote_message
 {
-   uint16_t state;
    int port;
    int device;
    int index;
    int id;
+   uint16_t state;
 };
 
 struct input_remote
@@ -10782,17 +10782,31 @@ static int16_t input_state_device(
    int16_t res          = 0;
    settings_t *settings = configuration_settings;
 
+#ifdef HAVE_NETWORKGAMEPAD
+   bool remote_input    = false;
+#endif
+   
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
 
 #ifdef HAVE_NETWORKGAMEPAD
          if (input_driver_remote)
+         {
             if (input_remote_key_pressed(id, port))
+            {
                res |= 1;
+               remote_input = true;
+            }
+         }
 #endif
 
-         if (id < RARCH_FIRST_META_KEY)
+         if (id < RARCH_FIRST_META_KEY
+#ifdef HAVE_NETWORKGAMEPAD
+               /* Don't process binds if input is coming from Remote RetroPad */
+               && remote_input == false
+#endif
+            )
          {
             bool bind_valid = libretro_input_binds[port] 
                && libretro_input_binds[port][id].valid;
@@ -10967,12 +10981,19 @@ static int16_t input_state_device(
                   if (id == RETRO_DEVICE_ID_ANALOG_Y)
                      base += 1;
                   if (input_state->analog[base][port])
+                  {
                      res = input_state->analog[base][port];
+                     remote_input = true;
+                  }
                }
             }
 #endif
 
-            if (id < RARCH_FIRST_META_KEY)
+            if (id < RARCH_FIRST_META_KEY
+#ifdef HAVE_NETWORKGAMEPAD
+                  && remote_input == false
+#endif
+                )
             {
                bool bind_valid = libretro_input_binds[port] 
                   && libretro_input_binds[port][id].valid;
@@ -11132,9 +11153,11 @@ static INLINE bool input_keys_pressed_other_sources(unsigned i,
    }
 #endif
 
-#ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote &&
-         input_remote_key_pressed(i, 0))
+#ifdef HAVE_NETWORKGAMEPAD   
+   /* Only process key presses related to game input if using Remote RetroPad */ 
+   if (i < RARCH_CUSTOM_BIND_LIST_END && 
+         input_driver_remote &&
+            input_remote_key_pressed(i, 0))
       return true;
 #endif
 
