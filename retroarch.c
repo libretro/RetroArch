@@ -3174,7 +3174,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
 #endif
 
    /* reset video format to libretro's default */
-   video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
+   video_driver_pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
    info.env = rarch_environment_cb;
    core_set_environment(&info);
@@ -6673,7 +6673,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
          }
 
-         video_driver_set_pixel_format(pix_fmt);
+         video_driver_pix_fmt = pix_fmt;
          break;
       }
 
@@ -17248,11 +17248,6 @@ void video_driver_set_aspect_ratio_value(float value)
 enum retro_pixel_format video_driver_get_pixel_format(void)
 {
    return video_driver_pix_fmt;
-}
-
-void video_driver_set_pixel_format(enum retro_pixel_format fmt)
-{
-   video_driver_pix_fmt = fmt;
 }
 
 /**
