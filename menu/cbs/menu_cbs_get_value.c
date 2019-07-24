@@ -45,7 +45,7 @@
 #include "../../playlist.h"
 
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay.h"
+#include "../../network/netplay/netplay.h"
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE

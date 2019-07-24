@@ -47,7 +47,7 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
-#include "../tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../playlist.h"
 #include "../../runtime_file.h"
