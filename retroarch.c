@@ -1669,8 +1669,10 @@ static bool audio_driver_start(bool is_shutdown);
 static bool recording_init(void);
 static bool recording_deinit(void);
 
+#ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(void);
 static void retroarch_overlay_deinit(void);
+#endif
 
 static void video_driver_gpu_record_deinit(void);
 static void video_driver_set_nonblock_state(bool toggle);
@@ -1681,9 +1683,11 @@ static bool video_driver_find_driver(void);
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
+#ifdef HAVE_OVERLAY
 static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(input_overlay_t *ol, float opacity);
+#endif
 
 static void bsv_movie_deinit(void);
 static bool bsv_movie_init(void);
