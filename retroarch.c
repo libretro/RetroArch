@@ -2836,8 +2836,8 @@ static void command_event_init_cheats(void)
    if (!allow_cheats)
       return;
 
-   cheat_manager_alloc_if_empty() ;
-   cheat_manager_load_game_specific_cheats() ;
+   cheat_manager_alloc_if_empty();
+   cheat_manager_load_game_specific_cheats();
 
    if (settings != NULL && settings->bools.apply_cheats_after_load)
       cheat_manager_apply_cheats();
@@ -6443,9 +6443,9 @@ static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsign
 static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
 {
    if ( clear_threads > 0)
-      audio_driver_start(false) ;
+      audio_driver_start(false);
    else
-      audio_driver_stop() ;
+      audio_driver_stop();
 
    return true;
 }
@@ -6865,7 +6865,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          bool state = *(const bool*)data;
          RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
 
-         set_save_state_in_background(state) ;
+         set_save_state_in_background(state);
 
          break;
       }
@@ -15044,19 +15044,18 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    unsigned new_rate     = 0;
    float   *aud_inp_data = NULL;
    float *samples_buf    = NULL;
-   int16_t *conv_buf     = NULL;
    int16_t *rewind_buf   = NULL;
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings  = configuration_settings;
    /* Accomodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO *
       settings->floats.slowmotion_ratio;
+   int16_t *conv_buf     = (int16_t*)malloc(outsamples_max
+         * sizeof(int16_t));
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
 
-   conv_buf = (int16_t*)malloc(outsamples_max
-         * sizeof(int16_t));
    /* Used for recording even if audio isn't enabled. */
    retro_assert(conv_buf != NULL);
 
