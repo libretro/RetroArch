@@ -1,8 +1,6 @@
 #ifndef _COMPAT_ZUTIL_H
 #define _COMPAT_ZUTIL_H
 
-#ifdef WANT_ZLIB
-
 /* zutil.h -- internal interface and configuration of the compression library
  * Copyright (C) 1995-2013 Jean-loup Gailly.
  * For conditions of distribution and use, see copyright notice in zlib.h
@@ -245,9 +243,5 @@ extern char z_errmsg[10][21]; /* indexed by 2-zlib_error */
                     (((q) & 0xff00) << 8) + (((q) & 0xff) << 24))
 
 #endif /* ZUTIL_H */
-
-#else
-#include <zutil.h>
-#endif
 
 #endif

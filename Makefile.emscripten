@@ -24,7 +24,6 @@ HAVE_RGUI = 1
 HAVE_SDL = 0
 HAVE_SDL2 = 0
 HAVE_ZLIB = 1
-WANT_ZLIB = 0
 HAVE_SHADERPIPELINE = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
@@ -34,10 +33,6 @@ HAVE_STB_FONT = 1
 PRECISE_F32 = 1
 
 OBJDIR := obj-emscripten
-
-ifneq ($(NATIVE_ZLIB),)
-   WANT_ZLIB = 0
-endif
 
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 

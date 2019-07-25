@@ -1,8 +1,6 @@
 #ifndef _COMPAT_ZLIB_H
 #define _COMPAT_ZLIB_H
 
-#ifdef WANT_ZLIB
-
 #ifdef RARCH_INTERNAL
 #include "zconf.h.in"
 #endif
@@ -1763,9 +1761,5 @@ const uint32_t * get_crc_table(void);
 #endif
 
 #endif /* ZLIB_H */
-
-#else
-#include <zlib.h>
-#endif
 
 #endif
