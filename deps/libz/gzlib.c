@@ -190,7 +190,7 @@ local gzFile gz_open(
     /* save the path name for error messages */
 #ifdef WIDECHAR
     if (fd == -2) {
-        len = wcstombs(NULL, path, 0);
+        len = wcstombs(NULL, (const wchar_t*)path, 0);
         if (len == (z_size_t)-1)
             len = 0;
     }
@@ -205,7 +205,7 @@ local gzFile gz_open(
 #ifdef WIDECHAR
     if (fd == -2)
         if (len)
-            wcstombs(state->path, path, len + 1);
+            wcstombs(state->path, (const wchar_t*)path, len + 1);
         else
             *(state->path) = 0;
     else
@@ -240,7 +240,7 @@ local gzFile gz_open(
     /* open the file with the appropriate flags (or just use fd) */
     state->fd = fd > -1 ? fd : (
 #ifdef WIDECHAR
-        fd == -2 ? _wopen(path, oflag, 0666) :
+        fd == -2 ? _wopen((const wchar_t*)path, oflag, 0666) :
 #endif
         open((const char *)path, oflag, 0666));
     if (state->fd == -1) {
