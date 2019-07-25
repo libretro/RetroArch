@@ -1329,6 +1329,7 @@ struct string_list* cdrom_get_available_drives(void)
 #if defined(__linux__) && !defined(ANDROID)
    struct string_list *dir_list = dir_list_new("/dev", NULL, false, false, false, false);
    int i;
+   bool found = false;
 
    if (!dir_list)
       return list;
@@ -1344,6 +1345,8 @@ struct string_list* cdrom_get_available_drives(void)
          RFILE *file = filestream_open(dir_list->elems[i].data, RETRO_VFS_FILE_ACCESS_READ, 0);
          libretro_vfs_implementation_file *stream;
          bool is_cdrom = false;
+
+         found = true;
 
          if (!file)
             continue;
@@ -1367,6 +1370,14 @@ struct string_list* cdrom_get_available_drives(void)
 
          string_list_append(list, drive_string, attr);
       }
+   }
+
+   if (!found)
+   {
+#ifdef CDROM_DEBUG
+      printf("[CDROM] No sg devices found. Is the sg kernel module loaded?\n");
+      fflush(stdout);
+#endif
    }
 
    string_list_free(dir_list);
