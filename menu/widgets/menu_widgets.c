@@ -475,13 +475,13 @@ bool menu_widgets_msg_queue_push(
             {
                menu_animation_ctx_entry_t entry;
 
-               entry.easing_enum = EASING_OUT_QUAD;
-               entry.tag = (uintptr_t) NULL;
-               entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
-               entry.target_value = msg_queue_height/2.0f;
-               entry.subject = &msg_widget->msg_transition_animation;
-               entry.cb = msg_widget_msg_transition_animation_done;
-               entry.userdata = msg_widget;
+               entry.easing_enum    = EASING_OUT_QUAD;
+               entry.tag            = (uintptr_t) msg_widget;
+               entry.duration       = MSG_QUEUE_ANIMATION_DURATION*2;
+               entry.target_value   = msg_queue_height/2.0f;
+               entry.subject        = &msg_widget->msg_transition_animation;
+               entry.cb             = msg_widget_msg_transition_animation_done;
+               entry.userdata       = msg_widget;
 
                menu_animation_push(&entry);
             }
@@ -525,7 +525,7 @@ static void menu_widgets_move_end(void *userdata)
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
       entry.easing_enum    = EASING_OUT_QUAD;
       entry.subject        = &unfold->unfold;
-      entry.tag            = generic_tag;
+      entry.tag            = (uintptr_t) unfold;
       entry.target_value   = 1.0f;
       entry.userdata       = unfold;
 
@@ -577,9 +577,9 @@ static void menu_widgets_msg_queue_move(void)
          entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
          entry.easing_enum    = EASING_OUT_QUAD;
          entry.subject        = &msg->offset_y;
-         entry.tag            = generic_tag;
+         entry.tag            = (uintptr_t) msg;
          entry.target_value   = y;
-         entry.userdata       = unfold; 
+         entry.userdata       = unfold;
 
          menu_animation_push(&entry);
 
@@ -608,6 +608,10 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
    /* Kill all animations */
    menu_timer_kill(&msg->hourglass_timer);
    menu_animation_kill_by_tag(&tag);
+
+   /* Kill all timers */
+   if (msg->expiration_timer_started)
+      menu_timer_kill(&msg->expiration_timer);
 
    /* Free it */
    if (msg->msg)
@@ -657,7 +661,7 @@ static void menu_widgets_msg_queue_kill(unsigned idx)
    entry.cb             = NULL;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = generic_tag;
+   entry.tag            = (uintptr_t) msg;
    entry.userdata       = NULL;
    entry.subject        = &msg->offset_y;
    entry.target_value   = msg->offset_y - msg_queue_height/4;
@@ -791,13 +795,13 @@ static void menu_widgets_hourglass_tick(void *userdata)
 
    menu_animation_ctx_entry_t entry;
 
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.tag = tag;
-   entry.duration = HOURGLASS_DURATION;
-   entry.target_value = -(2 * PI);
-   entry.subject = &msg->hourglass_rotation;
-   entry.cb = menu_widgets_hourglass_end;
-   entry.userdata = msg;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.tag            = tag;
+   entry.duration       = HOURGLASS_DURATION;
+   entry.target_value   = -(2 * PI);
+   entry.subject        = &msg->hourglass_rotation;
+   entry.cb             = menu_widgets_hourglass_end;
+   entry.userdata       = msg;
 
    menu_animation_push(&entry);
 }
@@ -1933,6 +1937,7 @@ static void menu_widgets_achievement_free(void *userdata)
 void menu_widgets_free(void)
 {
    size_t i;
+   menu_animation_ctx_tag libretro_tag;
 
    if (!menu_widgets_inited)
       return;
@@ -1990,7 +1995,10 @@ void menu_widgets_free(void)
    generic_message_alpha = 0.0f;
 
    /* Libretro message */
+   libretro_tag = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
+   menu_timer_kill(&libretro_message_timer);
+   menu_animation_kill_by_tag(&libretro_tag);
 
    /* Volume */
    volume_alpha = 0.0f;
@@ -2174,7 +2182,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    /* Setup the animation */
    entry.cb          = NULL;
    entry.easing_enum = EASING_OUT_QUAD;
-   entry.tag         = (uintptr_t) NULL;
+   entry.tag         = generic_tag;
    entry.userdata    = NULL;
 
    /* Stage one: icon animation */
