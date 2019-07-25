@@ -1161,7 +1161,7 @@ local unsigned bi_reverse(
     unsigned code, /* the value to invert */
     int len)       /* its bit length */
 {
-    register unsigned res = 0;
+    unsigned res = 0;
     do {
         res |= code & 1;
         code >>= 1, res <<= 1;
