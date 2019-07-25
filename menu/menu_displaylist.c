@@ -2209,12 +2209,24 @@ static unsigned menu_displaylist_parse_information_list(
          count++;
 
 #ifdef HAVE_CDROM
-   if (menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
-         msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
-         MENU_ENUM_LABEL_DISC_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0))
-      count++;
+   {
+      struct string_list *drive_list = cdrom_get_available_drives();
+
+      if (drive_list)
+      {
+         if (drive_list->size)
+         {
+            if (menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
+                  MENU_ENUM_LABEL_DISC_INFORMATION,
+                  MENU_SETTING_ACTION, 0, 0))
+               count++;
+         }
+
+         string_list_free(drive_list);
+      }
+   }
 #endif
 
 #ifdef HAVE_NETWORKING
