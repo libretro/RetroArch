@@ -608,7 +608,8 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
    }
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+            (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_RIGHT(cbs, core_setting_right);
    }

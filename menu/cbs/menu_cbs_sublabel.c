@@ -1124,7 +1124,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    }
 #endif
 
-   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+       (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
       return 0;
