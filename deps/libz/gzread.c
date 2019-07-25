@@ -139,7 +139,7 @@ local int gz_look(
     if (strm->avail_in > 1 &&
             strm->next_in[0] == 31 && strm->next_in[1] == 139) {
         inflateReset(strm);
-        state->how = GZIP;
+        state->how = MODE_GZIP;
         state->direct = 0;
         return 0;
     }
@@ -162,7 +162,7 @@ local int gz_look(
         state->x.have = strm->avail_in;
         strm->avail_in = 0;
     }
-    state->how = COPY;
+    state->how = MODE_COPY;
     state->direct = 1;
     return 0;
 }
@@ -233,19 +233,20 @@ local int gz_fetch(
 
     do {
         switch(state->how) {
-        case LOOK:      /* -> LOOK, COPY (only if never GZIP), or GZIP */
+        /* -> LOOK, MODE_COPY (only if never MODE_GZIP), or MODE_GZIP */
+        case LOOK:
             if (gz_look(state) == -1)
                 return -1;
             if (state->how == LOOK)
                 return 0;
             break;
-        case COPY:      /* -> COPY */
+        case MODE_COPY:    /* -> MODE_COPY */
             if (gz_load(state, state->out, state->size << 1, &(state->x.have))
                     == -1)
                 return -1;
             state->x.next = state->out;
             return 0;
-        case GZIP:      /* -> GZIP or LOOK (if end of gzip stream) */
+        case MODE_GZIP:    /* -> MODE_GZIP or LOOK (if end of gzip stream) */
             strm->avail_out = state->size << 1;
             strm->next_out = state->out;
             if (gz_decomp(state) == -1)
@@ -345,13 +346,13 @@ local z_size_t gz_read(
         }
 
         /* large len -- read directly into user buffer */
-        else if (state->how == COPY) {      /* read directly */
+        else if (state->how == MODE_COPY) {      /* read directly */
             if (gz_load(state, (unsigned char *)buf, n, &n) == -1)
                 return 0;
         }
 
         /* large len -- decompress directly into user buffer */
-        else {  /* state->how == GZIP */
+        else {  /* state->how == MODE_GZIP */
             state->strm.avail_out = n;
             state->strm.next_out = (unsigned char *)buf;
             if (gz_decomp(state) == -1)

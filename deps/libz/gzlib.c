@@ -395,7 +395,7 @@ z_off64_t ZEXPORT gzseek64(
     state->seek = 0;
 
     /* if within raw area while reading, just go there */
-    if (state->mode == GZ_READ && state->how == COPY &&
+    if (state->mode == GZ_READ && state->how == MODE_COPY &&
             state->x.pos + offset >= 0) {
         ret = LSEEK(state->fd, offset - state->x.have, SEEK_CUR);
         if (ret == -1)
