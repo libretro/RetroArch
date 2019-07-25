@@ -111,7 +111,7 @@ void *mmdevice_list_new(void *u)
       if (!ir)
          goto error;
 
-      br = string_list_append(sl, dev_id_str, attr);
+      br = string_list_append(sl, dev_name_str, attr);
       if (!br)
          goto error;
 

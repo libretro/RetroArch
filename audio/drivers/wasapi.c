@@ -17,6 +17,7 @@
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+#include <string/stdstring.h>
 
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
@@ -38,50 +39,6 @@ typedef struct
    IAudioRenderClient *renderer;
    fifo_buffer_t      *buffer; /* NULL in unbuffered shared mode */
 } wasapi_t;
-
-static bool wasapi_check_device_id(IMMDevice *device, const char *id)
-{
-   HRESULT hr;
-   bool result   = false;
-   LPWSTR dev_id = NULL, dev_cmp_id = NULL;
-   int id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, NULL, 0);
-
-   if (!(id_length > 0))
-      goto error;
-
-   dev_cmp_id = (LPWSTR)malloc(id_length * sizeof(WCHAR));
-   if (!dev_cmp_id)
-      goto error;
-
-   id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, dev_cmp_id, id_length);
-   if (!(id_length > 0))
-      goto error;
-
-   hr = _IMMDevice_GetId(device, &dev_id);
-   if (FAILED(hr))
-      goto error;
-
-   result = lstrcmpW(dev_cmp_id, dev_id) == 0 ? true : false;
-
-   if (dev_id)
-      CoTaskMemFree(dev_id);
-   if (dev_cmp_id)
-      free(dev_cmp_id);
-   dev_id     = NULL;
-   dev_cmp_id = NULL;
-
-   return result;
-
-error:
-   if (dev_id)
-      CoTaskMemFree(dev_id);
-   if (dev_cmp_id)
-      free(dev_cmp_id);
-   dev_id     = NULL;
-   dev_cmp_id = NULL;
-
-   return false;
-}
 
 static IMMDevice *wasapi_init_device(const char *id)
 {
@@ -112,6 +69,41 @@ static IMMDevice *wasapi_init_device(const char *id)
 
    if (id)
    {
+      int32_t idx_found        = -1;
+      struct string_list *list = mmdevice_list_new(NULL);
+
+      /* Search for device name first */
+      if (list && list->elems)
+      {
+         if (list->elems)
+         {
+            unsigned i;
+            for (i = 0; i < list->size; i++)
+            {
+               RARCH_LOG("%d : %s\n", i, list->elems[i].data);
+               if (string_is_equal(id, list->elems[i].data))
+               {
+                  idx_found = i;
+                  break;
+               }
+            }
+            /* Index was not found yet based on name string,
+             * just assume id is a one-character number index. */
+
+            if (idx_found == -1 && isdigit(id[0]))
+            {
+               idx_found = strtoul(id, NULL, 0);
+               RARCH_LOG("[WASAPI]: Fallback, device index is a single number index instead: %d.\n", idx_found);
+
+               if (idx_found < list->size)
+               {
+                  RARCH_LOG("[WASAPI]: Corresponding name: %s\n", list->elems[idx_found].data);
+               }
+            }
+         }
+         string_list_free(list);
+      }
+
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
             eRender, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
@@ -127,7 +119,7 @@ static IMMDevice *wasapi_init_device(const char *id)
          if (FAILED(hr))
             goto error;
 
-         if (wasapi_check_device_id(device, id))
+         if (i == idx_found)
             break;
 
          IFACE_RELEASE(device);
@@ -167,7 +159,7 @@ error:
 
 static unsigned wasapi_pref_rate(unsigned i)
 {
-   const unsigned r[] = { 48000, 44100, 96000, 192000 };
+   const unsigned r[] = { 48000, 44100, 96000, 192000, 32000 };
 
    if (i >= sizeof(r) / sizeof(unsigned))
       return 0;
