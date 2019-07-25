@@ -95,14 +95,14 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 
 #ifdef __cplusplus
 #define IFACE_RELEASE(iface) \
-      if(iface) \
+      if (iface) \
       { \
          iface->Release(); \
          iface = NULL; \
       }
 #else
 #define IFACE_RELEASE(iface) \
-      if(iface) \
+      if (iface) \
       { \
          iface->lpVtbl->Release(iface);\
          iface = NULL; \
@@ -157,7 +157,7 @@ static bool wasapi_check_device_id(IMMDevice *device, const char *id)
    return result;
 
 error:
-   if(dev_id)
+   if (dev_id)
       CoTaskMemFree(dev_id);
    if (dev_cmp_id)
       free(dev_cmp_id);
@@ -586,12 +586,12 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    bool float_format         = settings->bools.audio_wasapi_float_format;
    int sh_buffer_length      = settings->ints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
-   w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
    if (!w)
       return NULL;
 
-   w->device = wasapi_init_device(dev_id);
+   w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
+   w->device                 = wasapi_init_device(dev_id);
    if (!w->device && dev_id)
       w->device = wasapi_init_device(NULL);
    if (!w->device)
@@ -606,8 +606,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (FAILED(hr))
       goto error;
 
-   w->frame_size = float_format ? 8 : 4;
+   w->frame_size         = float_format ? 8 : 4;
    w->engine_buffer_size = frame_count * w->frame_size;
+
    if (w->exclusive)
    {
       w->buffer = fifo_new(w->engine_buffer_size);
@@ -666,7 +667,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    hr = _IAudioClient_Start(w->client);
    if (FAILED(hr))
       goto error;
-   w->running = true;
+   w->running  = true;
    w->blocking = settings->bools.audio_sync;
 
    return w;
@@ -752,10 +753,8 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          write_avail = w->engine_buffer_size - padding * w->frame_size;
          written     = read_avail < write_avail ? read_avail : write_avail;
          if (written)
-         {
             if (!wasapi_flush_buffer(w, written))
                return -1;
-         }
       }
 
       write_avail = fifo_write_avail(w->buffer);
@@ -782,10 +781,8 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
       written = size < write_avail ? size : write_avail;
       if (written)
-      {
          if (!wasapi_flush(w, data, written))
             return -1;
-      }
    }
 
    return written;
@@ -793,20 +790,19 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 {
-   ssize_t writen     = 0;
+   ssize_t written    = 0;
    size_t write_avail = fifo_write_avail(w->buffer);
 
    if (!write_avail)
    {
       DWORD ir = WaitForSingleObject(
             w->write_event, w->blocking ? INFINITE : 0);
-      if (ir != WAIT_OBJECT_0 && w->blocking)
-      {
-         RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
-         return -1;
-      }
       if (ir != WAIT_OBJECT_0)
+      {
+         if (w->blocking)
+            return -1;
          return 0;
+      }
 
       if (!wasapi_flush_buffer(w, w->engine_buffer_size))
          return -1;
@@ -814,10 +810,10 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
       write_avail = w->engine_buffer_size;
    }
 
-   writen = size < write_avail ? size : write_avail;
-   fifo_write(w->buffer, data, writen);
+   written = size < write_avail ? size : write_avail;
+   fifo_write(w->buffer, data, written);
 
-   return writen;
+   return written;
 }
 
 static ssize_t wasapi_write(void *wh, const void *data, size_t size)
@@ -1024,9 +1020,9 @@ static void *wasapi_device_list_new(void *u)
 
       PropVariantClear(&prop_var);
       prop_var_init = false;
-      if(dev_id_wstr)
+      if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
-      if(dev_id_str)
+      if (dev_id_str)
          free(dev_id_str);
       if (dev_name_str)
          free(dev_name_str);
@@ -1043,7 +1039,7 @@ static void *wasapi_device_list_new(void *u)
    return sl;
 
 error:
-   if(dev_id_str)
+   if (dev_id_str)
       free(dev_id_str);
    if (dev_name_str)
       free(dev_name_str);
@@ -1052,7 +1048,7 @@ error:
    if (prop_var_init)
       PropVariantClear(&prop_var);
    IFACE_RELEASE(prop_store);
-   if(dev_id_wstr)
+   if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;
    IFACE_RELEASE(device);
