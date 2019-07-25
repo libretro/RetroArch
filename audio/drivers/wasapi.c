@@ -19,6 +19,7 @@
 #include <queues/fifo_queue.h>
 
 #include "../common/mmdevice_common.h"
+#include "../common/mmdevice_common_inline.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"

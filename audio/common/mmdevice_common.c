@@ -18,6 +18,7 @@
 #include <lists/string_list.h>
 
 #include "mmdevice_common.h"
+#include "mmdevice_common_inline.h"
 
 void *mmdevice_list_new(void *u)
 {
