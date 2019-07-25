@@ -1349,7 +1349,11 @@ struct string_list* cdrom_get_available_drives(void)
          found = true;
 
          if (!file)
+         {
+            printf("[CDROM] Could not open %s, please check permissions.\n", dir_list->elems[i].data);
+            fflush(stdout);
             continue;
+         }
 
          stream = filestream_get_vfs_handle(file);
          cdrom_get_inquiry(stream, drive_model, sizeof(drive_model), &is_cdrom);
@@ -1374,10 +1378,45 @@ struct string_list* cdrom_get_available_drives(void)
 
    if (!found)
    {
-#ifdef CDROM_DEBUG
-      printf("[CDROM] No sg devices found. Is the sg kernel module loaded?\n");
-      fflush(stdout);
-#endif
+      char *buf = NULL;
+      int64_t len = 0;
+
+      if (filestream_read_file("/proc/modules", (void**)&buf, &len))
+      {
+         struct string_list *mods = string_split(buf, "\n");
+         bool found = false;
+
+         if (mods)
+         {
+
+            for (i = 0; i < mods->size; i++)
+            {
+               if (strcasestr(mods->elems[i].data, "sg "))
+               {
+                  found = true;
+                  break;
+               }
+            }
+
+            string_list_free(mods);
+         }
+
+         if (found)
+         {
+            printf("[CDROM] No sg devices found but kernel module is loaded.\n");
+            fflush(stdout);
+         }
+         else
+         {
+            printf("[CDROM] No sg devices found and sg kernel module is not loaded.\n");
+            fflush(stdout);
+         }
+      }
+      else
+      {
+         printf("[CDROM] No sg devices found, could not check if sg kernel module is loaded.\n");
+         fflush(stdout);
+      }
    }
 
    string_list_free(dir_list);
