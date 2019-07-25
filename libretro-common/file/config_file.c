@@ -603,12 +603,15 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
    uint8_t *ret_buf              = NULL;
    config_file_t *conf           = NULL;
 
-   if (filestream_read_file(path, (void**)&ret_buf, &length))
+   if (path_is_valid(path))
    {
-      if (length >= 0)
-         conf = config_file_new_from_string((const char*)ret_buf, path);
-      if ((void*)ret_buf)
-         free((void*)ret_buf);
+      if (filestream_read_file(path, (void**)&ret_buf, &length))
+      {
+         if (length >= 0)
+            conf = config_file_new_from_string((const char*)ret_buf, path);
+         if ((void*)ret_buf)
+            free((void*)ret_buf);
+      }
    }
 
    return conf;
