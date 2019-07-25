@@ -73,14 +73,14 @@ static IMMDevice *wasapi_init_device(const char *id)
       struct string_list *list = mmdevice_list_new(NULL);
 
       /* Search for device name first */
-      if (list && list->elems)
+      if (list)
       {
          if (list->elems)
          {
             unsigned i;
             for (i = 0; i < list->size; i++)
             {
-               RARCH_LOG("%d : %s\n", i, list->elems[i].data);
+               RARCH_LOG("[WASAPI]: %d : %s\n", i, list->elems[i].data);
                if (string_is_equal(id, list->elems[i].data))
                {
                   idx_found = i;
