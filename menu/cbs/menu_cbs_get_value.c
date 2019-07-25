@@ -1630,7 +1630,8 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+       (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_core_options);

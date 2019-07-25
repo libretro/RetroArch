@@ -257,7 +257,8 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
    }
 #endif
 
-   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+       (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_SELECT(cbs, action_select_core_setting);
       return 0;
