@@ -1,10 +1,7 @@
 /* gzguts.h -- zlib internal header definitions for gz* operations
- * Copyright (C) 2004, 2005, 2010, 2011, 2012, 2013 Mark Adler
+ * Copyright (C) 2004, 2005, 2010, 2011, 2012, 2013, 2016 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
-
-#ifndef _GZGUTS_H
-#define _GZGUTS_H
 
 #ifdef _LARGEFILE64_SOURCE
 #  ifndef _LARGEFILE_SOURCE
@@ -22,22 +19,28 @@
 #endif
 
 #include <stdio.h>
-#include <zlib.h>
+#include "zlib.h"
 #ifdef STDC
 #  include <string.h>
 #  include <stdlib.h>
 #  include <limits.h>
 #endif
+
+#ifndef _POSIX_SOURCE
+#  define _POSIX_SOURCE
+#endif
 #include <fcntl.h>
 
 #ifdef _WIN32
 #  include <stddef.h>
-#else
-#  include <unistd.h>
 #endif
 
 #if defined(__TURBOC__) || defined(_MSC_VER) || defined(_WIN32)
 #  include <io.h>
+#endif
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+#  define WIDECHAR
 #endif
 
 #ifdef WINAPI_FAMILY
@@ -100,20 +103,19 @@
 #  endif
 #endif
 
-/* unlike snprintf (which is required in C99, yet still not supported by
-   Microsoft more than a decade later!), _snprintf does not guarantee null
-   termination of the result -- however this is only used in gzlib.c where
+/* unlike snprintf (which is required in C99), _snprintf does not guarantee
+   null termination of the result -- however this is only used in gzlib.c where
    the result is assured to fit in the space provided */
-#ifdef _MSC_VER
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#  define snprintf _snprintf
 #endif
 
 #ifndef local
 #  define local static
 #endif
-/* compile with -Dlocal if your debugger can't find static symbols */
+/* since "static" is used to mean two completely different things in C, we
+   define "local" for the non-static meaning of "static", for readability
+   (compile with -Dlocal if your debugger can't find static symbols) */
 
 /* gz* functions always use library allocation functions */
 #ifndef STDC
@@ -136,14 +138,10 @@
 
 /* provide prototypes for these when building zlib without LFS */
 #if !defined(_LARGEFILE64_SOURCE) || _LFS64_LARGEFILE-0 == 0
-#ifndef z_off64_t
-#define z_off64_t z_off_t
-#endif
-
-    gzFile gzopen64 OF((const char *, const char *));
-    z_off64_t gzseek64 OF((gzFile, z_off64_t, int));
-    z_off64_t gztell64 OF((gzFile));
-    z_off64_t gzoffset64 OF((gzFile));
+    ZEXTERN gzFile ZEXPORT gzopen64 OF((const char *, const char *));
+    ZEXTERN z_off64_t ZEXPORT gzseek64 OF((gzFile, z_off64_t, int));
+    ZEXTERN z_off64_t ZEXPORT gztell64 OF((gzFile));
+    ZEXTERN z_off64_t ZEXPORT gzoffset64 OF((gzFile));
 #endif
 
 /* default memLevel */
@@ -165,10 +163,8 @@
 
 /* values for gz_state how */
 #define LOOK 0      /* look for a gzip header */
-#define MODE_COPY 1      /* copy input directly */
-#define MODE_GZIP 2      /* decompress a gzip stream */
-
-#include "gzfile.h"
+#define COPY 1      /* copy input directly */
+#define GZIP 2      /* decompress a gzip stream */
 
 /* internal gzip file state data structure */
 typedef struct {
@@ -183,7 +179,7 @@ typedef struct {
     char *path;             /* path or fd for error messages */
     unsigned size;          /* buffer size, zero if not allocated yet */
     unsigned want;          /* requested buffer size, default is GZBUFSIZE */
-    unsigned char *in;      /* input buffer */
+    unsigned char *in;      /* input buffer (double-sized when writing) */
     unsigned char *out;     /* output buffer (double-sized when reading) */
     int direct;             /* 0 if processing gzip, 1 if transparent */
         /* just for reading */
@@ -219,6 +215,4 @@ char ZLIB_INTERNAL *gz_strwinerror OF((DWORD error));
 #else
 unsigned ZLIB_INTERNAL gz_intmax OF((void));
 #  define GT_OFF(x) (sizeof(int) == sizeof(z_off64_t) && (x) > gz_intmax())
-#endif
-
 #endif

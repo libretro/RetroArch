@@ -7,9 +7,5 @@
    part of the implementation of the compression library and is
    subject to change. Applications should only use zlib.h.
  */
-#ifndef _INFFAST_H
-#define _INFFAST_H
 
 void ZLIB_INTERNAL inflate_fast OF((z_streamp strm, unsigned start));
-
-#endif
