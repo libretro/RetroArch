@@ -47,25 +47,14 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
    char                          *buf = nullptr;
    int64_t                        len = 0;
    const char *basename               = path_basename(path);
-   size_t path_size                   = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp_path                     = (char*)malloc(path_size);
 
    include_path[0] = tmp[0] = '\0';
 
-   strlcpy(tmp_path, path, path_size);
-   path_resolve_realpath(tmp_path, path_size, false);
-
-   if (!path_is_valid(tmp_path))
-      strlcpy(tmp_path, path, path_size);
-
-   if (!filestream_read_file(tmp_path, (void**)&buf, &len))
+   if (!filestream_read_file(path, (void**)&buf, &len))
    {
-      RARCH_ERR("Failed to open shader file: \"%s\".\n", tmp_path);
-      free(tmp_path);
+      RARCH_ERR("Failed to open shader file: \"%s\".\n", path);
       return false;
    }
-
-   free(tmp_path);
 
    /* Remove Windows \r chars if we encounter them.
     * filestream_read_file() allocates one extra for 0 terminator. */
