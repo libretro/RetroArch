@@ -1069,12 +1069,12 @@ static bool core_info_compare_api_version(int sys_major, int sys_minor, int majo
 
 bool core_info_hw_api_supported(core_info_t *info)
 {
+   unsigned i;
    enum gfx_ctx_api sys_api;
-   gfx_ctx_flags_t sys_flags = {0};
-   int i;
+   gfx_ctx_flags_t sys_flags       = {0};
    const char *sys_api_version_str = video_driver_get_gpu_api_version_string();
-   int sys_api_version_major = 0;
-   int sys_api_version_minor = 0;
+   int sys_api_version_major       = 0;
+   int sys_api_version_minor       = 0;
 
    enum api_parse_state
    {
@@ -1091,21 +1091,21 @@ bool core_info_hw_api_supported(core_info_t *info)
 
    for (i = 0; i < info->required_hw_api_list->size; i++)
    {
-      char api_str[32] = {0};
-      char version[16] = {0};
-      char major_str[16] = {0};
-      char minor_str[16] = {0};
-      const char *cur_api = info->required_hw_api_list->elems[i].data;
-      int api_pos = 0;
-      int major_str_pos = 0;
-      int minor_str_pos = 0;
-      int cur_api_len = 0;
-      int j = 0;
-      int major = 0;
-      int minor = 0;
-      bool found_major = false;
-      bool found_minor = false;
-      enum compare_op op = COMPARE_OP_GREATER_EQUAL;
+      char api_str[32]           = {0};
+      char version[16]           = {0};
+      char major_str[16]         = {0};
+      char minor_str[16]         = {0};
+      const char *cur_api        = info->required_hw_api_list->elems[i].data;
+      int api_pos                = 0;
+      int major_str_pos          = 0;
+      int minor_str_pos          = 0;
+      int cur_api_len            = 0;
+      int j                      = 0;
+      int major                  = 0;
+      int minor                  = 0;
+      bool found_major           = false;
+      bool found_minor           = false;
+      enum compare_op op         = COMPARE_OP_GREATER_EQUAL;
       enum api_parse_state state = STATE_API_NAME;
 
       if (string_is_empty(cur_api))
@@ -1143,9 +1143,7 @@ bool core_info_hw_api_supported(core_info_t *info)
                      j++;
                   }
                   else if (cur_api[j] == '=')
-                  {
                      op = COMPARE_OP_EQUAL;
-                  }
                   else if (cur_api[j] == '!' && cur_api[j + 1] == '=')
                   {
                      op = COMPARE_OP_NOT_EQUAL;
@@ -1162,13 +1160,9 @@ bool core_info_hw_api_supported(core_info_t *info)
                      j++;
                   }
                   else if (cur_api[j] == '<')
-                  {
                      op = COMPARE_OP_LESS;
-                  }
                   else if (cur_api[j] == '>')
-                  {
                      op = COMPARE_OP_GREATER;
-                  }
                }
 
                state = STATE_API_VERSION;
@@ -1190,10 +1184,7 @@ bool core_info_hw_api_supported(core_info_t *info)
                      minor_str[minor_str_pos++] = cur_api[j];
                }
                else if (cur_api[j] == '.')
-               {
                   found_minor = true;
-               }
-
                break;
             }
             default:
@@ -1216,11 +1207,9 @@ bool core_info_hw_api_supported(core_info_t *info)
             (string_is_equal_noncase(api_str, "openglcompat") && sys_api == GFX_CTX_OPENGL_API) ||
             (string_is_equal_noncase(api_str, "openglcompatibility") && sys_api == GFX_CTX_OPENGL_API))
       {
-         if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-         {
-            /* system is running a core context while compat is requested */
+         /* system is running a core context while compat is requested */
+         if (sys_flags.flags & (1 << GFX_CTX_FLAGS_GL_CORE_CONTEXT))   
             return false;
-         }
 
          sscanf(sys_api_version_str, "%d.%d", &sys_api_version_major, &sys_api_version_minor);
 

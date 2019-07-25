@@ -15,99 +15,14 @@
 
 #include <stdlib.h>
 
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0600
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winerror.h>
-#include <propidl.h>
-#include <initguid.h>
-#include <mmdeviceapi.h>
-#include <mmreg.h>
-#include <audioclient.h>
-
-#ifdef _MSC_VER
-DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4C, 0xDBFA, 0x4C32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
-DEFINE_GUID(IID_IAudioRenderClient, 0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2);
-DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
-DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
-#undef KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
-DEFINE_GUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 0x00000003, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
-#endif
-
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+
+#include "../common/mmdevice_common.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
-
-DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
-
-#ifdef __cplusplus
-#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->Item(nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->Start() )
-#define _IAudioClient_Stop(This)	( (This)->Stop() )
-#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->GetCurrentPadding(pNumPaddingFrames) )
-#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->GetBuffer(NumFramesRequested,ppData) )
-#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
-#define _IAudioClient_GetService(This,riid,ppv) ( (This)->GetService(riid,ppv) )
-#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->SetEventHandle(eventHandle) )
-#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
-#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->GetStreamLatency(phnsLatency) )
-#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->GetDevicePeriod(phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
-#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
-#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
-#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
-#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->OpenPropertyStore(stgmAccess,ppProperties)
-#define _IMMDevice_GetId(This,ppstrId) ((This)->GetId(ppstrId))
-#define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
-#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
-#else
-#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
-#define _IAudioClient_Stop(This)	( (This)->lpVtbl -> Stop(This) )
-#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
-#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->lpVtbl -> GetBuffer(This,NumFramesRequested,ppData) )
-#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
-#define _IAudioClient_GetService(This,riid,ppv)	( (This)->lpVtbl -> GetService(This,&(riid),ppv) )
-#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->lpVtbl -> SetEventHandle(This,eventHandle) )
-#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
-#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->lpVtbl -> GetStreamLatency(This,phnsLatency) )
-#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->lpVtbl -> GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
-#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
-#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
-#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
-#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->lpVtbl->OpenPropertyStore(This,stgmAccess,ppProperties)
-#define _IMMDevice_GetId(This,ppstrId) (This)->lpVtbl->GetId(This,ppstrId)
-#define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )
-#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->lpVtbl -> GetCount(This,cProps) )
-#endif
-
-#ifdef __cplusplus
-#define IFACE_RELEASE(iface) \
-      if (iface) \
-      { \
-         iface->Release(); \
-         iface = NULL; \
-      }
-#else
-#define IFACE_RELEASE(iface) \
-      if (iface) \
-      { \
-         iface->lpVtbl->Release(iface);\
-         iface = NULL; \
-      }
-#endif
 
 typedef struct
 {
@@ -921,147 +836,6 @@ static bool wasapi_use_float(void *wh)
    return w->frame_size == 8;
 }
 
-static void *wasapi_device_list_new(void *u)
-{
-   HRESULT hr;
-   UINT i;
-   PROPVARIANT prop_var;
-   int ir;
-   union string_list_elem_attr attr;
-   IMMDeviceEnumerator *enumerator = NULL;
-   IMMDeviceCollection *collection = NULL;
-   UINT dev_count                  = 0;
-   IMMDevice *device               = NULL;
-   LPWSTR dev_id_wstr              = NULL;
-   IPropertyStore *prop_store      = NULL;
-   bool prop_var_init              = false;
-   bool br                         = false;
-   char *dev_id_str                = NULL;
-   char *dev_name_str              = NULL;
-   struct string_list *sl          = string_list_new();
-
-   if (!sl)
-      return NULL;
-
-   attr.i = 0;
-#ifdef __cplusplus
-   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         IID_IMMDeviceEnumerator, (void **)&enumerator);
-#else
-   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         &IID_IMMDeviceEnumerator, (void **)&enumerator);
-#endif
-   if (FAILED(hr))
-      goto error;
-
-   hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
-   if (FAILED(hr))
-      goto error;
-
-   hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
-   if (FAILED(hr))
-      goto error;
-
-   for (i = 0; i < dev_count; ++i)
-   {
-      hr = _IMMDeviceCollection_Item(collection, i, &device);
-      if (FAILED(hr))
-         goto error;
-
-      hr = _IMMDevice_GetId(device, &dev_id_wstr);
-      if (FAILED(hr))
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            NULL, 0, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      dev_id_str = (char *)malloc(ir);
-      if (!dev_id_str)
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            dev_id_str, ir, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
-      if (FAILED(hr))
-         goto error;
-
-      PropVariantInit(&prop_var);
-      prop_var_init = true;
-      hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName,
-            &prop_var);
-      if (FAILED(hr))
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            NULL, 0, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      dev_name_str = (char *)malloc(ir);
-      if (!dev_name_str)
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            dev_name_str, ir, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      RARCH_LOG("[WASAPI]: %s %s\n", dev_name_str, dev_id_str);
-
-      br = string_list_append(sl, dev_id_str, attr);
-      if (!br)
-         goto error;
-
-      PropVariantClear(&prop_var);
-      prop_var_init = false;
-      if (dev_id_wstr)
-         CoTaskMemFree(dev_id_wstr);
-      if (dev_id_str)
-         free(dev_id_str);
-      if (dev_name_str)
-         free(dev_name_str);
-      dev_id_str   = NULL;
-      dev_name_str = NULL;
-      dev_id_wstr = NULL;
-      IFACE_RELEASE(prop_store);
-      IFACE_RELEASE(device);
-   }
-
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
-
-   return sl;
-
-error:
-   if (dev_id_str)
-      free(dev_id_str);
-   if (dev_name_str)
-      free(dev_name_str);
-   dev_id_str   = NULL;
-   dev_name_str = NULL;
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-   IFACE_RELEASE(prop_store);
-   if (dev_id_wstr)
-      CoTaskMemFree(dev_id_wstr);
-   dev_id_wstr = NULL;
-   IFACE_RELEASE(device);
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
-   if (sl)
-      string_list_free(sl);
-
-   RARCH_ERR("[WASAPI]: Device enumeration failed.\n");
-
-   return NULL;
-}
-
 static void wasapi_device_list_free(void *u, void *slp)
 {
    struct string_list *sl = (struct string_list*)slp;
@@ -1106,7 +880,7 @@ audio_driver_t audio_wasapi = {
    wasapi_free,
    wasapi_use_float,
    "wasapi",
-   wasapi_device_list_new,
+   mmdevice_list_new,
    wasapi_device_list_free,
    wasapi_write_avail,
    wasapi_buffer_size

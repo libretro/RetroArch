@@ -874,6 +874,10 @@ AUDIO
 
 #include "../audio/drivers/nullaudio.c"
 
+#if defined(HAVE_WASAPI) || defined(HAVE_XAUDIO)
+#include "../audio/common/mmdevice_common.c"
+#endif
+
 /*============================================================
 MIDI
 ============================================================ */

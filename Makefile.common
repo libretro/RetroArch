@@ -660,6 +660,7 @@ ifeq ($(HAVE_DSOUND), 1)
 endif
 
 ifeq ($(HAVE_WASAPI), 1)
+	HAVE_MMDEVICE_COMMON = 1
    OBJ += audio/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
@@ -669,6 +670,10 @@ ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/drivers/xaudio.o
    DEFINES += -DHAVE_XAUDIO
    LIBS += -lole32
+endif
+
+ifeq ($(HAVE_MMDEVICE_COMMON), 1)
+	OBJ += audio/common/mmdevice_common.o
 endif
 
 ifeq ($(HAVE_WINMM), 1)
