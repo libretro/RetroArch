@@ -16,13 +16,8 @@
 #include <stdlib.h>
 
 #include <lists/string_list.h>
-#include <queues/fifo_queue.h>
 
 #include "mmdevice_common.h"
-
-#include "../../retroarch.h"
-#include "../../verbosity.h"
-#include "../../configuration.h"
 
 void *mmdevice_list_new(void *u)
 {
@@ -115,8 +110,6 @@ void *mmdevice_list_new(void *u)
       if (!ir)
          goto error;
 
-      RARCH_LOG("[WASAPI]: %s %s\n", dev_name_str, dev_id_str);
-
       br = string_list_append(sl, dev_id_str, attr);
       if (!br)
          goto error;
@@ -159,8 +152,6 @@ error:
    IFACE_RELEASE(enumerator);
    if (sl)
       string_list_free(sl);
-
-   RARCH_ERR("[WASAPI]: Device enumeration failed.\n");
 
    return NULL;
 }
