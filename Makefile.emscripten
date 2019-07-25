@@ -56,7 +56,7 @@ endif
 
 include Makefile.common
 
-CFLAGS += $(DEF_FLAGS) -Ideps/libz -Ideps -Ideps/stb
+CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)

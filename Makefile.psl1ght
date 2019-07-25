@@ -17,7 +17,7 @@ ELF_TARGET := retroarch_psl1ght.elf
 EBOOT_PATH		= pkg/ps3/USRDIR/EBOOT.BIN
 CORE_PATH		= pkg/ps3/USRDIR/cores/CORE.SELF
 
-INCLUDE := -I. -I$(PS3DEV)/ppu/include -Ideps/libz -Ips3/gcmgl/include/export -Ips3/include -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib
+INCLUDE := -I. -I$(PS3DEV)/ppu/include -Ips3/gcmgl/include/export -Ips3/include -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib
 LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
 
 MACHDEP := -D__CELLOS_LV2__ -D__PSL1GHT__

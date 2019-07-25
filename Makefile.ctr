@@ -133,7 +133,6 @@ endif
 
 CFLAGS += -I. \
 			 -Ideps \
-			 -Ideps/libz \
 			 -Ideps/7zip \
 			 -Ideps/stb \
 			 -Ilibretro-common/include \

@@ -36,7 +36,6 @@ LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
 INCDIRS = -I. \
 			 -Idefines \
 			 -Ideps \
-			 -Ideps/libz \
 			 -Ideps/stb \
 			 -Ideps/rcheevos/include \
 			 -Ilibretro-common/include \

@@ -117,7 +117,7 @@ else ifeq ($(libogc_platform), 1)
    EXT_TARGET := $(TARGET_NAME)_$(platform).dol
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
+   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Iwii/libogc/include
 
    ifeq ($(EXTERNAL_LIBOGC), 1)
       CFLAGS   += -DEXTERNAL_LIBOGC
@@ -195,7 +195,6 @@ else ifeq ($(libogc_platform), 1)
    HAVE_IBXM                := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    RARCH_CONSOLE             = 1
@@ -275,7 +274,6 @@ else ifeq ($(platform), vita)
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
    MACHDEP := -DVITA
    INCLUDE += -Ideps/libvita2d/include
-   INCLUDE += -Ideps/libz
    PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
         -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
    LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
@@ -307,7 +305,6 @@ else ifeq ($(platform), vita)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
@@ -329,7 +326,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 0
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -368,12 +365,11 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -417,12 +413,11 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_NETWORK_CMD         := 1
-	HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -468,7 +463,6 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
@@ -543,7 +537,6 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
@@ -622,7 +615,6 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
@@ -701,7 +693,6 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
@@ -795,7 +786,6 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_BUILTINZLIB         := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
@@ -889,7 +879,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -DHAVE_ZLIB
-   CFLAGS += -I./libretro-common/include/compat/zlib
+   CFLAGS      += -I./libretro-common/include/compat/zlib
 endif
 
 ifeq ($(HAVE_RPNG), 1)
