@@ -18982,8 +18982,8 @@ bool video_driver_has_windowed(void)
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    if (video_driver_data && current_video->has_windowed)
       return current_video->has_windowed(video_driver_data);
-   else if (video_context_data && current_video_context.has_windowed)
-      return current_video_context.has_windowed(video_context_data);
+   else if (video_context_data)
+      return current_video_context.has_windowed;
 #endif
    return false;
 }

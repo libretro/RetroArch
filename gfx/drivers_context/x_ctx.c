@@ -1028,12 +1028,6 @@ static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
    return true;
 }
 
-static bool gfx_ctx_x_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
 {
    switch (x_api)
@@ -1260,7 +1254,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_set_resize,
    x11_has_focus,
    gfx_ctx_x_suppress_screensaver,
-   gfx_ctx_x_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_x_swap_buffers,
    gfx_ctx_x_input_driver,
    gfx_ctx_x_get_proc_address,

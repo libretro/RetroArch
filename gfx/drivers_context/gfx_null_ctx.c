@@ -151,7 +151,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    NULL, /* set_resize */
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,

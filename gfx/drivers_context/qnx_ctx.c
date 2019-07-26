@@ -482,7 +482,7 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    NULL, /* set_resize */
    gfx_ctx_qnx_has_focus,
    gfx_ctx_qnx_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
    gfx_ctx_qnx_get_proc_address,

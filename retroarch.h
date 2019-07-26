@@ -1282,7 +1282,7 @@ typedef struct gfx_ctx_driver
    bool (*suppress_screensaver)(void *data, bool enable);
 
    /* Checks if context driver has windowed support. */
-   bool (*has_windowed)(void*);
+   bool has_windowed;
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */

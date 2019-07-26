@@ -1818,12 +1818,6 @@ static bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
     return true;
 }
 
-static bool gfx_ctx_wl_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
 {
    return wl_api;
@@ -2053,7 +2047,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_resize,
    gfx_ctx_wl_has_focus,
    gfx_ctx_wl_suppress_screensaver,
-   gfx_ctx_wl_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
    gfx_ctx_wl_get_proc_address,

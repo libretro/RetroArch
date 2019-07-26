@@ -454,13 +454,6 @@ static bool cocoagl_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-#if !defined(HAVE_COCOATOUCH)
-static bool cocoagl_gfx_ctx_has_windowed(void *data)
-{
-   return true;
-}
-#endif
-
 static void cocoagl_gfx_ctx_input_driver(void *data,
       const char *name,
       const input_driver_t **input, void **input_data)
@@ -918,9 +911,9 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   NULL,
+   false,
 #else
-   cocoagl_gfx_ctx_has_windowed,
+   true,
 #endif
    cocoagl_gfx_ctx_swap_buffers,
    cocoagl_gfx_ctx_input_driver,

@@ -457,7 +457,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL, /* set_resize */
    gfx_ctx_ps3_has_focus,
    gfx_ctx_ps3_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_ps3_swap_buffers,
    gfx_ctx_ps3_input_driver,
    NULL,

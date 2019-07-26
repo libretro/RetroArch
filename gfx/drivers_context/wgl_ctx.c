@@ -724,13 +724,6 @@ static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
    return win32_suppress_screensaver(data, enable);
 }
 
-static bool gfx_ctx_wgl_has_windowed(void *data)
-{
-   (void)data;
-
-   return true;
-}
-
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
@@ -894,7 +887,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_set_resize,
    gfx_ctx_wgl_has_focus,
    gfx_ctx_wgl_suppress_screensaver,
-   gfx_ctx_wgl_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,
    gfx_ctx_wgl_get_proc_address,

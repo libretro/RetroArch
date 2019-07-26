@@ -333,7 +333,7 @@ const gfx_ctx_driver_t switch_ctx = {
     NULL, /* set_resize */
     switch_ctx_has_focus,
     switch_ctx_suppress_screensaver,
-    NULL, /* has_windowed */
+    false, /* has_windowed */
     switch_ctx_swap_buffers,
     switch_ctx_input_driver,
     switch_ctx_get_proc_address,

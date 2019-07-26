@@ -340,12 +340,6 @@ static bool osmesa_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool osmesa_ctx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void osmesa_ctx_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
@@ -410,7 +404,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
    NULL, /* set_resize */
    osmesa_ctx_has_focus,
    osmesa_ctx_suppress_screensaver,
-   osmesa_ctx_has_windowed,
+   true, /* has_windowed */
    osmesa_ctx_swap_buffers,
    osmesa_ctx_input_driver,
    osmesa_ctx_get_proc_address,

@@ -367,7 +367,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    NULL, /* set_resize */
    gfx_ctx_cgl_has_focus,
    gfx_ctx_cgl_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_cgl_swap_buffers,
    gfx_ctx_cgl_input_driver,
    gfx_ctx_cgl_get_proc_address,

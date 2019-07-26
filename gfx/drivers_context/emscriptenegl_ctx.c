@@ -306,14 +306,6 @@ static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_emscripten_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO -verify. */
-   return true;
-}
-
 static float gfx_ctx_emscripten_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -387,7 +379,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    NULL, /* set_resize */
    gfx_ctx_emscripten_has_focus,
    gfx_ctx_emscripten_suppress_screensaver,
-   gfx_ctx_emscripten_has_windowed,
+   false,
    gfx_ctx_emscripten_swap_buffers,
    gfx_ctx_emscripten_input_driver,
    gfx_ctx_emscripten_get_proc_address,

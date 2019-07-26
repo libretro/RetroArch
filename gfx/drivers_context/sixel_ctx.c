@@ -135,13 +135,6 @@ static bool gfx_ctx_sixel_suppress_screensaver(void *data, bool enable)
    return true;
 }
 
-static bool gfx_ctx_sixel_has_windowed(void *data)
-{
-   (void)data;
-
-   return true;
-}
-
 static bool gfx_ctx_sixel_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
@@ -209,7 +202,7 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_set_resize,
    gfx_ctx_sixel_has_focus,
    gfx_ctx_sixel_suppress_screensaver,
-   gfx_ctx_sixel_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_sixel_swap_buffers,
    gfx_ctx_sixel_input_driver,
    NULL,

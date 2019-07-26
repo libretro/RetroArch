@@ -725,7 +725,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    NULL, /* set_resize */
    gfx_ctx_vc_has_focus,
    gfx_ctx_vc_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
    gfx_ctx_vc_get_proc_address,

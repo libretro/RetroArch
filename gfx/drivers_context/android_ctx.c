@@ -654,7 +654,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,
