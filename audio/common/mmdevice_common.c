@@ -34,6 +34,7 @@ void *mmdevice_list_new(void *u)
    LPWSTR dev_id_wstr              = NULL;
    IPropertyStore *prop_store      = NULL;
    bool br                         = false;
+   bool prop_var_init              = false;
    char *dev_id_str                = NULL;
    char *dev_name_str              = NULL;
    struct string_list *sl          = string_list_new();
@@ -79,7 +80,9 @@ void *mmdevice_list_new(void *u)
          goto error;
 
       PropVariantInit(&prop_var);
-      hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName,
+      prop_var_init = true;
+      hr            = _IPropertyStore_GetValue(
+            prop_store, PKEY_Device_FriendlyName,
             &prop_var);
       if (FAILED(hr))
          goto error;
@@ -92,6 +95,7 @@ void *mmdevice_list_new(void *u)
          goto error;
 
       PropVariantClear(&prop_var);
+      prop_var_init = false;
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
       if (dev_id_str)
@@ -100,7 +104,7 @@ void *mmdevice_list_new(void *u)
          free(dev_name_str);
       dev_id_str   = NULL;
       dev_name_str = NULL;
-      dev_id_wstr = NULL;
+      dev_id_wstr  = NULL;
       IFACE_RELEASE(prop_store);
       IFACE_RELEASE(device);
    }
