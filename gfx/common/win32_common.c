@@ -1407,17 +1407,8 @@ BOOL IsIconic(HWND hwnd)
 bool win32_has_focus(void)
 {
    if (g_win32_inited)
-   {
-#ifdef _XBOX
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
-#else
-      const ui_window_t *window =
-         ui_companion_driver_get_window_ptr();
-      if (window)
-         return window->focused(&main_window);
-#endif
-   }
 
    return false;
 }
