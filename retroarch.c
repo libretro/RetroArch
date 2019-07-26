@@ -16489,7 +16489,6 @@ void video_context_driver_destroy(void)
    current_video_context.check_window               = NULL;
    current_video_context.set_resize                 = set_resize_null;
    current_video_context.suppress_screensaver       = NULL;
-   current_video_context.has_windowed               = NULL;
    current_video_context.swap_buffers               = swap_buffers_null;
    current_video_context.input_driver               = NULL;
    current_video_context.get_proc_address           = NULL;

@@ -66,6 +66,9 @@ typedef struct
    size_t bufsize;
 } xa_t;
 
+/* Forward declarations */
+static void *xa_list_new(void *u);
+
 #if defined(__cplusplus) && !defined(CINTERFACE)
 struct xaudio2 : public IXAudio2VoiceCallback
 #else
@@ -181,19 +184,21 @@ static void xaudio2_free(xaudio2_t *handle)
 }
 
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
-      size_t size, unsigned device)
+      size_t size, const char *device)
 {
-   xaudio2_t *handle = NULL;
-   WAVEFORMATEX wfx  = {0};
-
+   int32_t idx_found        = -1;
+   WAVEFORMATEX wfx         = {0};
+   struct string_list *list = NULL;
 #if defined(__cplusplus) && !defined(CINTERFACE)
-   handle = new xaudio2;
+   xaudio2_t *handle        = new xaudio2;
 #else
-   handle = (xaudio2_t*)calloc(1, sizeof(*handle));
+   xaudio2_t *handle        = (xaudio2_t*)calloc(1, sizeof(*handle));
 #endif
 
    if (!handle)
       goto error;
+
+   list                     = (struct string_list*)xa_list_new(NULL);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
    handle->lpVtbl = &voice_vtable;
@@ -202,11 +207,53 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
+   if (device)
+   {
+      /* Search for device name first */
+      if (list && list->elems)
+      {
+         if (list->elems)
+         {
+            unsigned i;
+            for (i = 0; i < list->size; i++)
+            {
+               if (string_is_equal(device, list->elems[i].data))
+               {
+                  idx_found       = i;
+                  break;
+               }
+            }
+            /* Index was not found yet based on name string,
+             * just assume id is a one-character number index. */
+
+            if (idx_found == -1)
+            {
+               if (isdigit(device[0]))
+               {
+                  RARCH_LOG("[XAudio2]: Fallback, device index is a single number index instead: %d.\n", idx_found);
+                  idx_found = strtoul(device, NULL, 0);
+               }
+            }
+         }
+      }
+   }
+
+   if (idx_found == -1)
+      idx_found = 0;
+
 #if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
-   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, (LPCWSTR)(uintptr_t)device, NULL, AudioCategory_GameEffects)))
-      goto error;
+   {
+      wchar_t *temp = utf8_to_utf16_string_alloc((const char*)(char)idx_found);
+      if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, (LPCWSTR)(uintptr_t)temp, NULL, AudioCategory_GameEffects)))
+      {
+         free(temp);
+         goto error;
+      }
+      if (temp)
+         free(temp);
+   }
 #else
-   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
+   if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, idx_found, NULL)))
       goto error;
 #endif
 
@@ -231,9 +278,13 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
                XAUDIO2_COMMIT_NOW)))
       goto error;
 
+   if (list)
+      string_list_free(list);
    return handle;
 
 error:
+   if (list)
+      string_list_free(list);
    xaudio2_free(handle);
    return NULL;
 }
@@ -243,7 +294,6 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    size_t bufsize;
-   unsigned device_index = 0;
    xa_t *xa              = (xa_t*)calloc(1, sizeof(*xa));
    if (!xa)
       return NULL;
@@ -258,10 +308,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 
    xa->bufsize = bufsize * 2 * sizeof(float);
 
-   if (device)
-      device_index = strtoul(device, NULL, 0);
-
-   xa->xa = xaudio2_new(rate, 2, xa->bufsize, device_index);
+   xa->xa = xaudio2_new(rate, 2, xa->bufsize, device);
    if (!xa->xa)
    {
       RARCH_ERR("Failed to init XAudio2.\n");
