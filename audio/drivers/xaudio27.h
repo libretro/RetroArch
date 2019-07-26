@@ -314,6 +314,8 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()
 #define IXAudio2_Release(handle) handle->Release()
 #define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)
+#define IXAudio2_GetDeviceCount(handle, puCount) (handle)->GetDeviceCount(puCount)
+#define IXAudio2_GetDeviceDetails(handle, Index,pDeviceDetails) (handle)->GetDeviceDetails(Index, pDeviceDetails)
 #define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)
 #define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
 #else
