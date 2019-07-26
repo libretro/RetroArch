@@ -466,7 +466,7 @@ static void *xa_list_new(void *u)
    attr.i = 0;
 
    if (FAILED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
-      return false;
+      return NULL;
 
    IXAudio2_GetDeviceCount(ixa2, &dev_count);
 

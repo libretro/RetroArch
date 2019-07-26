@@ -336,7 +336,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    WAVEFORMATEX wfx         = {0};
    DSBUFFERDESC bufdesc     = {0};
    int32_t idx_found        = -1;
-   struct string_list *list = dsound_list_new(NULL);
+   struct string_list *list = (struct string_list*)dsound_list_new(NULL);
    dsound_t          *ds    = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
@@ -357,7 +357,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
                if (string_is_equal(dev, list->elems[i].data))
                {
                   idx_found       = i;
-                  selected_device = list->elems[idx_found].userdata;
+                  selected_device = (LPGUID)list->elems[idx_found].userdata;
                   break;
                }
             }
@@ -374,7 +374,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
                   if (idx_found < (int32_t)list->size)
                   {
                      RARCH_LOG("[DirectSound]: Corresponding name: %s\n", list->elems[idx_found].data);
-                     selected_device = list->elems[idx_found].userdata;
+                     selected_device = (LPGUID)list->elems[idx_found].userdata;
                   }
                }
             }

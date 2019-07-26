@@ -70,7 +70,7 @@ static IMMDevice *wasapi_init_device(const char *id)
    if (id)
    {
       int32_t idx_found        = -1;
-      struct string_list *list = mmdevice_list_new(NULL);
+      struct string_list *list = (struct string_list*)mmdevice_list_new(NULL);
 
       /* Search for device name first */
       if (list)
