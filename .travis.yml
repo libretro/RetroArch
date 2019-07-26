@@ -63,6 +63,21 @@ matrix:
         script: bash travis_metal_deploy.sh
         on:
           branch: master
+    - language: android
+      # Android builds are only supported on Trusty
+      dist: trusty
+      android:
+        components:
+          - tools
+          - build-tools-28.0.3
+          - android-28
+      install:
+        - echo y | sdkmanager "ndk-bundle"
+      before_script:
+        - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
+      script:
+        - cd pkg/android/phoenix
+        - ./gradlew clean assembleRelease
 
 before_install:
   - |
