@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 
+#include <encodings/utf.h>
 #include <lists/string_list.h>
 
 #include "mmdevice_common.h"
@@ -25,7 +26,6 @@ void *mmdevice_list_new(void *u)
    HRESULT hr;
    UINT i;
    PROPVARIANT prop_var;
-   int ir;
    union string_list_elem_attr attr;
    IMMDeviceEnumerator *enumerator = NULL;
    IMMDeviceCollection *collection = NULL;
@@ -33,7 +33,6 @@ void *mmdevice_list_new(void *u)
    IMMDevice *device               = NULL;
    LPWSTR dev_id_wstr              = NULL;
    IPropertyStore *prop_store      = NULL;
-   bool prop_var_init              = false;
    bool br                         = false;
    char *dev_id_str                = NULL;
    char *dev_name_str              = NULL;
@@ -72,18 +71,7 @@ void *mmdevice_list_new(void *u)
       if (FAILED(hr))
          goto error;
 
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            NULL, 0, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      dev_id_str = (char *)malloc(ir);
-      if (!dev_id_str)
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            dev_id_str, ir, NULL, NULL);
-      if (!ir)
+      if (!(dev_id_str = utf16_to_utf8_string_alloc(dev_id_wstr)))
          goto error;
 
       hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
@@ -91,24 +79,12 @@ void *mmdevice_list_new(void *u)
          goto error;
 
       PropVariantInit(&prop_var);
-      prop_var_init = true;
       hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName,
             &prop_var);
       if (FAILED(hr))
          goto error;
 
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            NULL, 0, NULL, NULL);
-      if (!ir)
-         goto error;
-
-      dev_name_str = (char *)malloc(ir);
-      if (!dev_name_str)
-         goto error;
-
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            dev_name_str, ir, NULL, NULL);
-      if (!ir)
+      if (!(dev_name_str = utf16_to_utf8_string_alloc(prop_var.pwszVal)))
          goto error;
 
       br = string_list_append(sl, dev_name_str, attr);
@@ -116,7 +92,6 @@ void *mmdevice_list_new(void *u)
          goto error;
 
       PropVariantClear(&prop_var);
-      prop_var_init = false;
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
       if (dev_id_str)
