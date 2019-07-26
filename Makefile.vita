@@ -32,7 +32,6 @@ else
 	HAVE_RJPEG		:= 1
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
-	HAVE_BUILTINZLIB        := 1
 	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
 	HAVE_VITA2D		:= 1
