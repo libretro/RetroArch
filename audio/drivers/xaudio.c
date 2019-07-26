@@ -28,6 +28,9 @@
 
 #include <compat/msvc.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
+#include <encodings/utf.h>
+#include <lists/string_list.h>
 
 #if defined(_MSC_VER) && (_WIN32_WINNT <= _WIN32_WINNT_WIN2K)
 /* needed for CoInitializeEx */
@@ -35,6 +38,10 @@
 #endif
 
 #include "xaudio.h"
+
+#if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+#include "../common/mmdevice_common.h"
+#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -124,29 +131,6 @@ const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
    dummy_voidp,
    dummy_voidp_hresult,
 };
-#endif
-
-#if 0
-static void xaudio2_enumerate_devices(xaudio2_t *xa)
-{
-   uint32_t dev_count = 0;
-   unsigned i = 0;
-
-   (void)xa;
-   (void)i;
-   (void)dev_count;
-#ifndef _XBOX
-   IXAudio2_GetDeviceCount(xa->pXAudio2, &dev_count);
-   fprintf(stderr, "XAudio2 devices:\n");
-
-   for (i = 0; i < dev_count; i++)
-   {
-      XAUDIO2_DEVICE_DETAILS dev_detail;
-      IXAudio2_GetDeviceDetails(xa->pXAudio2, i, &dev_detail);
-      fwprintf(stderr, L"\t%u: %s\n", i, dev_detail.DisplayName);
-   }
-#endif
-}
 #endif
 
 static void xaudio2_set_wavefmt(WAVEFORMATEX *wfx,
@@ -412,6 +396,56 @@ static size_t xa_buffer_size(void *data)
    return xa->bufsize;
 }
 
+static void xa_device_list_free(void *u, void *slp)
+{
+   struct string_list *sl = (struct string_list*)slp;
+
+   if (sl)
+      string_list_free(sl);
+}
+
+static void *xa_list_new(void *u)
+{
+#if defined(_XBOX) || !(_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+   unsigned i;
+   union string_list_elem_attr attr;
+   uint32_t dev_count              = 0;
+   IXAudio2 *ixa2                  = NULL;
+   struct string_list *sl          = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+   attr.i = 0;
+
+   if (FAILED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
+      return false;
+
+   IXAudio2_GetDeviceCount(ixa2, &dev_count);
+
+   for (i = 0; i < dev_count; i++)
+   {
+      XAUDIO2_DEVICE_DETAILS dev_detail;
+      if (IXAudio2_GetDeviceDetails(ixa2, i, &dev_detail) == S_OK)
+      {
+         char *str = utf16_to_utf8_string_alloc(dev_detail.DisplayName);
+
+         if (str)
+         {
+            string_list_append(sl, str, attr);
+            free(str);
+         }
+      }
+   }
+
+   IXAudio2_Release(ixa2);
+
+   return sl;
+#else
+   return mmdevice_list_new(u);
+#endif
+}
+
 audio_driver_t audio_xa = {
    xa_init,
    xa_write,
@@ -422,8 +456,8 @@ audio_driver_t audio_xa = {
    xa_free,
    xa_use_float,
    "xaudio",
-   NULL,
-   NULL,
+   xa_list_new,
+   xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,
 };
