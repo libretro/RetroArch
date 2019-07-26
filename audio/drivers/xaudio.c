@@ -441,6 +441,8 @@ static void *xa_list_new(void *u)
    IXAudio2_Release(ixa2);
 
    return sl;
+#elif defined(__WINRT__)
+   return NULL;
 #else
    return mmdevice_list_new(u);
 #endif

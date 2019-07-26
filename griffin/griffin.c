@@ -874,7 +874,7 @@ AUDIO
 
 #include "../audio/drivers/nullaudio.c"
 
-#if defined(HAVE_WASAPI) || (_WIN32_WINNT >= 0x0602)
+#if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
 #include "../audio/common/mmdevice_common.c"
 #endif
 
