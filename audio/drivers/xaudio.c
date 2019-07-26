@@ -243,7 +243,10 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 
 #if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
    {
-      wchar_t *temp = utf8_to_utf16_string_alloc((const char*)(char)idx_found);
+      wchar_t *temp = NULL;
+      if (device)
+         temp = utf8_to_utf16_string_alloc((const char*)list->elems[idx_found].userdata);
+
       if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, (LPCWSTR)(uintptr_t)temp, NULL, AudioCategory_GameEffects)))
       {
          free(temp);

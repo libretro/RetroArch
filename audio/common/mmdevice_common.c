@@ -93,16 +93,15 @@ void *mmdevice_list_new(void *u)
       br = string_list_append(sl, dev_name_str, attr);
       if (!br)
          goto error;
+      if (dev_id_str)
+         sl->elems[sl->size-1].userdata = dev_id_str;
 
       PropVariantClear(&prop_var);
       prop_var_init = false;
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
-      if (dev_id_str)
-         free(dev_id_str);
       if (dev_name_str)
          free(dev_name_str);
-      dev_id_str   = NULL;
       dev_name_str = NULL;
       dev_id_wstr  = NULL;
       IFACE_RELEASE(prop_store);
