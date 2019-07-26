@@ -95,10 +95,13 @@ static IMMDevice *wasapi_init_device(const char *id)
                idx_found = strtoul(id, NULL, 0);
                RARCH_LOG("[WASAPI]: Fallback, device index is a single number index instead: %d.\n", idx_found);
 
-               if (idx_found < list->size)
-               {
-                  RARCH_LOG("[WASAPI]: Corresponding name: %s\n", list->elems[idx_found].data);
-               }
+			   if (idx_found != -1)
+			   {
+                  if (idx_found < (int32_t)list->size)
+                  {
+                     RARCH_LOG("[WASAPI]: Corresponding name: %s\n", list->elems[idx_found].data);
+                  }
+			   }
             }
          }
          string_list_free(list);

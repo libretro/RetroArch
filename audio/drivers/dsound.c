@@ -35,7 +35,9 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+#include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+#include <string/stdstring.h>
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -72,6 +74,9 @@ typedef struct dsound
    bool is_paused;
    volatile bool thread_alive;
 } dsound_t;
+
+/* Forward declarations */
+static void *dsound_list_new(void *u);
 
 static INLINE unsigned write_avail(unsigned read_ptr,
       unsigned write_ptr, unsigned buffer_size)
@@ -298,52 +303,86 @@ static void dsound_free(void *data)
    free(ds);
 }
 
-struct dsound_dev
-{
-   unsigned device;
-   unsigned total_count;
-   LPGUID guid;
-};
-
 static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
 {
-   struct dsound_dev *dev = (struct dsound_dev*)context;
+   union string_list_elem_attr attr;
+   struct string_list *list = (struct string_list*)context;
 
-   RARCH_LOG("\t%u: %s\n", dev->total_count, desc);
+   attr.i = 0;
 
-   if (dev->device == dev->total_count)
-      dev->guid = guid;
-   dev->total_count++;
+   string_list_append(list, desc, attr);
+
+   if (guid)
+   {
+      unsigned i;
+      LPGUID guid_copy = (LPGUID)malloc(sizeof(GUID) * 1);
+      guid_copy->Data1 = guid->Data1;
+      guid_copy->Data2 = guid->Data2;
+      guid_copy->Data3 = guid->Data3;
+      for (i = 0; i < 8; i++)
+         guid_copy->Data4[i] = guid->Data4[i];
+
+      list->elems[list->size-1].userdata = guid_copy;
+   }
+
    return TRUE;
 }
 
-static void *dsound_init(const char *device, unsigned rate, unsigned latency,
+static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   WAVEFORMATEX wfx      = {0};
-   DSBUFFERDESC bufdesc  = {0};
-   struct dsound_dev dev = {0};
-   dsound_t          *ds = (dsound_t*)calloc(1, sizeof(*ds));
+   LPGUID selected_device   = NULL;
+   WAVEFORMATEX wfx         = {0};
+   DSBUFFERDESC bufdesc     = {0};
+   int32_t idx_found        = -1;
+   struct string_list *list = dsound_list_new(NULL);
+   dsound_t          *ds    = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
       goto error;
 
    InitializeCriticalSection(&ds->crit);
 
-   if (device)
-      dev.device = strtoul(device, NULL, 0);
+   if (dev)
+   {
+       /* Search for device name first */
+      if (list && list->elems)
+      {
+         if (list->elems)
+         {
+            unsigned i;
+            for (i = 0; i < list->size; i++)
+            {
+               if (string_is_equal(dev, list->elems[i].data))
+               {
+                  idx_found       = i;
+                  selected_device = list->elems[idx_found].userdata;
+                  break;
+               }
+            }
+            /* Index was not found yet based on name string,
+             * just assume id is a one-character number index. */
 
-   RARCH_LOG("DirectSound devices:\n");
-#ifndef _XBOX
-#ifdef UNICODE
-   DirectSoundEnumerate((LPDSENUMCALLBACKW)enumerate_cb, &dev);
-#else
-   DirectSoundEnumerate((LPDSENUMCALLBACKA)enumerate_cb, &dev);
-#endif
-#endif
+            if (idx_found == -1 && isdigit(dev[0]))
+            {
+               idx_found = strtoul(dev, NULL, 0);
+               RARCH_LOG("[DirectSound]: Fallback, device index is a single number index instead: %d.\n", idx_found);
 
-   if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)
+               if (idx_found != -1)
+               {
+                  if (idx_found < (int32_t)list->size)
+                  {
+                     RARCH_LOG("[DirectSound]: Corresponding name: %s\n", list->elems[idx_found].data);
+                     selected_device = list->elems[idx_found].userdata;
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   if (DirectSoundCreate(selected_device, &ds->ds, NULL) != DS_OK)
       goto error;
 
 #ifndef _XBOX
@@ -397,10 +436,13 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency,
    if (!dsound_start_thread(ds))
       goto error;
 
+   string_list_free(list);
    return ds;
 
 error:
    RARCH_ERR("[DirectSound] Error occurred in init.\n");
+   if (list)
+      string_list_free(list);
    dsound_free(ds);
    return NULL;
 }
@@ -502,6 +544,32 @@ static bool dsound_use_float(void *data)
    return false;
 }
 
+static void *dsound_list_new(void *u)
+{
+   struct string_list *sl          = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+#ifndef _XBOX
+#ifdef UNICODE
+   DirectSoundEnumerate((LPDSENUMCALLBACKW)enumerate_cb, sl);
+#else
+   DirectSoundEnumerate((LPDSENUMCALLBACKA)enumerate_cb, sl);
+#endif
+#endif
+
+   return sl;
+}
+
+static void dsound_device_list_free(void *u, void *slp)
+{
+   struct string_list *sl = (struct string_list*)slp;
+
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
@@ -512,8 +580,8 @@ audio_driver_t audio_dsound = {
    dsound_free,
    dsound_use_float,
    "dsound",
-   NULL,
-   NULL,
+   dsound_list_new,
+   dsound_device_list_free,
    dsound_write_avail,
    dsound_buffer_size,
 };
