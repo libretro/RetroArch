@@ -77,7 +77,7 @@ matrix:
         - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
       script:
         - cd pkg/android/phoenix
-        - ./gradlew clean assembleRelease
+        - ./gradlew assembleNormalRelease
 
 before_install:
   - |
