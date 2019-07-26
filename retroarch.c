@@ -9155,22 +9155,12 @@ void recording_driver_update_streaming_url(void)
             snprintf(settings->paths.path_stream_url,
                   sizeof(settings->paths.path_stream_url),
                   "%s%s", twitch_url, settings->arrays.twitch_stream_key);
-         else
-         {
-            /* TODO: Show input box for twitch_stream_key*/
-            RARCH_LOG("[recording] twitch streaming key empty\n");
-         }
          break;
       case STREAMING_MODE_YOUTUBE:
          if (!string_is_empty(settings->arrays.youtube_stream_key))
             snprintf(settings->paths.path_stream_url,
                   sizeof(settings->paths.path_stream_url),
                   "%s%s", youtube_url, settings->arrays.youtube_stream_key);
-         else
-         {
-            /* TODO: Show input box for youtube_stream_key*/
-            RARCH_LOG("[recording] youtube streaming key empty\n");
-         }
          break;
       case STREAMING_MODE_LOCAL:
          /* TODO: figure out default interface and bind to that instead */
