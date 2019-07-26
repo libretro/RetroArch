@@ -172,7 +172,7 @@
 
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 #if !defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER >= 1400)
 #define ATLEAST_VC2005
 #endif
