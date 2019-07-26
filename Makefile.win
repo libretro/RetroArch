@@ -34,7 +34,6 @@ HAVE_FFMPEG   := 0
 
 HAVE_CG       := 1
 HAVE_ZLIB     := 1
-WANT_ZLIB     := 1
 HAVE_CC_RESAMPLER := 1
 
 ifeq ($(HAVE_CG), 1)

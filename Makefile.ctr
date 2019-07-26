@@ -51,7 +51,7 @@ DEFINES :=
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA
 	#DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
@@ -133,7 +133,6 @@ endif
 
 CFLAGS += -I. \
 			 -Ideps \
-			 -Ideps/libz \
 			 -Ideps/7zip \
 			 -Ideps/stb \
 			 -Ilibretro-common/include \
