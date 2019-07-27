@@ -282,7 +282,8 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif
-      goto error; /* DLL was loaded but did not contain the correct function. */
+      goto error; /* DLL was loaded but did not contain 
+                     the correct function. */
    }
 
    /* Zero out the states. */
@@ -328,7 +329,8 @@ static bool xinput_joypad_init(void *data)
    for (j = 0; j < MAX_USERS; j++)
    {
       if (xinput_joypad_name(j))
-         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\", user #%u\n", xinput_joypad_name(j), j);
+         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\","
+               " user #%u\n", xinput_joypad_name(j), j);
       else
          RARCH_LOG("[XInput]: Attempting autoconf for user #%u\n", j);
 
@@ -338,8 +340,10 @@ static bool xinput_joypad_init(void *data)
          int32_t pid          = 0;
 #ifdef HAVE_DINPUT
          int32_t dinput_index = 0;
-         bool success     = dinput_joypad_get_vidpid_from_xinput_index((int32_t)pad_index_to_xuser_index(j), (int32_t*)&vid, (int32_t*)&pid,
-			 (int32_t*)&dinput_index);
+         bool success         = dinput_joypad_get_vidpid_from_xinput_index(
+               (int32_t)pad_index_to_xuser_index(j),
+               (int32_t*)&vid, (int32_t*)&pid,
+               (int32_t*)&dinput_index);
 
          if (success)
             RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n",
@@ -371,14 +375,13 @@ error:
 
 static bool xinput_joypad_query_pad(unsigned pad)
 {
-   int xuser = pad_index_to_xuser_index(pad);
-   if (xuser > -1)
-      return g_xinput_states[xuser].connected;
 #ifdef HAVE_DINPUT
-   return dinput_joypad.query_pad(pad);
-#else
-   return false;
+   int xuser = pad_index_to_xuser_index(pad);
+   if (xuser == -1)
+      return dinput_joypad.query_pad(pad);
+   pad       = xuser;
 #endif
+   return g_xinput_states[pad].connected;
 }
 
 static void xinput_joypad_destroy(void)
@@ -425,17 +428,17 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word    = 0;
    unsigned hat_dir     = 0;
-   int xuser            = pad_index_to_xuser_index(port_num);
-
 #ifdef HAVE_DINPUT
+   int xuser            = pad_index_to_xuser_index(port_num);
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
+   port_num             = xuser;
 #endif
 
-   if (!(g_xinput_states[xuser].connected))
+   if (!(g_xinput_states[port_num].connected))
       return false;
 
-   btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
    hat_dir  = GET_HAT_DIR(joykey);
 
    if (hat_dir)
@@ -463,7 +466,6 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 {
-   int xuser;
    int16_t val         = 0;
    int     axis        = -1;
    bool is_neg         = false;
@@ -473,29 +475,31 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   xuser = pad_index_to_xuser_index(port_num);
-
 #ifdef HAVE_DINPUT
-   if (xuser == -1)
-      return dinput_joypad.axis(port_num, joyaxis);
+   {
+      int xuser = pad_index_to_xuser_index(port_num);
+      if (xuser == -1)
+         return dinput_joypad.axis(port_num, joyaxis);
+      port_num  = xuser;
+   }
 #endif
 
-   if (!(g_xinput_states[xuser].connected))
+   if (!(g_xinput_states[port_num].connected))
       return 0;
 
    /* triggers (axes 4,5) cannot be negative */
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis = AXIS_NEG_GET(joyaxis);
+      axis   = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis = AXIS_POS_GET(joyaxis);
+      axis   = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
 
-   pad = &(g_xinput_states[xuser].xstate.Gamepad);
+   pad = &(g_xinput_states[port_num].xstate.Gamepad);
 
    switch (axis)
    {
@@ -520,13 +524,13 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    }
 
    if (is_neg && val > 0)
-      val = 0;
+      return 0;
    else if (is_pos && val < 0)
-      val = 0;
+      return 0;
 
    /* Clamp to avoid overflow error. */
    if (val == -32768)
-      val = -32767;
+      return -32767;
 
    return val;
 }
@@ -539,19 +543,18 @@ static void xinput_joypad_poll(void)
    {
 #ifdef HAVE_DINPUT
       if (g_xinput_states[i].connected)
-      {
-         if (g_XInputGetStateEx && g_XInputGetStateEx(i,
+         if (g_XInputGetStateEx(i,
                   &(g_xinput_states[i].xstate))
                == ERROR_DEVICE_NOT_CONNECTED)
             g_xinput_states[i].connected = false;
-      }
 #else
       /* Normally, dinput handles device insertion/removal for us, but
        * since dinput is not available on UWP we have to do it ourselves */
       /* Also note that on UWP, the controllers are not available on startup
        * and are instead 'plugged in' a moment later because Microsoft reasons */
       /* TODO: This may be bad for performance? */
-      bool new_connected = g_XInputGetStateEx && g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
+      bool new_connected = g_XInputGetStateEx(i, 
+            &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
          if (new_connected)
@@ -577,25 +580,22 @@ static void xinput_joypad_poll(void)
 static bool xinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+#ifdef HAVE_DINPUT
    int xuser = pad_index_to_xuser_index(pad);
 
    if (xuser == -1)
    {
-#ifdef HAVE_DINPUT
       if (dinput_joypad.set_rumble)
          return dinput_joypad.set_rumble(pad, effect, strength);
-#endif
       return false;
    }
+#endif
 
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
       g_xinput_rumble_states[xuser].wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
       g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
-
-   if (!g_XInputSetState)
-      return false;
 
    return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser])
       == 0);

@@ -12546,7 +12546,7 @@ void input_driver_deinit_command(void)
 #endif
 }
 
-void input_driver_deinit_remote(void)
+static void input_driver_deinit_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
@@ -12556,14 +12556,14 @@ void input_driver_deinit_remote(void)
 #endif
 }
 
-void input_driver_deinit_mapper(void)
+static void input_driver_deinit_mapper(void)
 {
    if (input_driver_mapper)
       input_mapper_free(input_driver_mapper);
    input_driver_mapper = NULL;
 }
 
-bool input_driver_init_remote(void)
+static bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
    settings_t *settings = configuration_settings;
@@ -12583,7 +12583,7 @@ bool input_driver_init_remote(void)
    return false;
 }
 
-bool input_driver_init_mapper(void)
+static bool input_driver_init_mapper(void)
 {
    settings_t *settings = configuration_settings;
 
