@@ -16,7 +16,7 @@ int main(void) { puts("Hai world!"); return 0; }
 EOF
 
 cc_works=0
-HAVE_CC=no
+add_opt CC no
 if [ "$CC" ]; then
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
@@ -53,7 +53,7 @@ int main() { std::cout << "Hai guise" << std::endl; return 0; }
 EOF
 
 cxx_works=0
-HAVE_CXX=no
+add_opt CXX no
 if [ "$CXX" ]; then
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
