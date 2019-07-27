@@ -3830,9 +3830,202 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Menu główne animacji Otwiera/Zamyka")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
+    "Informacje o dysku"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
+    "Wyświetl informacje o włożonych dyskach multimedialnych."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Pokaż Ustaw podstawowe stowarzyszenie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Pokaż/ukryj opcję „Ustaw podstawowe stowarzyszenie”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Pokaż Pobierz Miniatury"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Pokaż/ukryj opcję „Pobierz miniatury”."
+    )
+   MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Pokaż aktualizację starszych miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Pokaż/ukryj możliwość pobierania starszych pakietów miniatur."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż Uruchom ponownie RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
+    )
+   MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+    "Pokaż podpowiedzi menu"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+     "Styl daty/godziny"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+    "Wznów zawartość po użyciu stanów zapisu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Współczynnik skali miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Próg skalowania miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "Animacja paska tekstu"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+    "Szybkość paska tekstu"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+    "Sortuj listy alfabetycznie"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Zapisz listy odtwarzania w starym formacie"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Pokaż powiązane rdzenie na listach odtwarzania"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+    "Pokaż etykiety pomocnicze listy odtwarzania"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Czas działania etykiety podrzędnej listy odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "Dopasowanie rozmycia archiwum"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+    "Zarządzanie listami odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Pobieranie miniatur na żądanie"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Pokaż kursor myszy z nakładką"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Dołącz szczegóły pamięci"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+    "Synchronizuj z dokładną liczbą klatek na sekundę (G-Sync, FreeSync)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Zaloguj się do pliku"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Pliki dziennika ze znacznikami czasu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+    "Zapisz dziennik środowiska wykonawczego (na rdzeń)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Zapisz dziennik czasu wykonywania (agregacja)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+    "Naciśnij dwukrotnie quit"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+    "Wibruj po naciśnięciu klawisza"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+    "Włącz wibracje urządzenia (dla obsługiwanych rdzeni)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Wprowadź próg osi przycisku"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+    "Martwa strefa analoga"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+    "Czułość analoga"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+    "Rozpocznij lub kontynuuj wyszukiwanie kodu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+    "Załaduj plik kodu (dołącz)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+    "Odśwież Kody specyficzne dla gry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+    "Dodaj nowy kod do góry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+    "Dodaj nowy kod do dołu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+    "Usuń wszystkie kody"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+    "Automatyczne stosowanie cheatów podczas ładowania gry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+    "Zastosuj po przełączeniu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+    "Zapisz plik zmiany mapowania zawartości"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+    "Rozmiar bufora przewijania (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+    "Krok zmiany rozmiaru bufora (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Wyślij informacje o debugowaniu"
+    )
+   
