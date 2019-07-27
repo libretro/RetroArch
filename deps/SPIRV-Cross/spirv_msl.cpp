@@ -21,6 +21,10 @@
 #include <assert.h>
 #include <numeric>
 
+#ifdef RARCH_INTERNAL
+#include <retro_miscellaneous.h>
+#endif
+
 using namespace spv;
 using namespace SPIRV_CROSS_NAMESPACE;
 using namespace std;
@@ -2552,7 +2556,11 @@ bool CompilerMSL::is_member_packable(SPIRType &ib_type, uint32_t index, uint32_t
 		uint32_t md_elem_cnt = 1;
 		size_t last_elem_idx = mbr_type.array.size() - 1;
 		for (uint32_t i = 0; i < last_elem_idx; i++)
+#ifdef RARCH_INTERNAL
+			md_elem_cnt *= MAX(to_array_size_literal(mbr_type, i), 1u);
+#else
 			md_elem_cnt *= max(to_array_size_literal(mbr_type, i), 1u);
+#endif
 
 		uint32_t unpacked_array_stride = unpacked_mbr_size * md_elem_cnt;
 		uint32_t array_stride = type_struct_member_array_stride(ib_type, index);
@@ -8486,7 +8494,11 @@ size_t CompilerMSL::get_declared_struct_member_size_msl(const SPIRType &struct_t
 		if (!type.array.empty())
 		{
 			uint32_t array_size = to_array_size_literal(type);
+#ifdef RARCH_INTERNAL
+			return type_struct_member_array_stride(struct_type, index) * MAX(array_size, 1u);
+#else
 			return type_struct_member_array_stride(struct_type, index) * max(array_size, 1u);
+#endif
 		}
 
 		if (type.basetype == SPIRType::Struct)
