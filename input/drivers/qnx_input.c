@@ -77,7 +77,6 @@ struct input_pointer
 
 typedef struct qnx_input
 {
-   bool blocked;
    unsigned pads_connected;
 
    /*
@@ -739,7 +738,7 @@ static bool qnx_is_pressed(qnx_input_t *qnx,
       return false;
 
    if (qnx_keyboard_pressed(qnx, key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !qnx->blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_qnx.keyboard_mapping_blocked)
          return true;
 
    if (binds && binds[id].valid)
@@ -858,22 +857,6 @@ static const input_device_driver_t *qnx_input_get_joypad_driver(void *data)
    return qnx->joypad;
 }
 
-static bool qnx_input_keyboard_mapping_is_blocked(void *data)
-{
-   qnx_input_t *qnx = (qnx_input_t*)data;
-   if (!qnx)
-      return false;
-   return qnx->blocked;
-}
-
-static void qnx_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   qnx_input_t *qnx = (qnx_input_t*)data;
-   if (!qnx)
-      return;
-   qnx->blocked = value;
-}
-
 input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
@@ -888,6 +871,5 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_get_joypad_driver,
    NULL,
-   qnx_input_keyboard_mapping_is_blocked,
-   qnx_input_keyboard_mapping_set_block,
+   false
 };

@@ -129,7 +129,6 @@ typedef void (*device_handle_cb)(void *data,
 
 struct udev_input
 {
-   bool blocked;
    struct udev *udev;
    struct udev_monitor *monitor;
 
@@ -938,7 +937,7 @@ static bool udev_is_pressed(udev_input_t *udev,
    const struct retro_keybind *bind = &binds[id];
 
    if ( (bind->key < RETROK_LAST) && udev_keyboard_pressed(udev, bind->key) )
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !udev->blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_udev.keyboard_mapping_blocked)
          return true;
 
    if (binds && binds[id].valid)
@@ -1345,22 +1344,6 @@ static const input_device_driver_t *udev_input_get_joypad_driver(void *data)
    return udev->joypad;
 }
 
-static bool udev_input_keyboard_mapping_is_blocked(void *data)
-{
-   udev_input_t *udev = (udev_input_t*)data;
-   if (!udev)
-      return false;
-   return udev->blocked;
-}
-
-static void udev_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   udev_input_t *udev = (udev_input_t*)data;
-   if (!udev)
-      return;
-   udev->blocked = value;
-}
-
 input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
@@ -1379,6 +1362,5 @@ input_driver_t input_udev = {
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
    NULL,
-   udev_input_keyboard_mapping_is_blocked,
-   udev_input_keyboard_mapping_set_block,
+   false
 };

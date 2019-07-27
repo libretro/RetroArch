@@ -259,7 +259,7 @@ static void psp_on_vblank(u32 sub, psp1_video_t *psp)
 }
 
 static void *psp_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    /* TODO : add ASSERT() checks or use main RAM if
     * VRAM is too low for desired video->input_scale. */

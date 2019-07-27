@@ -31,7 +31,6 @@
 
 typedef struct uwp_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } uwp_input_t;
 
@@ -107,22 +106,6 @@ static void uwp_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool uwp_keyboard_mapping_is_blocked(void *data)
-{
-   uwp_input_t *uwp = (uwp_input_t*)data;
-   if (!uwp)
-      return false;
-   return uwp->blocked;
-}
-
-static void uwp_keyboard_mapping_set_block(void *data, bool value)
-{
-   uwp_input_t *uwp = (uwp_input_t*)data;
-   if (!uwp)
-      return;
-   uwp->blocked = value;
-}
-
 static bool uwp_pressed_joypad(uwp_input_t *uwp,
    rarch_joypad_info_t joypad_info,
    const struct retro_keybind *binds,
@@ -132,7 +115,7 @@ static bool uwp_pressed_joypad(uwp_input_t *uwp,
 
    /* First, process the keyboard bindings */
    if ((bind->key < RETROK_LAST) && uwp_keyboard_pressed(bind->key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !uwp->blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_uwp.keyboard_mapping_blocked)
          return true;
 
    /* Then, process the joypad bindings */
@@ -252,6 +235,5 @@ input_driver_t input_uwp = {
    uwp_input_set_rumble,
    uwp_input_get_joypad_driver,
    NULL,
-   uwp_keyboard_mapping_is_blocked,
-   uwp_keyboard_mapping_set_block,
+   false
 };

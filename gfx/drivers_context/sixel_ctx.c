@@ -108,7 +108,7 @@ static bool gfx_ctx_sixel_set_video_mode(void *data,
 
 static void gfx_ctx_sixel_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    (void)data;
 

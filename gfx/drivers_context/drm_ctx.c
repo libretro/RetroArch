@@ -757,7 +757,7 @@ static void gfx_ctx_drm_destroy(void *data)
 
 static void gfx_ctx_drm_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
 #ifdef HAVE_X11
    settings_t *settings = config_get_ptr();

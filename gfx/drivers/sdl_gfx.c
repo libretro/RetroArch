@@ -227,7 +227,8 @@ static void sdl_gfx_set_handles(void)
 #endif
 }
 
-static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *sdl_gfx_init(const video_info_t *video,
+      input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
    const SDL_VideoInfo *video_info = NULL;

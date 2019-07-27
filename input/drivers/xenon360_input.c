@@ -146,6 +146,5 @@ input_driver_t input_xenon360 = {
    NULL,
    xenon360_input_set_rumble,
    NULL,
-   NULL,
-   NULL,
+   false
 };

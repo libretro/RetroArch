@@ -88,7 +88,7 @@
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(const input_driver_t **)input
+                        input:(input_driver_t **)input
                     inputData:(void **)inputData
 {
    if (self = [super init])

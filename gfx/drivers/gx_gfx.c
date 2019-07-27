@@ -782,7 +782,7 @@ static void gx_efb_screenshot(void)
 #endif
 
 static void *gx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
    void *gxinput        = NULL;

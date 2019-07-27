@@ -66,7 +66,7 @@ static void caca_gfx_create(void)
 }
 
 static void *caca_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    caca_t *caca        = (caca_t*)calloc(1, sizeof(*caca));
 

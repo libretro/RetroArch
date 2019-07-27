@@ -3636,7 +3636,7 @@ static bool renderchain_gl2_init_first(void **renderchain_handle)
 }
 
 static void *gl2_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    enum gfx_wrap_type wrap_type;
    gfx_ctx_mode_t mode;

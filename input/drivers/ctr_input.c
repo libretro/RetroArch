@@ -32,7 +32,6 @@
 
 typedef struct ctr_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } ctr_input_t;
 
@@ -162,22 +161,6 @@ static bool ctr_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool ctr_input_keyboard_mapping_is_blocked(void *data)
-{
-   ctr_input_t *ctr = (ctr_input_t*)data;
-   if (!ctr)
-      return false;
-   return ctr->blocked;
-}
-
-static void ctr_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   ctr_input_t *ctr = (ctr_input_t*)data;
-   if (!ctr)
-      return;
-   ctr->blocked = value;
-}
-
 input_driver_t input_ctr = {
    ctr_input_init,
    ctr_input_poll,
@@ -192,6 +175,5 @@ input_driver_t input_ctr = {
    ctr_input_set_rumble,
    ctr_input_get_joypad_driver,
    NULL,
-   ctr_input_keyboard_mapping_is_blocked,
-   ctr_input_keyboard_mapping_set_block,
+   false
 };

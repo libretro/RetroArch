@@ -48,7 +48,6 @@ typedef struct
 
 typedef struct ps3_input
 {
-   bool blocked;
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
@@ -278,22 +277,6 @@ static void ps3_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool ps3_input_keyboard_mapping_is_blocked(void *data)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (!ps3)
-      return false;
-   return ps3->blocked;
-}
-
-static void ps3_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (!ps3)
-      return;
-   ps3->blocked = value;
-}
-
 input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -309,6 +292,5 @@ input_driver_t input_ps3 = {
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
    NULL,
-   ps3_input_keyboard_mapping_is_blocked,
-   ps3_input_keyboard_mapping_set_block,
+   false
 };

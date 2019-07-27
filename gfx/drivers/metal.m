@@ -61,9 +61,10 @@ static uint32_t metal_get_flags(void *data);
 static bool metal_set_shader(void *data,
                              enum rarch_shader_type type, const char *path);
 
-static void *metal_init(const video_info_t *video,
-                        const input_driver_t **input,
-                        void **input_data)
+static void *metal_init(
+      const video_info_t *video,
+      input_driver_t **input,
+      void **input_data)
 {
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
 

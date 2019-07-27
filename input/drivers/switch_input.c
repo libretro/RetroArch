@@ -88,7 +88,6 @@ typedef struct
 typedef struct switch_input
 {
    const input_device_driver_t *joypad;
-   bool blocked;
 
 #ifdef HAVE_LIBNX
    /* pointer */
@@ -901,22 +900,6 @@ static bool switch_input_set_rumble(void *data, unsigned port,
 #endif
 }
 
-static bool switch_input_keyboard_mapping_is_blocked(void *data)
-{
-   switch_input_t *sw = (switch_input_t*) data;
-   if (!sw)
-      return false;
-   return sw->blocked;
-}
-
-static void switch_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   switch_input_t *sw = (switch_input_t*) data;
-   if (!sw)
-      return;
-   sw->blocked = value;
-}
-
 input_driver_t input_switch = {
 	switch_input_init,
 	switch_input_poll,
@@ -931,6 +914,5 @@ input_driver_t input_switch = {
 	switch_input_set_rumble,
 	switch_input_get_joypad_driver,
 	NULL,
-	switch_input_keyboard_mapping_is_blocked,
-	switch_input_keyboard_mapping_set_block,
+   false
 };

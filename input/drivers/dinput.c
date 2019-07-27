@@ -73,7 +73,6 @@ struct pointer_status
 struct dinput_input
 {
    char *joypad_driver_name;
-   bool blocked;
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
@@ -572,7 +571,7 @@ static int16_t dinput_input_state(void *data,
                if (binds[port][i].key < RETROK_LAST)
                {
                   if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
-                     if ((i == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                     if ((i == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
                      {
                         ret |= (1 << i);
                         continue;
@@ -618,7 +617,7 @@ static int16_t dinput_input_state(void *data,
                if (binds[port][id].key < RETROK_LAST)
                {
                   if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
-                     if ((id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                     if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
                         return true;
                }
                if (binds[port][id].valid)
@@ -730,7 +729,7 @@ static int16_t dinput_input_state(void *data,
                   if (binds[port][new_id].key < RETROK_LAST)
                   {
                      if (di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
-                        if ((new_id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+                        if ((new_id == RARCH_GAME_FOCUS_TOGGLE) || !input_dinput.keyboard_mapping_blocked)
                            return true;
                   }
                   if (binds[port][new_id].valid)
@@ -1012,22 +1011,6 @@ static uint64_t dinput_get_capabilities(void *data)
    return caps;
 }
 
-static bool dinput_keyboard_mapping_is_blocked(void *data)
-{
-   struct dinput_input *di = (struct dinput_input*)data;
-   if (!di)
-      return false;
-   return di->blocked;
-}
-
-static void dinput_keyboard_mapping_set_block(void *data, bool value)
-{
-   struct dinput_input *di = (struct dinput_input*)data;
-   if (!di)
-      return;
-   di->blocked = value;
-}
-
 input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
@@ -1043,6 +1026,5 @@ input_driver_t input_dinput = {
    dinput_set_rumble,
    dinput_get_joypad_driver,
    NULL,
-   dinput_keyboard_mapping_is_blocked,
-   dinput_keyboard_mapping_set_block,
+   false
 };

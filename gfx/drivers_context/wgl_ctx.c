@@ -689,7 +689,7 @@ error:
 
 static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
 

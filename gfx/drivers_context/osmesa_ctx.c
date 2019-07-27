@@ -353,7 +353,7 @@ static void osmesa_ctx_swap_buffers(void *data, void *data2)
 
 static void osmesa_ctx_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;

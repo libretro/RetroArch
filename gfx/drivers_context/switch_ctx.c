@@ -194,10 +194,10 @@ error:
 }
 
 static void switch_ctx_input_driver(void *data,
-                                    const char *name,
-                                    const input_driver_t **input, void **input_data)
+      const char *name,
+      input_driver_t **input, void **input_data)
 {
-    *input = NULL;
+    *input      = NULL;
     *input_data = NULL;
 }
 

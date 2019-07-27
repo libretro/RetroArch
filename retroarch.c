@@ -499,7 +499,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 };
 
 
-static const input_driver_t *input_drivers[] = {
+static input_driver_t *input_drivers[] = {
 #ifdef ORBIS
    &input_ps4,
 #endif
@@ -1623,7 +1623,7 @@ static command_t *input_driver_command            = NULL;
 static input_remote_t *input_driver_remote        = NULL;
 #endif
 static input_mapper_t *input_driver_mapper        = NULL;
-static const input_driver_t *current_input        = NULL;
+static input_driver_t *current_input              = NULL;
 static void *current_input_data                   = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
@@ -1750,7 +1750,7 @@ const ui_companion_driver_t *ui_companion_get_ptr(void)
    return ui_companion;
 }
 
-const input_driver_t *input_get_ptr(void)
+input_driver_t *input_get_ptr(void)
 {
    return current_input;
 }
@@ -3975,7 +3975,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REINIT:
          video_driver_reinit();
          {
-            const input_driver_t *input_drv = current_input;
+            input_driver_t *input_drv       = current_input;
             void *input_data                = current_input_data;
             /* Poll input to avoid possibly stale data to corrupt things. */
             if (input_drv && input_drv->poll)
@@ -4798,7 +4798,7 @@ TODO: Add a setting for these tweaks */
                input_driver_grab_mouse();
                video_driver_hide_mouse();
                input_driver_set_hotkey_block();
-               input_driver_keyboard_mapping_set_block(1);
+               current_input->keyboard_mapping_blocked = true;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
                         1, 120, true,
@@ -4809,7 +4809,7 @@ TODO: Add a setting for these tweaks */
                input_driver_ungrab_mouse();
                video_driver_show_mouse();
                input_driver_unset_hotkey_block();
-               input_driver_keyboard_mapping_set_block(0);
+               current_input->keyboard_mapping_blocked = false;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 120, true,
@@ -10232,7 +10232,7 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
    bool button_pressed             = false;
    void *input_data                = current_input_data;
    input_overlay_state_t *ol_state = &ol->overlay_state;
-   const input_driver_t *input_ptr = current_input;
+   input_driver_t *input_ptr       = current_input;
 
    if (!ol_state)
       return;
@@ -10560,7 +10560,7 @@ const void *input_driver_find_handle(int idx)
  **/
 const char *input_driver_find_ident(int idx)
 {
-   const input_driver_t *drv = input_drivers[idx];
+   input_driver_t *drv = input_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;
@@ -10620,12 +10620,6 @@ uint64_t input_driver_get_capabilities(void)
    if (!current_input || !current_input->get_capabilities)
       return 0;
    return current_input->get_capabilities(current_input_data);
-}
-
-void input_driver_keyboard_mapping_set_block(bool value)
-{
-   if (current_input->keyboard_mapping_set_block)
-      current_input->keyboard_mapping_set_block(current_input_data, value);
 }
 
 /**
@@ -12449,8 +12443,7 @@ static bool input_driver_find_driver(void)
    i                    = (int)drv.len;
 
    if (i >= 0)
-      current_input = (const input_driver_t*)
-         input_driver_find_handle(i);
+      current_input = (input_driver_t*)input_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -12461,8 +12454,7 @@ static bool input_driver_find_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
       RARCH_WARN("Going to default to first input driver...\n");
 
-      current_input = (const input_driver_t*)
-         input_driver_find_handle(0);
+      current_input = (input_driver_t*)input_driver_find_handle(0);
 
       if (!current_input)
       {
@@ -13191,8 +13183,7 @@ const char **input_keyboard_start_line(void *userdata,
    g_keyboard_line->userdata = userdata;
 
    /* While reading keyboard line input, we have to block all hotkeys. */
-   if (current_input->keyboard_mapping_set_block)
-      current_input->keyboard_mapping_set_block(current_input_data, true);
+   current_input->keyboard_mapping_blocked = true;
 
    return (const char**)&g_keyboard_line->buffer;
 }
@@ -13219,8 +13210,7 @@ void input_keyboard_event(bool down, unsigned code,
 
       g_keyboard_press_cb   = NULL;
       g_keyboard_press_data = NULL;
-      if (current_input->keyboard_mapping_set_block)
-         current_input->keyboard_mapping_set_block(current_input_data, false);
+      current_input->keyboard_mapping_blocked = false;
       deferred_wait_keys    = false;
    }
    else if (g_keyboard_press_cb)
@@ -13252,8 +13242,7 @@ void input_keyboard_event(bool down, unsigned code,
       input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
       /* Unblock all hotkeys. */
-      if (current_input->keyboard_mapping_set_block)
-         current_input->keyboard_mapping_set_block(current_input_data, false);
+      current_input->keyboard_mapping_blocked = false;
    }
    else
    {
@@ -13288,14 +13277,12 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
          }
 
          /* While waiting for input, we have to block all hotkeys. */
-         if (current_input->keyboard_mapping_set_block)
-            current_input->keyboard_mapping_set_block(current_input_data, true);
+         current_input->keyboard_mapping_blocked = true;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
          g_keyboard_press_cb   = NULL;
          g_keyboard_press_data = NULL;
-         if (current_input->keyboard_mapping_set_block)
-            current_input->keyboard_mapping_set_block(current_input_data, false);
+         current_input->keyboard_mapping_blocked = false;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
          input_driver_keyboard_linefeed_enable = true;
@@ -16606,9 +16593,9 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
    video_driver_state_buffer    = buf;
 }
 
-static void video_driver_init_input(const input_driver_t *tmp)
+static void video_driver_init_input(input_driver_t *tmp)
 {
-   const input_driver_t **input = &current_input;
+   input_driver_t **input = &current_input;
    if (*input)
       return;
 
@@ -16711,6 +16698,7 @@ static void video_driver_free_internal(void)
    {
       if (current_input && current_input->free)
          current_input->free(current_input_data);
+      current_input->keyboard_mapping_blocked = false;
       current_input_data = NULL;
    }
 
@@ -16796,7 +16784,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_info_t video;
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
-   const input_driver_t *tmp              = NULL;
+   input_driver_t *tmp                    = NULL;
    rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = configuration_settings;
@@ -22825,10 +22813,8 @@ static enum runloop_state runloop_check_state(
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
 
-   if (     current_input->keyboard_mapping_is_blocked
-         && current_input->keyboard_mapping_is_blocked(current_input_data))
+   if (current_input->keyboard_mapping_blocked)
       input_driver_block_hotkey = true;
-
 
 #ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
@@ -24183,7 +24169,7 @@ static bool rarch_write_debug_info(void)
 
    {
       gfx_ctx_ident_t ident_info = {0};
-      const input_driver_t *input_driver;
+      input_driver_t *input_driver;
       const input_device_driver_t *joypad_driver;
       const char *driver;
 #ifdef HAVE_MENU

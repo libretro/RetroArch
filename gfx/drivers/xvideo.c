@@ -420,7 +420,7 @@ static void xv_calc_out_rect(bool keep_aspect,
 }
 
 static void *xv_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    unsigned i;
    int ret;

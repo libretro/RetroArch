@@ -215,6 +215,5 @@ input_driver_t input_dos = {
    dos_input_set_rumble,
    dos_input_get_joypad_driver,
    NULL,
-   NULL,
-   NULL
+   false
 };

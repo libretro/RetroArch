@@ -72,7 +72,6 @@ uint8_t modifier_lut[VITA_NUM_MODIFIERS][2] =
 
 typedef struct psp_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 #ifdef VITA
    int keyboard_hid_handle;
@@ -446,22 +445,6 @@ static bool psp_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool psp_input_keyboard_mapping_is_blocked(void *data)
-{
-   psp_input_t *psp = (psp_input_t*)data;
-   if (!psp)
-      return false;
-   return psp->blocked;
-}
-
-static void psp_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   psp_input_t *psp = (psp_input_t*)data;
-   if (!psp)
-      return;
-   psp->blocked = value;
-}
-
 input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -481,6 +464,5 @@ input_driver_t input_psp = {
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
    NULL,
-   psp_input_keyboard_mapping_is_blocked,
-   psp_input_keyboard_mapping_set_block,
+   false
 };

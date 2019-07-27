@@ -80,7 +80,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (nonatomic, readonly) Uniforms *viewportMVP;
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(const input_driver_t **)input
+                        input:(input_driver_t **)input
                     inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;

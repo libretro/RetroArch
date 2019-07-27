@@ -621,8 +621,8 @@ static void d3d11_gfx_free(void* data)
    free(d3d11);
 }
 
-   static void*
-d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
+static void *d3d11_gfx_init(const video_info_t* video,
+      input_driver_t** input, void** input_data)
 {
    unsigned       i;
 #ifdef HAVE_MONITOR

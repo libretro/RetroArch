@@ -40,7 +40,6 @@ static bool keyboardState[RETROK_LAST] = { 0 };
 
 typedef struct wiiu_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } wiiu_input_t;
 
@@ -259,22 +258,6 @@ static bool wiiu_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool wiiu_input_keyboard_mapping_is_blocked(void *data)
-{
-   wiiu_input_t *wiiu = (wiiu_input_t*)data;
-   if (!wiiu)
-      return false;
-   return wiiu->blocked;
-}
-
-static void wiiu_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   wiiu_input_t *wiiu = (wiiu_input_t*)data;
-   if (!wiiu)
-      return;
-   wiiu->blocked = value;
-}
-
 input_driver_t input_wiiu = {
    wiiu_input_init,
    wiiu_input_poll,
@@ -289,6 +272,5 @@ input_driver_t input_wiiu = {
    wiiu_input_set_rumble,
    wiiu_input_get_joypad_driver,
    NULL,
-   wiiu_input_keyboard_mapping_is_blocked,
-   wiiu_input_keyboard_mapping_set_block,
+   false
 };

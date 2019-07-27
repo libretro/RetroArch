@@ -34,7 +34,6 @@
 
 typedef struct ps4_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } ps4_input_t;
 
@@ -159,22 +158,6 @@ static bool ps4_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool ps4_input_keyboard_mapping_is_blocked(void *data)
-{
-   ps4_input_t *ps4 = (ps4_input_t*)data;
-   if (!ps4)
-      return false;
-   return ps4->blocked;
-}
-
-static void ps4_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   ps4_input_t *ps4 = (ps4_input_t*)data;
-   if (!ps4)
-      return;
-   ps4->blocked = value;
-}
-
 input_driver_t input_ps4 = {
    ps4_input_initialize,
    ps4_input_poll,
@@ -189,6 +172,5 @@ input_driver_t input_ps4 = {
    ps4_input_set_rumble,
    ps4_input_get_joypad_driver,
    NULL,
-   ps4_input_keyboard_mapping_is_blocked,
-   ps4_input_keyboard_mapping_set_block,
+   false
 };

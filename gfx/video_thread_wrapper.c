@@ -161,7 +161,7 @@ struct thread_video
    const video_poke_interface_t *poke;
 
    void *driver_data;
-   const input_driver_t **input;
+   input_driver_t **input;
    void **input_data;
 
    struct
@@ -220,7 +220,7 @@ struct thread_video
 };
 
 static void *video_thread_init_never_call(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    (void)video;
    (void)input;
@@ -793,7 +793,7 @@ static void video_thread_set_nonblock_state(void *data, bool state)
 
 static bool video_thread_init(thread_video_t *thr,
       const video_info_t info,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    size_t max_size;
    thread_packet_t pkt = {CMD_INIT};
@@ -1362,7 +1362,7 @@ static void video_thread_set_callbacks(
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_init_thread(const video_driver_t **out_driver,
-      void **out_data,  const input_driver_t **input, void **input_data,
+      void **out_data,  input_driver_t **input, void **input_data,
       const video_driver_t *drv, const video_info_t info)
 {
    thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(*thr));

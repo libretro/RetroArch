@@ -315,7 +315,7 @@ static void gfx_ctx_ps3_destroy(void *data)
 
 static void gfx_ctx_ps3_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *ps3input       = input_ps3.init(joypad_name);
 

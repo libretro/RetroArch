@@ -34,7 +34,6 @@ typedef struct
 
 typedef struct
 {
-   bool blocked;
    cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 

@@ -35,7 +35,6 @@
 
 typedef struct sdl_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 
    int mouse_x, mouse_y;
@@ -421,22 +420,6 @@ static uint64_t sdl_get_capabilities(void *data)
    return caps;
 }
 
-static bool sdl_keyboard_mapping_is_blocked(void *data)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-   if (!sdl)
-      return false;
-   return sdl->blocked;
-}
-
-static void sdl_keyboard_mapping_set_block(void *data, bool value)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-   if (!sdl)
-      return;
-   sdl->blocked = value;
-}
-
 input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
@@ -455,6 +438,5 @@ input_driver_t input_sdl = {
    sdl_set_rumble,
    sdl_get_joypad_driver,
    NULL,
-   sdl_keyboard_mapping_is_blocked,
-   sdl_keyboard_mapping_set_block,
+   false
 };

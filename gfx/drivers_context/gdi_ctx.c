@@ -250,7 +250,7 @@ error:
 
 static void gfx_ctx_gdi_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
 #if _WIN32_WINNT >= 0x0501
    settings_t *settings = config_get_ptr();

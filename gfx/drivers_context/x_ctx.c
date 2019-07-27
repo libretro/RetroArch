@@ -994,7 +994,7 @@ error:
 
 static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *x_input         = NULL;
 #ifdef HAVE_UDEV

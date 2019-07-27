@@ -66,7 +66,7 @@ static void gfx_ctx_null_destroy(void *data)
 
 static void gfx_ctx_null_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    (void)data;
    (void)input;

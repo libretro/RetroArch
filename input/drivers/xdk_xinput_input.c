@@ -37,7 +37,6 @@
 
 typedef struct xdk_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } xdk_input_t;
 
@@ -196,22 +195,6 @@ static void xdk_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool xdk_keyboard_mapping_is_blocked(void *data)
-{
-   xdk_input_t *xdk = (xdk_input_t*)data;
-   if (!xdk)
-      return false;
-   return xdk->blocked;
-}
-
-static void xdk_keyboard_mapping_set_block(void *data, bool value)
-{
-   xdk_input_t *xdk = (xdk_input_t*)data;
-   if (!xdk)
-      return;
-   xdk->blocked = value;
-}
-
 input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
@@ -226,6 +209,5 @@ input_driver_t input_xinput = {
    xdk_input_set_rumble,
    xdk_input_get_joypad_driver,
    NULL,
-   xdk_keyboard_mapping_is_blocked,
-   xdk_keyboard_mapping_set_block,
+   false
 };

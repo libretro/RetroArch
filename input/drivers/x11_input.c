@@ -34,7 +34,6 @@
 
 typedef struct x11_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 
    Display *display;
@@ -132,7 +131,7 @@ static bool x_is_pressed(x11_input_t *x11,
    const struct retro_keybind *bind = &binds[id];
 
    if ((bind->key < RETROK_LAST) && x_keyboard_pressed(x11, bind->key) )
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !x11->blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_x.keyboard_mapping_blocked)
          return true;
 
    if (binds && binds[id].valid)
@@ -533,22 +532,6 @@ static uint64_t x_input_get_capabilities(void *data)
    return caps;
 }
 
-static bool x_keyboard_mapping_is_blocked(void *data)
-{
-   x11_input_t *x11 = (x11_input_t*)data;
-   if (!x11)
-      return false;
-   return x11->blocked;
-}
-
-static void x_keyboard_mapping_set_block(void *data, bool value)
-{
-   x11_input_t *x11 = (x11_input_t*)data;
-   if (!x11)
-      return;
-   x11->blocked = value;
-}
-
 input_driver_t input_x = {
    x_input_init,
    x_input_poll,
@@ -563,6 +546,5 @@ input_driver_t input_x = {
    x_set_rumble,
    x_get_joypad_driver,
    NULL,
-   x_keyboard_mapping_is_blocked,
-   x_keyboard_mapping_set_block,
+   false
 };

@@ -30,7 +30,6 @@
 
 typedef struct ps2_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } ps2_input_t;
 
@@ -155,22 +154,6 @@ static bool ps2_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool ps2_input_keyboard_mapping_is_blocked(void *data)
-{
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-   if (!ps2)
-      return false;
-   return ps2->blocked;
-}
-
-static void ps2_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   ps2_input_t *ps2 = (ps2_input_t*)data;
-   if (!ps2)
-      return;
-   ps2->blocked = value;
-}
-
 input_driver_t input_ps2 = {
    ps2_input_initialize,
    ps2_input_poll,
@@ -185,6 +168,5 @@ input_driver_t input_ps2 = {
    ps2_input_set_rumble,
    ps2_input_get_joypad_driver,
    NULL,
-   ps2_input_keyboard_mapping_is_blocked,
-   ps2_input_keyboard_mapping_set_block,
+   false
 };

@@ -1153,7 +1153,7 @@ static void vulkan_init_readback(vk_t *vk)
 }
 
 static void *vulkan_init(const video_info_t *video,
-      const input_driver_t **input,
+      input_driver_t **input,
       void **input_data)
 {
    gfx_ctx_mode_t mode;

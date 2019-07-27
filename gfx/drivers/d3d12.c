@@ -892,8 +892,8 @@ static void d3d12_gfx_free(void* data)
    free(d3d12);
 }
 
-static void*
-d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
+static void *d3d12_gfx_init(const video_info_t* video, 
+      input_driver_t** input, void** input_data)
 {
 #ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;

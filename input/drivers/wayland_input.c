@@ -438,22 +438,6 @@ static const input_device_driver_t *input_wl_get_joypad_driver(void *data)
    return wl->joypad;
 }
 
-static bool input_wl_keyboard_mapping_is_blocked(void *data)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return false;
-   return wl->blocked;
-}
-
-static void input_wl_keyboard_mapping_set_block(void *data, bool value)
-{
-   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-   wl->blocked = value;
-}
-
 input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
@@ -468,6 +452,5 @@ input_driver_t input_wayland = {
    input_wl_set_rumble,
    input_wl_get_joypad_driver,
    NULL,
-   input_wl_keyboard_mapping_is_blocked,
-   input_wl_keyboard_mapping_set_block,
+   false
 };

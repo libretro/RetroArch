@@ -75,7 +75,6 @@ typedef struct rwebinput_input
    bool keys[RETROK_LAST];
    rwebinput_mouse_state_t mouse;
    const input_device_driver_t *joypad;
-   bool blocked;
 } rwebinput_input_t;
 
 /* KeyboardEvent.keyCode has been deprecated for a while and doesn't have
@@ -480,7 +479,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       int key                          = bind->key;
 
       if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
-         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !rwebinput->blocked)
+         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_rwebinput.keyboard_mapping_blocked)
             return true;
 
       if (bind->valid)
@@ -700,22 +699,6 @@ static uint64_t rwebinput_get_capabilities(void *data)
    return caps;
 }
 
-static bool rwebinput_keyboard_mapping_is_blocked(void *data)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   if (!rwebinput)
-      return false;
-   return rwebinput->blocked;
-}
-
-static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   if (!rwebinput)
-      return;
-   rwebinput->blocked = value;
-}
-
 input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
@@ -730,6 +713,5 @@ input_driver_t input_rwebinput = {
    rwebinput_set_rumble,
    rwebinput_get_joypad_driver,
    NULL,
-   rwebinput_keyboard_mapping_is_blocked,
-   rwebinput_keyboard_mapping_set_block,
+   false
 };

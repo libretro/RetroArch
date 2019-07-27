@@ -463,22 +463,6 @@ static const input_device_driver_t *cocoa_input_get_joypad_driver(void *data)
    return NULL;
 }
 
-static bool cocoa_input_keyboard_mapping_is_blocked(void *data)
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   if (!apple)
-      return false;
-   return apple->blocked;
-}
-
-static void cocoa_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   if (!apple)
-      return;
-   apple->blocked = value;
-}
-
 input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
@@ -493,6 +477,5 @@ input_driver_t input_cocoa = {
    cocoa_input_set_rumble,
    cocoa_input_get_joypad_driver,
    cocoa_input_get_sec_joypad_driver,
-   cocoa_input_keyboard_mapping_is_blocked,
-   cocoa_input_keyboard_mapping_set_block,
+   false
 };

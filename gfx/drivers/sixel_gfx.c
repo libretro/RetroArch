@@ -187,7 +187,7 @@ static void scroll_on_demand(int pixelheight)
 }
 
 static void *sixel_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;

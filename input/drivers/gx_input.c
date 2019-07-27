@@ -34,7 +34,6 @@
 
 typedef struct gx_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } gx_input_t;
 
@@ -166,22 +165,6 @@ static bool gx_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
-static bool gx_input_keyboard_mapping_is_blocked(void *data)
-{
-   gx_input_t *gx = (gx_input_t*)data;
-   if (!gx)
-      return false;
-   return gx->blocked;
-}
-
-static void gx_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   gx_input_t *gx = (gx_input_t*)data;
-   if (!gx)
-      return;
-   gx->blocked = value;
-}
-
 input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
@@ -197,6 +180,5 @@ input_driver_t input_gx = {
    gx_input_set_rumble,
    gx_input_get_joypad_driver,
    NULL,
-   gx_input_keyboard_mapping_is_blocked,
-   gx_input_keyboard_mapping_set_block,
+   false
 };
