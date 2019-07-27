@@ -3868,7 +3868,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
     "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
     )
-#else
    MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
     "Pokaż podpowiedzi menu"
