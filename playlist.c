@@ -651,9 +651,15 @@ void playlist_resolve_path(enum playlist_file_mode mode,
    else
    {
       /* iOS needs to call realpath here since the call
-       * above fails due to possibly buffer related issues. */
-      realpath(path, tmp);
-      fill_pathname_abbreviate_special(path, tmp, size);
+       * above fails due to possibly buffer related issues.
+       * Try to expand the path to ensure that it gets saved
+       * correctly. The path can be abbreviated if saving to
+       * a playlist from another playlist (ex: content history to favorites)
+       */
+       char tmp2[PATH_MAX_LENGTH];
+       fill_pathname_expand_special(tmp, path, sizeof(tmp));
+      realpath(tmp, tmp2);
+      fill_pathname_abbreviate_special(path, tmp2, size);
    }
 #else
    if (mode == PLAYLIST_LOAD)
