@@ -3856,20 +3856,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
     "Pokaż/ukryj możliwość pobierania starszych pakietów miniatur."
     )
-   #ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Pokaż Uruchom ponownie RetroArch"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch."
-    )
-#else
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Pokaż Zamknij RetroArch"
-    )
    MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
     "Pokaż podpowiedzi menu"
@@ -4030,4 +4016,30 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
     "Wyślij informacje o debugowaniu"
     )
-   
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż uruchom ponownie RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż zamknij RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż/ukryj opcję „Zakończ RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+    "Pokaż uruchom ponownie RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
+    )
+#endif
