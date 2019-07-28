@@ -1618,3 +1618,8 @@ SSL
 #ifdef HAVE_EASTEREGG
 #include "../cores/libretro-gong/gong.c"
 #endif
+
+/*============================================================
+PLAYLIST NAME SANITIZATION
+============================================================ */
+#include "../libretro-common/playlists/label-sanitization.c"

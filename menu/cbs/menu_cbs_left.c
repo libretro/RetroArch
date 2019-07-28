@@ -445,7 +445,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
    enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
 
    if (label_display_mode != LABEL_DISPLAY_MODE_DEFAULT)
-      label_display_mode--;
+      (int)label_display_mode--;
    else if (wraparound)
       label_display_mode = LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX;
 
