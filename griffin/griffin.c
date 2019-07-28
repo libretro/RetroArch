@@ -1622,4 +1622,4 @@ SSL
 /*============================================================
 PLAYLIST NAME SANITIZATION
 ============================================================ */
-#include "../libretro-common/playlists/label-sanitization.c"
+#include "../libretro-common/playlists/label_sanitization.c"
