@@ -3860,3 +3860,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Zapisz pliki dziennika zdarzeń systemowych w tym katalogu."
     )
+   MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+    "Automatyczne zamykanie menu i wznawianie bieżącej zawartości po wybraniu „Zapisz stan” lub „Wczytaj stan” z Szybkiego menu. Wyłączenie tego może poprawić wydajność stanu zapisywania na bardzo wolnych urządzeniach."
+    )
