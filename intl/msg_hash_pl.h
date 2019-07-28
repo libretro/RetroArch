@@ -2705,8 +2705,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Pokaż interfejsy sieciowe i powiązane adresy IP.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "Pokaż informacje dotyczące konkretnego urządzenia.")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Zamknij program.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
       "Ustaw niestandardowy rozmiar szerokości okna wyświetlacza. Pozostawienie go na 0 spowoduje przeskalowanie okna tak dużego, jak to możliwe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
@@ -3864,3 +3862,18 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
     "Automatyczne zamykanie menu i wznawianie bieżącej zawartości po wybraniu „Zapisz stan” lub „Wczytaj stan” z Szybkiego menu. Wyłączenie tego może poprawić wydajność stanu zapisywania na bardzo wolnych urządzeniach."
     )
+   #ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Uruchom ponownie program."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Zamknij program."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+    "Uruchom ponownie program."
+    )
+#endif
