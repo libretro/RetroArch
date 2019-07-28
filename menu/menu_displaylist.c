@@ -850,6 +850,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t           list_size        = playlist_size(playlist);
    settings_t       *settings        = config_get_ptr();
    bool show_inline_core_name        = false;
+   void (*sanitization)(char*, size_t);
 
    label_spacer[0] = '\0';
 
@@ -905,8 +906,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    /* Preallocate the file list */
    file_list_reserve(info->list, list_size);
-
-   void (*sanitization)(char*, size_t);
 
    switch (playlist_get_label_display_mode(playlist))
    {

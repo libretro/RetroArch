@@ -1106,14 +1106,20 @@ static void menu_action_setting_disp_set_label_playlist_label_display_mode(
       const char *path,
       char *s2, size_t len2)
 {
+   enum playlist_label_display_mode label_display_mode;
+   int msg_index;
    playlist_t *playlist  = playlist_get_cached();
-   enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
+
+   if (!playlist)
+      return;
+
+   label_display_mode = playlist_get_label_display_mode(playlist);
 
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   int msg_index = (int)label_display_mode;
+   msg_index = (int)label_display_mode;
    msg_index = msg_index * 3;
    msg_index = msg_index + (int)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT;
 

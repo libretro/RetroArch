@@ -550,12 +550,13 @@ static int playlist_association_right(unsigned type, const char *label,
 static int playlist_label_display_mode_right(unsigned type, const char *label,
       bool wraparound)
 {
+   enum playlist_label_display_mode label_display_mode;
    playlist_t *playlist             = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
-   enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
+   label_display_mode = playlist_get_label_display_mode(playlist);
 
    if (label_display_mode != LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
       label_display_mode = (enum playlist_label_display_mode)((int)label_display_mode + 1);

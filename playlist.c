@@ -1222,10 +1222,10 @@ void playlist_write_file(playlist_t *playlist)
    else
 #endif
    {
+      char label_display_mode[4] = {0};
       JSONContext context = {0};
       context.writer      = JSON_Writer_Create(NULL);
       context.file        = file;
-      char label_display_mode[4] = {0};
 
       if (!context.writer)
       {

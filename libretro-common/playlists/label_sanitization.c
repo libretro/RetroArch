@@ -21,6 +21,7 @@
  */
 
 #include <playlists/label_sanitization.h>
+#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <string.h>
 
@@ -32,7 +33,7 @@ void label_sanitize(char *label, size_t size, bool (*left)(char*), bool (*right)
    bool copy = true;
    int rindex = 0;
    int lindex = 0;
-   char new_label[size];
+   char new_label[PATH_MAX_LENGTH];
 
    for (; lindex < size && label[lindex] != '\0'; lindex++)
    {
