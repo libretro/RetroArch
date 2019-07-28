@@ -3521,7 +3521,7 @@ typedef struct menu_displaylist_build_info_selective {
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool checked;
-} menu_displaylist_build_info_selective_t; 
+} menu_displaylist_build_info_selective_t;
 
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
@@ -3752,8 +3752,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             if (playlist)
             {
                enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
+               int i;
 
-               for (int i = 0; MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + i != MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX; i += 3)
+               for (i = 0; MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + i != MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX; i += 3)
                {
                   if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + i),
@@ -4205,7 +4206,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
                bool parse_setting = true;
-               if (build_list[i].checked && 
+               if (build_list[i].checked &&
                      string_is_equal(ui_companion_driver_get_ident(), "null"))
                   parse_setting = false;
                if (parse_setting &&
