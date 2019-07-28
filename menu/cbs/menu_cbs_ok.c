@@ -2919,7 +2919,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
     strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
     playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
 
-   /* the update function reads our entry 
+   /* the update function reads our entry
     * as const, so these casts are safe */
    entry.core_path = (char*)resolved_core_path;
    entry.core_name = core_display_name;
@@ -5375,7 +5375,7 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(const char *
 {
    playlist_t *playlist = playlist_get_cached();
 
-   playlist_set_label_display_mode(playlist, idx);
+   playlist_set_label_display_mode(playlist, (enum playlist_label_display_mode)idx);
 
    /* In all cases, update file on disk */
    playlist_write_file(playlist);

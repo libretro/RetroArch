@@ -21,6 +21,7 @@
  */
 
 #include <playlists/label_sanitization.h>
+#include <string/stdstring.h>
 #include <string.h>
 
 /*
@@ -37,7 +38,7 @@ void label_sanitize(char *label, size_t size, bool (*left)(char*), bool (*right)
    {
       if (copy)
       {
-         // check for the start of the range
+         /* check for the start of the range */
          if ((*left)(&label[lindex]))
             copy = false;
 
@@ -80,35 +81,17 @@ bool left_parens_or_brackets(char *left)
 
 bool right_parens_or_brackets(char *right)
 {
-   return right[0] == ']' || right[0] == ']';
+   return right[0] == ')' || right[0] == ']';
 }
 
 bool left_parens_or_brackets_excluding_region(char *left)
 {
    if (left_parens_or_brackets(left))
    {
-      if ((left[1] == 'A'
-            && left[2] == 'u'
-            && left[3] == 's'
-            && left[4] == 'r'
-            && left[5] == 'a'
-            && left[6] == 'l'
-            && left[7] == 'i'
-            && left[8] == 'a')
-         || (left[1] == 'E'
-            && left[2] == 'u'
-            && left[3] == 'r'
-            && left[4] == 'o'
-            && left[5] == 'p'
-            && left[6] == 'e')
-         || (left[1] == 'J'
-            && left[2] == 'a'
-            && left[3] == 'p'
-            && left[4] == 'a'
-            && left[5] == 'n')
-         || (left[1] == 'U'
-            && left[2] == 'S'
-            && left[3] == 'A'))
+      if (string_is_equal_fast(&left[1], "Australia", 9)
+         || string_is_equal_fast(&left[1], "Europe", 6)
+         || string_is_equal_fast(&left[1], "Japan", 5)
+         || string_is_equal_fast(&left[1], "USA", 3))
          return false;
       else
          return true;
@@ -121,10 +104,7 @@ bool left_parens_or_brackets_excluding_disc(char *left)
 {
    if (left_parens_or_brackets(left))
    {
-      if (left[1] == 'D'
-         && left[2] == 'i'
-         && left[3] == 's'
-         && left[4] == 'c')
+      if (string_is_equal_fast(&left[1], "Disc", 4))
          return false;
       else
          return true;
@@ -137,32 +117,11 @@ bool left_parens_or_brackets_excluding_region_or_disc(char *left)
 {
    if (left_parens_or_brackets(left))
    {
-      if ((left[1] == 'A'
-            && left[2] == 'u'
-            && left[3] == 's'
-            && left[4] == 'r'
-            && left[5] == 'a'
-            && left[6] == 'l'
-            && left[7] == 'i'
-            && left[8] == 'a')
-         || (left[1] == 'E'
-            && left[2] == 'u'
-            && left[3] == 'r'
-            && left[4] == 'o'
-            && left[5] == 'p'
-            && left[6] == 'e')
-         || (left[1] == 'J'
-            && left[2] == 'a'
-            && left[3] == 'p'
-            && left[4] == 'a'
-            && left[5] == 'n')
-         || (left[1] == 'U'
-            && left[2] == 'S'
-            && left[3] == 'A')
-         || (left[1] == 'D'
-            && left[2] == 'i'
-            && left[3] == 's'
-            && left[4] == 'c'))
+      if (string_is_equal_fast(&left[1], "Australia", 9)
+         || string_is_equal_fast(&left[1], "Disc", 4)
+         || string_is_equal_fast(&left[1], "Europe", 6)
+         || string_is_equal_fast(&left[1], "Japan", 5)
+         || string_is_equal_fast(&left[1], "USA", 3))
          return false;
       else
          return true;
@@ -174,6 +133,7 @@ bool left_parens_or_brackets_excluding_region_or_disc(char *left)
 void label_default_display(char *label, size_t size)
 {
    return;
+   /* The default display will keep the label the same. */
 }
 
 void label_remove_parens(char *label, size_t size)

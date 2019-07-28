@@ -2084,7 +2084,7 @@ json_cleanup:
             start++;
 
             if (*start >= '0' && *start <= '9')
-               playlist->label_display_mode = *start - '0';
+               playlist->label_display_mode = (enum playlist_label_display_mode)(*start - '0');
          }
       }
 

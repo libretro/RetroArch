@@ -1113,7 +1113,11 @@ static void menu_action_setting_disp_set_label_playlist_label_display_mode(
 
    strlcpy(s2, path, len2);
 
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + label_display_mode * 3), len);
+   int msg_index = (int)label_display_mode;
+   msg_index = msg_index * 3;
+   msg_index = msg_index + (int)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT;
+
+   strlcpy(s, msg_hash_to_str((enum msg_hash_enums)msg_index), len);
 }
 
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
