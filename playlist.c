@@ -1225,6 +1225,7 @@ void playlist_write_file(playlist_t *playlist)
       JSONContext context = {0};
       context.writer      = JSON_Writer_Create(NULL);
       context.file        = file;
+      char label_display_mode[4];
 
       if (!context.writer)
       {
@@ -1281,7 +1282,6 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
-      char label_display_mode[4];
       snprintf(label_display_mode, sizeof(label_display_mode), "%u", playlist->label_display_mode);
 
       JSON_Writer_WriteSpace(context.writer, 2);
