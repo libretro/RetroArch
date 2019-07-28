@@ -94,9 +94,8 @@ parse_input() # Parse stuff :V
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="${OPTS} $NEWVAR"
-		case "$NEWVAR" in
-			C89_*|CXX_*) : ;;
-			*) CONFIG_OPTS="${CONFIG_OPTS} $NEWVAR" ;;
+		case "$TMPVAR" in
+			HAVE_*) CONFIG_OPTS="${CONFIG_OPTS} $NEWVAR" ;;
 		esac
 		eval "USER_$NEWVAR=auto"
 	done < 'qb/config.params.sh'
