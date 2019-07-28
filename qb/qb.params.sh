@@ -122,7 +122,7 @@ parse_input() # Parse stuff :V
 				opt_exists "${1##--disable-}" "$1"
 				eval "HAVE_$opt=no"
 				eval "USER_$opt=no"
-				eval "HAVE_NO_$opt=yes"
+				add_opt "NO_$opt" yes
 			;;
 			--with-*)
 				arg="${1##--with-}"
