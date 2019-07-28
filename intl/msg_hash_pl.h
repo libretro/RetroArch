@@ -3836,3 +3836,27 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
     "View information about inserted media discs."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Pliki dziennika ze znacznikami czasu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+    "Podczas logowania do pliku przekierowuje dane wyjściowe z każdej sesji RetroArch do nowego pliku ze znacznikami czasu. Jeśli opcja jest wyłączona, dziennik jest nadpisywany przy każdym ponownym uruchomieniu RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Zaloguj się do pliku"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+    "Przekierowuje komunikaty dziennika zdarzeń systemowych do pliku. Wymaga „oznajmiania rejestrowania”, aby włączyć."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_DIR,
+    "Dzienniki zdarzeń systemowych"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_DIR,
+    "Zapisz pliki dziennika zdarzeń systemowych w tym katalogu."
+    )
