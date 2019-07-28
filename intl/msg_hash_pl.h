@@ -3877,3 +3877,11 @@ MSG_HASH(
     "Uruchom ponownie program."
     )
 #endif
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+    "Dopasuj ramki i elementy sterujące na ekranie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+    "Dostosuj powiadomienia na ekranie"
+    )
