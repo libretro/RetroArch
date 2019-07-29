@@ -265,6 +265,12 @@ bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info)
 
          strlcpy(info->system, "3DO", sizeof(info->system));
       }
+      else if (!memcmp(buf + offset + 0x950, "PC Engine CD-ROM SYSTEM", 23))
+      {
+         info->system_id = MEDIA_CD_SYSTEM_PC_ENGINE_CD;
+
+         strlcpy(info->system, "TurboGrafx-CD / PC-Engine CD", sizeof(info->system));
+      }
 
       free(buf);
    }

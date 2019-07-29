@@ -5015,13 +5015,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (file)
             {
                const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+               unsigned first_data_track = 1;
 
                atip = cdrom_has_atip(filestream_get_vfs_handle(file));
 
                filestream_close(file);
 
-               /* open first track */
-               cdrom_device_fillpath(file_path, sizeof(file_path), drive, 1, false);
+               {
+                  unsigned i;
+
+                  for (i = 0; i < toc->num_tracks; i++)
+                  {
+                     if (!toc->track[i].audio)
+                     {
+                        first_data_track = i + 1;
+                        break;
+                     }
+                  }
+               }
+
+               /* open first data track */
+               cdrom_device_fillpath(file_path, sizeof(file_path), drive, first_data_track, false);
 
                if (media_detect_cd_info(file_path, &cd_info))
                {
