@@ -1,8 +1,34 @@
+# check_build:
+# $1 = USER_$1
+check_build()
+{	setval="$(eval "printf %s \"\$USER_$1\"")"
+
+	c89_build="C89_$1"
+	cxx_build="CXX_$1"
+
+	for build in "$c89_build" "$cxx_build"; do
+		C="${build%%_*}"
+		tmpval="$(eval "printf %s \"\$$build\"")"
+		tmpvar="$(eval "printf %s \"\$HAVE_${C}_BUILD\"")"
+
+		if [ "$tmpval" = 'no' ] && [ "$tmpvar" = 'yes' ]; then
+			if [ "$setval" = 'yes' ]; then
+				msg="$(eval "printf %s \"\$MSG_${C}_$1\"")"
+				die 1 "Error: $msg not supported with $C builds."
+			else
+				eval "HAVE_$1=no"
+				eval "HAVE_${C}_$1=no"
+			fi
+		fi
+	done
+}
+
 # add_opt
 # $1 = HAVE_$1
 # $2 = value ['auto', 'no' or 'yes', checked only if non-empty]
 add_opt()
-{	setval="$(eval "printf %s \"\$USER_$1\"")"
+{	check_build "$1"
+	setval="$(eval "printf %s \"\$USER_$1\"")"
 	[ "${2:-}" ] && ! match "$setval" no yes && eval "HAVE_$1=\"$2\""
 
 	for opt in $(printf %s "$CONFIG_OPTS"); do
@@ -75,7 +101,8 @@ EOF
 	done < 'qb/config.params.sh'
 }
 
-opt_exists() # $opt is returned if exists in OPTS
+# $opt is returned if exists in OPTS
+opt_exists()
 {	opt="$(printf %s "$1" | tr '[:lower:]' '[:upper:]')"
 	err="$2"
 	eval "set -- $OPTS"
@@ -83,25 +110,32 @@ opt_exists() # $opt is returned if exists in OPTS
 	die 1 "Unknown option $err"
 }
 
-parse_input() # Parse stuff :V
+# Parse config.params.sh
+parse_opts()
 {	BUILD=''
 	OPTS=''
 	CONFIG_OPTS=''
 	config_opts='./configure'
 
-	while read -r VAR _; do
+	while read -r VAR _ COMMENT; do
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="${OPTS} $NEWVAR"
 		case "$TMPVAR" in
 			HAVE_*) CONFIG_OPTS="${CONFIG_OPTS} $NEWVAR" ;;
+			C89_*|CXX_*) eval "MSG_${TMPVAR%%_*}_${TMPVAR#*_}=\"$COMMENT\"";;
 		esac
 		eval "USER_$NEWVAR=auto"
+		eval "C89_$NEWVAR=auto"
+		eval "CXX_$NEWVAR=auto"
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
 	#things in opt_exists()
+}
 
-	while [ $# -gt 0 ]; do
+# Parse user input
+parse_input()
+{	while [ $# -gt 0 ]; do
 		config_opts="${config_opts} $1"
 		case "$1" in
 			--prefix=*) PREFIX=${1##--prefix=};;
@@ -116,6 +150,10 @@ parse_input() # Parse stuff :V
 				opt_exists "${1##--enable-}" "$1"
 				eval "HAVE_$opt=yes"
 				eval "USER_$opt=yes"
+				case "$opt" in
+					C89_BUILD) HAVE_CXX_BUILD=no;;
+					CXX_BUILD) HAVE_C89_BUILD=no;;
+				esac
 			;;
 			--disable-*)
 				opt_exists "${1##--disable-}" "$1"
@@ -148,6 +186,8 @@ Command line invocation:
 
 EOF
 }
+
+parse_opts
 
 . qb/config.params.sh
 

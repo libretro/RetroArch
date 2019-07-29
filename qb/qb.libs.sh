@@ -47,6 +47,25 @@ check_compiler()
 	fi
 }
 
+# check_disabled:
+# $1 = HAVE_$1 ['feature' or 'feature feature1 feature2', $1 = name]
+# $2 = HAVE_$2 [Disabled feature]
+# $3 = lib
+# $4 = feature
+check_disabled()
+{	add_opt "$2"
+	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+	[ "$setval" = 'no' ] && return 0
+
+	for val in $(printf %s "$1"); do
+		tmpval="$(eval "printf %s \"\$HAVE_$val\"")"
+		if [ "$tmpval" = 'yes' ]; then
+			eval "HAVE_$2=no"
+			return 0
+		fi
+	done
+}
+
 # check_enabled:
 # $1 = HAVE_$1 [Disabled 'feature' or 'feature feature1 feature2', $1 = name]
 # $2 = USER_$2 [Enabled feature]
@@ -335,6 +354,8 @@ EOF
 # $4 = critical error message [checked only if non-empty]
 check_switch()
 {	add_opt "$2"
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	[ "$tmpval" = 'no' ] && return 0
 	check_compiler "$1" ''
 
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"

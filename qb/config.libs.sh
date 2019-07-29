@@ -1,14 +1,32 @@
 # Use add_opt to set HAVE_FOO variables the first time
 # example: add_opt FOO no
 #
-# Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
-# check_header, check_macro and check_switch are not used.
+# Only needed when check_disabled ($2), check_enabled ($2), check_platform,
+# check_lib, check_pkgconf, check_header, check_macro and check_switch are
+# not used.
+
+check_enabled CXX CXX_BUILD C++ 'The C++ compiler is' false
+
+check_disabled 'C89_BUILD CXX_BUILD' C99
 
 check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
+check_switch '' C89_BUILD -std=c89 "Cannot find C89 compatible compiler."
+check_switch '' CXX_BUILD -xc++ "Cannot find C++ compatible compiler."
 check_switch '' NOUNUSED -Wno-unused-result
 add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
 check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable
 add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
+
+if [ "$HAVE_C89_BUILD" = 'yes' ] && [ "$USER_CXX_BUILD" = 'yes' ]; then
+   die : 'Notice: Both C89 and C++ builds are enabled, building with C89.'
+fi
+
+if [ "$HAVE_CXX_BUILD" = 'yes' ] && [ "$USER_C89_BUILD" = 'yes' ]; then
+   die : 'Notice: Both C89 and C++ builds are enabled, building with C++.'
+fi
+
+[ "$HAVE_C89_BUILD" = 'yes' ] && add_define MAKEFILE C89_BUILD 1
+[ "$HAVE_CXX_BUILD" = 'yes' ] && add_define MAKEFILE CXX_BUILD 1
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_dirs LIBRARY /usr/lib64
