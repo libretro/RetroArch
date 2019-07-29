@@ -4142,23 +4142,6 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
-
-         /* blacklist these since they are handled by remaps */
-         /* to-do: add setting to control blacklisting
-         if (settings->uints.input_libretro_device[i]
-               != overrides->uints.input_libretro_device[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
-         }
-
-         if (settings->uints.input_analog_dpad_mode[i]
-               != overrides->uints.input_analog_dpad_mode[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-         }
-         */
       }
 
       ret = false;
