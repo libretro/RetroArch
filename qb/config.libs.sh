@@ -202,8 +202,8 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_val '' ALSA -lasound alsa alsa '' '' false
-check_lib '' CACA -lcaca
-check_lib '' SIXEL -lsixel
+check_val '' CACA -lcaca '' caca '' '' false
+check_val '' SIXEL -lsixel '' libsixel 1.6.0 '' false
 
 check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
 
