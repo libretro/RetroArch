@@ -242,6 +242,20 @@ static int action_start_playlist_association(unsigned type, const char *label)
    return 0;
 }
 
+static int action_start_playlist_label_display_mode(unsigned type, const char *label)
+{
+   playlist_t *playlist  = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   /* Set label display mode to the default */
+   playlist_set_label_display_mode(playlist, LABEL_DISPLAY_MODE_DEFAULT);
+   playlist_write_file(playlist);
+
+   return 0;
+}
+
 static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
@@ -318,6 +332,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
             BIND_ACTION_START(cbs, action_start_playlist_association);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
+            BIND_ACTION_START(cbs, action_start_playlist_label_display_mode);
             break;
          default:
             return -1;

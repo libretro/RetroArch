@@ -1119,11 +1119,29 @@ static void menu_action_setting_disp_set_label_playlist_label_display_mode(
 
    strlcpy(s2, path, len2);
 
-   msg_index = (int)label_display_mode;
-   msg_index = msg_index * 3;
-   msg_index = msg_index + (int)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT;
-
-   strlcpy(s, msg_hash_to_str((enum msg_hash_enums)msg_index), len);
+   switch (label_display_mode)
+   {
+      case LABEL_DISPLAY_MODE_REMOVE_PARENTHESES :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS), len);
+         break;
+      case LABEL_DISPLAY_MODE_REMOVE_BRACKETS :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS), len);
+         break;
+      case LABEL_DISPLAY_MODE_REMOVE_PARENTHESES_AND_BRACKETS :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS), len);
+         break;
+      case LABEL_DISPLAY_MODE_KEEP_DISC_INDEX :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX), len);
+         break;
+      case LABEL_DISPLAY_MODE_KEEP_REGION :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION), len);
+         break;
+      case LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX :
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX), len);
+         break;
+      default:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT), len);
+   }
 }
 
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,

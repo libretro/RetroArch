@@ -850,7 +850,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t           list_size        = playlist_size(playlist);
    settings_t       *settings        = config_get_ptr();
    bool show_inline_core_name        = false;
-   void (*sanitization)(char*, size_t);
+   void (*sanitization)(char*);
 
    label_spacer[0] = '\0';
 
@@ -928,7 +928,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          sanitization = &label_keep_region_and_disc;
          break;
       default :
-         sanitization = &label_default_display;
+         sanitization = NULL;
    }
 
    for (i = 0; i < list_size; i++)
@@ -950,13 +950,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
           *   no further action is necessary */
 
          if (string_is_empty(entry->label))
-         {
             fill_short_pathname_representation(menu_entry_label, entry->path, sizeof(menu_entry_label));
-         }
          else
          {
             strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
-            (*sanitization)(menu_entry_label, sizeof(menu_entry_label));
+            if (sanitization)
+               (*sanitization)(menu_entry_label);
          }
 
          if (show_inline_core_name)
@@ -3751,18 +3750,54 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             if (playlist)
             {
                enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
-               int i;
 
-               for (i = 0; MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + i != MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX; i += 3)
-               {
-                  if (menu_entries_append_enum(list,
-                        msg_hash_to_str((enum msg_hash_enums)((int)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT + i)),
-                        "",
-                        MENU_ENUM_LABEL_NO_ITEMS,
-                        MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                        0, 0))
-                     count++;
-               }
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX),
+                     "",
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                     0, 0))
+                  count++;
 
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX),
