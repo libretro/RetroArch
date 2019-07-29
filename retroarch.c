@@ -5441,33 +5441,6 @@ static void core_option_manager_free(core_option_manager_t *opt)
    free(opt);
 }
 
-static void core_option_manager_get(core_option_manager_t *opt,
-      struct retro_variable *var)
-{
-   size_t i;
-
-#ifdef HAVE_RUNAHEAD
-   if (opt->updated)
-      has_variable_update = true;
-#endif
-
-   opt->updated = false;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      if (string_is_empty(opt->opts[i].key))
-         continue;
-
-      if (string_is_equal(opt->opts[i].key, var->key))
-      {
-         var->value = opt->opts[i].vals->elems[opt->opts[i].index].data;
-         return;
-      }
-   }
-
-   var->value = NULL;
-}
-
 /**
  * core_option_manager_new_vars:
  * @conf_path        : Filesystem path to write core option config file to.
@@ -6507,17 +6480,39 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             unsigned log_level         = settings->uints.libretro_log_level;
             struct retro_variable *var = (struct retro_variable*)data;
 
-            if (!runloop_core_options || !var)
+            if (!var)
+               return true;
+
+            var->value = NULL;
+
+            if (!runloop_core_options)
             {
-               if (var)
-               {
-                  RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n",
-                        var->key);
-                  var->value = NULL;
-               }
+               RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n",
+                     var->key);
                return true;
             }
-            core_option_manager_get(runloop_core_options, var);
+
+            {
+               size_t i;
+
+#ifdef HAVE_RUNAHEAD
+               if (runloop_core_options->updated)
+                  has_variable_update = true;
+#endif
+
+               runloop_core_options->updated = false;
+
+               for (i = 0; i < runloop_core_options->size; i++)
+               {
+                  if (!string_is_empty(runloop_core_options->opts[i].key))
+                     if (string_is_equal(runloop_core_options->opts[i].key, var->key))
+                     {
+                        var->value = runloop_core_options->opts[i].vals->elems[
+                           runloop_core_options->opts[i].index].data;
+                        break;
+                     }
+               }
+            }
 
             if (log_level == RETRO_LOG_DEBUG)
             {
