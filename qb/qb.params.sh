@@ -53,24 +53,23 @@ EOF
 
 	printf %s\\n '' 'Custom options:'
 
-	while read -r VAR COMMENT; do
-		TMPVAR="${VAR%=*}"
-		COMMENT="${COMMENT#*#}"
-		VAL="${VAR#*=}"
-		VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
+	while read -r VAR _ COMMENT; do
 		case "$VAR" in
-			'c89_'*|'cxx_'*) continue;;
+			'C89_'*|'CXX_'*) continue;;
 			*)
+			TMPVAR="${VAR%=*}"
+			VAL="${VAR#*=}"
+			VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 			case "$VAL" in
 				'yes'*)
-					print_help_option "--disable-$VAR" "Disable $COMMENT";;
+					print_help_option "--disable-$VAR" "Disable  $COMMENT";;
 				'no'*)
-					print_help_option "--enable-$VAR" "Enable  $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable   $COMMENT";;
 				'auto'*)
-					print_help_option "--enable-$VAR" "Enable  $COMMENT"
-					print_help_option "--disable-$VAR" "Disable $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable   $COMMENT"
+					print_help_option "--disable-$VAR" "Disable  $COMMENT";;
 				*)
-					print_help_option "--with-$VAR" "Config  $COMMENT";;
+					print_help_option "--with-$VAR" "Config   $COMMENT";;
 			esac
 		esac
 	done < 'qb/config.params.sh'
