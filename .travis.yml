@@ -95,6 +95,14 @@ before_install:
 
 script:
   - |
+     if [ -n "$C89_BUILD" ]; then
+       ARGS="$ARGS --enable-c89_build"
+     fi
+  - |
+     if [ -n "$CXX_BUILD" ]; then
+       ARGS="$ARGS --enable-cxx_build"
+     fi
+  - |
      if [ -n "$CROSS_COMPILE" ]; then
        ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
      fi
@@ -119,14 +127,7 @@ script:
        ARGS="$ARGS --enable-opengles3"
      fi
   - ./configure $ARGS
-  - |
-     if [ -n "$C89_BUILD" ]; then
-       make C89_BUILD=1
-     elif [ -n "$CXX_BUILD" ]; then
-       make CXX_BUILD=1
-     else
-       make
-     fi
+  - make
 
 env:
   global:
