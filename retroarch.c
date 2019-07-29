@@ -13778,8 +13778,7 @@ unsigned input_config_get_device_count(void)
    unsigned num_devices;
    for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
    {
-      const char *device_name = input_config_get_device_name(num_devices);
-      if (string_is_empty(device_name))
+      if (string_is_empty(input_device_names[num_devices]))
          break;
    }
    return num_devices;
