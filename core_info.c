@@ -1069,6 +1069,7 @@ static bool core_info_compare_api_version(int sys_major, int sys_minor, int majo
 
 bool core_info_hw_api_supported(core_info_t *info)
 {
+#ifdef RARCH_INTERNAL
    unsigned i;
    enum gfx_ctx_api sys_api;
    gfx_ctx_flags_t sys_flags       = {0};
@@ -1287,4 +1288,7 @@ bool core_info_hw_api_supported(core_info_t *info)
    }
 
    return false;
+#else
+   return true;
+#endif
 }
