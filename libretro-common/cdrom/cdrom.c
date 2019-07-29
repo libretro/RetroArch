@@ -931,7 +931,7 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
       if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point >= 1 && point <= 99)
       {
          printf("[CDROM] - Session#: %d TNO %d POINT %d ", session_num, tno, point);
-         printf("Track start time: (MSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
+         printf("Track start time: (aMSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
       }
       else if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point == 0xA0)
       {
@@ -947,7 +947,7 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
       else if (/*(control == 4 || control == 6) && */adr == 1 && tno == 0 && point == 0xA2)
       {
          printf("[CDROM] - Session#: %d TNO %d POINT %d ", session_num, tno, point);
-         printf("Lead-out runtime: (MSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
+         printf("Lead-out start time: (aMSF %02u:%02u:%02u) ", (unsigned)pmin, (unsigned)psec, (unsigned)pframe);
       }
 
       printf("\n");
