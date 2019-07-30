@@ -5120,15 +5120,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (file)
             {
                const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+               unsigned first_data_track = 1;
 
                atip = cdrom_has_atip(filestream_get_vfs_handle(file));
 
                filestream_close(file);
 
-               /* open first track */
-               cdrom_device_fillpath(file_path, sizeof(file_path), drive, 1, false);
+               {
+                  unsigned i;
 
-               if (media_detect_cd_info(file_path, &cd_info))
+                  for (i = 0; i < toc->num_tracks; i++)
+                  {
+                     if (!toc->track[i].audio)
+                     {
+                        first_data_track = i + 1;
+                        break;
+                     }
+                  }
+               }
+
+               /* open first data track */
+               cdrom_device_fillpath(file_path, sizeof(file_path), drive, first_data_track, false);
+
+               if (media_detect_cd_info(file_path, 0, &cd_info))
                {
                   if (!string_is_empty(cd_info.title))
                   {
@@ -5223,6 +5237,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      char atip_string[32] = {"Genuine Disc: "};
 
+                     count++;
+
                      if (atip)
                         strlcat(atip_string, "No", sizeof(atip_string));
                      else
@@ -5237,6 +5253,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   {
                      char tracks_string[32] = {"Number of tracks: "};
+
+                     count++;
 
                      snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
 
@@ -5259,6 +5277,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
 
+                        count++;
+
                         menu_entries_append_enum(info->list,
                               track_string,
                               "",
@@ -5270,6 +5290,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         else
                            snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
 
+                        count++;
+
                         menu_entries_append_enum(info->list,
                               mode_string,
                               "",
@@ -5277,6 +5299,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               FILE_TYPE_NONE, 0, 0);
 
                         snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
+
+                        count++;
 
                         menu_entries_append_enum(info->list,
                               size_string,
@@ -5292,6 +5316,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
 
                            snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d.%02d", min, sec, frame);
+
+                           count++;
 
                            menu_entries_append_enum(info->list,
                                  length_string,

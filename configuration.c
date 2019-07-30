@@ -3389,7 +3389,7 @@ bool config_unload_override(void)
  *
  * Returns: false if there was an error or no action was performed.
  */
-bool config_load_remap(void)
+bool config_load_remap(const char *directory_input_remapping)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
@@ -3397,7 +3397,6 @@ bool config_load_remap(void)
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
@@ -3409,7 +3408,7 @@ bool config_load_remap(void)
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
-   if (string_is_empty(settings->paths.directory_input_remapping))
+   if (string_is_empty(directory_input_remapping))
       return false;
 
    if (!string_is_empty(rarch_path_basename))
@@ -3430,9 +3429,7 @@ bool config_load_remap(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-   strlcpy(remap_directory,
-         settings->paths.directory_input_remapping,
-         path_size);
+   strlcpy(remap_directory, directory_input_remapping, path_size);
    RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
@@ -3454,55 +3451,32 @@ bool config_load_remap(void)
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          path_size);
 
-   /* Create a new config file from game_path */
-   new_conf = config_file_new_from_path_to_string(game_path);
+   input_remapping_set_defaults(false);
 
    /* If a game remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
       RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no game-specific remap found at %s.\n", game_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from content_path */
-   new_conf = config_file_new_from_path_to_string(content_path);
 
    /* If a content-dir remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
       RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no content-dir-specific remap found at %s.\n", content_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from core_path */
-   new_conf = config_file_new_from_path_to_string(core_path);
 
    /* If a core remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
       RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
@@ -3510,11 +3484,6 @@ bool config_load_remap(void)
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }
-   }
-   else
-   {
-      RARCH_LOG("[Remaps]: no core-specific remap found at %s.\n", core_path);
-      input_remapping_set_defaults(false);
    }
 
    new_conf = NULL;
@@ -3526,6 +3495,9 @@ bool config_load_remap(void)
    return false;
 
 success:
+   runloop_msg_queue_push(msg_hash_to_str(
+            MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    free(content_path);
    free(remap_directory);
    free(core_path);
@@ -4142,23 +4114,6 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
-
-         /* blacklist these since they are handled by remaps */
-         /* to-do: add setting to control blacklisting
-         if (settings->uints.input_libretro_device[i]
-               != overrides->uints.input_libretro_device[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
-         }
-
-         if (settings->uints.input_analog_dpad_mode[i]
-               != overrides->uints.input_analog_dpad_mode[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-         }
-         */
       }
 
       ret = false;

@@ -61,7 +61,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length);
  * Opens a file for reading or writing, depending on the requested mode.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
-RFILE *filestream_open(const char *path, unsigned mode, unsigned hints);
+RFILE* filestream_open(const char *path, unsigned mode, unsigned hints);
 
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position);
 
@@ -77,7 +77,7 @@ int filestream_close(RFILE *stream);
 
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len);
 
-char *filestream_gets(RFILE *stream, char *s, size_t len);
+char* filestream_gets(RFILE *stream, char *s, size_t len);
 
 int filestream_getc(RFILE *stream);
 
@@ -101,11 +101,12 @@ int filestream_delete(const char *path);
 
 int filestream_rename(const char *old_path, const char *new_path);
 
-const char *filestream_get_path(RFILE *stream);
+const char* filestream_get_path(RFILE *stream);
 
 bool filestream_exists(const char *path);
 
-char *filestream_getline(RFILE *stream);
+/* Returned pointer must be freed by the caller. */
+char* filestream_getline(RFILE *stream);
 
 libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
 

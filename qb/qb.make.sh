@@ -1,7 +1,7 @@
 # Creates config.mk and config.h.
 vars=''
 add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-set -- $(set | grep ^HAVE_)
+eval "set -- $CONFIG_OPTS"
 while [ $# -gt 0 ]; do
 	tmpvar="${1%=*}"
 	shift 1

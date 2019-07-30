@@ -553,6 +553,7 @@ static void dinput_joypad_poll(void)
    unsigned i;
    for (i = 0; i < MAX_USERS; i++)
    {
+      HRESULT ret;
       struct dinput_joypad_data *pad = &g_pads[i];
       bool                    polled = g_xinput_pad_indexes[i] < 0;
 
@@ -577,8 +578,11 @@ static void dinput_joypad_poll(void)
          }
       }
 
-      IDirectInputDevice8_GetDeviceState(pad->joypad,
+      ret = IDirectInputDevice8_GetDeviceState(pad->joypad,
             sizeof(DIJOYSTATE2), &pad->joy_state);
+
+      if (ret == DIERR_INPUTLOST || ret == DIERR_NOTACQUIRED)
+         input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
    }
 }
 

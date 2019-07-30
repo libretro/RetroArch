@@ -540,10 +540,13 @@ static void xinput_joypad_poll(void)
 #ifdef HAVE_DINPUT
       if (g_xinput_states[i].connected)
       {
-         if (g_XInputGetStateEx && g_XInputGetStateEx(i,
+         if (g_XInputGetStateEx(i,
                   &(g_xinput_states[i].xstate))
                == ERROR_DEVICE_NOT_CONNECTED)
+         {
             g_xinput_states[i].connected = false;
+            input_autoconfigure_disconnect(i, xinput_joypad_name(i));
+         }
       }
 #else
       /* Normally, dinput handles device insertion/removal for us, but
@@ -551,7 +554,7 @@ static void xinput_joypad_poll(void)
       /* Also note that on UWP, the controllers are not available on startup
        * and are instead 'plugged in' a moment later because Microsoft reasons */
       /* TODO: This may be bad for performance? */
-      bool new_connected = g_XInputGetStateEx && g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
+      bool new_connected = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
          if (new_connected)
@@ -561,10 +564,10 @@ static void xinput_joypad_poll(void)
             xinput_joypad_init(NULL);
             return;
          }
-         else
-         {
-            g_xinput_states[i].connected = new_connected;
-         }
+
+         g_xinput_states[i].connected = new_connected;
+         if (!g_xinput_states[i].connected)
+            input_autoconfigure_disconnect(i, xinput_joypad_name(i));
       }
 #endif
    }

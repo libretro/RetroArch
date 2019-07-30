@@ -1,4 +1,23 @@
-print_help_option() # $1 = option $@ = description
+# add_opt
+# $1 = HAVE_$1
+# $2 = value ['auto', 'no' or 'yes', checked only if non-empty]
+add_opt()
+{	setval="$(eval "printf %s \"\$USER_$1\"")"
+	[ "${2:-}" ] && ! match "$setval" no yes && eval "HAVE_$1=\"$2\""
+
+	for opt in $(printf %s "$CONFIG_OPTS"); do
+		case "$opt" in
+			"$1") return 0 ;;
+		esac
+	done
+
+	CONFIG_OPTS="${CONFIG_OPTS} $1"
+}
+
+# print_help_option
+# $1 = option
+# $@ = description
+print_help_option()
 {
 	_opt="$1"
 	shift 1
@@ -34,24 +53,23 @@ EOF
 
 	printf %s\\n '' 'Custom options:'
 
-	while read -r VAR COMMENT; do
-		TMPVAR="${VAR%=*}"
-		COMMENT="${COMMENT#*#}"
-		VAL="${VAR#*=}"
-		VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
+	while read -r VAR _ COMMENT; do
 		case "$VAR" in
-			'c89_'*|'cxx_'*) continue;;
+			'C89_'*|'CXX_'*) continue;;
 			*)
+			TMPVAR="${VAR%=*}"
+			VAL="${VAR#*=}"
+			VAR="$(printf %s "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 			case "$VAL" in
 				'yes'*)
-					print_help_option "--disable-$VAR" "Disable $COMMENT";;
+					print_help_option "--disable-$VAR" "Disable  $COMMENT";;
 				'no'*)
-					print_help_option "--enable-$VAR" "Enable  $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable   $COMMENT";;
 				'auto'*)
-					print_help_option "--enable-$VAR" "Enable  $COMMENT"
-					print_help_option "--disable-$VAR" "Disable $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable   $COMMENT"
+					print_help_option "--disable-$VAR" "Disable  $COMMENT";;
 				*)
-					print_help_option "--with-$VAR" "Config  $COMMENT";;
+					print_help_option "--with-$VAR" "Config   $COMMENT";;
 			esac
 		esac
 	done < 'qb/config.params.sh'
@@ -68,12 +86,16 @@ opt_exists() # $opt is returned if exists in OPTS
 parse_input() # Parse stuff :V
 {	BUILD=''
 	OPTS=''
+	CONFIG_OPTS=''
 	config_opts='./configure'
 
 	while read -r VAR _; do
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
-		OPTS="$OPTS $NEWVAR"
+		OPTS="${OPTS} $NEWVAR"
+		case "$TMPVAR" in
+			HAVE_*) CONFIG_OPTS="${CONFIG_OPTS} $NEWVAR" ;;
+		esac
 		eval "USER_$NEWVAR=auto"
 	done < 'qb/config.params.sh'
 	#OPTS contains all available options in config.params.sh - used to speedup
@@ -99,7 +121,7 @@ parse_input() # Parse stuff :V
 				opt_exists "${1##--disable-}" "$1"
 				eval "HAVE_$opt=no"
 				eval "USER_$opt=no"
-				eval "HAVE_NO_$opt=yes"
+				add_opt "NO_$opt" yes
 			;;
 			--with-*)
 				arg="${1##--with-}"

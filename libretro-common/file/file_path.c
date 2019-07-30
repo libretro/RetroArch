@@ -655,6 +655,7 @@ void fill_str_dated_filename(char *out_filename,
 void path_basedir(char *path)
 {
    char *last = NULL;
+
    if (strlen(path) < 2)
       return;
 

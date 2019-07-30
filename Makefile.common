@@ -1109,7 +1109,8 @@ endif
 ifeq ($(HAVE_CACA), 1)
    DEFINES += -DHAVE_CACA
    OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
-   LIBS += -lcaca
+   LIBS += $(CACA_LIBS)
+   DEF_FLAGS += $(CACA_CFLAGS)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_caca.o
@@ -1122,6 +1123,7 @@ ifeq ($(HAVE_SIXEL), 1)
    OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
           gfx/drivers_context/sixel_ctx.o
    LIBS += $(SIXEL_LIBS)
+   DEF_FLAGS += $(SIXEL_CFLAGS)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_sixel.o

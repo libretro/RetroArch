@@ -34,7 +34,8 @@ enum media_detect_cd_system
    MEDIA_CD_SYSTEM_SATURN,
    MEDIA_CD_SYSTEM_DREAMCAST,
    MEDIA_CD_SYSTEM_PSX,
-   MEDIA_CD_SYSTEM_3DO
+   MEDIA_CD_SYSTEM_3DO,
+   MEDIA_CD_SYSTEM_PC_ENGINE_CD
 };
 
 typedef struct
@@ -49,7 +50,11 @@ typedef struct
    enum media_detect_cd_system system_id;
 } media_detect_cd_info_t;
 
-bool media_detect_cd_info(const char *path, media_detect_cd_info_t *info);
+/* Fill in "info" with detected CD info. Use this when you want to open a specific track file directly, and the pregap is known. */
+bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_cd_info_t *info);
+
+/* Fill in "info" with detected CD info. Use this when you have a cue file and want it parsed to find the first data track and any pregap info. */
+bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info);
 
 RETRO_END_DECLS
 
