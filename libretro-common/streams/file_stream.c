@@ -154,7 +154,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
  * Opens a file for reading or writing, depending on the requested mode.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
-RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
+RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    struct retro_vfs_file_handle  *fp = NULL;
    RFILE* output                     = NULL;
@@ -176,7 +176,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
    return output;
 }
 
-char *filestream_gets(RFILE *stream, char *s, size_t len)
+char* filestream_gets(RFILE *stream, char *s, size_t len)
 {
    int c   = 0;
    char *p = s;
@@ -399,7 +399,7 @@ int filestream_rename(const char *old_path, const char *new_path)
    return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
-const char *filestream_get_path(RFILE *stream)
+const char* filestream_get_path(RFILE *stream)
 {
    if (filestream_get_path_cb != NULL)
       return filestream_get_path_cb(stream->hfile);
@@ -572,13 +572,14 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    return true;
 }
 
-char *filestream_getline(RFILE *stream)
+/* Returned pointer must be freed by the caller. */
+char* filestream_getline(RFILE *stream)
 {
-   char* newline_tmp  = NULL;
+   char *newline_tmp  = NULL;
    size_t cur_size    = 8;
    size_t idx         = 0;
    int in             = 0;
-   char* newline      = (char*)malloc(9);
+   char *newline      = (char*)malloc(9);
 
    if (!stream || !newline)
    {

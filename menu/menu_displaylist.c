@@ -5037,7 +5037,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                /* open first data track */
                cdrom_device_fillpath(file_path, sizeof(file_path), drive, first_data_track, false);
 
-               if (media_detect_cd_info(file_path, &cd_info))
+               if (media_detect_cd_info(file_path, 0, &cd_info))
                {
                   if (!string_is_empty(cd_info.title))
                   {
