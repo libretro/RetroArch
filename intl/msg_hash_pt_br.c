@@ -151,7 +151,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_OVERLAY_NEXT:
              snprintf(s, len,
-                   "Mudar para a próxima Transparência.");
+                   "Mudar para a próxima Sobreposição.");
              break;
           case RARCH_DISK_EJECT_TOGGLE:
              snprintf(s, len,
@@ -438,7 +438,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY:
             snprintf(s, len,
-                     "Arquivo de Transparência.");
+                     "Arquivo de Sobreposição.");
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_RDB:
             snprintf(s, len,
@@ -616,7 +616,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
             snprintf(s, len,
-                     "Exibir / ocultar mensagens na tela.");
+                     "Exibir ou ocultar mensagens na tela.");
             break;
         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
@@ -628,30 +628,30 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
             snprintf(s, len,
                      "Habilitar ou desabilitar \n"
-                     "a Transparência atual.");
+                     "a Sobreposição atual.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
             snprintf(s, len,
-                     "Ocultar a exibição de Transparência \n"
+                     "Ocultar a exibição de Sobreposição \n"
                              "dentro do menu.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
             snprintf(s, len,
                       "Exibir comandos do teclado/controle na \n"
-                            "transparência.");
+                            "sobreposição.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
             snprintf(s, len,
                       "Seleciona a porta de escuta dos comandos do controle \n"
-                            "a serem exibidos na transparência.");
+                            "a serem exibidos na sobreposição.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
-                     "Caminho para predefinição de Transparência.");
+                     "Caminho para predefinição de Sobreposição.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_OPACITY:
             snprintf(s, len,
-                     "Opacidade da Transparência.");
+                     "Opacidade da Sobreposição.");
             break;
 #ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
@@ -682,7 +682,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
-                     "Escala da Transparência.");
+                     "Escala da Sobreposição.");
             break;
         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             snprintf(s, len,
@@ -940,7 +940,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                                  " \n"
                                  "Este é um driver de vídeo de baixo-nível \n"
                                  "usando libdrm para escala por hardware \n"
-                                 "utilizando overlay de GPU.");
+                                 "utilizando sobreposições de GPU.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
             {
@@ -1417,7 +1417,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_NEXT:
             snprintf(s, len,
-                     "Mudar para a próxima transparência.\n"
+                     "Mudar para a próxima sobreposição.\n"
                              " \n"
                              "Circula pela opções.");
             break;
@@ -1898,9 +1898,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
             snprintf(s, len,
-                     "Diretório de Transparências. \n"
+                     "Diretório de Sobreposições. \n"
                              " \n"
-                             "Define um diretório onde as transparências \n"
+                             "Define um diretório onde as sobreposições \n"
                              "são mantidas para fácil acesso.");
             break;
 #ifdef HAVE_VIDEO_LAYOUT
@@ -2251,14 +2251,14 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
             snprintf(s, len,
-                     "Você pode alterar a transparência de \n"
+                     "Você pode alterar a sobreposição de \n"
                              "gamepad virtual indo em \n"
                              "'%s' -> '%s'. \n"
                              " \n"
-                             "De lá você pode alterar a transparência, \n"
+                             "De lá você pode alterar a sobreposição, \n"
                              "mudar o tamanho e opacidade dos botões, etc. \n"
                              " \n"
-                             "OBS: Por padrão, as transparências de gamepad \n"
+                             "OBS: Por padrão, as sobreposições de gamepad \n"
                              "virtual ficam ocultas quando dentro do menu. \n"
                              "Se você quiser alterar este comportamento, \n"
                              "você pode definir '%s' como falso.",
