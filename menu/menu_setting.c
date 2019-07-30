@@ -91,6 +91,7 @@
 #include "../gfx/video_display_server.h"
 #include "../managers/cheat_manager.h"
 #include "../verbosity.h"
+#include "../playlist.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -6027,6 +6028,32 @@ void general_write_handler(rarch_setting_t *setting)
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
 
+         }
+         break;
+      case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
+         {
+            unsigned new_capacity;
+
+            /* Get new size */
+            if (settings->ints.content_favorites_size < 0)
+               new_capacity = COLLECTION_SIZE;
+            else
+               new_capacity = (unsigned)settings->ints.content_favorites_size;
+
+            /* Check whether capacity has changed */
+            if (new_capacity != playlist_capacity(g_defaults.content_favorites))
+            {
+               /* Remove excess entries, if required */
+               while (playlist_size(g_defaults.content_favorites) > new_capacity)
+                  playlist_delete_index(
+                        g_defaults.content_favorites,
+                        playlist_size(g_defaults.content_favorites) - 1);
+
+               /* In all cases, need to close and reopen
+                * playlist file (to update maximum capacity) */
+               command_event(CMD_EVENT_FAVORITES_DEINIT, NULL);
+               command_event(CMD_EVENT_FAVORITES_INIT, NULL);
+            }
          }
          break;
       default:
@@ -13287,11 +13314,30 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
+         menu_settings_list_current_add_range(list, list_info, 0.0f, (float)COLLECTION_SIZE, 1.0f, true, false);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
+
+         /* Favourites size is traditionally associtated with
+          * history size, but they are in fact unrelated. We
+          * therefore place this entry outside the "History"
+          * sub group. */
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.content_favorites_size,
+               MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,
+               MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+               default_content_favorites_size,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = -1;
+         menu_settings_list_current_add_range(list, list_info, -1.0f, 999.0f, 1.0f, true, true);
 
          CONFIG_BOOL(
                list, list_info,

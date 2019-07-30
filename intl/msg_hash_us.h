@@ -606,6 +606,14 @@ MSG_HASH(
     "History List Size"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+    "Favorites List Size"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+    "Limit the number of entries in the favorites playlist. Once limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' (99999) entries. WARNING: Reducing the value will delete existing entries!"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
     "Allow to remove entries"
     )
@@ -4380,6 +4388,10 @@ MSG_HASH(
     "Added to favorites"
     )
 MSG_HASH(
+    MSG_ADD_TO_FAVORITES_FAILED,
+    "Failed to add favorite: playlist full"
+    )
+MSG_HASH(
     MSG_SET_CORE_ASSOCIATION,
     "Core set: "
     )
@@ -4886,6 +4898,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_LOADING_HISTORY_FILE,
     "Loading history file"
+    )
+MSG_HASH(
+    MSG_LOADING_FAVORITES_FILE,
+    "Loading favorites file"
     )
 MSG_HASH(
     MSG_LOADING_STATE,

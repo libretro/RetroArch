@@ -401,6 +401,7 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+      int content_favorites_size;
    } ints;
 
    struct

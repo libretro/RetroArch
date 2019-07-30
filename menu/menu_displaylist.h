@@ -26,10 +26,6 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
-#endif
-
 RETRO_BEGIN_DECLS
 
 /* NOTE: Order matters - only add new entries at

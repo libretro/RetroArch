@@ -95,10 +95,6 @@ extern "C" {
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
 #define STATUS_MSG_THROTTLE_MSEC 250
 
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
-#endif
-
 #define GENERIC_FOLDER_ICON "/xmb/dot-art/png/folder.png"
 #define HIRAGANA_START 0x3041U
 #define HIRAGANA_END 0x3096U
