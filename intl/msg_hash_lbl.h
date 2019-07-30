@@ -273,6 +273,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,
       "deferred_dropdown_box_list_resolution")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE,
       "deferred_dropdown_box_list_playlist_default_core")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE,
+      "deferred_dropdown_box_list_playlist_label_display_mode")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
       "deferred_configurations_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,
@@ -887,6 +889,22 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
       "playlist_manager_default_core")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
       "playlist_manager_reset_cores")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+      "playlist_manager_label_display_mode")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+      "playlist_manager_label_display_mode_default")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+      "playlist_manager_label_display_mode_remove_parens")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+      "playlist_manager_label_display_mode_remove_brackets")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+      "playlist_manager_label_display_mode_remove_parens_and_brackets")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+      "playlist_manager_label_display_mode_keep_region")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+      "playlist_manager_label_display_mode_keep_disc_index")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+      "playlist_manager_label_display_mode_keep_region_and_disc_index")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
       "playlist_settings_begin")
 MSG_HASH(MENU_ENUM_LABEL_POINTER_ENABLE,

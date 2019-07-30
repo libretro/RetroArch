@@ -1366,6 +1366,12 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
          return 0;
    }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)))
+   {
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+         return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);

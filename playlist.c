@@ -43,6 +43,7 @@
 struct content_playlist
 {
    bool modified;
+   enum playlist_label_display_mode label_display_mode;
    size_t size;
    size_t cap;
 
@@ -67,6 +68,7 @@ typedef struct
    struct string_list **current_entry_string_list_val;
    char *current_meta_string;
    char **current_meta_val;
+   int *current_meta_int_val;
    char *current_items_string;
    bool in_items;
    bool in_subsystem_roms;
@@ -222,6 +224,13 @@ char *playlist_get_conf_path(playlist_t *playlist)
    if (!playlist)
       return NULL;
    return playlist->conf_path;
+}
+
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return LABEL_DISPLAY_MODE_DEFAULT;
+   return playlist->label_display_mode;
 }
 
 /**
@@ -743,29 +752,29 @@ bool playlist_push(playlist_t *playlist,
       if (!playlist_core_path_equal(real_core_path, playlist->entries[i].core_path))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_ident) 
-            && !string_is_empty(playlist->entries[i].subsystem_ident) 
+      if (     !string_is_empty(entry->subsystem_ident)
+            && !string_is_empty(playlist->entries[i].subsystem_ident)
             && !string_is_equal(playlist->entries[i].subsystem_ident, entry->subsystem_ident))
          continue;
 
-      if (      string_is_empty(entry->subsystem_ident) 
+      if (      string_is_empty(entry->subsystem_ident)
             && !string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (    !string_is_empty(entry->subsystem_ident) 
+      if (    !string_is_empty(entry->subsystem_ident)
             && string_is_empty(playlist->entries[i].subsystem_ident))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_name) 
-            && !string_is_empty(playlist->entries[i].subsystem_name) 
+      if (     !string_is_empty(entry->subsystem_name)
+            && !string_is_empty(playlist->entries[i].subsystem_name)
             && !string_is_equal(playlist->entries[i].subsystem_name, entry->subsystem_name))
          continue;
 
-      if (      string_is_empty(entry->subsystem_name) 
+      if (      string_is_empty(entry->subsystem_name)
             && !string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
-      if (     !string_is_empty(entry->subsystem_name) 
+      if (     !string_is_empty(entry->subsystem_name)
             &&  string_is_empty(playlist->entries[i].subsystem_name))
          continue;
 
@@ -842,7 +851,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      struct playlist_entry *last_entry = 
+      struct playlist_entry *last_entry =
          &playlist->entries[playlist->cap - 1];
 
       if (last_entry)
@@ -1000,11 +1009,11 @@ void playlist_write_runtime_file(playlist_t *playlist)
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteString(context.writer,
-            playlist->entries[i].path 
-            ? playlist->entries[i].path 
+            playlist->entries[i].path
+            ? playlist->entries[i].path
             : "",
-            playlist->entries[i].path 
-            ? strlen(playlist->entries[i].path) 
+            playlist->entries[i].path
+            ? strlen(playlist->entries[i].path)
             : 0,
             JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
@@ -1203,15 +1212,17 @@ void playlist_write_file(playlist_t *playlist)
       if (!string_is_empty(playlist->default_core_path) &&
           !string_is_empty(playlist->default_core_name))
       {
-         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\n",
+         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\nlabel_display_mode = \"%d\"\n",
                   playlist->default_core_path,
-                  playlist->default_core_name
+                  playlist->default_core_name,
+                  playlist->label_display_mode
                   );
       }
    }
    else
 #endif
    {
+      char label_display_mode[4] = {0};
       JSONContext context = {0};
       context.writer      = JSON_Writer_Create(NULL);
       context.file        = file;
@@ -1234,8 +1245,8 @@ void playlist_write_file(playlist_t *playlist)
             STRLEN_CONST("version"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, "1.1",
-            STRLEN_CONST("1.1"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "1.2",
+            STRLEN_CONST("1.2"), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1271,6 +1282,18 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
+      snprintf(label_display_mode, sizeof(label_display_mode), "%u", playlist->label_display_mode);
+
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "label_display_mode",
+            STRLEN_CONST("label_display_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, label_display_mode,
+            strlen(label_display_mode), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
       JSON_Writer_WriteSpace(context.writer, 2);
       JSON_Writer_WriteString(context.writer, "items",
             STRLEN_CONST("items"), JSON_UTF8);
@@ -1291,11 +1314,11 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].path 
-               ? playlist->entries[i].path 
+               playlist->entries[i].path
+               ? playlist->entries[i].path
                : "",
-               playlist->entries[i].path 
-               ? strlen(playlist->entries[i].path) 
+               playlist->entries[i].path
+               ? strlen(playlist->entries[i].path)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1307,11 +1330,11 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].label 
-               ? playlist->entries[i].label 
+               playlist->entries[i].label
+               ? playlist->entries[i].label
                : "",
-               playlist->entries[i].label 
-               ? strlen(playlist->entries[i].label) 
+               playlist->entries[i].label
+               ? strlen(playlist->entries[i].label)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1345,8 +1368,8 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
-               playlist->entries[i].crc32 
-               ? strlen(playlist->entries[i].crc32) 
+               playlist->entries[i].crc32
+               ? strlen(playlist->entries[i].crc32)
                : 0,
                JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
@@ -1358,8 +1381,8 @@ void playlist_write_file(playlist_t *playlist)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer, playlist->entries[i].db_name ? playlist->entries[i].db_name : "",
-               playlist->entries[i].db_name 
-               ? strlen(playlist->entries[i].db_name) 
+               playlist->entries[i].db_name
+               ? strlen(playlist->entries[i].db_name)
                : 0,
                JSON_UTF8);
 
@@ -1373,8 +1396,8 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
             JSON_Writer_WriteString(context.writer, playlist->entries[i].subsystem_ident ? playlist->entries[i].subsystem_ident : "",
-                  playlist->entries[i].subsystem_ident 
-                  ? strlen(playlist->entries[i].subsystem_ident) 
+                  playlist->entries[i].subsystem_ident
+                  ? strlen(playlist->entries[i].subsystem_ident)
                   : 0,
                   JSON_UTF8);
          }
@@ -1389,15 +1412,15 @@ void playlist_write_file(playlist_t *playlist)
             JSON_Writer_WriteColon(context.writer);
             JSON_Writer_WriteSpace(context.writer, 1);
             JSON_Writer_WriteString(context.writer,
-                  playlist->entries[i].subsystem_name 
-                  ? playlist->entries[i].subsystem_name 
+                  playlist->entries[i].subsystem_name
+                  ? playlist->entries[i].subsystem_name
                   : "",
-                  playlist->entries[i].subsystem_name 
-                  ? strlen(playlist->entries[i].subsystem_name) 
+                  playlist->entries[i].subsystem_name
+                  ? strlen(playlist->entries[i].subsystem_name)
                   : 0, JSON_UTF8);
          }
 
-         if (  playlist->entries[i].subsystem_roms && 
+         if (  playlist->entries[i].subsystem_roms &&
                playlist->entries[i].subsystem_roms->size > 0)
          {
             unsigned j;
@@ -1417,11 +1440,11 @@ void playlist_write_file(playlist_t *playlist)
                const struct string_list *roms = playlist->entries[i].subsystem_roms;
                JSON_Writer_WriteSpace(context.writer, 8);
                JSON_Writer_WriteString(context.writer,
-                     !string_is_empty(roms->elems[j].data) 
-                     ? roms->elems[j].data 
+                     !string_is_empty(roms->elems[j].data)
+                     ? roms->elems[j].data
                      : "",
-                     !string_is_empty(roms->elems[j].data) 
-                     ? strlen(roms->elems[j].data) 
+                     !string_is_empty(roms->elems[j].data)
+                     ? strlen(roms->elems[j].data)
                      : 0,
                      JSON_UTF8);
 
@@ -1721,6 +1744,8 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
 
             free(pCtx->current_meta_string);
             pCtx->current_meta_string = NULL;
+
+            *pCtx->current_meta_int_val = (int)strtoul(pValue, NULL, 10);
          }
       }
    }
@@ -1820,6 +1845,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_meta_val = &pCtx->playlist->default_core_path;
             else if (string_is_equal(pValue, "default_core_name"))
                pCtx->current_meta_val = &pCtx->playlist->default_core_name;
+            else if (string_is_equal(pValue, "label_display_mode"))
+               pCtx->current_meta_int_val = (int*)&pCtx->playlist->label_display_mode;
             else
             {
                /* ignore unknown members */
@@ -2009,8 +2036,8 @@ json_cleanup:
          metadata_char = filestream_getc(file);
       }
 
-      /* Search backwards for the next two newlines */
-      while (metadata_counter < 2)
+      /* Search backwards for the next three newlines */
+      while (metadata_counter < 3)
       {
          filestream_seek(file, -2, SEEK_CUR);
          if (filestream_error(file))
@@ -2040,6 +2067,26 @@ json_cleanup:
                STRLEN_CONST("default_core_name")) == 0)
          get_old_format_metadata_value(
                metadata_line, default_core_name, sizeof(default_core_name));
+
+      /* > Get label_display_mode */
+      if (!filestream_gets(file, metadata_line, sizeof(metadata_line)))
+         goto end;
+
+      if (strncmp("label_display_mode",
+               metadata_line,
+               STRLEN_CONST("label_display_mode")) == 0)
+      {
+         char *start = NULL;
+         start = strchr(metadata_line, '\"');
+
+         if (start)
+         {
+            start++;
+
+            if (*start >= '0' && *start <= '9')
+               playlist->label_display_mode = (enum playlist_label_display_mode)(*start - '0');
+         }
+      }
 
       /* > Populate playlist fields, if required */
       if (!string_is_empty(default_core_path) &&
@@ -2146,13 +2193,14 @@ playlist_t *playlist_init(const char *path, size_t size)
       return NULL;
    }
 
-   playlist->modified          = false;
-   playlist->size              = 0;
-   playlist->cap               = size;
-   playlist->conf_path         = strdup(path);
-   playlist->default_core_name = NULL;
-   playlist->default_core_path = NULL;
-   playlist->entries           = entries;
+   playlist->modified           = false;
+   playlist->size               = 0;
+   playlist->cap                = size;
+   playlist->conf_path          = strdup(path);
+   playlist->default_core_name  = NULL;
+   playlist->default_core_path  = NULL;
+   playlist->entries            = entries;
+   playlist->label_display_mode = LABEL_DISPLAY_MODE_DEFAULT;
 
    playlist_read_file(playlist, path);
 
@@ -2375,6 +2423,17 @@ void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
       if (playlist->default_core_name)
          free(playlist->default_core_name);
       playlist->default_core_name = strdup(core_name);
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode)
+{
+   if (!playlist)
+      return;
+
+   if (playlist->label_display_mode != label_display_mode) {
+      playlist->label_display_mode = label_display_mode;
       playlist->modified = true;
    }
 }

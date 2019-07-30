@@ -259,7 +259,8 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/drivers/null_midi.o
+       midi/drivers/null_midi.o \
+       $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o
 
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
