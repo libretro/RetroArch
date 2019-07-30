@@ -786,7 +786,7 @@ bool config_unload_override(void);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_remap(void);
+bool config_load_remap(const char *directory_input_remapping);
 
 /**
  * config_save_autoconf_profile:

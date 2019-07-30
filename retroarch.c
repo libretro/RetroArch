@@ -3185,7 +3185,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
 
    /* Auto-remap: apply remap files */
    if(settings->bools.auto_remaps_enable)
-      config_load_remap();
+      config_load_remap(settings->paths.directory_input_remapping);
 
    /* Per-core saves: reset redirection paths */
    path_set_redirect();

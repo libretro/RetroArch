@@ -3389,7 +3389,7 @@ bool config_unload_override(void)
  *
  * Returns: false if there was an error or no action was performed.
  */
-bool config_load_remap(void)
+bool config_load_remap(const char *directory_input_remapping)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
@@ -3397,7 +3397,6 @@ bool config_load_remap(void)
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
@@ -3409,7 +3408,7 @@ bool config_load_remap(void)
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
-   if (string_is_empty(settings->paths.directory_input_remapping))
+   if (string_is_empty(directory_input_remapping))
       return false;
 
    if (!string_is_empty(rarch_path_basename))
@@ -3430,9 +3429,7 @@ bool config_load_remap(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-   strlcpy(remap_directory,
-         settings->paths.directory_input_remapping,
-         path_size);
+   strlcpy(remap_directory, directory_input_remapping, path_size);
    RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
