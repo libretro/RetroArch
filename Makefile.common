@@ -868,7 +868,6 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
-			 $(LIBRETRO_COMM_DIR)/rthreads/rsemaphore.o \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
