@@ -3454,55 +3454,32 @@ bool config_load_remap(void)
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          path_size);
 
-   /* Create a new config file from game_path */
-   new_conf = config_file_new_from_path_to_string(game_path);
+   input_remapping_set_defaults(false);
 
    /* If a game remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
       RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no game-specific remap found at %s.\n", game_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from content_path */
-   new_conf = config_file_new_from_path_to_string(content_path);
 
    /* If a content-dir remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
       RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no content-dir-specific remap found at %s.\n", content_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from core_path */
-   new_conf = config_file_new_from_path_to_string(core_path);
 
    /* If a core remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
       RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
@@ -3510,11 +3487,6 @@ bool config_load_remap(void)
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }
-   }
-   else
-   {
-      RARCH_LOG("[Remaps]: no core-specific remap found at %s.\n", core_path);
-      input_remapping_set_defaults(false);
    }
 
    new_conf = NULL;
@@ -3526,6 +3498,9 @@ bool config_load_remap(void)
    return false;
 
 success:
+   runloop_msg_queue_push(msg_hash_to_str(
+            MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    free(content_path);
    free(remap_directory);
    free(core_path);
