@@ -296,7 +296,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 
       if (read_bytes != buf_size)
       {
-         printf("[MEDIA] Could not read from media.\n");
+         printf("[MEDIA] Could not read from media: got %" PRId64 " bytes instead of %d.\n", read_bytes, buf_size);
          fflush(stdout);
          filestream_close(file);
          free(buf);
