@@ -934,6 +934,15 @@ static int task_database_iterate_crc_lookup(
          (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name);
 
+   /* archive did not contain a CRC for this entry, or the file is empty */
+   if (!db_state->crc)
+   {
+      db_state->crc = file_archive_get_file_crc32(name);
+
+      if (!db_state->crc)
+         return database_info_list_iterate_next(db_state);
+   }
+
    if (db_state->entry_index == 0)
    {
       char query[50];
@@ -1015,11 +1024,8 @@ static int task_database_iterate_playlist_archive(
       database_info_handle_t *db, const char *name)
 {
 #ifdef HAVE_COMPRESSION
-   if (db_state->crc != 0)
-      return task_database_iterate_crc_lookup(
-            _db, db_state, db, name, db_state->archive_name);
-
-   db_state->crc = file_archive_get_file_crc32(name);
+   return task_database_iterate_crc_lookup(
+         _db, db_state, db, name, db_state->archive_name);
 #endif
 
    return 1;
