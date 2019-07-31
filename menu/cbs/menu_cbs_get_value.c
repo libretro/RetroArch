@@ -1107,7 +1107,6 @@ static void menu_action_setting_disp_set_label_playlist_label_display_mode(
       char *s2, size_t len2)
 {
    enum playlist_label_display_mode label_display_mode;
-   int msg_index;
    playlist_t *playlist  = playlist_get_cached();
 
    if (!playlist)
