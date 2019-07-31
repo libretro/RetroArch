@@ -106,10 +106,6 @@ enum event_command
    CMD_EVENT_HISTORY_DEINIT,
    /* Initializes history playlist. */
    CMD_EVENT_HISTORY_INIT,
-   /* Deinitializes favourties playlist. */
-   CMD_EVENT_FAVORITES_DEINIT,
-   /* Initializes favourties playlist. */
-   CMD_EVENT_FAVORITES_INIT,
    /* Deinitializes core information. */
    CMD_EVENT_CORE_INFO_DEINIT,
    /* Initializes core information. */

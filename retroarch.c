@@ -4210,34 +4210,6 @@ TODO: Add a setting for these tweaks */
 #endif
          }
          break;
-      case CMD_EVENT_FAVORITES_DEINIT:
-         if (g_defaults.content_favorites)
-         {
-            playlist_write_file(g_defaults.content_favorites);
-            playlist_free(g_defaults.content_favorites);
-            g_defaults.content_favorites = NULL;
-         }
-         break;
-      case CMD_EVENT_FAVORITES_INIT:
-         {
-            settings_t *settings          = configuration_settings;
-            unsigned content_favorites_size;
-
-            if (settings->ints.content_favorites_size < 0)
-               content_favorites_size = COLLECTION_SIZE;
-            else
-               content_favorites_size = (unsigned)settings->ints.content_favorites_size;
-
-            command_event(CMD_EVENT_FAVORITES_DEINIT, NULL);
-
-            RARCH_LOG("%s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
-                  settings->paths.path_content_favorites);
-            g_defaults.content_favorites = playlist_init(
-                  settings->paths.path_content_favorites,
-                  content_favorites_size);
-         }
-         break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
          core_info_free_current_core();
@@ -5174,7 +5146,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    libretro_free_system_info(&runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-   command_event(CMD_EVENT_FAVORITES_DEINIT, NULL);
+   rarch_favorites_deinit();
 
    configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
@@ -24774,6 +24746,39 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
    }
 
    return lang;
+}
+
+void rarch_favorites_init(void)
+{
+   settings_t *settings      = configuration_settings;
+   unsigned content_favorites_size;
+
+   if (!settings)
+      return;
+
+   if (settings->ints.content_favorites_size < 0)
+      content_favorites_size = COLLECTION_SIZE;
+   else
+      content_favorites_size = (unsigned)settings->ints.content_favorites_size;
+
+   rarch_favorites_deinit();
+
+   RARCH_LOG("%s: [%s].\n",
+         msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
+         settings->paths.path_content_favorites);
+   g_defaults.content_favorites = playlist_init(
+         settings->paths.path_content_favorites,
+         content_favorites_size);
+}
+
+void rarch_favorites_deinit(void)
+{
+   if (g_defaults.content_favorites)
+   {
+      playlist_write_file(g_defaults.content_favorites);
+      playlist_free(g_defaults.content_favorites);
+      g_defaults.content_favorites = NULL;
+   }
 }
 
 /* Libretro core loader */

@@ -6051,8 +6051,8 @@ void general_write_handler(rarch_setting_t *setting)
 
                /* In all cases, need to close and reopen
                 * playlist file (to update maximum capacity) */
-               command_event(CMD_EVENT_FAVORITES_DEINIT, NULL);
-               command_event(CMD_EVENT_FAVORITES_INIT, NULL);
+               rarch_favorites_deinit();
+               rarch_favorites_init();
             }
          }
          break;

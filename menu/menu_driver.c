@@ -2465,7 +2465,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-            command_event(CMD_EVENT_FAVORITES_DEINIT, NULL);
+            rarch_favorites_deinit();
 
             menu_dialog_reset();
 
