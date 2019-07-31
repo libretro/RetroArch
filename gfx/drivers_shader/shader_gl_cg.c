@@ -699,7 +699,6 @@ static bool gl_cg_load_preset(void *data, const char *path)
       return false;
    }
 
-   video_shader_resolve_relative(cg->shader, path);
    video_shader_resolve_parameters(conf, cg->shader);
    config_file_free(conf);
 

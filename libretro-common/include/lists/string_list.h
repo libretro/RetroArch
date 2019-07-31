@@ -41,6 +41,7 @@ union string_list_elem_attr
 struct string_list_elem
 {
    char *data;
+   void *userdata;
    union string_list_elem_attr attr;
 };
 

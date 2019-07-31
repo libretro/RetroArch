@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include "../input_driver.h"
+
 /* Input responder */
 #define MAX_TOUCHES  16
 
@@ -32,7 +34,6 @@ typedef struct
 
 typedef struct
 {
-   bool blocked;
    cocoa_touch_data_t touches[MAX_TOUCHES];
    uint32_t touch_count;
 

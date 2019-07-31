@@ -25,7 +25,6 @@
 #include <queues/task_queue.h>
 
 #include "cocoa_common.h"
-#include "../../../input/input_driver.h"
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
@@ -780,6 +779,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
          break;
       case MENU_ENTRY_ENUM:
          me = [RAMenuItemEnum new];
+         break;
+       case MENU_ENTRY_SIZE:
+         /* TODO/FIXME - implement this */
          break;
    };
 

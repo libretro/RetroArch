@@ -666,8 +666,8 @@ bool menu_animation_update(void)
    for (i = 0; i < da_count(anim.list); i++)
    {
       struct tween *tween   = da_getptr(anim.list, i);
-      
-      if (!tween)
+
+      if (!tween || tween->deleted)
          continue;
 
       tween->running_since += delta_time;

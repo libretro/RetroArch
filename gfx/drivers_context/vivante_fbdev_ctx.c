@@ -187,7 +187,7 @@ error:
 
 static void gfx_ctx_vivante_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;
@@ -291,7 +291,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL, /* set_resize */
    gfx_ctx_vivante_has_focus,
    gfx_ctx_vivante_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
    gfx_ctx_vivante_get_proc_address,

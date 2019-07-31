@@ -174,7 +174,7 @@ static void clear_screen(switch_video_t *sw)
 }
 
 static void *switch_init(const video_info_t *video,
-                         const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
     void  *switchinput = NULL;
     switch_video_t *sw = (switch_video_t *)calloc(1, sizeof(*sw));

@@ -45,7 +45,8 @@ static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
 
    err = audsrv_set_format(&format);
 
-   if (err){
+   if (err)
+   {
       printf("set format returned %d\n", err);
       printf("audsrv returned error string: %s\n", audsrv_get_error_string());
    }
@@ -71,7 +72,7 @@ static void *ps2_audio_init(const char *device,
 static void ps2_audio_free(void *data)
 {
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-   if(!ps2)
+   if (!ps2)
       return;
 
    ps2->running = false;
@@ -123,9 +124,7 @@ static bool ps2_audio_start(void *data, bool is_shutdown)
    bool       start = true;
 
    if (ps2)
-   {
       ps2->running = true;
-   }
 
    return start;
 }
@@ -148,9 +147,7 @@ static size_t ps2_audio_write_avail(void *data)
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
    if (ps2 && ps2->running)
-   {
       return AUDIO_BUFFER;
-   }
 
    return 0;
 }

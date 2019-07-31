@@ -363,7 +363,7 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 
 static void android_gfx_ctx_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *androidinput   = input_android.init(joypad_name);
 
@@ -654,7 +654,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,

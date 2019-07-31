@@ -1164,7 +1164,7 @@ static int exynos_render_msg(struct exynos_video *vid,
 }
 
 static void *exynos_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    struct exynos_video *vid;
    const unsigned fb_bpp = 4; /* Use XRGB8888 framebuffer. */

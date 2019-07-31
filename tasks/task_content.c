@@ -76,7 +76,9 @@
 #endif
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu/menu_shader.h"
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos-new/cheevos.h"
@@ -129,7 +131,7 @@ typedef struct
 {
    RFILE *file;
    RFILE *output_file;
-   const libretro_vfs_implementation_file *stream;
+   libretro_vfs_implementation_file *stream;
    const cdrom_toc_t *toc;
    char cdrom_path[64];
    char drive_letter[2];
@@ -588,7 +590,31 @@ static bool content_load(content_ctx_info_t *info)
    char *argv_copy [MAX_ARGS]        = {NULL};
    char **rarch_argv_ptr             = (char**)info->argv;
    int *rarch_argc_ptr               = (int*)&info->argc;
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
+   struct rarch_main_wrap *wrap_args;
+   core_info_t core_info = {0};
+   core_info_list_t *core_info_list = NULL;
+
+   core_info_get_list(&core_info_list);
+
+   if (core_info_list)
+   {
+      if (core_info_list_get_info(core_info_list, &core_info, path_get(RARCH_PATH_CORE)))
+      {
+         if (!core_info_hw_api_supported(&core_info))
+         {
+            RARCH_ERR("This core is not compatible with the current video driver.\n");
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER),
+                  100, 250, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            return false;
+         }
+         else
+            RARCH_LOG("This core is compatible with the current video driver.\n");
+      }
+   }
+
+   wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args));
 
    if (!wrap_args)
@@ -627,9 +653,12 @@ static bool content_load(content_ctx_info_t *info)
       content_clear_subsystem();
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   rarch_favorites_init();
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
@@ -1321,7 +1350,7 @@ static void task_push_to_history_list(
       /* Path can be relative here.
        * Ensure we're pushing absolute path. */
       if (!launched_from_menu && !string_is_empty(tmp))
-         path_resolve_realpath(tmp, tmp_size);
+         path_resolve_realpath(tmp, tmp_size, true);
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
@@ -1684,7 +1713,7 @@ bool task_push_load_content_from_playlist_from_menu(
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -1694,13 +1723,13 @@ bool task_push_load_content_from_playlist_from_menu(
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #ifdef HAVE_COCOATOUCH
-    // this seems to needed for iOS for some reason to show the quick menu after the menu is shown
-   menu_entries_flush_stack(NULL, MENU_SETTINGS);
+    /* This seems to be needed for iOS for some reason to show the 
+     * quick menu after the menu is shown */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 #else
    rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   rarch_menu_running_finished(true);
+   retroarch_menu_running_finished(true);
 #endif
 
 end:
@@ -1785,7 +1814,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -1911,7 +1940,7 @@ bool task_push_load_content_with_new_core_from_menu(
          free(error_string);
       }
 
-      rarch_menu_running();
+      retroarch_menu_running();
 
       ret = false;
       goto end;
@@ -2128,7 +2157,7 @@ bool task_push_start_builtin_core(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 
@@ -2174,7 +2203,7 @@ bool task_push_load_content_with_core_from_menu(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 
@@ -2199,7 +2228,7 @@ bool task_push_load_subsystem_with_core_from_menu(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-      rarch_menu_running();
+      retroarch_menu_running();
       return false;
    }
 

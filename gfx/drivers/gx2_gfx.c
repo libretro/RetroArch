@@ -203,7 +203,7 @@ static void wiiu_gfx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 static uint32_t wiiu_gfx_get_flags(void *data);
 
 static void *wiiu_gfx_init(const video_info_t *video,
-                           const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
    float refresh_rate = 60.0f / 1.001f;
@@ -1464,8 +1464,6 @@ static bool wiiu_gfx_set_shader(void *data,
       wiiu->shader_preset = NULL;
       return false;
    }
-
-   video_shader_resolve_relative(wiiu->shader_preset, path);
 
 #if 0
    video_shader_resolve_parameters(conf, wiiu->shader_preset);

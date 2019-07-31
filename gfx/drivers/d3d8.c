@@ -1126,7 +1126,7 @@ static void d3d8_set_osd_msg(void *data,
 }
 
 static bool d3d8_init_internal(d3d8_video_t *d3d,
-      const video_info_t *info, const input_driver_t **input,
+      const video_info_t *info, input_driver_t **input,
       void **input_data)
 {
 #ifdef HAVE_MONITOR
@@ -1237,7 +1237,7 @@ static void d3d8_show_mouse(void *data, bool state)
 }
 
 static void *d3d8_init(const video_info_t *info,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)calloc(1, sizeof(*d3d));
 

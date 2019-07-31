@@ -9,6 +9,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../../retroarch.h"
 
 #ifdef HAVE_LIBNX
@@ -78,10 +80,7 @@ typedef struct
 /* end of touch mouse defines and types */
 #endif
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
-
-#define MAX_PADS 10
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -89,7 +88,6 @@ typedef struct
 typedef struct switch_input
 {
    const input_device_driver_t *joypad;
-   bool blocked;
 
 #ifdef HAVE_LIBNX
    /* pointer */
@@ -373,10 +371,9 @@ static int16_t switch_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret = 0;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if (port > MAX_PADS-1)
+   if (port > DEFAULT_MAX_PADS - 1)
       return 0;
 
    switch (device)
@@ -385,33 +382,42 @@ static int16_t switch_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
-               const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
                   ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
 
-               if (joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, joykey))
+               if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
                   ret |= (1 << i);
-               else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                  continue;
+               }
+               if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
                   ret |= (1 << 1);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             /* Auto-binds are per joypad, not per user. */
-            const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
                ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
-            if (joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, joykey))
-               ret = 1;
-            else if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               ret = 1;
+            if ((uint16_t)joykey != NO_BTN && sw->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               return true;
+            if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(sw->joypad,
@@ -894,22 +900,6 @@ static bool switch_input_set_rumble(void *data, unsigned port,
 #endif
 }
 
-static bool switch_input_keyboard_mapping_is_blocked(void *data)
-{
-   switch_input_t *sw = (switch_input_t*) data;
-   if (!sw)
-      return false;
-   return sw->blocked;
-}
-
-static void switch_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   switch_input_t *sw = (switch_input_t*) data;
-   if (!sw)
-      return;
-   sw->blocked = value;
-}
-
 input_driver_t input_switch = {
 	switch_input_init,
 	switch_input_poll,
@@ -924,6 +914,5 @@ input_driver_t input_switch = {
 	switch_input_set_rumble,
 	switch_input_get_joypad_driver,
 	NULL,
-	switch_input_keyboard_mapping_is_blocked,
-	switch_input_keyboard_mapping_set_block,
+   false
 };

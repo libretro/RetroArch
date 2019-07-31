@@ -626,10 +626,10 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					"../../libretro-common/include",
+					../../libretro-common/include,
+					../../libretro-common/include/compat/zlib,
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -714,10 +714,10 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					"../../libretro-common/include",
+					../../libretro-common/include,
+					../../libretro-common/include/compat/zlib,
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";

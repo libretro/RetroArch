@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rsemaphore.h).
+ * The following license statement only applies to this file (file_path.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -19,36 +19,36 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <stddef.h>
+#include <boolean.h>
 
-#ifndef __LIBRETRO_SDK_SEMAPHORE_H
-#define __LIBRETRO_SDK_SEMAPHORE_H
+void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*));
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+bool left_parens(char *left);
+bool right_parens(char *right);
 
-typedef struct ssem ssem_t;
+bool left_brackets(char *left);
+bool right_brackets(char *right);
 
-/**
- * ssem_create:
- * @value                   : initial value for the semaphore
- *
- * Create a new semaphore.
- *
- * Returns: pointer to new semaphore if successful, otherwise NULL.
- */
-ssem_t *ssem_new(int value);
+bool left_parens_or_brackets(char *left);
+bool right_parens_or_brackets(char *right);
 
-void ssem_free(ssem_t *semaphore);
+bool left_exclusion(char *left, const char **strings, const size_t strings_count);
 
-int ssem_get(ssem_t *semaphore);
+bool left_parens_or_brackets_excluding_region(char *left);
 
-void ssem_wait(ssem_t *semaphore);
+bool left_parens_or_brackets_excluding_disc(char *left);
 
-void ssem_signal(ssem_t *semaphore);
+bool left_parens_or_brackets_excluding_region_or_disc(char *left);
 
-#ifdef __cplusplus
-}
-#endif
+void label_remove_parens(char *label);
 
-#endif /* __LIBRETRO_SDK_SEMAPHORE_H */
+void label_remove_brackets(char *label);
+
+void label_remove_parens_and_brackets(char *label);
+
+void label_keep_region(char *label);
+
+void label_keep_disc(char *label);
+
+void label_keep_region_and_disc(char *label);

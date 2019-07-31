@@ -1,3 +1,9 @@
+# Use add_opt to set HAVE_FOO variables the first time
+# example: add_opt FOO no
+#
+# Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
+# check_header, check_macro and check_switch are not used.
+
 check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
 check_switch '' NOUNUSED -Wno-unused-result
 add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
@@ -59,7 +65,7 @@ if [ "$HAVE_VIDEOCORE" != "no" ]; then
       [ -d /opt/vc/lib ] && add_dirs LIBRARY /opt/vc/lib /opt/vc/lib/GL
       check_lib '' VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
    else
-      HAVE_VIDEOCORE="$HAVE_VC_TEST"
+      add_opt VIDEOCORE "$HAVE_VC_TEST"
    fi
 fi
 
@@ -115,7 +121,7 @@ check_pkgconf EXYNOS libdrm_exynos
 
 if [ "$LIBRETRO" ]; then
    die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
-   HAVE_DYNAMIC='no'
+   add_opt DYNAMIC no
 else
    LIBRETRO="-lretro"
 fi
@@ -144,7 +150,7 @@ fi
 check_platform 'Linux Win32' CDROM 'CD-ROM is' user
 
 if [ "$OS" = 'Win32' ]; then
-   HAVE_DYLIB=yes
+   add_opt DYLIB yes
 else
    check_lib '' DYLIB "$DYLIB" dlopen
 fi
@@ -152,8 +158,8 @@ fi
 check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
 if [ "$HAVE_NETWORKING" != 'no' ]; then
-   HAVE_GETADDRINFO=auto
-   HAVE_SOCKET_LEGACY=no
+   add_opt GETADDRINFO auto
+   add_opt SOCKET_LEGACY no
 
    # WinXP+ implements getaddrinfo()
    if [ "$OS" = 'Win32' ]; then
@@ -166,9 +172,9 @@ if [ "$HAVE_NETWORKING" != 'no' ]; then
       fi
    fi
 
-   HAVE_NETWORK_CMD=yes
+   add_opt NETWORK_CMD yes
 else
-   HAVE_NETWORK_CMD=no
+   add_opt NETWORK_CMD no
 fi
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
@@ -184,9 +190,9 @@ check_lib '' MINIUPNPC '-lminiupnpc'
 check_lib '' STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
-   HAVE_COMMAND='yes'
+   add_opt COMMAND yes
 else
-   HAVE_COMMAND='no'
+   add_opt COMMAND no
 fi
 
 check_lib '' GETOPT_LONG "$CLIB" getopt_long
@@ -196,8 +202,8 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_val '' ALSA -lasound alsa alsa '' '' false
-check_lib '' CACA -lcaca
-check_lib '' SIXEL -lsixel
+check_val '' CACA -lcaca '' caca '' '' false
+check_val '' SIXEL -lsixel '' libsixel 1.6.0 '' false
 
 check_macro AUDIOIO AUDIO_SETINFO sys/audioio.h
 
@@ -209,6 +215,8 @@ fi
 
 check_platform Linux TINYALSA 'Tinyalsa is' true
 check_platform Linux RPILED 'The RPI led driver is' true
+
+check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
@@ -298,34 +306,28 @@ if [ "$HAVE_SSL" != 'no' ]; then
 fi
 
 check_enabled THREADS LIBUSB libusb 'Threads are' false
+check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
-if [ "$OS" = 'Win32' ]; then
-   check_lib '' DINPUT -ldinput8
-   check_lib '' D3D8 -ld3d8
-   check_lib '' D3D9 -ld3d9
-   check_lib '' DSOUND -ldsound
+check_lib '' DINPUT -ldinput8
+check_lib '' D3D8 -ld3d8
+check_lib '' D3D9 -ld3d9
+check_lib '' DSOUND -ldsound
 
-   if [ "$HAVE_D3DX" != 'no' ]; then
-      check_lib '' D3DX8 -ld3dx8
-      check_lib '' D3DX9 -ld3dx9
-   fi
+check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-   if [ "$HAVE_DINPUT" != 'no' ]; then
-      HAVE_XINPUT=yes
-   fi
-
-   HAVE_WASAPI=yes
-   HAVE_XAUDIO=yes
-   HAVE_WINMM=yes
+if [ "$HAVE_D3DX" != 'no' ]; then
+   check_lib '' D3DX8 -ld3dx8
+   check_lib '' D3DX9 -ld3dx9
 fi
 
-check_platform Win32 D3D8 'Direct3D 8 is' true
-check_platform Win32 D3D9 'Direct3D 9 is' true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
 check_platform Win32 D3DX 'Direct3DX is' true
+check_platform Win32 WASAPI 'WASAPI is' true
+check_platform Win32 XAUDIO 'XAudio is' true
+check_platform Win32 WINMM 'WinMM is' true
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
@@ -352,7 +354,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
       check_pkgconf OSMESA osmesa
    fi
 else
-   HAVE_OPENGL='no'
+   add_opt OPENGL no
 fi
 
 check_enabled EGL OPENGLES OpenGLES 'EGL is' false
@@ -369,6 +371,9 @@ elif [ "$HAVE_OPENGLES" != 'no' ] && [ "$HAVE_OPENGLES3" != 'yes' ]; then
    die : 'Notice: OpenGLES2 is enabled. Disabling the OpenGL core driver.'
    HAVE_OPENGL_CORE='no'
 fi
+
+check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
+   'OpenGL and OpenGLES are' false
 
 check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
@@ -491,24 +496,58 @@ else
 fi
 
 if [ "$HAVE_MENU" != 'no' ]; then
-   if [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+   if [ "$HAVE_OPENGL" = 'no' ]      && 
+      [ "$HAVE_OPENGL1" = 'no' ]     &&
+      [ "$HAVE_OPENGLES" = 'no' ]    && 
+      [ "$HAVE_OPENGL_CORE" = 'no' ] &&
+      [ "$HAVE_VULKAN" = 'no' ]      && 
+      [ "$HAVE_D3D10" = 'no' ]       && 
+      [ "$HAVE_D3D11" = 'no' ]       && 
+      [ "$HAVE_D3D12" = 'no' ]       && 
+      [ "$HAVE_METAL" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
       else
          if [ "$HAVE_CACA" != 'yes' ] && [ "$HAVE_SIXEL" != 'yes' ] &&
             [ "$HAVE_SDL" != 'yes' ] && [ "$HAVE_SDL2" != 'yes' ]; then
-            HAVE_RGUI=no
+            add_opt RGUI no
          fi
-         HAVE_MATERIALUI=no
-         HAVE_OZONE=no
-         HAVE_XMB=no
-         HAVE_STRIPES=no
-         HAVE_MENU_WIDGETS=no
+         add_opt MATERIALUI no
+         add_opt OZONE no
+         add_opt XMB no
+         add_opt STRIPES no
+         add_opt MENU_WIDGETS no
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi
 fi
+
+check_enabled CXX SLANG slang 'The C++ compiler is' false
+check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
+check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
+
+check_enabled SLANG GLSLANG glslang 'slang is' false
+check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
+check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
+check_enabled SLANG VULKAN vulkan 'slang is' false
+check_enabled SLANG METAL metal 'slang is' false
+
+check_enabled GLSLANG SLANG slang 'glslang is' false
+check_enabled GLSLANG SPIRV_CROSS SPIRV-Cross 'glslang is' false
+check_enabled GLSLANG OPENGL_CORE 'OpenGL core' 'glslang is' false
+check_enabled GLSLANG VULKAN vulkan 'glslang is' false
+check_enabled GLSLANG METAL metal 'glslang is' false
+
+check_enabled SPIRV_CROSS SLANG slang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS GLSLANG glslang 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS VULKAN vulkan 'SPIRV-Cross is' false
+check_enabled SPIRV_CROSS METAL metal 'SPIRV-Cross is' false
+
+check_enabled 'OPENGL_CORE METAL VULKAN' SLANG slang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' GLSLANG glslang '' user
+check_enabled 'OPENGL_CORE METAL VULKAN' SPIRV_CROSS SPIRV-Cross '' user
 
 check_macro NEON __ARM_NEON__
 

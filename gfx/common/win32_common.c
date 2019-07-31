@@ -57,7 +57,6 @@
 
 #include <commdlg.h>
 #include <dbt.h>
-#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
@@ -103,12 +102,6 @@ extern void *dinput_gdi;
 #endif
 extern void *dinput_wgl;
 extern void *dinput;
-#endif
-
-#if defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#ifndef MAX_PADS
-#define MAX_PADS 4
-#endif
 #endif
 
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
@@ -692,7 +685,7 @@ static void win32_save_position(void)
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
          settings->uints.window_position_width  = g_win32_pos_width - border_thickness * 2;
-         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - ((settings->bools.ui_menubar_enable && !video_driver_is_threaded()) ? menu_bar_height : 0);
+         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - (settings->bools.ui_menubar_enable ? menu_bar_height : 0);
       }
    }
 }
@@ -1006,7 +999,7 @@ bool win32_window_create(void *data, unsigned style,
       user_height= g_win32_pos_height;
    }
    main_window.hwnd = CreateWindowEx(0,
-         "RetroArch", "RetroArch",
+         msg_hash_to_str(MSG_PROGRAM), msg_hash_to_str(MSG_PROGRAM),
          style,
          fullscreen ? mon_rect->left : g_win32_pos_x,
          fullscreen ? mon_rect->top  : g_win32_pos_y,
@@ -1306,7 +1299,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->bools.ui_menubar_enable && !video_driver_is_threaded())
+      if (!fullscreen && settings->bools.ui_menubar_enable)
       {
          RECT rc_temp;
          rc_temp.left   = 0;
@@ -1414,17 +1407,8 @@ BOOL IsIconic(HWND hwnd)
 bool win32_has_focus(void)
 {
    if (g_win32_inited)
-   {
-#ifdef _XBOX
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
-#else
-      const ui_window_t *window =
-         ui_companion_driver_get_window_ptr();
-      if (window)
-         return window->focused(&main_window);
-#endif
-   }
 
    return false;
 }
@@ -1447,7 +1431,8 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+   UnregisterClass(msg_hash_to_str(MSG_PROGRAM), 
+         GetModuleHandle(NULL));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
 #endif

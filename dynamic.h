@@ -27,21 +27,6 @@
 RETRO_BEGIN_DECLS
 
 /**
- * libretro_get_system_info:
- * @path                         : Path to libretro library.
- * @info                         : System info information.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Gets system info from an arbitrary lib.
- * The struct returned must be freed as strings are allocated dynamically.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content);
-
-/**
  * libretro_free_system_info:
  * @info                         : Pointer to system info information.
  *
@@ -67,18 +52,6 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
 const struct retro_controller_description *
    libretro_find_controller_description(
          const struct retro_controller_info *info, unsigned id);
-
-/**
- * rarch_environment_cb:
- * @cmd                          : Identifier of command.
- * @data                         : Pointer to data.
- *
- * Environment callback function implementation.
- *
- * Returns: true (1) if environment callback command could
- * be performed, otherwise false (0).
- **/
-bool rarch_environment_cb(unsigned cmd, void *data);
 
 struct retro_core_t
 {

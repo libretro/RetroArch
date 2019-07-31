@@ -15,134 +15,16 @@
 
 #include <stdlib.h>
 
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0600
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winerror.h>
-#include <propidl.h>
-#include <initguid.h>
-#include <mmdeviceapi.h>
-#include <mmreg.h>
-#include <audioclient.h>
-
-#ifdef _MSC_VER
-DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4C, 0xDBFA, 0x4C32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
-DEFINE_GUID(IID_IAudioRenderClient, 0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2);
-DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
-DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
-#undef KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
-DEFINE_GUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 0x00000003, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
-#endif
-
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+#include <string/stdstring.h>
+
+#include "../common/mmdevice_common.h"
+#include "../common/mmdevice_common_inline.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
-
-DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
-
-#ifdef __cplusplus
-#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->Item(nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->Start() )
-#define _IAudioClient_Stop(This)	( (This)->Stop() )
-#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->GetCurrentPadding(pNumPaddingFrames) )
-#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->GetBuffer(NumFramesRequested,ppData) )
-#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
-#define _IAudioClient_GetService(This,riid,ppv) ( (This)->GetService(riid,ppv) )
-#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->SetEventHandle(eventHandle) )
-#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
-#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->GetStreamLatency(phnsLatency) )
-#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->GetDevicePeriod(phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
-#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
-#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
-#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
-#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->OpenPropertyStore(stgmAccess,ppProperties)
-#define _IMMDevice_GetId(This,ppstrId) ((This)->GetId(ppstrId))
-#define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
-#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
-#else
-#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
-#define _IAudioClient_Stop(This)	( (This)->lpVtbl -> Stop(This) )
-#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
-#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->lpVtbl -> GetBuffer(This,NumFramesRequested,ppData) )
-#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
-#define _IAudioClient_GetService(This,riid,ppv)	( (This)->lpVtbl -> GetService(This,&(riid),ppv) )
-#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->lpVtbl -> SetEventHandle(This,eventHandle) )
-#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
-#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->lpVtbl -> GetStreamLatency(This,phnsLatency) )
-#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->lpVtbl -> GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
-#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
-#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
-#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
-#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->lpVtbl->OpenPropertyStore(This,stgmAccess,ppProperties)
-#define _IMMDevice_GetId(This,ppstrId) (This)->lpVtbl->GetId(This,ppstrId)
-#define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )
-#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->lpVtbl -> GetCount(This,cProps) )
-#endif
-
-#define WASAPI_WARN(bool_exp, err_str, warn_exp) \
-      if (!(bool_exp)) { \
-         RARCH_WARN("[WASAPI]: %s.\n", err_str); \
-         warn_exp; }
-
-#define WASAPI_CHECK(bool_exp, err_str, err_exp) \
-      if (!(bool_exp)) { \
-         RARCH_ERR("[WASAPI]: %s.\n", err_str); \
-         err_exp; }
-
-#define WASAPI_HR_CHECK(hr, fun_str, err_exp) \
-      if (FAILED(hr)) { \
-         RARCH_ERR("[WASAPI]: %s failed with error 0x%.8X.\n", fun_str, hr); \
-         err_exp; }
-
-#define WASAPI_HR_WARN(hr, fun_str, warn_exp) \
-      if (FAILED(hr)) { \
-         RARCH_WARN("[WASAPI]: %s failed with error 0x%.8X.\n", fun_str, hr); \
-         warn_exp; }
-
-#define WASAPI_SR_CHECK(bool_exp, fun_str, err_exp) \
-      if (!(bool_exp)) { \
-         RARCH_ERR("[WASAPI]: %s failed with error %d.\n", fun_str, GetLastError()); \
-         err_exp; }
-
-#ifdef __cplusplus
-#define WASAPI_RELEASE(iface) \
-      if(iface) \
-      { \
-         iface->Release(); \
-         iface = NULL; \
-      }
-#else
-#define WASAPI_RELEASE(iface) \
-      if(iface) \
-      { \
-         iface->lpVtbl->Release(iface);\
-         iface = NULL; \
-      }
-#endif
-
-#define WASAPI_FREE(ptr)\
-      if(ptr) {\
-         free(ptr);\
-         ptr = NULL; }\
-
-#define WASAPI_CO_FREE(ptr)\
-      if(ptr) {\
-         CoTaskMemFree(ptr);\
-         ptr = NULL; }\
 
 typedef struct
 {
@@ -157,38 +39,6 @@ typedef struct
    IAudioRenderClient *renderer;
    fifo_buffer_t      *buffer; /* NULL in unbuffered shared mode */
 } wasapi_t;
-
-static bool wasapi_check_device_id(IMMDevice *device, const char *id)
-{
-   HRESULT hr;
-   bool result   = false;
-   LPWSTR dev_id = NULL, dev_cmp_id = NULL;
-   int id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, NULL, 0);
-
-   WASAPI_SR_CHECK(id_length > 0, "MultiByteToWideChar", goto error);
-
-   dev_cmp_id = (LPWSTR)malloc(id_length * sizeof(WCHAR));
-   WASAPI_CHECK(dev_cmp_id, "Out of memory", goto error);
-
-   id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, dev_cmp_id, id_length);
-   WASAPI_SR_CHECK(id_length > 0, "MultiByteToWideChar", goto error);
-
-   hr = _IMMDevice_GetId(device, &dev_id);
-   WASAPI_HR_CHECK(hr, "IMMDevice::GetId", goto error);
-
-   result = lstrcmpW(dev_cmp_id, dev_id) == 0 ? true : false;
-
-   WASAPI_CO_FREE(dev_id);
-   WASAPI_FREE(dev_cmp_id);
-
-   return result;
-
-error:
-   WASAPI_CO_FREE(dev_id);
-   WASAPI_FREE(dev_cmp_id);
-
-   return false;
-}
 
 static IMMDevice *wasapi_init_device(const char *id)
 {
@@ -214,48 +64,85 @@ static IMMDevice *wasapi_init_device(const char *id)
    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
          &IID_IMMDeviceEnumerator, (void **)&enumerator);
 #endif
-   WASAPI_HR_CHECK(hr, "CoCreateInstance", goto error);
+   if (FAILED(hr))
+      goto error;
 
    if (id)
    {
+      int32_t idx_found        = -1;
+      struct string_list *list = (struct string_list*)mmdevice_list_new(NULL);
+
+      /* Search for device name first */
+      if (list)
+      {
+         if (list->elems)
+         {
+            unsigned i;
+            for (i = 0; i < list->size; i++)
+            {
+               RARCH_LOG("[WASAPI]: %d : %s\n", i, list->elems[i].data);
+               if (string_is_equal(id, list->elems[i].data))
+               {
+                  idx_found = i;
+                  break;
+               }
+            }
+            /* Index was not found yet based on name string,
+             * just assume id is a one-character number index. */
+
+            if (idx_found == -1 && isdigit(id[0]))
+            {
+               idx_found = strtoul(id, NULL, 0);
+               RARCH_LOG("[WASAPI]: Fallback, device index is a single number index instead: %d.\n", idx_found);
+
+            }
+         }
+         string_list_free(list);
+      }
+
+      if (idx_found == -1)
+         idx_found = 0;
+
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
             eRender, DEVICE_STATE_ACTIVE, &collection);
-      WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::EnumAudioEndpoints",
-            goto error);
+      if (FAILED(hr))
+         goto error;
 
       hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
-      WASAPI_HR_CHECK(hr, "IMMDeviceCollection::GetCount", goto error);
+      if (FAILED(hr))
+         goto error;
 
       for (i = 0; i < dev_count; ++i)
       {
          hr = _IMMDeviceCollection_Item(collection, i, &device);
-         WASAPI_HR_CHECK(hr, "IMMDeviceCollection::Item", continue);
+         if (FAILED(hr))
+            goto error;
 
-         if (wasapi_check_device_id(device, id))
+         if (i == idx_found)
             break;
 
-         WASAPI_RELEASE(device);
+         IFACE_RELEASE(device);
       }
    }
    else
    {
       hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
             enumerator, eRender, eConsole, &device);
-      WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::GetDefaultAudioEndpoint",
-            goto error);
+      if (FAILED(hr))
+         goto error;
    }
 
    if (!device)
       goto error;
 
-   WASAPI_RELEASE(collection);
-   WASAPI_RELEASE(enumerator);
+   IFACE_RELEASE(collection);
+   IFACE_RELEASE(enumerator);
 
    return device;
 
 error:
-   WASAPI_RELEASE(collection);
-   WASAPI_RELEASE(enumerator);
+   IFACE_RELEASE(collection);
+   IFACE_RELEASE(enumerator);
 
    if (id)
    {
@@ -271,7 +158,7 @@ error:
 
 static unsigned wasapi_pref_rate(unsigned i)
 {
-   const unsigned r[] = { 48000, 44100, 96000, 192000 };
+   const unsigned r[] = { 48000, 44100, 96000, 192000, 32000 };
 
    if (i >= sizeof(r) / sizeof(unsigned))
       return 0;
@@ -317,7 +204,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    HRESULT hr           = _IMMDevice_Activate(device,
          IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
-   WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
+   if (FAILED(hr))
+      return NULL;
 
    /* once for float, once for pcm (requested first) */
    for (i = 0; i < 2; ++i)
@@ -346,11 +234,12 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
             HRESULT hr;
-            WASAPI_RELEASE(client);
+            IFACE_RELEASE(client);
             hr           = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
-            WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
+            if (FAILED(hr))
+               return NULL;
 
 #ifdef __cplusplus
             hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
@@ -375,7 +264,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       }
    }
 
-   WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
+   if (FAILED(hr))
+      goto error;
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
@@ -383,7 +273,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    return client;
 
 error:
-   WASAPI_RELEASE(client);
+   IFACE_RELEASE(client);
 
    return NULL;
 }
@@ -402,10 +292,12 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    HRESULT hr                     = _IMMDevice_Activate(device,
          IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
-   WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
+   if (FAILED(hr))
+      return NULL;
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
-   WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
+   if (FAILED(hr))
+      goto error;
 
    /* buffer_duration is in 100ns units */
    buffer_duration = latency * 10000.0;
@@ -438,13 +330,15 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
          {
             hr = _IAudioClient_GetBufferSize(client, &buffer_length);
-            WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", goto error);
+            if (FAILED(hr))
+               goto error;
 
-            WASAPI_RELEASE(client);
+            IFACE_RELEASE(client);
             hr                     = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
-            WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
+            if (FAILED(hr))
+               return NULL;
 
             buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
 #ifdef __cplusplus
@@ -459,11 +353,12 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          }
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
-            WASAPI_RELEASE(client);
+            IFACE_RELEASE(client);
             hr                     = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
-            WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
+            if (FAILED(hr))
+               return NULL;
 
 #ifdef __cplusplus
             hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
@@ -477,11 +372,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          }
          if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
          {
-            WASAPI_WARN(hr != AUDCLNT_E_DEVICE_IN_USE,
-                  "Device already in use", goto error);
+            if (hr == AUDCLNT_E_DEVICE_IN_USE)
+               goto error;
 
-            WASAPI_WARN(hr != AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED,
-                  "Exclusive mode disabled", goto error);
+            if (hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+               goto error;
 
             i = 2; /* break from outer loop too */
             break;
@@ -494,7 +389,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       }
    }
 
-   WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
+   if (FAILED(hr))
+      goto error;
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
@@ -502,7 +398,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    return client;
 
 error:
-   WASAPI_RELEASE(client);
+   IFACE_RELEASE(client);
 
    return NULL;
 }
@@ -538,7 +434,8 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       }
    }
 
-   WASAPI_CHECK(client, "Failed to initialize client", return NULL);
+   if (!client)
+      return NULL;
 
    /* next calls are allowed to fail (we losing info only) */
 
@@ -596,11 +493,12 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    bool float_format         = settings->bools.audio_wasapi_float_format;
    int sh_buffer_length      = settings->ints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
+
+   if (!w)
+      return NULL;
+
    w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
-
-   WASAPI_CHECK(w, "Out of memory", return NULL);
-
-   w->device = wasapi_init_device(dev_id);
+   w->device                 = wasapi_init_device(dev_id);
    if (!w->device && dev_id)
       w->device = wasapi_init_device(NULL);
    if (!w->device)
@@ -612,14 +510,17 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    hr = _IAudioClient_GetBufferSize(w->client, &frame_count);
-   WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", goto error);
+   if (FAILED(hr))
+      goto error;
 
-   w->frame_size = float_format ? 8 : 4;
+   w->frame_size         = float_format ? 8 : 4;
    w->engine_buffer_size = frame_count * w->frame_size;
+
    if (w->exclusive)
    {
       w->buffer = fifo_new(w->engine_buffer_size);
-      WASAPI_CHECK(w->buffer, "Out of memory", goto error);
+      if (!w->buffer)
+         goto error;
 
       RARCH_LOG("[WASAPI]: Intermediate buffer length is %u frames (%.1fms).\n",
             frame_count, (double)frame_count * 1000.0 / rate);
@@ -629,13 +530,15 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       if (sh_buffer_length < 0)
       {
          hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
-         WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
+         if (FAILED(hr))
+            goto error;
 
          sh_buffer_length = dev_period * rate / 10000000;
       }
 
       w->buffer = fifo_new(sh_buffer_length * w->frame_size);
-      WASAPI_CHECK(w->buffer, "Out of memory", goto error);
+      if (!w->buffer)
+         goto error;
 
       RARCH_LOG("[WASAPI]: Intermediate buffer length is %u frames (%.1fms).\n",
             sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate);
@@ -646,34 +549,40 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    }
 
    w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
-   WASAPI_SR_CHECK(w->write_event, "CreateEventA", goto error);
+   if (!w->write_event)
+      goto error;
 
    hr = _IAudioClient_SetEventHandle(w->client, w->write_event);
-   WASAPI_HR_CHECK(hr, "IAudioClient::SetEventHandle", goto error);
+   if (FAILED(hr))
+      goto error;
 
    hr = _IAudioClient_GetService(w->client,
          IID_IAudioRenderClient, (void**)&w->renderer);
-   WASAPI_HR_CHECK(hr, "IAudioClient::GetService", goto error);
+   if (FAILED(hr))
+      goto error;
 
    hr = _IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", goto error);
+   if (FAILED(hr))
+      goto error;
 
    hr = _IAudioRenderClient_ReleaseBuffer(
          w->renderer, frame_count,
          AUDCLNT_BUFFERFLAGS_SILENT);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", goto error);
+   if (FAILED(hr))
+      goto error;
 
    hr = _IAudioClient_Start(w->client);
-   WASAPI_HR_CHECK(hr, "IAudioClient::Start", goto error);
-   w->running = true;
+   if (FAILED(hr))
+      goto error;
+   w->running  = true;
    w->blocking = settings->bools.audio_sync;
 
    return w;
 
 error:
-   WASAPI_RELEASE(w->renderer);
-   WASAPI_RELEASE(w->client);
-   WASAPI_RELEASE(w->device);
+   IFACE_RELEASE(w->renderer);
+   IFACE_RELEASE(w->client);
+   IFACE_RELEASE(w->device);
    if (w->write_event)
       CloseHandle(w->write_event);
    if (w->buffer)
@@ -689,13 +598,15 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
    UINT32 frame_count = size / w->frame_size;
    HRESULT hr         = _IAudioRenderClient_GetBuffer(
          w->renderer, frame_count, &dest);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", return false)
+   if (FAILED(hr))
+      return false;
 
    memcpy(dest, data, size);
    hr = _IAudioRenderClient_ReleaseBuffer(
          w->renderer, frame_count,
          0);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", return false);
+   if (FAILED(hr))
+      return false;
 
    return true;
 }
@@ -706,13 +617,15 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
    UINT32 frame_count = size / w->frame_size;
    HRESULT hr         = _IAudioRenderClient_GetBuffer(
          w->renderer, frame_count, &dest);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", return false)
+   if (FAILED(hr))
+      return false;
 
    fifo_read(w->buffer, dest, size);
    hr = _IAudioRenderClient_ReleaseBuffer(
          w->renderer, frame_count,
          0);
-   WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", return false);
+   if (FAILED(hr))
+      return false;
 
    return true;
 }
@@ -735,20 +648,20 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          if (w->blocking)
          {
             ir = WaitForSingleObject(w->write_event, INFINITE);
-            WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
+            if (!(ir == WAIT_OBJECT_0))
+               return -1;
          }
 
          hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
-         WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
+         if (FAILED(hr))
+            return -1;
 
          read_avail  = fifo_read_avail(w->buffer);
          write_avail = w->engine_buffer_size - padding * w->frame_size;
          written     = read_avail < write_avail ? read_avail : write_avail;
          if (written)
-         {
             if (!wasapi_flush_buffer(w, written))
                return -1;
-         }
       }
 
       write_avail = fifo_write_avail(w->buffer);
@@ -761,11 +674,13 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
       if (w->blocking)
       {
          ir = WaitForSingleObject(w->write_event, INFINITE);
-         WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
+         if (!(ir == WAIT_OBJECT_0))
+            return -1;
       }
 
       hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
-      WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
+      if (FAILED(hr))
+         return -1;
 
       write_avail = w->engine_buffer_size - padding * w->frame_size;
       if (!write_avail)
@@ -773,10 +688,8 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
       written = size < write_avail ? size : write_avail;
       if (written)
-      {
          if (!wasapi_flush(w, data, written))
             return -1;
-      }
    }
 
    return written;
@@ -784,20 +697,19 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 {
-   ssize_t writen     = 0;
+   ssize_t written    = 0;
    size_t write_avail = fifo_write_avail(w->buffer);
 
    if (!write_avail)
    {
       DWORD ir = WaitForSingleObject(
             w->write_event, w->blocking ? INFINITE : 0);
-      if (ir != WAIT_OBJECT_0 && w->blocking)
-      {
-         RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
-         return -1;
-      }
       if (ir != WAIT_OBJECT_0)
+      {
+         if (w->blocking)
+            return -1;
          return 0;
+      }
 
       if (!wasapi_flush_buffer(w, w->engine_buffer_size))
          return -1;
@@ -805,10 +717,10 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
       write_avail = w->engine_buffer_size;
    }
 
-   writen = size < write_avail ? size : write_avail;
-   fifo_write(w->buffer, data, writen);
+   written = size < write_avail ? size : write_avail;
+   fifo_write(w->buffer, data, written);
 
-   return writen;
+   return written;
 }
 
 static ssize_t wasapi_write(void *wh, const void *data, size_t size)
@@ -841,7 +753,8 @@ static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
    HRESULT  hr = _IAudioClient_Stop(w->client);
-   WASAPI_HR_CHECK(hr, "IAudioClient::Stop", return !w->running);
+   if (FAILED(hr))
+      return !w->running;
 
    w->running = false;
 
@@ -856,7 +769,8 @@ static bool wasapi_start(void *wh, bool u)
    if (hr == AUDCLNT_E_NOT_STOPPED)
       return true;
 
-   WASAPI_HR_CHECK(hr, "IAudioClient::Start", return w->running);
+   if (FAILED(hr))
+      return w->running;
 
    w->running = true;
 
@@ -885,11 +799,11 @@ static void wasapi_free(void *wh)
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
 
-   WASAPI_RELEASE(w->renderer);
+   IFACE_RELEASE(w->renderer);
    if (w->client)
       _IAudioClient_Stop(w->client);
-   WASAPI_RELEASE(w->client);
-   WASAPI_RELEASE(w->device);
+   IFACE_RELEASE(w->client);
+   IFACE_RELEASE(w->device);
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
@@ -901,7 +815,8 @@ static void wasapi_free(void *wh)
    }
 
    /* If event isn't signaled log and leak */
-   WASAPI_CHECK(ir == WAIT_OBJECT_0, "Memory leak in wasapi_free", return);
+   if (!(ir == WAIT_OBJECT_0))
+      return;
 
    CloseHandle(write_event);
 }
@@ -913,125 +828,12 @@ static bool wasapi_use_float(void *wh)
    return w->frame_size == 8;
 }
 
-static void *wasapi_device_list_new(void *u)
-{
-   HRESULT hr;
-   UINT i;
-   PROPVARIANT prop_var;
-   int ir;
-   union string_list_elem_attr attr;
-   IMMDeviceEnumerator *enumerator = NULL;
-   IMMDeviceCollection *collection = NULL;
-   UINT dev_count                  = 0;
-   IMMDevice *device               = NULL;
-   LPWSTR dev_id_wstr              = NULL;
-   IPropertyStore *prop_store      = NULL;
-   bool prop_var_init              = false;
-   bool br                         = false;
-   char *dev_id_str                = NULL;
-   char *dev_name_str              = NULL;
-   struct string_list *sl          = string_list_new();
-
-   WASAPI_CHECK(sl, "string_list_new failed", return NULL);
-
-   attr.i = 0;
-#ifdef __cplusplus
-   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         IID_IMMDeviceEnumerator, (void **)&enumerator);
-#else
-   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         &IID_IMMDeviceEnumerator, (void **)&enumerator);
-#endif
-   WASAPI_HR_CHECK(hr, "CoCreateInstance", goto error);
-
-   hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
-   WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::EnumAudioEndpoints", goto error);
-
-   hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
-   WASAPI_HR_CHECK(hr, "IMMDeviceCollection::GetCount", goto error);
-
-   for (i = 0; i < dev_count; ++i)
-   {
-      hr = _IMMDeviceCollection_Item(collection, i, &device);
-      WASAPI_HR_CHECK(hr, "IMMDeviceCollection::Item", goto error);
-
-      hr = _IMMDevice_GetId(device, &dev_id_wstr);
-      WASAPI_HR_CHECK(hr, "IMMDevice::GetId", goto error);
-
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            NULL, 0, NULL, NULL);
-      WASAPI_SR_CHECK(ir, "WideCharToMultiByte", goto error);
-
-      dev_id_str = (char *)malloc(ir);
-      WASAPI_CHECK(dev_id_str, "Out of memory", goto error);
-
-      ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
-            dev_id_str, ir, NULL, NULL);
-      WASAPI_SR_CHECK(ir, "WideCharToMultiByte", goto error);
-
-      hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
-      WASAPI_HR_CHECK(hr, "IMMDevice::OpenPropertyStore", goto error);
-
-      PropVariantInit(&prop_var);
-      prop_var_init = true;
-      hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName,
-            &prop_var);
-      WASAPI_HR_CHECK(hr, "IPropertyStore::GetValue", goto error);
-
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            NULL, 0, NULL, NULL);
-      WASAPI_SR_CHECK(ir, "WideCharToMultiByte", goto error);
-
-      dev_name_str = (char *)malloc(ir);
-      WASAPI_CHECK(dev_name_str, "Out of memory", goto error);
-
-      ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
-            dev_name_str, ir, NULL, NULL);
-      WASAPI_SR_CHECK(ir, "WideCharToMultiByte", goto error);
-
-      RARCH_LOG("[WASAPI]: %s %s\n", dev_name_str, dev_id_str);
-
-      br = string_list_append(sl, dev_id_str, attr);
-      WASAPI_CHECK(br, "string_list_append failed", goto error);
-
-      PropVariantClear(&prop_var);
-      prop_var_init = false;
-      WASAPI_CO_FREE(dev_id_wstr);
-      WASAPI_FREE(dev_id_str);
-      WASAPI_FREE(dev_name_str);
-      WASAPI_RELEASE(prop_store);
-      WASAPI_RELEASE(device);
-   }
-
-   WASAPI_RELEASE(collection);
-   WASAPI_RELEASE(enumerator);
-
-   return sl;
-
-error:
-   WASAPI_FREE(dev_id_str);
-   WASAPI_FREE(dev_name_str);
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-   WASAPI_RELEASE(prop_store);
-   WASAPI_CO_FREE(dev_id_wstr);
-   WASAPI_RELEASE(device);
-   WASAPI_RELEASE(collection);
-   WASAPI_RELEASE(enumerator);
-   if (sl)
-      string_list_free(sl);
-
-   RARCH_ERR("[WASAPI]: Device enumeration failed.\n");
-
-   return NULL;
-}
-
 static void wasapi_device_list_free(void *u, void *slp)
 {
    struct string_list *sl = (struct string_list*)slp;
 
-   string_list_free(sl);
+   if (sl)
+      string_list_free(sl);
 }
 
 static size_t wasapi_write_avail(void *wh)
@@ -1044,7 +846,8 @@ static size_t wasapi_write_avail(void *wh)
       return fifo_write_avail(w->buffer);
 
    hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
-   WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return 0);
+   if (FAILED(hr))
+      return 0;
 
    return w->engine_buffer_size - padding * w->frame_size;
 }
@@ -1069,7 +872,7 @@ audio_driver_t audio_wasapi = {
    wasapi_free,
    wasapi_use_float,
    "wasapi",
-   wasapi_device_list_new,
+   mmdevice_list_new,
    wasapi_device_list_free,
    wasapi_write_avail,
    wasapi_buffer_size

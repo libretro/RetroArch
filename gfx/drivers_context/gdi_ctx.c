@@ -36,7 +36,6 @@
 
 #include "../../dynamic.h"
 #include "../../configuration.h"
-#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -251,7 +250,7 @@ error:
 
 static void gfx_ctx_gdi_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
 #if _WIN32_WINNT >= 0x0501
    settings_t *settings = config_get_ptr();
@@ -287,13 +286,6 @@ static bool gfx_ctx_gdi_has_focus(void *data)
 static bool gfx_ctx_gdi_suppress_screensaver(void *data, bool enable)
 {
    return win32_suppress_screensaver(data, enable);
-}
-
-static bool gfx_ctx_gdi_has_windowed(void *data)
-{
-   (void)data;
-
-   return true;
 }
 
 static bool gfx_ctx_gdi_get_metrics(void *data,
@@ -380,7 +372,7 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    gfx_ctx_gdi_set_resize,
    gfx_ctx_gdi_has_focus,
    gfx_ctx_gdi_suppress_screensaver,
-   gfx_ctx_gdi_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_gdi_swap_buffers,
    gfx_ctx_gdi_input_driver,
    NULL,

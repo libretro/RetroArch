@@ -93,8 +93,6 @@ endif
    OBJ += gfx/drivers/gx2_shaders/snow.o
    OBJ += gfx/drivers/gx2_shaders/snow_simple.o
    OBJ += gfx/drivers/gx2_shaders/snowflake.o
-   OBJ += gfx/drivers_shader/slang_preprocess.o
-   OBJ += gfx/drivers_shader/glslang_util.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
       OBJ += griffin/griffin.o
@@ -104,16 +102,19 @@ endif
       INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
+      INCDIRS += -Ideps/SPIRV-Cross
 
       DEFINES += -DHAVE_AUDIOMIXER
       DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_LIBRETRODB
-      DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
+      DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
+      DEFINES += -DHAVE_SPIRV_CROSS -DHAVE_SLANG
       DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_NETPLAYDISCOVERY
       #DEFINES += -DWANT_IFADDRS
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
       DEFINES += -DHAVE_HID
       DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_IOSUHAX -DHAVE_IOSUHAX
+      DEFINES += -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
 
    # $(GRIFFIN_BUILD),0
    else
@@ -140,6 +141,8 @@ endif
       HAVE_CHEEVOS = 1
       #WANT_IFADDRS = 1
       HAVE_OVERLAY = 1
+      HAVE_SPIRV_CROSS = 1
+      HAVE_SLANG = 1
       HAVE_VIDEO_LAYOUT = 0
       HAVE_STATIC_VIDEO_FILTERS = 1
       HAVE_STATIC_AUDIO_FILTERS = 1
@@ -149,31 +152,6 @@ endif
       include Makefile.common
       DEFINES += $(DEF_FLAGS)
       INCDIRS += $(INCLUDE_DIRS)
-
-      OBJ += gfx/drivers/gx2_gfx.o
-      OBJ += gfx/drivers_font/wiiu_font.o
-      OBJ += menu/drivers_display/menu_display_wiiu.o
-      OBJ += input/drivers/wiiu_input.o
-      OBJ += input/drivers_joypad/wiiu_joypad.o
-      OBJ += input/drivers_joypad/wiiu/wpad_driver.o
-      OBJ += input/drivers_joypad/wiiu/kpad_driver.o
-      OBJ += input/drivers_joypad/wiiu/pad_functions.o
-      INCDIRS += -Iinput/include
-
-      OBJ += audio/drivers/wiiu_audio.o
-      OBJ += frontend/drivers/platform_wiiu.o
-
-      ifeq ($(WIIU_HID),1)
-         DEFINES += -DWIIU_HID
-         OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
-         OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
-      endif
    endif
 endif
 
@@ -203,7 +181,7 @@ CFLAGS  := -mcpu=750 -meabi -mhard-float
 CFLAGS  += -ffast-math -Werror=implicit-function-declaration
 CFLAGS  += -ffunction-sections -fdata-sections
 #CFLAGS += -fomit-frame-pointer -mword-relocations
-#CFLAGS	+= -Wall
+#CFLAGS += -Wall
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -212,7 +190,6 @@ else
 endif
 
 ASFLAGS := $(CFLAGS) -mregnames
-CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions
 
 #-----------------------------
 # Linking/library flags
@@ -256,7 +233,7 @@ ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPRO")
 endif
 
-export PATH	  := $(PATH):$(DEVKITPPC)/bin
+export PATH   := $(PATH):$(DEVKITPPC)/bin
 
 PREFIX := powerpc-eabi-
 

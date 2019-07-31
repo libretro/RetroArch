@@ -2994,7 +2994,9 @@ static int xmb_draw_item(
             && !string_is_empty(entry->sublabel))
       {
          menu_animation_ctx_line_ticker_t line_ticker;
-         char entry_sublabel[512] = {0};
+         char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+
+         entry_sublabel[0] = '\0';
 
          line_ticker.type_enum  = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
          line_ticker.idx        = menu_animation_get_ticker_idx();
@@ -5717,11 +5719,17 @@ static int xmb_list_push(void *data, void *userdata,
                menu_subsystem_populate(subsystem, info);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_load_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+               menu_displaylist_setting(&entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_dump_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+               menu_displaylist_setting(&entry);
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
             menu_displaylist_setting(&entry);

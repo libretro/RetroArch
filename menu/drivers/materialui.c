@@ -605,7 +605,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
    for (i = 0; i < entries_end; i++)
    {
       menu_entry_t entry;
-      char wrapped_sublabel_str[512];
+      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
       const char *sublabel_str  = NULL;
       unsigned lines            = 0;
       materialui_node_t *node   = (materialui_node_t*)
@@ -744,7 +744,7 @@ static void materialui_render_label_value(
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
    char value_str[255];
-   char wrapped_sublabel_str[512];
+   char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
    unsigned entry_type             = 0;
    const char *sublabel_str        = NULL;
    bool switch_is_on               = true;
@@ -2111,11 +2111,17 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_setting(&entry);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_load_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
+               menu_displaylist_setting(&entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
-            menu_displaylist_setting(&entry);
+            if (settings->bools.menu_show_dump_disc)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
+               menu_displaylist_setting(&entry);
+            }
 
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA

@@ -39,10 +39,6 @@
 #endif
 #endif
 
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
-#endif
-
 enum pl_thumb_status
 {
    PL_THUMB_BEGIN = 0,

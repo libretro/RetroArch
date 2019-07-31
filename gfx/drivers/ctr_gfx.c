@@ -326,7 +326,7 @@ static void ctr_set_bottom_screen_enable(void* data, bool enabled)
 }
 
 static void* ctr_init(const video_info_t* video,
-      const input_driver_t** input, void** input_data)
+      input_driver_t** input, void** input_data)
 {
    float refresh_rate;
    u8 device_model      = 0xFF;

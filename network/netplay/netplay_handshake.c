@@ -295,7 +295,7 @@ static void handshake_password(void *ignore, const char *line)
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
-   rarch_menu_running_finished(false);
+   retroarch_menu_running_finished(false);
 #endif
 }
 #endif
@@ -420,7 +420,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
 #ifdef HAVE_MENU
       menu_input_ctx_line_t line;
-      rarch_menu_running();
+      retroarch_menu_running();
 #endif
 
       handshake_password_netplay = netplay;

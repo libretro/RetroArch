@@ -72,7 +72,7 @@ static struct string_list *image_file_list;
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
 
-static const char* IMAGE_CORE_PREFIX(valid_extensions) = 1+ /* to remove the first |, the alternative is 25 extra lines of ifdef/etc */
+static const char image_formats[] =
 
 #ifdef HAVE_RJPEG
 "|jpg|jpeg"
@@ -94,6 +94,9 @@ static const char* IMAGE_CORE_PREFIX(valid_extensions) = 1+ /* to remove the fir
 #error "can't build this core with no image formats"
 #endif
 ;
+
+/* to remove the first |, the alternative is 25 extra lines of ifdef/etc */
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = image_formats + 1;
 
 #endif
 

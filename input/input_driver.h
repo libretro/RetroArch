@@ -164,8 +164,7 @@ struct input_driver
          enum retro_rumble_effect effect, uint16_t state);
    const input_device_driver_t *(*get_joypad_driver)(void *data);
    const input_device_driver_t *(*get_sec_joypad_driver)(void *data);
-   bool (*keyboard_mapping_is_blocked)(void *data);
-   void (*keyboard_mapping_set_block)(void *data, bool value);
+   bool keyboard_mapping_blocked;
 };
 
 struct rarch_joypad_driver
@@ -228,8 +227,6 @@ const input_device_driver_t * input_driver_get_joypad_driver(void);
 
 const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
 
-void input_driver_keyboard_mapping_set_block(bool value);
-
 /**
  * input_sensor_set_state:
  * @port               : User number.
@@ -249,7 +246,7 @@ void *input_driver_get_data(void);
 void input_get_state_for_port(
       void *data, unsigned port, input_bits_t *p_new_state);
 
-const input_driver_t *input_get_ptr(void);
+input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
 
@@ -276,14 +273,6 @@ void input_driver_unset_own_driver(void);
 void input_driver_deinit_command(void);
 
 bool input_driver_init_command(void);
-
-void input_driver_deinit_remote(void);
-
-bool input_driver_init_remote(void);
-
-void input_driver_deinit_mapper(void);
-
-bool input_driver_init_mapper(void);
 
 bool input_driver_grab_mouse(void);
 

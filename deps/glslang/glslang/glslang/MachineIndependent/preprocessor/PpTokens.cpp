@@ -84,7 +84,9 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 #if (defined(_MSC_VER) && _MSC_VER < 1900 /*vs2015*/)
+#ifndef snprintf
 #define snprintf sprintf_s
+#endif
 #endif
 
 #include <cassert>

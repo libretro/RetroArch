@@ -710,13 +710,6 @@ static void ui_companion_cocoa_toggle(void *data, bool force)
    (void)force;
 }
 
-static int ui_companion_cocoa_iterate(void *data, unsigned action)
-{
-   (void)data;
-
-   return 0;
-}
-
 static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
@@ -763,7 +756,6 @@ static void *ui_companion_cocoa_get_main_window(void *data)
 ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
-   ui_companion_cocoa_iterate,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,

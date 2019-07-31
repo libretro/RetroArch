@@ -103,7 +103,8 @@ static void xenon360_gfx_free(void *data)
    free(vid);
 }
 
-static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *xenon360_gfx_init(const video_info_t *video,
+      input_driver_t **input, void **input_data)
 {
    gl_t * gl = calloc(1, sizeof(gl_t));
    if (!gl)

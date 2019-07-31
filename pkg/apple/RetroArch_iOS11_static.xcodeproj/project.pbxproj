@@ -469,9 +469,9 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					"../../libretro-common/include",
+					../../libretro-common/include,
+					../../libretro-common/include/compat/zlib,
 					../../deps/stb,
-					../../deps/libz,
 					../../deps/rcheevos/include,
 					../../deps,
 				);
@@ -558,9 +558,9 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
-					"../../libretro-common/include",
+					../../libretro-common/include,
+					../../libretro-common/include/compat/zlib,
 					../../deps/stb,
-					../../deps/libz,
 					../../deps/rcheevos/include,
 					../../deps,
 				);

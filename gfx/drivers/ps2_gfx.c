@@ -222,7 +222,7 @@ static void ps2_texture_upload(GSGLOBAL *gsGlobal, GSTEXTURE *Texture, bool send
 }
 
 static void *ps2_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *ps2input = NULL;
    *input_data = NULL;

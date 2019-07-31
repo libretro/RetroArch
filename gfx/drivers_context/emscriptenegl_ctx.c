@@ -283,7 +283,7 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
 static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *rwebinput = input_rwebinput.init(name);
 
@@ -304,14 +304,6 @@ static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)
    (void)enable;
 
    return false;
-}
-
-static bool gfx_ctx_emscripten_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO -verify. */
-   return true;
 }
 
 static float gfx_ctx_emscripten_translate_aspect(void *data,
@@ -387,7 +379,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    NULL, /* set_resize */
    gfx_ctx_emscripten_has_focus,
    gfx_ctx_emscripten_suppress_screensaver,
-   gfx_ctx_emscripten_has_windowed,
+   false,
    gfx_ctx_emscripten_swap_buffers,
    gfx_ctx_emscripten_input_driver,
    gfx_ctx_emscripten_get_proc_address,

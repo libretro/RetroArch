@@ -383,7 +383,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
 }
 
 static void *dispmanx_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
 

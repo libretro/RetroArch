@@ -108,7 +108,7 @@ static bool gfx_ctx_sixel_set_video_mode(void *data,
 
 static void gfx_ctx_sixel_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    (void)data;
 
@@ -132,13 +132,6 @@ static bool gfx_ctx_sixel_has_focus(void *data)
 
 static bool gfx_ctx_sixel_suppress_screensaver(void *data, bool enable)
 {
-   return true;
-}
-
-static bool gfx_ctx_sixel_has_windowed(void *data)
-{
-   (void)data;
-
    return true;
 }
 
@@ -209,7 +202,7 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_set_resize,
    gfx_ctx_sixel_has_focus,
    gfx_ctx_sixel_suppress_screensaver,
-   gfx_ctx_sixel_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_sixel_swap_buffers,
    gfx_ctx_sixel_input_driver,
    NULL,

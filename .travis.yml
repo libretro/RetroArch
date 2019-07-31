@@ -35,6 +35,8 @@ matrix:
     - compiler: gcc
       env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
@@ -61,6 +63,21 @@ matrix:
         script: bash travis_metal_deploy.sh
         on:
           branch: master
+    - language: android
+      # Android builds are only supported on Trusty
+      dist: trusty
+      android:
+        components:
+          - tools
+          - build-tools-28.0.3
+          - android-28
+      install:
+        - echo y | sdkmanager "ndk-bundle"
+      before_script:
+        - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
+      script:
+        - cd pkg/android/phoenix
+        - ./gradlew assembleNormalRelease
 
 before_install:
   - |
@@ -88,6 +105,10 @@ script:
   - |
      if [ -n "$DISABLE_OVERLAY" ]; then
        ARGS="$ARGS --disable-overlay"
+     fi
+  - |
+     if [ -n "$DISABLE_CDROM" ]; then
+       ARGS="$ARGS --disable-cdrom"
      fi
   - |
      if [ -n "$ENABLE_GLES" ]; then

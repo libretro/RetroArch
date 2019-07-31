@@ -53,7 +53,7 @@ typedef struct thread_video thread_video_t;
  **/
 bool video_init_thread(
       const video_driver_t **out_driver, void **out_data,
-      const input_driver_t **input, void **input_data,
+      input_driver_t **input, void **input_data,
       const video_driver_t *driver, const video_info_t info);
 
 /**

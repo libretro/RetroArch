@@ -26,7 +26,6 @@
 
 #include <emscripten/html5.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -76,7 +75,6 @@ typedef struct rwebinput_input
    bool keys[RETROK_LAST];
    rwebinput_mouse_state_t mouse;
    const input_device_driver_t *joypad;
-   bool blocked;
 } rwebinput_input_t;
 
 /* KeyboardEvent.keyCode has been deprecated for a while and doesn't have
@@ -481,13 +479,13 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       int key                          = bind->key;
 
       if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
-         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !rwebinput->blocked)
+         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_rwebinput.keyboard_mapping_blocked)
             return true;
 
       if (bind->valid)
       {
          /* Auto-binds are per joypad, not per user. */
-         const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+         const uint64_t joykey  = (binds[id].joykey != NO_BTN)
             ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
          const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
             ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
@@ -495,7 +493,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
          if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
                   bind->mbutton, false))
             return true;
-         if (joykey != NO_BTN && rwebinput->joypad->button(joypad_info.joy_idx, joykey))
+         if ((uint16_t)joykey != NO_BTN && rwebinput->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
             return true;
          if (((float)abs(rwebinput->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
             return true;
@@ -528,7 +526,6 @@ static int16_t rwebinput_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                   = 0;
    rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;
 
    switch (device)
@@ -537,27 +534,37 @@ static int16_t rwebinput_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (rwebinput_is_pressed(
                         rwebinput, joypad_info, port, binds[port], i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = rwebinput_is_pressed(rwebinput, joypad_info, binds[port],
-                     port, id);
+               if (rwebinput_is_pressed(rwebinput, joypad_info, binds[port],
+                     port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
-         ret = rwebinput_analog_pressed(rwebinput, joypad_info, binds[port],
-            idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(rwebinput->joypad, joypad_info, port,
-               idx, id, binds[port]);
-         return ret;
+         {
+            int16_t ret = rwebinput_analog_pressed(
+                  rwebinput, joypad_info, binds[port],
+                  idx, id);
+            if (!ret && binds[port])
+               ret = input_joypad_analog(rwebinput->joypad, joypad_info, port,
+                     idx, id, binds[port]);
+            return ret;
+         }
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);
       case RETRO_DEVICE_MOUSE:
@@ -692,22 +699,6 @@ static uint64_t rwebinput_get_capabilities(void *data)
    return caps;
 }
 
-static bool rwebinput_keyboard_mapping_is_blocked(void *data)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   if (!rwebinput)
-      return false;
-   return rwebinput->blocked;
-}
-
-static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   if (!rwebinput)
-      return;
-   rwebinput->blocked = value;
-}
-
 input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
@@ -722,6 +713,5 @@ input_driver_t input_rwebinput = {
    rwebinput_set_rumble,
    rwebinput_get_joypad_driver,
    NULL,
-   rwebinput_keyboard_mapping_is_blocked,
-   rwebinput_keyboard_mapping_set_block,
+   false
 };

@@ -26,29 +26,6 @@
 
 RETRO_BEGIN_DECLS
 
-#define DRIVERS_CMD_ALL \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVER_MENU_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
-#define DRIVERS_CMD_ALL_BUT_MENU \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
 enum
 {
    DRIVER_AUDIO = 0,
@@ -114,10 +91,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data);
  * If nonblock state is false, sets blocking state for both
  * audio and video drivers instead. */
 void driver_set_nonblock_state(void);
-
-void driver_uninit(int flags);
-
-void drivers_init(int flags);
 
 RETRO_END_DECLS
 

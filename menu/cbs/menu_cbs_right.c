@@ -28,7 +28,9 @@
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../core.h"
@@ -51,6 +53,7 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
@@ -83,6 +86,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 
    return ret;
 }
+#endif
 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
@@ -292,6 +296,7 @@ static int action_right_cheat_delete_all(unsigned type, const char *label,
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
@@ -338,6 +343,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
          setting_get_type(setting), MENU_ACTION_RIGHT,
          wraparound);
 }
+#endif
 
 static int action_right_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
@@ -353,6 +359,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
@@ -372,6 +379,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 
    return 0;
 }
+#endif
 
 static int action_right_video_gpu_index(unsigned type, const char *label,
       bool wraparound)
@@ -455,6 +463,7 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_watch_for_changes(unsigned type, const char *label,
       bool wraparound)
 {
@@ -462,6 +471,7 @@ static int action_right_shader_watch_for_changes(unsigned type, const char *labe
    settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
    return 0;
 }
+#endif
 
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
@@ -537,6 +547,28 @@ static int playlist_association_right(unsigned type, const char *label,
    return 0;
 }
 
+static int playlist_label_display_mode_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   enum playlist_label_display_mode label_display_mode;
+   playlist_t *playlist             = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   label_display_mode = playlist_get_label_display_mode(playlist);
+
+   if (label_display_mode != LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
+      label_display_mode = (enum playlist_label_display_mode)((int)label_display_mode + 1);
+   else if (wraparound)
+      label_display_mode = LABEL_DISPLAY_MODE_DEFAULT;
+
+   playlist_set_label_display_mode(playlist, label_display_mode);
+   playlist_write_file(playlist);
+
+   return 0;
+}
+
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -576,6 +608,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
       BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
    }
 #endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -586,6 +619,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
    }
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
@@ -596,7 +630,8 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
    }
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+            (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_RIGHT(cbs, core_setting_right);
    }
@@ -735,19 +770,29 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_RIGHT(cbs, action_right_cheat_delete_all);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
+#endif
                break;
             case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_watch_for_changes);
+#endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
+#endif
                break;
             case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
                BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
@@ -801,6 +846,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
                BIND_ACTION_RIGHT(cbs, playlist_association_right);
+               break;
+            case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
+               BIND_ACTION_RIGHT(cbs, playlist_label_display_mode_right);
                break;
             default:
                return -1;

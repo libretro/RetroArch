@@ -88,7 +88,7 @@
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(const input_driver_t **)input
+                        input:(input_driver_t **)input
                     inputData:(void **)inputData
 {
    if (self = [super init])
@@ -1146,8 +1146,6 @@ typedef struct MTLALIGN(16)
       texture_t *source = NULL;
       if (!video_shader_read_conf_preset(conf, shader))
          return NO;
-
-      video_shader_resolve_relative(shader, path.UTF8String);
 
       source = &_engine.frame.texture[0];
 

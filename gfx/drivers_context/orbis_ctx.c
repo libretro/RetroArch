@@ -184,10 +184,10 @@ error:
 }
 
 static void orbis_ctx_input_driver(void *data,
-                                    const char *name,
-                                    const input_driver_t **input, void **input_data)
+      const char *name,
+      input_driver_t **input, void **input_data)
 {
-    *input = NULL;
+    *input      = NULL;
     *input_data = NULL;
 }
 
@@ -326,7 +326,7 @@ const gfx_ctx_driver_t orbis_ctx = {
     NULL, /* set_resize */
     orbis_ctx_has_focus,
     orbis_ctx_suppress_screensaver,
-    NULL, /* has_windowed */
+    false, /* has_windowed */
     orbis_ctx_swap_buffers,
     orbis_ctx_input_driver,
     orbis_ctx_get_proc_address,

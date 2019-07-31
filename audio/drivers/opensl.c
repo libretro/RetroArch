@@ -152,7 +152,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 
    fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
    fmt_pcm.numChannels    = 2;
-   fmt_pcm.samplesPerSec  = rate * 1000; // Samplerate is in milli-Hz.
+   fmt_pcm.samplesPerSec  = rate * 1000; /* Samplerate is in milli-Hz. */
    fmt_pcm.bitsPerSample  = 16;
    fmt_pcm.containerSize  = 16;
    fmt_pcm.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;

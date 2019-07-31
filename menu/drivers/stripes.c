@@ -2472,7 +2472,7 @@ static int stripes_draw_item(
    if (i == current && width > 320 && height > 240
          && !string_is_empty(entry->sublabel))
    {
-      char entry_sublabel[255] = {0};
+      char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH] = {0};
 
       label_offset      = - stripes->margins_label_top;
 

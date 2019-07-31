@@ -48,7 +48,9 @@ UI
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
 #include "../ui/drivers/qt/gridview.cpp"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../ui/drivers/qt/shaderparamsdialog.cpp"
+#endif
 #include "../ui/drivers/qt/coreoptionsdialog.cpp"
 #include "../ui/drivers/qt/filedropwidget.cpp"
 #include "../ui/drivers/qt/coreinfodialog.cpp"
@@ -61,17 +63,13 @@ UI
 #include "../ui/drivers/qt/playlistthumbnaildownload.cpp"
 #ifdef HAVE_MENU
 #include "../ui/drivers/qt/settingswidgets.cpp"
-#include "../ui/drivers/qt/options/drivers.cpp"
+#include "../ui/drivers/qt/options/generic.cpp"
 #include "../ui/drivers/qt/options/video.cpp"
 #include "../ui/drivers/qt/options/audio.cpp"
 #include "../ui/drivers/qt/options/saving.cpp"
 #include "../ui/drivers/qt/options/throttle.cpp"
 #include "../ui/drivers/qt/options/osd.cpp"
 #include "../ui/drivers/qt/options/input.cpp"
-#include "../ui/drivers/qt/options/directory.cpp"
-#include "../ui/drivers/qt/options/logging.cpp"
-#include "../ui/drivers/qt/options/core.cpp"
-#include "../ui/drivers/qt/options/configuration.cpp"
 #include "../ui/drivers/qt/options/latency.cpp"
 #include "../ui/drivers/qt/options/playlists.cpp"
 #include "../ui/drivers/qt/options/user.cpp"
@@ -88,7 +86,9 @@ UI
 #include "../ui/drivers/qt/moc_filedropwidget.cpp"
 #include "../ui/drivers/qt/moc_gridview.cpp"
 #include "../ui/drivers/qt/moc_playlistentrydialog.cpp"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../ui/drivers/qt/moc_shaderparamsdialog.cpp"
+#endif
 #include "../ui/drivers/qt/moc_ui_qt_load_core_window.cpp"
 #include "../ui/drivers/qt/moc_viewoptionsdialog.cpp"
 #endif

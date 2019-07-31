@@ -163,7 +163,6 @@ struct video_shader
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
- *
  * Loads preset file and all associated state (passes,
  * textures, imports, etc).
  *
@@ -178,24 +177,13 @@ bool video_shader_read_conf_preset(config_file_t *conf,
  * @shader            : Shader passes handle.
  * @preset_path       : Optional path to where the preset will be written.
  *
- * Saves preset and all associated state (passes,
- * textures, imports, etc) to disk.
+ * Writes preset and all associated state (passes,
+ * textures, imports, etc) into @conf.
  * If @preset_path is not NULL, shader paths are saved
  * relative to it.
  **/
 void video_shader_write_conf_preset(config_file_t *conf,
       struct video_shader *shader, const char *preset_path);
-
-/**
- * video_shader_resolve_relative:
- * @shader            : Shader pass handle.
- * @ref_path          : Relative shader path.
- *
- * Resolves relative shader path (@ref_path) into absolute
- * shader paths.
- **/
-void video_shader_resolve_relative(struct video_shader *shader,
-      const char *ref_path);
 
 /**
  * video_shader_resolve_parameters:

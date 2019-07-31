@@ -18,7 +18,8 @@
 #include "../../config.h"
 #endif
 
-#include "../input_driver.h"
+#include "../../config.def.h"
+
 
 #include "../../tasks/tasks_internal.h"
 
@@ -27,12 +28,8 @@
 #include "string.h"
 #include "3ds.h"
 
-#ifndef MAX_PADS
-#define MAX_PADS 1
-#endif
-
 static uint32_t pad_state;
-static int16_t analog_state[1][2][2];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
 
 static const char *ctr_joypad_name(unsigned pad)
@@ -63,7 +60,7 @@ static bool ctr_joypad_init(void *data)
 
 static bool ctr_joypad_button(unsigned port_num, uint16_t key)
 {
-   if (port_num >= MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
    return (pad_state & (1 << key));
@@ -71,7 +68,7 @@ static bool ctr_joypad_button(unsigned port_num, uint16_t key)
 
 static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if ( port_num < MAX_PADS )
+	if (port_num < DEFAULT_MAX_PADS)
    {
 		BITS_COPY16_PTR( state, pad_state );
 	}
@@ -86,7 +83,7 @@ static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)

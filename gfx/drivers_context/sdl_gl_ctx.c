@@ -366,12 +366,6 @@ static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool sdl_ctx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void sdl_ctx_swap_buffers(void *data, void *data2)
 {
 #ifdef HAVE_SDL2
@@ -385,7 +379,7 @@ static void sdl_ctx_swap_buffers(void *data, void *data2)
 
 static void sdl_ctx_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;
@@ -434,7 +428,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL, /* set_resize */
    sdl_ctx_has_focus,
    sdl_ctx_suppress_screensaver,
-   sdl_ctx_has_windowed,
+   true, /* has_windowed */
    sdl_ctx_swap_buffers,
    sdl_ctx_input_driver,
    sdl_ctx_get_proc_address,

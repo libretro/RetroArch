@@ -78,7 +78,7 @@ static void gdi_gfx_create(void)
 }
 
 static void *gdi_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
    gfx_ctx_input_t inp;

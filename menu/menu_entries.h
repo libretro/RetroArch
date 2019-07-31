@@ -30,6 +30,8 @@
 
 RETRO_BEGIN_DECLS
 
+#define MENU_SUBLABEL_MAX_LENGTH 1024
+
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
@@ -80,7 +82,7 @@ typedef struct menu_ctx_list
 
 typedef struct menu_file_list_cbs
 {
-   char action_sublabel_cache[512];
+   char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
    char action_title_cache   [512];
 
    enum msg_hash_enums enum_idx;
@@ -210,7 +212,7 @@ typedef struct menu_entry
    size_t entry_idx;
    char path[255];
    char label[255];
-   char sublabel[512];
+   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
    char rich_label[255];
    char value[255];
    char password_value[255];

@@ -21,6 +21,8 @@
 #include <wiiuse/wpad.h>
 #endif
 
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO
@@ -37,10 +39,6 @@
 #define NUM_DEVICES 4
 #else
 #define NUM_DEVICES 1
-#endif
-
-#ifndef MAX_PADS
-#define MAX_PADS 4
 #endif
 
 enum
@@ -99,9 +97,9 @@ enum
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
 extern uint64_t lifecycle_state;
-static uint64_t pad_state[MAX_PADS];
-static uint32_t pad_type[MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
-static int16_t analog_state[MAX_PADS][2][2];
+static uint64_t pad_state[DEFAULT_MAX_PADS];
+static uint32_t pad_type[DEFAULT_MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static bool g_menu = false;
 
 #ifdef HW_RVL
@@ -154,14 +152,14 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
 
 static bool gx_joypad_button(unsigned port, uint16_t key)
 {
-   if (port >= MAX_PADS)
+   if (port >= DEFAULT_MAX_PADS)
       return false;
    return (pad_state[port] & (UINT64_C(1) << key));
 }
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	if (port < MAX_PADS)
+	if (port < DEFAULT_MAX_PADS)
    {
 		BITS_COPY16_PTR( state, pad_state[port] );
 	}
@@ -176,7 +174,7 @@ static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -333,7 +331,7 @@ static void gx_joypad_poll(void)
    WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 #endif
 
-   for (port = 0; port < MAX_PADS; port++)
+   for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
       uint32_t down = 0, ptype = WPAD_EXP_NOCONTROLLER;
       uint64_t *state_cur = &pad_state[port];
@@ -478,7 +476,7 @@ static bool gx_joypad_init(void *data)
 
    (void)data;
 
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
       pad_type[i] = WPAD_EXP_NOCONTROLLER;
 
    PAD_Init();
@@ -501,7 +499,7 @@ static void gx_joypad_destroy(void)
 #ifdef HW_RVL
 #if 0
    int i;
-   for (i = 0; i < MAX_PADS; i++)
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       /* Commenting this out fixes the Wii
        * remote not reconnecting after

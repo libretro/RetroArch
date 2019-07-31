@@ -994,7 +994,7 @@ error:
 
 static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *x_input         = NULL;
 #ifdef HAVE_UDEV
@@ -1025,12 +1025,6 @@ static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
 
    x11_suspend_screensaver(video_driver_window_get(), enable);
 
-   return true;
-}
-
-static bool gfx_ctx_x_has_windowed(void *data)
-{
-   (void)data;
    return true;
 }
 
@@ -1260,7 +1254,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_set_resize,
    x11_has_focus,
    gfx_ctx_x_suppress_screensaver,
-   gfx_ctx_x_has_windowed,
+   true, /* has_windowed */
    gfx_ctx_x_swap_buffers,
    gfx_ctx_x_input_driver,
    gfx_ctx_x_get_proc_address,

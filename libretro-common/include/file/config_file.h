@@ -94,7 +94,8 @@ config_file_t *config_file_new_alloc(void);
 config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb);
 
 /* Load a config file from a string. */
-config_file_t *config_file_new_from_string(const char *from_string);
+config_file_t *config_file_new_from_string(const char *from_string,
+      const char *path);
 
 config_file_t *config_file_new_from_path_to_string(const char *path);
 

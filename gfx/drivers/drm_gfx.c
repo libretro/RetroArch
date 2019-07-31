@@ -704,7 +704,7 @@ static bool init_drm(void)
 }
 
 static void *drm_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    struct drm_video *_drmvars = (struct drm_video*)
       calloc(1, sizeof(struct drm_video));

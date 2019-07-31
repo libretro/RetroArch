@@ -33,7 +33,6 @@
 #endif
 
 #include "file_path_special.h"
-#include "input/input_driver.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
@@ -51,7 +50,7 @@
 #include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 
-#include "../list_special.h"
+#include "list_special.h"
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
@@ -1325,7 +1324,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    unsigned count                      = 0;
 
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
-   SETTING_BOOL("automatically_add_content_to_playlist", &settings->bools.automatically_add_content_to_playlist, true, automatically_add_content_to_playlist, false);
+   SETTING_BOOL("automatically_add_content_to_playlist", &settings->bools.automatically_add_content_to_playlist, true, DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST, false);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, ui_companion_toggle, false);
@@ -1333,7 +1332,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_gpu_record",              &settings->bools.video_gpu_record, true, DEFAULT_GPU_RECORD, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
-   SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
+   SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("netplay_public_announce",       &settings->bools.netplay_public_announce, true, DEFAULT_NETPLAY_PUBLIC_ANNOUNCE, false);
    SETTING_BOOL("netplay_start_as_spectator",    &settings->bools.netplay_start_as_spectator, false, netplay_start_as_spectator, false);
@@ -1370,7 +1369,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("statistics_show",               &settings->bools.video_statistics_show, true, DEFAULT_STATISTICS_SHOW, false);
    SETTING_BOOL("framecount_show",               &settings->bools.video_framecount_show, true, DEFAULT_FRAMECOUNT_SHOW, false);
    SETTING_BOOL("memory_show",                   &settings->bools.video_memory_show, true, DEFAULT_MEMORY_SHOW, false);
-   SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
+   SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, DEFAULT_UI_MENUBAR_ENABLE, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, DEFAULT_REWIND_ENABLE, false);
    SETTING_BOOL("vrr_runloop_enable",            &settings->bools.vrr_runloop_enable, true, DEFAULT_VRR_RUNLOOP_ENABLE, false);
@@ -1442,7 +1441,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, true, false);
-   SETTING_BOOL("dpi_override_enable",           &settings->bools.menu_dpi_override_enable, true, menu_dpi_override_enable, false);
+   SETTING_BOOL("dpi_override_enable",           &settings->bools.menu_dpi_override_enable, true, DEFAULT_MENU_DPI_OVERRIDE_ENABLE, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, menu_savestate_resume, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
@@ -1495,6 +1494,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, content_show_playlists, false);
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);
+#ifdef HAVE_CDROM
+   SETTING_BOOL("menu_show_load_disc",           &settings->bools.menu_show_load_disc, true, menu_show_load_disc, false);
+   SETTING_BOOL("menu_show_dump_disc",           &settings->bools.menu_show_dump_disc, true, menu_show_dump_disc, false);
+#endif
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
    SETTING_BOOL("menu_show_configurations",      &settings->bools.menu_show_configurations, true, menu_show_configurations, false);
    SETTING_BOOL("menu_show_latency",      &settings->bools.menu_show_latency, true, true, false);
@@ -1611,16 +1614,16 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, playlist_sort_alphabetical, false);
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, playlist_fuzzy_archive_match, false);
 
-   SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, quit_press_twice, false);
+   SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
    SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress, true, vibrate_on_keypress, false);
    SETTING_BOOL("enable_device_vibration", &settings->bools.enable_device_vibration, true, enable_device_vibration, false);
 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
 #endif
-   SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, default_log_to_file, false);
+   SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
-   SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, log_to_file_timestamp, false);
+   SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
    SETTING_BOOL("ai_service_enable", &settings->bools.ai_service_enable, true, false, false);
 
    *size = count;
@@ -1638,8 +1641,8 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
-   SETTING_FLOAT("crt_video_refresh_rate",   &settings->floats.crt_video_refresh_rate, true, crt_refresh_rate, false);
-   SETTING_FLOAT("video_refresh_rate",       &settings->floats.video_refresh_rate, true, refresh_rate, false);
+   SETTING_FLOAT("crt_video_refresh_rate",   &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
+   SETTING_FLOAT("video_refresh_rate",       &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
    SETTING_FLOAT("audio_rate_control_delta", audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA), true, DEFAULT_RATE_CONTROL_DELTA, false);
    SETTING_FLOAT("audio_max_timing_skew",    &settings->floats.audio_max_timing_skew, true, DEFAULT_MAX_TIMING_SKEW, false);
    SETTING_FLOAT("audio_volume",             &settings->floats.audio_volume, true, DEFAULT_AUDIO_VOLUME, false);
@@ -1699,7 +1702,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("rewind_granularity",           &settings->uints.rewind_granularity, true, DEFAULT_REWIND_GRANULARITY, false);
    SETTING_UINT("rewind_buffer_size_step",      &settings->uints.rewind_buffer_size_step, true, DEFAULT_REWIND_BUFFER_SIZE_STEP, false);
    SETTING_UINT("autosave_interval",            &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
-   SETTING_UINT("libretro_log_level",           &settings->uints.libretro_log_level, true, libretro_log_level, false);
+   SETTING_UINT("libretro_log_level",           &settings->uints.libretro_log_level, true, DEFAULT_LIBRETRO_LOG_LEVEL, false);
    SETTING_UINT("keyboard_gamepad_mapping_type",&settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
    SETTING_UINT("input_poll_type_behavior",     &settings->uints.input_poll_type_behavior, true, 2, false);
    SETTING_UINT("video_monitor_index",          &settings->uints.video_monitor_index, true, DEFAULT_MONITOR_INDEX, false);
@@ -1721,7 +1724,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_overscan_correction_bottom", &settings->uints.video_overscan_correction_bottom, true, DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM, false);
 #endif
 #ifdef HAVE_MENU
-   SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
+   SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, DEFAULT_MENU_DPI_OVERRIDE_VALUE, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("menu_thumbnail_upscale_threshold", &settings->uints.menu_thumbnail_upscale_threshold, true, menu_thumbnail_upscale_threshold, false);
@@ -1878,6 +1881,7 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_D3D12
    SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
 #endif
+   SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
 
    *size = count;
 
@@ -2048,7 +2052,7 @@ void config_set_defaults(void)
    settings->floats.video_msg_color_b          = ((message_color >>  0) & 0xff) / 255.0f;
 
    if (g_defaults.settings.video_refresh_rate > 0.0 &&
-         g_defaults.settings.video_refresh_rate != refresh_rate)
+         g_defaults.settings.video_refresh_rate != DEFAULT_REFRESH_RATE)
       settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
 
    if (DEFAULT_AUDIO_DEVICE)
@@ -3123,6 +3127,21 @@ static bool config_load_file(const char *path, settings_t *settings)
    if (!config_entry_exists(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
+   /* If this is the first run of an existing installation
+    * after the independent favourites playlist size limit was
+    * added, set the favourites limit according to the current
+    * history playlist size limit. (Have to do this, otherwise
+    * users with large custom history size limits may lose
+    * favourites entries when updating RetroArch...) */
+   if ( config_entry_exists(conf, "content_history_size") &&
+       !config_entry_exists(conf, "content_favorites_size"))
+   {
+      if (settings->uints.content_history_size > 999)
+         settings->ints.content_favorites_size = -1;
+      else
+         settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
+   }
+
    ret = true;
 end:
    if (conf)
@@ -3386,7 +3405,7 @@ bool config_unload_override(void)
  *
  * Returns: false if there was an error or no action was performed.
  */
-bool config_load_remap(void)
+bool config_load_remap(const char *directory_input_remapping)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
@@ -3394,7 +3413,6 @@ bool config_load_remap(void)
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
@@ -3406,7 +3424,7 @@ bool config_load_remap(void)
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
-   if (string_is_empty(settings->paths.directory_input_remapping))
+   if (string_is_empty(directory_input_remapping))
       return false;
 
    if (!string_is_empty(rarch_path_basename))
@@ -3427,9 +3445,7 @@ bool config_load_remap(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
-   strlcpy(remap_directory,
-         settings->paths.directory_input_remapping,
-         path_size);
+   strlcpy(remap_directory, directory_input_remapping, path_size);
    RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
@@ -3451,55 +3467,32 @@ bool config_load_remap(void)
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          path_size);
 
-   /* Create a new config file from game_path */
-   new_conf = config_file_new_from_path_to_string(game_path);
+   input_remapping_set_defaults(false);
 
    /* If a game remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
       RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no game-specific remap found at %s.\n", game_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from content_path */
-   new_conf = config_file_new_from_path_to_string(content_path);
 
    /* If a content-dir remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
       RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(
-                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          goto success;
       }
    }
-   else
-   {
-      RARCH_LOG("[Remaps]: no content-dir-specific remap found at %s.\n", content_path);
-      input_remapping_set_defaults(false);
-   }
-
-   /* Create a new config file from core_path */
-   new_conf = config_file_new_from_path_to_string(core_path);
 
    /* If a core remap file exists, load it. */
-   if (new_conf)
+   if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
       RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
@@ -3507,11 +3500,6 @@ bool config_load_remap(void)
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }
-   }
-   else
-   {
-      RARCH_LOG("[Remaps]: no core-specific remap found at %s.\n", core_path);
-      input_remapping_set_defaults(false);
    }
 
    new_conf = NULL;
@@ -3523,6 +3511,9 @@ bool config_load_remap(void)
    return false;
 
 success:
+   runloop_msg_queue_push(msg_hash_to_str(
+            MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    free(content_path);
    free(remap_directory);
    free(core_path);
@@ -4139,23 +4130,6 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
-
-         /* blacklist these since they are handled by remaps */
-         /* to-do: add setting to control blacklisting
-         if (settings->uints.input_libretro_device[i]
-               != overrides->uints.input_libretro_device[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
-         }
-
-         if (settings->uints.input_analog_dpad_mode[i]
-               != overrides->uints.input_analog_dpad_mode[i])
-         {
-            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-         }
-         */
       }
 
       ret = false;

@@ -47,8 +47,7 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../managers/cheat_manager.h"
-#include "../input/input_driver.h"
-#include "../tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../playlist.h"
 #include "../../runtime_file.h"
@@ -235,6 +234,7 @@ default_sublabel_macro(action_bind_sublabel_video_disable_composition,     MENU_
 default_sublabel_macro(action_bind_sublabel_video_smooth,                  MENU_ENUM_SUBLABEL_VIDEO_SMOOTH)
 default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE)
 default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
+default_sublabel_macro(action_bind_sublabel_content_favorites_size,        MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE)
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_quit_press_twice,              MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
@@ -493,6 +493,8 @@ default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                 
 default_sublabel_macro(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES)
 default_sublabel_macro(action_bind_sublabel_menu_show_load_core,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE)
 default_sublabel_macro(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
+default_sublabel_macro(action_bind_sublabel_menu_show_load_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC)
+default_sublabel_macro(action_bind_sublabel_menu_show_dump_disc,                   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC)
 default_sublabel_macro(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_menu_show_configurations,              MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS)
 default_sublabel_macro(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
@@ -1123,7 +1125,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    }
 #endif
 
-   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+       (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
       return 0;
@@ -1453,6 +1456,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_content);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_disc);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_dump_disc);
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_information);
@@ -2535,6 +2544,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_history_size);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_favorites_size);
             break;
          case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_use_mitm_server);

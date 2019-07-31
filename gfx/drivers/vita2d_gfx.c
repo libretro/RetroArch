@@ -44,7 +44,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
 
 static void *vita2d_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
    unsigned temp_width                = PSP_FB_WIDTH;

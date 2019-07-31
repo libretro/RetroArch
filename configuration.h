@@ -164,6 +164,8 @@ typedef struct settings
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;
+      bool menu_show_load_disc;
+      bool menu_show_dump_disc;
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
@@ -399,6 +401,7 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+      int content_favorites_size;
    } ints;
 
    struct
@@ -784,7 +787,7 @@ bool config_unload_override(void);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_remap(void);
+bool config_load_remap(const char *directory_input_remapping);
 
 /**
  * config_save_autoconf_profile:

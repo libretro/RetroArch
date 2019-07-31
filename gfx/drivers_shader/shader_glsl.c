@@ -934,8 +934,6 @@ static void *gl_glsl_init(void *data, const char *path)
       }
    }
 
-   if (!string_is_empty(path))
-      video_shader_resolve_relative(glsl->shader, path);
    video_shader_resolve_parameters(conf, glsl->shader);
 
    if (conf)

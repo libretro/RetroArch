@@ -61,7 +61,6 @@ bool menu_shader_manager_init(void)
 {
    bool is_preset              = false;
    config_file_t *conf         = NULL;
-   char *new_path              = NULL;
    const char *path_shader     = retroarch_get_shader_preset();
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
@@ -80,8 +79,6 @@ bool menu_shader_manager_init(void)
    {
       if (path_is_valid(path_shader))
          conf = config_file_new_from_path_to_string(path_shader);
-
-      new_path = strdup(path_shader);
    }
    else
    {
@@ -131,22 +128,12 @@ bool menu_shader_manager_init(void)
                conf = config_file_new_from_path_to_string(preset_path);
          }
 #endif
-
-         new_path = strdup(preset_path);
       }
    }
 
-   if (
-         !string_is_empty(new_path) && conf &&
-         video_shader_read_conf_preset(conf, menu_driver_shader)
-      )
-   {
-      video_shader_resolve_relative(menu_driver_shader, new_path);
+   if (conf && video_shader_read_conf_preset(conf, menu_driver_shader))
       video_shader_resolve_parameters(conf, menu_driver_shader);
-   }
 
-   if (new_path)
-      free(new_path);
    if (conf)
       config_file_free(conf);
 
@@ -195,10 +182,8 @@ bool menu_shader_manager_set_preset(void *data,
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
    if (video_shader_read_conf_preset(conf, shader))
-   {
-      video_shader_resolve_relative(shader, preset_path);
       video_shader_resolve_parameters(conf, shader);
-   }
+
    config_file_free(conf);
 
 #ifdef HAVE_MENU

@@ -1,4 +1,4 @@
-﻿#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
@@ -1259,6 +1259,42 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
       "Listy odtwarzania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Listy odtwarzania")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Label Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Change how the content labels are displayed in this playlist."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+    "Show full labels"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+    "Remove () content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+    "Remove [] content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+    "Remove () and []"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+    "Keep region"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+    "Keep disc index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+    "Keep region and disc index"
+    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "Obsługa dotyku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PORT,
@@ -2705,8 +2741,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Pokaż interfejsy sieciowe i powiązane adresy IP.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "Pokaż informacje dotyczące konkretnego urządzenia.")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Zamknij program.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
       "Ustaw niestandardowy rozmiar szerokości okna wyświetlacza. Pozostawienie go na 0 spowoduje przeskalowanie okna tak dużego, jak to możliwe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
@@ -3401,10 +3435,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "Pokaż pomoc")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
       "Pokaż/ukryj opcję \"Pomoc\".")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Pokaż Zamknij RetroArch")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-      "Pokaż/ukryj opcję 'Zamknij RetroArch'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
       "Pokaż restart")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
@@ -3830,9 +3860,331 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Menu główne animacji Otwiera/Zamyka")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
+    "Informacje o dysku"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
+    "Wyświetl informacje o włożonych dyskach multimedialnych."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Pokaż Ustaw podstawowe stowarzyszenie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+    "Pokaż/ukryj opcję „Ustaw podstawowe stowarzyszenie”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Pokaż Pobierz Miniatury"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+    "Pokaż/ukryj opcję „Pobierz miniatury”."
+    )
+   MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Pokaż aktualizację starszych miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+    "Pokaż/ukryj możliwość pobierania starszych pakietów miniatur."
+    )
+   MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+    "Pokaż podpowiedzi menu"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+     "Styl daty/godziny"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+    "Wznów zawartość po użyciu stanów zapisu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Współczynnik skali miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Próg skalowania miniatur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+    "Animacja paska tekstu"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+    "Szybkość paska tekstu"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+    "Sortuj listy alfabetycznie"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+    "Zapisz listy odtwarzania w starym formacie"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Pokaż powiązane rdzenie na listach odtwarzania"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+    "Pokaż etykiety pomocnicze listy odtwarzania"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Czas działania etykiety podrzędnej listy odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "Dopasowanie rozmycia archiwum"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+    "Zarządzanie listami odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Pobieranie miniatur na żądanie"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Pokaż kursor myszy z nakładką"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+    "Dołącz szczegóły pamięci"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+    "Synchronizuj z dokładną liczbą klatek na sekundę (G-Sync, FreeSync)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+    "Zaloguj się do pliku"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+    "Pliki dziennika ze znacznikami czasu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+    "Zapisz dziennik środowiska wykonawczego (na rdzeń)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Zapisz dziennik czasu wykonywania (agregacja)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+    "Naciśnij dwukrotnie quit"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+    "Wibruj po naciśnięciu klawisza"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+    "Włącz wibracje urządzenia (dla obsługiwanych rdzeni)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Wprowadź próg osi przycisku"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+    "Martwa strefa analoga"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+    "Czułość analoga"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+    "Rozpocznij lub kontynuuj wyszukiwanie kodu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+    "Załaduj plik kodu (dołącz)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+    "Odśwież Kody specyficzne dla gry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+    "Dodaj nowy kod do góry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+    "Dodaj nowy kod do dołu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+    "Usuń wszystkie kody"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+    "Automatyczne stosowanie cheatów podczas ładowania gry"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+    "Zastosuj po przełączeniu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+    "Zapisz plik zmiany mapowania zawartości"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+    "Rozmiar bufora przewijania (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+    "Krok zmiany rozmiaru bufora (MB)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Wyślij informacje o debugowaniu"
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż uruchom ponownie RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż zamknij RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+    "Pokaż/ukryj opcję „Zakończ RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+    "Pokaż uruchom ponownie RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+    "Pokaż/ukryj opcję „Uruchom ponownie RetroArch”."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+    "Dzienniki uruchomia"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+    "Zapisz pliki dziennika środowiska wykonawczego do tego katalogu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_DIR,
+    "Dzienniki zdarzeń systemowych"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+    "Zapisz wszystkie listy odtwarzania w tym katalogu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+    "Wykonuj zadania konserwacyjne na wybranej liście odtwarzania (np. Ustaw/przywróć domyślne skojarzenia rdzenia)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+    "Podczas wyszukiwania list odtwarzania dla wpisów powiązanych ze skompresowanymi plikami, dopasuj tylko nazwę pliku archiwum zamiast [nazwa pliku] + [treść]. Włącz to, aby uniknąć duplikatów wpisów historii treści podczas ładowania skompresowanych plików."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+    "Wybiera typ rekordu dziennika środowiska wykonawczego, który ma być wyświetlany na sublabelach listy odtwarzania. (Należy pamiętać, że odpowiedni dziennik środowiska wykonawczego musi być włączony za pomocą menu opcji „Zapisywanie”)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+    "Wyświetla dodatkowe informacje dla każdego wpisu listy odtwarzania, takie jak bieżące powiązanie rdzenia i środowisko wykonawcze (jeśli jest dostępne). Ma zmienny wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+    "Określ, kiedy oznaczyć pozycje listy odtwarzania aktualnie powiązanym rdzeniem (jeśli istnieje). UWAGA: To ustawienie jest ignorowane po włączeniu sublabeli listy odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+    "Sortuje listy odtwarzania treści w porządku alfabetycznym. Pamiętaj, że listy odtwarzania historii ostatnio używanych gier, obrazów, muzyki i filmów są wykluczone."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+    "Pozwól użytkownikowi usunąć wpisy z list odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+    "Pozwól użytkownikowi zmieniać nazwy wpisów na listach odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+    "Automatycznie pobieraj brakujące miniatury podczas przeglądania list odtwarzania. Ma poważny wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+    "Brak odchylenia od żądanego czasu rdzenia. Użyj dla ekranów o zmiennej częstotliwości odświeżania, G-Sync, FreeSync."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+    "Przekierowuje komunikaty dziennika zdarzeń systemowych do pliku. Wymaga „oznajmiania rejestrowania”, aby włączyć."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+    "Podczas logowania do pliku przekierowuje dane wyjściowe z każdej sesji RetroArch do nowego pliku ze znacznikami czasu. Jeśli opcja jest wyłączona, dziennik jest nadpisywany przy każdym ponownym uruchomieniu RetroArch."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+    "Śledzi, jak długo każdy element treści został uruchomiony, z rekordami oddzielonymi rdzeniem."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+    "Śledzi, jak długo każdy element treści został uruchomiony, zapisany jako suma całkowita dla wszystkich rdzeni."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+    "Jak daleko należy przechylać oś, aby uzyskać naciśnięcie przycisku."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+    "Pamiętaj o wielkości i pozycji okna, włączenie tej opcji ma pierwszeństwo przed skalą okienkową"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOG_DIR,
+    "Zapisz pliki dziennika zdarzeń systemowych w tym katalogu."
+    )
+   MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+    "Automatyczne zamykanie menu i wznawianie bieżącej zawartości po wybraniu „Zapisz stan” lub „Wczytaj stan” z Szybkiego menu. Wyłączenie tego może poprawić wydajność stanu zapisywania na bardzo wolnych urządzeniach."
+    )
+   #ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Uruchom ponownie program."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+    "Zamknij program."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+    "Uruchom ponownie program."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+    "Dopasuj ramki i elementy sterujące na ekranie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+    "Dostosuj powiadomienia na ekranie"
     )

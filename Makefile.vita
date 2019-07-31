@@ -12,15 +12,17 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 DEFINES :=
+INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1
 	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB DEFINES -DHAVE_KEYMAPPER
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER -DHAVE_UPDATE_ASSETS
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER -DHAVE_UPDATE_ASSETS
 	ifeq ($(DEBUG), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
+	INCDIRS += -I. -Ideps/7zip -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb
 else
 
 	HAVE_NEON		:= 1
@@ -60,11 +62,7 @@ else
 	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += input/drivers/psp_input.o
-	OBJ += input/drivers_joypad/psp_joypad.o
-	OBJ += audio/drivers/psp_audio.o
-	OBJ += frontend/drivers/platform_psp.o
+	INCDIRS += $(INCLUDE_DIRS)
 endif
 
 ifeq ($(strip $(VITASDK)),)
@@ -84,7 +82,6 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Ideps/stb
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA

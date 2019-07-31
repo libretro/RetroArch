@@ -15,7 +15,6 @@
 
 #include <windows.h>
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -37,7 +36,6 @@ typedef struct
 
 typedef struct
 {
-   bool kbd_mapp_block;
    bool mouse_grab;
    winraw_keyboard_t keyboard;
    HWND window;
@@ -402,19 +400,19 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    const struct retro_keybind *bind = &binds[id];
 
    if ((bind->key < RETROK_LAST) && winraw_keyboard_pressed(wr, bind->key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !wr->kbd_mapp_block)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_winraw.keyboard_mapping_blocked)
          return true;
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
          ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
       if (winraw_mouse_button_pressed(wr, port, bind->mbutton))
          return true;
-      if (joykey != NO_BTN && 
-            wr->joypad->button(joypad_info.joy_idx, joykey))
+      if ((uint16_t)joykey != NO_BTN && 
+            wr->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
          return true;
       if (((float)abs(wr->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
@@ -423,7 +421,7 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    return false;
 }
 
-static void winraw_init_mouse_xy_mapping()
+static void winraw_init_mouse_xy_mapping(void)
 {
    struct video_viewport viewport;
    int center_x;
@@ -704,7 +702,6 @@ static int16_t winraw_input_state(void *d,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   int16_t ret        = 0;
    winraw_input_t *wr = (winraw_input_t*)d;
 
    switch (device)
@@ -713,19 +710,25 @@ static int16_t winraw_input_state(void *d,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (winraw_is_pressed(
                         wr, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = winraw_is_pressed(wr, joypad_info, binds[port], port, id);
+               return winraw_is_pressed(wr, joypad_info, binds[port], port, id);
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,
@@ -839,20 +842,6 @@ static const input_device_driver_t *winraw_get_joypad_driver(void *d)
    return wr->joypad;
 }
 
-static bool winraw_keyboard_mapping_is_blocked(void *d)
-{
-   winraw_input_t *wr = (winraw_input_t*)d;
-
-   return wr->kbd_mapp_block;
-}
-
-static void winraw_keyboard_mapping_set_block(void *d, bool block)
-{
-   winraw_input_t *wr = (winraw_input_t*)d;
-
-   wr->kbd_mapp_block = block;
-}
-
 input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
@@ -867,6 +856,5 @@ input_driver_t input_winraw = {
    winraw_set_rumble,
    winraw_get_joypad_driver,
    NULL,
-   winraw_keyboard_mapping_is_blocked,
-   winraw_keyboard_mapping_set_block,
+   false
 };

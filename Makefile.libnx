@@ -61,6 +61,7 @@ ifeq ($(HAVE_OPENGL), 1)
   HAVE_OZONE = 1
   HAVE_OVERLAY = 1
   HAVE_VIDEO_LAYOUT = 0
+  HAVE_GLSL = 1
 else
   HAVE_RGUI = 1
   HAVE_MATERIALUI = 0
@@ -113,7 +114,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
-          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
+          $(ARCH) $(DEFINES) $(INCLUDE_DIRS) -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
 CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_STB_FONT #-DHAVE_FREETYPE
 
@@ -125,6 +126,9 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
+
+# add things from Makefile.common
+CFLAGS += $(DEF_FLAGS)
 
 LIBS	:= -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lm
 

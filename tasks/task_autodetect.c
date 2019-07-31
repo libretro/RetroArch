@@ -69,7 +69,6 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #endif
 #endif
 
-#include "../input/input_driver.h"
 #include "../input/include/blissbox.h"
 
 #include "../configuration.h"
@@ -407,7 +406,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(
-            input_builtin_autoconfs[i]);
+            input_builtin_autoconfs[i], NULL);
       if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
         return true;
    }

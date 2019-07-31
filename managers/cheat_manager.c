@@ -49,7 +49,6 @@
 #include "../dynamic.h"
 #include "../core.h"
 #include "../verbosity.h"
-#include "../input/input_driver.h"
 #include "../configuration.h"
 
 cheat_manager_t cheat_manager_state;

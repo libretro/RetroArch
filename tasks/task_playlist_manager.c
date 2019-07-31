@@ -29,10 +29,6 @@
 #include "../file_path_special.h"
 #include "../playlist.h"
 
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
-#endif
-
 enum pl_manager_status
 {
    PL_MANAGER_BEGIN = 0,

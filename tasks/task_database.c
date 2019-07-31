@@ -42,9 +42,6 @@
 #include "../gfx/video_display_server.h"
 #endif
 #include "../verbosity.h"
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE                99999
-#endif
 
 typedef struct database_state_handle
 {
