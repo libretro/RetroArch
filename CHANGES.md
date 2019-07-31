@@ -1,4 +1,6 @@
 # 1.7.8 (future)
+- 3DS: Fix C-Stick y-axis inversion
+- 3DS: Update all icon/banner images
 - ANDROID: Implemented multi-touch touchscreen support
 - BLISS-BOX: Add 4 new pad types from firmware 3.0
 - COMMON: Add optional 'on demand' thumbnail downloads
@@ -6,6 +8,13 @@
 - COMMON: Show license per core (if available) inside 'Load Core'
 - COMMON: Add option to load content from (and dump) CD-ROM discs
 - COMMON: New core options interface, allows for localization, sublabels and more
+- COMMON: Re-enable '--log-file' command line option
+- COMMON: Default playlist core association is now stored as metadata inside each playlist
+- COMMON: Fix playlist format detection
+- COMMON: When saving core option overrides, only include settings for the current core
+- COMMON: Favorites playlist size can now be set independently of content history size. Values can be set from 0-999, or '-1' for unlimited (99999)
+- COMMON: Prevent adding new items to favorites when playlist is full (old entries are no longer overwritten)
+- CPU FILTERS: Add Scanline2x filter
 - GAMECUBE: Add default video/audio filter directories
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
@@ -25,12 +34,25 @@
 - MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan
 - MENU/WIDGETS: Fine tune progress bar colors
 - MENU: Fix longstanding menu display issues on Mali400 GPUs (on ARM hardware, SBCs and mobile phones/tablets)
+- MENU: Fix Record -> Streaming Quality, and Record -> Recording Threads settings
+- MENU: Fix history playlist navigation after running content
+- NENU: Menu entry performance optimisations
+- MENU: Add option to show 'remove playlist entry' only on history/favourites
+- MENU: Overhaul content 'Information' menu display
+- MENU: Add new 'Playlist Management' submenu. Allows default core associations to be set (via dropdown list), and all existing associations to be reset
+- MENU: Add 'Set Core Association' option to Quick Menu
+- MENU: Add option to remain in menu after saving/loading states
 - MENU/THUMBNAILS: Ensure that displayed thumbnails are always refreshed correctly after selecting 'Download Thumbnails' from Quick Menu
+- MENU/THUMBNAILS: Make PNG image loading/processing non-blocking on non-threaded systems
 - MENU/OZONE: Add it for PS3
 - MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it
+- MENU/OZONE: Fix sublabel spacing
 - MENU/XMB: Add menu animation settings
-- MENU: Fix Record -> Streaming Quality, and Record -> Recording Threads settings
+- MENU/XMB: Add optional thumbnail scaling
+- MENU/XMB: Fix display of long sublabels. Text that would exceed the display area now scrolls line-by-line
+- MENU/XMB/OZONE: Add optional thumbnail upscaling
 - MENU/QT/WIMP: Path selector fixes
+- MENU/RGUI: Enable playlist display on platforms without database support
 - METAL/SLANG: Added "FrameDirection" slang semantic
 - NETBSD: Audioio is now the default audio driver
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment
@@ -44,6 +66,9 @@
 - WII: Add default video/audio filter directories
 - WII: Fix RGUI display corruption
 - WII: Fix HID joypad drivers
+- WII: Add optional overscan correction
+- WII: Fix recursive path_mkdir() operations
+- WII: Add widescreen RGUI support
 - WIIU/SLANG: Added "FrameDirection" slang semantic
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11
 - X11/UDEV: Mouse pointer should work now in X11 environment with no Display
