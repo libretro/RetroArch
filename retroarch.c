@@ -4141,13 +4141,6 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.content_history = NULL;
 
-         if (g_defaults.content_favorites)
-         {
-            playlist_write_file(g_defaults.content_favorites);
-            playlist_free(g_defaults.content_favorites);
-         }
-         g_defaults.content_favorites = NULL;
-
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
@@ -4189,13 +4182,6 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_history);
             g_defaults.content_history = playlist_init(
                   settings->paths.path_content_history,
-                  content_history_size);
-
-            RARCH_LOG("%s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_favorites);
-            g_defaults.content_favorites = playlist_init(
-                  settings->paths.path_content_favorites,
                   content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
@@ -4321,6 +4307,16 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_ADD_TO_FAVORITES:
          {
             struct string_list *str_list = (struct string_list*)data;
+
+            /* Check whether favourties playlist is at capacity */
+            if (playlist_size(g_defaults.content_favorites) >=
+                playlist_capacity(g_defaults.content_favorites))
+            {
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED), 1, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+               return false;
+            }
 
             if (str_list)
             {
@@ -5150,6 +5146,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    libretro_free_system_info(&runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+   rarch_favorites_deinit();
 
    configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
@@ -24749,6 +24746,39 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
    }
 
    return lang;
+}
+
+void rarch_favorites_init(void)
+{
+   settings_t *settings      = configuration_settings;
+   unsigned content_favorites_size;
+
+   if (!settings)
+      return;
+
+   if (settings->ints.content_favorites_size < 0)
+      content_favorites_size = COLLECTION_SIZE;
+   else
+      content_favorites_size = (unsigned)settings->ints.content_favorites_size;
+
+   rarch_favorites_deinit();
+
+   RARCH_LOG("%s: [%s].\n",
+         msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
+         settings->paths.path_content_favorites);
+   g_defaults.content_favorites = playlist_init(
+         settings->paths.path_content_favorites,
+         content_favorites_size);
+}
+
+void rarch_favorites_deinit(void)
+{
+   if (g_defaults.content_favorites)
+   {
+      playlist_write_file(g_defaults.content_favorites);
+      playlist_free(g_defaults.content_favorites);
+      g_defaults.content_favorites = NULL;
+   }
 }
 
 /* Libretro core loader */

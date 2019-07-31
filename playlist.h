@@ -26,6 +26,9 @@
 
 RETRO_BEGIN_DECLS
 
+/* Default maximum playlist size */
+#define COLLECTION_SIZE 99999
+
 typedef struct content_playlist playlist_t;
 
 enum playlist_runtime_status
@@ -113,6 +116,15 @@ void playlist_clear(playlist_t *playlist);
  * Returns: size of playlist.
  **/
 size_t playlist_size(playlist_t *playlist);
+
+/**
+ * playlist_capacity:
+ * @playlist        	   : Playlist handle.
+ *
+ * Gets maximum capacity of playlist.
+ * Returns: maximum capacity of playlist.
+ **/
+size_t playlist_capacity(playlist_t *playlist);
 
 /**
  * playlist_get_index:

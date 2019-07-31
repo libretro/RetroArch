@@ -380,6 +380,10 @@ void rarch_log_file_deinit(void);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);
 
+void rarch_favorites_init(void);
+
+void rarch_favorites_deinit(void);
+
 /* Audio */
 
 #ifdef HAVE_AUDIOMIXER

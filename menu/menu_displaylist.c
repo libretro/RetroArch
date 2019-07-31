@@ -1699,12 +1699,29 @@ end:
 static void menu_displaylist_set_new_playlist(
       menu_handle_t *menu, const char *path)
 {
-   menu->db_playlist_file[0] = '\0';
+   unsigned playlist_size         = COLLECTION_SIZE;
+   const char *playlist_file_name = path_basename(path);
+   settings_t *settings           = config_get_ptr();
+
+   menu->db_playlist_file[0]      = '\0';
 
    if (playlist_get_cached())
       playlist_free_cached();
 
-   if (playlist_init_cached(path, COLLECTION_SIZE))
+   /* Get proper playlist capacity */
+   if (settings && !string_is_empty(playlist_file_name))
+   {
+      if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
+          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
+          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
+          string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)))
+         playlist_size = settings->uints.content_history_size;
+      else if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         if (settings->ints.content_favorites_size >= 0)
+            playlist_size = (unsigned)settings->ints.content_favorites_size;
+   }
+
+   if (playlist_init_cached(path, playlist_size))
       strlcpy(
             menu->db_playlist_file,
             path,
@@ -6598,6 +6615,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,            PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,          PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,           PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,           PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,      PARSE_ONLY_BOOL},
@@ -8648,12 +8666,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 if (menu_entries_append_enum(info->list,
+                                 menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0))
-                                    count++;
+                                       setting_type, val, 0);
 
                                  if (!checked_found && val == orig_value)
                                  {

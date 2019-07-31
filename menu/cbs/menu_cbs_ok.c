@@ -4343,6 +4343,7 @@ static int action_ok_delete_entry(const char *path,
 #ifdef HAVE_IMAGEVIEWER
    char *def_conf_img_path   = NULL;
 #endif
+   char *def_conf_fav_path   = NULL;
    menu_handle_t *menu       = NULL;
    playlist_t *playlist      = playlist_get_cached();
 
@@ -4358,6 +4359,7 @@ static int action_ok_delete_entry(const char *path,
 #ifdef HAVE_IMAGEVIEWER
    def_conf_img_path         = playlist_get_conf_path(g_defaults.image_history);
 #endif
+   def_conf_fav_path         = playlist_get_conf_path(g_defaults.content_favorites);
 
    if (string_is_equal(conf_path, def_conf_path))
       playlist = g_defaults.content_history;
@@ -4371,6 +4373,8 @@ static int action_ok_delete_entry(const char *path,
    else if (string_is_equal(conf_path, def_conf_img_path))
       playlist = g_defaults.image_history;
 #endif
+   else if (string_is_equal(conf_path, def_conf_fav_path))
+      playlist = g_defaults.content_favorites;
 
    if (playlist)
    {

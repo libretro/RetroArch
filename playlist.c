@@ -72,6 +72,7 @@ typedef struct
    char *current_items_string;
    bool in_items;
    bool in_subsystem_roms;
+   bool capacity_exceeded;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
@@ -254,6 +255,57 @@ void playlist_get_index(playlist_t *playlist,
 }
 
 /**
+ * playlist_free_entry:
+ * @entry               : Playlist entry handle.
+ *
+ * Frees playlist entry.
+ **/
+static void playlist_free_entry(struct playlist_entry *entry)
+{
+   if (!entry)
+      return;
+
+   if (entry->path != NULL)
+      free(entry->path);
+   if (entry->label != NULL)
+      free(entry->label);
+   if (entry->core_path != NULL)
+      free(entry->core_path);
+   if (entry->core_name != NULL)
+      free(entry->core_name);
+   if (entry->db_name != NULL)
+      free(entry->db_name);
+   if (entry->crc32 != NULL)
+      free(entry->crc32);
+   if (entry->subsystem_ident != NULL)
+      free(entry->subsystem_ident);
+   if (entry->subsystem_name != NULL)
+      free(entry->subsystem_name);
+   if (entry->subsystem_roms != NULL)
+      string_list_free(entry->subsystem_roms);
+
+   entry->path      = NULL;
+   entry->label     = NULL;
+   entry->core_path = NULL;
+   entry->core_name = NULL;
+   entry->db_name   = NULL;
+   entry->crc32     = NULL;
+   entry->subsystem_ident = NULL;
+   entry->subsystem_name = NULL;
+   entry->subsystem_roms = NULL;
+   entry->runtime_status = PLAYLIST_RUNTIME_UNKNOWN;
+   entry->runtime_hours = 0;
+   entry->runtime_minutes = 0;
+   entry->runtime_seconds = 0;
+   entry->last_played_year = 0;
+   entry->last_played_month = 0;
+   entry->last_played_day = 0;
+   entry->last_played_hour = 0;
+   entry->last_played_minute = 0;
+   entry->last_played_second = 0;
+}
+
+/**
  * playlist_delete_index:
  * @playlist            : Playlist handle.
  * @idx                 : Index of playlist entry.
@@ -263,11 +315,22 @@ void playlist_get_index(playlist_t *playlist,
 void playlist_delete_index(playlist_t *playlist,
       size_t idx)
 {
+   struct playlist_entry *entry_to_delete = NULL;
+
    if (!playlist)
+      return;
+
+   if (idx >= playlist->size)
       return;
 
    playlist->size     = playlist->size - 1;
 
+   /* Free unwanted entry */
+   entry_to_delete = (struct playlist_entry *)(playlist->entries + idx);
+   if (entry_to_delete)
+      playlist_free_entry(entry_to_delete);
+
+   /* Shift remaining entries to fill the gap */
    memmove(playlist->entries + idx, playlist->entries + idx + 1,
          (playlist->size - idx) * sizeof(struct playlist_entry));
 
@@ -322,57 +385,6 @@ bool playlist_entry_exists(playlist_t *playlist,
          return true;
 
    return false;
-}
-
-/**
- * playlist_free_entry:
- * @entry               : Playlist entry handle.
- *
- * Frees playlist entry.
- **/
-static void playlist_free_entry(struct playlist_entry *entry)
-{
-   if (!entry)
-      return;
-
-   if (entry->path != NULL)
-      free(entry->path);
-   if (entry->label != NULL)
-      free(entry->label);
-   if (entry->core_path != NULL)
-      free(entry->core_path);
-   if (entry->core_name != NULL)
-      free(entry->core_name);
-   if (entry->db_name != NULL)
-      free(entry->db_name);
-   if (entry->crc32 != NULL)
-      free(entry->crc32);
-   if (entry->subsystem_ident != NULL)
-      free(entry->subsystem_ident);
-   if (entry->subsystem_name != NULL)
-      free(entry->subsystem_name);
-   if (entry->subsystem_roms != NULL)
-      string_list_free(entry->subsystem_roms);
-
-   entry->path      = NULL;
-   entry->label     = NULL;
-   entry->core_path = NULL;
-   entry->core_name = NULL;
-   entry->db_name   = NULL;
-   entry->crc32     = NULL;
-   entry->subsystem_ident = NULL;
-   entry->subsystem_name = NULL;
-   entry->subsystem_roms = NULL;
-   entry->runtime_status = PLAYLIST_RUNTIME_UNKNOWN;
-   entry->runtime_hours = 0;
-   entry->runtime_minutes = 0;
-   entry->runtime_seconds = 0;
-   entry->last_played_year = 0;
-   entry->last_played_month = 0;
-   entry->last_played_day = 0;
-   entry->last_played_hour = 0;
-   entry->last_played_minute = 0;
-   entry->last_played_second = 0;
 }
 
 void playlist_update(playlist_t *playlist, size_t idx,
@@ -1561,6 +1573,20 @@ size_t playlist_size(playlist_t *playlist)
    return playlist->size;
 }
 
+/**
+ * playlist_capacity:
+ * @playlist        	   : Playlist handle.
+ *
+ * Gets maximum capacity of playlist.
+ * Returns: maximum capacity of playlist.
+ **/
+size_t playlist_capacity(playlist_t *playlist)
+{
+   if (!playlist)
+      return 0;
+   return playlist->cap;
+}
+
 static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
 {
    JSONContext *pCtx = (JSONContext*)JSON_Parser_GetUserData(parser);
@@ -1624,13 +1650,24 @@ static JSON_Parser_HandlerResult JSONStartObjectHandler(JSON_Parser parser)
 
    if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->array_depth == 1)
+      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
       {
          if (pCtx->playlist->size < pCtx->playlist->cap)
             pCtx->current_entry = &pCtx->playlist->entries[pCtx->playlist->size];
          else
-            /* hit max item limit */
-            return JSON_Parser_Abort;
+         {
+            /* Hit max item limit.
+             * Note: We can't just abort here, since there may
+             * be more metadata to read at the end of the file... */
+            RARCH_WARN("JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
+            pCtx->capacity_exceeded = true;
+            pCtx->current_entry = NULL;
+            /* In addition, since we are discarding excess entries,
+             * the playlist must be flagged as being modified
+             * (i.e. the playlist is not the same as when it was
+             * last saved to disk...) */
+            pCtx->playlist->modified = true;
+         }
       }
    }
 
@@ -1643,7 +1680,7 @@ static JSON_Parser_HandlerResult JSONEndObjectHandler(JSON_Parser parser)
 
    if (pCtx->in_items && pCtx->object_depth == 2)
    {
-      if (pCtx->array_depth == 1)
+      if ((pCtx->array_depth == 1) && !pCtx->capacity_exceeded)
          pCtx->playlist->size++;
    }
 
@@ -1679,7 +1716,6 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
          {
             if (*pCtx->current_entry_val)
                free(*pCtx->current_entry_val);
-
             *pCtx->current_entry_val = strdup(pValue);
          }
          else
@@ -1781,45 +1817,54 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_items_string = strdup(pValue);
             }
 
-            if (string_is_equal(pValue, "path"))
-               pCtx->current_entry_val = &pCtx->current_entry->path;
-            else if (string_is_equal(pValue, "label"))
-               pCtx->current_entry_val = &pCtx->current_entry->label;
-            else if (string_is_equal(pValue, "core_path"))
-               pCtx->current_entry_val = &pCtx->current_entry->core_path;
-            else if (string_is_equal(pValue, "core_name"))
-               pCtx->current_entry_val = &pCtx->current_entry->core_name;
-            else if (string_is_equal(pValue, "crc32"))
-               pCtx->current_entry_val = &pCtx->current_entry->crc32;
-            else if (string_is_equal(pValue, "db_name"))
-               pCtx->current_entry_val = &pCtx->current_entry->db_name;
-            else if (string_is_equal(pValue, "subsystem_ident"))
-               pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
-            else if (string_is_equal(pValue, "subsystem_name"))
-               pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
-            else if (string_is_equal(pValue, "subsystem_roms"))
-               pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
-            else if (string_is_equal(pValue, "runtime_hours"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
-            else if (string_is_equal(pValue, "runtime_minutes"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
-            else if (string_is_equal(pValue, "runtime_seconds"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
-            else if (string_is_equal(pValue, "last_played_year"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
-            else if (string_is_equal(pValue, "last_played_month"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
-            else if (string_is_equal(pValue, "last_played_day"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
-            else if (string_is_equal(pValue, "last_played_hour"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
-            else if (string_is_equal(pValue, "last_played_minute"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
-            else if (string_is_equal(pValue, "last_played_second"))
-               pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
+            if (!pCtx->capacity_exceeded)
+            {
+               if (string_is_equal(pValue, "path"))
+                  pCtx->current_entry_val = &pCtx->current_entry->path;
+               else if (string_is_equal(pValue, "label"))
+                  pCtx->current_entry_val = &pCtx->current_entry->label;
+               else if (string_is_equal(pValue, "core_path"))
+                  pCtx->current_entry_val = &pCtx->current_entry->core_path;
+               else if (string_is_equal(pValue, "core_name"))
+                  pCtx->current_entry_val = &pCtx->current_entry->core_name;
+               else if (string_is_equal(pValue, "crc32"))
+                  pCtx->current_entry_val = &pCtx->current_entry->crc32;
+               else if (string_is_equal(pValue, "db_name"))
+                  pCtx->current_entry_val = &pCtx->current_entry->db_name;
+               else if (string_is_equal(pValue, "subsystem_ident"))
+                  pCtx->current_entry_val = &pCtx->current_entry->subsystem_ident;
+               else if (string_is_equal(pValue, "subsystem_name"))
+                  pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
+               else if (string_is_equal(pValue, "subsystem_roms"))
+                  pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
+               else if (string_is_equal(pValue, "runtime_hours"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
+               else if (string_is_equal(pValue, "runtime_minutes"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
+               else if (string_is_equal(pValue, "runtime_seconds"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
+               else if (string_is_equal(pValue, "last_played_year"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
+               else if (string_is_equal(pValue, "last_played_month"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
+               else if (string_is_equal(pValue, "last_played_day"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
+               else if (string_is_equal(pValue, "last_played_hour"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
+               else if (string_is_equal(pValue, "last_played_minute"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
+               else if (string_is_equal(pValue, "last_played_second"))
+                  pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
+               else
+               {
+                  /* ignore unknown members */
+               }
+            }
             else
             {
-               /* ignore unknown members */
+               pCtx->current_entry_val             = NULL;
+               pCtx->current_entry_uint_val        = NULL;
+               pCtx->current_entry_string_list_val = NULL;
             }
          }
       }
@@ -1977,7 +2022,14 @@ static bool playlist_read_file(
 
          if (!JSON_Parser_Parse(context.parser, chunk, length, JSON_False))
          {
-            RARCH_WARN("Error parsing chunk:\n---snip---\n%s\n---snip---\n", chunk);
+            /* Note: Chunk may not be null-terminated.
+             * It is therefore dangerous to print its contents.
+             * Setting a size limit here mitigates the issue, but
+             * in general this is not good practice...
+             * Addendum: RARCH_WARN() actually limits the printed
+             * buffer size anyway, so this warning message is most
+             * likely worthless... */
+            RARCH_WARN("Error parsing chunk:\n---snip---\n%.*s\n---snip---\n", 4096, chunk);
             JSONLogError(&context);
             goto json_cleanup;
          }

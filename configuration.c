@@ -1881,6 +1881,7 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_D3D12
    SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
 #endif
+   SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
 
    *size = count;
 
@@ -3125,6 +3126,21 @@ static bool config_load_file(const char *path, settings_t *settings)
 
    if (!config_entry_exists(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
+
+   /* If this is the first run of an existing installation
+    * after the independent favourites playlist size limit was
+    * added, set the favourites limit according to the current
+    * history playlist size limit. (Have to do this, otherwise
+    * users with large custom history size limits may lose
+    * favourites entries when updating RetroArch...) */
+   if ( config_entry_exists(conf, "content_history_size") &&
+       !config_entry_exists(conf, "content_favorites_size"))
+   {
+      if (settings->uints.content_history_size > 999)
+         settings->ints.content_favorites_size = -1;
+      else
+         settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
+   }
 
    ret = true;
 end:

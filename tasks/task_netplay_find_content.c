@@ -270,7 +270,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             continue;
 
          RARCH_LOG("[lobby] searching playlist: %s\n", lpl_path);
-         playlist      = playlist_init(lpl_path, 99999);
+         playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
          playlist_size = playlist_get_size(playlist);
 
          for (j = 0; j < playlist_size; j++)
@@ -344,7 +344,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                continue;
 
             RARCH_LOG("[lobby] searching rom %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
-            playlist      = playlist_init(lpl_path, 99999);
+            playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
             playlist_size = playlist_get_size(playlist);
 
             for (k = 0; k < playlist_size && !found[i]; k++)
