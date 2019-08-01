@@ -3980,7 +3980,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-    "Naciśnij dwukrotnie wyjdź"
+    "Naciśnij dwukrotnie quit"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
