@@ -10857,8 +10857,8 @@ static int16_t input_state_device(
          }
 
          if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-            input_mapper_state(input_driver_mapper,
-                  &res, port, device, idx, id);
+            if (BIT256_GET(input_driver_mapper->buttons[port], id))
+               res = 1;
 
          /* Don't allow turbo for D-pad. */
          if ((id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
@@ -10907,10 +10907,6 @@ static int16_t input_state_device(
             }
          }
 
-         if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-            input_mapper_state(input_driver_mapper,
-                  &res, port, device, idx, id);
-
          break;
 
       case RETRO_DEVICE_KEYBOARD:
@@ -10934,8 +10930,9 @@ static int16_t input_state_device(
 #endif
 
          if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-            input_mapper_state(input_driver_mapper,
-                  &res, port, device, idx, id);
+            if (id < RETROK_LAST)
+               if (MAPPER_GET_KEY(input_driver_mapper, id))
+                  res |= 1;
 
          break;
 
@@ -10958,10 +10955,6 @@ static int16_t input_state_device(
                   res = ret;
             }
          }
-
-         if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-            input_mapper_state(input_driver_mapper,
-                  &res, port, device, idx, id);
 
          break;
 
@@ -11050,8 +11043,23 @@ static int16_t input_state_device(
             }
 
             if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-               input_mapper_state(input_driver_mapper,
-                     &res, port, device, idx, id);
+            {
+               if (idx < 2 && id < 2)
+               {
+                  int         val = 0;
+                  unsigned offset = 0 + (idx * 4) + (id * 2);
+                  int        val1 = input_driver_mapper->analog_value[port][offset];
+                  int        val2 = input_driver_mapper->analog_value[port][offset+1];
+
+                  if (val1)
+                     val          = val1;
+                  else if (val2)
+                     val          = val2;
+
+                  if (val1 || val2)
+                     res        |= val;
+               }
+            }
          }
          break;
 
@@ -11074,10 +11082,6 @@ static int16_t input_state_device(
                   res = ret;
             }
          }
-
-         if (settings->bools.input_remap_binds_enable && input_driver_mapper)
-            input_mapper_state(input_driver_mapper,
-                  &res, port, device, idx, id);
 
          break;
    }
@@ -12579,7 +12583,7 @@ static void input_driver_deinit_remote(void)
 static void input_driver_deinit_mapper(void)
 {
    if (input_driver_mapper)
-      input_mapper_free(input_driver_mapper);
+      free(input_driver_mapper);
    input_driver_mapper = NULL;
 }
 
@@ -12605,18 +12609,23 @@ static bool input_driver_init_remote(void)
 
 static bool input_driver_init_mapper(void)
 {
-   settings_t *settings = configuration_settings;
+   input_mapper_t *handle = NULL;
+   settings_t *settings   = configuration_settings;
 
    if (!settings->bools.input_remap_binds_enable)
       return false;
 
-   input_driver_mapper = input_mapper_new();
+   handle = (input_mapper_t*)calloc(1, sizeof(*input_driver_mapper));
 
-   if (input_driver_mapper)
-      return true;
+   if (!handle)
+   {
+      RARCH_ERR("Failed to initialize input mapper.\n");
+      return false;
+   }
 
-   RARCH_ERR("Failed to initialize input mapper.\n");
-   return false;
+   input_driver_mapper = handle;
+
+   return true;
 }
 
 bool input_driver_grab_mouse(void)

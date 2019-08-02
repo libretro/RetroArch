@@ -27,12 +27,7 @@
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
 #include <libretro.h>
-
-#ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -46,38 +41,6 @@
 #endif
 
 #include "../configuration.h"
-#include "../msg_hash.h"
-#include "../verbosity.h"
-
-#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-struct input_mapper
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog_value[MAX_USERS][8];
-   /* the whole keyboard state */
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons[MAX_USERS];
-};
-
-input_mapper_t *input_mapper_new(void)
-{
-   input_mapper_t* handle = (input_mapper_t*)
-      calloc(1, sizeof(*handle));
-
-   if (!handle)
-      return NULL;
-
-   return handle;
-}
-
-void input_mapper_free(input_mapper_t *handle)
-{
-   if (handle)
-      free (handle);
-}
 
 void input_mapper_poll(input_mapper_t *handle,
       void *ol_pointer,
@@ -131,11 +94,9 @@ void input_mapper_poll(input_mapper_t *handle,
                   /* key_event tracks if a key is pressed for ANY PLAYER, so we must check
                      if the key was used by any player before releasing */
                   else if (!key_event[j])
-                  {
                      input_keyboard_event(false,
                            remap_button,
                            0, 0, RETRO_DEVICE_KEYBOARD);
-                  }
                }
             }
             break;
@@ -223,12 +184,6 @@ void input_mapper_poll(input_mapper_t *handle,
                            remap_axis_bind] =
                               current_axis_value * invert;
                      }
-#if 0
-                     RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n",
-                           j, k,
-                           remap_axis - RARCH_FIRST_CUSTOM_BIND,
-                           current_axis_value);
-#endif
                   }
                }
 
@@ -237,46 +192,5 @@ void input_mapper_poll(input_mapper_t *handle,
          default:
             break;
       }
-   }
-}
-
-void input_mapper_state(
-      input_mapper_t *handle,
-      int16_t *ret,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (BIT256_GET(handle->buttons[port], id))
-            *ret            = 1;
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (idx < 2 && id < 2)
-         {
-            int         val = 0;
-            unsigned offset = 0 + (idx * 4) + (id * 2);
-            int        val1 = handle->analog_value[port][offset];
-            int        val2 = handle->analog_value[port][offset+1];
-
-            if (val1)
-               val          = val1;
-            else if (val2)
-               val          = val2;
-
-            if (val1 || val2)
-               *ret        |= val;
-         }
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST)
-            if (MAPPER_GET_KEY(handle, id))
-               *ret |= 1;
-         break;
-      default:
-         break;
    }
 }

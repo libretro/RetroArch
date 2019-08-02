@@ -27,29 +27,26 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
 RETRO_BEGIN_DECLS
 
-typedef struct input_mapper input_mapper_t;
-
-input_mapper_t *input_mapper_new(void);
-
-void input_mapper_free(input_mapper_t *handle);
+typedef struct input_mapper
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog_value[MAX_USERS][8];
+   /* the whole keyboard state */
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons[MAX_USERS];
+} input_mapper_t;
 
 void input_mapper_poll(input_mapper_t *handle,
       void *overlay_pointer,
       void *settings_data,
       unsigned max_users,
       bool poll_overlay);
-
-bool input_mapper_key_pressed(input_mapper_t *handle, int key);
-
-void input_mapper_state(
-      input_mapper_t *handle,
-      int16_t *ret,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id);
 
 RETRO_END_DECLS
 
