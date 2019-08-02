@@ -4479,13 +4479,13 @@ TODO: Add a setting for these tweaks */
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
 
-            RARCH_LOG("[netplay] buf %s\n", buf);
+            RARCH_LOG("[Netplay] buf %s\n", buf);
 
             hostname                            = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d (direct)\n",
+            RARCH_LOG("[Netplay] connecting to %s:%d (direct)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                   ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
@@ -4516,13 +4516,13 @@ TODO: Add a setting for these tweaks */
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
 
-            RARCH_LOG("[netplay] buf %s\n", buf);
+            RARCH_LOG("[Netplay] buf %s\n", buf);
 
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d (deferred)\n",
+            RARCH_LOG("[Netplay] connecting to %s:%d (deferred)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                   ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
@@ -6499,9 +6499,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             if (log_level == RETRO_LOG_DEBUG)
             {
-               RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
-               RARCH_LOG("\t%s\n", var->value ? var->value :
+               char s[128];
+               s[0] = '\0';
+
+               snprintf(s, sizeof(s), "Environ GET_VARIABLE %s:\n\t%s\n", var->key, var->value ? var->value :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               RARCH_LOG(s);
             }
          }
 
