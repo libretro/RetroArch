@@ -3976,7 +3976,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-    "Zapisz dziennik czasu wykonywania (agregacja)"
+    "Zapisz dziennik czasu wykonywania (agregacji)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
