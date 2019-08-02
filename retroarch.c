@@ -4793,7 +4793,7 @@ TODO: Add a setting for these tweaks */
             {
                input_driver_grab_mouse();
                video_driver_hide_mouse();
-               input_driver_set_hotkey_block();
+               input_driver_block_hotkey = true;
                current_input->keyboard_mapping_blocked = true;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
@@ -4804,7 +4804,7 @@ TODO: Add a setting for these tweaks */
             {
                input_driver_ungrab_mouse();
                video_driver_show_mouse();
-               input_driver_unset_hotkey_block();
+               input_driver_block_hotkey = false;
                current_input->keyboard_mapping_blocked = false;
                if (mode != -1)
                   runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
@@ -12447,16 +12447,6 @@ static bool input_driver_find_driver(void)
 void input_driver_set_flushing_input(void)
 {
    input_driver_flushing_input = true;
-}
-
-void input_driver_unset_hotkey_block(void)
-{
-   input_driver_block_hotkey = true;
-}
-
-void input_driver_set_hotkey_block(void)
-{
-   input_driver_block_hotkey = true;
 }
 
 void input_driver_set_libretro_input_blocked(void)
