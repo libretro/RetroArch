@@ -23,7 +23,6 @@
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"
-#include "../verbosity.h"
 
 static unsigned old_analog_dpad_mode[MAX_USERS];
 static unsigned old_libretro_device[MAX_USERS];
@@ -113,15 +112,11 @@ bool input_remapping_load_file(void *data, const char *path)
                   s3,
                   key_strings[j]);
 
-            /* RARCH_LOG("pre_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]); */
-
             if (config_get_int(conf, stk_ident[k], &stk_remap) && stk_remap != -1)
                settings->uints.input_remap_ids[i][j] = stk_remap;
             else if (config_get_int(conf, stk_ident[k], &stk_remap) && stk_remap == -1)
                settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
             /* else do nothing, important */
-
-            /*RARCH_LOG("stk_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]);*/
          }
       }
 
