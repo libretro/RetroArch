@@ -263,11 +263,19 @@ void CoreOptionsDialog::buildLayout()
 
          if (coreopts)
          {
+            QToolButton *resetAllButton = new QToolButton(this);
+
+            resetAllButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_ALL), this));
+            connect(resetAllButton, SIGNAL(clicked()), this, SLOT(onCoreOptionResetAllClicked()));
+
             for (j = 0; j < opts; j++)
             {
                QString desc = core_option_manager_get_desc(coreopts, j);
                QString val = core_option_manager_get_val(coreopts, j);
                QComboBox *comboBox = NULL;
+               QLabel *descLabel = NULL;
+               QHBoxLayout *comboLayout = NULL;
+               QToolButton *resetButton = NULL;
                struct core_option *option = NULL;
 
                if (desc.isEmpty() || !coreopts->opts)
@@ -278,18 +286,39 @@ void CoreOptionsDialog::buildLayout()
                if (!option->vals || option->vals->size == 0)
                   continue;
 
+               comboLayout = new QHBoxLayout();
+               descLabel = new QLabel(desc, this);
                comboBox = new QComboBox(this);
+               comboBox->setObjectName("coreOptionComboBox");
+               resetButton = new QToolButton(this);
+               resetButton->setObjectName("resetButton");
+               resetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET), this));
+               resetButton->setProperty("comboBox", QVariant::fromValue(comboBox));
+
+               connect(resetButton, SIGNAL(clicked()), this, SLOT(onCoreOptionResetClicked()));
+
+               if (!string_is_empty(option->info))
+               {
+                  descLabel->setToolTip(option->info);
+                  comboBox->setToolTip(option->info);
+               }
 
                for (k = 0; k < option->vals->size; k++)
                   comboBox->addItem(option->vals->elems[k].data, option->key);
 
                comboBox->setCurrentText(val);
+               comboBox->setProperty("default_index", static_cast<unsigned>(option->default_index));
 
                /* Only connect the signal after setting the default item */
                connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCoreOptionComboBoxCurrentIndexChanged(int)));
 
-               form->addRow(desc, comboBox);
+               comboLayout->addWidget(comboBox);
+               comboLayout->addWidget(resetButton);
+
+               form->addRow(descLabel, comboLayout);
             }
+
+            form->addRow(resetAllButton, new QWidget(this));
 
             m_layout->addLayout(form);
          }
@@ -309,4 +338,52 @@ void CoreOptionsDialog::buildLayout()
    resize(width() + 1, height());
    show();
    resize(width() - 1, height());
+}
+
+void CoreOptionsDialog::onCoreOptionResetClicked()
+{
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
+   QComboBox *comboBox = NULL;
+   int default_index = 0;
+   bool ok = false;
+
+   if (!button)
+      return;
+
+   comboBox = qobject_cast<QComboBox*>(button->property("comboBox").value<QComboBox*>());
+
+   if (!comboBox)
+      return;
+
+   default_index = comboBox->property("default_index").toInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (default_index >= 0 && default_index < comboBox->count())
+      comboBox->setCurrentIndex(default_index);
+}
+
+void CoreOptionsDialog::onCoreOptionResetAllClicked()
+{
+   QList<QComboBox*> comboBoxes = findChildren<QComboBox*>("coreOptionComboBox");
+   int i;
+
+   for (i = 0; i < comboBoxes.count(); i++)
+   {
+      QComboBox *comboBox = comboBoxes.at(i);
+      int default_index = 0;
+      bool ok = false;
+
+      if (!comboBox)
+         continue;
+
+      default_index = comboBox->property("default_index").toInt(&ok);
+
+      if (!ok)
+         continue;
+
+      if (default_index >= 0 && default_index < comboBox->count())
+         comboBox->setCurrentIndex(default_index);
+   }
 }

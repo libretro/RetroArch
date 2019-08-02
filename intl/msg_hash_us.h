@@ -9043,3 +9043,11 @@ MSG_HASH(
     MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
     "This core is not compatible with the current video driver."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET,
+    "Reset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+    "Reset All"
+    )

@@ -27,6 +27,8 @@ private slots:
    void buildLayout();
    void onSaveGameSpecificOptions();
    void onCoreOptionComboBoxCurrentIndexChanged(int index);
+   void onCoreOptionResetClicked();
+   void onCoreOptionResetAllClicked();
 private:
    QPointer<QVBoxLayout> m_layout;
    QPointer<QScrollArea> m_scrollArea;
