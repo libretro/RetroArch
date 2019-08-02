@@ -299,8 +299,11 @@ void CoreOptionsDialog::buildLayout()
 
                if (!string_is_empty(option->info))
                {
-                  descLabel->setToolTip(option->info);
-                  comboBox->setToolTip(option->info);
+                  char *new_info = strdup(option->info);
+                  word_wrap(new_info, new_info, 50, true, 0);
+                  descLabel->setToolTip(new_info);
+                  comboBox->setToolTip(new_info);
+                  free(new_info);
                }
 
                for (k = 0; k < option->vals->size; k++)
