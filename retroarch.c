@@ -21548,7 +21548,7 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
-   RARCH_LOG("Initializing Dr.MingW Exception handler\n");
+   RARCH_LOG_OUTPUT("Initializing Dr.MingW Exception handler\n");
    fill_str_dated_filename(log_file_name, "crash",
          "log", sizeof(log_file_name));
    ExcHndlInit();
