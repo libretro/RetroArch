@@ -305,6 +305,7 @@ typedef struct settings
       bool game_specific_options;
       bool auto_overrides_enable;
       bool auto_remaps_enable;
+      bool global_core_options;
       bool auto_shaders_enable;
 
       bool sort_savefiles_enable;
