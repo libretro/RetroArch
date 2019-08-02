@@ -467,6 +467,7 @@ static bool rgui_extended_ascii = false;
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
 static bool default_auto_remaps_enable = true;
+static bool default_global_core_options = true;
 static bool default_auto_shaders_enable = true;
 
 static bool default_sort_savefiles_enable = false;

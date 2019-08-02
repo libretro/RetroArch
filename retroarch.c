@@ -5241,7 +5241,8 @@ int main(int argc, char *argv[])
 /* CORE OPTIONS */
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
-      const struct retro_variable *var)
+      const struct retro_variable *var,
+      config_file_t *config_src)
 {
    const char *val_start      = NULL;
    char *value                = NULL;
@@ -5286,7 +5287,8 @@ static bool core_option_manager_parse_variable(
    option->default_index = 0;
    option->index         = 0;
 
-   if (config_get_string(opt->conf, option->key, &config_val))
+   /* Set current config value */
+   if (config_get_string(config_src ? config_src : opt->conf, option->key, &config_val))
    {
       size_t i;
 
@@ -5313,7 +5315,8 @@ error:
 
 static bool core_option_manager_parse_option(
       core_option_manager_t *opt, size_t idx,
-      const struct retro_core_option_definition *option_def)
+      const struct retro_core_option_definition *option_def,
+      config_file_t *config_src)
 {
    size_t i;
    union string_list_elem_attr attr;
@@ -5382,7 +5385,7 @@ static bool core_option_manager_parse_option(
    }
 
    /* Set current config value */
-   if (config_get_string(opt->conf, option->key, &config_val))
+   if (config_get_string(config_src ? config_src : opt->conf, option->key, &config_val))
    {
       for (i = 0; i < option->vals->size; i++)
       {
@@ -5441,6 +5444,7 @@ static void core_option_manager_free(core_option_manager_t *opt)
 /**
  * core_option_manager_new_vars:
  * @conf_path        : Filesystem path to write core option config file to.
+ * @src_conf_path    : Filesystem path from which to load initial config settings.
  * @vars             : Pointer to variable array handle.
  *
  * Legacy version of core_option_manager_new().
@@ -5448,13 +5452,15 @@ static void core_option_manager_free(core_option_manager_t *opt)
  *
  * Returns: handle to new core manager handle, otherwise NULL.
  **/
-static core_option_manager_t *core_option_manager_new_vars(const char *conf_path,
+static core_option_manager_t *core_option_manager_new_vars(
+      const char *conf_path, const char *src_conf_path,
       const struct retro_variable *vars)
 {
    const struct retro_variable *var;
    size_t size                       = 0;
    core_option_manager_t *opt        = (core_option_manager_t*)
       calloc(1, sizeof(*opt));
+   config_file_t *config_src         = NULL;
 
    if (!opt)
       return NULL;
@@ -5465,6 +5471,10 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
             goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
+
+   /* Load source config file, if required */
+   if (!string_is_empty(src_conf_path))
+      config_src = config_file_new_from_path_to_string(src_conf_path);
 
    for (var = vars; var->key && var->value; var++)
       size++;
@@ -5481,13 +5491,18 @@ static core_option_manager_t *core_option_manager_new_vars(const char *conf_path
 
    for (var = vars; var->key && var->value; size++, var++)
    {
-      if (!core_option_manager_parse_variable(opt, size, var))
+      if (!core_option_manager_parse_variable(opt, size, var, config_src))
          goto error;
    }
+
+   if (config_src)
+      config_file_free(config_src);
 
    return opt;
 
 error:
+   if (config_src)
+      config_file_free(config_src);
    core_option_manager_free(opt);
    return NULL;
 }
@@ -5495,19 +5510,22 @@ error:
 /**
  * core_option_manager_new:
  * @conf_path        : Filesystem path to write core option config file to.
+ * @src_conf_path    : Filesystem path from which to load initial config settings.
  * @option_defs      : Pointer to variable array handle.
  *
  * Creates and initializes a core manager handle.
  *
  * Returns: handle to new core manager handle, otherwise NULL.
  **/
-static core_option_manager_t *core_option_manager_new(const char *conf_path,
+static core_option_manager_t *core_option_manager_new(
+      const char *conf_path, const char *src_conf_path,
       const struct retro_core_option_definition *option_defs)
 {
    const struct retro_core_option_definition *option_def;
    size_t size                       = 0;
    core_option_manager_t *opt        = (core_option_manager_t*)
       calloc(1, sizeof(*opt));
+   config_file_t *config_src         = NULL;
 
    if (!opt)
       return NULL;
@@ -5518,6 +5536,10 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
             goto error;
 
    strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
+
+   /* Load source config file, if required */
+   if (!string_is_empty(src_conf_path))
+      config_src = config_file_new_from_path_to_string(src_conf_path);
 
    /* Note: 'option_def->info == NULL' is valid */
    for (option_def = option_defs;
@@ -5540,13 +5562,18 @@ static core_option_manager_t *core_option_manager_new(const char *conf_path,
         option_def->key && option_def->desc && option_def->values[0].value;
         size++, option_def++)
    {
-      if (!core_option_manager_parse_option(opt, size, option_def))
+      if (!core_option_manager_parse_option(opt, size, option_def, config_src))
          goto error;
    }
+
+   if (config_src)
+      config_file_free(config_src);
 
    return opt;
 
 error:
+   if (config_src)
+      config_file_free(config_src);
    core_option_manager_free(opt);
    return NULL;
 }
@@ -5610,6 +5637,7 @@ static bool core_option_manager_flush_game_specific(
                opt->opts[i].vals->elems[opt->opts[i].index].data);
    }
 
+   RARCH_LOG("Per-Game Options: game-specific core options saved to \"%s\"\n", path);
    ret = config_file_write(conf_tmp, path, true);
 
    config_file_free(conf_tmp);
@@ -21416,7 +21444,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
          file_path_str(FILE_PATH_OPT_EXTENSION),
          len);
 
-   if (mkdir)
+   /* No need to make a directory if file already exists... */
+   if (mkdir && !path_is_valid(s))
    {
       char *core_path  = (char*)malloc(str_size);
       core_path[0]     = '\0';
@@ -21428,6 +21457,46 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
          path_mkdir(core_path);
 
       free(core_path);
+   }
+
+   free(config_directory);
+   return true;
+}
+
+bool retroarch_validate_per_core_options(char *s, size_t len, bool mkdir)
+{
+   char *config_directory                 = NULL;
+   size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
+   const char *core_name                  = runloop_system.info.library_name;
+
+   if (string_is_empty(core_name))
+      return false;
+
+   config_directory                       = (char*)malloc(str_size);
+   config_directory[0]                    = '\0';
+
+   fill_pathname_application_special(config_directory,
+         str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+   /* Concatenate strings into full paths for core options path */
+   fill_pathname_join_special_ext(s,
+         config_directory, core_name, core_name,
+         file_path_str(FILE_PATH_OPT_EXTENSION),
+         len);
+
+   /* No need to make a directory if file already exists... */
+   if (mkdir && !path_is_valid(s))
+   {
+      char *core_options_dir  = (char*)malloc(str_size);
+      core_options_dir[0]     = '\0';
+
+      fill_pathname_join(core_options_dir,
+            config_directory, core_name, str_size);
+
+      if (!path_is_directory(core_options_dir))
+         path_mkdir(core_options_dir);
+
+      free(core_options_dir);
    }
 
    free(config_directory);
@@ -21744,7 +21813,7 @@ void retroarch_menu_running_finished(bool quit)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   size_t game_path_size = 8192 * sizeof(char);
+   size_t game_path_size = PATH_MAX_LENGTH * sizeof(char);
    char *game_path       = (char*)malloc(game_path_size);
 
    game_path[0] ='\0';
@@ -21752,7 +21821,7 @@ static bool rarch_game_specific_options(char **output)
    if (!retroarch_validate_game_options(game_path,
             game_path_size, false))
       goto error;
-   if (!config_file_exists(game_path))
+   if (!path_is_valid(game_path))
       goto error;
 
    RARCH_LOG("%s %s\n",
@@ -21787,41 +21856,115 @@ static void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-static void rarch_init_core_options(
-      const struct retro_core_option_definition *option_defs)
+/* Fetches core options path for current core/content
+ * - path: path from which options should be read
+ *   from/saved to
+ * - src_path: in the event that 'path' file does not
+ *   yet exist, provides source path from which initial
+ *   options should be extracted
+ *  */
+static void rarch_init_core_options_path(
+      char *path, size_t len,
+      char *src_path, size_t src_len)
 {
-   settings_t *settings              = configuration_settings;
-   char *game_options_path           = NULL;
+   settings_t *settings           = configuration_settings;
+   char *game_options_path        = NULL;
 
+   /* Ensure that 'input' strings are null terminated */
+   if (len > 0)
+      path[0] = '\0';
+   if (src_len > 0)
+      src_path[0] = '\0';
+
+   /* Check whether game-specific options exist */
    if (settings->bools.game_specific_options &&
          rarch_game_specific_options(&game_options_path))
    {
+      /* Notify system that we have a valid core options
+       * override */
       path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
       runloop_game_options_active = true;
-      runloop_core_options        =
-         core_option_manager_new(game_options_path, option_defs);
+
+      /* Copy options path */
+      strlcpy(path, game_options_path, len);
+
       free(game_options_path);
    }
    else
    {
-      char buf[PATH_MAX_LENGTH];
-      const char *options_path       = settings ? settings->paths.path_core_options : NULL;
+      char global_options_path[PATH_MAX_LENGTH];
+      char per_core_options_path[PATH_MAX_LENGTH];
+      bool per_core_options       = !settings->bools.global_core_options;
+      bool per_core_options_exist = false;
 
-      buf[0] = '\0';
+      global_options_path[0]   = '\0';
+      per_core_options_path[0] = '\0';
 
-      if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
+      if (per_core_options)
       {
-         fill_pathname_resolve_relative(buf, path_get(RARCH_PATH_CONFIG),
-               file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
-         options_path = buf;
+         /* Get core-specific options path
+          * > if retroarch_validate_per_core_options() returns
+          *   false, then per-core options are disabled (due to
+          *   unknown system errors...) */
+         per_core_options = retroarch_validate_per_core_options(
+               per_core_options_path, sizeof(per_core_options_path), true);
+
+         /* If we can use per-core options, check whether an options
+          * file already exists */
+         if (per_core_options)
+            per_core_options_exist = path_is_valid(per_core_options_path);
       }
 
-      runloop_game_options_active = false;
+      /* If not using per-core options, or if a per-core options
+       * file does not yet exist, must fetch 'global' options path */
+      if (!per_core_options || !per_core_options_exist)
+      {
+         const char *options_path = settings ? settings->paths.path_core_options : NULL;
 
-      if (!string_is_empty(options_path))
-         runloop_core_options =
-            core_option_manager_new(options_path, option_defs);
+         if (!string_is_empty(options_path))
+            strlcpy(global_options_path, options_path, sizeof(global_options_path));
+         else if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
+         {
+            fill_pathname_resolve_relative(
+                  global_options_path, path_get(RARCH_PATH_CONFIG),
+                  file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(global_options_path));
+         }
+      }
+
+      /* Allocate correct path/src_path strings */
+      if (per_core_options)
+      {
+         strlcpy(path, per_core_options_path, len);
+
+         if (!per_core_options_exist)
+            strlcpy(src_path, global_options_path, src_len);
+      }
+      else
+         strlcpy(path, global_options_path, len);
+
+      /* Notify system that we *do not* have a valid core options
+       * options override */
+      runloop_game_options_active = false;
    }
+}
+
+static void rarch_init_core_options(
+      const struct retro_core_option_definition *option_defs)
+{
+   char options_path[PATH_MAX_LENGTH];
+   char src_options_path[PATH_MAX_LENGTH];
+
+   options_path[0] = '\0';
+   src_options_path[0] = '\0';
+
+   /* Get core options file path */
+   rarch_init_core_options_path(
+      options_path, sizeof(options_path),
+      src_options_path, sizeof(src_options_path));
+
+   if (!string_is_empty(options_path))
+      runloop_core_options =
+            core_option_manager_new(options_path, src_options_path, option_defs);
 }
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
@@ -22093,40 +22236,22 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_CORE_VARIABLES_INIT:
          {
-            settings_t *settings              = configuration_settings;
-            char *game_options_path           = NULL;
+            char options_path[PATH_MAX_LENGTH];
+            char src_options_path[PATH_MAX_LENGTH];
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (settings->bools.game_specific_options && 
-                  rarch_game_specific_options(&game_options_path))
-            {
-               path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
-               runloop_game_options_active = true;
-               runloop_core_options        =
-                  core_option_manager_new_vars(game_options_path, vars);
-               free(game_options_path);
-            }
-            else
-            {
-               char buf[PATH_MAX_LENGTH];
-               const char *options_path       = settings ? settings->paths.path_core_options : NULL;
+            options_path[0] = '\0';
+            src_options_path[0] = '\0';
 
-               buf[0] = '\0';
+            /* Get core options file path */
+            rarch_init_core_options_path(
+               options_path, sizeof(options_path),
+               src_options_path, sizeof(src_options_path));
 
-               if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
-               {
-                  fill_pathname_resolve_relative(buf, path_get(RARCH_PATH_CONFIG),
-                        file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
-                  options_path = buf;
-               }
-
-               runloop_game_options_active = false;
-
-               if (!string_is_empty(options_path))
-                  runloop_core_options =
-                     core_option_manager_new_vars(options_path, vars);
-            }
+            if (!string_is_empty(options_path))
+               runloop_core_options =
+                     core_option_manager_new_vars(options_path, src_options_path, vars);
          }
          break;
       case RARCH_CTL_CORE_OPTIONS_INIT:
