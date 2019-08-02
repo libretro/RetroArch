@@ -5583,11 +5583,11 @@ error:
  * @opt              : options manager handle
  *
  * Writes core option key-pair values to file.
- *
- * Returns: true (1) if core option values could be
- * successfully saved to disk, otherwise false (0).
  **/
-static bool core_option_manager_flush(core_option_manager_t *opt)
+static void core_option_manager_flush(
+      config_file_t *conf,
+      core_option_manager_t *opt,
+      const char *path)
 {
    size_t i;
 
@@ -5596,55 +5596,9 @@ static bool core_option_manager_flush(core_option_manager_t *opt)
       struct core_option *option = (struct core_option*)&opt->opts[i];
 
       if (option)
-         config_set_string(opt->conf, option->key,
+         config_set_string(conf, option->key,
                opt->opts[i].vals->elems[opt->opts[i].index].data);
    }
-
-   RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
-   return config_file_write(opt->conf, opt->conf_path, true);
-}
-
-/**
- * core_option_manager_flush_game_specific:
- * @opt              : options manager handle
- * @path             : path for the core options file
- *
- * Writes core option key-pair values to a custom file.
- *
- * Returns: true (1) if core option values could be
- * successfully saved to disk, otherwise false (0).
- **/
-static bool core_option_manager_flush_game_specific(
-      core_option_manager_t *opt, const char* path)
-{
-   size_t i;
-   config_file_t *conf_tmp = NULL;
-   bool ret                = false;
-
-   /* We only need to save configuration settings for
-    * the current core, so create a temporary config_file
-    * object and populate the required values. */
-   conf_tmp = config_file_new_alloc();
-   if (!conf_tmp)
-      goto end;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = (struct core_option*)&opt->opts[i];
-
-      if (option)
-         config_set_string(conf_tmp, option->key,
-               opt->opts[i].vals->elems[opt->opts[i].index].data);
-   }
-
-   RARCH_LOG("Per-Game Options: game-specific core options saved to \"%s\"\n", path);
-   ret = config_file_write(conf_tmp, path, true);
-
-   config_file_free(conf_tmp);
-   conf_tmp = NULL;
-
-end:
-   return ret;
 }
 
 /**
@@ -22300,12 +22254,33 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             to that file instead */
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
          {
-            core_option_manager_flush_game_specific(runloop_core_options,
-                  path_get(RARCH_PATH_CORE_OPTIONS));
+            /* We only need to save configuration settings for
+             * the current core, so create a temporary config_file
+             * object and populate the required values. */
+            config_file_t *conf_tmp = config_file_new_alloc();
+
+            if (conf_tmp)
+            {
+               const char *path = path_get(RARCH_PATH_CORE_OPTIONS);
+               core_option_manager_flush(
+                     conf_tmp,
+                     runloop_core_options, path);
+               RARCH_LOG("[Core Options]: Saved game-specific core options to \"%s\"\n", path);
+               config_file_write(conf_tmp, path, true);
+               config_file_free(conf_tmp);
+               conf_tmp = NULL;
+            }
             path_clear(RARCH_PATH_CORE_OPTIONS);
          }
          else
-            core_option_manager_flush(runloop_core_options);
+         {
+            const char *path = runloop_core_options->conf_path;
+            core_option_manager_flush(
+                  runloop_core_options->conf,
+                  runloop_core_options, path);
+            RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
+            config_file_write(runloop_core_options->conf, path, true);
+         }
 
          if (runloop_game_options_active)
             runloop_game_options_active = false;
