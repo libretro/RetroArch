@@ -23831,9 +23831,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_NETWORKING
       want_runahead                 = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
-#endif
 
-#ifdef HAVE_RUNAHEAD
       if (want_runahead)
          do_runahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
       else
