@@ -4220,3 +4220,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
     "Pobierz pojedyncze miniatury dla każdego wpisu wybranej listy odtwarzania."
     )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+    "Naciśnij dwukrotnie klawisz skrótu, aby wyjść z RetroArch."
+    )
