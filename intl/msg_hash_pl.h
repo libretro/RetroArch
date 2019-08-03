@@ -4204,3 +4204,19 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
     "Zainstaluj lub przywróć rdzeń z katalogu pobranych plików."
     )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Zainstaluj rdzeń z narzędzia do aktualizacji online."
+    )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Zainstaluj rdzeń z narzędzia do aktualizacji online."
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Aktualizator miniatur list odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Pobierz pojedyncze miniatury dla każdego wpisu wybranej listy odtwarzania."
+    )
