@@ -10678,30 +10678,25 @@ static void input_driver_poll(void)
             input_driver_axis_threshold);
 #endif
 
+#ifdef HAVE_MENU
+   if (!menu_driver_is_alive())
+#endif
    if (settings->bools.input_remap_binds_enable && input_driver_mapper)
    {
+      input_mapper_poll(input_driver_mapper, 
 #ifdef HAVE_OVERLAY
-      bool overlay_is_alive = (overlay_ptr && overlay_ptr->alive);
+            overlay_ptr,
 #else
-      bool overlay_is_alive = false;
+            NULL,
 #endif
-#ifdef HAVE_MENU
-      bool do_poll          = menu_driver_is_alive() ? false : true;
-#else
-      bool do_poll          = true;
-#endif
-
-      if (do_poll)
-         input_mapper_poll(input_driver_mapper, 
+            settings,
+            max_users,
 #ifdef HAVE_OVERLAY
-               overlay_ptr,
+            (overlay_ptr && overlay_ptr->alive)
 #else
-               NULL,
+            false
 #endif
-               settings,
-               max_users,
-               overlay_is_alive
-               );
+            );
    }
 
 #ifdef HAVE_COMMAND
