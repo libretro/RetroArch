@@ -7225,16 +7225,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
-         const struct retro_game_geometry *in_geom = NULL;
          struct retro_system_av_info *av_info      = &video_driver_av_info;
          struct retro_game_geometry  *geom         = (struct retro_game_geometry*)&av_info->geometry;
+         const struct retro_game_geometry *in_geom = (const struct retro_game_geometry*)data;
 
          if (!geom)
             return false;
-
-         in_geom = (const struct retro_game_geometry*)data;
-
-         RARCH_LOG("Environ SET_GEOMETRY.\n");
 
          /* Can potentially be called every frame,
           * don't do anything unless required. */
@@ -7254,6 +7250,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             video_driver_set_aspect_ratio();
 
             /* TODO: Figure out what to do, if anything, with recording. */
+         }
+         else
+         {
+            RARCH_LOG("Environ SET_GEOMETRY.\n");
+
          }
          break;
       }
