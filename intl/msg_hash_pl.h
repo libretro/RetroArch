@@ -3882,7 +3882,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
     "Pokaż/ukryj opcję „Pobierz miniatury”."
     )
-   MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
     "Pokaż aktualizację starszych miniatur"
     )
@@ -3890,12 +3890,12 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
     "Pokaż/ukryj możliwość pobierania starszych pakietów miniatur."
     )
-   MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
     "Pokaż podpowiedzi menu"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
      "Styl daty/godziny"
     )
 MSG_HASH(
@@ -3976,11 +3976,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-    "Zapisz dziennik czasu wykonywania (agregacja)"
+    "Zapisz dziennik czasu wykonywania (agregacji)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-    "Naciśnij dwukrotnie quit"
+    "Naciśnij dwukrotnie wyjście"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
@@ -4187,4 +4187,12 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Dostosuj powiadomienia na ekranie"
+    )
+MSG_HASH( 
+    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE, 
+   "Rozmiar listy ulubionych" 
+    )
+MSG_HASH( 
+    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE, 
+    "Ogranicz liczbę wpisów na liście odtwarzania ulubionych. Po osiągnięciu limitu nowe dodatki będą blokowane, dopóki stare wpisy nie zostaną usunięte. Ustawienie wartości -1 pozwala na „nieograniczoną” liczbę (99999) wpisów. OSTRZEŻENIE: Zmniejszenie wartości spowoduje usunięcie istniejących wpisów!"
     )
