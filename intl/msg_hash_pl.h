@@ -3834,7 +3834,8 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
     "Brak ulubionych."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
       "Zapamiętaj położenie i rozmiar okna")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -3844,19 +3845,25 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
     "Obsługa CoreAudio V3"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
       "Menu widgetów")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
       "Shadery Video")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
       "Skanuj bez dopasowania podstawowego")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
       "Po wyłączeniu zawartość jest dodawana tylko do list odtwarzania, jeśli zainstalowany jest rdzeń, który obsługuje jej rozszerzenie. Włączając to, niezależnie od tego doda do listy odtwarzania. W ten sposób możesz zainstalować rdzeń, którego potrzebujesz później po skanowaniu")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
       "Podświetlanie ikony poziomej animacji")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
       "Animacja Przesuń w górę/w dół")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "Menu główne animacji Otwiera/Zamyka")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
@@ -3882,7 +3889,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
     "Pokaż/ukryj opcję „Pobierz miniatury”."
     )
-   MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
     "Pokaż aktualizację starszych miniatur"
     )
@@ -3890,7 +3897,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
     "Pokaż/ukryj możliwość pobierania starszych pakietów miniatur."
     )
-   MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
     "Pokaż podpowiedzi menu"
     )
@@ -3914,15 +3921,15 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
     "Animacja paska tekstu"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
     "Szybkość paska tekstu"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
     "Sortuj listy alfabetycznie"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
     "Zapisz listy odtwarzania w starym formacie"
     )
@@ -3930,11 +3937,11 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
     "Pokaż powiązane rdzenie na listach odtwarzania"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
     "Pokaż etykiety pomocnicze listy odtwarzania"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
     "Czas działania etykiety podrzędnej listy odtwarzania"
     )
@@ -3976,11 +3983,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-    "Zapisz dziennik czasu wykonywania (agregacja)"
+    "Zapisz dziennik czasu wykonywania (agregacji)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-    "Naciśnij dwukrotnie quit"
+    "Naciśnij dwukrotnie wyjście"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
@@ -4161,7 +4168,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Zapisz pliki dziennika zdarzeń systemowych w tym katalogu."
     )
-   MSG_HASH(
+MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
     "Automatyczne zamykanie menu i wznawianie bieżącej zawartości po wybraniu „Zapisz stan” lub „Wczytaj stan” z Szybkiego menu. Wyłączenie tego może poprawić wydajność stanu zapisywania na bardzo wolnych urządzeniach."
     )
@@ -4187,4 +4194,40 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Dostosuj powiadomienia na ekranie"
+    )
+MSG_HASH( 
+    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE, 
+   "Rozmiar listy ulubionych" 
+    )
+MSG_HASH( 
+    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE, 
+    "Ogranicz liczbę wpisów na liście odtwarzania ulubionych. Po osiągnięciu limitu nowe dodatki będą blokowane, dopóki stare wpisy nie zostaną usunięte. Ustawienie wartości -1 pozwala na „nieograniczoną” liczbę (99999) wpisów. OSTRZEŻENIE: Zmniejszenie wartości spowoduje usunięcie istniejących wpisów!"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Zainstaluj lub przywróć rdzeń"
+    )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Zainstaluj lub przywróć rdzeń z katalogu pobranych plików."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Zainstaluj rdzeń z narzędzia do aktualizacji online."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Zainstaluj rdzeń z narzędzia do aktualizacji online."
+    ) 
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+    "Aktualizator miniatur list odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+    "Pobierz pojedyncze miniatury dla każdego wpisu wybranej listy odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+    "Naciśnij dwukrotnie klawisz skrótu, aby wyjść z RetroArch."
     )
