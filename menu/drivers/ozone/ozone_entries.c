@@ -711,6 +711,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
          thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
 
+      menu_display_blend_begin(video_info);
       ozone_draw_icon(video_info,
          ozone->dimensions.thumbnail_width,
          ozone->dimensions.thumbnail_height,
@@ -721,6 +722,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          0, 1,
          ozone_pure_white
       );
+      menu_display_blend_end(video_info);
    }
    else
    {
@@ -739,6 +741,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.left_thumbnail_width / 2;
       unsigned thumb_y_position = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
 
+      menu_display_blend_begin(video_info);
       ozone_draw_icon(video_info,
          ozone->dimensions.left_thumbnail_width,
          ozone->dimensions.left_thumbnail_height,
@@ -749,6 +752,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
          0, 1,
          ozone_pure_white
       );
+      menu_display_blend_end(video_info);
    }
    else if (!ozone->selection_core_is_viewer)
    {
