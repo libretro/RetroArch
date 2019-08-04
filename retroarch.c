@@ -16277,14 +16277,6 @@ bool *audio_get_bool_ptr(enum audio_action action)
    return NULL;
 }
 
-static const char* audio_driver_get_ident(void)
-{
-   if (!current_audio)
-      return NULL;
-
-   return current_audio->ident;
-}
-
 /* VIDEO */
 
 bool video_driver_started_fullscreen(void)
@@ -24043,6 +24035,7 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
    }
 }
 
+#ifdef HAVE_NETWORKING
 static bool rarch_write_debug_info(void)
 {
    int i;
@@ -24259,10 +24252,10 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "Drivers:\n");
 
    {
-      gfx_ctx_ident_t ident_info = {0};
-      input_driver_t *input_driver;
-      const input_device_driver_t *joypad_driver;
-      const char *driver;
+      gfx_ctx_ident_t ident_info                 = {0};
+      input_driver_t *input_driver               = NULL;
+      const input_device_driver_t *joypad_driver = NULL;
+      const char *driver                         = NULL;
 #ifdef HAVE_MENU
       driver = menu_driver_ident();
 
@@ -24303,7 +24296,9 @@ static bool rarch_write_debug_info(void)
       filestream_printf(file, "  - Video Context: %s\n",
             ident_info.ident ? ident_info.ident : "n/a");
 
-      driver = audio_driver_get_ident();
+      driver    = NULL;
+      if (current_audio)
+         driver = current_audio->ident;
 
       if (string_is_equal(driver, settings->arrays.audio_driver))
          filestream_printf(file, "  - Audio: %s\n",
@@ -24530,7 +24525,6 @@ error:
    return false;
 }
 
-#ifdef HAVE_NETWORKING
 static void send_debug_info_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
