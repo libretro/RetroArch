@@ -4214,10 +4214,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
     "Zainstaluj rdzeń z narzędzia do aktualizacji online."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-    "Zainstaluj rdzeń z narzędzia do aktualizacji online."
     ) 
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
