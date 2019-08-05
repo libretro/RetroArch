@@ -370,7 +370,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0 && best_conf)
    {
-      RARCH_LOG("[Auoconf]: selected configuration: %s\n", best_path);
+      RARCH_LOG("[Autoconf]: selected configuration: %s\n", best_path);
       input_autoconfigure_joypad_add(best_conf, params, task);
       ret = 1;
    }
