@@ -242,7 +242,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
 
    if (core_context || debug)
    {
-      int attribs[16];
+      int attribs[16] = {0};
       int *aptr = attribs;
 
       if (core_context)
@@ -274,29 +274,71 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (!pcreate_context)
          pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
+      /* In order to support the core info "required_hw_api" field correctly, we should try to init the highest available
+       * version GL context possible. This means trying successively lower versions until it works, because GL has
+       * no facility for determining the highest possible supported version.
+       */
       if (pcreate_context)
       {
-         HGLRC context = pcreate_context(win32_hdc, NULL, attribs);
+         int i;
+         int gl_versions[][2] = {{4, 6}, {4, 3}, {4, 0}, {3, 3}, {3, 2}, {0, 0}};
+         int gl_version_rows = ARRAY_SIZE(gl_versions);
+         int (*versions)[2];
+         int version_rows = 0;
+         HGLRC context = NULL;
 
-         if (context)
-         {
-            wglMakeCurrent(NULL, NULL);
-            wglDeleteContext(win32_hrc);
-            win32_hrc = context;
-            if (!wglMakeCurrent(win32_hdc, win32_hrc))
-               *quit = true;
-         }
-         else
-            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+         versions = gl_versions;
+         version_rows = gl_version_rows;
 
-         if (win32_use_hw_ctx)
+         /* try each version, starting with the highest first */
+         for (i = 0; i < version_rows; i++)
          {
-            win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
-            if (!win32_hw_hrc)
+            if (versions[i][0] == 0 && versions[i][1] == 0)
             {
-               RARCH_ERR("[WGL]: Failed to create shared context.\n");
-               *quit = true;
+               /* use the actual requested version last */
+               versions[i][0] = win32_major;
+               versions[i][1] = win32_minor;
             }
+
+            attribs[1] = versions[i][0];
+            attribs[3] = versions[i][1];
+
+            context = pcreate_context(win32_hdc, NULL, attribs);
+
+            if (context)
+            {
+               wglMakeCurrent(NULL, NULL);
+               wglDeleteContext(win32_hrc);
+               win32_hrc = context;
+
+               if (!wglMakeCurrent(win32_hdc, win32_hrc))
+               {
+                  *quit = true;
+                  break;
+               }
+            }
+            else
+              continue;
+
+            if (win32_use_hw_ctx)
+            {
+               win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
+
+               if (!win32_hw_hrc)
+               {
+                  RARCH_ERR("[WGL]: Failed to create shared context.\n");
+                  *quit = true;
+                  break;
+               }
+            }
+
+            break;
+         }
+
+         if (!context)
+         {
+            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+            *quit = true;
          }
       }
       else
@@ -725,7 +767,7 @@ static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
 }
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
-	enum display_metric_types type, float *value)
+   enum display_metric_types type, float *value)
 {
    return win32_get_metrics(data, type, value);
 }
