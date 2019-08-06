@@ -281,7 +281,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (pcreate_context)
       {
          int i;
-         int gl_versions[][2] = {{4, 6}, {4, 3}, {4, 0}, {3, 3}, {3, 2}, {0, 0}};
+         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {0, 0}};
          int gl_version_rows = ARRAY_SIZE(gl_versions);
          int (*versions)[2];
          int version_rows = 0;
@@ -318,7 +318,15 @@ static void create_gl_context(HWND hwnd, bool *quit)
                }
             }
             else
-              continue;
+            {
+               if (versions[i][0] == g_major && versions[i][1] == g_minor)
+               {
+                  /* The requested version is not supported, go ahead and fail since everything else will be lower than that. */
+                  break;
+               }
+
+               continue;
+            }
 
             if (win32_use_hw_ctx)
             {
