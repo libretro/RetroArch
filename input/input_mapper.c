@@ -49,26 +49,35 @@ void input_mapper_poll(input_mapper_t *handle,
       bool poll_overlay)
 {
    unsigned i, j;
-   input_bits_t current_input;
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_pointer           = (input_overlay_t*)ol_pointer;
 #endif
    settings_t *settings                       = (settings_t*)settings_data;
-   bool key_event[RARCH_CUSTOM_BIND_LIST_END] = { false };
 
    memset(handle->keys, 0, sizeof(handle->keys));
 
    for (i = 0; i < max_users; i++)
    {
-      unsigned device  = settings->uints.input_libretro_device[i];
-      device          &= RETRO_DEVICE_MASK;
+      input_bits_t current_input;
+      unsigned device  = settings->uints.input_libretro_device[i] 
+         & RETRO_DEVICE_MASK;
 
       switch (device)
       {
-            /* keyboard to gamepad remapping */
          case RETRO_DEVICE_KEYBOARD:
+         case RETRO_DEVICE_JOYPAD:
+         case RETRO_DEVICE_ANALOG:
             BIT256_CLEAR_ALL_PTR(&current_input);
             input_get_state_for_port(settings, i, &current_input);
+            break;
+         default:
+            break;
+      }
+
+      switch (device)
+      {
+         /* keyboard to gamepad remapping */
+         case RETRO_DEVICE_KEYBOARD:
             for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
             {
                unsigned remap_button         =
@@ -79,8 +88,8 @@ void input_mapper_poll(input_mapper_t *handle,
                {
                   unsigned current_button_value = BIT256_GET(current_input, j);
 #ifdef HAVE_OVERLAY
-               if (poll_overlay && i == 0)
-                  current_button_value |= input_overlay_key_pressed(overlay_pointer, j);
+                  if (poll_overlay && i == 0)
+                     current_button_value |= input_overlay_key_pressed(overlay_pointer, j);
 #endif
                   if ((current_button_value == 1) && (j != remap_button))
                   {
@@ -89,14 +98,13 @@ void input_mapper_poll(input_mapper_t *handle,
                      input_keyboard_event(true,
                            remap_button,
                            0, 0, RETRO_DEVICE_KEYBOARD);
-                     key_event[j] = true;
+                     continue;
                   }
-                  /* key_event tracks if a key is pressed for ANY PLAYER, so we must check
-                     if the key was used by any player before releasing */
-                  else if (!key_event[j])
-                     input_keyboard_event(false,
-                           remap_button,
-                           0, 0, RETRO_DEVICE_KEYBOARD);
+
+                  /* Release keyboard event*/
+                  input_keyboard_event(false,
+                        remap_button,
+                        0, 0, RETRO_DEVICE_KEYBOARD);
                }
             }
             break;
@@ -110,12 +118,9 @@ void input_mapper_poll(input_mapper_t *handle,
              * the bit on the mapper input bitmap, later on the
              * original input is cleared in input_state */
             BIT256_CLEAR_ALL(handle->buttons[i]);
-            BIT256_CLEAR_ALL_PTR(&current_input);
 
             for (j = 0; j < 8; j++)
                handle->analog_value[i][j] = 0;
-
-            input_get_state_for_port(settings, i, &current_input);
 
             for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
             {
@@ -159,12 +164,12 @@ void input_mapper_poll(input_mapper_t *handle,
 
                if (
                      (abs(current_axis_value) > 0 &&
-                     (k != remap_axis)            &&
-                     (remap_axis != RARCH_UNMAPPED)
-                  ))
+                      (k != remap_axis)            &&
+                      (remap_axis != RARCH_UNMAPPED)
+                     ))
                {
                   if (remap_axis < RARCH_FIRST_CUSTOM_BIND &&
-                     abs(current_axis_value) > *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767)
+                        abs(current_axis_value) > *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767)
                   {
                      BIT256_SET(handle->buttons[i], remap_axis);
                   }
