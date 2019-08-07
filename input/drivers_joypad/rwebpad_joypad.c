@@ -64,9 +64,10 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
 
 static bool rwebpad_joypad_init(void *data)
 {
-   int supported = emscripten_get_num_gamepads();
+   EMSCRIPTEN_RESULT supported;
    (void)data;
 
+   supported = emscripten_sample_gamepad_data();
    if (supported == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
       return false;
 
@@ -171,8 +172,7 @@ static int16_t rwebpad_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void rwebpad_joypad_poll(void)
 {
-   /* this call makes emscripten poll gamepad state */
-   (void)emscripten_get_num_gamepads();
+   (void)emscripten_sample_gamepad_data();
 }
 
 static bool rwebpad_joypad_query_pad(unsigned pad)
