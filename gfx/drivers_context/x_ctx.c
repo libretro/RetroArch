@@ -871,11 +871,11 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                 */
                {
                   int i;
-                  int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {0, 0}};
+                  int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
 #ifdef HAVE_OPENGLES3
-                  int gles_versions[][2] = {{3, 2}, {3, 1}, {3, 0}, {0, 0}};
+                  int gles_versions[][2] = {{3, 2}, {3, 1}, {3, 0}, {2, 0}, {1, 1}, {1, 0}};
 #else
-                  int gles_versions[][2] = {{2, 1}, {2, 0}, {1, 1}, {1, 0}, {0, 0}};
+                  int gles_versions[][2] = {{2, 0}, {1, 1}, {1, 0}};
 #endif
                   int gl_version_rows = ARRAY_SIZE(gl_versions);
                   int gles_version_rows = ARRAY_SIZE(gles_versions);
@@ -896,44 +896,36 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                   /* try each version, starting with the highest first */
                   for (i = 0; i < version_rows; i++)
                   {
-                     if (versions[i][0] == 0 && versions[i][1] == 0)
-                     {
-                        /* use the actual requested version last */
-                        versions[i][0] = g_major;
-                        versions[i][1] = g_minor;
-                     }
-
                      attribs[1] = versions[i][0];
                      attribs[3] = versions[i][1];
 
                      x->g_ctx = glx_create_context_attribs(g_x11_dpy,
                            x->g_fbc, NULL, True, attribs);
 
-                     if (!x->g_ctx)
+                     if (x->g_ctx)
+                     {
+                        if (x->g_use_hw_ctx)
+                        {
+                           RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                           x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                                 x->g_fbc, x->g_ctx, True, attribs);
+
+                           if (!x->g_hw_ctx)
+                              RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                        }
+
+                        break;
+                     }
+                     else
                      {
                         if (versions[i][0] == g_major && versions[i][1] == g_minor)
                         {
-                           /* The requested version is not supported, go ahead and fail since everything else will be lower than that. */
+                           /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
                            break;
                         }
 
                         continue;
                      }
-
-                     if (x->g_use_hw_ctx)
-                     {
-                        RARCH_LOG("[GLX]: Creating shared HW context.\n");
-                        x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
-                              x->g_fbc, x->g_ctx, True, attribs);
-
-                        if (!x->g_hw_ctx)
-                           RARCH_ERR("[GLX]: Failed to create new shared context.\n");
-                     }
-
-                     g_major = versions[i][0];
-                     g_minor = versions[i][1];
-
-                     break;
                   }
                }
 

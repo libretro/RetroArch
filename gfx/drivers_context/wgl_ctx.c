@@ -281,7 +281,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (pcreate_context)
       {
          int i;
-         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {0, 0}};
+         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
          int gl_version_rows = ARRAY_SIZE(gl_versions);
          int (*versions)[2];
          int version_rows = 0;
@@ -293,13 +293,6 @@ static void create_gl_context(HWND hwnd, bool *quit)
          /* try each version, starting with the highest first */
          for (i = 0; i < version_rows; i++)
          {
-            if (versions[i][0] == 0 && versions[i][1] == 0)
-            {
-               /* use the actual requested version last */
-               versions[i][0] = win32_major;
-               versions[i][1] = win32_minor;
-            }
-
             attribs[1] = versions[i][0];
             attribs[3] = versions[i][1];
 
@@ -316,31 +309,32 @@ static void create_gl_context(HWND hwnd, bool *quit)
                   *quit = true;
                   break;
                }
+
+               if (win32_use_hw_ctx)
+               {
+                  win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
+
+                  if (!win32_hw_hrc)
+                  {
+                     RARCH_ERR("[WGL]: Failed to create shared context.\n");
+                     *quit = true;
+                     break;
+                  }
+               }
+
+               /* found a suitable version that is high enough, we can stop now */
+               break;
             }
             else
             {
                if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
                {
-                  /* The requested version is not supported, go ahead and fail since everything else will be lower than that. */
+                  /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
                   break;
                }
 
                continue;
             }
-
-            if (win32_use_hw_ctx)
-            {
-               win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
-
-               if (!win32_hw_hrc)
-               {
-                  RARCH_ERR("[WGL]: Failed to create shared context.\n");
-                  *quit = true;
-                  break;
-               }
-            }
-
-            break;
          }
 
          if (!context)
