@@ -319,7 +319,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
             }
             else
             {
-               if (versions[i][0] == g_major && versions[i][1] == g_minor)
+               if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
                {
                   /* The requested version is not supported, go ahead and fail since everything else will be lower than that. */
                   break;
