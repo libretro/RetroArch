@@ -916,15 +916,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
                         break;
                      }
-                     else
+                     else if (versions[i][0] == g_major && versions[i][1] == g_minor)
                      {
-                        if (versions[i][0] == g_major && versions[i][1] == g_minor)
-                        {
-                           /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
-                           break;
-                        }
-
-                        continue;
+                        /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
+                        break;
                      }
                   }
                }

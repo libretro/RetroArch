@@ -325,15 +325,10 @@ static void create_gl_context(HWND hwnd, bool *quit)
                /* found a suitable version that is high enough, we can stop now */
                break;
             }
-            else
+            else if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
             {
-               if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
-               {
-                  /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
-                  break;
-               }
-
-               continue;
+               /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
+               break;
             }
          }
 
