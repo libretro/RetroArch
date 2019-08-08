@@ -536,7 +536,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          line_index++;
 
          /* Check if this is a '#pragma parameter' line */
-         if (strncmp("#pragma parameter", line, STRLEN_CONST("#pragma parameter")))
+         if (strncmp("#pragma parameter", line,
+                  STRLEN_CONST("#pragma parameter")))
             continue;
 
          /* Parse line */
@@ -567,10 +568,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       string_list_free(lines);
    }
 
-   if (conf && !video_shader_resolve_current_parameters(conf, shader))
-      return false;
-
-   return true;
+   return video_shader_resolve_current_parameters(conf, shader);
 }
 
 /**
@@ -592,8 +590,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
    bool watch_files                 = settings->bools.video_shader_watch_files;
-
-   (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
 
