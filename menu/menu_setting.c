@@ -5713,8 +5713,8 @@ void general_write_handler(rarch_setting_t *setting)
                settings->bools.video_shader_enable = false;
             }
          }
-         /* TODO/FIXME - fallthrough here intentional? */
 #endif
+         break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)

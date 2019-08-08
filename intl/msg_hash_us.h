@@ -4680,6 +4680,10 @@ MSG_HASH(
     "Failed to apply shader."
     )
 MSG_HASH(
+    MSG_FAILED_TO_APPLY_SHADER_PRESET,
+    "Failed to apply shader preset:"
+    )
+MSG_HASH(
     MSG_FAILED_TO_BIND_SOCKET,
     "Failed to bind socket."
     )
