@@ -110,7 +110,8 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
 
    for (size_t i = root_file ? 1 : 0; i < lines.size(); i++)
    {
-      const char *line = lines[i];
+      unsigned push_line = 0;
+      const char *line   = lines[i];
       if (strstr(line, "#include ") == line)
       {
          char *closing = NULL;
@@ -141,8 +142,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
 
          /* After including a file, use line directive
           * to pull it back to current file. */
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 1), basename);
-         output->push_back(tmp);
+         push_line = 1;
       }
       else if (strstr(line, "#endif") || strstr(line, "#pragma"))
       {
@@ -151,12 +151,17 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
           * Add extra offset here since we're setting #line
           * for the line after this one.
           */
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 2), basename);
+         push_line = 2;
          output->push_back(line);
-         output->push_back(tmp);
       }
       else
          output->push_back(line);
+
+      if (push_line != 0)
+      {
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + push_line), basename);
+         output->push_back(tmp);
+      }
    }
 
    free(buf);
