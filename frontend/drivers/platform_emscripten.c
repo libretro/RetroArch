@@ -47,6 +47,7 @@
 #include "../../file_path_special.h"
 
 void RWebAudioRecalibrateTime(void);
+void dummyErrnoCodes(void);
 
 static unsigned emscripten_fullscreen_reinit;
 static unsigned emscripten_frame_count = 0;
@@ -225,6 +226,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 int main(int argc, char *argv[])
 {
    EMSCRIPTEN_RESULT r;
+
+   dummyErrnoCodes();
 
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
