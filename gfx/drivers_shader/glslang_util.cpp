@@ -93,7 +93,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
       if (strstr(lines[0], "#version ") != lines[0])
       {
          RARCH_ERR("First line of the shader must contain a valid #version string.\n");
-         return false;
+         goto error;
       }
 
       output->push_back(lines[0]);
