@@ -26,7 +26,7 @@ RETRO_BEGIN_DECLS
 /* Utility function to implement the same parameter reflection
  * which happens in the slang backend.
  * This does preprocess over the input file to handle #includes and so on. */
-bool slang_preprocess_parse_parameters(void *data, 
+bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader);
 
 RETRO_END_DECLS

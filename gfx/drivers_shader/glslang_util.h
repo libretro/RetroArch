@@ -105,8 +105,9 @@ struct glslang_output
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
 
+/* Helpers for internal use. */
+bool glslang_read_shader_file(const char *path, std::vector<std::string> *output, bool root_file);
 bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *meta);
-bool glslang_parse_meta(void *data, glslang_meta *meta);
 #endif
 
 void *config_file_new_wrapper(const char *path);

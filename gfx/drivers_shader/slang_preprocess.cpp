@@ -89,11 +89,14 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
    return true;
 }
 
-bool slang_preprocess_parse_parameters(void *data, struct video_shader *shader)
+bool slang_preprocess_parse_parameters(const char *shader_path,
+      struct video_shader *shader)
 {
    glslang_meta meta;
-   struct string_list *lines = (struct string_list*)data;
+   vector<string> lines;
 
+   if (!glslang_read_shader_file(shader_path, &lines, true))
+      return false;
    if (!glslang_parse_meta(lines, &meta))
       return false;
    return slang_preprocess_parse_parameters(meta, shader);
