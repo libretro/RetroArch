@@ -38,7 +38,7 @@
 
 using namespace std;
 
-bool glslang_read_shader_file(const char *path, vector<string> *output, bool root_file)
+static bool glslang_read_shader_file(const char *path, vector<string> *output, bool root_file)
 {
    vector<const char *> lines;
    char include_path[PATH_MAX_LENGTH];
@@ -281,6 +281,113 @@ static glslang_format glslang_find_format(const char *fmt)
    FMT(R32G32B32A32_SFLOAT);
 
    return SLANG_FORMAT_UNKNOWN;
+}
+
+bool glslang_parse_meta(void *data, glslang_meta *meta)
+{
+   char id[64];
+   char desc[64];
+   size_t line_index         = 0;
+   struct string_list *lines = (struct string_list*)data;
+
+   id[0] = desc[0]           = '\0';
+
+   *meta                     = glslang_meta{};
+
+   while (line_index < lines->size)
+   {
+      const char *line_c = lines->elems[line_index].data;
+      line_index++;
+
+      if (!strncmp("#pragma name", line_c, STRLEN_CONST("#pragma name")))
+      {
+         const char *str = NULL;
+
+         if (!meta->name.empty())
+         {
+            RARCH_ERR("[slang]: Trying to declare multiple names for file.\n");
+            string_list_free(lines);
+            return false;
+         }
+
+         str = line_c + STRLEN_CONST("#pragma name ");
+
+         while (*str == ' ')
+            str++;
+         meta->name = str;
+      }
+      if (!strncmp("#pragma parameter", line_c, STRLEN_CONST("#pragma parameter")))
+      {
+         float initial, minimum, maximum, step;
+         int ret = sscanf(line_c, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+               id, desc, &initial, &minimum, &maximum, &step);
+
+         if (ret == 5)
+         {
+            step = 0.1f * (maximum - minimum);
+            ret  = 6;
+         }
+
+         if (ret == 6)
+         {
+            auto itr = find_if(begin(meta->parameters), end(meta->parameters), [&](const glslang_parameter &param) {
+                     return param.id == id;
+                  });
+
+            /* Allow duplicate #pragma parameter, but only
+             * if they are exactly the same. */
+            if (itr != end(meta->parameters))
+            {
+               if (   itr->desc    != desc    ||
+                      itr->initial != initial ||
+                      itr->minimum != minimum ||
+                      itr->maximum != maximum ||
+                      itr->step    != step
+                  )
+               {
+                  RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
+                  string_list_free(lines);
+                  return false;
+               }
+            }
+            else
+               meta->parameters.push_back({ id, desc, initial, minimum, maximum, step });
+         }
+         else
+         {
+            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line_c);
+            string_list_free(lines);
+            return false;
+         }
+      }
+      else if (!strncmp("#pragma format", line_c, STRLEN_CONST("#pragma format")))
+      {
+         const char *str = NULL;
+
+         if (meta->rt_format != SLANG_FORMAT_UNKNOWN)
+         {
+            RARCH_ERR("[slang]: Trying to declare format multiple times for file.\n");
+            string_list_free(lines);
+            return false;
+         }
+
+         str = line_c + STRLEN_CONST("#pragma format ");
+
+         while (*str == ' ')
+            str++;
+
+         meta->rt_format = glslang_find_format(str);
+         if (meta->rt_format == SLANG_FORMAT_UNKNOWN)
+         {
+            RARCH_ERR("[slang]: Failed to find format \"%s\".\n", str);
+            string_list_free(lines);
+            return false;
+         }
+      }
+   }
+
+   string_list_free(lines);
+   return true;
 }
 
 bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)

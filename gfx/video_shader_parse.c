@@ -496,20 +496,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       if (!path_is_valid(path))
          continue;
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* First try to use the more robust slang
-       * implementation to support #includes. */
-      /* FIXME: The check for slang can be removed
-       * if it's sufficiently tested for
-       * GLSL/Cg as well, it should be the same implementation. */
-      if (string_is_equal(path_get_extension(path), "slang") &&
-            slang_preprocess_parse_parameters(path, shader))
-         continue;
-
-      /* If that doesn't work, fallback to the old path.
-       * Ideally, we'd get rid of this path sooner or later. */
-#endif
-
       /* Read file contents */
       if (!filestream_read_file(path, (void**)&buf, &buf_len))
          continue;
@@ -525,7 +511,21 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       if (!lines)
          continue;
 
-      /* even though the pass is set in the loop too, not all passes have parameters */
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+      /* First try to use the more robust slang
+       * implementation to support #includes. */
+      /* FIXME: The check for slang can be removed
+       * if it's sufficiently tested for
+       * GLSL/Cg as well, it should be the same implementation. */
+      if (string_is_equal(path_get_extension(path), "slang") &&
+            slang_preprocess_parse_parameters(lines, shader))
+         continue;
+
+      /* If that doesn't work, fallback to the old path.
+       * Ideally, we'd get rid of this path sooner or later. */
+#endif
+      /* even though the pass is set in the loop too, not all 
+       * passes have parameters */
       param->pass = i;
 
       while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) &&
