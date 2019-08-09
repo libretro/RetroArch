@@ -10647,6 +10647,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
 static void input_driver_poll(void)
 {
    size_t i;
+   rarch_joypad_info_t joypad_info[MAX_USERS];
    settings_t *settings           = configuration_settings;
    uint8_t max_users              = (uint8_t)input_driver_max_users;
    input_bits_t current_inputs[MAX_USERS];
@@ -10663,17 +10664,14 @@ static void input_driver_poll(void)
 
    for (i = 0; i < max_users; i++)
    {
-      rarch_joypad_info_t joypad_info;
-
+      joypad_info[i].axis_threshold              = input_driver_axis_threshold;
+      joypad_info[i].joy_idx                     = settings->uints.input_joypad_map[i];
+      joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
       if (!libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
          continue;
 
-      joypad_info.axis_threshold              = input_driver_axis_threshold;
-      joypad_info.joy_idx                     = settings->uints.input_joypad_map[i];
-      joypad_info.auto_binds                  = input_autoconf_binds[joypad_info.joy_idx];
-
       input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-            current_input_data, joypad_info, libretro_input_binds,
+            current_input_data, joypad_info[i], libretro_input_binds,
             (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -10701,7 +10699,45 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
                BIT256_CLEAR_ALL_PTR(&current_inputs[i]);
-               input_get_state_for_port(settings, i, &current_inputs[i]);
+               {
+                  unsigned k, j;
+                  const input_device_driver_t *joypad_driver   = input_driver_get_joypad_driver();
+                  input_bits_t *p_new_state                    = (input_bits_t*)&current_inputs[i];
+
+                  if (joypad_driver)
+                  {
+                     for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
+                     {
+                        if (input_driver_input_state(joypad_info[i], libretro_input_binds,
+                                 i, RETRO_DEVICE_JOYPAD, 0, k) != 0)
+                        {
+                           int16_t      val = input_joypad_analog(
+                                 joypad_driver, joypad_info[i], i,
+                                 RETRO_DEVICE_INDEX_ANALOG_BUTTON, k, libretro_input_binds[i]);
+
+                           BIT256_SET_PTR(p_new_state, k);
+
+                           if (val)
+                              p_new_state->analog_buttons[k] = val;
+                        }
+                     }
+
+                     for (k = 0; k < 2; k++)
+                     {
+                        for (j = 0; j < 2; j++)
+                        {
+                           unsigned offset = 0 + (i * 4) + (j * 2);
+                           int16_t     val = input_joypad_analog(joypad_driver,
+                                 joypad_info[i], i, k, j, libretro_input_binds[i]);
+
+                           if (val >= 0)
+                              p_new_state->analogs[offset]   = val;
+                           else
+                              p_new_state->analogs[offset+1] = val;
+                        }
+                     }
+                  }
+               }
                break;
             default:
                break;
@@ -12369,53 +12405,6 @@ int16_t input_driver_input_state(
             retro_keybinds,
             port, device, index, id);
    return 0;
-}
-
-void input_get_state_for_port(void *data, unsigned port,
-      input_bits_t *p_new_state)
-{
-   unsigned i, j;
-   rarch_joypad_info_t joypad_info;
-   settings_t              *settings            = (settings_t*)data;
-   const input_device_driver_t *joypad_driver   = input_driver_get_joypad_driver();
-
-   joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
-   joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
-   joypad_info.axis_threshold                   = input_driver_axis_threshold;
-
-   if (!joypad_driver)
-      return;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      if (input_driver_input_state(joypad_info, libretro_input_binds,
-               port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
-      {
-         int16_t      val = input_joypad_analog(
-               joypad_driver, joypad_info, port,
-               RETRO_DEVICE_INDEX_ANALOG_BUTTON, i, libretro_input_binds[port]);
-
-         BIT256_SET_PTR(p_new_state, i);
-
-         if (val)
-            p_new_state->analog_buttons[i] = val;
-      }
-   }
-
-   for (i = 0; i < 2; i++)
-   {
-      for (j = 0; j < 2; j++)
-      {
-         unsigned offset = 0 + (i * 4) + (j * 2);
-         int16_t     val = input_joypad_analog(joypad_driver,
-               joypad_info, port, i, j, libretro_input_binds[port]);
-
-         if (val >= 0)
-            p_new_state->analogs[offset]   = val;
-         else
-            p_new_state->analogs[offset+1] = val;
-      }
-   }
 }
 
 void *input_driver_get_data(void)

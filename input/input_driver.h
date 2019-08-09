@@ -243,9 +243,6 @@ float input_sensor_get_input(unsigned port, unsigned id);
 
 void *input_driver_get_data(void);
 
-void input_get_state_for_port(
-      void *data, unsigned port, input_bits_t *p_new_state);
-
 input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
