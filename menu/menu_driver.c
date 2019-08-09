@@ -212,9 +212,6 @@ static bool menu_driver_pending_quit            = false;
  * be enacted upon the next menu iteration */
 static bool menu_driver_pending_shutdown        = false;
 
-/* Are we binding a button inside the menu? */
-static bool menu_driver_is_binding              = false;
-
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
@@ -1745,15 +1742,6 @@ bool menu_display_reset_textures_list(
    return true;
 }
 
-bool menu_driver_is_binding_state(void)
-{
-   return menu_driver_is_binding;
-}
-
-void menu_driver_set_binding_state(bool on)
-{
-   menu_driver_is_binding = on;
-}
 
 /**
  * menu_driver_find_handle:

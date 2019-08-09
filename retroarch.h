@@ -2105,6 +2105,11 @@ void menu_driver_set_alive(bool val);
 
 bool menu_driver_is_alive(void);
 
+bool menu_driver_is_binding_state(void);
+
+void menu_driver_set_binding_state(bool on);
+
+
 RETRO_END_DECLS
 
 #endif

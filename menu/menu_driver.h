@@ -505,10 +505,6 @@ const char *menu_driver_ident(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
-bool menu_driver_is_binding_state(void);
-
-void menu_driver_set_binding_state(bool on);
-
 void menu_driver_frame(video_frame_info_t *video_info);
 
 bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);

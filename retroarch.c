@@ -924,6 +924,8 @@ static menu_input_t menu_input_state;
 
 /* Is the menu driver still running? */
 static bool menu_driver_alive                   = false;
+/* Are we binding a button inside the menu? */
+static bool menu_driver_is_binding              = false;
 
 void menu_driver_set_alive(bool val)
 {
@@ -936,6 +938,15 @@ bool menu_driver_is_alive(void)
    return menu_driver_alive;
 }
 
+bool menu_driver_is_binding_state(void)
+{
+   return menu_driver_is_binding;
+}
+
+void menu_driver_set_binding_state(bool on)
+{
+   menu_driver_is_binding = on;
+}
 #endif
 
 /* RECORDING GLOBAL VARIABLES */
@@ -22915,7 +22926,7 @@ static enum runloop_state runloop_check_state(
    bool pause_nonactive                = settings->bools.pause_nonactive;
    bool rarch_is_initialized           = rarch_is_inited;
 #ifdef HAVE_MENU
-   bool menu_driver_binding_state      = menu_driver_is_binding_state();
+   bool menu_driver_binding_state      = menu_driver_is_binding;
    bool menu_is_alive                  = menu_driver_alive;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
 #ifdef HAVE_EASTEREGG
