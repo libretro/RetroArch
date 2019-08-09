@@ -1940,15 +1940,12 @@ static void menu_driver_toggle(bool on)
    if (menu_driver_ctx && menu_driver_ctx->toggle)
       menu_driver_ctx->toggle(menu_userdata, on);
 
-   if (on)
-      menu_driver_alive = true;
-   else
-      menu_driver_alive = false;
+   menu_driver_set_alive(on);
 
    rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
    rarch_ctl(RARCH_CTL_KEY_EVENT_GET,          &key_event);
 
-   if (menu_driver_alive)
+   if (menu_driver_is_alive())
    {
       bool refresh = false;
 
@@ -2007,7 +2004,7 @@ static void menu_driver_toggle(bool on)
 
 const char *menu_driver_ident(void)
 {
-   if (!menu_driver_alive)
+   if (!menu_driver_is_alive())
       return NULL;
    if (!menu_driver_ctx || !menu_driver_ctx->ident)
       return NULL;
@@ -2016,7 +2013,7 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (menu_driver_alive && menu_driver_ctx->frame)
+   if (menu_driver_is_alive() && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
@@ -2024,6 +2021,11 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
 {
    return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
+}
+
+void menu_driver_set_alive(bool val)
+{
+   menu_driver_alive = val;
 }
 
 /* Checks if the menu is still running */
