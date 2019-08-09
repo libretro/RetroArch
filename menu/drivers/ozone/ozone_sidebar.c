@@ -686,6 +686,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             and the subsequent space */
          chr          = title_noext;
          hyphen_found = false;
+         settings_t *settings = config_get_ptr();
 
          while (true)
          {
@@ -701,7 +702,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             chr++;
          }
 
-         if (hyphen_found)
+         if (hyphen_found && settings->bools.ozone_truncate_playlist_name)
             chr += 2;
          else
             chr = title_noext;

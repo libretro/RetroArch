@@ -338,6 +338,7 @@ typedef struct settings
       bool vibrate_on_keypress;
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
+      bool ozone_truncate_playlist_name;
 
       bool log_to_file;
       bool log_to_file_timestamp;

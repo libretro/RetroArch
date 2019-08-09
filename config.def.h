@@ -332,6 +332,7 @@
 
 #ifdef HAVE_OZONE
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
+#define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
 #endif
 
 static bool quick_menu_show_take_screenshot             = true;
