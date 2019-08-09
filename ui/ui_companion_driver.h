@@ -165,8 +165,6 @@ extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
 
-const ui_companion_driver_t *ui_companion_get_ptr(void);
-
 void ui_companion_driver_init_first(void);
 
 bool ui_companion_is_on_foreground(void);
@@ -174,8 +172,6 @@ bool ui_companion_is_on_foreground(void);
 void ui_companion_set_foreground(unsigned enable);
 
 void ui_companion_event_command(enum event_command action);
-
-void ui_companion_driver_deinit(void);
 
 void ui_companion_driver_notify_refresh(void);
 

@@ -1676,6 +1676,8 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core);
 static bool init_libretro_symbols(enum rarch_core_type type,
       struct retro_core_t *current_core);
 
+static void ui_companion_driver_deinit(void);
+
 static bool audio_driver_stop(void);
 static bool audio_driver_start(bool is_shutdown);
 
@@ -1746,11 +1748,6 @@ settings_t *config_get_ptr(void)
 global_t *global_get_ptr(void)
 {
    return &g_extern;
-}
-
-const ui_companion_driver_t *ui_companion_get_ptr(void)
-{
-   return ui_companion;
 }
 
 input_driver_t *input_get_ptr(void)
@@ -8490,7 +8487,7 @@ void ui_companion_event_command(enum event_command action)
 #endif
 }
 
-void ui_companion_driver_deinit(void)
+static void ui_companion_driver_deinit(void)
 {
    const ui_companion_driver_t *ui = ui_companion;
 
