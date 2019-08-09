@@ -4235,3 +4235,35 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
     "Zapisz wszystkie opcje rdzenia w pliku wspólnych ustawień (retroarch-core-options.cfg). Po wyłączeniu opcje dla każdego rdzenia zostaną zapisane w osobnym folderze/pliku specyficznym dla rdzenia w katalogu „Config” RetroArch."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+    "Za każdym razem, gdy zwiększysz lub zmniejszysz wartość rozmiaru bufora przewijania za pomocą tego interfejsu, zmieni się on o tę wartość"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+    "Ilość pamięci (w MB) do zarezerwowania dla bufora przewijania. Zwiększenie tego zwiększy ilość historii przewijania."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+    "Pokaż kursor myszy podczas korzystania z nakładki ekranowej."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+    "Zapisuje plik konfiguracji zastępowania, który będzie obowiązywał dla całej zawartości załadowanej tym rdzeniem. Będzie mieć pierwszeństwo przed główną konfiguracją."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+    "Rozpocznij lub kontynuuj wyszukiwanie kodów"
+    )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+    "Załaduj plik kodów i zastąp istniejące kody."
+    )
+ MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+    "Automatyczne stosowanie kodów podczas ładowania gry."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+    "Zastosuj cheat natychmiast po przełączeniu."
+    )
