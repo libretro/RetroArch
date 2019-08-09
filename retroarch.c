@@ -1667,6 +1667,15 @@ static char *secondary_library_path                = NULL;
 #endif
 
 /* Forward declarations */
+static void retro_frame_null(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+static void retro_run_null(void);
+static void retro_input_poll_null(void);
+
+static void uninit_libretro_symbols(struct retro_core_t *current_core);
+static bool init_libretro_symbols(enum rarch_core_type type,
+      struct retro_core_t *current_core);
+
 static bool audio_driver_stop(void);
 static bool audio_driver_start(bool is_shutdown);
 
@@ -1700,22 +1709,12 @@ static bool bsv_movie_check(void);
 static void driver_uninit(int flags);
 static void drivers_init(int flags);
 
-static bool core_uninit_libretro_callbacks(void);
 static void core_free_retro_game_info(struct retro_game_info *dest);
-static void core_uninit_symbols(void);
-static bool core_unload(void);
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
-static bool core_init(void);
-static bool core_set_environment(retro_ctx_environ_info_t *info);
-static bool core_init_symbols(enum rarch_core_type *type);
-static bool core_get_system_av_info(struct retro_system_av_info *av_info);
 
 static void rarch_send_debug_info(void);
 static bool rarch_environment_cb(unsigned cmd, void *data);
-
-static void runloop_unset(enum runloop_action action);
-static void runloop_set(enum runloop_action action);
 
 static bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
@@ -2813,10 +2812,17 @@ static void command_event_deinit_core(bool reinit)
 
    RARCH_LOG("Unloading game..\n");
    core_unload_game();
+
    RARCH_LOG("Unloading core..\n");
-   core_unload();
+
+   video_driver_set_cached_frame_ptr(NULL);
+
+   if (current_core.inited)
+      current_core.retro_deinit();
+
    RARCH_LOG("Unloading core symbols..\n");
-   core_uninit_symbols();
+   uninit_libretro_symbols(&current_core);
+   current_core.symbols_inited = false;
 
    if (reinit)
       driver_uninit(DRIVERS_CMD_ALL);
@@ -3157,13 +3163,15 @@ static void retroarch_set_frame_limit(void)
 }
 
 
-static bool command_event_init_core(enum rarch_core_type *data)
+static bool command_event_init_core(enum rarch_core_type type)
 {
-   retro_ctx_environ_info_t info;
    settings_t *settings            = configuration_settings;
 
-   if (!core_init_symbols(data))
+   if (!init_libretro_symbols(type, &current_core))
       return false;
+   if (!current_core.retro_run)
+      current_core.retro_run   = retro_run_null;
+   current_core.symbols_inited = true;
 
    retroarch_system_info_init();
 
@@ -3184,8 +3192,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    /* reset video format to libretro's default */
    video_driver_pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
-   info.env = rarch_environment_cb;
-   core_set_environment(&info);
+   current_core.retro_set_environment(rarch_environment_cb);
 
    /* Auto-remap: apply remap files */
    if(settings->bools.auto_remaps_enable)
@@ -3194,8 +3201,10 @@ static bool command_event_init_core(enum rarch_core_type *data)
    /* Per-core saves: reset redirection paths */
    path_set_redirect();
 
-   if (!core_init())
-      return false;
+   video_driver_set_cached_frame_ptr(NULL);
+
+   current_core.retro_init();
+   current_core.inited          = true;
 
    if (!event_init_content())
       return false;
@@ -4049,10 +4058,7 @@ TODO: Add a setting for these tweaks */
                   && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
             {
-               if (autosave_init())
-                  runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-               else
-                  runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+               runloop_autosave = autosave_init();
             }
          }
 #endif
@@ -4253,8 +4259,11 @@ TODO: Add a setting for these tweaks */
          }
       case CMD_EVENT_CORE_INIT:
          content_reset_savestate_backups();
-         if (!command_event_init_core((enum rarch_core_type*)data))
-            return false;
+         {
+            enum rarch_core_type *type = (enum rarch_core_type*)data;
+            if (!type || !command_event_init_core(*type))
+               return false;
+         }
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:
          video_driver_apply_state_changes();
@@ -7756,7 +7765,8 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
  * setups environment callback functions. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-static bool init_libretro_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+static bool init_libretro_symbols(enum rarch_core_type type,
+      struct retro_core_t *current_core)
 {
    /* Load symbols */
    if (!init_libretro_symbols_custom(type, current_core, NULL, NULL))
@@ -19837,7 +19847,14 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          camera_data            = NULL;
 
          wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
-         core_uninit_libretro_callbacks();
+
+         retro_ctx.frame_cb        = retro_frame_null;
+         retro_ctx.sample_cb       = NULL;
+         retro_ctx.sample_batch_cb = NULL;
+         retro_ctx.state_cb        = NULL;
+         retro_ctx.poll_cb         = retro_input_poll_null;
+
+         current_core.inited       = false;
          break;
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
          {
@@ -20322,8 +20339,6 @@ static bool runahead_load_state_secondary(void)
       video_driver_active = true; \
    else \
       video_driver_active = false
-
-static void retro_input_poll_null(void);
 
 static bool runahead_core_run_use_last_input(void)
 {
@@ -23669,30 +23684,6 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
-static void runloop_set(enum runloop_action action)
-{
-   switch (action)
-   {
-      case RUNLOOP_ACTION_AUTOSAVE:
-         runloop_autosave = true;
-         break;
-      case RUNLOOP_ACTION_NONE:
-         break;
-   }
-}
-
-static void runloop_unset(enum runloop_action action)
-{
-   switch (action)
-   {
-      case RUNLOOP_ACTION_AUTOSAVE:
-         runloop_autosave = false;
-         break;
-      case RUNLOOP_ACTION_NONE:
-         break;
-   }
-}
-
 /**
  * runloop_iterate:
  *
@@ -24967,23 +24958,6 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
    return true;
 }
 
-static bool core_uninit_libretro_callbacks(void)
-{
-   struct retro_callbacks *cbs = (struct retro_callbacks*)&retro_ctx;
-   if (!cbs)
-      return false;
-
-   cbs->frame_cb        = retro_frame_null;
-   cbs->sample_cb       = NULL;
-   cbs->sample_batch_cb = NULL;
-   cbs->state_cb        = NULL;
-   cbs->poll_cb         = retro_input_poll_null;
-
-   current_core.inited  = false;
-
-   return true;
-}
-
 /**
  * core_set_rewind_callbacks:
  *
@@ -25062,23 +25036,6 @@ bool core_reset_cheat(void)
 bool core_set_poll_type(unsigned type)
 {
    current_core.poll_type = type;
-   return true;
-}
-
-static void core_uninit_symbols(void)
-{
-   uninit_libretro_symbols(&current_core);
-   current_core.symbols_inited = false;
-}
-
-static bool core_init_symbols(enum rarch_core_type *type)
-{
-   if (!type || !init_libretro_symbols(*type, &current_core))
-      return false;
-
-   if (!current_core.retro_run)
-      current_core.retro_run   = retro_run_null;
-   current_core.symbols_inited = true;
    return true;
 }
 
@@ -25172,46 +25129,11 @@ uint64_t core_serialization_quirks(void)
    return current_core.serialization_quirks_v;
 }
 
-static bool core_set_environment(retro_ctx_environ_info_t *info)
-{
-   if (!info)
-      return false;
-   current_core.retro_set_environment(info->env);
-   return true;
-}
-
-static bool core_get_system_av_info(struct retro_system_av_info *av_info)
-{
-   if (!av_info)
-      return false;
-   current_core.retro_get_system_av_info(av_info);
-   return true;
-}
-
 bool core_reset(void)
 {
    video_driver_set_cached_frame_ptr(NULL);
 
    current_core.retro_reset();
-   return true;
-}
-
-static bool core_init(void)
-{
-   video_driver_set_cached_frame_ptr(NULL);
-
-   current_core.retro_init();
-   current_core.inited          = true;
-   return true;
-}
-
-static bool core_unload(void)
-{
-   video_driver_set_cached_frame_ptr(NULL);
-
-   if (current_core.inited)
-      current_core.retro_deinit();
-
    return true;
 }
 
@@ -25294,7 +25216,7 @@ static bool core_load(unsigned poll_type_behavior)
    if (!core_init_libretro_cbs(&retro_ctx))
       return false;
 
-   core_get_system_av_info(&video_driver_av_info);
+   current_core.retro_get_system_av_info(&video_driver_av_info);
 
    return true;
 }
