@@ -2026,53 +2026,6 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
-bool menu_driver_render(bool is_idle, bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   if (!menu_driver_data)
-      return false;
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
-         != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
-      BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_set_framebuffer_dirty_flag();
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-         && !string_is_empty(menu_driver_data->menu_state_msg))
-   {
-      if (menu_driver_data->driver_ctx->render_messagebox)
-         menu_driver_data->driver_ctx->render_messagebox(
-               menu_driver_data->userdata,
-               menu_driver_data->menu_state_msg);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->render_messagebox)
-            ui->render_messagebox(menu_driver_data->menu_state_msg);
-      }
-   }
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
-   {
-      if (menu_driver_data->driver_ctx->render)
-         menu_driver_data->driver_ctx->render(
-               menu_driver_data->userdata, is_idle);
-   }
-
-   if (menu_driver_alive && !is_idle)
-      menu_display_libretro(is_idle, rarch_is_inited, rarch_is_dummy_core);
-
-   if (menu_driver_data->driver_ctx->set_texture)
-      menu_driver_data->driver_ctx->set_texture();
-
-   menu_driver_data->state               = 0;
-
-   return true;
-}
-
 /* Checks if the menu is still running */
 bool menu_driver_is_alive(void)
 {

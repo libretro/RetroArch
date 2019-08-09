@@ -503,8 +503,6 @@ const char* config_get_menu_driver_options(void);
 
 const char *menu_driver_ident(void);
 
-bool menu_driver_render(bool is_idle, bool is_inited, bool is_dummy);
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 bool menu_driver_is_binding_state(void);

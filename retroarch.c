@@ -4314,7 +4314,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_RESUME:
          retroarch_menu_running_finished(false);
-         if (ui_companion_is_on_foreground())
+         if (main_ui_companion_is_on_foreground)
             ui_companion_driver_toggle(false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
@@ -23121,7 +23121,7 @@ static enum runloop_state runloop_check_state(
 
       action                    = (enum menu_action)menu_event(&current_bits, &trigger_input);
       focused                   = pause_nonactive ? is_focused : true;
-      focused                   = focused && !ui_companion_is_on_foreground();
+      focused                   = focused && !main_ui_companion_is_on_foreground;
 
       iter.action               = action;
 
@@ -23171,13 +23171,52 @@ static enum runloop_state runloop_check_state(
 
       if (focused || !runloop_idle)
       {
-         bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
-         bool libretro_running   = menu_display_libretro_running(
+         bool core_type_is_dummy  = current_core_type == CORE_TYPE_DUMMY;
+         bool libretro_running    = menu_display_libretro_running(
                rarch_is_initialized,
                core_type_is_dummy);
+         menu_handle_t *menu_data = menu_driver_get_ptr();
 
-         menu_driver_render(runloop_idle, rarch_is_initialized,
-              core_type_is_dummy);
+         if (menu_data)
+         {
+            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
+                  != BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX))
+               BIT64_SET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
+
+            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
+               menu_display_set_framebuffer_dirty_flag();
+
+            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX)
+                  && !string_is_empty(menu_data->menu_state_msg))
+            {
+               if (menu_data->driver_ctx->render_messagebox)
+                  menu_data->driver_ctx->render_messagebox(
+                        menu_data->userdata,
+                        menu_data->menu_state_msg);
+
+               if (main_ui_companion_is_on_foreground)
+               {
+                  if (ui_companion && ui_companion->render_messagebox)
+                     ui_companion->render_messagebox(menu_data->menu_state_msg);
+               }
+            }
+
+            if (BIT64_GET(menu_data->state, MENU_STATE_BLIT))
+            {
+               if (menu_data->driver_ctx->render)
+                  menu_data->driver_ctx->render(
+                        menu_data->userdata, runloop_idle);
+            }
+
+            if (!runloop_idle)
+               menu_display_libretro(runloop_idle, rarch_is_initialized, core_type_is_dummy);
+
+            if (menu_data->driver_ctx->set_texture)
+               menu_data->driver_ctx->set_texture();
+
+            menu_data->state               = 0;
+         }
+
          if (settings->bools.audio_enable_menu &&
                !libretro_running)
             audio_driver_menu_sample();
