@@ -20520,7 +20520,7 @@ force_input_dirty:
 }
 #endif
 
-void rarch_core_runtime_tick(void)
+static void rarch_core_runtime_tick(void)
 {
    struct retro_system_av_info *av_info = &video_driver_av_info;
 
