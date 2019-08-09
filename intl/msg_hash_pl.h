@@ -3294,10 +3294,6 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
       "Zmiany kodu odniosą skutek natychmiast.")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-      "Załaduj plik oszukiwać."
-      )
-MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
       "Zapisz bieżące kody jako plik składowania."
       )
@@ -4246,10 +4242,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
     "Pokaż kursor myszy podczas korzystania z nakładki ekranowej."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-    "Zapisuje plik konfiguracji zastępowania, który będzie obowiązywał dla całej zawartości załadowanej tym rdzeniem. Będzie mieć pierwszeństwo przed główną konfiguracją."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
