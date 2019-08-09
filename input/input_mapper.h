@@ -45,6 +45,7 @@ typedef struct input_mapper
 void input_mapper_poll(input_mapper_t *handle,
       void *overlay_pointer,
       void *settings_data,
+      void *data,
       unsigned max_users,
       bool poll_overlay);
 

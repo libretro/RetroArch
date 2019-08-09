@@ -45,6 +45,7 @@
 void input_mapper_poll(input_mapper_t *handle,
       void *ol_pointer,
       void *settings_data,
+      void *input_data,
       unsigned max_users,
       bool poll_overlay)
 {
@@ -53,26 +54,15 @@ void input_mapper_poll(input_mapper_t *handle,
    input_overlay_t *overlay_pointer           = (input_overlay_t*)ol_pointer;
 #endif
    settings_t *settings                       = (settings_t*)settings_data;
+   input_bits_t *current_inputs               = (input_bits_t*)input_data;
 
    memset(handle->keys, 0, sizeof(handle->keys));
 
    for (i = 0; i < max_users; i++)
    {
-      input_bits_t current_input;
       unsigned device  = settings->uints.input_libretro_device[i] 
          & RETRO_DEVICE_MASK;
-
-      switch (device)
-      {
-         case RETRO_DEVICE_KEYBOARD:
-         case RETRO_DEVICE_JOYPAD:
-         case RETRO_DEVICE_ANALOG:
-            BIT256_CLEAR_ALL_PTR(&current_input);
-            input_get_state_for_port(settings, i, &current_input);
-            break;
-         default:
-            break;
-      }
+      input_bits_t current_input = *current_inputs++;
 
       switch (device)
       {

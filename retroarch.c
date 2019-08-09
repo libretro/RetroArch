@@ -10649,6 +10649,7 @@ static void input_driver_poll(void)
    size_t i;
    settings_t *settings           = configuration_settings;
    uint8_t max_users              = (uint8_t)input_driver_max_users;
+   input_bits_t current_inputs[MAX_USERS];
 
    current_input->poll(current_input_data);
 
@@ -10690,6 +10691,23 @@ static void input_driver_poll(void)
 #endif
    if (settings->bools.input_remap_binds_enable && input_driver_mapper)
    {
+      for (i = 0; i < max_users; i++)
+      {
+         unsigned device = settings->uints.input_libretro_device[i] & RETRO_DEVICE_MASK;
+
+         switch (device)
+         {
+            case RETRO_DEVICE_KEYBOARD:
+            case RETRO_DEVICE_JOYPAD:
+            case RETRO_DEVICE_ANALOG:
+               BIT256_CLEAR_ALL_PTR(&current_inputs[i]);
+               input_get_state_for_port(settings, i, &current_inputs[i]);
+               break;
+            default:
+               break;
+         }
+
+      }
       input_mapper_poll(input_driver_mapper, 
 #ifdef HAVE_OVERLAY
             overlay_ptr,
@@ -10697,6 +10715,7 @@ static void input_driver_poll(void)
             NULL,
 #endif
             settings,
+            &current_inputs,
             max_users,
 #ifdef HAVE_OVERLAY
             (overlay_ptr && overlay_ptr->alive)
