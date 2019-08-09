@@ -4257,5 +4257,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-    "Zastosuj cheat natychmiast po przełączeniu."
+    "Zastosuj kody natychmiast po przełączeniu."
     )
