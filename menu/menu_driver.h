@@ -351,6 +351,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    const menu_ctx_driver_t *driver_ctx;
+   void *userdata;
 } menu_handle_t;
 
 struct menu_display_ctx_draw

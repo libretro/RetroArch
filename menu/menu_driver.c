@@ -2037,13 +2037,14 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_framebuf_dirty = true;
+      menu_display_set_framebuffer_dirty_flag();
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
          && !string_is_empty(menu_driver_data->menu_state_msg))
    {
       if (menu_driver_data->driver_ctx->render_messagebox)
-         menu_driver_data->driver_ctx->render_messagebox(menu_userdata,
+         menu_driver_data->driver_ctx->render_messagebox(
+               menu_driver_data->userdata,
                menu_driver_data->menu_state_msg);
 
       if (ui_companion_is_on_foreground())
@@ -2057,7 +2058,8 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
       if (menu_driver_data->driver_ctx->render)
-         menu_driver_data->driver_ctx->render(menu_userdata, is_idle);
+         menu_driver_data->driver_ctx->render(
+               menu_driver_data->userdata, is_idle);
    }
 
    if (menu_driver_alive && !is_idle)
@@ -2208,6 +2210,7 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    {
       menu_driver_data               = (menu_handle_t*)
          menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+      menu_driver_data->userdata     = menu_userdata;
       menu_driver_data->driver_ctx   = menu_driver_ctx;
    }
 
