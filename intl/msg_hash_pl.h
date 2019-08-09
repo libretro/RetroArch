@@ -4227,3 +4227,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
     "Naciśnij dwukrotnie klawisz skrótu, aby wyjść z RetroArch."
      )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+    "Użyj pliku globalnych opcji podstawowych"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+    "Zapisz wszystkie opcje rdzenia w pliku wspólnych ustawień (retroarch-core-options.cfg). Po wyłączeniu opcje dla każdego rdzenia zostaną zapisane w osobnym folderze/pliku specyficznym dla rdzenia w katalogu „Config” RetroArch."
+    )
