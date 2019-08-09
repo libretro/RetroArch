@@ -541,7 +541,6 @@ static void xui_render(void *data, bool is_idle)
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-         && menu_driver_is_alive()
          && !msg_force
       )
       return;
