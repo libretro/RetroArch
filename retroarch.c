@@ -921,6 +921,21 @@ enum menu_mouse_action
 static unsigned char menu_keyboard_key_state[RETROK_LAST]       = {0};
 
 static menu_input_t menu_input_state;
+
+/* Is the menu driver still running? */
+static bool menu_driver_alive                   = false;
+
+void menu_driver_set_alive(bool val)
+{
+   menu_driver_alive = val;
+}
+
+/* Checks if the menu is still running */
+bool menu_driver_is_alive(void)
+{
+   return menu_driver_alive;
+}
+
 #endif
 
 /* RECORDING GLOBAL VARIABLES */
@@ -3860,7 +3875,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_driver_is_alive())
+         if (menu_driver_alive)
             retroarch_menu_running_finished(false);
          else
             retroarch_menu_running();
@@ -3999,7 +4014,7 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
 
-            if (menu_driver_is_alive())
+            if (menu_driver_alive)
                command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
          }
 #endif
@@ -4427,7 +4442,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
-         if (menu_driver_is_alive())
+         if (menu_driver_alive)
          {
             settings_t *settings      = configuration_settings;
             if (settings && settings->bools.menu_pause_libretro)
@@ -10119,7 +10134,7 @@ static void input_overlay_loaded(retro_task_t *task,
 
 #ifdef HAVE_MENU
    /* We can't display when the menu is up */
-   if (data->hide_in_menu && menu_driver_is_alive())
+   if (data->hide_in_menu && menu_driver_alive)
    {
       if (data->overlay_enable)
          goto abort_load;
@@ -10685,7 +10700,7 @@ static void input_driver_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (!menu_driver_is_alive())
+   if (!menu_driver_alive)
 #endif
    if (settings->bools.input_remap_binds_enable && input_driver_mapper)
    {
@@ -18348,7 +18363,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->msg_bgcolor_enable     = settings->bools.video_msg_bgcolor_enable;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive          = menu_driver_is_alive();
+   video_info->menu_is_alive          = menu_driver_alive;
    video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme = settings->uints.menu_materialui_color_theme;
@@ -19842,6 +19857,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
 #ifdef HAVE_MENU
          menu_driver_destroy();
+         menu_driver_alive         = false;
 #endif
          location_driver_active    = false;
          location_driver           = NULL;
@@ -21647,7 +21663,7 @@ bool retroarch_main_init(int argc, char *argv[])
       /* Check if menu was active prior to core initialization */
       if (!content_launched_from_cli()
 #ifdef HAVE_MENU
-          || menu_driver_is_alive()
+          || menu_driver_alive
 #endif
          )
       {
@@ -22900,7 +22916,7 @@ static enum runloop_state runloop_check_state(
    bool rarch_is_initialized           = rarch_is_inited;
 #ifdef HAVE_MENU
    bool menu_driver_binding_state      = menu_driver_is_binding_state();
-   bool menu_is_alive                  = menu_driver_is_alive();
+   bool menu_is_alive                  = menu_driver_alive;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
 #ifdef HAVE_EASTEREGG
    static uint64_t seq                 = 0;
@@ -23291,7 +23307,7 @@ static enum runloop_state runloop_check_state(
 
       if (menu_keyboard_key_state[RETROK_F1] == 1)
       {
-         if (menu_driver_is_alive())
+         if (menu_driver_alive)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
@@ -23304,7 +23320,7 @@ static enum runloop_state runloop_check_state(
                (pressed && !old_pressed)) ||
             core_type_is_dummy)
       {
-         if (menu_driver_is_alive())
+         if (menu_driver_alive)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
                retroarch_menu_running_finished(false);
@@ -23382,7 +23398,7 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the netplay host toggle button */
    HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true, NULL);
 
-   if (menu_driver_is_alive())
+   if (menu_driver_alive)
    {
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;

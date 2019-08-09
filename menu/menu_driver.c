@@ -197,9 +197,6 @@ static bool menu_driver_pending_quick_menu      = false;
 
 static bool menu_driver_prevent_populate        = false;
 
-/* Is the menu driver still running? */
-static bool menu_driver_alive                   = false;
-
 /* A menu toggle has been requested; if the menu was running,
  * it will be closed; if the menu was not running, it will be opened */
 static bool menu_driver_toggled                 = false;
@@ -2023,17 +2020,6 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
-void menu_driver_set_alive(bool val)
-{
-   menu_driver_alive = val;
-}
-
-/* Checks if the menu is still running */
-bool menu_driver_is_alive(void)
-{
-   return menu_driver_alive;
-}
-
 /* Checks if the menu framebuffer is set.
  * This would usually only return true
  * for framebuffer-based menu drivers, like RGUI. */
@@ -2249,7 +2235,6 @@ void menu_driver_destroy(void)
    menu_driver_pending_quit       = false;
    menu_driver_pending_shutdown   = false;
    menu_driver_prevent_populate   = false;
-   menu_driver_alive              = false;
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;

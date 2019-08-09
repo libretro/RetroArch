@@ -517,10 +517,6 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
  * return true for RGUI, for instance. */
 bool menu_driver_is_texture_set(void);
 
-void menu_driver_set_alive(bool val);
-
-bool menu_driver_is_alive(void);
-
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
 bool menu_driver_list_clear(file_list_t *list);

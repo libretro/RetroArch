@@ -2101,6 +2101,10 @@ const void *camera_driver_find_handle(int index);
  **/
 const char *camera_driver_find_ident(int index);
 
+void menu_driver_set_alive(bool val);
+
+bool menu_driver_is_alive(void);
+
 RETRO_END_DECLS
 
 #endif
