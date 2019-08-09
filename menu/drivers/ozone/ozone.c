@@ -1800,15 +1800,16 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    }
 }
 
-static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
+static int ozone_menu_iterate(void *data,
+      void *userdata, enum menu_action action)
 {
    int new_selection;
    enum menu_action new_action;
    menu_animation_ctx_tag tag;
-
    file_list_t *selection_buf    = NULL;
    ozone_handle_t *ozone         = (ozone_handle_t*) userdata;
    unsigned horizontal_list_size = 0;
+   menu_handle_t *menu           = (menu_handle_t*)data;
 
    if (!ozone)
       return generic_menu_iterate(menu, userdata, action);

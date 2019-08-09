@@ -240,98 +240,13 @@ typedef struct menu_display_ctx_driver
    void (*scissor_end)(video_frame_info_t *video_info);
 } menu_display_ctx_driver_t;
 
-typedef struct
-{
-   unsigned rpl_entry_selection_ptr;
-   size_t                     core_len;
-   uint64_t state;
-
-   char *core_buf;
-   char menu_state_msg[1024];
-   /* Scratchpad variables. These are used for instance
-    * by the filebrowser when having to store intermediary
-    * paths (subdirs/previous dirs/current dir/path, etc).
-    */
-   char deferred_path[PATH_MAX_LENGTH];
-   char scratch_buf[PATH_MAX_LENGTH];
-   char scratch2_buf[PATH_MAX_LENGTH];
-   char db_playlist_file[PATH_MAX_LENGTH];
-   char filebrowser_label[PATH_MAX_LENGTH];
-   char detect_content_path[PATH_MAX_LENGTH];
-
-   /* This is used for storing intermediary variables
-    * that get used later on during menu actions -
-    * for instance, selecting a shader pass for a shader
-    * slot */
-   struct
-   {
-      unsigned                unsigned_var;
-   } scratchpad;
-} menu_handle_t;
-
-struct menu_display_ctx_draw
-{
-   float x;
-   float y;
-   float *color;
-   const float *vertex;
-   const float *tex_coord;
-   unsigned width;
-   unsigned height;
-   uintptr_t texture;
-   size_t vertex_count;
-   struct video_coords *coords;
-   void *matrix_data;
-   enum menu_display_prim_type prim_type;
-   struct
-   {
-      unsigned id;
-      const void *backend_data;
-      size_t backend_data_size;
-      bool active;
-   } pipeline;
-   float rotation;
-   float scale_factor;
-};
-
-typedef struct menu_display_ctx_rotate_draw
-{
-   bool scale_enable;
-   float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   math_matrix_4x4 *matrix;
-} menu_display_ctx_rotate_draw_t;
-
-typedef struct menu_display_ctx_coord_draw
-{
-   const float *ptr;
-} menu_display_ctx_coord_draw_t;
-
-typedef struct menu_display_ctx_datetime
-{
-   char *s;
-   size_t len;
-   unsigned time_mode;
-} menu_display_ctx_datetime_t;
-
-typedef struct menu_display_ctx_powerstate
-{
-   char *s;
-   size_t len;
-   unsigned percent;
-   bool battery_enabled;
-   bool charging;
-} menu_display_ctx_powerstate_t;
-
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
    void  (*set_texture)(void);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(menu_handle_t *menu, void *userdata, enum menu_action action);
+   int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
    /* Initializes the menu driver. (setup) */
@@ -406,6 +321,93 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
 } menu_ctx_driver_t;
+
+
+typedef struct
+{
+   unsigned rpl_entry_selection_ptr;
+   size_t                     core_len;
+   uint64_t state;
+
+   char *core_buf;
+   char menu_state_msg[1024];
+   /* Scratchpad variables. These are used for instance
+    * by the filebrowser when having to store intermediary
+    * paths (subdirs/previous dirs/current dir/path, etc).
+    */
+   char deferred_path[PATH_MAX_LENGTH];
+   char scratch_buf[PATH_MAX_LENGTH];
+   char scratch2_buf[PATH_MAX_LENGTH];
+   char db_playlist_file[PATH_MAX_LENGTH];
+   char filebrowser_label[PATH_MAX_LENGTH];
+   char detect_content_path[PATH_MAX_LENGTH];
+
+   /* This is used for storing intermediary variables
+    * that get used later on during menu actions -
+    * for instance, selecting a shader pass for a shader
+    * slot */
+   struct
+   {
+      unsigned                unsigned_var;
+   } scratchpad;
+   const menu_ctx_driver_t *driver_ctx;
+} menu_handle_t;
+
+struct menu_display_ctx_draw
+{
+   float x;
+   float y;
+   float *color;
+   const float *vertex;
+   const float *tex_coord;
+   unsigned width;
+   unsigned height;
+   uintptr_t texture;
+   size_t vertex_count;
+   struct video_coords *coords;
+   void *matrix_data;
+   enum menu_display_prim_type prim_type;
+   struct
+   {
+      unsigned id;
+      const void *backend_data;
+      size_t backend_data_size;
+      bool active;
+   } pipeline;
+   float rotation;
+   float scale_factor;
+};
+
+typedef struct menu_display_ctx_rotate_draw
+{
+   bool scale_enable;
+   float rotation;
+   float scale_x;
+   float scale_y;
+   float scale_z;
+   math_matrix_4x4 *matrix;
+} menu_display_ctx_rotate_draw_t;
+
+typedef struct menu_display_ctx_coord_draw
+{
+   const float *ptr;
+} menu_display_ctx_coord_draw_t;
+
+typedef struct menu_display_ctx_datetime
+{
+   char *s;
+   size_t len;
+   unsigned time_mode;
+} menu_display_ctx_datetime_t;
+
+typedef struct menu_display_ctx_powerstate
+{
+   char *s;
+   size_t len;
+   unsigned percent;
+   bool battery_enabled;
+   bool charging;
+} menu_display_ctx_powerstate_t;
 
 typedef struct menu_ctx_displaylist
 {
@@ -701,6 +703,8 @@ void menu_driver_destroy(void);
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
+
+menu_handle_t *menu_driver_get_ptr(void);
 
 extern uintptr_t menu_display_white_texture;
 

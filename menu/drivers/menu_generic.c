@@ -66,12 +66,13 @@ static enum action_iterate_type action_iterate_type(const char *label)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
+int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
    const char *label              = NULL;
+   menu_handle_t *menu            = (menu_handle_t*)data;
 
    if (!menu)
       return 0;

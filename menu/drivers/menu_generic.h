@@ -31,7 +31,7 @@ enum action_iterate_type
    ITERATE_TYPE_BIND
 };
 
-int generic_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action);
+int generic_menu_iterate(void *data, void *userdata, enum menu_action action);
 
 bool generic_menu_init_list(void *data);
 

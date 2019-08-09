@@ -238,6 +238,11 @@ static retro_time_t menu_driver_datetime_last_time_us   = 0;
  * representation string */
 static char menu_datetime_cache[255]                    = {0};
 
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   return menu_driver_data;
+}
+
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
@@ -2037,8 +2042,8 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
          && !string_is_empty(menu_driver_data->menu_state_msg))
    {
-      if (menu_driver_ctx->render_messagebox)
-         menu_driver_ctx->render_messagebox(menu_userdata,
+      if (menu_driver_data->driver_ctx->render_messagebox)
+         menu_driver_data->driver_ctx->render_messagebox(menu_userdata,
                menu_driver_data->menu_state_msg);
 
       if (ui_companion_is_on_foreground())
@@ -2051,15 +2056,15 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
-      if (menu_driver_ctx->render)
-         menu_driver_ctx->render(menu_userdata, is_idle);
+      if (menu_driver_data->driver_ctx->render)
+         menu_driver_data->driver_ctx->render(menu_userdata, is_idle);
    }
 
    if (menu_driver_alive && !is_idle)
       menu_display_libretro(is_idle, rarch_is_inited, rarch_is_dummy_core);
 
-   if (menu_driver_ctx->set_texture)
-      menu_driver_ctx->set_texture();
+   if (menu_driver_data->driver_ctx->set_texture)
+      menu_driver_data->driver_ctx->set_texture();
 
    menu_driver_data->state               = 0;
 
@@ -2200,8 +2205,11 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       return true;
 
    if (menu_driver_ctx->init)
+   {
       menu_driver_data               = (menu_handle_t*)
          menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+      menu_driver_data->driver_ctx   = menu_driver_ctx;
+   }
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;
