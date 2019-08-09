@@ -12493,16 +12493,6 @@ void input_driver_set_flushing_input(void)
    input_driver_flushing_input = true;
 }
 
-void input_driver_set_libretro_input_blocked(void)
-{
-   input_driver_block_libretro_input = true;
-}
-
-void input_driver_unset_libretro_input_blocked(void)
-{
-   input_driver_block_libretro_input = false;
-}
-
 bool input_driver_is_libretro_input_blocked(void)
 {
    return input_driver_block_libretro_input;
@@ -22906,6 +22896,50 @@ static bool input_driver_toggle_button_combo(
       old_pressed3                              = pressed3; \
    }
 
+#if defined(HAVE_MENU)
+static bool menu_display_libretro_running(void)
+{
+   settings_t *settings = configuration_settings;
+   if (!settings->bools.menu_pause_libretro)
+   {
+      bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
+      if (rarch_is_inited && !core_type_is_dummy)
+         return true;
+   }
+   return false;
+}
+
+/* Display the libretro core's framebuffer onscreen. */
+static bool menu_display_libretro(void)
+{
+   video_driver_set_texture_enable(true, false);
+
+   if (menu_display_libretro_running())
+   {
+      if (!input_driver_block_libretro_input)
+         input_driver_block_libretro_input = true;
+
+      core_run();
+      rarch_core_runtime_tick();
+      input_driver_block_libretro_input = false;
+
+      return true;
+   }
+
+   if (runloop_idle)
+   {
+#ifdef HAVE_DISCORD
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
+      return false; /* Return false here for indication of idleness */
+   }
+   return video_driver_cached_frame();
+}
+#endif
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -23204,9 +23238,7 @@ static enum runloop_state runloop_check_state(
       if (focused || !runloop_idle)
       {
          bool core_type_is_dummy  = current_core_type == CORE_TYPE_DUMMY;
-         bool libretro_running    = menu_display_libretro_running(
-               rarch_is_initialized,
-               core_type_is_dummy);
+         bool libretro_running    = menu_display_libretro_running();
          menu_handle_t *menu_data = menu_driver_get_ptr();
 
          if (menu_data)
@@ -23241,7 +23273,7 @@ static enum runloop_state runloop_check_state(
             }
 
             if (!runloop_idle)
-               menu_display_libretro(runloop_idle, rarch_is_initialized, core_type_is_dummy);
+               menu_display_libretro();
 
             if (menu_data->driver_ctx->set_texture)
                menu_data->driver_ctx->set_texture();

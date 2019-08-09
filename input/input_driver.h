@@ -249,10 +249,6 @@ void *input_get_data(void);
 
 void input_driver_set_flushing_input(void);
 
-void input_driver_set_libretro_input_blocked(void);
-
-void input_driver_unset_libretro_input_blocked(void);
-
 bool input_driver_is_libretro_input_blocked(void);
 
 void input_driver_set_nonblock_state(void);

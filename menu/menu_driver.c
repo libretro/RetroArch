@@ -602,51 +602,6 @@ video_coord_array_t *menu_display_get_coords_array(void)
    return &menu_disp_ca;
 }
 
-bool menu_display_libretro_running(
-      bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   settings_t *settings = config_get_ptr();
-   if (!settings->bools.menu_pause_libretro)
-   {
-      if (rarch_is_inited && !rarch_is_dummy_core)
-         return true;
-   }
-   return false;
-}
-
-/* Display the libretro core's framebuffer onscreen. */
-bool menu_display_libretro(bool is_idle,
-      bool rarch_is_inited, bool rarch_is_dummy_core)
-{
-   video_driver_set_texture_enable(true, false);
-
-   if (menu_display_libretro_running(
-            rarch_is_inited, rarch_is_dummy_core))
-   {
-      if (!input_driver_is_libretro_input_blocked())
-         input_driver_set_libretro_input_blocked();
-
-      core_run();
-      rarch_core_runtime_tick();
-      input_driver_unset_libretro_input_blocked();
-
-      return true;
-   }
-
-   if (is_idle)
-   {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-      return false; /* Return false here for indication of idleness */
-   }
-   return video_driver_cached_frame();
-}
-
 /* Get the menu framebuffer's size dimensions. */
 void menu_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)

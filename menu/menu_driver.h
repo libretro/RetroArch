@@ -560,9 +560,6 @@ void menu_display_font_free(font_data_t *font);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);
-bool menu_display_libretro(bool is_idle, bool is_inited, bool is_dummy);
-bool menu_display_libretro_running(bool rarch_is_inited,
-      bool rarch_is_dummy_core);
 
 void menu_display_set_width(unsigned width);
 void menu_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
