@@ -2608,7 +2608,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
    int n = 0;
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    
-   /* Select approriate 'star' marker for subsystem menu entries
+   /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
    snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
@@ -2637,7 +2637,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[content_get_subsystem_rom_id()].desc);
 
-                  /* Stupid gcc will warn about snprintf() truncation even though
+                  /* Stupid GCC will warn about snprintf() truncation even though
                    * we couldn't care less about it (if the menu entry label gets
                    * truncated then the string will already be too long to view in
                    * any usable manner on screen, so the fact that the end is
