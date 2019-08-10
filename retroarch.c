@@ -23975,12 +23975,10 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_sleep(video_frame_delay);
 
    {
-      bool want_runahead            = false;
-      unsigned run_ahead_num_frames = 0;
 #ifdef HAVE_RUNAHEAD
-      run_ahead_num_frames          = settings->uints.run_ahead_frames;
+      unsigned run_ahead_num_frames = settings->uints.run_ahead_frames;
       /* Run Ahead Feature replaces the call to core_run in this loop */
-      want_runahead                 = settings->bools.run_ahead_enabled && run_ahead_num_frames > 0;
+      bool want_runahead            = settings->bools.run_ahead_enabled && run_ahead_num_frames > 0;
 #ifdef HAVE_NETWORKING
       want_runahead                 = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
