@@ -37,8 +37,10 @@
 #include "uwp/uwp_func.h"
 #endif
 
-static const char *core_info_tmp_path               = NULL;
+#ifdef HAVE_COMPRESSION
 static const struct string_list *core_info_tmp_list = NULL;
+#endif
+static const char *core_info_tmp_path               = NULL;
 static core_info_t *core_info_current               = NULL;
 static core_info_list_t *core_info_curr_list        = NULL;
 
@@ -507,6 +509,7 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    return false;
 }
 
+#ifdef HAVE_COMPRESSION
 static bool core_info_does_support_any_file(const core_info_t *core,
       const struct string_list *list)
 {
@@ -520,6 +523,7 @@ static bool core_info_does_support_any_file(const core_info_t *core,
          return true;
    return false;
 }
+#endif
 
 static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
@@ -539,12 +543,14 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
    const core_info_t *a = (const core_info_t*)a_;
    const core_info_t *b = (const core_info_t*)b_;
-   int support_a        =
-         core_info_does_support_any_file(a, core_info_tmp_list)
-      || core_info_does_support_file(a, core_info_tmp_path);
-   int support_b        =
-         core_info_does_support_any_file(b, core_info_tmp_list)
-      || core_info_does_support_file(b, core_info_tmp_path);
+   int support_a        = core_info_does_support_file(a, core_info_tmp_path);
+   int support_b        = core_info_does_support_file(b, core_info_tmp_path);
+#ifdef HAVE_COMPRESSION
+   support_a            = support_a ||
+      core_info_does_support_any_file(a, core_info_tmp_list);
+   support_b            = support_b ||
+      core_info_does_support_any_file(b, core_info_tmp_list);
+#endif
 
    if (support_a != support_b)
       return support_b - support_a;
@@ -725,8 +731,10 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
    size_t i;
-   struct string_list *list = NULL;
    size_t supported         = 0;
+#ifdef HAVE_COMPRESSION
+   struct string_list *list = NULL;
+#endif
 
    if (!core_info_list)
       return;
@@ -759,8 +767,10 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       break;
    }
 
+#ifdef HAVE_COMPRESSION
    if (list)
       string_list_free(list);
+#endif
 
    *infos     = core_info_list->list;
    *num_infos = supported;
@@ -869,7 +879,8 @@ error:
    return false;
 }
 
-bool core_info_database_supports_content_path(const char *database_path, const char *path)
+bool core_info_database_supports_content_path(
+      const char *database_path, const char *path)
 {
    char *database           = NULL;
    const char *new_path     = path_basename(database_path);
@@ -1001,7 +1012,8 @@ static int core_info_qsort_func_system_name(const core_info_t *a,
    return strcasecmp(a->systemname, b->systemname);
 }
 
-void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type)
+void core_info_qsort(core_info_list_t *core_info_list,
+      enum core_info_list_qsort_type qsort_type)
 {
    if (!core_info_list)
       return;
@@ -1012,20 +1024,32 @@ void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort
    switch (qsort_type)
    {
       case CORE_INFO_LIST_SORT_PATH:
-         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
-               (int (*)(const void *, const void *))core_info_qsort_func_path);
+         qsort(core_info_list->list,
+               core_info_list->count,
+               sizeof(core_info_t),
+               (int (*)(const void *, const void *))
+               core_info_qsort_func_path);
          break;
       case CORE_INFO_LIST_SORT_DISPLAY_NAME:
-         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
-               (int (*)(const void *, const void *))core_info_qsort_func_display_name);
+         qsort(core_info_list->list,
+               core_info_list->count,
+               sizeof(core_info_t),
+               (int (*)(const void *, const void *))
+               core_info_qsort_func_display_name);
          break;
       case CORE_INFO_LIST_SORT_CORE_NAME:
-         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
-               (int (*)(const void *, const void *))core_info_qsort_func_core_name);
+         qsort(core_info_list->list,
+               core_info_list->count,
+               sizeof(core_info_t),
+               (int (*)(const void *, const void *))
+               core_info_qsort_func_core_name);
          break;
       case CORE_INFO_LIST_SORT_SYSTEM_NAME:
-         qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t),
-               (int (*)(const void *, const void *))core_info_qsort_func_system_name);
+         qsort(core_info_list->list,
+               core_info_list->count,
+               sizeof(core_info_t),
+               (int (*)(const void *, const void *))
+               core_info_qsort_func_system_name);
          break;
       default:
          return;
