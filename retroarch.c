@@ -23000,6 +23000,22 @@ static bool menu_display_libretro(void)
 }
 #endif
 
+static void update_savestate_slot(void)
+{
+   char msg[128];
+   settings_t *settings = configuration_settings;
+   msg[0] = '\0';
+
+   snprintf(msg, sizeof(msg), "%s: %d",
+         msg_hash_to_str(MSG_STATE_SLOT),
+         settings->ints.state_slot);
+
+   runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   RARCH_LOG("%s\n", msg);
+}
+
+
 static void update_fastforwarding_state(void)
 {
    /* Display the fast forward state to the user, if needed. */
@@ -23664,37 +23680,23 @@ static enum runloop_state runloop_check_state(
             current_bits, RARCH_STATE_SLOT_PLUS);
       bool should_slot_decrease            = BIT256_GET(
             current_bits, RARCH_STATE_SLOT_MINUS);
-      bool should_set                      = false;
-      int cur_state_slot                   = settings->ints.state_slot;
 
       /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
       if (should_slot_increase && !old_should_slot_increase)
       {
-         configuration_set_int(settings, settings->ints.state_slot, cur_state_slot + 1);
-
-         should_set = true;
+         int cur_state_slot                = settings->ints.state_slot;
+         configuration_set_int(settings, settings->ints.state_slot,
+               cur_state_slot + 1);
+         update_savestate_slot();
       }
       else if (should_slot_decrease && !old_should_slot_decrease)
       {
+         int cur_state_slot                = settings->ints.state_slot;
          if (cur_state_slot > 0)
-            configuration_set_int(settings, settings->ints.state_slot, cur_state_slot - 1);
-
-         should_set = true;
-      }
-
-      if (should_set)
-      {
-         char msg[128];
-         msg[0] = '\0';
-
-         snprintf(msg, sizeof(msg), "%s: %d",
-               msg_hash_to_str(MSG_STATE_SLOT),
-               settings->ints.state_slot);
-
-         runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-         RARCH_LOG("%s\n", msg);
+            configuration_set_int(settings, settings->ints.state_slot,
+                  cur_state_slot - 1);
+         update_savestate_slot();
       }
 
       old_should_slot_increase = should_slot_increase;
