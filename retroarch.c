@@ -3781,7 +3781,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
-#ifdef HAVE_MENU
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
@@ -3805,7 +3804,6 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
             }
-#endif
          }
          break;
       case CMD_EVENT_LOAD_CORE:
@@ -21708,6 +21706,7 @@ static bool retroarch_is_on_main_thread(void)
 }
 #endif
 
+#ifdef HAVE_MENU
 /* This callback gets triggered by the keyboard whenever
  * we press or release a keyboard key. When a keyboard
  * key is being pressed down, 'down' will be true. If it
@@ -21813,6 +21812,7 @@ static void menu_driver_toggle(bool on)
          *key_event = *frontend_key_event;
    }
 }
+#endif
 
 void retroarch_menu_running(void)
 {
