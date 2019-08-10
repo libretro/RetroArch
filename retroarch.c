@@ -23632,10 +23632,17 @@ static enum runloop_state runloop_check_state(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state        = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
+      bool check1                       = !new_hold_button_state;
+      bool check2                       = new_button_state && !old_button_state;
 
-      if (new_button_state && !old_button_state)
+      if (check2)
+         check1                         = input_nonblock_state;
+      else
+         check2                         = old_hold_button_state != new_hold_button_state;
+
+      if (check2)
       {
-         if (input_nonblock_state)
+         if (check1)
          {
             input_driver_nonblock_state = false;
             runloop_fastmotion          = false;
@@ -23645,22 +23652,6 @@ static enum runloop_state runloop_check_state(
          {
             input_driver_nonblock_state = true;
             runloop_fastmotion          = true;
-         }
-         driver_set_nonblock_state();
-         update_fastforwarding_state();
-      }
-      else if (old_hold_button_state != new_hold_button_state)
-      {
-         if (new_hold_button_state)
-         {
-            input_driver_nonblock_state = true;
-            runloop_fastmotion          = true;
-         }
-         else
-         {
-            input_driver_nonblock_state = false;
-            runloop_fastmotion          = false;
-            fastforward_after_frames    = 1;
          }
          driver_set_nonblock_state();
          update_fastforwarding_state();
