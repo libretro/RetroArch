@@ -8761,7 +8761,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-    "Remove everything before the hyphen and the subsequent space in Playlist names. Changes require a restart to take effect."
+    "When enabled, will remove the system names from the playlists. For example, display 'PlayStation' instead of 'Sony - PlayStation'. Changes require a restart to take effect."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
