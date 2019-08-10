@@ -23272,7 +23272,7 @@ static enum runloop_state runloop_check_state(
                         menu_data->userdata, runloop_idle);
             }
 
-            if (!runloop_idle)
+            if (menu_driver_alive && !runloop_idle)
                menu_display_libretro();
 
             if (menu_data->driver_ctx->set_texture)
