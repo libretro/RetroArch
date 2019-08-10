@@ -22901,6 +22901,25 @@ static bool menu_display_libretro(void)
 }
 #endif
 
+static void update_fastforwarding_state(void)
+{
+   /* Display the fast forward state to the user, if needed. */
+   if (runloop_fastmotion)
+   {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!menu_widgets_set_fast_forward(true))
+#endif
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   else
+   {
+      menu_widgets_set_fast_forward(false);
+   }
+#endif
+}
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -23515,6 +23534,7 @@ static enum runloop_state runloop_check_state(
             runloop_fastmotion          = true;
          }
          driver_set_nonblock_state();
+         update_fastforwarding_state();
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
@@ -23530,21 +23550,8 @@ static enum runloop_state runloop_check_state(
             fastforward_after_frames    = 1;
          }
          driver_set_nonblock_state();
+         update_fastforwarding_state();
       }
-
-      /* Display the fast forward state to the user, if needed. */
-      if (runloop_fastmotion)
-      {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         if (!menu_widgets_set_fast_forward(true))
-#endif
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      else
-         menu_widgets_set_fast_forward(false);
-#endif
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
