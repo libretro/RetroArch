@@ -213,24 +213,6 @@ enum event_command
 
 bool command_set_shader(const char *arg);
 
-bool command_network_send(const char *cmd_);
-
-bool command_network_new(
-      command_t *handle,
-      bool stdin_enable,
-      bool network_enable,
-      uint16_t port);
-
-command_t *command_new(void);
-
-bool command_poll(command_t *handle);
-
-bool command_get(command_handle_t *handle);
-
-bool command_set(command_handle_t *handle);
-
-bool command_free(command_t *handle);
-
 /**
  * command_event:
  * @cmd                  : Command index.

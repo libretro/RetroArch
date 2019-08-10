@@ -2248,7 +2248,7 @@ static void command_network_poll(command_t *handle)
 }
 #endif
 
-bool command_network_send(const char *cmd_)
+static bool command_network_send(const char *cmd_)
 {
 #if defined(HAVE_COMMAND) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    bool ret            = false;
@@ -2314,24 +2314,25 @@ static bool command_stdin_init(command_t *handle)
 }
 #endif
 
-command_t *command_new(void)
+static bool command_free(command_t *handle)
 {
-   command_t *handle = (command_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      return NULL;
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+   if (handle && handle->net_fd >= 0)
+      socket_close(handle->net_fd);
+#endif
 
-   return handle;
+   free(handle);
+
+   return true;
 }
 
-bool command_network_new(
+
+static bool command_network_new(
       command_t *handle,
       bool stdin_enable,
       bool network_enable,
       uint16_t port)
 {
-   if (!handle)
-      return false;
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    handle->net_fd = -1;
    if (network_enable && !command_network_init(handle, port))
@@ -2396,50 +2397,6 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
-
-bool command_poll(command_t *handle)
-{
-   memset(handle->state, 0, sizeof(handle->state));
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-   command_network_poll(handle);
-#endif
-
-#ifdef HAVE_STDIN_CMD
-   if (handle->stdin_enable)
-      command_stdin_poll(handle);
-#endif
-
-   return true;
-}
-
-bool command_get(command_handle_t *handle)
-{
-   if (!handle || !handle->handle)
-      return false;
-   return handle->id < RARCH_BIND_LIST_END
-      && handle->handle->state[handle->id];
-}
-
-bool command_set(command_handle_t *handle)
-{
-   if (!handle || !handle->handle)
-      return false;
-   if (handle->id < RARCH_BIND_LIST_END)
-      handle->handle->state[handle->id] = true;
-   return true;
-}
-
-bool command_free(command_t *handle)
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-   if (handle && handle->net_fd >= 0)
-      socket_close(handle->net_fd);
-#endif
-
-   free(handle);
-
-   return true;
-}
 
 /**
  * command_event_disk_control_set_eject:
@@ -10789,7 +10746,17 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
-      command_poll(input_driver_command);
+   {
+      memset(input_driver_command->state, 0, sizeof(input_driver_command->state));
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+      command_network_poll(input_driver_command);
+#endif
+
+#ifdef HAVE_STDIN_CMD
+      if (input_driver_command->stdin_enable)
+         command_stdin_poll(input_driver_command);
+#endif
+   }
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -11207,15 +11174,8 @@ static INLINE bool input_keys_pressed_other_sources(unsigned i,
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
-   {
-      command_handle_t handle;
-
-      handle.handle = input_driver_command;
-      handle.id     = i;
-
-      if (command_get(&handle))
-         return true;
-   }
+      return ((i < RARCH_BIND_LIST_END)
+         && input_driver_command->state[i]);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD   
@@ -12525,14 +12485,15 @@ bool input_driver_init_command(void)
             "Cannot use this command interface.\n");
    }
 
-   input_driver_command = command_new();
+   input_driver_command = (command_t*)calloc(1, sizeof(*input_driver_command));
 
-   if (command_network_new(
-            input_driver_command,
-            input_stdin_cmd_enable && !grab_stdin,
-            input_network_cmd_enable,
-            settings->uints.network_cmd_port))
-      return true;
+   if (input_driver_command)
+      if (command_network_new(
+               input_driver_command,
+               input_stdin_cmd_enable && !grab_stdin,
+               input_network_cmd_enable,
+               settings->uints.network_cmd_port))
+         return true;
 
    RARCH_ERR("Failed to initialize command interface.\n");
 #endif
