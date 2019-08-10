@@ -23016,21 +23016,6 @@ static void update_savestate_slot(void)
 
 static void update_fastforwarding_state(void)
 {
-   /* Display the fast forward state to the user, if needed. */
-   if (runloop_fastmotion)
-   {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_set_fast_forward(true))
-#endif
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   else
-   {
-      menu_widgets_set_fast_forward(false);
-   }
-#endif
 }
 
 static enum runloop_state runloop_check_state(
@@ -23669,22 +23654,25 @@ static enum runloop_state runloop_check_state(
             current_bits, RARCH_STATE_SLOT_PLUS);
       bool should_slot_decrease            = BIT256_GET(
             current_bits, RARCH_STATE_SLOT_MINUS);
+      bool check1                          = true;
+      bool check2                          = should_slot_increase && !old_should_slot_increase;
+      int addition                         = 1;
+
+      if (!check2)
+      {
+         check2                            = should_slot_decrease && !old_should_slot_decrease;
+         check1                            = settings->ints.state_slot > 0;
+         addition                          = -1;
+      }
 
       /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
-      if (should_slot_increase && !old_should_slot_increase)
+      if (check2)
       {
          int cur_state_slot                = settings->ints.state_slot;
-         configuration_set_int(settings, settings->ints.state_slot,
-               cur_state_slot + 1);
-         update_savestate_slot();
-      }
-      else if (should_slot_decrease && !old_should_slot_decrease)
-      {
-         int cur_state_slot                = settings->ints.state_slot;
-         if (cur_state_slot > 0)
+         if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
-                  cur_state_slot - 1);
+                  cur_state_slot + addition);
          update_savestate_slot();
       }
 
