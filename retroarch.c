@@ -23335,7 +23335,7 @@ static enum runloop_state runloop_check_state(
             if (rarch_is_initialized && !core_type_is_dummy)
             {
                retroarch_menu_running_finished(false);
-               menu_event_kb_set(false, RETROK_F1);
+               menu_keyboard_key_state[RETROK_F1] = ((menu_keyboard_key_state[RETROK_F1] & 1) << 1) | false;
             }
          }
       }
@@ -23355,7 +23355,7 @@ static enum runloop_state runloop_check_state(
          }
       }
       else
-         menu_event_kb_set(false, RETROK_F1);
+         menu_keyboard_key_state[RETROK_F1] = ((menu_keyboard_key_state[RETROK_F1] & 1) << 1) | false;
 
       old_pressed             = pressed;
    }
