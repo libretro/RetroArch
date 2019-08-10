@@ -23014,8 +23014,23 @@ static void update_savestate_slot(void)
 }
 
 
+/* Display the fast forward state to the user, if needed. */
 static void update_fastforwarding_state(void)
 {
+   if (runloop_fastmotion)
+   {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!menu_widgets_set_fast_forward(true))
+#endif
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   else
+   {
+      menu_widgets_set_fast_forward(false);
+   }
+#endif
 }
 
 static enum runloop_state runloop_check_state(
