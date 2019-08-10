@@ -1725,7 +1725,6 @@ static void retroarch_overlay_deinit(void);
 #endif
 
 static void video_driver_gpu_record_deinit(void);
-static void video_driver_set_nonblock_state(bool toggle);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(void);
@@ -3992,7 +3991,10 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_hide_mouse();
 
             if (menu_driver_alive)
-               command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+            {
+               if (current_video->set_nonblock_state)
+                  current_video->set_nonblock_state(video_driver_data, false);
+            }
          }
 #endif
          break;
@@ -4258,7 +4260,8 @@ TODO: Add a setting for these tweaks */
          video_driver_apply_state_changes();
          break;
       case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
-         video_driver_set_nonblock_state(boolean);
+         if (current_video->set_nonblock_state)
+            current_video->set_nonblock_state(video_driver_data, false);
          break;
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
          video_driver_set_aspect_ratio();
@@ -17583,12 +17586,6 @@ void video_driver_hide_mouse(void)
       video_driver_poke->show_mouse(video_driver_data, false);
 }
 
-static void video_driver_set_nonblock_state(bool toggle)
-{
-   if (current_video->set_nonblock_state)
-      current_video->set_nonblock_state(video_driver_data, toggle);
-}
-
 static bool video_driver_find_driver(void)
 {
    int i;
@@ -19526,7 +19523,10 @@ static void driver_adjust_system_rates(void)
       return;
 
    if (runloop_force_nonblock)
-      video_driver_set_nonblock_state(true);
+   {
+      if (current_video->set_nonblock_state)
+         current_video->set_nonblock_state(video_driver_data, true);
+   }
    else
       driver_set_nonblock_state();
 }
@@ -19551,7 +19551,8 @@ void driver_set_nonblock_state(void)
 
       if (!settings->bools.video_vsync || runloop_force_nonblock)
          video_nonblock = true;
-      video_driver_set_nonblock_state(video_nonblock);
+      if (current_video->set_nonblock_state)
+         current_video->set_nonblock_state(video_driver_data, video_nonblock);
    }
 
    if (audio_driver_active && audio_driver_context_audio_data)
@@ -21769,7 +21770,8 @@ static void menu_driver_toggle(bool on)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
-      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+      if (current_video->set_nonblock_state)
+         current_video->set_nonblock_state(video_driver_data, false);
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
