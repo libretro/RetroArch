@@ -21733,7 +21733,7 @@ static void menu_input_key_event(bool down, unsigned keycode,
  * If the menu is already running, it will be turned off.
  * If the menu is off, then the menu will be started.
  */
-void menu_driver_toggle(bool on)
+static void menu_driver_toggle(bool on)
 {
    retro_keyboard_event_t *key_event          = &runloop_key_event;
    retro_keyboard_event_t *frontend_key_event = &runloop_frontend_key_event;
@@ -21820,7 +21820,7 @@ void retroarch_menu_running(void)
    settings_t *settings        = configuration_settings;
 #endif
 #ifdef HAVE_MENU
-   menu_driver_toggled         = true;
+   menu_driver_toggle(true);
 
    /* Prevent stray input */
    input_driver_flushing_input = true;
@@ -21844,7 +21844,7 @@ void retroarch_menu_running_finished(bool quit)
    settings_t *settings = configuration_settings;
 #endif
 #ifdef HAVE_MENU
-   menu_driver_toggled         = false;
+   menu_driver_toggle(false);
 
    /* Prevent stray input */
    input_driver_flushing_input = true;

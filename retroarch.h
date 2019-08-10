@@ -2109,9 +2109,6 @@ bool menu_driver_is_toggled(void);
 
 bool menu_driver_is_toggled(void);
 
-void menu_driver_toggle(bool on);
-
-
 RETRO_END_DECLS
 
 #endif
