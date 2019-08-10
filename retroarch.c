@@ -2841,7 +2841,7 @@ static void command_event_init_cheats(void)
    cheat_manager_alloc_if_empty();
    cheat_manager_load_game_specific_cheats();
 
-   if (settings != NULL && settings->bools.apply_cheats_after_load)
+   if (settings && settings->bools.apply_cheats_after_load)
       cheat_manager_apply_cheats();
 }
 
@@ -3827,7 +3827,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
-         if (bsv_movie_state_handle != NULL)
+         if (bsv_movie_state_handle)
             return false;
 
 #ifdef HAVE_CHEEVOS
@@ -17308,7 +17308,7 @@ void video_driver_set_stub_frame(void)
 
 void video_driver_unset_stub_frame(void)
 {
-   if (frame_bak != NULL)
+   if (frame_bak)
       current_video->frame = frame_bak;
 
    frame_bak = NULL;
