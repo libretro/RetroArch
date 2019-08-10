@@ -197,10 +197,6 @@ static bool menu_driver_pending_quick_menu      = false;
 
 static bool menu_driver_prevent_populate        = false;
 
-/* A menu toggle has been requested; if the menu was running,
- * it will be closed; if the menu was not running, it will be opened */
-static bool menu_driver_toggled                 = false;
-
 /* The menu driver owns the userdata */
 static bool menu_driver_data_own                = false;
 
@@ -1838,110 +1834,6 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-static void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-#if 0
-   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
-         down, keycode, mod, character);
-#endif
-
-   menu_event_kb_set(down, (enum retro_key)keycode);
-}
-
-/* Gets called when we want to toggle the menu.
- * If the menu is already running, it will be turned off.
- * If the menu is off, then the menu will be started.
- */
-static void menu_driver_toggle(bool on)
-{
-   retro_keyboard_event_t *key_event          = NULL;
-   retro_keyboard_event_t *frontend_key_event = NULL;
-   settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings ?
-      settings->bools.menu_pause_libretro : false;
-   bool enable_menu_sound                     = settings ?
-      settings->bools.audio_enable_menu : false;
-
-   menu_driver_toggled = on;
-
-   if (!on)
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
-
-   if (menu_driver_ctx && menu_driver_ctx->toggle)
-      menu_driver_ctx->toggle(menu_userdata, on);
-
-   menu_driver_set_alive(on);
-
-   rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-   rarch_ctl(RARCH_CTL_KEY_EVENT_GET,          &key_event);
-
-   if (menu_driver_is_alive())
-   {
-      bool refresh = false;
-
-#ifdef WIIU
-      /* Enable burn-in protection menu is running */
-      IMEnableDim();
-#endif
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-      /* Menu should always run with vsync on. */
-      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-      /* Stop all rumbling before entering the menu. */
-      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ... */
-
-      if (key_event && frontend_key_event)
-      {
-         *frontend_key_event        = *key_event;
-         *key_event                 = menu_input_key_event;
-
-         rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
-      }
-   }
-   else
-   {
-#ifdef WIIU
-      /* Disable burn-in protection while core is running; this is needed
-       * because HID inputs don't count for the purpose of Wii U
-       * power-saving. */
-      IMDisableDim();
-#endif
-
-      if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
-         driver_set_nonblock_state();
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Restore libretro keyboard callback. */
-      if (key_event && frontend_key_event)
-         *key_event = *frontend_key_event;
-   }
-}
-
 const char *menu_driver_ident(void)
 {
    if (!menu_driver_is_alive())
@@ -2288,14 +2180,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
          return menu_driver_prevent_populate;
-      case RARCH_MENU_CTL_IS_TOGGLE:
-         return menu_driver_toggled;
-      case RARCH_MENU_CTL_SET_TOGGLE:
-         menu_driver_toggle(true);
-         break;
-      case RARCH_MENU_CTL_UNSET_TOGGLE:
-         menu_driver_toggle(false);
-         break;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;

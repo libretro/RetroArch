@@ -146,8 +146,6 @@ enum rarch_ctl_state
    RARCH_CTL_IS_PERFCNT_ENABLE,
 
    /* Key event */
-   RARCH_CTL_FRONTEND_KEY_EVENT_GET,
-   RARCH_CTL_KEY_EVENT_GET,
    RARCH_CTL_DATA_DEINIT,
 
    /* Core options */
@@ -2106,6 +2104,12 @@ bool menu_driver_is_alive(void);
 bool menu_driver_is_binding_state(void);
 
 void menu_driver_set_binding_state(bool on);
+
+bool menu_driver_is_toggled(void);
+
+bool menu_driver_is_toggled(void);
+
+void menu_driver_toggle(bool on);
 
 
 RETRO_END_DECLS
