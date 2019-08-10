@@ -20491,40 +20491,38 @@ force_input_dirty:
 }
 #endif
 
-static void rarch_core_runtime_tick(void)
+static retro_time_t rarch_core_runtime_tick(void)
 {
-   struct retro_system_av_info *av_info = &video_driver_av_info;
+   retro_time_t frame_time              = 
+      (1.0 / video_driver_av_info.timing.fps) * 1000000;
 
-   if (av_info && av_info->timing.fps)
+   /* Account for slow motion */
+   if (runloop_slowmotion)
    {
-      retro_time_t frame_time = (1.0 / av_info->timing.fps) * 1000000;
-
-      /* Account for slow motion */
-      if (runloop_slowmotion)
-      {
-         settings_t *settings       = configuration_settings;
-         frame_time                 = (retro_time_t)((double)
-               frame_time * settings->floats.slowmotion_ratio);
-      }
-      /* Account for fast forward */
-      else if (runloop_fastmotion)
-      {
-         /* Doing it this way means we miss the first frame after
-          * turning fast forward on, but it saves the overhead of
-          * having to do:
-          *    retro_time_t current_usec = cpu_features_get_time_usec();
-          *    libretro_core_runtime_last = current_usec;
-          * every frame when fast forward is off. */
-         retro_time_t current_usec = cpu_features_get_time_usec();
-
-         if (current_usec - libretro_core_runtime_last < frame_time)
-            frame_time = current_usec - libretro_core_runtime_last;
-
-         libretro_core_runtime_last = current_usec;
-      }
-
-      libretro_core_runtime_usec += frame_time;
+      settings_t *settings       = configuration_settings;
+      return (retro_time_t)((double)
+            frame_time * settings->floats.slowmotion_ratio);
    }
+
+   /* Account for fast forward */
+   if (runloop_fastmotion)
+   {
+      /* Doing it this way means we miss the first frame after
+       * turning fast forward on, but it saves the overhead of
+       * having to do:
+       *    retro_time_t current_usec = cpu_features_get_time_usec();
+       *    libretro_core_runtime_last = current_usec;
+       * every frame when fast forward is off. */
+      retro_time_t current_usec         = cpu_features_get_time_usec();
+      retro_time_t potential_frame_time = current_usec - 
+         libretro_core_runtime_last;
+      libretro_core_runtime_last        = current_usec;
+
+      if (potential_frame_time < frame_time)
+         return potential_frame_time;
+   }
+
+   return frame_time;
 }
 
 static void retroarch_print_features(void)
@@ -22980,7 +22978,7 @@ static bool menu_display_libretro(void)
          input_driver_block_libretro_input = true;
 
       core_run();
-      rarch_core_runtime_tick();
+      libretro_core_runtime_usec += rarch_core_runtime_tick();
       input_driver_block_libretro_input = false;
 
       return true;
@@ -23996,7 +23994,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
-   rarch_core_runtime_tick();
+   libretro_core_runtime_usec += rarch_core_runtime_tick();
 
 #ifdef HAVE_CHEEVOS
    if (  settings->bools.cheevos_enable && 
