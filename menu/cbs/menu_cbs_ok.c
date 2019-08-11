@@ -300,6 +300,48 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
+static const char *get_default_shader_dir(void)
+{
+   settings_t *settings       = config_get_ptr();
+   const char *def_shader_dir = settings->paths.directory_video_shader;
+   bool slang_supported       = video_shader_is_supported(RARCH_SHADER_SLANG);
+   bool glsl_supported        = video_shader_is_supported(RARCH_SHADER_GLSL);
+   bool cg_supported          = video_shader_is_supported(RARCH_SHADER_CG);
+
+   if (slang_supported)
+   {
+      static char new_path[1024];
+      new_path[0] = '\0';
+      fill_pathname_join(new_path,
+            def_shader_dir, "shaders_slang",
+            sizeof(new_path));
+      if (path_is_directory(new_path))
+         return new_path;
+   }
+   else if (glsl_supported && !cg_supported)
+   {
+      static char new_path[1024];
+      new_path[0] = '\0';
+      fill_pathname_join(new_path,
+            def_shader_dir, "shaders_glsl",
+            sizeof(new_path));
+      if (path_is_directory(new_path))
+         return new_path;
+   }
+   else if (cg_supported   && !glsl_supported)
+   {
+      static char new_path[1024];
+      new_path[0] = '\0';
+      fill_pathname_join(new_path,
+            def_shader_dir, "shaders_cg",
+            sizeof(new_path));
+      if (path_is_directory(new_path))
+         return new_path;
+   }
+
+   return def_shader_dir;
+}
+
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -483,16 +525,6 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
-      case ACTION_OK_DL_SHADER_PASS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.directory_video_shader;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
-#endif
-         break;
       case ACTION_OK_DL_SHADER_PARAMETERS:
          info.type          = MENU_SETTING_ACTION;
          info.directory_ptr = idx;
@@ -536,12 +568,22 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = get_default_shader_dir();
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+#endif
+         break;
       case ACTION_OK_DL_SHADER_PRESET:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->paths.directory_video_shader;
+         info_path          = get_default_shader_dir();
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 #endif
