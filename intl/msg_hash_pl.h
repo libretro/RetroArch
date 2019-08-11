@@ -4259,3 +4259,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
     "Zastosuj kody natychmiast po przełączeniu."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+    "Zapisuje plik konfiguracji zastępowania, który będzie obowiązywał dla całej zawartości ładowanej z tego samego katalogu, co bieżący plik. Będzie mieć pierwszeństwo przed główną konfiguracją."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+    "Załaduj plik kodów i dołącz do istniejących kodów."
+    )
