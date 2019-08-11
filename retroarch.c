@@ -23032,17 +23032,15 @@ static void update_fastforwarding_state(void)
 #endif
 }
 
-static enum runloop_state runloop_check_state(
-      settings_t *settings,
-      bool input_nonblock_state,
-      bool runloop_is_paused,
-      float fastforward_ratio)
+static enum runloop_state runloop_check_state(void)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
    static bool old_focus               = true;
+   settings_t *settings                = configuration_settings;
+   float fastforward_ratio             = settings->floats.fastforward_ratio;
    bool is_focused                     = video_has_focus();
    bool is_alive                       = current_video ?
       current_video->alive(video_driver_data) : true;
@@ -23095,7 +23093,7 @@ static enum runloop_state runloop_check_state(
       if (bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data)))
       {
          BIT256_CLEAR_ALL(current_bits);
-         if (runloop_is_paused)
+         if (runloop_paused)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
          input_driver_flushing_input = true;
       }
@@ -23121,7 +23119,7 @@ static enum runloop_state runloop_check_state(
 
    /* Check fullscreen toggle */
    {
-      bool fullscreen_toggled = !runloop_is_paused
+      bool fullscreen_toggled = !runloop_paused
 #ifdef HAVE_MENU
          || menu_is_alive;
 #else
@@ -23586,7 +23584,7 @@ static enum runloop_state runloop_check_state(
        * unpause the libretro core. */
 
       /* FRAMEADVANCE will set us into pause mode. */
-      pause_pressed                |= !runloop_is_paused && trig_frameadvance;
+      pause_pressed                |= !runloop_paused && trig_frameadvance;
 
       if (focused && pause_pressed && !old_pause_pressed)
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -23599,7 +23597,7 @@ static enum runloop_state runloop_check_state(
       old_pause_pressed   = pause_pressed;
       old_frameadvance    = frameadvance_pressed;
 
-      if (runloop_is_paused)
+      if (runloop_paused)
       {
          bool toggle = !runloop_idle ? true : false;
 
@@ -23634,7 +23632,7 @@ static enum runloop_state runloop_check_state(
       bool check2                       = new_button_state && !old_button_state;
 
       if (check2)
-         check1                         = input_nonblock_state;
+         check1                         = input_driver_nonblock_state;
       else
          check2                         = old_hold_button_state != new_hold_button_state;
 
@@ -23858,8 +23856,6 @@ static enum runloop_state runloop_check_state(
 int runloop_iterate(void)
 {
    unsigned i;
-   bool runloop_is_paused                       = runloop_paused;
-   bool input_nonblock_state                    = input_driver_nonblock_state;
    settings_t *settings                         = configuration_settings;
    float fastforward_ratio                      = settings->floats.fastforward_ratio;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
@@ -23877,7 +23873,7 @@ int runloop_iterate(void)
        * Limits frame time if fast forward ratio throttle is enabled. */
       retro_usec_t runloop_last_frame_time = runloop_frame_time_last;
       retro_time_t current                 = cpu_features_get_time_usec();
-      bool is_locked_fps                   = (runloop_is_paused || input_nonblock_state)
+      bool is_locked_fps                   = (runloop_paused || input_driver_nonblock_state)
          | !!recording_data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps) ?
          runloop_frame_time.reference
@@ -23898,12 +23894,7 @@ int runloop_iterate(void)
       runloop_frame_time.callback(delta);
    }
 
-   switch ((enum runloop_state)
-         runloop_check_state(
-            settings,
-            input_nonblock_state,
-            runloop_is_paused,
-            fastforward_ratio))
+   switch ((enum runloop_state)runloop_check_state())
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
@@ -23967,7 +23958,7 @@ int runloop_iterate(void)
       }
    }
 
-   if ((video_frame_delay > 0) && !input_nonblock_state)
+   if ((video_frame_delay > 0) && !input_driver_nonblock_state)
       retro_sleep(video_frame_delay);
 
    {
