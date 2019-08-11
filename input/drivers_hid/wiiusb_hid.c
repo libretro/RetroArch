@@ -273,38 +273,22 @@ static int wiiusb_hid_removal_cb(int result, void *usrdata)
 static bool isRetrodeGamepad(usb_devdesc devdesc)
 {
     if (devdesc.idVendor != VID_RETRODE || devdesc.idProduct != PID_RETRODE)
-    {
         return false;
-    }
-    if (devdesc.configurations != NULL)
-    {
-        if (devdesc.configurations->interfaces != NULL)
-        {
-            if (devdesc.configurations->interfaces->endpoints != NULL)
-            {
+    if (devdesc.configurations)
+        if (devdesc.configurations->interfaces)
+            if (devdesc.configurations->interfaces->endpoints)
                 return devdesc.configurations->interfaces->bInterfaceSubClass == 0;
-            }
-        }
-    }
     return false;
 }
 
 static bool isRetrodeMouse(usb_devdesc devdesc)
 {
     if (devdesc.idVendor != VID_RETRODE || devdesc.idProduct != PID_RETRODE)
-    {
         return false;
-    }
-    if (devdesc.configurations != NULL)
-    {
-        if (devdesc.configurations->interfaces != NULL)
-        {
-            if (devdesc.configurations->interfaces->endpoints != NULL)
-            {
+    if (devdesc.configurations)
+        if (devdesc.configurations->interfaces)
+            if (devdesc.configurations->interfaces->endpoints)
                 return devdesc.configurations->interfaces->bInterfaceSubClass == 1;
-            }
-        }
-    }
     return false;
 }
 
@@ -315,6 +299,8 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
    wiiusb_hid_t              *hid = (wiiusb_hid_t*)data;
    struct wiiusb_adapter *adapter = (struct wiiusb_adapter*)
       calloc(1, sizeof(struct wiiusb_adapter));
+   int i;
+   int32_t slot1;
 
    if (!adapter)
       return -1;
@@ -390,20 +376,17 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
    RARCH_LOG("Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device_id, desc.idVendor, desc.idProduct);
 
-   // Retrode support
    if (isRetrodeGamepad(desc))
    {
-       // Retrode port #1
+       /* Retrode port #1 */
        RARCH_LOG("Interface Retrode1 gamepad slot: %d\n", adapter->slot);
        wiiusb_hid_device_add_autodetect(adapter->slot, device_name, wiiusb_hid.ident, desc.idVendor, desc.idProduct);
-       // Retrode port #2, #3, #4
-       for (int i = 2; i <= 4; i++)
+       /* Retrode port #2, #3, #4 */
+       for (i = 2; i <= 4; i++)
        {
-           int32_t slot1 = pad_connection_pad_init(hid->connections, "hid", desc.idVendor, desc.idProduct, adapter, &wiiusb_hid);
+           slot1 = pad_connection_pad_init(hid->connections, "hid", desc.idVendor, desc.idProduct, adapter, &wiiusb_hid);
            if (slot1 == -1)
-           {
                RARCH_LOG("No slot free for Retrode%d gamepad\n", i);
-           }
            else
            {
                RARCH_LOG("Interface Retrode%d gamepad slot: %d\n", i, slot1);
@@ -412,11 +395,8 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
        }
    }
    else
-   {
-       //RARCH_LOG("Interface USB slot: %d\n", adapter->slot);
        wiiusb_hid_device_add_autodetect(adapter->slot,
              device_name, wiiusb_hid.ident, desc.idVendor, desc.idProduct);
-   }
 
    USB_FreeDescriptors(&desc);
    USB_DeviceRemovalNotifyAsync(adapter->handle, wiiusb_hid_removal_cb, adapter);

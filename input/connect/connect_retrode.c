@@ -97,19 +97,11 @@ static int16_t hidpad_retrode_get_axis(void *data, unsigned axis)
 
    /* map Retrode values to a known gamepad (VID=0x0079, PID=0x0011) */
    if (val == 0x9C)
-   {
-       /* axis=0 left, axis=1 up */
-       val = 0x00;
-   }
+       val = 0x00; /* axis=0 left, axis=1 up */
    else if (val == 0x64)
-   {
-       /* axis=0 right, axis=1 down */
-       val = 0xFF;
-   }
+       val = 0xFF; /* axis=0 right, axis=1 down */
    else
-   {
        val = 0x7F; /* no button pressed */
-   }
 
    val = (val << 8) - 0x8000;
 
@@ -166,7 +158,7 @@ static void hidpad_retrode_packet_handler(void *data, uint8_t *packet, uint16_t 
     */
    device1234 = port_device[packet[1] - 1];
 
-   if (device1234 == NULL)
+   if (!device1234)
       return;
 
    memcpy(device1234->data, packet, size);
