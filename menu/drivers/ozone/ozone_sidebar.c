@@ -573,6 +573,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    char title_noext[255];
    char *chr;
    bool hyphen_found;
+   settings_t *settings = config_get_ptr();
 
    size_t list_size  = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
@@ -687,7 +688,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          chr          = title_noext;
          hyphen_found = false;
 
-         while (true)
+         while (settings->bools.ozone_truncate_playlist_name)
          {
             /* Check for "- " */
             if (*chr == '-' && *(chr + 1) == ' ')

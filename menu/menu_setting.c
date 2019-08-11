@@ -13472,6 +13472,26 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+#ifdef HAVE_OZONE
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ozone_truncate_playlist_name,
+                  MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+                  MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+                  DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
+#endif
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);
