@@ -5202,14 +5202,10 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       int ret;
       bool app_exit     = false;
-      unsigned sleep_ms = 0;
 #ifdef HAVE_QT
       ui_companion_qt.application->process_events();
 #endif
-      ret = runloop_iterate(&sleep_ms);
-
-      if (ret == 1 && sleep_ms > 0)
-         retro_sleep(sleep_ms);
+      ret = runloop_iterate();
 
       task_queue_check();
 
@@ -23040,8 +23036,7 @@ static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
       bool runloop_is_paused,
-      float fastforward_ratio,
-      unsigned *sleep_ms)
+      float fastforward_ratio)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
@@ -23860,7 +23855,7 @@ static enum runloop_state runloop_check_state(
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-int runloop_iterate(unsigned *sleep_ms)
+int runloop_iterate(void)
 {
    unsigned i;
    bool runloop_is_paused                       = runloop_paused;
@@ -23908,8 +23903,7 @@ int runloop_iterate(unsigned *sleep_ms)
             settings,
             input_nonblock_state,
             runloop_is_paused,
-            fastforward_ratio,
-            sleep_ms))
+            fastforward_ratio))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
@@ -23920,7 +23914,10 @@ int runloop_iterate(unsigned *sleep_ms)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-         *sleep_ms = 10;
+#if defined(HAVE_COCOATOUCH)
+         if (!main_ui_companion_is_on_foreground)
+#endif
+            retro_sleep(10);
          return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
@@ -24087,9 +24084,14 @@ end:
 
       if (to_sleep_ms > 0)
       {
-         *sleep_ms              = (unsigned)to_sleep_ms;
+         unsigned sleep_ms = (unsigned)to_sleep_ms;
          /* Combat jitter a bit. */
          frame_limit_last_time += frame_limit_minimum_time;
+         if (sleep_ms > 0)
+#if defined(HAVE_COCOATOUCH)
+            if (!main_ui_companion_is_on_foreground)
+#endif
+               retro_sleep(sleep_ms);
          return 1;
       }
    }

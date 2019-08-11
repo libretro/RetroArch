@@ -314,11 +314,7 @@ void App::Run()
 	{
 		CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
-		unsigned sleep_ms = 0;
-		int           ret = runloop_iterate(&sleep_ms);
-
-		if (ret == 1 && sleep_ms > 0)
-			retro_sleep(sleep_ms);
+		int           ret = runloop_iterate();
 
 		task_queue_check();
 

@@ -345,7 +345,7 @@ global_t *global_get_ptr(void);
  * Returns -1 if we forcibly quit out of the
  * RetroArch iteration loop.
  **/
-int runloop_iterate(unsigned *sleep_ms);
+int runloop_iterate(void);
 
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,

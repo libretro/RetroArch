@@ -413,7 +413,6 @@ static char** waiting_argv;
     do
     {
        int ret;
-       unsigned sleep_ms = 0;
 #ifdef HAVE_QT
        const ui_application_t *application = &ui_application_qt;
 #else
@@ -422,10 +421,7 @@ static char** waiting_argv;
        if (application)
           application->process_events();
 
-       ret = runloop_iterate(&sleep_ms);
-
-       if (ret == 1 && sleep_ms > 0)
-          retro_sleep(sleep_ms);
+       ret = runloop_iterate();
 
        task_queue_check();
 

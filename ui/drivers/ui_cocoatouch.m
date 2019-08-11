@@ -79,11 +79,8 @@ static void ui_companion_cocoatouch_event_command(
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   unsigned sleep_ms  = 0;
-   int          ret   = runloop_iterate(&sleep_ms);
+   int          ret   = runloop_iterate();
 
-   if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
-      retro_sleep(sleep_ms);
    task_queue_check();
 
    if (ret == -1)

@@ -69,7 +69,6 @@ static void emscripten_mainloop(void)
 {
    int ret;
    video_frame_info_t video_info;
-   unsigned sleep_ms = 0;
 
    RWebAudioRecalibrateTime();
 
@@ -99,10 +98,7 @@ static void emscripten_mainloop(void)
          command_event(CMD_EVENT_REINIT, NULL);
    }
 
-   ret = runloop_iterate(&sleep_ms);
-
-   if (ret == 1 && sleep_ms > 0)
-      retro_sleep(sleep_ms);
+   ret = runloop_iterate();
 
    task_queue_check();
 
