@@ -1268,18 +1268,6 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
    matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
 }
 
-bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
-{
-   if (!draw)
-      return false;
-
-   if (!menu_disp || !menu_disp->get_default_tex_coords)
-      return false;
-
-   draw->ptr = menu_disp->get_default_tex_coords();
-   return true;
-}
-
 static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
 {
    if (menu_driver_ctx && menu_driver_ctx->load_image)

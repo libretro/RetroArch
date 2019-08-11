@@ -624,9 +624,9 @@ void menu_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h, unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
+
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
       video_frame_info_t *video_info);
-bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
 void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate);
