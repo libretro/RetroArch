@@ -69,6 +69,21 @@ static int action_start_remap_file_load(unsigned type, const char *label)
    return 0;
 }
 
+static int action_start_shader_preset(unsigned type, const char *label)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
+
+   shader->passes = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+#endif
+   return 0;
+}
+
 static int action_start_video_filter_file_load(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
@@ -290,6 +305,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+            BIND_ACTION_START(cbs, action_start_shader_preset);
+            break;
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_START(cbs, action_start_remap_file_load);
             break;
