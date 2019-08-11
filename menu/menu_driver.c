@@ -196,14 +196,6 @@ static bool menu_driver_prevent_populate        = false;
 /* The menu driver owns the userdata */
 static bool menu_driver_data_own                = false;
 
-/* The user has requested that the menu be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_quit            = false;
-
-/* The user has requested that RetroArch be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_shutdown        = false;
-
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
@@ -1867,12 +1859,13 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    /* Get current time */
    menu_driver_current_time_us = cpu_features_get_time_usec();
 
-   /* If the user had requested that the Quick Menu
-    * be spawned during the previous frame, do this now
-    * and exit the function to go to the next frame.
-    */
    if (menu_driver_pending_quick_menu)
    {
+      /* If the user had requested that the Quick Menu
+       * be spawned during the previous frame, do this now
+       * and exit the function to go to the next frame.
+       */
+
       menu_driver_pending_quick_menu = false;
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
       menu_display_set_msg_force(true);
@@ -1880,45 +1873,19 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       generic_action_ok_displaylist_push("", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-      if (menu_driver_pending_quit)
-      {
-         menu_driver_pending_quit     = false;
-         return false;
-      }
-
       menu_navigation_set_selection(0);
 
       return true;
    }
 
-   /* If the user had requested that the menu
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_quit)
-   {
-      menu_driver_pending_quit     = false;
-      return false;
-   }
-
-   /* if the user had requested that RetroArch
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_shutdown)
-   {
-      menu_driver_pending_shutdown = false;
-      if (!command_event(CMD_EVENT_QUIT, NULL))
-         return false;
+   if (
+         menu_driver_ctx          &&
+         menu_driver_ctx->iterate &&
+         menu_driver_ctx->iterate(menu_driver_data,
+            menu_userdata, iterate->action) != -1)
       return true;
-   }
 
-   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-      return false;
-
-   if (menu_driver_ctx->iterate(menu_driver_data,
-            menu_userdata, iterate->action) == -1)
-      return false;
-
-   return true;
+   return false;
 }
 
 bool menu_driver_list_cache(menu_ctx_list_t *list)
@@ -2063,8 +2030,6 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 void menu_driver_destroy(void)
 {
    menu_driver_pending_quick_menu = false;
-   menu_driver_pending_quit       = false;
-   menu_driver_pending_shutdown   = false;
    menu_driver_prevent_populate   = false;
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
@@ -2121,12 +2086,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_QUIT:
-         menu_driver_pending_quit     = true;
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
-         menu_driver_pending_shutdown = true;
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
