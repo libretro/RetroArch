@@ -93,25 +93,28 @@ unsigned menu_input_dialog_get_kb_idx(void)
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 extern u32 __nx_applet_type;
-extern void libnx_apply_overclock();
+extern void libnx_apply_overclock(void);
 #endif
 
 bool menu_input_dialog_get_display_kb(void)
 {
 #ifdef HAVE_LIBNX
+   SwkbdConfig kbd;
+   Result rc;
+
    /* swkbd only works on "real" titles */
-   if (__nx_applet_type != AppletType_Application && __nx_applet_type != AppletType_SystemApplication)
+   if (     __nx_applet_type != AppletType_Application 
+         && __nx_applet_type != AppletType_SystemApplication)
       return menu_input_dialog_keyboard_display;
 
    if (!menu_input_dialog_keyboard_display)
       return false;
 
-   SwkbdConfig kbd;
-
-   Result rc = swkbdCreate(&kbd, 0);
+   rc = swkbdCreate(&kbd, 0);
 
    if (R_SUCCEEDED(rc))
    {
+      unsigned i;
       char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
       swkbdConfigMakePresetDefault(&kbd);
 
@@ -123,7 +126,7 @@ bool menu_input_dialog_get_display_kb(void)
 
       /* RetroArch uses key-by-key input
          so we need to simulate it */
-      for (int i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
       {
          /* In case a previous "Enter" press closed the keyboard */
          if (!menu_input_dialog_keyboard_display)
@@ -137,9 +140,9 @@ bool menu_input_dialog_get_display_kb(void)
                string, so just make one (yes, the touch keyboard is
                a list of "null-terminated characters") */
             char oldchar = buf[i+1];
-            buf[i+1] = '\0';
+            buf[i+1]     = '\0';
             input_keyboard_line_append(&buf[i]);
-            buf[i+1] = oldchar;
+            buf[i+1]     = oldchar;
          }
       }
 
@@ -150,11 +153,7 @@ bool menu_input_dialog_get_display_kb(void)
       libnx_apply_overclock();
       return false;
    }
-   else
-   {
-      libnx_apply_overclock();
-      return menu_input_dialog_keyboard_display;
-   }
+   libnx_apply_overclock();
 #endif
    return menu_input_dialog_keyboard_display;
 }
@@ -178,7 +177,8 @@ bool menu_input_dialog_start_search(void)
       return false;
 
    menu_input_dialog_display_kb();
-   strlcpy(menu_input_dialog_keyboard_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+   strlcpy(menu_input_dialog_keyboard_label,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_input_dialog_keyboard_label));
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
@@ -205,7 +205,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             sizeof(menu_input_dialog_keyboard_label));
    if (line->label_setting)
       strlcpy(menu_input_dialog_keyboard_label_setting,
-            line->label_setting, sizeof(menu_input_dialog_keyboard_label_setting));
+            line->label_setting,
+            sizeof(menu_input_dialog_keyboard_label_setting));
 
    menu_input_dialog_keyboard_type   = line->type;
    menu_input_dialog_keyboard_idx    = line->idx;
