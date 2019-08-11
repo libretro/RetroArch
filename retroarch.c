@@ -2424,7 +2424,7 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
    char msg[128];
    bool error                                        = false;
    const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = runloop_get_system_info();
+   rarch_system_info_t *info                         = &runloop_system;
 
    msg[0] = '\0';
 
@@ -2474,7 +2474,7 @@ static void command_event_disk_control_set_index(unsigned idx)
    char msg[128];
    bool error                                        = false;
    const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = runloop_get_system_info();
+   rarch_system_info_t *info                         = &runloop_system;
 
    msg[0] = '\0';
 
@@ -2532,7 +2532,7 @@ static bool command_event_disk_control_append_image(const char *path)
    char msg[128];
    struct retro_game_info info                        = {0};
    const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t *sysinfo                      = runloop_get_system_info();
+   rarch_system_info_t *sysinfo                       = &runloop_system;
 
    msg[0] = '\0';
 
@@ -2714,7 +2714,7 @@ static void command_event_set_mixer_volume(float gain)
 static void command_event_init_controllers(void)
 {
    unsigned i;
-   rarch_system_info_t *info = runloop_get_system_info();
+   rarch_system_info_t *info = &runloop_system;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -3788,7 +3788,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
             core_info_ctx_find_t info_find;
-            rarch_system_info_t *system_info = runloop_get_system_info();
+            rarch_system_info_t *system_info = &runloop_system;
             struct retro_system_info *system = &system_info->info;
             const char *core_path            = path_get(RARCH_PATH_CORE);
 
@@ -4666,7 +4666,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
-            rarch_system_info_t *info = runloop_get_system_info();
+            rarch_system_info_t *info = &runloop_system;
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -4689,7 +4689,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_NEXT:
          {
-            rarch_system_info_t *info = runloop_get_system_info();
+            rarch_system_info_t *info = &runloop_system;
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -4714,7 +4714,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_PREV:
          {
-            rarch_system_info_t *info = runloop_get_system_info();
+            rarch_system_info_t *info = &runloop_system;
 
             if (info && info->disk_control_cb.get_num_images)
             {
