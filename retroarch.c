@@ -1832,13 +1832,13 @@ static void retroarch_msg_queue_init(void)
 #endif
 }
 
+#ifdef HAVE_THREADS
 static void retroarch_autosave_deinit(void)
 {
-#ifdef HAVE_THREADS
    if (rarch_use_sram)
       autosave_deinit();
-#endif
 }
+#endif
 
 /* COMMAND */
 
@@ -2555,7 +2555,9 @@ static bool command_event_disk_control_append_image(const char *path)
    RARCH_LOG("%s\n", msg);
    runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+#ifdef HAVE_THREADS
    retroarch_autosave_deinit();
+#endif
 
    /* TODO: Need to figure out what to do with subsystems case. */
    if (path_is_empty(RARCH_PATH_SUBSYSTEM))
@@ -4036,20 +4038,15 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
-         retroarch_autosave_deinit();
 #ifdef HAVE_THREADS
-         {
+         retroarch_autosave_deinit();
 #ifdef HAVE_NETWORKING
-            /* Only enable state manager if netplay is not underway
+         /* Only enable state manager if netplay is not underway
 TODO: Add a setting for these tweaks */
-            settings_t *settings      = configuration_settings;
-            if (settings->uints.autosave_interval != 0
-                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+         if (configuration_settings->uints.autosave_interval != 0
+               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
-            {
-               runloop_autosave = autosave_init();
-            }
-         }
+            runloop_autosave = autosave_init();
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
@@ -22065,7 +22062,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          input_driver_deinit_remote();
          input_driver_deinit_mapper();
 
+#ifdef HAVE_THREADS
          retroarch_autosave_deinit();
+#endif
 
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
@@ -23938,8 +23937,10 @@ int runloop_iterate(unsigned *sleep_ms)
          break;
    }
 
+#ifdef HAVE_THREADS
    if (runloop_autosave)
       autosave_lock();
+#endif
 
    /* Used for rewinding while playback/record. */
    if (bsv_movie_state_handle)
@@ -24027,8 +24028,10 @@ int runloop_iterate(unsigned *sleep_ms)
       bsv_movie_state_handle->did_rewind   = false;
    }
 
+#ifdef HAVE_THREADS
    if (runloop_autosave)
       autosave_unlock();
+#endif
 
    /* Condition for max speed x0.0 when vrr_runloop is off to skip that part */
    if (!(fastforward_ratio || vrr_runloop_enable))

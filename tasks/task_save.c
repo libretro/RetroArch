@@ -333,7 +333,6 @@ void autosave_deinit(void)
    autosave_state.list     = NULL;
    autosave_state.num      = 0;
 }
-#endif
 
 /**
  * autosave_lock:
@@ -342,7 +341,6 @@ void autosave_deinit(void)
  **/
 void autosave_lock(void)
 {
-#ifdef HAVE_THREADS
    unsigned i;
 
    for (i = 0; i < autosave_state.num; i++)
@@ -351,7 +349,6 @@ void autosave_lock(void)
       if (handle)
          slock_lock(handle->lock);
    }
-#endif
 }
 
 /**
@@ -361,7 +358,6 @@ void autosave_lock(void)
  **/
 void autosave_unlock(void)
 {
-#ifdef HAVE_THREADS
    unsigned i;
 
    for (i = 0; i < autosave_state.num; i++)
@@ -370,8 +366,8 @@ void autosave_unlock(void)
       if (handle)
          slock_unlock(handle->lock);
    }
-#endif
 }
+#endif
 
 /**
  * undo_load_state:
