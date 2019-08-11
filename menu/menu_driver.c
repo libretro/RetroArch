@@ -27,10 +27,6 @@
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
-#ifdef WIIU
-#include <wiiu/os/energy.h>
-#endif
-
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
 #endif

@@ -92,6 +92,10 @@
 #include <net/net_http.h>
 #endif
 
+#ifdef WIIU
+#include <wiiu/os/energy.h>
+#endif
+
 #include "config.def.h"
 #include "config.def.keybinds.h"
 
