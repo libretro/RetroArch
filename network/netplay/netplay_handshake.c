@@ -563,10 +563,14 @@ bool netplay_handshake_sync(netplay_t *netplay,
    size_t nicklen, nickmangle = 0;
    bool nick_matched          = false;
 
+#ifdef HAVE_THREADS
    autosave_lock();
+#endif
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
+#ifdef HAVE_THREADS
    autosave_unlock();
+#endif
 
    /* Send basic sync info */
    cmd[0]     = htonl(NETPLAY_CMD_SYNC);
@@ -661,16 +665,22 @@ bool netplay_handshake_sync(netplay_t *netplay,
       return false;
 
    /* And finally, the SRAM */
+#ifdef HAVE_THREADS
    autosave_lock();
+#endif
    if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             mem_info.data, mem_info.size) ||
          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
    {
+#ifdef HAVE_THREADS
       autosave_unlock();
+#endif
       return false;
    }
+#ifdef HAVE_THREADS
    autosave_unlock();
+#endif
 
    /* Now we're ready! */
    connection->mode = NETPLAY_CONNECTION_SPECTATING;
@@ -1071,7 +1081,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Now check the SRAM */
+#ifdef HAVE_THREADS
    autosave_lock();
+#endif
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
@@ -1085,7 +1097,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       {
          RARCH_ERR("%s\n",
                msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+#ifdef HAVE_THREADS
          autosave_unlock();
+#endif
          return false;
       }
 
@@ -1100,7 +1114,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
          {
             RARCH_ERR("%s\n",
                   msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+#ifdef HAVE_THREADS
             autosave_unlock();
+#endif
             return false;
          }
          if (remote_sram_size > sizeof(uint32_t))
@@ -1110,7 +1126,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       }
 
    }
+#ifdef HAVE_THREADS
    autosave_unlock();
+#endif
 
    /* We're ready! */
    *had_input = true;

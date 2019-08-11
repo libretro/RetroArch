@@ -848,9 +848,13 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       {
          netplay->replay_ptr = PREV_PTR(netplay->replay_ptr);
          netplay->replay_frame_count--;
+#ifdef HAVE_THREADS
          autosave_lock();
+#endif
          core_run();
+#ifdef HAVE_THREADS
          autosave_unlock();
+#endif
          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
          netplay->replay_frame_count++;
       }
@@ -888,9 +892,13 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          /* Re-simulate this frame's input */
          netplay_resolve_input(netplay, netplay->replay_ptr, true);
 
+#ifdef HAVE_THREADS
          autosave_lock();
+#endif
          core_run();
+#ifdef HAVE_THREADS
          autosave_unlock();
+#endif
          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
          netplay->replay_frame_count++;
 
