@@ -1434,8 +1434,8 @@ void menu_display_push_quad(
 {
    float vertex[8];
    video_coords_t coords;
-   menu_display_ctx_coord_draw_t coord_draw;
-   video_coord_array_t *ca = menu_display_get_coords_array();
+   const float *coord_draw_ptr   = NULL;
+   video_coord_array_t       *ca = &menu_disp_ca;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1446,14 +1446,13 @@ void menu_display_push_quad(
    vertex[6]             = x2 / (float)width;
    vertex[7]             = y2 / (float)height;
 
-   coord_draw.ptr        = NULL;
-
-   menu_display_get_tex_coords(&coord_draw);
+   if (menu_disp && menu_disp->get_default_tex_coords)
+      coord_draw_ptr     = menu_disp->get_default_tex_coords();
 
    coords.color          = colors;
    coords.vertex         = vertex;
-   coords.tex_coord      = coord_draw.ptr;
-   coords.lut_tex_coord  = coord_draw.ptr;
+   coords.tex_coord      = coord_draw_ptr;
+   coords.lut_tex_coord  = coord_draw_ptr;
    coords.vertices       = 3;
 
    video_coord_array_append(ca, &coords, 3);
