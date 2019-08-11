@@ -147,7 +147,6 @@ static struct autosave_st autosave_state;
  **/
 static void autosave_thread(void *data)
 {
-   bool first_log   = true;
    autosave_t *save = (autosave_t*)data;
 
    while (!save->quit)
@@ -164,40 +163,30 @@ static void autosave_thread(void *data)
       if (differ)
       {
          /* Should probably deal with this more elegantly. */
-         intfstream_t *file = intfstream_open_file(save->path,
+         RFILE *file = filestream_open(save->path,
                RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
          if (file)
          {
-            bool failed = false;
-
-            /* Avoid spamming down stderr ... */
-            if (first_log)
-            {
-               RARCH_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n",
-                     save->path, save->interval);
-               first_log = false;
-            }
-            else
-               RARCH_LOG("SRAM changed ... autosaving ...\n");
-
-            failed |= ((size_t)intfstream_write(file, save->buffer, save->bufsize) != save->bufsize);
-            failed |= (intfstream_flush(file) != 0);
-            failed |= (intfstream_close(file) != 0);
+            filestream_write(file, save->buffer, save->bufsize);
+            filestream_flush(file);
+            filestream_close(file);
             free(file);
-            if (failed)
-               RARCH_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }
       }
 
       slock_lock(save->cond_lock);
 
       if (!save->quit)
+      {
 #if defined(_MSC_VER) && _MSC_VER <= 1200
-         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000);
+         int64_t timeout_us = 1000000;
 #else
-         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000LL);
+         int64_t timeout_us = 1000000LL;
 #endif
+         scond_wait_timeout(save->cond, save->cond_lock,
+               save->interval * timeout_us);
+      }
 
       slock_unlock(save->cond_lock);
    }
