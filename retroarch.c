@@ -2324,34 +2324,6 @@ static bool command_free(command_t *handle)
    return true;
 }
 
-static bool command_network_new(
-      command_t *handle,
-      bool stdin_enable,
-      bool network_enable,
-      uint16_t port)
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   handle->net_fd = -1;
-   if (network_enable && !command_network_init(handle, port))
-      goto error;
-#endif
-
-#ifdef HAVE_STDIN_CMD
-   handle->stdin_enable = stdin_enable;
-   if (stdin_enable && !command_stdin_init(handle))
-      goto error;
-#endif
-
-   return true;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
-error:
-   command_free(handle);
-   return false;
-#endif
-}
-#endif
-
 #ifdef HAVE_STDIN_CMD
 static bool command_stdin_init(command_t *handle)
 {
@@ -2408,6 +2380,35 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
+
+static bool command_network_new(
+      command_t *handle,
+      bool stdin_enable,
+      bool network_enable,
+      uint16_t port)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+   handle->net_fd = -1;
+   if (network_enable && !command_network_init(handle, port))
+      goto error;
+#endif
+
+#ifdef HAVE_STDIN_CMD
+   handle->stdin_enable = stdin_enable;
+   if (stdin_enable && !command_stdin_init(handle))
+      goto error;
+#endif
+
+   return true;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
+error:
+   command_free(handle);
+   return false;
+#endif
+}
+#endif
+
 
 /**
  * command_event_disk_control_set_eject:
