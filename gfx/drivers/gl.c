@@ -1425,42 +1425,6 @@ error:
    return false;
 }
 
-static void gl2_renderchain_bind_vao(
-      gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glBindVertexArray(chain->vao);
-#endif
-}
-
-static void gl2_renderchain_unbind_vao(void)
-{
-#ifndef HAVE_OPENGLES
-   glBindVertexArray(0);
-#endif
-}
-
-static void gl2_renderchain_new_vao(gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glGenVertexArrays(1, &chain->vao);
-#endif
-}
-
-static void gl2_renderchain_free_vao(
-      gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glDeleteVertexArrays(1, &chain->vao);
-#endif
-}
-
 static void gl2_renderchain_restore_default_state(
       gl_t *gl)
 {
@@ -2923,8 +2887,10 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl2_context_bind_hw_render(gl, false);
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
-      gl2_renderchain_bind_vao(chain);
+      glBindVertexArray(chain->vao);
+#endif
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
@@ -2946,15 +2912,9 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      gfx_ctx_mode_t mode;
-
-      gl->should_resize = false;
-
-      mode.width        = width;
-      mode.height       = height;
-
       video_info->cb_set_resize(video_info->context_data,
-            mode.width, mode.height);
+            width, height);
+      gl->should_resize = false;
 
       if (gl->fbo_inited)
       {
@@ -3095,17 +3055,8 @@ static bool gl2_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-
-#if 0
-         osd_params->y               = 0.350f;
-         osd_params->scale           = 0.75f;
-         font_driver_render_msg(video_info, NULL, video_info->chat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-#endif
-      }
    }
 #endif
 
@@ -3179,11 +3130,11 @@ static bool gl2_frame(void *data, const void *frame,
             video_info->hard_sync_frames);
    }
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
-      gl2_renderchain_unbind_vao();
-
+      glBindVertexArray(0);
+#endif
    gl2_context_bind_hw_render(gl, true);
-
    return true;
 }
 
@@ -3258,12 +3209,16 @@ static void gl2_free(void *data)
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
    {
-      gl2_renderchain_unbind_vao();
-      gl2_renderchain_free_vao((gl2_renderchain_data_t*)
-            gl->renderchain_data);
+      gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+         gl->renderchain_data;
+
+      glBindVertexArray(0);
+      glDeleteVertexArrays(1, &chain->vao);
    }
+#endif
 
    gl2_renderchain_deinit_fbo(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
    gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
@@ -3774,9 +3729,15 @@ static void *gl2_init(const video_info_t *video,
 
    gl2_renderchain_restore_default_state(gl);
 
+#ifndef HAVE_OPENGLES
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
-      gl2_renderchain_new_vao((gl2_renderchain_data_t*)
-            gl->renderchain_data);
+   {
+      gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+         gl->renderchain_data;
+
+      glGenVertexArrays(1, &chain->vao);
+   }
+#endif
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);

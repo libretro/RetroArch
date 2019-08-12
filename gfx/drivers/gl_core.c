@@ -1597,10 +1597,10 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
 #endif
 
 static bool gl_core_frame(void *data, const void *frame,
-                          unsigned frame_width, unsigned frame_height,
-                          uint64_t frame_count,
-                          unsigned pitch, const char *msg,
-                          video_frame_info_t *video_info)
+      unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count,
+      unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
 {
    struct gl_core_filter_chain_texture texture;
    struct gl_core_streamed_texture *streamed;
@@ -1684,20 +1684,18 @@ static bool gl_core_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-      }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
       gl_core_render_overlay(gl, video_info);
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
