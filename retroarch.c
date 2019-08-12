@@ -23330,7 +23330,6 @@ static enum runloop_state runloop_check_state(void)
 
       if (focused || !runloop_idle)
       {
-         bool core_type_is_dummy  = current_core_type == CORE_TYPE_DUMMY;
          bool libretro_running    = menu_display_libretro_running();
          menu_handle_t *menu_data = menu_driver_get_ptr();
 
