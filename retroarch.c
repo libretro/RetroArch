@@ -4079,7 +4079,9 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_SEND_DEBUG_INFO:
+#ifdef HAVE_NETWORKING
          rarch_send_debug_info();
+#endif
          break;
       case CMD_EVENT_FPS_TOGGLE:
          {
@@ -24754,11 +24756,9 @@ static void send_debug_info_cb(retro_task_t *task,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 }
-#endif
 
 static void rarch_send_debug_info(void)
 {
-#ifdef HAVE_NETWORKING
    char debug_filepath[PATH_MAX_LENGTH];
    const char *url             = "http://lobby.libretro.com/debuginfo/add/";
    char *info_buf              = NULL;
@@ -24812,8 +24812,8 @@ finish:
       free(param_buf);
    if (info_buf)
       free(info_buf);
-#endif
 }
+#endif
 
 void rarch_log_file_init(void)
 {
