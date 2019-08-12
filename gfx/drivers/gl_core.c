@@ -312,11 +312,9 @@ static void gl_core_render_overlay(gl_core_t *gl, video_frame_info_t *video_info
 }
 #endif
 
-static void gl_core_context_bind_hw_render(gl_core_t *gl, bool enable)
-{
-   if (gl->use_shared_context && gl->ctx_driver->bind_hw_render)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
-}
+#define gl_core_context_bind_hw_render(*gl, enable) \
+   if (gl->use_shared_context) \
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
 static void gl_core_deinit_hw_render(gl_core_t *gl)
 {
