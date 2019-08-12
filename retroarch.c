@@ -11335,25 +11335,6 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 
 /* MENU INPUT */
 #ifdef HAVE_MENU
-/* Set a specific keyboard key.
- *
- * 'down' sets the latch (true would
- * mean the key is being pressed down, while 'false' would mean that
- * the key has been released).
- **/
-void menu_event_kb_set(bool down, enum retro_key key)
-{
-   if (key == RETROK_UNKNOWN)
-   {
-      unsigned i;
-
-      for (i = 0; i < RETROK_LAST; i++)
-         menu_keyboard_key_state[i] = (menu_keyboard_key_state[(enum retro_key)i] & 1) << 1;
-   }
-   else
-      menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
-}
-
 /*
  * This function gets called in order to process all input events
  * for the current frame.
@@ -21719,13 +21700,22 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)down;
    (void)keycode;
    (void)mod;
+   enum retro_key key = (enum retro_key)keycode;
 
 #if 0
    RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
          down, keycode, mod, character);
 #endif
 
-   menu_event_kb_set(down, (enum retro_key)keycode);
+   if (key == RETROK_UNKNOWN)
+   {
+      unsigned i;
+
+      for (i = 0; i < RETROK_LAST; i++)
+         menu_keyboard_key_state[i] = (menu_keyboard_key_state[(enum retro_key)i] & 1) << 1;
+   }
+   else
+      menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
 }
 
 /* Gets called when we want to toggle the menu.
