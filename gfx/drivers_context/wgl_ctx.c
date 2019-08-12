@@ -290,11 +290,18 @@ static void create_gl_context(HWND hwnd, bool *quit)
          versions = gl_versions;
          version_rows = gl_version_rows;
 
-         /* try each version, starting with the highest first */
+         /* only try higher versions when core_context is true */
+         if (!core_context)
+            version_rows = 1;
+
+         /* try versions from highest down to requested version */
          for (i = 0; i < version_rows; i++)
          {
-            attribs[1] = versions[i][0];
-            attribs[3] = versions[i][1];
+            if (core_context)
+            {
+               attribs[1] = versions[i][0];
+               attribs[3] = versions[i][1];
+            }
 
             context = pcreate_context(win32_hdc, NULL, attribs);
 

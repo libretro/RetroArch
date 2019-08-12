@@ -176,17 +176,13 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 }
 #endif
 
-static int x_gl_version_error_handler(Display *dpy, XErrorEvent *event)
+static int x_log_error_handler(Display *dpy, XErrorEvent *event)
 {
-   (void)dpy;
-
-   if (event->error_code == BadMatch && event->request_code == 151 && event->minor_code == 34)
-   {
-      RARCH_WARN("[GLX]: Version %d.%d not supported, trying a lower version.\n", g_major, g_minor);
-      return 0;
-   }
-
-   exit(1);
+   char buf[1024];
+   XGetErrorText(dpy, event->error_code, buf, sizeof buf);
+   RARCH_WARN("[GLX]: X error message: %s, request code: %d, minor code: %d\n",
+         buf, event->request_code, event->minor_code);
+   return 0;
 }
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
@@ -862,8 +858,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
                *aptr = None;
 
-               /* silently ignore failures when requesting GL versions that are too high */
-               old_handler = XSetErrorHandler(x_gl_version_error_handler);
+               old_handler = XSetErrorHandler(x_log_error_handler);
 
                /* In order to support the core info "required_hw_api" field correctly, we should try to init the highest available
                 * version GL context possible. This means trying successively lower versions until it works, because GL has
@@ -887,17 +882,71 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      versions = gl_versions;
                      version_rows = gl_version_rows;
                   }
-                  else if (x_api == GFX_CTX_OPENGL_ES_API)
+                  else
                   {
                      versions = gles_versions;
                      version_rows = gles_version_rows;
                   }
 
-                  /* try each version, starting with the highest first */
+                  /* Mesa/X currently crashes when an unsupported version is
+                   * requested. Since Mesa always seems to return a context
+                   * of the highest compatible version, we start with the
+                   * requested version first.
+                   * The following code can hopefully be removed in the future:
+                   */
+                  RARCH_LOG("[GLX]: Creating context for requested version %u.%u.\n", g_major, g_minor);
+                  x->g_ctx = glx_create_context_attribs(g_x11_dpy,
+                        x->g_fbc, NULL, True, attribs);
+
+                  if (x->g_ctx)
+                  {
+                     const char *version;
+
+                     if (x->g_use_hw_ctx)
+                     {
+                        RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                        x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                              x->g_fbc, x->g_ctx, True, attribs);
+
+                        if (!x->g_hw_ctx)
+                           RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                     }
+
+                     glXMakeContextCurrent(g_x11_dpy,
+                           x->g_glx_win, x->g_glx_win, x->g_ctx);
+
+                     version = (const char*)glGetString(GL_VERSION);
+                     if (strstr(version, " Mesa ") != NULL || !x->g_core_es)
+                     {
+                        /* we are done, break switch case */
+                        XSetErrorHandler(old_handler);
+                        break;
+                     }
+
+                     RARCH_LOG("[GLX]: Not running Mesa, trying higher versions...\n");
+                  }
+                  else
+                  {
+                     RARCH_ERR("[GLX]: Failed to create new context.\n");
+                     goto error;
+                  }
+                  /* end of Mesa workaround / code to be removed */
+
+                  /* only try higher versions when x->g_core_es is true */
+                  if (!x->g_core_es)
+                     version_rows = 1;
+
+                  /* try versions from highest down to requested version */
                   for (i = 0; i < version_rows; i++)
                   {
-                     attribs[1] = versions[i][0];
-                     attribs[3] = versions[i][1];
+                     if (x->g_core_es)
+                     {
+                        attribs[1] = versions[i][0];
+                        attribs[3] = versions[i][1];
+                        RARCH_LOG("[GLX]: Creating context for version %d.%d.\n", versions[i][0], versions[i][1]);
+                     }
+                     else
+                        RARCH_LOG("[GLX]: Creating context for version %u.%u.\n", g_major, g_minor);
 
                      x->g_ctx = glx_create_context_attribs(g_x11_dpy,
                            x->g_fbc, NULL, True, attribs);
@@ -930,10 +979,13 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             {
                x->g_ctx = glXCreateNewContext(g_x11_dpy, x->g_fbc,
                      GLX_RGBA_TYPE, 0, True);
+
                if (x->g_use_hw_ctx)
                {
+                  RARCH_LOG("[GLX]: Creating shared HW context.\n");
                   x->g_hw_ctx = glXCreateNewContext(g_x11_dpy, x->g_fbc,
                         GLX_RGBA_TYPE, x->g_ctx, True);
+
                   if (!x->g_hw_ctx)
                      RARCH_ERR("[GLX]: Failed to create new shared context.\n");
                }
