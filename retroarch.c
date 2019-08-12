@@ -2166,6 +2166,25 @@ error:
    return false;
 }
 
+static bool command_verify(const char *cmd)
+{
+   unsigned i;
+
+   if (command_get_arg(cmd, NULL, NULL))
+      return true;
+
+   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
+   RARCH_ERR("\tValid commands:\n");
+   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      RARCH_ERR("\t\t%s\n", map[i].str);
+
+   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
+
+   return false;
+}
+
+
 static bool command_network_send(const char *cmd_)
 {
    bool ret            = false;
@@ -2291,24 +2310,6 @@ static void command_network_poll(command_t *handle)
 
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
-}
-
-static bool command_verify(const char *cmd)
-{
-   unsigned i;
-
-   if (command_get_arg(cmd, NULL, NULL))
-      return true;
-
-   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("\tValid commands:\n");
-   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
-      RARCH_ERR("\t\t%s\n", map[i].str);
-
-   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
-      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
-
-   return false;
 }
 
 static bool command_free(command_t *handle)
