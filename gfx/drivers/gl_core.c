@@ -312,7 +312,7 @@ static void gl_core_render_overlay(gl_core_t *gl, video_frame_info_t *video_info
 }
 #endif
 
-#define gl_core_context_bind_hw_render(*gl, enable) \
+#define gl_core_context_bind_hw_render(gl, enable) \
    if (gl->use_shared_context) \
       gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
@@ -1629,15 +1629,17 @@ static bool gl_core_frame(void *data, const void *frame,
 
    gl_core_set_viewport(gl, video_info->width, video_info->height, false, true);
 
-   memset(&texture, 0, sizeof(texture));
-
-   texture.width = streamed->width;
-   texture.height = streamed->height;
+   texture.image            = 0;
+   texture.width            = streamed->width;
+   texture.height           = streamed->height;
+   texture.padded_width     = 0;
+   texture.padded_height    = 0;
+   texture.format           = 0;
    if (gl->hw_render_enable)
    {
-      texture.image = gl->hw_render_texture;
-      texture.format = GL_RGBA8;
-      texture.padded_width = gl->hw_render_max_width;
+      texture.image         = gl->hw_render_texture;
+      texture.format        = GL_RGBA8;
+      texture.padded_width  = gl->hw_render_max_width;
       texture.padded_height = gl->hw_render_max_height;
 
 	  if (texture.width == 0)
@@ -1647,9 +1649,9 @@ static bool gl_core_frame(void *data, const void *frame,
    }
    else
    {
-      texture.image = streamed->tex;
-      texture.format = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
-      texture.padded_width = streamed->width;
+      texture.image         = streamed->tex;
+      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
+      texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
