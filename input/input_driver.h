@@ -267,11 +267,6 @@ bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
 
-int16_t input_driver_input_state(
-         rarch_joypad_info_t joypad_info,
-         const struct retro_keybind **retro_keybinds,
-         unsigned port, unsigned device, unsigned index, unsigned id);
-
 float *input_driver_get_float(enum input_action action);
 
 unsigned *input_driver_get_uint(enum input_action action);

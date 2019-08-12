@@ -10703,10 +10703,15 @@ static void input_driver_poll(void)
 
                   if (joypad_driver)
                   {
+                     int16_t ret = 0;
+                     if (current_input && current_input->input_state)
+                        ret = current_input->input_state(current_input_data, joypad_info[i],
+                              libretro_input_binds,
+                              i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+
                      for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
                      {
-                        if (input_driver_input_state(joypad_info[i], libretro_input_binds,
-                                 i, RETRO_DEVICE_JOYPAD, 0, k) != 0)
+                        if (ret & (1 << k))
                         {
                            int16_t      val = input_joypad_analog(
                                  joypad_driver, joypad_info[i], i,
@@ -12399,18 +12404,6 @@ static void input_keys_pressed(input_bits_t *p_new_state)
          BIT256_SET_PTR(p_new_state, i);
       }
    }
-}
-
-int16_t input_driver_input_state(
-         rarch_joypad_info_t joypad_info,
-         const struct retro_keybind **retro_keybinds,
-         unsigned port, unsigned device, unsigned index, unsigned id)
-{
-   if (current_input && current_input->input_state)
-      return current_input->input_state(current_input_data, joypad_info,
-            retro_keybinds,
-            port, device, index, id);
-   return 0;
 }
 
 void *input_driver_get_data(void)
