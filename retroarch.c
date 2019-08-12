@@ -10643,11 +10643,6 @@ static void input_driver_poll(void)
    settings_t *settings           = configuration_settings;
    uint8_t max_users              = (uint8_t)input_driver_max_users;
    input_bits_t current_inputs[MAX_USERS];
-   static unsigned prev_frame_count = 0;
-
-   if (video_driver_frame_count == prev_frame_count)
-      return;
-   prev_frame_count                 = video_driver_frame_count;
 
    current_input->poll(current_input_data);
 
