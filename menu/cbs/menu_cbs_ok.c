@@ -300,6 +300,7 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static const char *get_default_shader_dir(void)
 {
    settings_t *settings       = config_get_ptr();
@@ -341,6 +342,7 @@ static const char *get_default_shader_dir(void)
 
    return def_shader_dir;
 }
+#endif
 
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
