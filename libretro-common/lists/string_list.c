@@ -260,6 +260,59 @@ error:
 }
 
 /**
+ * string_separate:
+ * @str              : string to turn into a string list
+ * @delim            : delimiter character to use for separating the string.
+ *
+ * Creates a new string list based on string @str, delimited by @delim.
+ * Includes empty strings - i.e. two adjacent delimiters will resolve
+ * to a string list element of "".
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+struct string_list *string_separate(char *str, const char *delim)
+{
+   char *token              = NULL;
+   char **str_ptr           = NULL;
+   struct string_list *list = NULL;
+
+   /* Sanity check */
+   if (!str || string_is_empty(delim))
+      goto error;
+
+   str_ptr = &str;
+   list    = string_list_new();
+
+   if (!list)
+      goto error;
+
+   token = string_tokenize(str_ptr, delim);
+   while (token)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+
+      if (!string_list_append(list, token, attr))
+         goto error;
+
+      free(token);
+      token = NULL;
+
+      token = string_tokenize(str_ptr, delim);
+   }
+
+   return list;
+
+error:
+   if (token)
+      free(token);
+   if (list)
+      string_list_free(list);
+   return NULL;
+}
+
+/**
  * string_list_find_elem:
  * @list             : pointer to string list
  * @elem             : element to find inside the string list.
