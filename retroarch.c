@@ -10306,9 +10306,9 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       if (ol_state->analog[j])
          continue;
 
-      if (input_overlay_key_pressed(ol, bind_plus))
+      if ((BIT256_GET(ol->overlay_state.buttons, bind_plus)))
          ol_state->analog[j] += 0x7fff;
-      if (input_overlay_key_pressed(ol, bind_minus))
+      if ((BIT256_GET(ol->overlay_state.buttons, bind_minus)))
          ol_state->analog[j] -= 0x7fff;
    }
 
@@ -10872,7 +10872,7 @@ static int16_t input_state_device(
                   int16_t res_overlay  = 0;
                   if (overlay_ptr && port == 0 && overlay_ptr->alive)
                   {
-                     if (input_overlay_key_pressed(overlay_ptr, id))
+                     if ((BIT256_GET(overlay_ptr->overlay_state.buttons, id)))
                         res_overlay |= 1;
                      if (overlay_ptr->alive)
                         res |= res_overlay;
@@ -11182,7 +11182,7 @@ static INLINE bool input_keys_pressed_other_sources(unsigned i,
 {
 #ifdef HAVE_OVERLAY
    if (overlay_ptr &&
-         input_overlay_key_pressed(overlay_ptr, i))
+         ((BIT256_GET(overlay_ptr->overlay_state.buttons, i))))
       return true;
 #endif
 
