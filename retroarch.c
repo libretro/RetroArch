@@ -2032,7 +2032,9 @@ bool command_set_shader(const char *arg)
 #endif
 }
 
-#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#if defined(HAVE_COMMAND)
+
+#if defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
@@ -2088,7 +2090,7 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -2164,23 +2166,55 @@ error:
    return false;
 }
 
-static bool command_verify(const char *cmd)
+static bool command_network_send(const char *cmd_)
 {
-   unsigned i;
+   bool ret            = false;
+   char *command       = NULL;
+   char *save          = NULL;
+   const char *cmd     = NULL;
+   const char *host    = NULL;
+   const char *port_   = NULL;
+   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
 
-   if (command_get_arg(cmd, NULL, NULL))
+   if (!network_init())
+      return false;
+
+   if (!(command = strdup(cmd_)))
+      return false;
+
+   cmd = strtok_r(command, ";", &save);
+   if (cmd)
+      host = strtok_r(NULL, ";", &save);
+   if (host)
+      port_ = strtok_r(NULL, ";", &save);
+
+   if (!host)
+   {
+#ifdef _WIN32
+      host = "127.0.0.1";
+#else
+      host = "localhost";
+#endif
+   }
+
+   if (port_)
+      port = strtoul(port_, NULL, 0);
+
+   if (cmd)
+   {
+      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+            msg_hash_to_str(MSG_SENDING_COMMAND),
+            cmd, host, (unsigned short)port);
+
+      ret = command_verify(cmd) && udp_send_packet(host, port, cmd);
+   }
+   free(command);
+
+   if (ret)
       return true;
-
-   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("\tValid commands:\n");
-   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
-      RARCH_ERR("\t\t%s\n", map[i].str);
-
-   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
-      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
-
    return false;
 }
+#endif
 
 static void command_parse_sub_msg(command_t *handle, const char *tok)
 {
@@ -2258,58 +2292,64 @@ static void command_network_poll(command_t *handle)
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
-#endif
 
-static bool command_network_send(const char *cmd_)
+static bool command_verify(const char *cmd)
 {
-#if defined(HAVE_COMMAND) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   bool ret            = false;
-   char *command       = NULL;
-   char *save          = NULL;
-   const char *cmd     = NULL;
-   const char *host    = NULL;
-   const char *port_   = NULL;
-   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
+   unsigned i;
 
-   if (!network_init())
-      return false;
-
-   if (!(command = strdup(cmd_)))
-      return false;
-
-   cmd = strtok_r(command, ";", &save);
-   if (cmd)
-      host = strtok_r(NULL, ";", &save);
-   if (host)
-      port_ = strtok_r(NULL, ";", &save);
-
-   if (!host)
-   {
-#ifdef _WIN32
-      host = "127.0.0.1";
-#else
-      host = "localhost";
-#endif
-   }
-
-   if (port_)
-      port = strtoul(port_, NULL, 0);
-
-   if (cmd)
-   {
-      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
-            msg_hash_to_str(MSG_SENDING_COMMAND),
-            cmd, host, (unsigned short)port);
-
-      ret = command_verify(cmd) && udp_send_packet(host, port, cmd);
-   }
-   free(command);
-
-   if (ret)
+   if (command_get_arg(cmd, NULL, NULL))
       return true;
-#endif
+
+   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
+   RARCH_ERR("\tValid commands:\n");
+   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      RARCH_ERR("\t\t%s\n", map[i].str);
+
+   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
+
    return false;
 }
+
+static bool command_free(command_t *handle)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+   if (handle && handle->net_fd >= 0)
+      socket_close(handle->net_fd);
+#endif
+
+   free(handle);
+
+   return true;
+}
+
+static bool command_network_new(
+      command_t *handle,
+      bool stdin_enable,
+      bool network_enable,
+      uint16_t port)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+   handle->net_fd = -1;
+   if (network_enable && !command_network_init(handle, port))
+      goto error;
+#endif
+
+#ifdef HAVE_STDIN_CMD
+   handle->stdin_enable = stdin_enable;
+   if (stdin_enable && !command_stdin_init(handle))
+      goto error;
+#endif
+
+   return true;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
+error:
+   command_free(handle);
+   return false;
+#endif
+}
+#endif
 
 #ifdef HAVE_STDIN_CMD
 static bool command_stdin_init(command_t *handle)
@@ -2324,49 +2364,7 @@ static bool command_stdin_init(command_t *handle)
    handle->stdin_enable = true;
    return true;
 }
-#endif
 
-static bool command_free(command_t *handle)
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-   if (handle && handle->net_fd >= 0)
-      socket_close(handle->net_fd);
-#endif
-
-   free(handle);
-
-   return true;
-}
-
-
-static bool command_network_new(
-      command_t *handle,
-      bool stdin_enable,
-      bool network_enable,
-      uint16_t port)
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-   handle->net_fd = -1;
-   if (network_enable && !command_network_init(handle, port))
-      goto error;
-#endif
-
-#ifdef HAVE_STDIN_CMD
-   handle->stdin_enable = stdin_enable;
-   if (stdin_enable && !command_stdin_init(handle))
-      goto error;
-#endif
-
-   return true;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND) || defined(HAVE_STDIN_CMD)
-error:
-   command_free(handle);
-   return false;
-#endif
-}
-
-#ifdef HAVE_STDIN_CMD
 static void command_stdin_poll(command_t *handle)
 {
    ptrdiff_t msg_len;
@@ -21134,7 +21132,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
                break;
 
-   #ifdef HAVE_NETWORKING
+#ifdef HAVE_NETWORKING
             case 'H':
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
@@ -21189,18 +21187,18 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
                break;
 
-   #if defined(HAVE_NETWORK_CMD)
+#if defined(HAVE_NETWORK_CMD)
             case RA_OPT_COMMAND:
-   #ifdef HAVE_COMMAND
+#ifdef HAVE_COMMAND
                if (command_network_send((const char*)optarg))
                   exit(0);
                else
                   retroarch_fail(1, "network_cmd_send()");
-   #endif
+#endif
                break;
-   #endif
+#endif
 
-   #endif
+#endif
 
             case RA_OPT_BPS:
                strlcpy(global->name.bps, optarg,
