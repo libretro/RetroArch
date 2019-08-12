@@ -520,7 +520,7 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 }
 
 static void gl_core_set_projection(gl_core_t *gl,
-                                   const struct video_ortho *ortho, bool allow_rotate)
+      const struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -551,18 +551,16 @@ static void gl_core_set_projection(gl_core_t *gl,
 }
 
 static void gl_core_set_viewport(gl_core_t *gl,
-                                 unsigned viewport_width,
-                                 unsigned viewport_height,
-                                 bool force_full, bool allow_rotate)
+      video_frame_info_t *video_info,
+      unsigned viewport_width,
+      unsigned viewport_height,
+      bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   settings_t *settings     = config_get_ptr();
-
-   video_driver_get_size(&width, &height);
+   unsigned height          = video_info->height;
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
@@ -570,11 +568,11 @@ static void gl_core_set_viewport(gl_core_t *gl,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_info->scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-                                        viewport_width, viewport_height,
-                                        video_driver_get_aspect_ratio(), gl->keep_aspect);
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), gl->keep_aspect);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
@@ -583,7 +581,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
          /* GL has bottom-left origin viewport. */
@@ -930,6 +928,20 @@ static void gl_core_begin_debug(gl_core_t *gl)
 }
 #endif
 
+static void gl_core_set_viewport_wrapper(void *data,
+      unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   video_frame_info_t video_info;
+   gl_core_t *gl = (gl_core_t*)data;
+
+   video_driver_build_info(&video_info);
+
+   gl_core_set_viewport(gl, &video_info,
+         viewport_width, viewport_height, force_full, allow_rotate);
+}
+
+
 static void *gl_core_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -1076,7 +1088,7 @@ static void *gl_core_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   gl_core_set_viewport(gl, temp_width, temp_height, false, true);
+   gl_core_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
 
    inp.input      = input;
    inp.input_data = input_data;
@@ -1403,13 +1415,6 @@ static bool gl_core_set_shader(void *data,
    return true;
 }
 
-static void gl_core_set_viewport_wrapper(void *data, unsigned viewport_width,
-                                         unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-   gl_core_t *gl = (gl_core_t*)data;
-   gl_core_set_viewport(gl, viewport_width, viewport_height, force_full, allow_rotate);
-}
-
 static void gl_core_set_rotation(void *data, unsigned rotation)
 {
    gl_core_t *gl = (gl_core_t*)data;
@@ -1627,7 +1632,7 @@ static bool gl_core_frame(void *data, const void *frame,
       gl->should_resize = false;
    }
 
-   gl_core_set_viewport(gl, video_info->width, video_info->height, false, true);
+   gl_core_set_viewport(gl, video_info, video_info->width, video_info->height, false, true);
 
    texture.image            = 0;
    texture.width            = streamed->width;
