@@ -35,8 +35,6 @@
 #endif
 #include "../../verbosity.h"
 
-using namespace std;
-
 static void get_include_file(
       const char *line, char *include_file, size_t len)
 {
@@ -206,13 +204,13 @@ error:
    return false;
 }
 
-static string build_stage_source(const struct string_list *lines, const char *stage)
+static std::string build_stage_source(const struct string_list *lines, const char *stage)
 {
    /* Note: since we have to return a std::string anyway,
     * there is nothing to be gained from trying to replace
     * this ostringstream with a C-based alternative
     * (would require a rewrite of deps/glslang/glslang.cpp) */
-   ostringstream str;
+   std::ostringstream str;
    bool active = true;
    size_t i;
 
