@@ -923,6 +923,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                         break;
                      }
 
+                     glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+                     glXDestroyContext(g_x11_dpy, x->g_ctx);
+
                      RARCH_LOG("[GLX]: Not running Mesa, trying higher versions...\n");
                   }
                   else
