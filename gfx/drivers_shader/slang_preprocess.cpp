@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include <compat/strl.h>
+#include <lists/string_list.h>
 
 #include "../../verbosity.h"
 
@@ -93,11 +94,23 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
    glslang_meta meta;
-   vector<string> lines;
+   bool ret                  = false;
+   struct string_list *lines = string_list_new();
 
-   if (!glslang_read_shader_file(shader_path, &lines, true))
-      return false;
+   if (!lines)
+      goto end;
+
+   if (!glslang_read_shader_file(shader_path, lines, true))
+      goto end;
    if (!glslang_parse_meta(lines, &meta))
-      return false;
-   return slang_preprocess_parse_parameters(meta, shader);
+      goto end;
+
+   ret = slang_preprocess_parse_parameters(meta, shader);
+
+end:
+
+   if (lines)
+      string_list_free(lines);
+
+   return ret;
 }
