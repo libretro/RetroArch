@@ -171,7 +171,6 @@ static void autosave_thread(void *data)
             filestream_write(file, save->buffer, save->bufsize);
             filestream_flush(file);
             filestream_close(file);
-            free(file);
          }
       }
 
