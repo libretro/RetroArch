@@ -19527,12 +19527,13 @@ void driver_set_nonblock_state(void)
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_active && video_driver_get_ptr_internal(false))
    {
-      bool video_nonblock        = enable;
-
-      if (!settings->bools.video_vsync || runloop_force_nonblock)
-         video_nonblock = true;
       if (current_video->set_nonblock_state)
+      {
+         bool video_nonblock        = enable;
+         if (!settings->bools.video_vsync || runloop_force_nonblock)
+            video_nonblock = true;
          current_video->set_nonblock_state(video_driver_data, video_nonblock);
+      }
    }
 
    if (audio_driver_active && audio_driver_context_audio_data)

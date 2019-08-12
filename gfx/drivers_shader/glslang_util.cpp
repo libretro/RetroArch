@@ -40,10 +40,8 @@ using namespace std;
 static void get_include_file(
       const char *line, char *include_file, size_t len)
 {
-   char *start = NULL;
    char *end   = NULL;
-
-   start = (char*)strchr(line, '\"');
+   char *start = (char*)strchr(line, '\"');
 
    if (!start)
       return;
