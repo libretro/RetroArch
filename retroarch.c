@@ -12382,12 +12382,11 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    }
 
    /* Check the libretro input first */
-   if (!input_driver_block_libretro_input)
    {
       int16_t ret = current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed = binds[i].valid && (ret & (1 <<  i));
+         bool bit_pressed = !input_driver_block_libretro_input && binds[i].valid && (ret & (1 <<  i));
          if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
