@@ -586,36 +586,6 @@ static bool dispmanx_gfx_set_shader(void *data,
    return false;
 }
 
-static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
-{
-   /* Due to RetroArch setting the data pointer to NULL internally
-    * on core change, data is going to be NULL here after we load
-    * a new core from the GUI, so we can't count on accessing it
-    * to store the aspect ratio we are going to use, so we tell RA
-    * to keep track of the new aspect ratio and we get it in gfx_frame()
-    * with video_driver_get_aspect_ratio() to find out if it has changed. */
-
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
-}
-
 static uint32_t dispmanx_get_flags(void *data)
 {
    uint32_t             flags = 0;
@@ -635,7 +605,7 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   dispmanx_set_aspect_ratio,
+   NULL, /* set_aspect_ratio */
    NULL, /* dispmanx_apply_state_changes */
    dispmanx_set_texture_frame,
    dispmanx_set_texture_enable,

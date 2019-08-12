@@ -17492,10 +17492,9 @@ void video_driver_set_aspect_ratio(void)
    video_driver_set_aspect_ratio_value(
             aspectratio_lut[aspect_ratio_idx].value);
 
-   if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
-      return;
-   video_driver_poke->set_aspect_ratio(
-         video_driver_data, aspect_ratio_idx);
+   if (video_driver_poke && video_driver_poke->set_aspect_ratio)
+      video_driver_poke->set_aspect_ratio(
+            video_driver_data, aspect_ratio_idx);
 }
 
 void video_driver_update_viewport(

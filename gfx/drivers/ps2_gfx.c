@@ -391,16 +391,6 @@ static void ps2_set_filtering(void *data, unsigned index, bool smooth)
    ps2->menu_filter = smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
 }
 
-static void ps2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
-{
-   ps2_video_t *ps2 = (ps2_video_t*)data;
-}
-
-static void ps2_apply_state_changes(void *data)
-{
-   ps2_video_t *ps2 = (ps2_video_t*)data;
-}
-
 static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
@@ -458,8 +448,8 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   ps2_set_aspect_ratio,
-   ps2_apply_state_changes,
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
    ps2_set_texture_frame,
    ps2_set_texture_enable,
    ps2_set_osd_msg,             /* set_osd_msg */

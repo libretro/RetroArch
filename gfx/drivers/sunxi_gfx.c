@@ -916,7 +916,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 }
 
-static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
+static void sunxi_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    float              new_aspect = aspectratio_lut[aspect_ratio_idx].value;
