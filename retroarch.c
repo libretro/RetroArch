@@ -17991,7 +17991,7 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_info.fps_show)
       {
          snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-               "FPS: %6.1f", last_fps);
+               "FPS: %6.2f", last_fps);
          if (video_info.framecount_show)
             strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
       }
