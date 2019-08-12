@@ -1553,10 +1553,6 @@ bool video_driver_prefer_viewport_read(void);
 
 bool video_driver_supports_read_frame_raw(void);
 
-void video_driver_set_viewport_config(void);
-
-void video_driver_set_viewport_square_pixel(void);
-
 void video_driver_set_viewport_core(void);
 
 void video_driver_reset_custom_viewport(void);

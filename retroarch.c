@@ -16749,6 +16749,65 @@ error:
    return false;
 }
 
+static void video_driver_set_viewport_config(void)
+{
+   settings_t *settings = configuration_settings;
+
+   if (settings->floats.video_aspect_ratio < 0.0f)
+   {
+      struct retro_game_geometry *geom = &video_driver_av_info.geometry;
+
+      if (geom->aspect_ratio > 0.0f &&
+            settings->bools.video_aspect_ratio_auto)
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
+      else
+      {
+         unsigned base_width  = geom->base_width;
+         unsigned base_height = geom->base_height;
+
+         /* Get around division by zero errors */
+         if (base_width == 0)
+            base_width = 1;
+         if (base_height == 0)
+            base_height = 1;
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value =
+            (float)base_width / base_height; /* 1:1 PAR. */
+      }
+   }
+   else
+      aspectratio_lut[ASPECT_RATIO_CONFIG].value =
+         settings->floats.video_aspect_ratio;
+}
+
+static void video_driver_set_viewport_square_pixel(void)
+{
+   unsigned len, highest, i, aspect_x, aspect_y;
+   struct retro_game_geometry *geom  = &video_driver_av_info.geometry;
+   unsigned width                    = geom->base_width;
+   unsigned height                   = geom->base_height;
+
+   if (width == 0 || height == 0)
+      return;
+
+   len      = MIN(width, height);
+   highest  = 1;
+
+   for (i = 1; i < len; i++)
+   {
+      if ((width % i) == 0 && (height % i) == 0)
+         highest = i;
+   }
+
+   aspect_x = width / highest;
+   aspect_y = height / highest;
+
+   snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
+         sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
+         "1:1 PAR (%u:%u DAR)", aspect_x, aspect_y);
+
+   aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
+}
+
 static bool video_driver_init_internal(bool *video_is_threaded)
 {
    video_info_t video;
@@ -17330,65 +17389,6 @@ bool video_driver_supports_read_frame_raw(void)
    if (current_video->read_frame_raw)
       return true;
    return false;
-}
-
-void video_driver_set_viewport_config(void)
-{
-   settings_t *settings = configuration_settings;
-
-   if (settings->floats.video_aspect_ratio < 0.0f)
-   {
-      struct retro_game_geometry *geom = &video_driver_av_info.geometry;
-
-      if (geom->aspect_ratio > 0.0f &&
-            settings->bools.video_aspect_ratio_auto)
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
-      else
-      {
-         unsigned base_width  = geom->base_width;
-         unsigned base_height = geom->base_height;
-
-         /* Get around division by zero errors */
-         if (base_width == 0)
-            base_width = 1;
-         if (base_height == 0)
-            base_height = 1;
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value =
-            (float)base_width / base_height; /* 1:1 PAR. */
-      }
-   }
-   else
-      aspectratio_lut[ASPECT_RATIO_CONFIG].value =
-         settings->floats.video_aspect_ratio;
-}
-
-void video_driver_set_viewport_square_pixel(void)
-{
-   unsigned len, highest, i, aspect_x, aspect_y;
-   struct retro_game_geometry *geom  = &video_driver_av_info.geometry;
-   unsigned width                    = geom->base_width;
-   unsigned height                   = geom->base_height;
-
-   if (width == 0 || height == 0)
-      return;
-
-   len      = MIN(width, height);
-   highest  = 1;
-
-   for (i = 1; i < len; i++)
-   {
-      if ((width % i) == 0 && (height % i) == 0)
-         highest = i;
-   }
-
-   aspect_x = width / highest;
-   aspect_y = height / highest;
-
-   snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
-         sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "1:1 PAR (%u:%u DAR)", aspect_x, aspect_y);
-
-   aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
 
 void video_driver_set_viewport_core(void)
