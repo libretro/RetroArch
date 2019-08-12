@@ -21693,15 +21693,7 @@ static bool retroarch_is_on_main_thread(void)
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-   (void)down;
-   (void)keycode;
-   (void)mod;
    enum retro_key key = (enum retro_key)keycode;
-
-#if 0
-   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
-         down, keycode, mod, character);
-#endif
 
    if (key == RETROK_UNKNOWN)
    {
