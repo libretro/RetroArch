@@ -1083,6 +1083,8 @@ static void *gl_core_init(const video_info_t *video,
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
    video_driver_get_size(&temp_width, &temp_height);
+   gl->video_width  = temp_width;
+   gl->video_height = temp_height;
 
    RARCH_LOG("[GLCore]: Using resolution %ux%u\n", temp_width, temp_height);
 
@@ -1325,19 +1327,16 @@ static void gl_core_free(void *data)
 
 static bool gl_core_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    gl_core_t *gl        = (gl_core_t*)data;
    bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
-
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
+   unsigned temp_width  = gl->video_width;
+   unsigned temp_height = gl->video_height;
 
    gl->ctx_driver->check_window(gl->ctx_data,
-                                &quit, &resize, &temp_width, &temp_height, is_shutdown);
+         &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
    if (quit)
       gl->quitting = true;
@@ -1347,7 +1346,11 @@ static bool gl_core_alive(void *data)
    ret = !gl->quitting;
 
    if (temp_width != 0 && temp_height != 0)
+   {
       video_driver_set_size(&temp_width, &temp_height);
+      gl->video_width  = temp_width;
+      gl->video_height = temp_height;
+   }
 
    return ret;
 }
@@ -1428,11 +1431,11 @@ static void gl_core_set_rotation(void *data, unsigned rotation)
 
 static void gl_core_viewport_info(void *data, struct video_viewport *vp)
 {
-   unsigned width, height;
    unsigned top_y, top_dist;
-   gl_core_t *gl = (gl_core_t*)data;
+   gl_core_t *gl   = (gl_core_t*)data;
+   unsigned width  = gl->video_width;
+   unsigned height = gl->video_height;
 
-   video_driver_get_size(&width, &height);
 
    *vp             = gl->vp;
    vp->full_width  = width;

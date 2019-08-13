@@ -103,6 +103,9 @@ typedef struct gl_core
       struct gl_core_buffer_locations bokeh_loc;
    } pipelines;
 
+   unsigned video_width;
+   unsigned video_height;
+
    GLuint *overlay_tex;
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
