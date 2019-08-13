@@ -646,9 +646,11 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
 
 /* Called on each frame. We use this callback to implement the touch scroll
    with acceleration */
-static void materialui_render(void *data, bool is_idle)
+static void materialui_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
-   unsigned bottom, width, height, header_height;
+   unsigned bottom, header_height;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
    settings_t        *settings = config_get_ptr();
@@ -656,8 +658,6 @@ static void materialui_render(void *data, bool is_idle)
 
    if (!mui)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (mui->need_compute)
    {

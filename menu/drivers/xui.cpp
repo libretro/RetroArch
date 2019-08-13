@@ -519,7 +519,9 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void xui_render(void *data, bool is_idle)
+static void xui_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
    size_t end, i, selection, fb_pitch;
    unsigned fb_width, fb_height;

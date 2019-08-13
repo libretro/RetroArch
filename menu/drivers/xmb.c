@@ -3203,7 +3203,8 @@ static void xmb_draw_items(
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures);
 
-static void xmb_render(void *data, bool is_idle)
+static void xmb_render(void *data, 
+      unsigned width, unsigned height, bool is_idle)
 {
    size_t i;
    settings_t   *settings   = config_get_ptr();
@@ -3212,13 +3213,10 @@ static void xmb_render(void *data, bool is_idle)
    bool mouse_enable        = settings->bools.menu_mouse_enable;
    bool pointer_enable      = settings->bools.menu_pointer_enable;
 
-   unsigned width, height;
    float scale_factor;
 
-    if (!xmb)
+   if (!xmb)
       return;
-
-   video_driver_get_size(&width, &height);
 
    scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
 
@@ -3230,14 +3228,11 @@ static void xmb_render(void *data, bool is_idle)
 
    if (pointer_enable || mouse_enable)
    {
-      unsigned height;
       size_t selection  = menu_navigation_get_selection();
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
          + (xmb->cursor_size/2);
       unsigned first = 0, last = end;
-
-      video_driver_get_size(NULL, &height);
 
       if (height)
          xmb_calculate_visible_range(xmb, height,

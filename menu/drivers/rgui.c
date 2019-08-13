@@ -3065,7 +3065,9 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
 static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update);
 #endif
 
-static void rgui_render(void *data, bool is_idle)
+static void rgui_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
    static const char* const ticker_spacer = RGUI_TICKER_SPACER;
