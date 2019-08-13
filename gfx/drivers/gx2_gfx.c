@@ -91,7 +91,6 @@ static void wiiu_set_projection(wiiu_video_t *wiiu)
 
 static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
 {
-   unsigned width, height;
    int x                    = 0;
    int y                    = 0;
    unsigned viewport_width  = wiiu->color_buffer.surface.width;
@@ -99,13 +98,11 @@ static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
    float device_aspect      = (float)viewport_width / viewport_height;
    settings_t *settings     = config_get_ptr();
 
-   video_driver_get_size(&width, &height);
-
    if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
-                                        viewport_width, viewport_height,
-                                        video_driver_get_aspect_ratio(), wiiu->keep_aspect);
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), wiiu->keep_aspect);
       viewport_width  = wiiu->vp.width;
       viewport_height = wiiu->vp.height;
    }
