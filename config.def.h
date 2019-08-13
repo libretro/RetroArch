@@ -518,11 +518,7 @@ static unsigned input_backtouch_toggle       = false;
 #define DEFAULT_CROP_OVERSCAN true
 
 /* Font size for on-screen messages. */
-#if defined(HAVE_LIBDBGFONT)
-#define DEFAULT_FONT_SIZE 1.0f
-#else
 #define DEFAULT_FONT_SIZE 32
-#endif
 
 /* Offset for where messages will be placed on-screen.
  * Values are in range [0.0, 1.0]. */

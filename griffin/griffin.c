@@ -516,10 +516,6 @@ FONTS
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
-#if defined(HAVE_LIBDBGFONT)
-#include "../gfx/drivers_font/ps_libdbgfont.c"
-#endif
-
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers_font/gl1_raster_font.c"
 #endif

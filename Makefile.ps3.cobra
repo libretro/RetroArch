@@ -85,9 +85,6 @@ endif
 ifeq ($(HAVE_FREETYPE), 1)
 DEFINES			+= -DHAVE_FREETYPE
 FONT_LIBS		:= -lfontFT_stub -lfreetype_stub
-else
-DEFINES			+= -DHAVE_LIBDBGFONT
-FONT_LIBS		:= -ldbgfont
 endif
 
 ifeq ($(CELL_BUILD_TOOLS), SNC)

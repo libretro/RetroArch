@@ -24,12 +24,6 @@
 #include <sys/spu_initialize.h>
 #endif
 
-#ifdef HAVE_LIBDBGFONT
-#ifndef __PSL1GHT__
-#include <cell/dbgfont.h>
-#endif
-#endif
-
 #include <compat/strl.h>
 
 #include "../../configuration.h"
@@ -183,9 +177,6 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
 static void gfx_ctx_ps3_swap_buffers(void *data, void *data2)
 {
    (void)data;
-#ifdef HAVE_LIBDBGFONT
-   cellDbgFontDraw();
-#endif
 #ifdef HAVE_PSGL
    psglSwap();
 #endif
