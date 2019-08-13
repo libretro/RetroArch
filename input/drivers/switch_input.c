@@ -398,7 +398,7 @@ static int16_t switch_input_state(void *data,
                }
                if (((float)abs(sw->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
                {
-                  ret |= (1 << 1);
+                  ret |= (1 << i);
                   continue;
                }
             }
