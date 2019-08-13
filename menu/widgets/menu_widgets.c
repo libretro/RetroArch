@@ -806,7 +806,7 @@ static void menu_widgets_hourglass_tick(void *userdata)
    menu_animation_push(&entry);
 }
 
-void menu_widgets_iterate(void)
+void menu_widgets_iterate(unsigned width, unsigned height)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
@@ -891,12 +891,11 @@ void menu_widgets_iterate(void)
    if (screenshot_filename[0] != '\0')
    {
       menu_timer_ctx_entry_t timer;
-      unsigned width;
-
       video_driver_texture_unload(&screenshot_texture);
-      menu_display_reset_textures_list(screenshot_filename, "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR, &screenshot_texture_width, &screenshot_texture_height);
 
-      video_driver_get_size(&width, NULL);
+      menu_display_reset_textures_list(screenshot_filename,
+            "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR,
+            &screenshot_texture_width, &screenshot_texture_height);
 
       screenshot_height = settings->floats.video_font_size * 4;
       screenshot_width  = width;
@@ -1755,26 +1754,20 @@ err:
    menu_widgets_free();
 }
 
-void menu_widgets_context_reset(bool is_threaded)
+void menu_widgets_context_reset(bool is_threaded,
+      unsigned width, unsigned height)
 {
+   int i;
    char xmb_path[PATH_MAX_LENGTH];
+   char monochrome_png_path[PATH_MAX_LENGTH];
    char menu_widgets_path[PATH_MAX_LENGTH];
    char theme_path[PATH_MAX_LENGTH];
-   int i;
-
-   char monochrome_png_path[PATH_MAX_LENGTH];
-
    char ozone_path[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
-
    settings_t *settings = config_get_ptr();
-
-   unsigned video_info_width;
 
    if (!menu_widgets_inited)
       return;
-
-   video_driver_get_size(&video_info_width, NULL);
 
    /* Textures paths */
    fill_pathname_join(
@@ -1863,7 +1856,7 @@ void menu_widgets_context_reset(bool is_threaded)
    }
 
    msg_queue_text_scale_factor      = 0.69f;
-   msg_queue_base_width             = video_info_width / 4;
+   msg_queue_base_width             = width / 4;
    msg_queue_spacing                = msg_queue_height / 3;
    msg_queue_glyph_width            = glyph_width * msg_queue_text_scale_factor;
    msg_queue_rect_start_x           = msg_queue_spacing + msg_queue_icon_size_x;

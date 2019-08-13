@@ -53,7 +53,7 @@ bool menu_widgets_volume_update_and_show(void);
 
 bool menu_widgets_set_fps_text(char *fps_text);
 
-void menu_widgets_iterate(void);
+void menu_widgets_iterate(unsigned width, unsigned height);
 
 bool menu_widgets_set_paused(bool is_paused);
 bool menu_widgets_set_fast_forward(bool is_fast_forward);
@@ -69,7 +69,8 @@ void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
 void menu_widgets_cleanup_load_content_animation(void);
 
-void menu_widgets_context_reset(bool is_threaded);
+void menu_widgets_context_reset(bool is_threaded,
+      unsigned width, unsigned height);
 
 void menu_widgets_context_destroy(void);
 

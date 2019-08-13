@@ -19648,7 +19648,8 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       menu_widgets_init(video_is_threaded);
-      menu_widgets_context_reset(video_is_threaded);
+      menu_widgets_context_reset(video_is_threaded,
+            video_driver_width, video_driver_height);
    }
 #endif
 
@@ -23234,7 +23235,7 @@ static enum runloop_state runloop_check_state(void)
    if (menu_widgets_ready())
    {
       runloop_msg_queue_lock();
-      menu_widgets_iterate();
+      menu_widgets_iterate(video_driver_width, video_driver_height);
       runloop_msg_queue_unlock();
    }
 #endif
