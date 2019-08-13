@@ -1216,6 +1216,8 @@ static void *vulkan_init(const video_info_t *video,
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
    video_driver_get_size(&temp_width, &temp_height);
+   vk->video_width       = temp_width;
+   vk->video_height      = temp_height;
 
    RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
 
@@ -1317,15 +1319,13 @@ static void vulkan_set_nonblock_state(void *data, bool state)
 
 static bool vulkan_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    vk_t *vk             = (vk_t*)data;
    bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
-
-   video_driver_get_size(&temp_width, &temp_height);
+   unsigned temp_width  = vk->video_width;
+   unsigned temp_height = vk->video_height;
 
    vk->ctx_driver->check_window(vk->ctx_data,
             &quit, &resize, &temp_width, &temp_height, is_shutdown);
@@ -1338,7 +1338,11 @@ static bool vulkan_alive(void *data)
    ret = !vk->quitting;
 
    if (temp_width != 0 && temp_height != 0)
+   {
       video_driver_set_size(&temp_width, &temp_height);
+      vk->video_width  = temp_width;
+      vk->video_height = temp_height;
+   }
 
    return ret;
 }
@@ -1434,15 +1438,14 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
    int x                  = 0;
    int y                  = 0;
    float device_aspect    = (float)viewport_width / viewport_height;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings   = config_get_ptr();
    vk_t *vk               = (vk_t*)data;
-
-   video_driver_get_size(&width, &height);
+   unsigned width         = vk->video_width;
+   unsigned height        = vk->video_height;
 
    aspect_data.aspect     = &device_aspect;
    aspect_data.width      = viewport_width;
@@ -2421,11 +2424,11 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    unsigned width, height;
    vk_t *vk = (vk_t*)data;
 
-   video_driver_get_size(&width, &height);
-
    if (!vk)
       return;
 
+   width           = vk->video_width;
+   height          = vk->video_height;
    /* Make sure we get the correct viewport. */
    vulkan_set_viewport(vk, width, height, false, true);
 
