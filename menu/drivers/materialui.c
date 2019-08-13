@@ -413,7 +413,8 @@ static void materialui_draw_tab_begin(
       unsigned width, unsigned height,
       float *tabs_bg_color, float *tabs_separator_color)
 {
-   float scale_factor = menu_display_get_dpi();
+   float scale_factor = menu_display_get_dpi(video_info->width,
+         video_info->height);
 
    mui->tabs_height   = scale_factor / 3;
 
@@ -593,14 +594,15 @@ static unsigned materialui_count_lines(const char *str)
 }
 
 /* Compute the line height for each menu entry. */
-static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
+static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
+      int height)
 {
    unsigned i;
    size_t usable_width       = width - (mui->margin * 2);
    file_list_t *list         = menu_entries_get_selection_buf_ptr(0);
    float sum                 = 0;
    size_t entries_end        = menu_entries_get_size();
-   float scale_factor        = menu_display_get_dpi();
+   float scale_factor        = menu_display_get_dpi(width, height);
 
    for (i = 0; i < entries_end; i++)
    {
@@ -662,7 +664,7 @@ static void materialui_render(void *data,
    if (mui->need_compute)
    {
       if (mui->font)
-         materialui_compute_entries_box(mui, width);
+         materialui_compute_entries_box(mui, width, height);
       mui->need_compute = false;
    }
 
@@ -756,7 +758,8 @@ static void materialui_render_label_value(
    size_t usable_width             = width - (mui->margin * 2);
    int icon_margin                 = 0;
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
-   float scale_factor              = menu_display_get_dpi();
+   float scale_factor              = menu_display_get_dpi(video_info->width,
+         video_info->height);
    settings_t *settings            = config_get_ptr();
 
    /* Initial ticker configuration */
@@ -1632,7 +1635,7 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
     *
     * On desktops, we just care about readability, with every widget
     * size proportional to the display width. */
-   scale_factor         = menu_display_get_dpi();
+   scale_factor         = menu_display_get_dpi(width, height);
 
    new_header_height    = scale_factor / 3;
    new_font_size        = scale_factor / 9;
@@ -1682,13 +1685,17 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
-   float scale_factor = menu_display_get_dpi();
+   unsigned width, height;
+   float scale_factor         = 0.0f;
    materialui_handle_t   *mui = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
    if (!menu)
-      goto error;
+      return NULL;
+
+   video_driver_get_size(&width, &height);
+   scale_factor = menu_display_get_dpi(width, height);
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
@@ -2338,6 +2345,7 @@ static void materialui_list_insert(void *userdata,
       unsigned type)
 {
    float scale_factor;
+   unsigned width, height;
    int i                         = (int)list_size;
    materialui_node_t *node       = NULL;
    settings_t *settings          = config_get_ptr();
@@ -2358,7 +2366,8 @@ static void materialui_list_insert(void *userdata,
       return;
    }
 
-   scale_factor                = menu_display_get_dpi();
+   video_driver_get_size(&width, &height);
+   scale_factor                = menu_display_get_dpi(width, height);
 
    node->line_height           = scale_factor / 3;
    node->y                     = 0;

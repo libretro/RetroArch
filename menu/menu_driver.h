@@ -578,7 +578,7 @@ void menu_display_unset_viewport(unsigned width, unsigned height);
 bool menu_display_get_framebuffer_dirty_flag(void);
 void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
-float menu_display_get_dpi(void);
+float menu_display_get_dpi(unsigned width, unsigned height);
 bool menu_display_init_first_driver(bool video_is_threaded);
 bool menu_display_restore_clear_color(void);
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
