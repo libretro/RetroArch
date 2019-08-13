@@ -553,6 +553,51 @@ static int frontend_darwin_get_rating(void)
    if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
       return 18;
 
+   /* iPad Pro (12.9 Inch) */
+   if (strstr(model, "iPad6,7") || strstr(model, "iPad6,8"))
+     return 19;
+
+   /* iPad Pro (9.7 Inch) */
+   if (strstr(model, "iPad6,3") || strstr(model, "iPad6,4"))
+     return 19;
+
+   /* iPad 5th Generation */
+   if (strstr(model, "iPad6,11") || strstr(model, "iPad6,12"))
+     return 19;
+
+   /* iPad Pro (12.9 Inch 2nd Generation) */
+   if (strstr(model, "iPad7,1") || strstr(model, "iPad7,2"))
+     return 19;
+
+   /* iPad Pro (10.5 Inch) */
+   if (strstr(model, "iPad7,3") || strstr(model, "iPad7,4"))
+     return 19;
+
+   /* iPad Pro 6th Generation) */
+   if (strstr(model, "iPad7,5") || strstr(model, "iPad7,6"))
+     return 19;
+
+   /* iPad Pro (11 Inch) */
+   if (     strstr(model, "iPad8,1")
+         || strstr(model, "iPad8,2")
+         || strstr(model, "iPad8,3")
+         || strstr(model, "iPad8,4")
+      )
+      return 19;
+
+   /* iPad Pro (12.9 3rd Generation) */
+    if (   strstr(model, "iPad8,5")
+        || strstr(model, "iPad8,6")
+        || strstr(model, "iPad8,7")
+        || strstr(model, "iPad8,8")
+       )
+       return 19;
+
+   /* iPad Air 3rd Generation) */
+    if (   strstr(model, "iPad11,3")
+        || strstr(model, "iPad11,4"))
+       return 19;
+
    /* TODO/FIXME -
       - more ratings for more systems
       - determine rating more intelligently*/
