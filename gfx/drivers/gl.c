@@ -1111,7 +1111,8 @@ static void gl2_renderchain_init(
    if (!gl || shader_info.num == 0)
       return;
 
-   video_driver_get_size(&width, &height);
+   width        = gl->video_width;
+   height       = gl->video_height;
 
    scaler.idx   = 1;
    scaler.scale = &scale;
@@ -2286,11 +2287,12 @@ static void gl2_init_textures(gl_t *gl, const video_info_t *video)
 
 static INLINE void gl2_set_shader_viewports(gl_t *gl)
 {
-   unsigned i, width, height;
+   unsigned i;
    video_frame_info_t video_info;
+   unsigned width                = gl->video_width;
+   unsigned height               = gl->video_height;
 
    video_driver_build_info(&video_info);
-   video_driver_get_size(&width, &height);
 
    for (i = 0; i < 2; i++)
    {
@@ -3774,6 +3776,8 @@ static void *gl2_init(const video_info_t *video,
       video_driver_set_size(&temp_width, &temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
+   gl->video_width       = temp_width;
+   gl->video_height      = temp_height;
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
@@ -3940,16 +3944,13 @@ error:
 
 static bool gl2_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    gl_t         *gl     = (gl_t*)data;
    bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
-
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
+   unsigned temp_width  = gl->video_width;
+   unsigned temp_height = gl->video_height;
 
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height, is_shutdown);
@@ -3962,7 +3963,11 @@ static bool gl2_alive(void *data)
    ret = !gl->quitting;
 
    if (temp_width != 0 && temp_height != 0)
+   {
       video_driver_set_size(&temp_width, &temp_height);
+      gl->video_width  = temp_width;
+      gl->video_height = temp_height;
+   }
 
    return ret;
 }
@@ -4127,11 +4132,10 @@ error:
 
 static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
-   unsigned width, height;
    unsigned top_y, top_dist;
    gl_t *gl        = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
+   unsigned width  = gl->video_width;
+   unsigned height = gl->video_height;
 
    *vp             = gl->vp;
    vp->full_width  = width;
