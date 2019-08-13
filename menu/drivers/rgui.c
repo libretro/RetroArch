@@ -598,7 +598,8 @@ enum rgui_symbol_type
    RGUI_SYMBOL_BATTERY_80,
    RGUI_SYMBOL_BATTERY_60,
    RGUI_SYMBOL_BATTERY_40,
-   RGUI_SYMBOL_BATTERY_20
+   RGUI_SYMBOL_BATTERY_20,
+   RGUI_SYMBOL_CHECKMARK
 };
 
 /* All custom symbols must have dimensions
@@ -745,6 +746,21 @@ static const uint8_t rgui_symbol_data_battery_20[FONT_WIDTH * FONT_HEIGHT] = {
       0, 1, 0, 0, 1,
       0, 1, 1, 1, 1, /* Baseline */
       0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0};
+
+/* Note: This is not actually a 'checkmark' - we don't
+ * have enough pixels to draw one effectively. The 'icon'
+ * is merely named according to its function... */
+static const uint8_t rgui_symbol_data_checkmark[FONT_WIDTH * FONT_HEIGHT] = {
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0,
+      0, 1, 1, 0, 0, /* Baseline */
+      0, 1, 1, 0, 0,
       0, 0, 0, 0, 0};
 
 /* ==============================
@@ -2547,6 +2563,8 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
          return rgui_symbol_data_battery_40;
       case RGUI_SYMBOL_BATTERY_20:
          return rgui_symbol_data_battery_20;
+      case RGUI_SYMBOL_CHECKMARK:
+         return rgui_symbol_data_checkmark;
       default:
          break;
    }
@@ -3519,6 +3537,11 @@ static void rgui_render(void *data,
                   type_str_buf,
                   entry_color, rgui->colors.shadow_color);
          }
+         /* Print marker for currently selected item in
+          * drop down lists, if required */
+         else if (entry.checked)
+            blit_symbol(fb_width, x + FONT_WIDTH_STRIDE, y, RGUI_SYMBOL_CHECKMARK,
+                  entry_color, rgui->colors.shadow_color);
 
          /* Print selection marker, if required */
          if (entry_selected)
