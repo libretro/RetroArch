@@ -3211,6 +3211,7 @@ static void xmb_render(void *data, bool is_idle)
    unsigned      end        = (unsigned)menu_entries_get_size();
    bool mouse_enable        = settings->bools.menu_mouse_enable;
    bool pointer_enable      = settings->bools.menu_pointer_enable;
+
    unsigned width, height;
    float scale_factor;
 
@@ -3229,11 +3230,14 @@ static void xmb_render(void *data, bool is_idle)
 
    if (pointer_enable || mouse_enable)
    {
+      unsigned height;
       size_t selection  = menu_navigation_get_selection();
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
          + (xmb->cursor_size/2);
       unsigned first = 0, last = end;
+
+      video_driver_get_size(NULL, &height);
 
       if (height)
          xmb_calculate_visible_range(xmb, height,
