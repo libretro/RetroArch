@@ -200,18 +200,6 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
          && !string_is_empty(ident)
          && string_is_equal(ident, params->name))
       score += 2;
-#if 0
-   else
-   {
-      if (string_is_empty(params->name))
-         RARCH_LOG("[Autoconf]: failed match because params->name was empty\n");
-      else if (string_is_empty(ident))
-         RARCH_LOG("[Autoconf]: failed match because ident was empty\n");
-      else
-         RARCH_LOG("[Autoconf]: failed match because ident '%s' != param->name '%s'\n",
-               ident, params->name);
-   }
-#endif
 
    return score;
 }
@@ -382,7 +370,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0 && best_conf)
    {
-      RARCH_LOG("[Auoconf]: selected configuration: %s\n", best_path);
+      RARCH_LOG("[Autoconf]: selected configuration: %s\n", best_path);
       input_autoconfigure_joypad_add(best_conf, params, task);
       ret = 1;
    }

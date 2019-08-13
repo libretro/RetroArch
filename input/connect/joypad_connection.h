@@ -39,6 +39,7 @@
 #define VID_PCS           SWAP_IF_BIG(0x0810)
 #define VID_PS3_CLONE     SWAP_IF_BIG(0x0313)
 #define VID_SNES_CLONE    SWAP_IF_BIG(0x081f)
+#define VID_RETRODE       SWAP_IF_BIG(0x0403)
 
 #define PID_NONE          0x0000
 #define PID_NINTENDO_PRO  SWAP_IF_BIG(0x0330)
@@ -50,6 +51,7 @@
 #define PID_NINTENDO_GCA  SWAP_IF_BIG(0x0337)
 #define PID_PCS_PS2PSX    SWAP_IF_BIG(0x0001)
 #define PID_PCS_PSX2PS3   SWAP_IF_BIG(0x0003)
+#define PID_RETRODE       SWAP_IF_BIG(0x97c1)
 
 struct joypad_connection
 {
@@ -80,6 +82,7 @@ extern pad_connection_interface_t pad_connection_nesusb;
 extern pad_connection_interface_t pad_connection_wiiugca;
 extern pad_connection_interface_t pad_connection_ps2adapter;
 extern pad_connection_interface_t pad_connection_psxadapter;
+extern pad_connection_interface_t pad_connection_retrode;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,

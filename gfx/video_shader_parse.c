@@ -28,7 +28,7 @@
 #include <file/file_path.h>
 #include <rhash.h>
 #include <string/stdstring.h>
-#include <streams/interface_stream.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #include "../configuration.h"
@@ -484,13 +484,17 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      intfstream_t *file = NULL;
-      size_t line_size   = 4096 * sizeof(char);
-      char *line         = NULL;
-      const char *path   = shader->pass[i].source.path;
+      const char *path          = shader->pass[i].source.path;
+      uint8_t *buf              = NULL;
+      int64_t buf_len           = 0;
+      struct string_list *lines = NULL;
+      size_t line_index         = 0;
 
-     if (string_is_empty(path))
-        continue;
+      if (string_is_empty(path))
+         continue;
+
+      if (!path_is_valid(path))
+         continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* First try to use the more robust slang
@@ -505,24 +509,39 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-      file = intfstream_open_file(path,
-            RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      if (!file)
+      /* Read file contents */
+      if (!filestream_read_file(path, (void**)&buf, &buf_len))
          continue;
 
-      line    = (char*)malloc(line_size);
-      line[0] = '\0';
+      /* Split into lines */
+      if (buf_len > 0)
+         lines = string_split((const char*)buf, "\n");
+
+      /* Buffer is no longer required - clean up */
+      if ((void*)buf)
+         free((void*)buf);
+
+      if (!lines)
+         continue;
 
       /* even though the pass is set in the loop too, not all passes have parameters */
       param->pass = i;
 
-      while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
-            && intfstream_gets(file, line, line_size))
+      while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) &&
+             (line_index < lines->size))
       {
-         int ret = sscanf(line,
-               "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+         int ret;
+         const char *line = lines->elems[line_index].data;
+         line_index++;
+
+         /* Check if this is a '#pragma parameter' line */
+         if (strncmp("#pragma parameter", line,
+                  STRLEN_CONST("#pragma parameter")))
+            continue;
+
+         /* Parse line */
+         ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                param->id,        param->desc,    &param->initial,
                &param->minimum, &param->maximum, &param->step);
 
@@ -546,15 +565,10 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param++;
       }
 
-      free(line);
-      intfstream_close(file);
-      free(file);
+      string_list_free(lines);
    }
 
-   if (conf && !video_shader_resolve_current_parameters(conf, shader))
-      return false;
-
-   return true;
+   return video_shader_resolve_current_parameters(conf, shader);
 }
 
 /**
@@ -576,8 +590,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
    bool watch_files                 = settings->bools.video_shader_watch_files;
-
-   (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
 

@@ -158,7 +158,32 @@ bool menu_shader_manager_set_preset(void *data,
 
    if (!video_driver_set_shader(type, preset_path))
    {
-      configuration_set_bool(settings, settings->bools.video_shader_enable, false);
+      char msg[PATH_MAX_LENGTH];
+      const char *preset_file     = NULL;
+
+      msg[0] = '\0';
+
+      /* Display error message */
+      if (!string_is_empty(preset_path))
+         preset_file = path_basename(preset_path);
+
+      snprintf(msg, sizeof(msg), "%s %s",
+            msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
+            string_is_empty(preset_file) ? "(null)" : preset_file);
+
+      runloop_msg_queue_push(
+            msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+
+      /* We don't want to disable shaders entirely here,
+       * just reset number of passes
+       * > Note: Disabling shaders at this point would in
+       *   fact be dangerous, since it changes the number of
+       *   entries in the shader options menu which can in
+       *   turn lead to the menu selection pointer going out
+       *   of bounds. This causes undefined behaviour/segfaults */
+      menu_shader_manager_clear_num_passes();
+
       return false;
    }
 

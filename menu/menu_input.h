@@ -58,14 +58,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-/* Set a specific keyboard key.
- *
- * 'down' sets the latch (true would
- * mean the key is being pressed down, while 'false' would mean that
- * the key has been released).
- **/
-void menu_event_kb_set(bool down, enum retro_key key);
-
 void menu_input_post_iterate(int *ret, unsigned action);
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);

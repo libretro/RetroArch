@@ -14,11 +14,12 @@
 - COMMON: When saving core option overrides, only include settings for the current core
 - COMMON: Favorites playlist size can now be set independently of content history size. Values can be set from 0-999, or '-1' for unlimited (99999)
 - COMMON: Prevent adding new items to favorites when playlist is full (old entries are no longer overwritten)
+- COMMON: Prevent loading content with cores that require an incompatible graphics API version from the current one
 - CPU FILTERS: Add Scanline2x filter
 - GAMECUBE: Add default video/audio filter directories
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores
-- GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+.
-- D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though.
+- GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+
+- D3D10/11/12/SLANG: Added "FrameDirection" slang semantic. Works fine with braid-rewind shader, not entirely perfect with D3D12 though
 - D3D10/11/12: Add option to select which GPU to render with
 - D3D10/11: Fix maintaining aspect ratio when resizing window
 - GLCORE/SLANG: Added "FrameDirection" slang semantic
@@ -61,6 +62,7 @@
 - RECORD: Fix Twitch streaming
 - SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport)
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not
+- SCANNER: Fix hang on empty files inside archives
 - VULKAN/SLANG: Added "FrameDirection" slang semantic
 - VULKAN: Add option to select which GPU to render with
 - WII: Add default video/audio filter directories

@@ -243,22 +243,11 @@ float input_sensor_get_input(unsigned port, unsigned id);
 
 void *input_driver_get_data(void);
 
-void input_get_state_for_port(
-      void *data, unsigned port, input_bits_t *p_new_state);
-
 input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
 
 void input_driver_set_flushing_input(void);
-
-void input_driver_unset_hotkey_block(void);
-
-void input_driver_set_hotkey_block(void);
-
-void input_driver_set_libretro_input_blocked(void);
-
-void input_driver_unset_libretro_input_blocked(void);
 
 bool input_driver_is_libretro_input_blocked(void);
 
@@ -277,11 +266,6 @@ bool input_driver_init_command(void);
 bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
-
-int16_t input_driver_input_state(
-         rarch_joypad_info_t joypad_info,
-         const struct retro_keybind **retro_keybinds,
-         unsigned port, unsigned device, unsigned index, unsigned id);
 
 float *input_driver_get_float(enum input_action action);
 

@@ -27,10 +27,6 @@
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
-#ifdef WIIU
-#include <wiiu/os/energy.h>
-#endif
-
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
 #endif
@@ -197,26 +193,8 @@ static bool menu_driver_pending_quick_menu      = false;
 
 static bool menu_driver_prevent_populate        = false;
 
-/* Is the menu driver still running? */
-static bool menu_driver_alive                   = false;
-
-/* A menu toggle has been requested; if the menu was running,
- * it will be closed; if the menu was not running, it will be opened */
-static bool menu_driver_toggled                 = false;
-
 /* The menu driver owns the userdata */
 static bool menu_driver_data_own                = false;
-
-/* The user has requested that the menu be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_quit            = false;
-
-/* The user has requested that RetroArch be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_shutdown        = false;
-
-/* Are we binding a button inside the menu? */
-static bool menu_driver_is_binding              = false;
 
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
@@ -237,6 +215,11 @@ static retro_time_t menu_driver_datetime_last_time_us   = 0;
 /* Storage container for current menu datetime
  * representation string */
 static char menu_datetime_cache[255]                    = {0};
+
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   return menu_driver_data;
+}
 
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -601,51 +584,6 @@ void menu_display_coords_array_reset(void)
 video_coord_array_t *menu_display_get_coords_array(void)
 {
    return &menu_disp_ca;
-}
-
-bool menu_display_libretro_running(
-      bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   settings_t *settings = config_get_ptr();
-   if (!settings->bools.menu_pause_libretro)
-   {
-      if (rarch_is_inited && !rarch_is_dummy_core)
-         return true;
-   }
-   return false;
-}
-
-/* Display the libretro core's framebuffer onscreen. */
-bool menu_display_libretro(bool is_idle,
-      bool rarch_is_inited, bool rarch_is_dummy_core)
-{
-   video_driver_set_texture_enable(true, false);
-
-   if (menu_display_libretro_running(
-            rarch_is_inited, rarch_is_dummy_core))
-   {
-      if (!input_driver_is_libretro_input_blocked())
-         input_driver_set_libretro_input_blocked();
-
-      core_run();
-      rarch_core_runtime_tick();
-      input_driver_unset_libretro_input_blocked();
-
-      return true;
-   }
-
-   if (is_idle)
-   {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-      return false; /* Return false here for indication of idleness */
-   }
-   return video_driver_cached_frame();
 }
 
 /* Get the menu framebuffer's size dimensions. */
@@ -1330,18 +1268,6 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
    matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
 }
 
-bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
-{
-   if (!draw)
-      return false;
-
-   if (!menu_disp || !menu_disp->get_default_tex_coords)
-      return false;
-
-   draw->ptr = menu_disp->get_default_tex_coords();
-   return true;
-}
-
 static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
 {
    if (menu_driver_ctx && menu_driver_ctx->load_image)
@@ -1496,8 +1422,8 @@ void menu_display_push_quad(
 {
    float vertex[8];
    video_coords_t coords;
-   menu_display_ctx_coord_draw_t coord_draw;
-   video_coord_array_t *ca = menu_display_get_coords_array();
+   const float *coord_draw_ptr   = NULL;
+   video_coord_array_t       *ca = &menu_disp_ca;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1508,14 +1434,13 @@ void menu_display_push_quad(
    vertex[6]             = x2 / (float)width;
    vertex[7]             = y2 / (float)height;
 
-   coord_draw.ptr        = NULL;
-
-   menu_display_get_tex_coords(&coord_draw);
+   if (menu_disp && menu_disp->get_default_tex_coords)
+      coord_draw_ptr     = menu_disp->get_default_tex_coords();
 
    coords.color          = colors;
    coords.vertex         = vertex;
-   coords.tex_coord      = coord_draw.ptr;
-   coords.lut_tex_coord  = coord_draw.ptr;
+   coords.tex_coord      = coord_draw_ptr;
+   coords.lut_tex_coord  = coord_draw_ptr;
    coords.vertices       = 3;
 
    video_coord_array_append(ca, &coords, 3);
@@ -1743,15 +1668,6 @@ bool menu_display_reset_textures_list(
    return true;
 }
 
-bool menu_driver_is_binding_state(void)
-{
-   return menu_driver_is_binding;
-}
-
-void menu_driver_set_binding_state(bool on)
-{
-   menu_driver_is_binding = on;
-}
 
 /**
  * menu_driver_find_handle:
@@ -1893,116 +1809,9 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-static void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-#if 0
-   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
-         down, keycode, mod, character);
-#endif
-
-   menu_event_kb_set(down, (enum retro_key)keycode);
-}
-
-/* Gets called when we want to toggle the menu.
- * If the menu is already running, it will be turned off.
- * If the menu is off, then the menu will be started.
- */
-static void menu_driver_toggle(bool on)
-{
-   retro_keyboard_event_t *key_event          = NULL;
-   retro_keyboard_event_t *frontend_key_event = NULL;
-   settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings ?
-      settings->bools.menu_pause_libretro : false;
-   bool enable_menu_sound                     = settings ?
-      settings->bools.audio_enable_menu : false;
-
-   menu_driver_toggled = on;
-
-   if (!on)
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
-
-   if (menu_driver_ctx && menu_driver_ctx->toggle)
-      menu_driver_ctx->toggle(menu_userdata, on);
-
-   if (on)
-      menu_driver_alive = true;
-   else
-      menu_driver_alive = false;
-
-   rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-   rarch_ctl(RARCH_CTL_KEY_EVENT_GET,          &key_event);
-
-   if (menu_driver_alive)
-   {
-      bool refresh = false;
-
-#ifdef WIIU
-      /* Enable burn-in protection menu is running */
-      IMEnableDim();
-#endif
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-      /* Menu should always run with vsync on. */
-      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-      /* Stop all rumbling before entering the menu. */
-      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ... */
-
-      if (key_event && frontend_key_event)
-      {
-         *frontend_key_event        = *key_event;
-         *key_event                 = menu_input_key_event;
-
-         rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
-      }
-   }
-   else
-   {
-#ifdef WIIU
-      /* Disable burn-in protection while core is running; this is needed
-       * because HID inputs don't count for the purpose of Wii U
-       * power-saving. */
-      IMDisableDim();
-#endif
-
-      if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
-         driver_set_nonblock_state();
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Restore libretro keyboard callback. */
-      if (key_event && frontend_key_event)
-         *key_event = *frontend_key_event;
-   }
-}
-
 const char *menu_driver_ident(void)
 {
-   if (!menu_driver_alive)
+   if (!menu_driver_is_alive())
       return NULL;
    if (!menu_driver_ctx || !menu_driver_ctx->ident)
       return NULL;
@@ -2011,7 +1820,7 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (menu_driver_alive && menu_driver_ctx->frame)
+   if (menu_driver_is_alive() && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
@@ -2019,57 +1828,6 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
 {
    return menu_driver_ctx && menu_driver_ctx->get_load_content_animation_data
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
-}
-
-bool menu_driver_render(bool is_idle, bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   if (!menu_driver_data)
-      return false;
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
-         != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
-      BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_framebuf_dirty = true;
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-         && !string_is_empty(menu_driver_data->menu_state_msg))
-   {
-      if (menu_driver_ctx->render_messagebox)
-         menu_driver_ctx->render_messagebox(menu_userdata,
-               menu_driver_data->menu_state_msg);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->render_messagebox)
-            ui->render_messagebox(menu_driver_data->menu_state_msg);
-      }
-   }
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
-   {
-      if (menu_driver_ctx->render)
-         menu_driver_ctx->render(menu_userdata, is_idle);
-   }
-
-   if (menu_driver_alive && !is_idle)
-      menu_display_libretro(is_idle, rarch_is_inited, rarch_is_dummy_core);
-
-   if (menu_driver_ctx->set_texture)
-      menu_driver_ctx->set_texture();
-
-   menu_driver_data->state               = 0;
-
-   return true;
-}
-
-/* Checks if the menu is still running */
-bool menu_driver_is_alive(void)
-{
-   return menu_driver_alive;
 }
 
 /* Checks if the menu framebuffer is set.
@@ -2088,12 +1846,13 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    /* Get current time */
    menu_driver_current_time_us = cpu_features_get_time_usec();
 
-   /* If the user had requested that the Quick Menu
-    * be spawned during the previous frame, do this now
-    * and exit the function to go to the next frame.
-    */
    if (menu_driver_pending_quick_menu)
    {
+      /* If the user had requested that the Quick Menu
+       * be spawned during the previous frame, do this now
+       * and exit the function to go to the next frame.
+       */
+
       menu_driver_pending_quick_menu = false;
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
       menu_display_set_msg_force(true);
@@ -2101,45 +1860,19 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       generic_action_ok_displaylist_push("", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-      if (menu_driver_pending_quit)
-      {
-         menu_driver_pending_quit     = false;
-         return false;
-      }
-
       menu_navigation_set_selection(0);
 
       return true;
    }
 
-   /* If the user had requested that the menu
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_quit)
-   {
-      menu_driver_pending_quit     = false;
-      return false;
-   }
-
-   /* if the user had requested that RetroArch
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_shutdown)
-   {
-      menu_driver_pending_shutdown = false;
-      if (!command_event(CMD_EVENT_QUIT, NULL))
-         return false;
+   if (
+         menu_driver_ctx          &&
+         menu_driver_ctx->iterate &&
+         menu_driver_ctx->iterate(menu_driver_data,
+            menu_userdata, iterate->action) != -1)
       return true;
-   }
 
-   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-      return false;
-
-   if (menu_driver_ctx->iterate(menu_driver_data,
-            menu_userdata, iterate->action) == -1)
-      return false;
-
-   return true;
+   return false;
 }
 
 bool menu_driver_list_cache(menu_ctx_list_t *list)
@@ -2200,8 +1933,12 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       return true;
 
    if (menu_driver_ctx->init)
+   {
       menu_driver_data               = (menu_handle_t*)
          menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+      menu_driver_data->userdata     = menu_userdata;
+      menu_driver_data->driver_ctx   = menu_driver_ctx;
+   }
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
       goto error;
@@ -2280,10 +2017,7 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 void menu_driver_destroy(void)
 {
    menu_driver_pending_quick_menu = false;
-   menu_driver_pending_quit       = false;
-   menu_driver_pending_shutdown   = false;
    menu_driver_prevent_populate   = false;
-   menu_driver_alive              = false;
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;
@@ -2340,12 +2074,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;
          break;
-      case RARCH_MENU_CTL_SET_PENDING_QUIT:
-         menu_driver_pending_quit     = true;
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
-         menu_driver_pending_shutdown = true;
-         break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
             int i;
@@ -2394,14 +2122,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
          return menu_driver_prevent_populate;
-      case RARCH_MENU_CTL_IS_TOGGLE:
-         return menu_driver_toggled;
-      case RARCH_MENU_CTL_SET_TOGGLE:
-         menu_driver_toggle(true);
-         break;
-      case RARCH_MENU_CTL_UNSET_TOGGLE:
-         menu_driver_toggle(false);
-         break;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;
@@ -2830,7 +2550,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
    int n = 0;
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    
-   /* Select approriate 'star' marker for subsystem menu entries
+   /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
    snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
@@ -2859,7 +2579,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[content_get_subsystem_rom_id()].desc);
 
-                  /* Stupid gcc will warn about snprintf() truncation even though
+                  /* Stupid GCC will warn about snprintf() truncation even though
                    * we couldn't care less about it (if the menu entry label gets
                    * truncated then the string will already be too long to view in
                    * any usable manner on screen, so the fact that the end is

@@ -146,8 +146,6 @@ enum rarch_ctl_state
    RARCH_CTL_IS_PERFCNT_ENABLE,
 
    /* Key event */
-   RARCH_CTL_FRONTEND_KEY_EVENT_GET,
-   RARCH_CTL_KEY_EVENT_GET,
    RARCH_CTL_DATA_DEINIT,
 
    /* Core options */
@@ -347,7 +345,7 @@ global_t *global_get_ptr(void);
  * Returns -1 if we forcibly quit out of the
  * RetroArch iteration loop.
  **/
-int runloop_iterate(unsigned *sleep_ms);
+int runloop_iterate(void);
 
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
@@ -369,8 +367,6 @@ rarch_system_info_t *runloop_get_system_info(void);
 struct retro_system_info *runloop_get_libretro_system_info(void);
 
 void retroarch_force_video_driver_fallback(const char *driver);
-
-void rarch_core_runtime_tick(void);
 
 void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
 
@@ -611,6 +607,8 @@ extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
 extern audio_driver_t audio_switch;
 extern audio_driver_t audio_switch_thread;
+extern audio_driver_t audio_switch_libnx_audren;
+extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_null;
 
@@ -1555,10 +1553,6 @@ bool video_driver_prefer_viewport_read(void);
 
 bool video_driver_supports_read_frame_raw(void);
 
-void video_driver_set_viewport_config(void);
-
-void video_driver_set_viewport_square_pixel(void);
-
 void video_driver_set_viewport_core(void);
 
 void video_driver_reset_custom_viewport(void);
@@ -2098,6 +2092,18 @@ const void *camera_driver_find_handle(int index);
  * if nothing found.
  **/
 const char *camera_driver_find_ident(int index);
+
+void menu_driver_set_alive(bool val);
+
+bool menu_driver_is_alive(void);
+
+bool menu_driver_is_binding_state(void);
+
+void menu_driver_set_binding_state(bool on);
+
+bool menu_driver_is_toggled(void);
+
+bool menu_driver_is_toggled(void);
 
 RETRO_END_DECLS
 

@@ -59,10 +59,10 @@ struct menu_thumbnail_path_data
  * Returns handle to new menu_thumbnail_path_data_t object.
  * on success, otherwise NULL.
  * Note: Returned object must be free()d */
-menu_thumbnail_path_data_t *menu_thumbnail_path_init()
+menu_thumbnail_path_data_t *menu_thumbnail_path_init(void)
 {
-   menu_thumbnail_path_data_t *path_data = NULL;
-   path_data = (menu_thumbnail_path_data_t*)calloc(1, sizeof(*path_data));
+   menu_thumbnail_path_data_t *path_data = (menu_thumbnail_path_data_t*)
+      calloc(1, sizeof(*path_data));
    if (!path_data)
       return NULL;
    return path_data;

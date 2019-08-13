@@ -9067,3 +9067,11 @@ MSG_HASH(
     MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
     "このコアは設定されたビデオドライバに対応しません。"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET,
+    "リセット"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+    "全てをリセット"
+    )

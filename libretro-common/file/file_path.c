@@ -114,16 +114,16 @@
 
 #endif
 
-static retro_vfs_stat_t path_stat_cb   = NULL;
-static retro_vfs_mkdir_t path_mkdir_cb = NULL;
+static retro_vfs_stat_t path_stat_cb   = retro_vfs_stat_impl;
+static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
    const struct retro_vfs_interface* 
       vfs_iface           = vfs_info->iface;
 
-   path_stat_cb           = NULL;
-   path_mkdir_cb          = NULL;
+   path_stat_cb           = retro_vfs_stat_impl;
+   path_mkdir_cb          = retro_vfs_mkdir_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
@@ -132,13 +132,9 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_mkdir_cb          = vfs_iface->mkdir;
 }
 
-#define path_stat_internal(path, size) ((path_stat_cb != NULL) ? path_stat_cb((path), (size)) : retro_vfs_stat_impl((path), (size)))
-
-#define path_mkdir_norecurse(dir) ((path_mkdir_cb != NULL) ? path_mkdir_cb((dir)) : retro_vfs_mkdir_impl((dir)))
-
 int path_stat(const char *path)
 {
-   return path_stat_internal(path, NULL);
+   return path_stat_cb(path, NULL);
 }
 
 /**
@@ -151,23 +147,23 @@ int path_stat(const char *path)
  */
 bool path_is_directory(const char *path)
 {
-   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
 }
 
 bool path_is_character_special(const char *path)
 {
-   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
+   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
 }
 
 bool path_is_valid(const char *path)
 {
-   return (path_stat_internal(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
+   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
 int32_t path_get_size(const char *path)
 {
    int32_t filesize = 0;
-   if (path_stat_internal(path, &filesize) != 0)
+   if (path_stat_cb(path, &filesize) != 0)
       return filesize;
 
    return -1;
@@ -233,7 +229,7 @@ bool path_mkdir(const char *dir)
 
    if (norecurse)
    {
-      int ret = path_mkdir_norecurse(dir);
+      int ret = path_mkdir_cb(dir);
 
       /* Don't treat this as an error. */
       if (ret == -2 && path_is_directory(dir))

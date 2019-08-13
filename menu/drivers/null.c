@@ -45,9 +45,9 @@ static void null_toggle(void *userdata, bool menu_on)
    g_menu_on = menu_on;
 }
 
-static int null_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_action action)
+static int null_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
-   (void)menu;
+   (void)data;
    (void)userdata;
    (void)action;
 

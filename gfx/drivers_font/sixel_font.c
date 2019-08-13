@@ -85,6 +85,9 @@ static void sixel_render_msg(video_frame_info_t *video_info,
    sixel_raster_t              *font = (sixel_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
+   (void)newX;
+   (void)newY;
+
    if (!font || string_is_empty(msg))
       return;
 

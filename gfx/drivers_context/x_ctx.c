@@ -176,6 +176,19 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 }
 #endif
 
+static int x_gl_version_error_handler(Display *dpy, XErrorEvent *event)
+{
+   (void)dpy;
+
+   if (event->error_code == BadMatch && event->request_code == 151 && event->minor_code == 34)
+   {
+      RARCH_WARN("[GLX]: Version %d.%d not supported, trying a lower version.\n", g_major, g_minor);
+      return 0;
+   }
+
+   exit(1);
+}
+
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
@@ -816,7 +829,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          {
             if (x->g_core_es || x->g_debug)
             {
-               int attribs[16];
+               int attribs[16] = {0};
                int *aptr = attribs;
 
                if (x->g_core_es)
@@ -848,18 +861,70 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                }
 
                *aptr = None;
-               x->g_ctx = glx_create_context_attribs(g_x11_dpy,
-                     x->g_fbc, NULL, True, attribs);
 
-               if (x->g_use_hw_ctx)
+               /* silently ignore failures when requesting GL versions that are too high */
+               old_handler = XSetErrorHandler(x_gl_version_error_handler);
+
+               /* In order to support the core info "required_hw_api" field correctly, we should try to init the highest available
+                * version GL context possible. This means trying successively lower versions until it works, because GL has
+                * no facility for determining the highest possible supported version.
+                */
                {
-                  RARCH_LOG("[GLX]: Creating shared HW context.\n");
-                  x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
-                        x->g_fbc, x->g_ctx, True, attribs);
+                  int i;
+                  int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
+#ifdef HAVE_OPENGLES3
+                  int gles_versions[][2] = {{3, 2}, {3, 1}, {3, 0}, {2, 0}, {1, 1}, {1, 0}};
+#else
+                  int gles_versions[][2] = {{2, 0}, {1, 1}, {1, 0}};
+#endif
+                  int gl_version_rows = ARRAY_SIZE(gl_versions);
+                  int gles_version_rows = ARRAY_SIZE(gles_versions);
+                  int (*versions)[2];
+                  int version_rows = 0;
 
-                  if (!x->g_hw_ctx)
-                     RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                  if (x_api == GFX_CTX_OPENGL_API)
+                  {
+                     versions = gl_versions;
+                     version_rows = gl_version_rows;
+                  }
+                  else if (x_api == GFX_CTX_OPENGL_ES_API)
+                  {
+                     versions = gles_versions;
+                     version_rows = gles_version_rows;
+                  }
+
+                  /* try each version, starting with the highest first */
+                  for (i = 0; i < version_rows; i++)
+                  {
+                     attribs[1] = versions[i][0];
+                     attribs[3] = versions[i][1];
+
+                     x->g_ctx = glx_create_context_attribs(g_x11_dpy,
+                           x->g_fbc, NULL, True, attribs);
+
+                     if (x->g_ctx)
+                     {
+                        if (x->g_use_hw_ctx)
+                        {
+                           RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                           x->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                                 x->g_fbc, x->g_ctx, True, attribs);
+
+                           if (!x->g_hw_ctx)
+                              RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                        }
+
+                        break;
+                     }
+                     else if (versions[i][0] == g_major && versions[i][1] == g_minor)
+                     {
+                        /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
+                        break;
+                     }
+                  }
                }
+
+               XSetErrorHandler(old_handler);
             }
             else
             {

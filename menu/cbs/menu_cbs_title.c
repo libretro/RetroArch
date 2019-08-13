@@ -90,8 +90,43 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   if (!string_is_empty(path))
-      fill_pathname_base_noext(s, path, len);
+   const char *playlist_file = NULL;
+
+   if (string_is_empty(path))
+      return 0;
+
+   playlist_file = path_basename(path);
+
+   if (string_is_empty(playlist_file))
+      return 0;
+
+   if (string_is_equal_noncase(path_get_extension(playlist_file),
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+   {
+      /* Handle content history */
+      if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)))
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
+      /* Handle favourites */
+      else if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
+      /* Handle collection playlists */
+      else
+      {
+         char playlist_name[PATH_MAX_LENGTH];
+
+         playlist_name[0] = '\0';
+
+         strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
+         path_remove_extension(playlist_name);
+
+         strlcpy(s, playlist_name, len);
+      }
+   }
+   /* This should never happen, but if it does just set
+    * the label to the file name (it's better than nothing...) */
+   else
+      strlcpy(s, playlist_file, len);
+
    return 0;
 }
 

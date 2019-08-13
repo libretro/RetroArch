@@ -408,6 +408,7 @@ default_sublabel_macro(action_bind_sublabel_menu_filebrowser_open_picker,       
 default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_game_specific_options,                 MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_global_core_options,                   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_core_enable,                           MENU_ENUM_SUBLABEL_CORE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_database_manager,                      MENU_ENUM_SUBLABEL_DATABASE_MANAGER)
 default_sublabel_macro(action_bind_sublabel_cursor_manager,                        MENU_ENUM_SUBLABEL_CURSOR_MANAGER)
@@ -458,6 +459,7 @@ default_sublabel_macro(action_bind_sublabel_menu_xmb_thumbnail_scale_factor,    
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
+default_sublabel_macro(action_bind_sublabel_ozone_truncate_playlist_name,          MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
 default_sublabel_macro(action_bind_sublabel_menu_use_preferred_system_color_theme, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
@@ -1525,6 +1527,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_collapse_sidebar);
             break;
+         case MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_truncate_playlist_name);
+            break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_color_theme);
@@ -1681,6 +1686,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_specific_options);
+            break;
+         case MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_global_core_options);
             break;
          case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_auto_overrides_enable);

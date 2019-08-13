@@ -952,11 +952,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          if (string_is_empty(entry->label))
             fill_short_pathname_representation(menu_entry_label, entry->path, sizeof(menu_entry_label));
          else
-         {
             strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
-            if (sanitization)
-               (*sanitization)(menu_entry_label);
-         }
+
+         if (sanitization)
+            (*sanitization)(menu_entry_label);
 
          if (show_inline_core_name)
          {
@@ -2416,11 +2415,9 @@ static unsigned menu_displaylist_parse_playlists(
 
    for (i = 0; i < list_size; i++)
    {
-      char label[64];
-      const char *path              = NULL;
-      enum msg_file_type file_type  = FILE_TYPE_NONE;
-
-      label[0] = '\0';
+      const char *path             = str_list->elems[i].data;
+      const char *playlist_file    = NULL;
+      enum msg_file_type file_type = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
@@ -2436,20 +2433,33 @@ static unsigned menu_displaylist_parse_playlists(
       if (file_type == FILE_TYPE_DIRECTORY)
          continue;
 
-      /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
+      if (string_is_empty(path))
+         continue;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)) ||
-         ((strcasestr(path, "content") && strcasestr(path, "history"))))
+      playlist_file = path_basename(path);
+
+      if (string_is_empty(playlist_file))
+         continue;
+
+      /* Ignore non-playlist files */
+      if (!string_is_equal_noncase(path_get_extension(playlist_file),
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+         continue;
+
+      /* Ignore history/favourites */
+      if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
+          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
+          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
+          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
+          string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
       if (horizontal)
-         if (!string_is_empty(path))
-            path = path_basename(path);
+         path = playlist_file;
 
-      if (menu_entries_append_enum(info->list, path, label,
+      if (menu_entries_append_enum(info->list, path, "",
             MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY,
             file_type, 0, 0))
          count++;
@@ -2676,6 +2686,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    if (!settings)
       return count;
 
+   /* Add collection playlists */
    str_list = dir_list_new_special(
          settings->paths.directory_playlist,
          DIR_LIST_COLLECTIONS, NULL);
@@ -2688,7 +2699,8 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
 
       for (i = 0; i < str_list->size; i++)
       {
-         const char *path = str_list->elems[i].data;
+         const char *path          = str_list->elems[i].data;
+         const char *playlist_file = NULL;
 
          if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
             continue;
@@ -2696,8 +2708,24 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
          if (string_is_empty(path))
             continue;
 
-         if (!string_is_equal_noncase(path_get_extension(path),
-                  file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+         playlist_file = path_basename(path);
+
+         if (string_is_empty(playlist_file))
+            continue;
+
+         /* Ignore non-playlist files */
+         if (!string_is_equal_noncase(path_get_extension(playlist_file),
+               file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+            continue;
+
+         /* Ignore history/favourites
+          * > content_history + favorites are handled separately
+          * > music/video/image_history are ignored */
+         if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
             continue;
 
          menu_entries_append_enum(info->list,
@@ -2713,6 +2741,29 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    /* Not necessary to check for NULL here */
    string_list_free(str_list);
 
+   /* Add content history */
+   if (settings->bools.history_list_enable)
+      if (g_defaults.content_history)
+         if (playlist_size(g_defaults.content_history) > 0)
+            if (menu_entries_append_enum(info->list,
+                  playlist_get_conf_path(g_defaults.content_history),
+                  "",
+                  MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+                  MENU_SETTING_ACTION,
+                  0, 0))
+               count++;
+
+   /* Add favourites */
+   if (g_defaults.content_favorites)
+      if (playlist_size(g_defaults.content_favorites) > 0)
+         if (menu_entries_append_enum(info->list,
+               playlist_get_conf_path(g_defaults.content_favorites),
+               "",
+               MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+               MENU_SETTING_ACTION,
+               0, 0))
+            count++;
+
    return count;
 }
 
@@ -2721,21 +2772,37 @@ static bool menu_displaylist_parse_playlist_manager_settings(
       menu_displaylist_info_t *info,
       const char *playlist_path)
 {
-   playlist_t *playlist = NULL;
+   const char *playlist_file = NULL;
+   playlist_t *playlist      = NULL;
+
+   if (string_is_empty(playlist_path))
+      return false;
+
+   playlist_file = path_basename(playlist_path);
+
+   if (string_is_empty(playlist_file))
+      return false;
 
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
-   playlist             = playlist_get_cached();
+   playlist = playlist_get_cached();
 
    if (!playlist)
       return false;
 
-   /* Default core association */
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-         MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0);
+   /* Default core association
+    * > This is only shown for collection playlists
+    *   (i.e. it is not relevant for history/favourites) */
+   if (!string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) &&
+       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) &&
+       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) &&
+       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) &&
+       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+            MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0);
 
    /* Reset core associations */
    menu_entries_append_enum(info->list,
@@ -4815,6 +4882,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,   PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -4991,6 +5059,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,                         PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,                       PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,                 PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,                  PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,               PARSE_ONLY_FLOAT},
@@ -5118,14 +5187,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CDROM_DETAIL_INFO:
       {
          media_detect_cd_info_t cd_info = {{0}};
-         char file_path[PATH_MAX_LENGTH];
+         char file_path[PATH_MAX_LENGTH] = {0};
          RFILE *file;
          char drive = info->path[0];
          bool atip = false;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
-         file_path[0] = '\0';
 
          if (cdrom_drive_has_media(drive))
          {
@@ -5157,6 +5225,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* open first data track */
+               memset(file_path, 0, sizeof(file_path));
                cdrom_device_fillpath(file_path, sizeof(file_path), drive, first_data_track, false);
 
                if (media_detect_cd_info(file_path, 0, &cd_info))
@@ -6625,6 +6694,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,  PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,    PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

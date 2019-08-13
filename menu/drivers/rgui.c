@@ -3100,7 +3100,7 @@ static void rgui_render(void *data, bool is_idle)
       msg_force = menu_display_get_msg_force();
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-            && menu_driver_is_alive() && !msg_force)
+            && !msg_force)
          return;
 
       if (!display_kb && !current_display_cb && (is_idle || !menu_display_get_update_pending()))

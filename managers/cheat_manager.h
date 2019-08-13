@@ -90,14 +90,14 @@ struct item_cheat
    char *desc;
    bool state;
    char *code;
-   unsigned int handler ;
+   unsigned int handler;
    /* Number of bits = 2^memory_search_size
     * 0=1, 1=2, 2=4, 3=8, 4=16, 5=32
     */
-   unsigned int memory_search_size ;
-   unsigned int cheat_type ;
-   unsigned int value ;
-   unsigned int address ;
+   unsigned int memory_search_size;
+   unsigned int cheat_type;
+   unsigned int value;
+   unsigned int address;
    /*
     * address_mask used when memory_search_size <8 bits
     * if memory_search_size=0, then the number of bits is 1 and this value can be one of the following:
@@ -118,20 +118,20 @@ struct item_cheat
     * 0 : 00001111
     * 1 : 11110000
     */
-   unsigned int address_mask ;
+   unsigned int address_mask;
    /* Whether to apply the cheat based on big-endian console memory or not */
-   bool big_endian ;
-   unsigned int rumble_type ;
-   unsigned int rumble_value ;
-   unsigned int rumble_prev_value ;
-   unsigned int rumble_initialized ;
-   unsigned int rumble_port ; /* 0-15 for specific port, anything else means "all ports" */
-   unsigned int rumble_primary_strength ; /* 0-65535 */
-   unsigned int rumble_primary_duration ; /* in milliseconds */
-   retro_time_t rumble_primary_end_time ; /* clock value for when rumbling should stop */
-   unsigned int rumble_secondary_strength ; /* 0-65535 */
-   unsigned int rumble_secondary_duration ; /* in milliseconds */
-   retro_time_t rumble_secondary_end_time ; /* clock value for when rumbling should stop */
+   bool big_endian;
+   unsigned int rumble_type;
+   unsigned int rumble_value;
+   unsigned int rumble_prev_value;
+   unsigned int rumble_initialized;
+   unsigned int rumble_port; /* 0-15 for specific port, anything else means "all ports" */
+   unsigned int rumble_primary_strength; /* 0-65535 */
+   unsigned int rumble_primary_duration; /* in milliseconds */
+   retro_time_t rumble_primary_end_time; /* clock value for when rumbling should stop */
+   unsigned int rumble_secondary_strength; /* 0-65535 */
+   unsigned int rumble_secondary_duration; /* in milliseconds */
+   retro_time_t rumble_secondary_end_time; /* clock value for when rumbling should stop */
 
    /*
     * The repeat_ variables allow for a single cheat code to affect multiple memory addresses.
@@ -145,9 +145,9 @@ struct item_cheat
     *
     * This is a cheating structure used for codes like unlocking all levels, giving yourself 1 of every item,etc.
     */
-   unsigned int repeat_count ;
-   unsigned int repeat_add_to_value ;
-   unsigned int repeat_add_to_address ;
+   unsigned int repeat_count;
+   unsigned int repeat_add_to_value;
+   unsigned int repeat_add_to_address;
 
 };
 
@@ -157,29 +157,29 @@ struct cheat_manager
    unsigned ptr;
    unsigned size;
    unsigned buf_size;
-   unsigned total_memory_size ;
-   uint8_t *curr_memory_buf ;
-   uint8_t *prev_memory_buf ;
-   uint8_t *matches ;
-   uint8_t **memory_buf_list ;
-   unsigned *memory_size_list ;
-   unsigned num_memory_buffers ;
+   unsigned total_memory_size;
+   uint8_t *curr_memory_buf;
+   uint8_t *prev_memory_buf;
+   uint8_t *matches;
+   uint8_t **memory_buf_list;
+   unsigned *memory_size_list;
+   unsigned num_memory_buffers;
    struct item_cheat working_cheat;
-   unsigned match_idx ;
-   unsigned match_action ;
-   unsigned search_bit_size ;
-   unsigned dummy ;
-   unsigned search_exact_value ;
-   unsigned search_eqplus_value ;
-   unsigned search_eqminus_value ;
-   unsigned num_matches ;
-   bool  big_endian ;
-   bool  memory_initialized ;
-   bool  memory_search_initialized ;
-   unsigned int delete_state ;
+   unsigned match_idx;
+   unsigned match_action;
+   unsigned search_bit_size;
+   unsigned dummy;
+   unsigned search_exact_value;
+   unsigned search_eqplus_value;
+   unsigned search_eqminus_value;
+   unsigned num_matches;
+   bool  big_endian;
+   bool  memory_initialized;
+   bool  memory_search_initialized;
+   unsigned int delete_state;
    unsigned browse_address;
-   char working_desc[CHEAT_DESC_SCRATCH_SIZE] ;
-   char working_code[CHEAT_CODE_SCRATCH_SIZE] ;
+   char working_desc[CHEAT_DESC_SCRATCH_SIZE];
+   char working_code[CHEAT_CODE_SCRATCH_SIZE];
    unsigned int loading_cheat_size;
    unsigned int loading_cheat_offset;
 };

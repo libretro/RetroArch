@@ -382,6 +382,14 @@ MSG_HASH(
     "Load Remap Files Automatically"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+    "Use Global Core Options File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+    "Save all core options to a common settings file (retroarch-core-options.cfg). When disabled, options for each core will be saved to a separate core-specific folder/file in RetroArch's 'Config' directory."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
     "Load Shader Presets Automatically"
     )
@@ -4672,6 +4680,10 @@ MSG_HASH(
     "Failed to apply shader."
     )
 MSG_HASH(
+    MSG_FAILED_TO_APPLY_SHADER_PRESET,
+    "Failed to apply shader preset:"
+    )
+MSG_HASH(
     MSG_FAILED_TO_BIND_SOCKET,
     "Failed to bind socket."
     )
@@ -8744,6 +8756,14 @@ MSG_HASH(
     "Have the left sidebar always collapsed."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+    "Truncate Playlist names"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+    "When enabled, will remove the system names from the playlists. For example, display 'PlayStation' instead of 'Sony - PlayStation'. Changes require a restart to take effect."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
     "Use preferred system color theme"
     )
@@ -9034,4 +9054,12 @@ MSG_HASH(
 MSG_HASH(
     MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
     "This core is not compatible with the current video driver."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET,
+    "Reset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+    "Reset All"
     )

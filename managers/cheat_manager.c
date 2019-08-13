@@ -277,27 +277,27 @@ static void cheat_manager_new(unsigned size)
 
    cheat_manager_free();
 
-   cheat_manager_state.buf_size = size;
-   cheat_manager_state.size = size;
+   cheat_manager_state.buf_size        = size;
+   cheat_manager_state.size            = size;
    cheat_manager_state.search_bit_size = 3;
-   cheat_manager_state.cheats = (struct item_cheat*)
+   cheat_manager_state.cheats          = (struct item_cheat*)
          calloc(cheat_manager_state.buf_size, sizeof(struct item_cheat));
 
    if (!cheat_manager_state.cheats)
    {
-      cheat_manager_state.buf_size = 0;
-      cheat_manager_state.size = 0;
-      cheat_manager_state.cheats = NULL;
+      cheat_manager_state.buf_size    = 0;
+      cheat_manager_state.size        = 0;
+      cheat_manager_state.cheats      = NULL;
       return;
    }
 
    for (i = 0; i < cheat_manager_state.size; i++)
    {
-      cheat_manager_state.cheats[i].desc = NULL;
-      cheat_manager_state.cheats[i].code = NULL;
-      cheat_manager_state.cheats[i].state = false;
-      cheat_manager_state.cheats[i].repeat_count = 1;
-      cheat_manager_state.cheats[i].repeat_add_to_value = 0;
+      cheat_manager_state.cheats[i].desc                  = NULL;
+      cheat_manager_state.cheats[i].code                  = NULL;
+      cheat_manager_state.cheats[i].state                 = false;
+      cheat_manager_state.cheats[i].repeat_count          = 1;
+      cheat_manager_state.cheats[i].repeat_add_to_value   = 0;
       cheat_manager_state.cheats[i].repeat_add_to_address = 1;
    }
 }
@@ -390,9 +390,10 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
 
 bool cheat_manager_load(const char *path, bool append)
 {
-   unsigned orig_size;
-   unsigned cheats = 0, i;
    config_file_cb_t cb;
+   unsigned orig_size  = 0;
+   unsigned cheats     = 0;
+   unsigned i          = 0;
    config_file_t *conf = NULL;
 
    cb.config_file_new_entry_cb = cheat_manager_load_cb_first_pass;
@@ -1285,22 +1286,22 @@ void cheat_manager_apply_retro_cheats(void)
 {
    unsigned i;
    unsigned int offset;
-   unsigned int mask = 0;
+   unsigned int mask           = 0;
    unsigned int bytes_per_item = 1;
-   unsigned int bits = 8;
-   unsigned int curr_val = 0;
-   bool run_cheat = true;
+   unsigned int bits           = 8;
+   unsigned int curr_val       = 0;
+   bool run_cheat              = true;
 
    if ((!cheat_manager_state.cheats))
       return;
 
    for (i = 0; i < cheat_manager_state.size; i++)
    {
-      unsigned char *curr;
-      unsigned int idx;
-      bool set_value = false;
+      unsigned char *curr       = NULL;
+      bool set_value            = false;
+      unsigned int idx          = 0;
       unsigned int value_to_set = 0;
-      unsigned int repeat_iter = 0;
+      unsigned int repeat_iter  = 0;
       unsigned int address_mask = cheat_manager_state.cheats[i].address_mask;
 
       if (cheat_manager_state.cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_manager_state.cheats[i].state)
@@ -1320,61 +1321,61 @@ void cheat_manager_apply_retro_cheats(void)
       }
       cheat_manager_setup_search_meta(cheat_manager_state.cheats[i].memory_search_size, &bytes_per_item, &mask, &bits);
 
-      curr = cheat_manager_state.curr_memory_buf;
-      idx = cheat_manager_state.cheats[i].address;
+      curr   = cheat_manager_state.curr_memory_buf;
+      idx    = cheat_manager_state.cheats[i].address;
 
       offset = translate_address(idx, &curr);
 
       switch (bytes_per_item)
       {
-      case 2:
-         curr_val = cheat_manager_state.big_endian ?
+         case 2:
+            curr_val = cheat_manager_state.big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
-         break;
-      case 4:
-         curr_val = cheat_manager_state.big_endian ?
+            break;
+         case 4:
+            curr_val = cheat_manager_state.big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
-         break;
-      case 1:
-      default:
-         curr_val = *(curr + idx - offset);
-         break;
+            break;
+         case 1:
+         default:
+            curr_val = *(curr + idx - offset);
+            break;
       }
 
       cheat_manager_apply_rumble(&cheat_manager_state.cheats[i], curr_val);
 
       switch (cheat_manager_state.cheats[i].cheat_type)
       {
-      case CHEAT_TYPE_SET_TO_VALUE:
-         set_value = true;
-         value_to_set = cheat_manager_state.cheats[i].value;
-         break;
-      case CHEAT_TYPE_INCREASE_VALUE:
-         set_value = true;
-         value_to_set = curr_val + cheat_manager_state.cheats[i].value;
-         break;
-      case CHEAT_TYPE_DECREASE_VALUE:
-         set_value = true;
-         value_to_set = curr_val - cheat_manager_state.cheats[i].value;
-         break;
-      case CHEAT_TYPE_RUN_NEXT_IF_EQ:
-         if (!(curr_val == cheat_manager_state.cheats[i].value))
-            run_cheat = false;
-         break;
-      case CHEAT_TYPE_RUN_NEXT_IF_NEQ:
-         if (!(curr_val != cheat_manager_state.cheats[i].value))
-            run_cheat = false;
-         break;
-      case CHEAT_TYPE_RUN_NEXT_IF_LT:
-         if (!(cheat_manager_state.cheats[i].value < curr_val))
-            run_cheat = false;
-         break;
-      case CHEAT_TYPE_RUN_NEXT_IF_GT:
-         if (!(cheat_manager_state.cheats[i].value > curr_val))
-            run_cheat = false;
-         break;
+         case CHEAT_TYPE_SET_TO_VALUE:
+            set_value = true;
+            value_to_set = cheat_manager_state.cheats[i].value;
+            break;
+         case CHEAT_TYPE_INCREASE_VALUE:
+            set_value = true;
+            value_to_set = curr_val + cheat_manager_state.cheats[i].value;
+            break;
+         case CHEAT_TYPE_DECREASE_VALUE:
+            set_value = true;
+            value_to_set = curr_val - cheat_manager_state.cheats[i].value;
+            break;
+         case CHEAT_TYPE_RUN_NEXT_IF_EQ:
+            if (!(curr_val == cheat_manager_state.cheats[i].value))
+               run_cheat = false;
+            break;
+         case CHEAT_TYPE_RUN_NEXT_IF_NEQ:
+            if (!(curr_val != cheat_manager_state.cheats[i].value))
+               run_cheat = false;
+            break;
+         case CHEAT_TYPE_RUN_NEXT_IF_LT:
+            if (!(cheat_manager_state.cheats[i].value < curr_val))
+               run_cheat = false;
+            break;
+         case CHEAT_TYPE_RUN_NEXT_IF_GT:
+            if (!(cheat_manager_state.cheats[i].value > curr_val))
+               run_cheat = false;
+            break;
       }
 
       if (set_value)
@@ -1383,60 +1384,60 @@ void cheat_manager_apply_retro_cheats(void)
          {
             switch (bytes_per_item)
             {
-            case 2:
-               if (cheat_manager_state.cheats[i].big_endian)
-               {
-                  *(curr + idx - offset) = (value_to_set >> 8) & 0xFF;
-                  *(curr + idx + 1 - offset) = value_to_set & 0xFF;
-               }
-               else
-               {
-                  *(curr + idx - offset) = value_to_set & 0xFF;
-                  *(curr + idx + 1 - offset) = (value_to_set >> 8) & 0xFF;
-               }
-               break;
-            case 4:
-               if (cheat_manager_state.cheats[i].big_endian)
-               {
-                  *(curr + idx - offset) = (value_to_set >> 24) & 0xFF;
-                  *(curr + idx + 1 - offset) = (value_to_set >> 16) & 0xFF;
-                  *(curr + idx + 2 - offset) = (value_to_set >> 8) & 0xFF;
-                  *(curr + idx + 3 - offset) = value_to_set & 0xFF;
-               }
-               else
-               {
-                  *(curr + idx - offset) = value_to_set & 0xFF;
-                  *(curr + idx + 1 - offset) = (value_to_set >> 8) & 0xFF;
-                  *(curr + idx + 2 - offset) = (value_to_set >> 16) & 0xFF;
-                  *(curr + idx + 3 - offset) = (value_to_set >> 24) & 0xFF;
-               }
-               break;
-            case 1:
-               if (bits < 8)
-               {
-                  unsigned bitpos;
-                  unsigned char val = *(curr + idx - offset);
-
-                  for (bitpos = 0; bitpos < 8; bitpos++)
+               case 2:
+                  if (cheat_manager_state.cheats[i].big_endian)
                   {
-                     if ((address_mask >> bitpos) & 0x01)
-                     {
-                        mask = (~(1 << bitpos) & 0xFF);
-                        /* Clear current bit value */
-                        val = val & mask;
-                        /* Inject cheat bit value */
-                        val = val | (((value_to_set >> bitpos) & 0x01) << bitpos);
-                     }
+                     *(curr + idx - offset) = (value_to_set >> 8) & 0xFF;
+                     *(curr + idx + 1 - offset) = value_to_set & 0xFF;
                   }
+                  else
+                  {
+                     *(curr + idx - offset) = value_to_set & 0xFF;
+                     *(curr + idx + 1 - offset) = (value_to_set >> 8) & 0xFF;
+                  }
+                  break;
+               case 4:
+                  if (cheat_manager_state.cheats[i].big_endian)
+                  {
+                     *(curr + idx - offset) = (value_to_set >> 24) & 0xFF;
+                     *(curr + idx + 1 - offset) = (value_to_set >> 16) & 0xFF;
+                     *(curr + idx + 2 - offset) = (value_to_set >> 8) & 0xFF;
+                     *(curr + idx + 3 - offset) = value_to_set & 0xFF;
+                  }
+                  else
+                  {
+                     *(curr + idx - offset) = value_to_set & 0xFF;
+                     *(curr + idx + 1 - offset) = (value_to_set >> 8) & 0xFF;
+                     *(curr + idx + 2 - offset) = (value_to_set >> 16) & 0xFF;
+                     *(curr + idx + 3 - offset) = (value_to_set >> 24) & 0xFF;
+                  }
+                  break;
+               case 1:
+                  if (bits < 8)
+                  {
+                     unsigned bitpos;
+                     unsigned char val = *(curr + idx - offset);
 
-                  *(curr + idx - offset) = val;
-               }
-               else
+                     for (bitpos = 0; bitpos < 8; bitpos++)
+                     {
+                        if ((address_mask >> bitpos) & 0x01)
+                        {
+                           mask = (~(1 << bitpos) & 0xFF);
+                           /* Clear current bit value */
+                           val = val & mask;
+                           /* Inject cheat bit value */
+                           val = val | (((value_to_set >> bitpos) & 0x01) << bitpos);
+                        }
+                     }
+
+                     *(curr + idx - offset) = val;
+                  }
+                  else
+                     *(curr + idx - offset) = value_to_set & 0xFF;
+                  break;
+               default:
                   *(curr + idx - offset) = value_to_set & 0xFF;
-               break;
-            default:
-               *(curr + idx - offset) = value_to_set & 0xFF;
-               break;
+                  break;
             }
 
             value_to_set += cheat_manager_state.cheats[i].repeat_add_to_value;
@@ -1468,6 +1469,7 @@ void cheat_manager_apply_retro_cheats(void)
       }
    }
 }
+
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value)
 {

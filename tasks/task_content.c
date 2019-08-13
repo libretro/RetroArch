@@ -230,9 +230,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       case DUMP_STATE_TOC_PENDING:
       {
          /* open cuesheet file from drive */
-         char cue_path[PATH_MAX_LENGTH];
-
-         cue_path[0] = '\0';
+         char cue_path[PATH_MAX_LENGTH] = {0};
 
          cdrom_device_fillpath(cue_path, sizeof(cue_path), state->drive_letter[0], 0, true);
 
@@ -584,33 +582,46 @@ static void content_load_init_wrap(
  **/
 static bool content_load(content_ctx_info_t *info)
 {
-   unsigned i;
+   unsigned i                        = 0;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
    char **rarch_argv_ptr             = (char**)info->argv;
    int *rarch_argc_ptr               = (int*)&info->argc;
-   struct rarch_main_wrap *wrap_args;
-   core_info_t core_info = {0};
-   core_info_list_t *core_info_list = NULL;
+   struct rarch_main_wrap *wrap_args = NULL;
+   core_info_t core_info             = {0};
+   core_info_list_t *core_info_list  = NULL;
+   gfx_ctx_ident_t ident_info        = {0};
 
-   core_info_get_list(&core_info_list);
+   video_context_driver_get_ident(&ident_info);
 
-   if (core_info_list)
+   /* only check for supported hw api on X11/GLX and Windows since that is where it is currently implemented */
+#ifdef HAVE_X11
+   if (!string_is_empty(ident_info.ident) && string_is_equal(ident_info.ident, "x"))
+#else
+#if defined(_WIN32) && !defined(_XBOX)
+   if (!string_is_empty(ident_info.ident) && string_is_equal(ident_info.ident, "wgl"))
+#endif
+#endif
    {
-      if (core_info_list_get_info(core_info_list, &core_info, path_get(RARCH_PATH_CORE)))
+      core_info_get_list(&core_info_list);
+
+      if (core_info_list)
       {
-         if (!core_info_hw_api_supported(&core_info))
+         if (core_info_list_get_info(core_info_list, &core_info, path_get(RARCH_PATH_CORE)))
          {
-            RARCH_ERR("This core is not compatible with the current video driver.\n");
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER),
-                  100, 250, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            return false;
+            if (!core_info_hw_api_supported(&core_info))
+            {
+               RARCH_ERR("This core is not compatible with the current video driver.\n");
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER),
+                     100, 250, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               return false;
+            }
+            else
+               RARCH_LOG("This core is compatible with the current video driver.\n");
          }
-         else
-            RARCH_LOG("This core is compatible with the current video driver.\n");
       }
    }
 

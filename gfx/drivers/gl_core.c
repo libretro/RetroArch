@@ -312,11 +312,9 @@ static void gl_core_render_overlay(gl_core_t *gl, video_frame_info_t *video_info
 }
 #endif
 
-static void gl_core_context_bind_hw_render(gl_core_t *gl, bool enable)
-{
-   if (gl->use_shared_context && gl->ctx_driver->bind_hw_render)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
-}
+#define gl_core_context_bind_hw_render(gl, enable) \
+   if (gl->use_shared_context) \
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
 static void gl_core_deinit_hw_render(gl_core_t *gl)
 {
@@ -522,7 +520,7 @@ static const gfx_ctx_driver_t *gl_core_get_context(gl_core_t *gl)
 }
 
 static void gl_core_set_projection(gl_core_t *gl,
-                                   const struct video_ortho *ortho, bool allow_rotate)
+      const struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -553,18 +551,16 @@ static void gl_core_set_projection(gl_core_t *gl,
 }
 
 static void gl_core_set_viewport(gl_core_t *gl,
-                                 unsigned viewport_width,
-                                 unsigned viewport_height,
-                                 bool force_full, bool allow_rotate)
+      video_frame_info_t *video_info,
+      unsigned viewport_width,
+      unsigned viewport_height,
+      bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   settings_t *settings     = config_get_ptr();
-
-   video_driver_get_size(&width, &height);
+   unsigned height          = video_info->height;
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
@@ -572,11 +568,11 @@ static void gl_core_set_viewport(gl_core_t *gl,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_info->scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-                                        viewport_width, viewport_height,
-                                        video_driver_get_aspect_ratio(), gl->keep_aspect);
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), gl->keep_aspect);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
@@ -585,7 +581,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
          /* GL has bottom-left origin viewport. */
@@ -932,6 +928,20 @@ static void gl_core_begin_debug(gl_core_t *gl)
 }
 #endif
 
+static void gl_core_set_viewport_wrapper(void *data,
+      unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   video_frame_info_t video_info;
+   gl_core_t *gl = (gl_core_t*)data;
+
+   video_driver_build_info(&video_info);
+
+   gl_core_set_viewport(gl, &video_info,
+         viewport_width, viewport_height, force_full, allow_rotate);
+}
+
+
 static void *gl_core_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -1078,7 +1088,7 @@ static void *gl_core_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   gl_core_set_viewport(gl, temp_width, temp_height, false, true);
+   gl_core_set_viewport_wrapper(gl, temp_width, temp_height, false, true);
 
    inp.input      = input;
    inp.input_data = input_data;
@@ -1405,13 +1415,6 @@ static bool gl_core_set_shader(void *data,
    return true;
 }
 
-static void gl_core_set_viewport_wrapper(void *data, unsigned viewport_width,
-                                         unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-   gl_core_t *gl = (gl_core_t*)data;
-   gl_core_set_viewport(gl, viewport_width, viewport_height, force_full, allow_rotate);
-}
-
 static void gl_core_set_rotation(void *data, unsigned rotation)
 {
    gl_core_t *gl = (gl_core_t*)data;
@@ -1594,10 +1597,10 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
 #endif
 
 static bool gl_core_frame(void *data, const void *frame,
-                          unsigned frame_width, unsigned frame_height,
-                          uint64_t frame_count,
-                          unsigned pitch, const char *msg,
-                          video_frame_info_t *video_info)
+      unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count,
+      unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
 {
    struct gl_core_filter_chain_texture texture;
    struct gl_core_streamed_texture *streamed;
@@ -1629,17 +1632,19 @@ static bool gl_core_frame(void *data, const void *frame,
       gl->should_resize = false;
    }
 
-   gl_core_set_viewport(gl, video_info->width, video_info->height, false, true);
+   gl_core_set_viewport(gl, video_info, video_info->width, video_info->height, false, true);
 
-   memset(&texture, 0, sizeof(texture));
-
-   texture.width = streamed->width;
-   texture.height = streamed->height;
+   texture.image            = 0;
+   texture.width            = streamed->width;
+   texture.height           = streamed->height;
+   texture.padded_width     = 0;
+   texture.padded_height    = 0;
+   texture.format           = 0;
    if (gl->hw_render_enable)
    {
-      texture.image = gl->hw_render_texture;
-      texture.format = GL_RGBA8;
-      texture.padded_width = gl->hw_render_max_width;
+      texture.image         = gl->hw_render_texture;
+      texture.format        = GL_RGBA8;
+      texture.padded_width  = gl->hw_render_max_width;
       texture.padded_height = gl->hw_render_max_height;
 
 	  if (texture.width == 0)
@@ -1649,9 +1654,9 @@ static bool gl_core_frame(void *data, const void *frame,
    }
    else
    {
-      texture.image = streamed->tex;
-      texture.format = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
-      texture.padded_width = streamed->width;
+      texture.image         = streamed->tex;
+      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
+      texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
    }
    gl_core_filter_chain_set_frame_count(gl->filter_chain, frame_count);
@@ -1679,20 +1684,18 @@ static bool gl_core_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-      }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
       gl_core_render_overlay(gl, video_info);
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -1771,31 +1774,10 @@ static void gl_core_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_core_t *gl = (gl_core_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
-
    if (!gl)
       return;
 
-   gl->keep_aspect = true;
+   gl->keep_aspect   = true;
    gl->should_resize = true;
 }
 

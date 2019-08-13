@@ -129,6 +129,28 @@ char *string_trim_whitespace(char *const s);
 char *word_wrap(char *buffer, const char *string,
       int line_width, bool unicode, unsigned max_lines);
 
+/* Splits string into tokens seperated by 'delim'
+ * > Returned token string must be free()'d
+ * > Returns NULL if token is not found
+ * > After each call, 'str' is set to the position after the
+ *   last found token
+ * > Tokens *include* empty strings
+ * Usage example:
+ *    char *str      = "1,2,3,4,5,6,7,,,10,";
+ *    char **str_ptr = &str;
+ *    char *token    = NULL;
+ *    while((token = string_tokenize(str_ptr, ",")))
+ *    {
+ *        printf("%s\n", token);
+ *        free(token);
+ *        token = NULL;
+ *    }
+ */
+char* string_tokenize(char **str, const char *delim);
+
+/* Removes every instance of character 'c' from 'str' */
+void string_remove_all_chars(char *str, char c);
+
 RETRO_END_DECLS
 
 #endif

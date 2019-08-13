@@ -319,46 +319,35 @@ static void switch_update_viewport(switch_video_t *sw,
 
 static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-    switch_video_t *sw = (switch_video_t *)data;
+    settings_t *settings = config_get_ptr();
+    switch_video_t *sw   = (switch_video_t *)data;
 
     if (!sw)
         return;
 
-    sw->keep_aspect = true;
-    sw->o_size = false;
-
-    settings_t *settings = config_get_ptr();
+    sw->keep_aspect      = true;
+    sw->o_size           = false;
 
     switch (aspect_ratio_idx)
     {
-    case ASPECT_RATIO_SQUARE:
-        video_driver_set_viewport_square_pixel();
-        break;
+       case ASPECT_RATIO_CORE:
+          sw->o_size      = true;
+          sw->keep_aspect = false;
+          break;
 
-    case ASPECT_RATIO_CORE:
-        video_driver_set_viewport_core();
-        sw->o_size = true;
-        sw->keep_aspect = false;
-        break;
+       case ASPECT_RATIO_CUSTOM:
+          if (settings->bools.video_scale_integer)
+          {
+             video_driver_set_viewport_core();
+             sw->o_size      = true;
+             sw->keep_aspect = false;
+          }
+          break;
 
-    case ASPECT_RATIO_CONFIG:
-        video_driver_set_viewport_config();
-        break;
-
-    case ASPECT_RATIO_CUSTOM:
-        if (settings->bools.video_scale_integer)
-        {
-            video_driver_set_viewport_core();
-            sw->o_size = true;
-            sw->keep_aspect = false;
-        }
-        break;
-
-    default:
-        break;
+       default:
+          break;
     }
 
-    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
     sw->should_resize = true;
 }

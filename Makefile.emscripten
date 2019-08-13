@@ -7,9 +7,10 @@ PTHREAD = 0
 OS = Emscripten
 OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -s USE_PTHREADS=$(PTHREAD)
-DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_GLSL -DHAVE_FILTERS_BUILTIN -DHAVE_STB_FONT
+DEFINES += -DHAVE_FILTERS_BUILTIN
 
 HAVE_OVERLAY = 1
+HAVE_GLSL = 1
 HAVE_AUDIOMIXER = 1
 HAVE_VIDEO_LAYOUT = 0
 HAVE_CC_RESAMPLER = 1
@@ -27,8 +28,9 @@ HAVE_ZLIB = 1
 HAVE_SHADERPIPELINE = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
-MEMORY = 536870912
 HAVE_STB_FONT = 1
+
+MEMORY = 536870912
 
 PRECISE_F32 = 1
 
@@ -37,10 +39,11 @@ OBJDIR := obj-emscripten
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 
 LIBS    := -s USE_ZLIB=1
-LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 -s BINARYEN_TRAP_MODE=\"clamp\" \
+LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 \
            -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
            --js-library emscripten/library_rwebaudio.js \
-           --js-library emscripten/library_rwebcam.js
+           --js-library emscripten/library_rwebcam.js \
+           --js-library emscripten/library_errno_codes.js
 ifneq ($(PTHREAD), 0)
    LDFLAGS += -s USE_PTHREADS=$(PTHREAD) -s PTHREAD_POOL_SIZE=2
 endif

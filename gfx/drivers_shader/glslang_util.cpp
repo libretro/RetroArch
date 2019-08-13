@@ -23,7 +23,6 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <streams/file_stream.h>
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -36,163 +35,222 @@
 #endif
 #include "../../verbosity.h"
 
-using namespace std;
-
-bool glslang_read_shader_file(const char *path, vector<string> *output, bool root_file)
+static void get_include_file(
+      const char *line, char *include_file, size_t len)
 {
-   vector<const char *> lines;
-   char include_path[PATH_MAX_LENGTH];
+   char *end   = NULL;
+   char *start = (char*)strchr(line, '\"');
+
+   if (!start)
+      return;
+
+   start++;
+   end = (char*)strchr(start, '\"');
+
+   if (!end)
+      return;
+
+   *end = '\0';
+   strlcpy(include_file, start, len);
+}
+
+bool glslang_read_shader_file(const char *path, struct string_list *output, bool root_file)
+{
    char tmp[PATH_MAX_LENGTH];
-   char                          *ptr = NULL;
-   char                          *buf = nullptr;
-   int64_t                        len = 0;
-   const char *basename               = path_basename(path);
+   union string_list_elem_attr attr;
+   size_t i;
+   const char *basename      = NULL;
+   uint8_t *buf              = NULL;
+   int64_t buf_len           = 0;
+   struct string_list *lines = NULL;
 
-   include_path[0] = tmp[0] = '\0';
+   tmp[0] = '\0';
+   attr.i = 0;
 
-   if (!filestream_read_file(path, (void**)&buf, &len))
+   /* Sanity check */
+   if (string_is_empty(path) || !output)
+      return false;
+
+   basename      = path_basename(path);
+
+   if (string_is_empty(basename))
+      return false;
+
+   /* Read file contents */
+   if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
       RARCH_ERR("Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
-   /* Remove Windows \r chars if we encounter them.
-    * filestream_read_file() allocates one extra for 0 terminator. */
-   auto itr = remove_if(buf, buf + len + 1, [](char c) {
-      return c == '\r';
-   });
-
-   if (itr < buf + len)
-      *itr = '\0';
-
-   /* Cannot use string_split since it removes blank lines (strtok). */
-   ptr = buf;
-
-   while (ptr && *ptr)
+   if (buf_len > 0)
    {
-      char *next_ptr = NULL;
+      /* Remove Windows '\r' chars if we encounter them */
+      string_remove_all_chars((char*)buf, '\r');
 
-      lines.push_back(ptr);
-
-      next_ptr = strchr(ptr, '\n');
-
-      if (next_ptr)
-      {
-         ptr = next_ptr + 1;
-         *next_ptr = '\0';
-      }
-      else
-         ptr = nullptr;
+      /* Split into lines
+       * (Blank lines must be included) */
+      lines = string_separate((char*)buf, "\n");
    }
 
-   if (lines.empty())
+   /* Buffer is no longer required - clean up */
+   if (buf)
+      free(buf);
+
+   /* Sanity check */
+   if (!lines)
+      return false;
+
+   if (lines->size < 1)
       goto error;
 
+   /* If this is the 'parent' shader file, ensure that first
+    * line is a 'VERSION' string */
    if (root_file)
    {
-      if (strstr(lines[0], "#version ") != lines[0])
+      const char *line = lines->elems[0].data;
+
+      if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
          RARCH_ERR("First line of the shader must contain a valid #version string.\n");
-         return false;
+         goto error;
       }
 
-      output->push_back(lines[0]);
+      if (!string_list_append(output, line, attr))
+         goto error;
+
       /* Allows us to use #line to make dealing with shader errors easier.
        * This is supported by glslang, but since we always use glslang statically,
        * this is fine. */
-      output->push_back("#extension GL_GOOGLE_cpp_style_line_directive : require");
+
+      if (!string_list_append(output, "#extension GL_GOOGLE_cpp_style_line_directive : require", attr))
+         goto error;
    }
 
    /* At least VIM treats the first line as line #1,
     * so offset everything by one. */
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
-   output->push_back(tmp);
+   if (!string_list_append(output, tmp, attr))
+      goto error;
 
-   for (size_t i = root_file ? 1 : 0; i < lines.size(); i++)
+   /* Loop through lines of file */
+   for (i = root_file ? 1 : 0; i < lines->size; i++)
    {
-      const char *line = lines[i];
-      if (strstr(line, "#include ") == line)
+      unsigned push_line = 0;
+      const char *line   = lines->elems[i].data;
+
+      /* Check for 'include' statements */
+      if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
       {
-         char *closing = NULL;
-         char *c       = (char*)strchr(line, '"');
+         char include_file[PATH_MAX_LENGTH];
+         char include_path[PATH_MAX_LENGTH];
 
-         if (!c)
+         include_file[0] = '\0';
+         include_path[0] = '\0';
+
+         /* Build include file path */
+         get_include_file(line, include_file, sizeof(include_file));
+
+         if (string_is_empty(include_file))
          {
             RARCH_ERR("Invalid include statement \"%s\".\n", line);
             goto error;
          }
 
-         c++;
+         fill_pathname_resolve_relative(
+               include_path, path, include_file, sizeof(include_path));
 
-         closing = (char*)strchr(c, '"');
-
-         if (!closing)
-         {
-            RARCH_ERR("Invalid include statement \"%s\".\n", line);
-            goto error;
-         }
-
-         *closing = '\0';
-
-         fill_pathname_resolve_relative(include_path, path, c, sizeof(include_path));
-
+         /* Parse include file */
          if (!glslang_read_shader_file(include_path, output, false))
             goto error;
 
          /* After including a file, use line directive
           * to pull it back to current file. */
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 1), basename);
-         output->push_back(tmp);
+         push_line = 1;
       }
-      else if (strstr(line, "#endif") || strstr(line, "#pragma"))
+      else if (!strncmp("#endif", line, STRLEN_CONST("#endif")) ||
+               !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
       {
          /* #line seems to be ignored if preprocessor tests fail,
           * so we should reapply #line after each #endif.
           * Add extra offset here since we're setting #line
           * for the line after this one.
           */
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 2), basename);
-         output->push_back(line);
-         output->push_back(tmp);
+         push_line = 2;
+         if (!string_list_append(output, line, attr))
+            goto error;
       }
       else
-         output->push_back(line);
+         if (!string_list_append(output, line, attr))
+            goto error;
+
+      if (push_line != 0)
+      {
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + push_line), basename);
+         if (!string_list_append(output, tmp, attr))
+            goto error;
+      }
    }
 
-   free(buf);
+   string_list_free(lines);
+
    return true;
 
 error:
-   free(buf);
+
+   if (lines)
+      string_list_free(lines);
+
    return false;
 }
 
-static string build_stage_source(const vector<string> &lines, const char *stage)
+static std::string build_stage_source(const struct string_list *lines, const char *stage)
 {
-   ostringstream str;
+   /* Note: since we have to return a std::string anyway,
+    * there is nothing to be gained from trying to replace
+    * this ostringstream with a C-based alternative
+    * (would require a rewrite of deps/glslang/glslang.cpp) */
+   std::ostringstream str;
    bool active = true;
+   size_t i;
+
+   if (!lines)
+      return "";
+
+   if (lines->size < 1)
+      return "";
 
    /* Version header. */
-   str << lines.front();
+   str << lines->elems[0].data;;
    str << '\n';
 
-   for (auto itr = begin(lines) + 1; itr != end(lines); ++itr)
+   for (i = 1; i < lines->size; i++)
    {
-      if (itr->find("#pragma stage ") == 0)
+      const char *line = lines->elems[i].data;
+
+      /* Identify 'stage' (fragment/vertex) */
+      if (!strncmp("#pragma stage ", line, STRLEN_CONST("#pragma stage ")))
       {
-         if (stage)
+         if (!string_is_empty(stage))
          {
-            auto expected = string("#pragma stage ") + stage;
-            active = itr->find(expected) != string::npos;
+            char expected[128];
+
+            expected[0] = '\0';
+
+            strlcpy(expected, "#pragma stage ", sizeof(expected));
+            strlcat(expected, stage,            sizeof(expected));
+
+            active = strcmp(expected, line) == 0;
          }
       }
-      else if (itr->find("#pragma name ") == 0 ||
-               itr->find("#pragma format ") == 0)
+      else if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")) ||
+               !strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
       {
          /* Ignore */
       }
       else if (active)
-         str << *itr;
+         str << line;
+
       str << '\n';
    }
 
@@ -283,20 +341,26 @@ static glslang_format glslang_find_format(const char *fmt)
    return SLANG_FORMAT_UNKNOWN;
 }
 
-bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
+bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 {
    char id[64];
    char desc[64];
+   size_t i;
 
-   id[0] = desc[0] = '\0';
+   id[0]   = '\0';
+   desc[0] = '\0';
 
-   *meta           = glslang_meta{};
+   if (!lines)
+      return false;
 
-   for (auto &line : lines)
+   *meta   = glslang_meta{};
+
+   for (i = 0; i < lines->size; i++)
    {
-      const char *line_c = line.c_str();
+      const char *line = lines->elems[i].data;
 
-      if (line.find("#pragma name ") == 0)
+      /* Check for shader identifier */
+      if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")))
       {
          const char *str = NULL;
 
@@ -306,16 +370,18 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line_c + STRLEN_CONST("#pragma name ");
-
+         str = line + STRLEN_CONST("#pragma name ");
          while (*str == ' ')
             str++;
+
          meta->name = str;
       }
-      else if (line.find("#pragma parameter ") == 0)
+      /* Check for shader parameters */
+      else if (!strncmp("#pragma parameter ", line, STRLEN_CONST("#pragma parameter ")))
       {
          float initial, minimum, maximum, step;
-         int ret = sscanf(line_c, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+         int ret = sscanf(
+               line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                id, desc, &initial, &minimum, &maximum, &step);
 
          if (ret == 5)
@@ -326,19 +392,33 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 
          if (ret == 6)
          {
-            auto itr = find_if(begin(meta->parameters), end(meta->parameters), [&](const glslang_parameter &param) {
-                     return param.id == id;
-                  });
+            bool parameter_found   = false;
+            size_t parameter_index = 0;
+            size_t j;
+
+            for (j = 0; j < meta->parameters.size(); j++)
+            {
+               /* Note: LHS is a std:string, RHS is a C string.
+                * (the glslang_meta stuff has to be C++) */
+               if (meta->parameters[j].id == id)
+               {
+                  parameter_found = true;
+                  parameter_index = j;
+                  break;
+               }
+            }
 
             /* Allow duplicate #pragma parameter, but only
              * if they are exactly the same. */
-            if (itr != end(meta->parameters))
+            if (parameter_found)
             {
-               if (   itr->desc    != desc    ||
-                      itr->initial != initial ||
-                      itr->minimum != minimum ||
-                      itr->maximum != maximum ||
-                      itr->step    != step
+               const glslang_parameter *parameter = &meta->parameters[parameter_index];
+
+               if (   parameter->desc    != desc    ||
+                      parameter->initial != initial ||
+                      parameter->minimum != minimum ||
+                      parameter->maximum != maximum ||
+                      parameter->step    != step
                   )
                {
                   RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
@@ -350,11 +430,12 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
          }
          else
          {
-            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line_c);
+            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line);
             return false;
          }
       }
-      else if (line.find("#pragma format ") == 0)
+      /* Check for framebuffer format */
+      else if (!strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
       {
          const char *str = NULL;
 
@@ -364,12 +445,12 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
             return false;
          }
 
-         str = line_c + STRLEN_CONST("#pragma format ");
-
+         str = line + STRLEN_CONST("#pragma format ");
          while (*str == ' ')
             str++;
 
          meta->rt_format = glslang_find_format(str);
+
          if (meta->rt_format == SLANG_FORMAT_UNKNOWN)
          {
             RARCH_ERR("[slang]: Failed to find format \"%s\".\n", str);
@@ -377,37 +458,50 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
          }
       }
    }
+
    return true;
 }
 
 #if defined(HAVE_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
-   vector<string> lines;
+   struct string_list *lines = string_list_new();
+
+   if (!lines)
+      return false;
 
    RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
 
-   if (!glslang_read_shader_file(shader_path, &lines, true))
-      return false;
+   if (!glslang_read_shader_file(shader_path, lines, true))
+      goto error;
 
    if (!glslang_parse_meta(lines, &output->meta))
-      return false;
+      goto error;
 
    if (    !glslang::compile_spirv(build_stage_source(lines, "vertex"),
             glslang::StageVertex, &output->vertex))
    {
       RARCH_ERR("Failed to compile vertex shader stage.\n");
-      return false;
+      goto error;
    }
 
    if (    !glslang::compile_spirv(build_stage_source(lines, "fragment"),
             glslang::StageFragment, &output->fragment))
    {
       RARCH_ERR("Failed to compile fragment shader stage.\n");
-      return false;
+      goto error;
    }
 
+   string_list_free(lines);
+
    return true;
+
+error:
+
+   if (lines)
+      string_list_free(lines);
+
+   return false;
 }
 #else
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)

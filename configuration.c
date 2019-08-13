@@ -695,7 +695,11 @@ const char *config_get_default_audio(void)
       case AUDIO_CTR:
          return "dsp";
       case AUDIO_SWITCH:
+#if defined(HAVE_LIBNX)
+         return "switch_thread";
+#else
          return "switch";
+#endif
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       case AUDIO_JACK:
@@ -1579,6 +1583,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("game_specific_options",        &settings->bools.game_specific_options, true, default_game_specific_options, false);
    SETTING_BOOL("auto_overrides_enable",        &settings->bools.auto_overrides_enable, true, default_auto_overrides_enable, false);
    SETTING_BOOL("auto_remaps_enable",           &settings->bools.auto_remaps_enable, true, default_auto_remaps_enable, false);
+   SETTING_BOOL("global_core_options",          &settings->bools.global_core_options, true, default_global_core_options, false);
    SETTING_BOOL("auto_shaders_enable",          &settings->bools.auto_shaders_enable, true, default_auto_shaders_enable, false);
    SETTING_BOOL("scan_without_core_match",   &settings->bools.scan_without_core_match, true, scan_without_core_match, false);
    SETTING_BOOL("sort_savefiles_enable",        &settings->bools.sort_savefiles_enable, true, default_sort_savefiles_enable, false);
@@ -1620,6 +1625,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
+   SETTING_BOOL("ozone_truncate_playlist_name", &settings->bools.ozone_truncate_playlist_name, true, DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME, false);
 #endif
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
