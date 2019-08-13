@@ -349,7 +349,7 @@ static bool add_active_buffer_ranges(
 
       if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && tex_sem_index >= reflection->pass_number)
       {
-         RARCH_ERR("[slang]: Non causal filter chain detected."
+         RARCH_ERR("[slang]: Non causal filter chain detected. "
                "Shader is trying to use output from pass #%u,"
                " but this shader is pass #%u.\n",
                tex_sem_index, reflection->pass_number);
@@ -637,7 +637,15 @@ bool slang_reflect(
             *reflection->texture_semantic_map,
             fragment.sampled_images[i].name, &array_index);
 
-      if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
+      if (index == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && array_index >= reflection->pass_number)
+      {
+         RARCH_ERR("[slang]: Non causal filter chain detected. "
+               "Shader is trying to use output from pass #%u,"
+               " but this shader is pass #%u.\n",
+               array_index, reflection->pass_number);
+         return false;
+      }
+      else if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
          RARCH_ERR("[slang]: Non-semantic textures not supported yet.\n");
          return false;
