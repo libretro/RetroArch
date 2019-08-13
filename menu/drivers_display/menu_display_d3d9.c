@@ -121,7 +121,6 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
 {
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
-   unsigned width, height;
    LPDIRECT3DDEVICE9 dev;
    d3d9_video_t *d3d             = (d3d9_video_t*)video_info->userdata;
    Vertex * pv                   = NULL;
@@ -185,19 +184,18 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
       draw->matrix_data = menu_display_d3d9_get_default_mvp(video_info);
 
    /* ugh */
-   video_driver_get_size(&width, &height);
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
    matrix_4x4_translate(mop, -1.0, -1.0, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_multiply(m1,
          *((math_matrix_4x4*)draw->matrix_data), m2);
    matrix_4x4_scale(mop,
-         (draw->width  / 2.0) / width,
-         (draw->height / 2.0) / height, 0);
+         (draw->width  / 2.0) / video_info->width,
+         (draw->height / 2.0) / video_info->height, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_translate(mop,
-         (draw->x + (draw->width  / 2.0)) / width,
-         (draw->y + (draw->height / 2.0)) / height,
+         (draw->x + (draw->width  / 2.0)) / video_info->width,
+         (draw->y + (draw->height / 2.0)) / video_info->height,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
