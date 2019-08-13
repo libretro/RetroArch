@@ -837,8 +837,11 @@ static int ozone_list_push(void *data, void *userdata,
                   !string_is_equal(system->info.library_name,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
-               entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
-               menu_displaylist_setting(&entry);
+               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
+                  menu_displaylist_setting(&entry);
+               }
             }
 
             if (system->load_no_content)
