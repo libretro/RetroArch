@@ -5187,14 +5187,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CDROM_DETAIL_INFO:
       {
          media_detect_cd_info_t cd_info = {{0}};
-         char file_path[PATH_MAX_LENGTH];
+         char file_path[PATH_MAX_LENGTH] = {0};
          RFILE *file;
          char drive = info->path[0];
          bool atip = false;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
-         file_path[0] = '\0';
 
          if (cdrom_drive_has_media(drive))
          {
@@ -5226,6 +5225,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* open first data track */
+               memset(file_path, 0, sizeof(file_path));
                cdrom_device_fillpath(file_path, sizeof(file_path), drive, first_data_track, false);
 
                if (media_detect_cd_info(file_path, 0, &cd_info))

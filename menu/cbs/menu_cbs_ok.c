@@ -2263,9 +2263,7 @@ static int action_ok_load_cdrom(const char *path,
 
    if (system && !string_is_empty(system->library_name))
    {
-      char cdrom_path[256];
-
-      cdrom_path[0] = '\0';
+      char cdrom_path[256] = {0};
 
       cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
 

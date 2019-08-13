@@ -230,9 +230,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       case DUMP_STATE_TOC_PENDING:
       {
          /* open cuesheet file from drive */
-         char cue_path[PATH_MAX_LENGTH];
-
-         cue_path[0] = '\0';
+         char cue_path[PATH_MAX_LENGTH] = {0};
 
          cdrom_device_fillpath(cue_path, sizeof(cue_path), state->drive_letter[0], 0, true);
 

@@ -1494,9 +1494,7 @@ bool cdrom_is_media_inserted(libretro_vfs_implementation_file *stream)
 bool cdrom_drive_has_media(const char drive)
 {
    RFILE *file;
-   char cdrom_path_bin[256];
-
-   cdrom_path_bin[0] = '\0';
+   char cdrom_path_bin[256] = {0};
 
    cdrom_device_fillpath(cdrom_path_bin, sizeof(cdrom_path_bin), drive, 1, false);
 
@@ -1690,8 +1688,11 @@ void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char tra
 #ifdef __linux__
       pos = strlcpy(path, "cdrom://drive", len);
 
-      if (len > pos)
+      if (len > pos + 1)
+      {
          path[pos++] = drive;
+         path[pos] = '\0';
+      }
 
       pos = strlcat(path, ".cue", len);
 #endif
@@ -1702,8 +1703,11 @@ void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char tra
 #ifdef _WIN32
       pos = strlcpy(path, "cdrom://", len);
 
-      if (len > pos)
+      if (len > pos + 1)
+      {
          path[pos++] = drive;
+         path[pos] = '\0';
+      }
 
       pos += snprintf(path + pos, len - pos, ":/drive-track%02d.bin", track);
 #else
