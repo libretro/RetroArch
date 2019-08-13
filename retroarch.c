@@ -23339,7 +23339,10 @@ static enum runloop_state runloop_check_state(void)
             {
                if (menu_data->driver_ctx->render)
                   menu_data->driver_ctx->render(
-                        menu_data->userdata, runloop_idle);
+                        menu_data->userdata,
+                        video_driver_width,
+                        video_driver_height,
+                        runloop_idle);
             }
 
             if (menu_driver_alive && !runloop_idle)

@@ -2655,7 +2655,9 @@ static void stripes_draw_items(
    menu_display_blend_end(video_info);
 }
 
-static void stripes_render(void *data, bool is_idle)
+static void stripes_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
    size_t i;
    settings_t   *settings   = config_get_ptr();
@@ -2674,9 +2676,6 @@ static void stripes_render(void *data, bool is_idle)
       int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
          + (stripes->cursor_size/2);
       unsigned first = 0, last = end;
-      unsigned height;
-
-      video_driver_get_size(NULL, &height);
 
       if (height)
          stripes_calculate_visible_range(stripes, height,

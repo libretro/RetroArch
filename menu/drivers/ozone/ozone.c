@@ -992,7 +992,9 @@ static void ozone_list_free(file_list_t *list, size_t a, size_t b)
    ozone_list_clear(list);
 }
 
-static void ozone_render(void *data, bool is_idle)
+static void ozone_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
    size_t i;
    unsigned end                     = (unsigned)menu_entries_get_size();
