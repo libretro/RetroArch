@@ -14733,7 +14733,9 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
                midi_drv_output_event.data_size);
 #endif
 
-      midi_drv_output_pending = true;
+      midi_drv_output_pending             = true;
+      midi_drv_output_event.data_size     = 0;
+      midi_drv_output_event.delta_time    = 0;
    }
 
    return true;
