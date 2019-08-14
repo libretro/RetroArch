@@ -24,13 +24,16 @@
 #define __LIBRETRO_SDK_VFS_IMPLEMENTATION_CDROM_H
 
 #include <vfs/vfs.h>
+
+#ifdef HAVE_CDROM
 #include <cdrom/cdrom.h>
+#endif
 
 RETRO_BEGIN_DECLS
 
 int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
-void retro_vfs_file_open_cdrom(
+bool retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);
 
@@ -43,9 +46,30 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
 int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream);
 
+#ifdef HAVE_CDROM
 const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(void);
+#endif
 
-const vfs_cdrom_t* retro_vfs_file_get_cdrom_position(const libretro_vfs_implementation_file *stream);
+libretro_vfs_implementation_file* retro_vfs_file_open_cdrom_track(
+      libretro_vfs_implementation_file* stream, const char* track);
+
+int retro_vfs_file_close_cdrom_track(libretro_vfs_implementation_file *stream);
+
+int64_t retro_vfs_file_seek_cdrom_track(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
+
+int64_t retro_vfs_file_read_cdrom_track(libretro_vfs_implementation_file *stream, void *s, uint64_t len);
+
+int64_t retro_vfs_file_tell_cdrom_track(libretro_vfs_implementation_file *stream);
+
+
+libretro_vfs_implementation_file* retro_vfs_file_open_cdrom_file(
+      libretro_vfs_implementation_file* stream, const char* path);
+
+int64_t retro_vfs_file_seek_cdrom_file(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
+
+int64_t retro_vfs_file_read_cdrom_file(libretro_vfs_implementation_file *stream, void *s, uint64_t len);
+
+int64_t retro_vfs_file_tell_cdrom_file(libretro_vfs_implementation_file *stream);
 
 RETRO_END_DECLS
 

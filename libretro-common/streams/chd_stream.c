@@ -43,6 +43,8 @@ struct chdstream
    uint32_t frame_size;
    /* Offset of data within frame */
    uint32_t frame_offset;
+   /* Size of frame header */
+   uint32_t frame_header_size;
    /* Number of frames per hunk */
    uint32_t frames_per_hunk;
    /* First frame of track in chd */
@@ -360,11 +362,62 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
    return bytes;
 }
 
+ssize_t chdstream_read_file(chdstream_t *stream, int64_t file_start, void *data, size_t bytes)
+{
+   uint8_t buffer[SECTOR_SIZE];
+   int64_t file_frame = (stream->offset - file_start) / stream->frame_size;
+   int64_t file_frame_offset = (stream->offset - file_start) - (file_frame * stream->frame_size) - stream->frame_header_size;
+   ssize_t bytes_read = 0;
+
+   if (file_frame_offset >= stream->frame_header_size + 2048)
+   {
+      ++file_frame;
+      file_frame_offset = -1;
+   }
+   if (file_frame_offset < 0)
+   {
+      stream->offset = file_start + (file_frame * stream->frame_size) + stream->frame_header_size;
+      file_frame_offset = 0;
+   }
+
+   do
+   {
+      const int64_t remaining = 2048 - file_frame_offset;
+      if (bytes < remaining)
+      {
+         if (bytes > 0)
+         {
+            chdstream_read(stream, data, bytes);
+            bytes_read += bytes;
+         }
+         return bytes_read;
+      }
+
+      chdstream_read(stream, data, remaining);
+      bytes_read += remaining;
+      bytes -= remaining;
+
+      ++file_frame;
+      stream->offset = file_start + (file_frame * stream->frame_size) + stream->frame_header_size;
+      file_frame_offset = 0;
+   } while (true);
+}
+
 int chdstream_getc(chdstream_t *stream)
 {
    char c = 0;
 
-   if (chdstream_read(stream, &c, sizeof(c) != sizeof(c)))
+   if (chdstream_read(stream, &c, sizeof(c)) != sizeof(c))
+      return EOF;
+
+   return c;
+}
+
+int chdstream_getc_file(chdstream_t *stream, int64_t file_start)
+{
+   char c = 0;
+
+   if (chdstream_read_file(stream, file_start, &c, sizeof(c)) != sizeof(c))
       return EOF;
 
    return c;
@@ -385,14 +438,41 @@ char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
    return buffer;
 }
 
+char *chdstream_gets_file(chdstream_t *stream, int64_t file_start, char *buffer, size_t len)
+{
+   int c;
+
+   size_t offset = 0;
+
+   while (offset < len && (c = chdstream_getc_file(stream, file_start)) != EOF)
+      buffer[offset++] = c;
+
+   if (offset < len)
+      buffer[offset] = '\0';
+
+   return buffer;
+}
+
 uint64_t chdstream_tell(chdstream_t *stream)
 {
    return stream->offset;
 }
 
+uint64_t chdstream_tell_file(chdstream_t *stream, int64_t file_start)
+{
+   const int64_t file_frame = (stream->offset - file_start) / stream->frame_size;
+   const int64_t file_frame_offset = (stream->offset - file_start) - (file_frame * stream->frame_size) - stream->frame_header_size;
+   return (file_frame * 2048) + file_frame_offset;
+}
+
 void chdstream_rewind(chdstream_t *stream)
 {
    stream->offset = 0;
+}
+
+void chdstream_rewind_file(chdstream_t *stream, int64_t file_start)
+{
+   stream->offset = file_start;
 }
 
 int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
@@ -422,6 +502,74 @@ int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
 
    stream->offset = new_offset;
    return 0;
+}
+
+int64_t chdstream_seek_file(chdstream_t* stream, const char* path)
+{
+   uint8_t buffer[SECTOR_SIZE], *tmp;
+   int sector, path_length;
+
+   const char* slash = strrchr(path, '\\');
+   if (slash)
+   {
+      /* navigate the path to the directory record for the file */
+      const int dir_length = (int)(slash - path);
+      memcpy(buffer, path, dir_length);
+      buffer[dir_length] = '\0';
+
+      if (chdstream_seek_file(stream, (const char*)buffer) < 0)
+         return -1;
+
+      path += dir_length + 1;
+   }
+   else
+   {
+      /* The boot record or primary volume descriptor is always at sector 16 and will contain a "CD001" marker */
+      chdstream_seek(stream, 16 * stream->frame_size, SEEK_SET);
+      chdstream_read(stream, buffer, sizeof(buffer));
+
+      if (stream->frame_header_size == 0)
+      {
+         if (memcmp(&buffer[25], "CD001", 5) == 0)
+            stream->frame_header_size = 24;
+         else
+            stream->frame_header_size = 16;
+      }
+
+      /* the directory_record starts at 156 bytes into the sector.
+       * the sector containing the table of contents is a 3 byte value that is 2 bytes into the directory_record. */
+      {
+         const int offset = stream->frame_header_size + 156 + 2;
+         sector = buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
+      }
+      chdstream_seek(stream, sector * stream->frame_size, SEEK_SET);
+   }
+
+   /* process the table of contents */
+   chdstream_read(stream, buffer, sizeof(buffer));
+
+   path_length = strlen(path);
+   tmp = buffer + stream->frame_header_size;
+   while (tmp < buffer + sizeof(buffer))
+   {
+      /* the first byte of the record is the length of the record - if 0, we reached the end of the data */
+      if (!*tmp)
+         break;
+
+      /* filename is 33 bytes into the record and the format is "FILENAME;version" or "DIRECTORY" */
+      if ((tmp[33 + path_length] == ';' || tmp[33 + path_length] == '\0') &&
+         strncasecmp((const char*)(tmp + 33), path, path_length) == 0)
+      {
+         /* the file contents are in the sector identified in bytes 2-4 of the record */
+         sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
+         return chdstream_seek(stream, sector * stream->frame_size, SEEK_SET);
+      }
+
+      /* the first byte of the record is the length of the record */
+      tmp += tmp[0];
+   }
+
+   return -1;
 }
 
 ssize_t chdstream_get_size(chdstream_t *stream)
