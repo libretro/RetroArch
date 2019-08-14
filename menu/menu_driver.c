@@ -1913,20 +1913,8 @@ bool menu_driver_list_set_selection(file_list_t *list)
    return true;
 }
 
-static void menu_update_libretro_info(void)
-{
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-}
-
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
-   settings_t *settings           = config_get_ptr();
-   menu_update_libretro_info();
-
-   if (menu_driver_data)
-      return true;
-
    if (menu_driver_ctx->init)
    {
       menu_driver_data               = (menu_handle_t*)
@@ -1936,34 +1924,36 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    }
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
-      goto error;
+      return false;
 
-   strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
-         sizeof(settings->arrays.menu_driver));
+   {
+      settings_t *settings           = config_get_ptr();
+      strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
+            sizeof(settings->arrays.menu_driver));
+   }
 
    if (menu_driver_ctx->lists_init)
       if (!menu_driver_ctx->lists_init(menu_driver_data))
-         goto error;
+         return false;
 
-   return true;
-
-error:
-   retroarch_fail(1, "init_menu()");
-   return false;
-}
-
-static bool menu_driver_context_reset(bool video_is_threaded)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
-      return false;
-   menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
    return true;
 }
 
 bool menu_driver_init(bool video_is_threaded)
 {
-   if (menu_driver_init_internal(video_is_threaded))
-      return menu_driver_context_reset(video_is_threaded);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
+   if (  menu_driver_data || 
+         menu_driver_init_internal(video_is_threaded))
+   {
+      if (menu_driver_ctx && menu_driver_ctx->context_reset)
+      {
+         menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
+         return true;
+      }
+   }
+
    return false;
 }
 
