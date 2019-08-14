@@ -1125,11 +1125,6 @@ bool menu_input_dialog_get_display_kb(void)
    return menu_input_dialog_keyboard_display;
 }
 
-void menu_driver_set_alive(bool val)
-{
-   menu_driver_alive = val;
-}
-
 bool menu_driver_is_toggled(void)
 {
    return menu_driver_toggled;
