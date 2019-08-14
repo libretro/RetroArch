@@ -179,15 +179,12 @@
 #endif
 
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_cdrom.h>
 #include <libretro.h>
 #include <memmap.h>
 #include <encodings/utf.h>
 #include <compat/fopen_utf8.h>
 #include <file/file_path.h>
-
-#ifdef HAVE_CDROM
-#include <vfs/vfs_implementation_cdrom.h>
-#endif
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
@@ -198,10 +195,25 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+      switch (stream->scheme)
+      {
 #ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_seek_cdrom(stream, offset, whence);
+         case VFS_SCHEME_CDROM:
+            return retro_vfs_file_seek_cdrom(stream, offset, whence);
+         case VFS_SCHEME_CDROM_TRACK:
+            return retro_vfs_file_seek_cdrom_track(stream, offset, whence);
+         case VFS_SCHEME_CDROM_FILE:
+            return retro_vfs_file_seek_cdrom_file(stream, offset, whence);
 #endif
+         case VFS_SCHEME_CUE:
+            break;
+         case VFS_SCHEME_CUE_BIN:
+            return retro_vfs_file_seek_cdrom_track(stream, offset, whence);
+         case VFS_SCHEME_CUE_BIN_FILE:
+            return retro_vfs_file_seek_cdrom_file(stream, offset, whence);
+         default:
+            break;
+      }
 /* VC2005 and up have a special 64-bit fseek */
 #ifdef ATLEAST_VC2005
       return _fseeki64(stream->fp, offset, whence);
@@ -403,28 +415,28 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
       stream->fd = fd;
 #else
-      FILE *fp;
 #ifdef HAVE_CDROM
       if (stream->scheme == VFS_SCHEME_CDROM)
       {
-         retro_vfs_file_open_cdrom(stream, path, mode, hints);
-#if defined(_WIN32) && !defined(_XBOX)
-         if (!stream->fh)
+         if (!retro_vfs_file_open_cdrom(stream, path, mode, hints))
             goto error;
-#else
-         if (!stream->fp)
-            goto error;
-#endif
       }
       else
 #endif
       {
+         FILE *fp;
+         const char* ext;
+
          fp = (FILE*)fopen_utf8(path, mode_str);
 
          if (!fp)
             goto error;
 
          stream->fp  = fp;
+
+         ext = path_get_extension(path);
+         if (string_is_equal_case_insensitive(ext, "cue"))
+            stream->scheme = VFS_SCHEME_CUE;
       }
       /* Regarding setvbuf:
        *
@@ -437,11 +449,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        */
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
 #if !defined(PS2) && !defined(PSP)
-      if (stream->scheme != VFS_SCHEME_CDROM)
+      switch (stream->scheme)
       {
-         stream->buf = (char*)calloc(1, 0x4000);
-         if (stream->fp)
-            setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+         case VFS_SCHEME_CDROM:
+         case VFS_SCHEME_CDROM_FILE:
+         case VFS_SCHEME_CDROM_TRACK:
+            break;
+         default:
+            stream->buf = (char*)calloc(1, 0x4000);
+            if (stream->fp)
+               setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+            break;
       }
 #endif
 #endif
@@ -491,18 +509,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->size = orbisLseek(stream->fd, 0, SEEK_END);
    orbisLseek(stream->fd, 0, SEEK_SET);
 #else
-#ifdef HAVE_CDROM
-   if (stream->scheme == VFS_SCHEME_CDROM)
-   {
-      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
-      retro_vfs_file_seek_cdrom(stream, 0, SEEK_END);
-
-      stream->size = retro_vfs_file_tell_impl(stream);
-
-      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
-   }
-   else
-#endif
    {
       retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
       retro_vfs_file_seek_internal(stream, 0, SEEK_END);
@@ -524,13 +530,27 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    if (!stream)
       return -1;
 
-#ifdef HAVE_CDROM
-   if (stream->scheme == VFS_SCHEME_CDROM)
+   switch (stream->scheme)
    {
-      retro_vfs_file_close_cdrom(stream);
-      goto end;
-   }
+#ifdef HAVE_CDROM
+      case VFS_SCHEME_CDROM:
+         retro_vfs_file_close_cdrom(stream);
+         goto end;
+
+      case VFS_SCHEME_CDROM_TRACK:
+         retro_vfs_file_close_cdrom_track(stream);
+         goto end;
+
+      case VFS_SCHEME_CDROM_FILE:
+         break;
 #endif
+
+      case VFS_SCHEME_CUE_BIN:
+         retro_vfs_file_close_cdrom_track(stream);
+         goto end;
+      default:
+         break;
+   }
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
@@ -556,8 +576,9 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
 #endif
    }
-#ifdef HAVE_CDROM
+
 end:
+#ifdef HAVE_CDROM
    if (stream->cdrom.cue_buf)
       free(stream->cdrom.cue_buf);
 #endif
@@ -616,10 +637,23 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+      switch (stream->scheme)
+      {
 #ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_tell_cdrom(stream);
+         case VFS_SCHEME_CDROM:
+            return retro_vfs_file_tell_cdrom(stream);
+         case VFS_SCHEME_CDROM_TRACK:
+            return retro_vfs_file_tell_cdrom_track(stream);
+         case VFS_SCHEME_CDROM_FILE:
+            return retro_vfs_file_tell_cdrom_file(stream);
 #endif
+         case VFS_SCHEME_CUE_BIN:
+            return retro_vfs_file_tell_cdrom_track(stream);
+         case VFS_SCHEME_CUE_BIN_FILE:
+            return retro_vfs_file_tell_cdrom_file(stream);
+         default:
+            break;
+      }
 #ifdef ORBIS
       {
          int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
@@ -676,10 +710,25 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+      switch (stream->scheme)
+      {
 #ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_read_cdrom(stream, s, len);
+         case VFS_SCHEME_CDROM:
+            return retro_vfs_file_read_cdrom(stream, s, len);
+         case VFS_SCHEME_CDROM_TRACK:
+            return retro_vfs_file_read_cdrom_track(stream, s, len);
+         case VFS_SCHEME_CDROM_FILE:
+            return retro_vfs_file_read_cdrom_file(stream, s, len);
 #endif
+         case VFS_SCHEME_CUE:
+            break;
+         case VFS_SCHEME_CUE_BIN:
+            return retro_vfs_file_read_cdrom_track(stream, s, len);
+         case VFS_SCHEME_CUE_BIN_FILE:
+            return retro_vfs_file_read_cdrom_file(stream, s, len);
+         default:
+            break;
+      }
 #ifdef ORBIS
       if (orbisRead(stream->fd, s, (size_t)len) < 0)
          return -1;
