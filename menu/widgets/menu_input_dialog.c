@@ -65,7 +65,7 @@ void menu_input_dialog_end(void)
 {
    menu_input_dialog_keyboard_type             = 0;
    menu_input_dialog_keyboard_idx              = 0;
-   menu_input_dialog_keyboard_display          = false;
+   menu_input_dialog_set_kb(false);
    menu_input_dialog_keyboard_label[0]         = '\0';
    menu_input_dialog_keyboard_label_setting[0] = '\0';
 
@@ -158,14 +158,9 @@ bool menu_input_dialog_get_display_kb(void)
    return menu_input_dialog_keyboard_display;
 }
 
-void menu_input_dialog_display_kb(void)
+void menu_input_dialog_set_kb(bool val)
 {
-   menu_input_dialog_keyboard_display = true;
-}
-
-void menu_input_dialog_hide_kb(void)
-{
-   menu_input_dialog_keyboard_display = false;
+   menu_input_dialog_keyboard_display = val;
 }
 
 bool menu_input_dialog_start_search(void)
@@ -176,7 +171,7 @@ bool menu_input_dialog_start_search(void)
             RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
-   menu_input_dialog_display_kb();
+   menu_input_dialog_set_kb(true);
    strlcpy(menu_input_dialog_keyboard_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_input_dialog_keyboard_label));
@@ -197,7 +192,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
-   menu_input_dialog_display_kb();
+   menu_input_dialog_set_kb(true);
 
    /* Only copy over the menu label and setting if they exist. */
    if (line->label)

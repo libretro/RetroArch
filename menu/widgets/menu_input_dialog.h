@@ -49,9 +49,7 @@ unsigned menu_input_dialog_get_kb_idx(void);
 
 bool menu_input_dialog_start_search(void);
 
-void menu_input_dialog_hide_kb(void);
-
-void menu_input_dialog_display_kb(void);
+void menu_input_dialog_set_kb(bool val);
 
 bool menu_input_dialog_get_display_kb(void);
 
