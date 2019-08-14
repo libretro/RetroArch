@@ -716,8 +716,6 @@ const char *menu_input_dialog_get_label_buffer(void);
 
 const char *menu_input_dialog_get_buffer(void);
 
-unsigned menu_input_dialog_get_kb_type(void);
-
 unsigned menu_input_dialog_get_kb_idx(void);
 
 bool menu_input_dialog_start_search(void);

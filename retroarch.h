@@ -2095,8 +2095,6 @@ const char *camera_driver_find_ident(int index);
 
 bool menu_driver_is_alive(void);
 
-bool menu_driver_is_binding_state(void);
-
 void menu_driver_set_binding_state(bool on);
 
 bool menu_driver_is_toggled(void);

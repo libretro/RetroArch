@@ -1002,11 +1002,6 @@ const char *menu_input_dialog_get_buffer(void)
    return *menu_input_dialog_keyboard_buffer;
 }
 
-unsigned menu_input_dialog_get_kb_type(void)
-{
-   return menu_input_dialog_keyboard_type;
-}
-
 unsigned menu_input_dialog_get_kb_idx(void)
 {
    return menu_input_dialog_keyboard_idx;
@@ -1134,11 +1129,6 @@ bool menu_driver_is_toggled(void)
 bool menu_driver_is_alive(void)
 {
    return menu_driver_alive;
-}
-
-bool menu_driver_is_binding_state(void)
-{
-   return menu_driver_is_binding;
 }
 
 void menu_driver_set_binding_state(bool on)
