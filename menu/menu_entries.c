@@ -24,8 +24,6 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 
-#include "widgets/menu_input_dialog.h"
-
 #include "../core.h"
 #include "../retroarch.h"
 #include "../version.h"

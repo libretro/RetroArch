@@ -701,6 +701,35 @@ extern hid_driver_t wiiusb_hid;
 extern hid_driver_t null_hid;
 #endif
 
+typedef struct menu_input_ctx_line
+{
+   const char *label;
+   const char *label_setting;
+   unsigned type;
+   unsigned idx;
+   input_keyboard_line_complete_t cb;
+} menu_input_ctx_line_t;
+
+const char *menu_input_dialog_get_label_setting_buffer(void);
+
+const char *menu_input_dialog_get_label_buffer(void);
+
+const char *menu_input_dialog_get_buffer(void);
+
+unsigned menu_input_dialog_get_kb_type(void);
+
+unsigned menu_input_dialog_get_kb_idx(void);
+
+bool menu_input_dialog_start_search(void);
+
+void menu_input_dialog_set_kb(bool val);
+
+bool menu_input_dialog_get_display_kb(void);
+
+bool menu_input_dialog_start(menu_input_ctx_line_t *line);
+
+void menu_input_dialog_end(void);
+
 RETRO_END_DECLS
 
 #endif

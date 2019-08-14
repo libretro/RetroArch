@@ -44,7 +44,6 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/widgets/menu_input_dialog.h"
 #include "../../menu/menu_cbs.h"
 #endif
 

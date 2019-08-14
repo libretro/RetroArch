@@ -805,7 +805,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
-          menu/widgets/menu_input_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
           menu/widgets/menu_osk.o \
           menu/menu_cbs.o \

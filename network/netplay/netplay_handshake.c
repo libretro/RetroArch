@@ -37,10 +37,6 @@
 #include "../../retroarch.h"
 #include "../../version.h"
 
-#ifdef HAVE_MENU
-#include "../../menu/widgets/menu_input_dialog.h"
-#endif
-
 const uint32_t netplay_magic = 0x52414E50; /* RANP */
 
 /* TODO/FIXME - replace netplay_log_connection with calls

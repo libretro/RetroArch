@@ -49,7 +49,6 @@
 #endif
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
-#include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_input_bind_dialog.h"
 #include "../menu_input.h"
 #include "../menu_networking.h"

@@ -43,7 +43,6 @@
 #include "../../playlist.h"
 #include "../../runtime_file.h"
 
-#include "../../widgets/menu_input_dialog.h"
 #include "../../widgets/menu_osk.h"
 #include "../../widgets/menu_filebrowser.h"
 

@@ -1241,7 +1241,6 @@ MENU
 
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
-#include "../menu/widgets/menu_input_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
 #ifdef HAVE_MENU_WIDGETS
 #include "../menu/widgets/menu_widgets.c"
