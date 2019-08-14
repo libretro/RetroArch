@@ -3752,13 +3752,10 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          break;
       case CMD_EVENT_OSK_TOGGLE:
-         if (input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+         if (input_driver_keyboard_linefeed_enable)
+            input_driver_keyboard_linefeed_enable = false;
          else
-            input_keyboard_ctl(
-                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+            input_driver_keyboard_linefeed_enable = true;
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
@@ -11608,9 +11605,10 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
    return inside_hitbox;
 }
 
+static bool pointer_dragging                 = false;
+
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
-   static bool pointer_dragging                 = false;
    menu_input_t *menu_input                     = &menu_input_state;
 
    if (!menu_input)
@@ -11639,12 +11637,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          break;
       case MENU_INPUT_CTL_IS_POINTER_DRAGGED:
          return pointer_dragging;
-      case MENU_INPUT_CTL_SET_POINTER_DRAGGED:
-         pointer_dragging = true;
-         break;
-      case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
-         pointer_dragging = false;
-         break;
       case MENU_INPUT_CTL_NONE:
          break;
    }
@@ -11981,8 +11973,7 @@ static int menu_input_pointer_post_iterate(
 
       menu_input->pointer.counter++;
 
-      if (menu_input->pointer.counter == 1 &&
-            !menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
+      if (menu_input->pointer.counter == 1 && !pointer_dragging)
       {
          menu_ctx_pointer_t point;
 
@@ -12014,16 +12005,16 @@ static int menu_input_pointer_post_iterate(
          {
             float s;
 
-            menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
+            pointer_dragging                  = true;
             menu_input->pointer.dx            = pointer_x - pointer_old_x;
             menu_input->pointer.dy            = pointer_y - pointer_old_y;
             pointer_old_x                     = pointer_x;
             pointer_old_y                     = pointer_y;
 
-            s = menu_input->pointer.dy;
-            menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
-            accel0                    = accel1;
-            accel1                    = menu_input->pointer.accel;
+            s                                 = menu_input->pointer.dy;
+            menu_input->pointer.accel         = (accel0 + accel1 + s) / 3;
+            accel0                            = accel1;
+            accel1                            = menu_input->pointer.accel;
          }
       }
    }
@@ -12031,7 +12022,7 @@ static int menu_input_pointer_post_iterate(
    {
       if (pointer_oldpressed[0])
       {
-         if (!menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
+         if (!pointer_dragging)
          {
             menu_ctx_pointer_t point;
 
@@ -12078,7 +12069,7 @@ static int menu_input_pointer_post_iterate(
          menu_input->pointer.dy            = 0;
          menu_input->pointer.counter       = 0;
 
-         menu_input_ctl(MENU_INPUT_CTL_UNSET_POINTER_DRAGGED, NULL);
+         pointer_dragging                  = false;
       }
    }
 
@@ -13195,7 +13186,13 @@ void input_keyboard_event(bool down, unsigned code,
       }
 
       /* Line is complete, can free it now. */
-      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+      if (g_keyboard_line)
+      {
+         if (g_keyboard_line->buffer)
+            free(g_keyboard_line->buffer);
+         free(g_keyboard_line);
+      }
+      g_keyboard_line = NULL;
 
       /* Unblock all hotkeys. */
       current_input->keyboard_mapping_blocked = false;
@@ -13216,7 +13213,8 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
          if (g_keyboard_line)
          {
-            free(g_keyboard_line->buffer);
+            if (g_keyboard_line->buffer)
+               free(g_keyboard_line->buffer);
             free(g_keyboard_line);
          }
          g_keyboard_line = NULL;
@@ -13239,12 +13237,6 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
          g_keyboard_press_cb   = NULL;
          g_keyboard_press_data = NULL;
          current_input->keyboard_mapping_blocked = false;
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
-         input_driver_keyboard_linefeed_enable = true;
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED:
-         input_driver_keyboard_linefeed_enable = false;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED:
          return input_driver_keyboard_linefeed_enable;
