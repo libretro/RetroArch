@@ -96,6 +96,11 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#include "switch_performance_profiles.h"
+#endif
+
 #include "config.def.h"
 #include "config.def.keybinds.h"
 
@@ -922,6 +927,7 @@ enum menu_mouse_action
    MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
 
+static bool menu_input_dialog_keyboard_display             = false;
 static unsigned char menu_keyboard_key_state[RETROK_LAST]       = {0};
 
 static menu_input_t menu_input_state;
@@ -933,6 +939,85 @@ static bool menu_driver_is_binding              = false;
 /* A menu toggle has been requested; if the menu was running,
  * it will be closed; if the menu was not running, it will be opened */
 static bool menu_driver_toggled                 = false;
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+extern u32 __nx_applet_type;
+extern void libnx_apply_overclock(void);
+#endif
+
+bool menu_input_dialog_get_display_kb(void)
+{
+#ifdef HAVE_LIBNX
+   SwkbdConfig kbd;
+   Result rc;
+
+   /* swkbd only works on "real" titles */
+   if (     __nx_applet_type != AppletType_Application 
+         && __nx_applet_type != AppletType_SystemApplication)
+      return menu_input_dialog_keyboard_display;
+
+   if (!menu_input_dialog_keyboard_display)
+      return false;
+
+   rc = swkbdCreate(&kbd, 0);
+
+   if (R_SUCCEEDED(rc))
+   {
+      unsigned i;
+      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
+      swkbdConfigMakePresetDefault(&kbd);
+
+      swkbdConfigSetGuideText(&kbd, menu_input_dialog_keyboard_label);
+
+      rc = swkbdShow(&kbd, buf, sizeof(buf));
+
+      swkbdClose(&kbd);
+
+      /* RetroArch uses key-by-key input
+         so we need to simulate it */
+      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      {
+         /* In case a previous "Enter" press closed the keyboard */
+         if (!menu_input_dialog_keyboard_display)
+            break;
+
+         if (buf[i] == '\n' || buf[i] == '\0')
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+         else
+         {
+            /* input_keyboard_line_append expects a null-terminated
+               string, so just make one (yes, the touch keyboard is
+               a list of "null-terminated characters") */
+            char oldchar = buf[i+1];
+            buf[i+1]     = '\0';
+            input_keyboard_line_append(&buf[i]);
+            buf[i+1]     = oldchar;
+         }
+      }
+
+      /* fail-safe */
+      if (menu_input_dialog_keyboard_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      libnx_apply_overclock();
+      return false;
+   }
+   libnx_apply_overclock();
+#endif
+   return menu_input_dialog_keyboard_display;
+}
+
+#ifdef HAVE_LIBNX
+#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_get_display_kb()
+#else
+#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
+#endif
+
+void menu_input_dialog_set_kb(bool val)
+{
+   menu_input_dialog_keyboard_display = val;
+}
 
 void menu_driver_set_alive(bool val)
 {
@@ -11346,7 +11431,10 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
  * entire button state either but do a separate event per button
  * state.
  */
-static unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
+static unsigned menu_event(
+      input_bits_t *p_input,
+      input_bits_t *p_trigger_input,
+      bool display_kb)
 {
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
@@ -11421,7 +11509,7 @@ static unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 
    delay_count += menu_animation_get_delta_time();
 
-   if (menu_input_dialog_get_display_kb())
+   if (display_kb)
    {
       menu_event_osk_iterate();
 
@@ -11766,7 +11854,7 @@ static int menu_input_mouse_frame(
       point.action  = 0;
       point.retcode = 0;
 
-      if (menu_input_dialog_get_display_kb())
+      if (menu_input_dialog_get_display_kb_internal())
          menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
 
       if (rarch_timer_is_running(&mouse_activity_timer))
@@ -11798,7 +11886,7 @@ static int menu_input_mouse_frame(
       point.entry  = entry;
       point.action = action;
 
-      if (menu_input_dialog_get_display_kb())
+      if (menu_input_dialog_get_display_kb_internal())
       {
          menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
          if (point.retcode > -1)
@@ -12033,7 +12121,7 @@ static int menu_input_pointer_post_iterate(
             point.entry  = entry;
             point.action = action;
 
-            if (menu_input_dialog_get_display_kb())
+            if (menu_input_dialog_get_display_kb_internal())
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -12246,7 +12334,6 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
       input_pop_analog_dpad(auto_binds);
    }
 
-   if (!menu_input_dialog_get_display_kb())
    {
       unsigned ids[][2] =
       {
@@ -23027,6 +23114,7 @@ static enum runloop_state runloop_check_state(void)
    bool menu_driver_binding_state      = menu_driver_is_binding;
    bool menu_is_alive                  = menu_driver_alive;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
+   bool display_kb                     = menu_input_dialog_get_display_kb_internal();
 #ifdef HAVE_EASTEREGG
    static uint64_t seq                 = 0;
 #endif
@@ -23047,7 +23135,7 @@ static enum runloop_state runloop_check_state(void)
       input_driver_block_hotkey = true;
 
 #ifdef HAVE_MENU
-   if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
+   if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
       input_menu_keys_pressed(&current_bits);
    else
 #endif
@@ -23249,7 +23337,7 @@ static enum runloop_state runloop_check_state(void)
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
 
-      action                    = (enum menu_action)menu_event(&current_bits, &trigger_input);
+      action                    = (enum menu_action)menu_event(&current_bits, &trigger_input, display_kb);
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused && !main_ui_companion_is_on_foreground;
 
