@@ -1117,7 +1117,7 @@ static void retroarch_unset_shader_preset(void)
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
-#define FPS_UPDATE_INTERVAL 256
+#define FPS_UPDATE_INTERVAL 120
 
 #ifdef HAVE_THREADS
 #define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
