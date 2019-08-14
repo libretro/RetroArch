@@ -34,6 +34,7 @@
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_cdrom.h>
 
 static const int64_t vfs_error_return_value      = -1;
 
@@ -165,6 +166,37 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    else
       fp = (struct retro_vfs_file_handle*)
          retro_vfs_file_open_impl(path, mode, hints);
+
+   if (!fp)
+      return NULL;
+
+   output             = (RFILE*)malloc(sizeof(RFILE));
+   output->error_flag = false;
+   output->eof_flag   = false;
+   output->hfile      = fp;
+   return output;
+}
+
+RFILE* filestream_open_child(RFILE *stream, const char* path)
+{
+   struct retro_vfs_file_handle  *fp = NULL;
+   RFILE* output                     = NULL;
+
+   switch (stream->hfile->scheme)
+   {
+      case VFS_SCHEME_CDROM:
+      case VFS_SCHEME_CUE:
+         fp = retro_vfs_file_open_cdrom_track(stream->hfile, path);
+         break;
+
+      case VFS_SCHEME_CDROM_TRACK:
+      case VFS_SCHEME_CUE_BIN:
+         fp = retro_vfs_file_open_cdrom_file(stream->hfile, path);
+         break;
+
+      default:
+         return NULL;
+   }
 
    if (!fp)
       return NULL;

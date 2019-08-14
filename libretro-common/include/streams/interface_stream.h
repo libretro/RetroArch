@@ -36,7 +36,8 @@ enum intfstream_type
 {
    INTFSTREAM_FILE = 0,
    INTFSTREAM_MEMORY,
-   INTFSTREAM_CHD
+   INTFSTREAM_CHD,
+   INTFSTREAM_CHD_FILE
 };
 
 typedef struct intfstream_internal intfstream_internal_t, intfstream_t;
@@ -96,6 +97,9 @@ int intfstream_flush(intfstream_internal_t *intf);
 
 intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
+
+intfstream_t* intfstream_open_file_child(intfstream_internal_t *intf,
+      const char* path);
 
 intfstream_t *intfstream_open_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size);
