@@ -272,50 +272,6 @@ static bool gl2_shader_scale(gl_t *gl,
    return true;
 }
 
-static void gl2_renderchain_convert_geometry(
-      struct video_fbo_rect *fbo_rect,
-      struct gfx_fbo_scale *fbo_scale,
-      unsigned last_width, unsigned last_max_width,
-      unsigned last_height, unsigned last_max_height,
-      unsigned vp_width, unsigned vp_height)
-{
-   switch (fbo_scale->type_x)
-   {
-      case RARCH_SCALE_INPUT:
-         fbo_rect->img_width      = fbo_scale->scale_x * last_width;
-         fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         fbo_rect->img_width      = fbo_rect->max_img_width =
-            fbo_scale->abs_x;
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_width      = fbo_rect->max_img_width =
-            fbo_scale->scale_x * vp_width;
-         break;
-   }
-
-   switch (fbo_scale->type_y)
-   {
-      case RARCH_SCALE_INPUT:
-         fbo_rect->img_height     = last_height * fbo_scale->scale_y;
-         fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         fbo_rect->img_height     = fbo_scale->abs_y;
-         fbo_rect->max_img_height = fbo_scale->abs_y;
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_height     = fbo_rect->max_img_height =
-            fbo_scale->scale_y * vp_height;
-         break;
-   }
-}
-
 static void gl2_size_format(GLint* internalFormat)
 {
 #ifndef HAVE_PSGL
@@ -403,59 +359,6 @@ static bool gl2_recreate_fbo(
 
    RARCH_WARN("Failed to reinitialize FBO texture.\n");
    return false;
-}
-
-/* On resize, we might have to recreate our FBOs
- * due to "Viewport" scale, and set a new viewport. */
-
-static void gl2_renderchain_check_fbo_dimensions(
-      gl_t *gl, gl2_renderchain_data_t *chain)
-{
-   unsigned i;
-
-   /* Check if we have to recreate our FBO textures. */
-   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
-   {
-      struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-      if (fbo_rect)
-      {
-         unsigned img_width   = fbo_rect->max_img_width;
-         unsigned img_height  = fbo_rect->max_img_height;
-
-         if ((img_width  > fbo_rect->width) ||
-             (img_height > fbo_rect->height))
-         {
-            /* Check proactively since we might suddently
-             * get sizes of tex_w width or tex_h height. */
-            unsigned max                    = img_width > img_height ? img_width : img_height;
-            unsigned pow2_size              = next_pow2(max);
-            bool update_feedback            = gl->fbo_feedback_enable
-               && (unsigned)i == gl->fbo_feedback_pass;
-
-            fbo_rect->width                 = pow2_size;
-            fbo_rect->height                = pow2_size;
-
-            gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
-
-            /* Update feedback texture in-place so we avoid having to
-             * juggle two different fbo_rect structs since they get updated here. */
-            if (update_feedback)
-            {
-               if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
-                        &gl->fbo_feedback_texture))
-               {
-                  /* Make sure the feedback textures are cleared
-                   * so we don't feedback noise. */
-                  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-                  glClear(GL_COLOR_BUFFER_BIT);
-               }
-            }
-
-            RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
-                  i, fbo_rect->width, fbo_rect->height);
-         }
-      }
-   }
 }
 
 static void gl2_set_projection(gl_t *gl,
@@ -1019,12 +922,41 @@ static void gl2_renderchain_recompute_pass_sizes(
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
 
-      gl2_renderchain_convert_geometry(
-            fbo_rect, fbo_scale,
-            last_width, last_max_width,
-            last_height, last_max_height,
-            vp_width, vp_height
-            );
+      switch (fbo_scale->type_x)
+      {
+         case RARCH_SCALE_INPUT:
+            fbo_rect->img_width      = fbo_scale->scale_x * last_width;
+            fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_scale->abs_x;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_scale->scale_x * vp_width;
+            break;
+      }
+
+      switch (fbo_scale->type_y)
+      {
+         case RARCH_SCALE_INPUT:
+            fbo_rect->img_height     = last_height * fbo_scale->scale_y;
+            fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            fbo_rect->img_height     = fbo_scale->abs_y;
+            fbo_rect->max_img_height = fbo_scale->abs_y;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            fbo_rect->img_height     = fbo_rect->max_img_height =
+               fbo_scale->scale_y * vp_height;
+            break;
+      }
 
       if (fbo_rect->img_width > (unsigned)max_size)
       {
@@ -1426,17 +1358,19 @@ error:
    return false;
 }
 
-static void gl2_renderchain_restore_default_state(
-      gl_t *gl)
-{
-#ifndef HAVE_OPENGLES
-   if (!gl->core_context_in_use)
-      glEnable(GL_TEXTURE_2D);
+#ifdef HAVE_OPENGLES
+#define gl2_renderchain_restore_default_state(gl) \
+   glDisable(GL_DEPTH_TEST); \
+   glDisable(GL_CULL_FACE); \
+   glDisable(GL_DITHER)
+#else
+#define gl2_renderchain_restore_default_state(gl) \
+   if (!gl->core_context_in_use) \
+      glEnable(GL_TEXTURE_2D); \
+   glDisable(GL_DEPTH_TEST); \
+   glDisable(GL_CULL_FACE); \
+   glDisable(GL_DITHER)
 #endif
-   glDisable(GL_DEPTH_TEST);
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_DITHER);
-}
 
 static void gl2_renderchain_copy_frame(
       gl_t *gl,
@@ -2920,7 +2854,53 @@ static bool gl2_frame(void *data, const void *frame,
 
       if (gl->fbo_inited)
       {
-         gl2_renderchain_check_fbo_dimensions(gl, chain);
+         /* On resize, we might have to recreate our FBOs
+          * due to "Viewport" scale, and set a new viewport. */
+         unsigned i;
+
+         /* Check if we have to recreate our FBO textures. */
+         for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+         {
+            struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+            if (fbo_rect)
+            {
+               unsigned img_width   = fbo_rect->max_img_width;
+               unsigned img_height  = fbo_rect->max_img_height;
+
+               if ((img_width  > fbo_rect->width) ||
+                     (img_height > fbo_rect->height))
+               {
+                  /* Check proactively since we might suddently
+                   * get sizes of tex_w width or tex_h height. */
+                  unsigned max                    = img_width > img_height ? img_width : img_height;
+                  unsigned pow2_size              = next_pow2(max);
+                  bool update_feedback            = gl->fbo_feedback_enable
+                     && (unsigned)i == gl->fbo_feedback_pass;
+
+                  fbo_rect->width                 = pow2_size;
+                  fbo_rect->height                = pow2_size;
+
+                  gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
+
+                  /* Update feedback texture in-place so we avoid having to
+                   * juggle two different fbo_rect structs since they get updated here. */
+                  if (update_feedback)
+                  {
+                     if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
+                              &gl->fbo_feedback_texture))
+                     {
+                        /* Make sure the feedback textures are cleared
+                         * so we don't feedback noise. */
+                        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                        glClear(GL_COLOR_BUFFER_BIT);
+                     }
+                  }
+
+                  RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
+                        i, fbo_rect->width, fbo_rect->height);
+               }
+            }
+         }
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
