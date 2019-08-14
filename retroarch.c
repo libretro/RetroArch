@@ -12261,7 +12261,8 @@ void menu_input_post_iterate(int *ret, unsigned action)
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-static void input_menu_keys_pressed(input_bits_t *p_new_state)
+static void input_menu_keys_pressed(input_bits_t *p_new_state,
+      bool display_kb)
 {
    unsigned i, port;
    rarch_joypad_info_t joypad_info;
@@ -12330,6 +12331,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state)
       input_pop_analog_dpad(auto_binds);
    }
 
+   if (!display_kb)
    {
       unsigned ids[][2] =
       {
@@ -23132,7 +23134,7 @@ static enum runloop_state runloop_check_state(void)
 
 #ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
-      input_menu_keys_pressed(&current_bits);
+      input_menu_keys_pressed(&current_bits, display_kb);
    else
 #endif
       input_keys_pressed(&current_bits);
