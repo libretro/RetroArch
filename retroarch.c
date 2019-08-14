@@ -3214,8 +3214,6 @@ static bool command_event_init_core(enum rarch_core_type type)
 static bool command_event_save_auto_state(void)
 {
    bool ret                    = false;
-   bool contentless            = false;
-   bool is_inited              = false;
    char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
@@ -3227,9 +3225,7 @@ static bool command_event_save_auto_state(void)
    if (current_core_type == CORE_TYPE_DUMMY)
       return false;
 
-   content_get_status(&contentless, &is_inited);
-
-   if (contentless)
+   if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
 
 #ifdef HAVE_CHEEVOS
