@@ -1603,9 +1603,6 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    union string_list_elem_attr attr = {0};
    settings_t *settings             = config_get_ptr();
 
-   if (vk->context.gpu != VK_NULL_HANDLE)
-      return true;
-
    if (vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
    {
@@ -1653,6 +1650,12 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    }
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
+
+   if (vk->context.gpu != VK_NULL_HANDLE)
+   {
+      free(gpus);
+      return true;
+   }
 
    if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < (int)gpu_count)
    {
@@ -2690,6 +2693,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
+   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, NULL);
    if (vulkan_gpu_list)
    {
       string_list_free(vulkan_gpu_list);
