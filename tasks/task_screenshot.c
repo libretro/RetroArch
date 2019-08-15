@@ -75,6 +75,7 @@ struct screenshot_task_state
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
    void *userbuf;
+   bool widgets_ready;
    struct scaler_ctx scaler;
 };
 
@@ -155,7 +156,7 @@ static void task_screenshot_handler(retro_task_t *task)
       /* If menu widgets are enabled, state is freed
          in the callback after the notification
          is displayed */
-      if (!menu_widgets_ready())
+      if (!state->widgets_ready)
 #endif
          free(state);
       return;
@@ -200,7 +201,7 @@ static void task_screenshot_callback(retro_task_t *task,
 {
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
 
-   if (!menu_widgets_ready())
+   if (!state->widgets_ready)
       return;
 
    if (state && !state->silence)
@@ -247,6 +248,11 @@ static bool screenshot_dump(
    state->pitch               = pitch;
    state->frame               = frame;
    state->userbuf             = userbuf;
+#ifdef HAVE_MENU_WIDGETS
+   state->widgets_ready       = menu_widgets_ready();
+#else
+   state->widgets_ready       = false;
+#endif
    state->silence             = savestate;
    state->history_list_enable = settings->bools.history_list_enable;
    state->pixel_format_type   = pixel_format_type;
@@ -319,7 +325,7 @@ static bool screenshot_dump(
       task->callback    = task_screenshot_callback;
 #endif
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (menu_widgets_ready() && !savestate)
+      if (state->widgets_ready && !savestate)
          task_free_title(task);
       else
 #endif
@@ -388,7 +394,8 @@ static bool take_screenshot_viewport(
    if (!screenshot_dump(screenshot_dir,
             name_base,
             buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer, savestate, is_idle, is_paused, fullpath, use_thread,
+            vp.width * 3, true, buffer,
+            savestate, is_idle, is_paused, fullpath, use_thread,
             pixel_format_type))
    {
       free(buffer);

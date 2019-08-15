@@ -25,9 +25,9 @@
 #include "../../menu/widgets/menu_widgets.h"
 #endif
 
-static bool connman_cache[256] = {0};
-static unsigned connman_counter = 0;
-static struct string_list* lines;
+static bool connman_cache[256]   = {0};
+static unsigned connman_counter  = 0;
+static struct string_list* lines = NULL;
 
 static void *connmanctl_init(void)
 {
@@ -65,7 +65,9 @@ static void connmanctl_scan(void)
 
    pclose(popen("connmanctl scan wifi", "r"));
 
-   runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push("Wi-Fi scan complete.",
+         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+         MESSAGE_QUEUE_CATEGORY_INFO);
 
    serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
@@ -100,18 +102,17 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
 static bool connmanctl_ssid_is_online(unsigned i)
 {
-   char ln[512] = {0};
-   char service[128] = {0};
-   char command[256] = {0};
-   const char *line = lines->elems[i].data;
+   char ln[512]       = {0};
+   char service[128]  = {0};
+   char command[256]  = {0};
+   const char *line   = lines->elems[i].data;
    FILE *command_file = NULL;
 
    if (connman_counter == 60)
    {
-      connman_counter = 0;
-
       static struct string_list* list = NULL;
-      list = string_split(line, " ");
+      connman_counter = 0;
+      list            = string_split(line, " ");
       if (!list)
          return false;
 
@@ -124,9 +125,12 @@ static bool connmanctl_ssid_is_online(unsigned i)
       strlcpy(service, list->elems[list->size-1].data, sizeof(service));
       string_list_free(list);
 
-      strlcat(command, "connmanctl services ", sizeof(command));
-      strlcat(command, service, sizeof(command));
-      strlcat(command, " | grep 'State = \\(online\\|ready\\)'", sizeof(command));
+      strlcat(command, "connmanctl services ",
+            sizeof(command));
+      strlcat(command, service,
+            sizeof(command));
+      strlcat(command, " | grep 'State = \\(online\\|ready\\)'",
+            sizeof(command));
 
       command_file = popen(command, "r");
 
@@ -149,22 +153,23 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 {
-   char ln[512] = {0};
-   char name[64] = {0};
-   char service[128] = {0};
-   char command[256] = {0};
-   char settings_dir[PATH_MAX_LENGTH] = {0};
+   char ln[512]                        = {0};
+   char name[64]                       = {0};
+   char service[128]                   = {0};
+   char command[256]                   = {0};
+   char settings_dir[PATH_MAX_LENGTH]  = {0};
    char settings_path[PATH_MAX_LENGTH] = {0};
-   FILE *command_file = NULL;
-   FILE *settings_file = NULL;
-   const char *line = lines->elems[i].data;
+   FILE *command_file                  = NULL;
+   FILE *settings_file                 = NULL;
+   const char *line                    = lines->elems[i].data;
 
-   static struct string_list* list = NULL;
-   // connmanctl services outputs a 4 character prefixed lines, either whispace
-   // or an identifier. i.e.:
-   // $ connmanctl services
-   //     '*A0 SSID some_unique_id'
-   //     '    SSID some_another_unique_id'
+   static struct string_list* list     = NULL;
+   /* connmanctl services outputs a 4 character prefixed lines, 
+    * either whitespace or an identifier. i.e.:
+    * $ connmanctl services
+    *     '*A0 SSID some_unique_id'
+    *     '    SSID some_another_unique_id'
+    */
    list = string_split(line+4, " ");
    if (!list)
       return false;
@@ -220,7 +225,9 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 #ifdef HAVE_MENU_WIDGETS
       if (!menu_widgets_ready())
 #endif
-         runloop_msg_queue_push(ln, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(ln, 1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
    }
    pclose(command_file);
 
