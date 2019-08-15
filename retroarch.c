@@ -2201,15 +2201,12 @@ bool command_set_shader(const char *arg)
    snprintf(msg, sizeof(msg),
          "Shader: \"%s\"", arg ? path_basename(arg) : "null");
 #ifdef HAVE_MENU_WIDGETS
-   if (!menu_widgets_inited)
-#endif
-   {
-#ifdef HAVE_MENU_WIDGETS
+   if (menu_widgets_inited)
       menu_widgets_set_message(msg);
+   else
 #endif
       runloop_msg_queue_push(msg, 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
@@ -2870,14 +2867,11 @@ static void command_event_set_volume(float gain)
          new_volume);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_inited)
-#endif
-   {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   if (menu_widgets_inited)
       menu_widgets_volume_update_and_show();
+   else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
 
    RARCH_LOG("%s\n", msg);
 
@@ -3781,16 +3775,13 @@ static void retroarch_pause_checks(void)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited)
-#endif
-      {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (menu_widgets_inited)
          menu_widgets_paused = is_paused;
+      else
 #endif
          runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                1, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
 
 
       if (!is_idle)
@@ -4259,15 +4250,11 @@ TODO: Add a setting for these tweaks */
             audio_driver_mute_enable  = !audio_driver_mute_enable;
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!menu_widgets_inited)
-#endif
-            {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+            if (menu_widgets_inited)
                menu_widgets_volume_update_and_show();
+            else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            }
-
          }
          break;
       case CMD_EVENT_SEND_DEBUG_INFO:
@@ -6744,14 +6731,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
 #ifdef HAVE_MENU_WIDGETS
-         if (!menu_widgets_inited)
-#endif
-         {
-#ifdef HAVE_MENU_WIDGETS
+         if (menu_widgets_inited)
             menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f));
+         else
 #endif
             runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         }
          break;
       }
 
@@ -23221,12 +23205,11 @@ static void update_fastforwarding_state(void)
    if (runloop_fastmotion)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited)
+      if (menu_widgets_inited)
+         menu_widgets_fast_forward = true;
+      else
 #endif
       {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         menu_widgets_fast_forward = true;
-#endif
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
@@ -23930,16 +23913,15 @@ static enum runloop_state runloop_check_state(void)
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited)
-#endif
-         if (rewinding)
-            runloop_msg_queue_push(s, 0, t, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_inited)
          menu_widgets_rewinding = rewinding;
+      else
 #endif
+      {
+         if (rewinding)
+            runloop_msg_queue_push(s, 0, t, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */

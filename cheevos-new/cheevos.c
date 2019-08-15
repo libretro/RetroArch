@@ -503,16 +503,18 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;
 
    /* Show the OSD message. */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_ready())
-#endif
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
+      bool widgets_ready = !menu_widgets_ready();
+      if (widgets_ready)
+         menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
+      else
 #endif
-      snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
-      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
+         runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(cheevo->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* Start the award task. */
