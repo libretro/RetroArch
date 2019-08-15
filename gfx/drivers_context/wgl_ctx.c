@@ -357,12 +357,14 @@ static void create_gl_context(HWND hwnd, bool *quit)
       wglGetExtensionsStringARB = (const char *(WINAPI *) (HDC))
          gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
       if (wglGetExtensionsStringARB)
-         extensions = wglGetExtensionsStringARB(win32_hdc);
-      RARCH_LOG("[WGL] extensions: %s\n", extensions);
-      if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
       {
-         RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
-         wgl_adaptive_vsync = true;
+         extensions = wglGetExtensionsStringARB(win32_hdc);
+         RARCH_LOG("[WGL] extensions: %s\n", extensions);
+         if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+         {
+            RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+            wgl_adaptive_vsync = true;
+         }
       }
    }
 }
