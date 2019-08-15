@@ -36,13 +36,10 @@
 #include <streams/file_stream.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifndef PI
 #define PI 3.14159265359f
-#endif
-
-#ifndef max
-#define max(x, y) x >= y ? x : y
 #endif
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
@@ -2218,7 +2215,7 @@ static void menu_widgets_start_achievement_notification()
    settings_t *settings = config_get_ptr();
    menu_animation_ctx_entry_t entry;
    cheevo_height  = settings->floats.video_font_size * 4;
-   cheevo_width   = max(
+   cheevo_width   = MAX(
          font_driver_get_message_width(font_regular, msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), 0, 1),
          font_driver_get_message_width(font_regular, cheevo_title, 0, 1)
    );
