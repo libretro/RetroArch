@@ -959,6 +959,11 @@ extern void libnx_apply_overclock(void);
 #ifdef HAVE_MENU_WIDGETS
 static bool menu_widgets_inited                 = false;
 menu_animation_ctx_tag menu_widgets_generic_tag = (uintptr_t) &menu_widgets_inited;
+
+/* Status icons */
+static bool menu_widgets_paused              = false;
+static bool menu_widgets_fast_forward        = false;
+static bool menu_widgets_rewinding           = false;
 #endif
 
 bool menu_widgets_ready(void)
@@ -3766,11 +3771,17 @@ static void retroarch_pause_checks(void)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited || !menu_widgets_set_paused(is_paused))
+      if (!menu_widgets_inited)
+#endif
+      {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         menu_widgets_paused = is_paused;
 #endif
          runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                1, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+
 
       if (!is_idle)
          video_driver_cached_frame();
@@ -3784,7 +3795,7 @@ static void retroarch_pause_checks(void)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_inited)
-         menu_widgets_set_paused(is_paused);
+         menu_widgets_paused = is_paused;
 #endif
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
       command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -18315,9 +18326,11 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_info.fps_show || video_info.framecount_show)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited || !menu_widgets_set_fps_text(video_info.fps_text))
+      if (!menu_widgets_inited)
 #endif
+      {
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* trigger set resolution*/
@@ -18470,9 +18483,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fps_text[0]           = '\0';
 
 #ifdef HAVE_MENU_WIDGETS
-   video_info->widgets_inited        = menu_widgets_inited;
+   video_info->widgets_inited             = menu_widgets_inited;
+   video_info->widgets_is_paused          = menu_widgets_paused;
+   video_info->widgets_is_fast_forwarding = menu_widgets_fast_forward;
+   video_info->widgets_is_rewinding       = menu_widgets_rewinding;
 #else
-   video_info->widgets_inited        = false;
+   video_info->widgets_inited             = false;
+   video_info->widgets_is_paused          = false;
+   video_info->widgets_is_fast_forwarding = false;
+   video_info->widgets_is_rewinding       = false;
 #endif
 
    video_info->width                 = video_driver_width;
@@ -19823,7 +19842,9 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       if (!menu_widgets_inited)
+      {
          menu_widgets_inited = menu_widgets_init(video_is_threaded);
+      }
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
@@ -23180,16 +23201,21 @@ static void update_fastforwarding_state(void)
    if (runloop_fastmotion)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited || !menu_widgets_set_fast_forward(true))
+      if (!menu_widgets_inited)
+#endif
+      {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+         menu_widgets_fast_forward = true;
 #endif
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    else
    {
       if (menu_widgets_inited)
-         menu_widgets_set_fast_forward(false);
+         menu_widgets_fast_forward = false;
    }
 #endif
 }
@@ -23892,7 +23918,7 @@ static enum runloop_state runloop_check_state(void)
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_inited)
-         menu_widgets_set_rewind(rewinding);
+         menu_widgets_rewinding = rewinding;
 #endif
    }
 

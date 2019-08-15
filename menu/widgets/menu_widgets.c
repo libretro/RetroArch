@@ -241,13 +241,6 @@ static float volume_text_alpha             = 0.0f;
 static menu_animation_ctx_tag volume_tag   = (uintptr_t) &volume_alpha;
 static bool volume_mute                    = false;
 
-/* FPS */
-static char menu_widgets_fps_text[255];
-
-/* Status icons */
-static bool menu_widgets_paused              = false;
-static bool menu_widgets_fast_forward        = false;
-static bool menu_widgets_rewinding           = false;
 
 /* Screenshot */
 static float screenshot_alpha                = 0.0f;
@@ -308,12 +301,6 @@ static unsigned msg_queue_task_rect_start_x;
 static unsigned msg_queue_task_hourglass_x;
 
 static unsigned generic_message_height; /* used for both generic and libretro messages */
-
-bool menu_widgets_set_paused(bool is_paused)
-{
-   menu_widgets_paused = is_paused;
-   return true;
-}
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -1641,10 +1628,10 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    /* FPS Counter */
    if (video_info->fps_show || video_info->framecount_show)
    {
-      const char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
+      const char *text      = *video_info->fps_text == '\0' ? "N/A" : video_info->fps_text;
 
-      int text_width  = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
-      int total_width = text_width + simple_widget_padding * 2;
+      int text_width        = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
+      int total_width       = text_width + simple_widget_padding * 2;
 
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1666,17 +1653,17 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* Indicators */
-   if (menu_widgets_paused)
+   if (video_info->widgets_is_paused)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (menu_widgets_fast_forward)
+   if (video_info->widgets_is_fast_forwarding)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (menu_widgets_rewinding)
+   if (video_info->widgets_is_rewinding)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_REWINDING);
@@ -1719,8 +1706,6 @@ bool menu_widgets_init(bool video_is_threaded)
       goto error;
 
    menu_widgets_frame_count = 0;
-
-   menu_widgets_fps_text[0] = '\0';
 
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
@@ -2019,27 +2004,6 @@ bool menu_widgets_volume_update_and_show(void)
    entry.userdata    = NULL;
 
    menu_timer_start(&volume_timer, &entry);
-
-   return true;
-}
-
-bool menu_widgets_set_fps_text(char *new_fps_text)
-{
-   strlcpy(menu_widgets_fps_text,
-         new_fps_text, sizeof(menu_widgets_fps_text));
-
-   return true;
-}
-
-bool menu_widgets_set_fast_forward(bool is_fast_forward)
-{
-   menu_widgets_fast_forward = is_fast_forward;
-   return true;
-}
-
-bool menu_widgets_set_rewind(bool is_rewind)
-{
-   menu_widgets_rewinding = is_rewind;
 
    return true;
 }

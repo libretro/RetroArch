@@ -51,8 +51,6 @@ bool menu_widgets_msg_queue_push(
 
 bool menu_widgets_volume_update_and_show(void);
 
-bool menu_widgets_set_fps_text(char *fps_text);
-
 void menu_widgets_iterate(unsigned width, unsigned height);
 
 bool menu_widgets_set_paused(bool is_paused);

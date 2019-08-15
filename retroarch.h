@@ -1123,6 +1123,9 @@ typedef struct video_info
 typedef struct video_frame_info
 {
    bool widgets_inited;
+   bool widgets_is_paused;
+   bool widgets_is_fast_forwarding;
+   bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool shared_context;
