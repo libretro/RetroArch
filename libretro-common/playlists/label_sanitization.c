@@ -122,21 +122,23 @@ bool right_parens_or_brackets(char *right)
    return right[0] == ')' || right[0] == ']';
 }
 
-bool left_exclusion(char *left, const char **strings, const size_t strings_count)
+bool left_exclusion(char *left,
+      const char **strings, const size_t strings_count)
 {
-   int i;
+   unsigned i;
    char exclusion_string[32];
    char comparison_string[32];
 
    strlcpy(exclusion_string, left, 32);
    string_to_upper(exclusion_string);
 
-   for (i = 0; i < strings_count; i++)
+   for (i = 0; i < (unsigned)strings_count; i++)
    {
       strlcpy(comparison_string, strings[i], 32);
       string_to_upper(comparison_string);
 
-      if (string_is_equal_fast(exclusion_string, comparison_string, strlen(comparison_string)))
+      if (string_is_equal_fast(exclusion_string,
+               comparison_string, strlen(comparison_string)))
          return true;
    }
 
