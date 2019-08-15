@@ -12277,9 +12277,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
     * menu_input_pointer_post_iterate() are
     * modified, will have to verify that these
     * parameters remain unused... */
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
-   entry.sublabel_enabled   = false;
+   entry.rich_label_enabled   = false;
+   entry.value_enabled        = false;
+   entry.sublabel_enabled     = false;
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
@@ -12526,10 +12526,13 @@ static void input_keys_pressed(input_bits_t *p_new_state)
 
    /* Check the libretro input first */
    {
-      int16_t ret = current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      int16_t ret = current_input->input_state(current_input_data,
+            joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         bool bit_pressed = !input_driver_block_libretro_input && binds[i].valid && (ret & (1 <<  i));
+         bool bit_pressed = !input_driver_block_libretro_input 
+            && binds[i].valid && (ret & (1 <<  i));
          if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
@@ -12540,8 +12543,12 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    /* Check the hotkeys */
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
-      bool bit_pressed = !input_driver_block_hotkey && binds[i].valid && current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
-      if (bit_pressed || BIT64_GET(lifecycle_state, i) || input_keys_pressed_other_sources(i, p_new_state))
+      bool bit_pressed = !input_driver_block_hotkey && binds[i].valid 
+         && current_input->input_state(current_input_data, joypad_info,
+               &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
+      if (     bit_pressed 
+            || BIT64_GET(lifecycle_state, i)
+            || input_keys_pressed_other_sources(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -17647,15 +17654,13 @@ void video_driver_set_aspect_ratio(void)
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect)
 {
-   gfx_ctx_aspect_t aspect_data;
    float            device_aspect = (float)vp->full_width / vp->full_height;
    settings_t *settings           = configuration_settings;
 
-   aspect_data.aspect = &device_aspect;
-   aspect_data.width  = vp->full_width;
-   aspect_data.height = vp->full_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   if (video_context_data 
+         && current_video_context.translate_aspect)
+      device_aspect = current_video_context.translate_aspect(
+            video_context_data, vp->full_width, vp->full_height);
 
    vp->x      = 0;
    vp->y      = 0;
@@ -18847,7 +18852,8 @@ bool video_context_driver_swap_interval(int *interval)
 {
    int current_interval                   = *interval;
    settings_t *settings                   = configuration_settings;
-   bool adaptive_vsync_enabled            = video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+   bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+         GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!current_video_context.swap_interval)
       return false;
@@ -18896,7 +18902,8 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
       if (refresh_rate)
          refresh_holder  =
              current_video_context.get_refresh_rate(video_context_data);
-      if (refresh_holder != video_driver_core_hz) /* Fix for incorrect interlacing detection -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
+      /* Fix for incorrect interlacing detection -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
+      if (refresh_holder != video_driver_core_hz)
          *refresh_rate = video_driver_core_hz;
    }
 
@@ -19113,7 +19120,8 @@ static bool video_driver_has_widgets(void)
 
 void video_driver_set_gpu_device_string(const char *str)
 {
-   strlcpy(video_driver_gpu_device_string, str, sizeof(video_driver_gpu_device_string));
+   strlcpy(video_driver_gpu_device_string, str,
+         sizeof(video_driver_gpu_device_string));
 }
 
 const char* video_driver_get_gpu_device_string(void)
@@ -19123,7 +19131,8 @@ const char* video_driver_get_gpu_device_string(void)
 
 void video_driver_set_gpu_api_version_string(const char *str)
 {
-   strlcpy(video_driver_gpu_api_version_string, str, sizeof(video_driver_gpu_api_version_string));
+   strlcpy(video_driver_gpu_api_version_string, str,
+         sizeof(video_driver_gpu_api_version_string));
 }
 
 const char* video_driver_get_gpu_api_version_string(void)
@@ -19131,8 +19140,10 @@ const char* video_driver_get_gpu_api_version_string(void)
    return video_driver_gpu_api_version_string;
 }
 
-/* string list stays owned by the caller and must be available at all times after the video driver is inited */
-void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list)
+/* string list stays owned by the caller and must be available at 
+ * all times after the video driver is inited */
+void video_driver_set_gpu_api_devices(
+      enum gfx_ctx_api api, struct string_list *list)
 {
    int i;
 
@@ -19259,7 +19270,9 @@ static bool driver_location_start(void)
       if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
-      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push("Location is explicitly disabled.\n",
+            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return false;
 }
@@ -19316,10 +19329,10 @@ static bool driver_location_get_position(double *lat, double *lon,
       return location_driver->get_position(location_data,
             lat, lon, horiz_accuracy, vert_accuracy);
 
-   *lat = 0.0;
-   *lon = 0.0;
+   *lat            = 0.0;
+   *lon            = 0.0;
    *horiz_accuracy = 0.0;
-   *vert_accuracy = 0.0;
+   *vert_accuracy  = 0.0;
    return false;
 }
 
@@ -19347,10 +19360,9 @@ static void init_location(void)
 
 static void uninit_location(void)
 {
-   rarch_system_info_t *system = &runloop_system;
-
    if (location_data && location_driver)
    {
+      rarch_system_info_t *system = &runloop_system;
       if (system->location_cb.deinitialized)
          system->location_cb.deinitialized();
 
@@ -19402,7 +19414,7 @@ const char *camera_driver_find_ident(int idx)
  * Returns: string listing of all camera driver names,
  * separated by '|'.
  **/
-const char* config_get_camera_driver_options(void)
+const char *config_get_camera_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
 }
@@ -19709,19 +19721,6 @@ void driver_set_nonblock_state(void)
       : audio_driver_chunk_block_size;
 }
 
-bool audio_driver_new_devices_list(void)
-{
-   if (!current_audio || !current_audio->device_list_new
-         || !audio_driver_context_audio_data)
-      return false;
-   audio_driver_devices_list = (struct string_list*)
-      current_audio->device_list_new(audio_driver_context_audio_data);
-   if (!audio_driver_devices_list)
-      return false;
-   return true;
-}
-
-
 /**
  * drivers_init:
  * @flags              : Bitmask of drivers to initialize.
@@ -19766,7 +19765,10 @@ static void drivers_init(int flags)
    if (flags & DRIVER_AUDIO_MASK)
    {
       audio_driver_init_internal(audio_callback.callback != NULL);
-      audio_driver_new_devices_list();
+      if (current_audio && current_audio->device_list_new &&
+            audio_driver_context_audio_data)
+         audio_driver_devices_list = (struct string_list*)
+            current_audio->device_list_new(audio_driver_context_audio_data);
    }
 
    if (flags & DRIVER_CAMERA_MASK)
@@ -24624,7 +24626,7 @@ static bool rarch_write_debug_info(void)
       else
          filestream_printf(file, "  - Input: %s (configured for %s)\n", !string_is_empty(input_driver->ident) ? input_driver->ident : "n/a", !string_is_empty(settings->arrays.input_driver) ? settings->arrays.input_driver : "n/a");
 
-      joypad_driver = (input_driver->get_joypad_driver ? input_driver->get_joypad_driver(input_driver_get_data()) : NULL);
+      joypad_driver = (input_driver->get_joypad_driver ? input_driver->get_joypad_driver(current_input_data) : NULL);
 
       if (joypad_driver && string_is_equal(joypad_driver->ident, settings->arrays.input_joypad_driver))
          filestream_printf(file, "  - Joypad: %s\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a");
