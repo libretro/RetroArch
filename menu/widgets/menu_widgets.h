@@ -38,8 +38,8 @@
 #define GENERIC_MESSAGE_DURATION          3000
 
 bool menu_widgets_init(bool video_is_threaded);
+
 void menu_widgets_free(void);
-bool menu_widgets_ready(void);
 
 bool menu_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,

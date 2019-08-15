@@ -67,9 +67,7 @@ static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
 static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
 
-static bool menu_widgets_inited              = false;
 static uint64_t menu_widgets_frame_count     = 0;
-static menu_animation_ctx_tag generic_tag    = (uintptr_t) &menu_widgets_inited;
 
 /* Font data */
 static font_data_t *font_regular;
@@ -183,6 +181,8 @@ static menu_texture_item msg_queue_icon          = 0;
 static menu_texture_item msg_queue_icon_outline  = 0;
 static menu_texture_item msg_queue_icon_rect     = 0;
 static bool msg_queue_has_icons                  = false;
+
+extern menu_animation_ctx_tag menu_widgets_generic_tag;
 
 /* there can only be one message animation at a time to avoid confusing users */
 static bool widgets_moving   = false;
@@ -747,7 +747,7 @@ static void menu_widgets_screenshot_end(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &screenshot_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = -((float)screenshot_height);
    entry.userdata       = NULL;
 
@@ -1735,12 +1735,10 @@ bool menu_widgets_init(bool video_is_threaded)
    if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
       goto error;
 
-   menu_widgets_inited = true;
-
    return true;
 
 error:
-   if (menu_widgets_inited)
+   if (menu_widgets_ready())
       menu_widgets_free();
    return false;
 }
@@ -1918,11 +1916,9 @@ void menu_widgets_free(void)
    size_t i;
    menu_animation_ctx_tag libretro_tag;
 
-   menu_widgets_inited = false;
-
    /* Kill any pending animation */
    menu_animation_kill_by_tag(&volume_tag);
-   menu_animation_kill_by_tag(&generic_tag);
+   menu_animation_kill_by_tag(&menu_widgets_generic_tag);
 
    /* Purge everything from the fifo */
    if (msg_queue)
@@ -2056,7 +2052,7 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
    entry.duration       = SCREENSHOT_DURATION_OUT;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &screenshot_alpha;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2071,7 +2067,7 @@ static void menu_widgets_play_screenshot_flash(void)
    entry.duration       = SCREENSHOT_DURATION_IN;
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &screenshot_alpha;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
@@ -2136,7 +2132,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    /* Setup the animation */
    entry.cb          = NULL;
    entry.easing_enum = EASING_OUT_QUAD;
-   entry.tag         = generic_tag;
+   entry.tag         = menu_widgets_generic_tag;
    entry.userdata    = NULL;
 
    /* Stage one: icon animation */
@@ -2210,7 +2206,7 @@ static void menu_widgets_achievement_dismiss(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = (float)(-(int)(cheevo_height));
    entry.userdata       = NULL;
 
@@ -2226,7 +2222,7 @@ static void menu_widgets_achievement_fold(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_unfold;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2243,7 +2239,7 @@ static void menu_widgets_achievement_unfold(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_unfold;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
@@ -2275,7 +2271,7 @@ static void menu_widgets_start_achievement_notification()
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2396,9 +2392,4 @@ bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
    libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
 
    return true;
-}
-
-bool menu_widgets_ready(void)
-{
-   return menu_widgets_inited;
 }

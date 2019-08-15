@@ -956,6 +956,20 @@ extern void libnx_apply_overclock(void);
 #define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
 #endif
 
+#ifdef HAVE_MENU_WIDGETS
+static bool menu_widgets_inited                 = false;
+menu_animation_ctx_tag menu_widgets_generic_tag = (uintptr_t) &menu_widgets_inited;
+#endif
+
+bool menu_widgets_ready(void)
+{
+#ifdef HAVE_MENU_WIDGETS
+   return menu_widgets_inited;
+#else
+   return false;
+#endif
+}
+
 static void menu_input_search_cb(void *userdata, const char *str)
 {
    size_t idx = 0;
@@ -2182,7 +2196,7 @@ bool command_set_shader(const char *arg)
    snprintf(msg, sizeof(msg),
          "Shader: \"%s\"", arg ? path_basename(arg) : "null");
 #ifdef HAVE_MENU_WIDGETS
-   if (!menu_widgets_ready() || !menu_widgets_set_message(msg))
+   if (!menu_widgets_inited || !menu_widgets_set_message(msg))
 #endif
       runloop_msg_queue_push(msg, 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -2846,7 +2860,7 @@ static void command_event_set_volume(float gain)
          new_volume);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_ready() || !menu_widgets_volume_update_and_show())
+   if (!menu_widgets_inited || !menu_widgets_volume_update_and_show())
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -3752,7 +3766,7 @@ static void retroarch_pause_checks(void)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_ready() || !menu_widgets_set_paused(is_paused))
+      if (!menu_widgets_inited || !menu_widgets_set_paused(is_paused))
 #endif
          runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                1, true,
@@ -3769,7 +3783,7 @@ static void retroarch_pause_checks(void)
    else
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (menu_widgets_ready())
+      if (menu_widgets_inited)
          menu_widgets_set_paused(is_paused);
 #endif
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
@@ -6704,7 +6718,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
 #ifdef HAVE_MENU_WIDGETS
-         if (!menu_widgets_ready() || !menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f)))
+         if (!menu_widgets_inited || !menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f)))
 #endif
             runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
@@ -18301,7 +18315,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_info.fps_show || video_info.framecount_show)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_ready() || !menu_widgets_set_fps_text(video_info.fps_text))
+      if (!menu_widgets_inited || !menu_widgets_set_fps_text(video_info.fps_text))
 #endif
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -18456,7 +18470,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fps_text[0]           = '\0';
 
 #ifdef HAVE_MENU_WIDGETS
-   video_info->widgets_inited        = menu_widgets_ready();
+   video_info->widgets_inited        = menu_widgets_inited;
 #else
    video_info->widgets_inited        = false;
 #endif
@@ -19808,20 +19822,10 @@ static void drivers_init(int flags)
    if (settings->bools.menu_enable_widgets
       && video_driver_has_widgets())
    {
-      /* TODO/FIXME - get rid of this local variable
-       * once we have moved it over */
-      bool widgets_inited = menu_widgets_ready();
+      if (!menu_widgets_inited)
+         menu_widgets_inited = menu_widgets_init(video_is_threaded);
 
-      if (!widgets_inited)
-      {
-         if (menu_widgets_init(video_is_threaded))
-         {
-            /* TODO/FIXME - set menu_widgets_inited to true here */
-         }
-      }
-
-      widgets_inited      = menu_widgets_ready();
-      if (widgets_inited)
+      if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
                video_driver_width, video_driver_height);
    }
@@ -19881,10 +19885,11 @@ static void driver_uninit(int flags)
       /* This absolutely has to be done before video_driver_free()
        * is called/completes, otherwise certain menu drivers
        * (e.g. Vulkan) will segfault */
-      if (menu_widgets_ready())
+      if (menu_widgets_inited)
       {
          menu_widgets_context_destroy();
          menu_widgets_free();
+         menu_widgets_inited = false;
       }
 #endif
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
@@ -19952,10 +19957,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
           * in case the handle is lost in the threaded
           * video driver in the meantime
           * (breaking video_driver_has_widgets) */
-         if (menu_widgets_ready())
+         if (menu_widgets_inited)
          {
             menu_widgets_context_destroy();
             menu_widgets_free();
+            menu_widgets_inited = false;
          }
 #endif
 
@@ -22063,8 +22069,7 @@ static void runloop_task_msg_queue_push(
       bool flush)
 {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   bool ready = menu_widgets_ready();
-   if (ready && task->title && !task->mute)
+   if (menu_widgets_inited && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
       ui_companion_driver_msg_queue_push(msg,
@@ -22943,7 +22948,7 @@ void runloop_msg_queue_push(const char *msg,
    runloop_msg_queue_lock();
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (menu_widgets_ready())
+   if (menu_widgets_inited)
    {
       menu_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
@@ -23175,7 +23180,7 @@ static void update_fastforwarding_state(void)
    if (runloop_fastmotion)
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_ready() || !menu_widgets_set_fast_forward(true))
+      if (!menu_widgets_inited || !menu_widgets_set_fast_forward(true))
 #endif
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -23183,7 +23188,7 @@ static void update_fastforwarding_state(void)
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    else
    {
-      if (menu_widgets_ready())
+      if (menu_widgets_inited)
          menu_widgets_set_fast_forward(false);
    }
 #endif
@@ -23407,7 +23412,7 @@ static enum runloop_state runloop_check_state(void)
    menu_animation_update();
 
 #ifdef HAVE_MENU_WIDGETS
-   if (menu_widgets_ready())
+   if (menu_widgets_inited)
    {
       runloop_msg_queue_lock();
       menu_widgets_iterate(video_driver_width, video_driver_height);
@@ -23879,14 +23884,14 @@ static enum runloop_state runloop_check_state(void)
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_ready())
+      if (!menu_widgets_inited)
 #endif
          if (rewinding)
             runloop_msg_queue_push(s, 0, t, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (menu_widgets_ready())
+      if (menu_widgets_inited)
          menu_widgets_set_rewind(rewinding);
 #endif
    }
@@ -23915,7 +23920,7 @@ static enum runloop_state runloop_check_state(void)
                video_driver_cached_frame();
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         if (!menu_widgets_ready())
+         if (!menu_widgets_inited)
          {
 #endif
             if (state_manager_frame_is_reversed())
