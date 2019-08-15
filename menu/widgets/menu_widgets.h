@@ -75,10 +75,10 @@ void menu_widgets_context_destroy(void);
 bool menu_widgets_push_achievement(const char *title, const char *badge);
 
 /* Warning: not thread safe! */
-bool menu_widgets_set_message(char *message);
+void menu_widgets_set_message(char *message);
 
 /* Warning: not thread safe! */
-bool menu_widgets_set_libretro_message(const char *message, unsigned duration);
+void menu_widgets_set_libretro_message(const char *message, unsigned duration);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set

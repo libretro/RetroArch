@@ -2201,10 +2201,15 @@ bool command_set_shader(const char *arg)
    snprintf(msg, sizeof(msg),
          "Shader: \"%s\"", arg ? path_basename(arg) : "null");
 #ifdef HAVE_MENU_WIDGETS
-   if (!menu_widgets_inited || !menu_widgets_set_message(msg))
+   if (!menu_widgets_inited)
+#endif
+   {
+#ifdef HAVE_MENU_WIDGETS
+      menu_widgets_set_message(msg);
 #endif
       runloop_msg_queue_push(msg, 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
@@ -6729,9 +6734,14 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
 #ifdef HAVE_MENU_WIDGETS
-         if (!menu_widgets_inited || !menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f)))
+         if (!menu_widgets_inited)
+#endif
+         {
+#ifdef HAVE_MENU_WIDGETS
+            menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f));
 #endif
             runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
          break;
       }
 

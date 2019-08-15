@@ -2294,7 +2294,7 @@ static void menu_widgets_generic_message_fadeout(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_set_message(char *msg)
+void menu_widgets_set_message(char *msg)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
    menu_timer_ctx_entry_t timer;
@@ -2312,8 +2312,6 @@ bool menu_widgets_set_message(char *msg)
    timer.userdata = NULL;
 
    menu_timer_start(&generic_message_timer, &timer);
-
-   return true;
 }
 
 static void menu_widgets_libretro_message_fadeout(void *userdata)
@@ -2333,7 +2331,7 @@ static void menu_widgets_libretro_message_fadeout(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
+void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
    menu_timer_ctx_entry_t timer;
@@ -2354,6 +2352,4 @@ bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 
    /* Compute text width */
    libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
-
-   return true;
 }
