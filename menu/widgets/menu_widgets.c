@@ -313,7 +313,7 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
-bool menu_widgets_msg_queue_push(
+void menu_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -485,8 +485,6 @@ bool menu_widgets_msg_queue_push(
          msg_widget->task_progress     = task->progress;
       }
    }
-
-   return true;
 }
 
 static void menu_widgets_unfold_end(void *userdata)

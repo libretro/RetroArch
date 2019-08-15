@@ -41,7 +41,7 @@ bool menu_widgets_init(bool video_is_threaded);
 
 void menu_widgets_free(void);
 
-bool menu_widgets_msg_queue_push(
+void menu_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -56,6 +56,7 @@ void menu_widgets_iterate(unsigned width, unsigned height);
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
+
 void menu_widgets_cleanup_load_content_animation(void);
 
 void menu_widgets_context_reset(bool is_threaded,
