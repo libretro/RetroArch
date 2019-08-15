@@ -4347,10 +4347,11 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       if (menu_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
             playlist_get_cached(), menu_navigation_get_selection()))
       {
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
             has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
          
-         if (settings->bools.menu_rgui_inline_thumbnails && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (settings->bools.menu_rgui_inline_thumbnails &&
+             menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
             has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT) ||
                             has_thumbnail;
       }
@@ -4419,7 +4420,8 @@ static void rgui_refresh_thumbnail_image(void *userdata)
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if ((rgui->show_fs_thumbnail || settings->bools.menu_rgui_inline_thumbnails) &&
-       (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)))
+       (menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+        menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT)))
    {
       /* In all cases, reset current thumbnails */
       fs_thumbnail.width = 0;

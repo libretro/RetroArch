@@ -456,6 +456,47 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
    return 0;
 }
 
+static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
+      bool wraparound)
+{
+   enum playlist_thumbnail_mode thumbnail_mode =
+         playlist_get_thumbnail_mode(playlist, thumbnail_id);
+
+   if (thumbnail_mode > PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+      thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode - 1);
+   else if (wraparound)
+      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
+
+   playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
+   playlist_write_file(playlist);
+}
+
+static int playlist_right_thumbnail_mode_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   playlist_thumbnail_mode_left(playlist, PLAYLIST_THUMBNAIL_RIGHT, wraparound);
+
+   return 0;
+}
+
+static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   playlist_thumbnail_mode_left(playlist, PLAYLIST_THUMBNAIL_LEFT, wraparound);
+
+   return 0;
+}
+
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -701,10 +742,15 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
                BIND_ACTION_LEFT(cbs, playlist_label_display_mode_left);
                break;
+            case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+               BIND_ACTION_LEFT(cbs, playlist_right_thumbnail_mode_left);
+               break;
+            case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+               BIND_ACTION_LEFT(cbs, playlist_left_thumbnail_mode_left);
+               break;
             default:
                return -1;
          }
-
       }
       else
       {

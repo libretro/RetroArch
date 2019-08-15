@@ -1762,15 +1762,17 @@ static int menu_displaylist_parse_horizontal_list(
       lpl_basename[0]   = '\0';
       path_playlist[0]  = '\0';
 
-      fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
-      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
-
       fill_pathname_join(
             path_playlist,
             settings->paths.directory_playlist,
             item->path,
             sizeof(path_playlist));
       menu_displaylist_set_new_playlist(menu, path_playlist);
+
+      /* Thumbnail system must be set *after* playlist
+       * is loaded/cached */
+      fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
+      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
    }
 
    playlist = playlist_get_cached();
@@ -2772,8 +2774,14 @@ static bool menu_displaylist_parse_playlist_manager_settings(
       menu_displaylist_info_t *info,
       const char *playlist_path)
 {
+   enum msg_hash_enums right_thumbnail_label_value;
+   enum msg_hash_enums left_thumbnail_label_value;
+   settings_t *settings      = config_get_ptr();
    const char *playlist_file = NULL;
    playlist_t *playlist      = NULL;
+
+   if (!settings)
+      return false;
 
    if (string_is_empty(playlist_path))
       return false;
@@ -2818,7 +2826,40 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
          MENU_SETTING_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE, 0, 0);
 
-   /* TODO: Add
+   /* Thumbnail modes */
+
+   /* > Get label values */
+   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+   {
+      right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
+      left_thumbnail_label_value =  MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
+   }
+   else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+   {
+      right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
+      left_thumbnail_label_value =  MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
+   }
+   else
+   {
+      right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
+      left_thumbnail_label_value =  MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
+   }
+
+   /* > Right thumbnail mode */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(right_thumbnail_label_value),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
+         MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, 0, 0);
+
+   /* > Left thumbnail mode */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(left_thumbnail_label_value),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
+         MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
+
+   /* TODO - Add:
     * - Remove invalid entries */
 
    return true;
@@ -3605,6 +3646,70 @@ typedef struct menu_displaylist_build_info_selective {
    bool checked;
 } menu_displaylist_build_info_selective_t;
 
+static unsigned populate_playlist_thumbnail_mode_dropdown_list(
+      file_list_t *list, enum playlist_thumbnail_id thumbnail_id)
+{
+   unsigned count       = 0;
+   playlist_t *playlist = playlist_get_cached();
+
+   if (list && playlist)
+   {
+      size_t i;
+      /* Get currently selected thumbnail mode */
+      enum playlist_thumbnail_mode current_thumbnail_mode =
+            playlist_get_thumbnail_mode(playlist, thumbnail_id);
+      /* Get appropriate menu_settings_type (right/left) */
+      enum menu_settings_type settings_type =
+            (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT) ?
+                  MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE :
+                  MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE;
+
+      /* Loop over all thumbnail modes */
+      for (i = 0; i <= (unsigned)PLAYLIST_THUMBNAIL_MODE_BOXARTS; i++)
+      {
+         enum msg_hash_enums label_value;
+         enum playlist_thumbnail_mode thumbnail_mode =
+               (enum playlist_thumbnail_mode)i;
+
+         /* Get appropriate entry label */
+         switch (thumbnail_mode)
+         {
+            case PLAYLIST_THUMBNAIL_MODE_OFF:
+               label_value = MENU_ENUM_LABEL_VALUE_OFF;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_BOXARTS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS;
+               break;
+            default:
+               /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
+               label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT;
+               break;
+         }
+
+         /* Add entry */
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(label_value),
+               "",
+               MENU_ENUM_LABEL_NO_ITEMS,
+               settings_type,
+               0, 0))
+            count++;
+
+         /* Add checkmark if item is currently selected */
+         if (current_thumbnail_mode == thumbnail_mode)
+            menu_entries_set_checked(list, i, true);
+      }
+   }
+
+   return count;
+}
+
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
@@ -3829,71 +3934,65 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
          {
-            playlist_t *playlist             = playlist_get_cached();
+            playlist_t *playlist = playlist_get_cached();
 
             if (playlist)
             {
-               enum playlist_label_display_mode label_display_mode = playlist_get_label_display_mode(playlist);
+               size_t i;
+               enum playlist_label_display_mode current_display_mode =
+                     playlist_get_label_display_mode(playlist);
 
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
+               for (i = 0; i <= (unsigned)LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX; i++)
+               {
+                  enum msg_hash_enums label_value;
+                  enum playlist_label_display_mode display_mode =
+                        (enum playlist_label_display_mode)i;
 
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
+                  switch (display_mode)
+                  {
+                     case LABEL_DISPLAY_MODE_REMOVE_PARENTHESES:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS;
+                        break;
+                     case LABEL_DISPLAY_MODE_REMOVE_BRACKETS:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS;
+                        break;
+                     case LABEL_DISPLAY_MODE_REMOVE_PARENTHESES_AND_BRACKETS:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS;
+                        break;
+                     case LABEL_DISPLAY_MODE_KEEP_REGION:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION;
+                        break;
+                     case LABEL_DISPLAY_MODE_KEEP_DISC_INDEX:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX;
+                        break;
+                     case LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX;
+                        break;
+                     default:
+                        /* LABEL_DISPLAY_MODE_DEFAULT */
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT;
+                        break;
+                  }
 
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
-
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
-
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
-
-               if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                     0, 0))
-                  count++;
-
-               if (menu_entries_append_enum(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX),
+                  if (menu_entries_append_enum(list,
+                        msg_hash_to_str(label_value),
                         "",
                         MENU_ENUM_LABEL_NO_ITEMS,
                         MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
                         0, 0))
                      count++;
 
-               menu_entries_set_checked(list, label_display_mode, true);
+                  if (current_display_mode == display_mode)
+                     menu_entries_set_checked(list, i, true);
+               }
             }
          }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+         count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_RIGHT);
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+         count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_LEFT);
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
@@ -6803,6 +6902,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
@@ -6824,6 +6925,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
+               case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+               case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),

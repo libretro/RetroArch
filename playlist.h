@@ -40,8 +40,8 @@ enum playlist_runtime_status
 
 enum playlist_file_mode
 {
-    PLAYLIST_LOAD,
-    PLAYLIST_SAVE
+   PLAYLIST_LOAD = 0,
+   PLAYLIST_SAVE
 };
 
 enum playlist_label_display_mode
@@ -53,6 +53,24 @@ enum playlist_label_display_mode
    LABEL_DISPLAY_MODE_KEEP_REGION,
    LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
    LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX
+};
+
+enum playlist_thumbnail_mode
+{
+   PLAYLIST_THUMBNAIL_MODE_DEFAULT = 0,
+   PLAYLIST_THUMBNAIL_MODE_OFF,
+   PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
+   PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
+   PLAYLIST_THUMBNAIL_MODE_BOXARTS
+};
+
+/* Note: We already have a left/right enum defined
+ * in menu_thumbnail_path.h - but we can't include
+ * menu code here, so have to make a 'duplicate'... */
+enum playlist_thumbnail_id
+{
+   PLAYLIST_THUMBNAIL_RIGHT = 0,
+   PLAYLIST_THUMBNAIL_LEFT
 };
 
 struct playlist_entry
@@ -237,10 +255,14 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
 char *playlist_get_default_core_path(playlist_t *playlist);
 char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
+enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
 void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode);
+void playlist_set_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
 
 RETRO_END_DECLS
 

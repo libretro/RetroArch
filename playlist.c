@@ -43,9 +43,12 @@
 struct content_playlist
 {
    bool modified;
-   enum playlist_label_display_mode label_display_mode;
    size_t size;
    size_t cap;
+
+   enum playlist_label_display_mode label_display_mode;
+   enum playlist_thumbnail_mode right_thumbnail_mode;
+   enum playlist_thumbnail_mode left_thumbnail_mode;
 
    char *conf_path;
    char *default_core_path;
@@ -225,13 +228,6 @@ char *playlist_get_conf_path(playlist_t *playlist)
    if (!playlist)
       return NULL;
    return playlist->conf_path;
-}
-
-enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
-{
-   if (!playlist)
-      return LABEL_DISPLAY_MODE_DEFAULT;
-   return playlist->label_display_mode;
 }
 
 /**
@@ -1217,24 +1213,25 @@ void playlist_write_file(playlist_t *playlist)
                playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
                );
 
-      /* Add default core assignment metadata lines
+      /* Add metadata lines
        * (we add these at the end of the file to prevent
        * breakage if the playlist is loaded with an older
        * version of RetroArch */
-      if (!string_is_empty(playlist->default_core_path) &&
-          !string_is_empty(playlist->default_core_name))
-      {
-         filestream_printf(file, "default_core_path = \"%s\"\ndefault_core_name = \"%s\"\nlabel_display_mode = \"%d\"\n",
-                  playlist->default_core_path,
-                  playlist->default_core_name,
-                  playlist->label_display_mode
-                  );
-      }
+      filestream_printf(
+            file,
+            "default_core_path = \"%s\"\n"
+            "default_core_name = \"%s\"\n"
+            "label_display_mode = \"%d\"\n"
+            "thumbnail_mode = \"%d|%d\"\n",
+            playlist->default_core_path ? "" : playlist->default_core_path,
+            playlist->default_core_name ? "" : playlist->default_core_name,
+            playlist->label_display_mode,
+            playlist->right_thumbnail_mode, playlist->left_thumbnail_mode);
    }
    else
 #endif
    {
-      char label_display_mode[4] = {0};
+      char uint_str[4];
       JSONContext context = {0};
       context.writer      = JSON_Writer_Create(NULL);
       context.file        = file;
@@ -1258,7 +1255,7 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteString(context.writer, "1.2",
-            STRLEN_CONST("1.2"), JSON_UTF8);
+            STRLEN_CONST("1.3"), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1294,15 +1291,42 @@ void playlist_write_file(playlist_t *playlist)
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
-      snprintf(label_display_mode, sizeof(label_display_mode), "%u", playlist->label_display_mode);
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->label_display_mode);
 
       JSON_Writer_WriteSpace(context.writer, 2);
       JSON_Writer_WriteString(context.writer, "label_display_mode",
             STRLEN_CONST("label_display_mode"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteNumber(context.writer, label_display_mode,
-            strlen(label_display_mode), JSON_UTF8);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->right_thumbnail_mode);
+
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "right_thumbnail_mode",
+            STRLEN_CONST("right_thumbnail_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->left_thumbnail_mode);
+
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "left_thumbnail_mode",
+            STRLEN_CONST("left_thumbnail_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1892,6 +1916,10 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_meta_val = &pCtx->playlist->default_core_name;
             else if (string_is_equal(pValue, "label_display_mode"))
                pCtx->current_meta_int_val = (int*)&pCtx->playlist->label_display_mode;
+            else if (string_is_equal(pValue, "right_thumbnail_mode"))
+               pCtx->current_meta_int_val = (int*)&pCtx->playlist->right_thumbnail_mode;
+            else if (string_is_equal(pValue, "left_thumbnail_mode"))
+               pCtx->current_meta_int_val = (int*)&pCtx->playlist->left_thumbnail_mode;
             else
             {
                /* ignore unknown members */
@@ -2088,8 +2116,8 @@ json_cleanup:
          metadata_char = filestream_getc(file);
       }
 
-      /* Search backwards for the next three newlines */
-      while (metadata_counter < 3)
+      /* Search backwards for the next four newlines */
+      while (metadata_counter < 4)
       {
          filestream_seek(file, -2, SEEK_CUR);
          if (filestream_error(file))
@@ -2128,19 +2156,57 @@ json_cleanup:
                metadata_line,
                STRLEN_CONST("label_display_mode")) == 0)
       {
-         char *start = NULL;
-         start = strchr(metadata_line, '\"');
+         unsigned display_mode;
+         char display_mode_str[4] = {0};
 
-         if (start)
+         get_old_format_metadata_value(
+               metadata_line, display_mode_str, sizeof(display_mode_str));
+
+         display_mode = string_to_unsigned(display_mode_str);
+
+         if (display_mode <= LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
+            playlist->label_display_mode = (enum playlist_label_display_mode)display_mode;
+      }
+
+      /* > Get thumbnail modes */
+      if (!filestream_gets(file, metadata_line, sizeof(metadata_line)))
+         goto end;
+
+      if (strncmp("thumbnail_mode",
+               metadata_line,
+               STRLEN_CONST("thumbnail_mode")) == 0)
+      {
+         char thumbnail_mode_str[8]          = {0};
+         struct string_list *thumbnail_modes = NULL;
+
+         get_old_format_metadata_value(
+               metadata_line, thumbnail_mode_str, sizeof(thumbnail_mode_str));
+
+         thumbnail_modes = string_split(thumbnail_mode_str, "|");
+
+         if (thumbnail_modes)
          {
-            start++;
+            if (thumbnail_modes->size == 2)
+            {
+               unsigned thumbnail_mode;
 
-            if (*start >= '0' && *start <= '9')
-               playlist->label_display_mode = (enum playlist_label_display_mode)(*start - '0');
+               /* Right thumbnail mode */
+               thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[0].data);
+               if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                  playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+
+               /* Left thumbnail mode */
+               thumbnail_mode = string_to_unsigned(thumbnail_modes->elems[1].data);
+               if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                  playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+            }
+
+            string_list_free(thumbnail_modes);
          }
       }
 
-      /* > Populate playlist fields, if required */
+      /* > Populate default core path/name, if required
+       *   (if one is empty, the other should be ignored) */
       if (!string_is_empty(default_core_path) &&
           !string_is_empty(default_core_name))
       {
@@ -2245,14 +2311,16 @@ playlist_t *playlist_init(const char *path, size_t size)
       return NULL;
    }
 
-   playlist->modified           = false;
-   playlist->size               = 0;
-   playlist->cap                = size;
-   playlist->conf_path          = strdup(path);
-   playlist->default_core_name  = NULL;
-   playlist->default_core_path  = NULL;
-   playlist->entries            = entries;
-   playlist->label_display_mode = LABEL_DISPLAY_MODE_DEFAULT;
+   playlist->modified             = false;
+   playlist->size                 = 0;
+   playlist->cap                  = size;
+   playlist->conf_path            = strdup(path);
+   playlist->default_core_name    = NULL;
+   playlist->default_core_path    = NULL;
+   playlist->entries              = entries;
+   playlist->label_display_mode   = LABEL_DISPLAY_MODE_DEFAULT;
+   playlist->right_thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->left_thumbnail_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 
    playlist_read_file(playlist, path);
 
@@ -2439,6 +2507,28 @@ char *playlist_get_default_core_name(playlist_t *playlist)
    return playlist->default_core_name;
 }
 
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return LABEL_DISPLAY_MODE_DEFAULT;
+   return playlist->label_display_mode;
+}
+
+enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id)
+{
+   if (!playlist)
+      return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+
+   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+      return playlist->right_thumbnail_mode;
+   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
+      return playlist->left_thumbnail_mode;
+
+   /* Fallback */
+   return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
 {
    char real_core_path[PATH_MAX_LENGTH];
@@ -2486,6 +2576,24 @@ void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_d
 
    if (playlist->label_display_mode != label_display_mode) {
       playlist->label_display_mode = label_display_mode;
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode)
+{
+   if (!playlist)
+      return;
+
+   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+   {
+      playlist->right_thumbnail_mode = thumbnail_mode;
+      playlist->modified = true;
+   }
+   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
+   {
+      playlist->left_thumbnail_mode = thumbnail_mode;
       playlist->modified = true;
    }
 }

@@ -937,7 +937,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
    if (string_is_equal(core_name, "imageviewer"))
    {
-      if ((pos == 'R') || (pos == 'L' && !menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT)))
+      if ((pos == 'R') || (pos == 'L' && !menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT)))
          menu_thumbnail_update_path(xmb->thumbnail_path_data, pos == 'R' ? MENU_THUMBNAIL_RIGHT : MENU_THUMBNAIL_LEFT);
    }
    else
@@ -1089,8 +1089,8 @@ static void xmb_refresh_thumbnail_image(void *data)
       return;
 
    /* Only refresh thumbnails if thumbnails are enabled */
-   if (  menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
-         menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   if (  menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) || 
+         menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
       unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
       unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
@@ -1107,10 +1107,10 @@ static void xmb_refresh_thumbnail_image(void *data)
            (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
           xmb->is_playlist)
       {
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
             xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
 
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
             xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
 
          xmb_update_thumbnail_image(xmb);
@@ -1293,8 +1293,8 @@ static void xmb_selection_pointer_changed(
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
          if (
-               menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
-               menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)
+               menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) || 
+               menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT)
             )
          {
             bool update_thumbnails = false;
@@ -1325,10 +1325,10 @@ static void xmb_selection_pointer_changed(
 
             if (update_thumbnails)
             {
-               if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+               if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
                   xmb_update_thumbnail_path(xmb, i /* will be ignored */, 'R');
 
-               if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+               if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
                   xmb_update_thumbnail_path(xmb, i /* will be ignored */, 'L');
 
                xmb_update_thumbnail_image(xmb);
@@ -1534,8 +1534,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS)
    {
-      if (  menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || 
-            menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (  menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) || 
+            menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
       {
          /* This code is horrible, full of hacks...
           * This hack ensures that thumbnails are not cleared
@@ -1548,10 +1548,10 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          {
             xmb_set_thumbnail_content(xmb, NULL);
 
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+            if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
                xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
 
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+            if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
                xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
 
             xmb_update_thumbnail_image(xmb);
@@ -1886,7 +1886,8 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       xmb_list_switch_new(xmb, selection_buf, dir, selection);
    xmb->categories_active_idx_old = (unsigned)xmb->categories_selection_ptr;
 
-   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+       menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
       xmb_unload_thumbnail_textures(xmb);
 
@@ -1894,10 +1895,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       {
          xmb_set_thumbnail_content(xmb, NULL);
 
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
             xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
 
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
             xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
 
          xmb_update_thumbnail_image(xmb);
@@ -2944,9 +2945,9 @@ static int xmb_draw_item(
    {
       if (xmb->savestate_thumbnail ||
             !xmb->use_ps3_layout ||
-            (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT)
+            (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT)
              && xmb->thumbnail) ||
-            (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)
+            (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT)
              && xmb->left_thumbnail
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
@@ -3587,7 +3588,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
-         if (xmb->thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (xmb->thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          {
             /* Limit thumbnail width */
 
@@ -3653,7 +3654,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       /* Left Thumbnail in the left margin */
 
-      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
       {
          /* Limit left thumbnail width */
 
@@ -3718,7 +3719,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
-         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
          {
             /* Limit left thumbnail width */
 
@@ -3782,7 +3783,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       /* Left Thumbnail in the left margin */
 
-      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
       {
          /* Limit left thumbnail width */
 
@@ -4024,7 +4025,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
-         if (xmb->thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (xmb->thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          {
             /* Limit right thumbnail width */
 
@@ -4087,7 +4088,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
-         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
          {
             /* Limit left thumbnail width */
 
@@ -5195,12 +5196,13 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    xmb_context_reset_horizontal_list(xmb);
 
-   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+       menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          xmb_update_thumbnail_path(xmb, 0, 'R');
 
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
          xmb_update_thumbnail_path(xmb, 0, 'L');
 
       xmb_update_thumbnail_image(xmb);

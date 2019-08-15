@@ -151,6 +151,10 @@ char* string_tokenize(char **str, const char *delim);
 /* Removes every instance of character 'c' from 'str' */
 void string_remove_all_chars(char *str, char c);
 
+/* Converts string to unsigned integer.
+ * Returns 0 if string is invalid  */
+unsigned string_to_unsigned(char *str);
+
 RETRO_END_DECLS
 
 #endif

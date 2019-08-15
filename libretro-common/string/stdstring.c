@@ -318,3 +318,21 @@ void string_remove_all_chars(char *str, char c)
 
    *write_ptr = '\0';
 }
+
+/* Converts string to unsigned integer.
+ * Returns 0 if string is invalid  */
+unsigned string_to_unsigned(char *str)
+{
+   char *ptr = NULL;
+
+   if (string_is_empty(str))
+      return 0;
+
+   for (ptr = str; *ptr != '\0'; ptr++)
+   {
+      if (!isdigit(*ptr))
+         return 0;
+   }
+
+   return (unsigned)strtoul(str, NULL, 10);
+}

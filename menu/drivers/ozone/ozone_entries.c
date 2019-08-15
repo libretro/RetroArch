@@ -689,14 +689,14 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Thumbnails */
    thumbnail = ozone->thumbnail &&
-     menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT);
+     menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
    left_thumbnail = ozone->left_thumbnail &&
-      menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT);
+      menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT);
 
    /* If user requested "left" thumbnail instead of content metadata
     * and no thumbnails are available, show a centered message and
     * return immediately */
-   if (!thumbnail && !left_thumbnail && settings->uints.menu_left_thumbnails != 0)
+   if (!thumbnail && !left_thumbnail && menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
       ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, 0);
       return;

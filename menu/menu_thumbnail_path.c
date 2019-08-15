@@ -51,6 +51,8 @@ struct menu_thumbnail_path_data
    char content_img[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
+   enum playlist_thumbnail_mode playlist_right_mode;
+   enum playlist_thumbnail_mode playlist_left_mode;
 };
 
 /* Initialisation */
@@ -65,6 +67,12 @@ menu_thumbnail_path_data_t *menu_thumbnail_path_init(void)
       calloc(1, sizeof(*path_data));
    if (!path_data)
       return NULL;
+   
+   /* Set these manually, since the default enum
+    * may not necessarily have a value of zero */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   
    return path_data;
 }
 
@@ -75,14 +83,17 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data)
    if (!path_data)
       return;
    
-   path_data->system[0] = '\0';
-   path_data->content_path[0] = '\0';
-   path_data->content_label[0] = '\0';
+   path_data->system[0]            = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0] = '\0';
-   path_data->content_img[0] = '\0';
-   path_data->right_path[0] = '\0';
-   path_data->left_path[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
+   
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 }
 
 /* Utility Functions */
@@ -118,21 +129,27 @@ bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_direct
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *menu_thumbnail_get_type(enum menu_thumbnail_id thumbnail_id)
+const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
    unsigned type = 0;
    
-   if (!settings)
+   if (!path_data || !settings)
       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
    
    switch (thumbnail_id)
    {
       case MENU_THUMBNAIL_RIGHT:
-         type = settings->uints.menu_thumbnails;
+         if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            type = (unsigned)path_data->playlist_right_mode - 1;
+         else
+            type = settings->uints.menu_thumbnails;
          break;
       case MENU_THUMBNAIL_LEFT:
-         type = settings->uints.menu_left_thumbnails;
+         if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            type = (unsigned)path_data->playlist_left_mode - 1;
+         else
+            type = settings->uints.menu_left_thumbnails;
          break;
       default:
          return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
@@ -156,19 +173,25 @@ const char *menu_thumbnail_get_type(enum menu_thumbnail_id thumbnail_id)
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool menu_thumbnail_is_enabled(enum menu_thumbnail_id thumbnail_id)
+bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
    
-   if (!settings)
+   if (!path_data || !settings)
       return false;
    
    switch (thumbnail_id)
    {
       case MENU_THUMBNAIL_RIGHT:
-         return settings->uints.menu_thumbnails != 0;
+         if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+         else
+            return settings->uints.menu_thumbnails != 0;
       case MENU_THUMBNAIL_LEFT:
-         return settings->uints.menu_left_thumbnails != 0;
+         if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+         else
+            return settings->uints.menu_left_thumbnails != 0;
       default:
          break;
    }
@@ -206,6 +229,8 @@ static void fill_content_img(menu_thumbnail_path_data_t *path_data)
  *   associated database name */
 bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system)
 {
+   playlist_t *playlist = playlist_get_cached();
+   
    if (!path_data)
       return false;
    
@@ -217,6 +242,10 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
    /* 'Reset' path_data system string */
    path_data->system[0] = '\0';
    
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   
    if (string_is_empty(system))
       return false;
    
@@ -226,6 +255,44 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
       strlcpy(path_data->system, "MAME", sizeof(path_data->system));
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
+   
+   /* Addendum: Now that we have per-playlist thumbnail display
+    * modes, we must extract them here - otherwise
+    * menu_thumbnail_is_enabled() will go out of sync */
+   if (playlist)
+   {
+      /* History/favourites are a special case: 'system'
+       * can only be set to these values if we have a
+       * valid playlist (cf. menu_displaylist_parse_playlist()) */
+      bool playlist_valid =
+            string_is_equal(system, "history") ||
+            string_is_equal(system, "favorites");
+      
+      if (!playlist_valid)
+      {
+         /* This means we have to work a little harder
+          * i.e. check whether the cached playlist file
+          * matches the database name */
+         const char *playlist_path = playlist_get_conf_path(playlist);
+         char playlist_name[PATH_MAX_LENGTH];
+         
+         playlist_name[0] = '\0';
+
+         if (!string_is_empty(playlist_path))
+            fill_pathname_base_noext(playlist_name, playlist_path, sizeof(playlist_name));
+
+         playlist_valid = string_is_equal(playlist_name, system);
+      }
+      
+      /* If we have a valid playlist, extract thumbnail modes */
+      if (playlist_valid)
+      {
+         path_data->playlist_right_mode =
+               playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
+         path_data->playlist_left_mode =
+               playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+      }
+   }
    
    return true;
 }
@@ -248,6 +315,10 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0] = '\0';
    path_data->content_img[0] = '\0';
+   
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (string_is_empty(label))
       return false;
@@ -289,6 +360,10 @@ bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, con
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0] = '\0';
    path_data->content_img[0] = '\0';
+   
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (string_is_empty(img_dir))
       return false;
@@ -347,7 +422,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    const char *core_name     = NULL;
    const char *db_name       = NULL;
    const struct playlist_entry *entry = NULL;
-
+   
    if (!path_data)
       return false;
    
@@ -362,6 +437,10 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0] = '\0';
    path_data->content_img[0] = '\0';
+   
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (!playlist)
       return false;
@@ -437,6 +516,14 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       }
    }
    
+   /* Playlist entry is valid -> it is now 'safe' to
+    * extract any remaining playlist metadata
+    * (i.e. thumbnail display modes) */
+   path_data->playlist_right_mode =
+         playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
+   path_data->playlist_left_mode =
+         playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+   
    return true;
 }
 
@@ -452,7 +539,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
 bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
 {
    settings_t *settings    = config_get_ptr();
-   const char *type        = menu_thumbnail_get_type(thumbnail_id);
+   const char *type        = menu_thumbnail_get_type(path_data, thumbnail_id);
    const char *system_name = NULL;
    char *thumbnail_path    = NULL;
    char content_dir[PATH_MAX_LENGTH];
@@ -483,7 +570,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    if (string_is_empty(settings->paths.directory_thumbnails))
       return false;
    
-   if (!menu_thumbnail_is_enabled(thumbnail_id))
+   if (!menu_thumbnail_is_enabled(path_data, thumbnail_id))
       return false;
    
    /* Generate new path */
