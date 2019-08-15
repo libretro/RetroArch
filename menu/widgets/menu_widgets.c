@@ -2261,7 +2261,7 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
          tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 }
 
-bool menu_widgets_push_achievement(const char *title, const char *badge)
+void menu_widgets_push_achievement(const char *title, const char *badge)
 {
    menu_widgets_achievement_free(NULL);
 
@@ -2271,8 +2271,6 @@ bool menu_widgets_push_achievement(const char *title, const char *badge)
    menu_widgets_get_badge_texture(&cheevo_badge, badge);
 
    menu_widgets_start_achievement_notification();
-
-   return true;
 }
 
 static void menu_widgets_generic_message_fadeout(void *userdata)
