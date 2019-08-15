@@ -58,6 +58,7 @@ typedef struct {
    Thread thread;
 
    volatile bool running;
+   volatile bool paused;
 } libnx_audren_thread_t;
 
 static void thread_job(void* data)
@@ -94,7 +95,7 @@ static void thread_job(void* data)
       if(current_wavebuf)
       {
          mutexLock(&aud->fifo_lock);
-         available = fifo_read_avail(aud->fifo);
+         available = aud->paused ? 0 : fifo_read_avail(aud->fifo);
          written_tmp = MIN(available, aud->buffer_size - current_size);
          dstbuf = current_pool_ptr + current_size;
          if(written_tmp > 0)
@@ -160,6 +161,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    RARCH_LOG("[Audio]: real_latency is %u\n", real_latency);
 
    aud->running = true;
+   aud->paused = false;
    aud->nonblocking = !block_frames;
    aud->buffer_size = (real_latency * sample_rate / 1000);
    aud->samples = (aud->buffer_size / num_channels / sizeof(int16_t));
@@ -284,6 +286,9 @@ static ssize_t libnx_audren_thread_audio_write(void *data, const void *buf, size
    if (!aud || !aud->running)
       return -1;
 
+   if(aud->paused)
+      return 0;
+
    if(aud->nonblocking)
    {
       mutexLock(&aud->fifo_lock);
@@ -329,9 +334,7 @@ static bool libnx_audren_thread_audio_stop(void *data)
    if (!aud)
       return false;
 
-   mutexLock(&aud->fifo_lock);
-   audrvVoiceStop(&aud->drv, 0);
-   mutexUnlock(&aud->fifo_lock);
+   aud->paused = true;
 
    return true;
 }
@@ -344,9 +347,7 @@ static bool libnx_audren_thread_audio_start(void *data, bool is_shutdown)
    if (!aud)
       return false;
 
-   mutexLock(&aud->fifo_lock);
-   audrvVoiceStart(&aud->drv, 0);
-   mutexUnlock(&aud->fifo_lock);
+   aud->paused = false;
 
    return true;
 }
