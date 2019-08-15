@@ -49,13 +49,9 @@ bool menu_widgets_msg_queue_push(
       enum message_queue_category category,
       unsigned prio, bool flush);
 
-bool menu_widgets_volume_update_and_show(void);
+void menu_widgets_volume_update_and_show(void);
 
 void menu_widgets_iterate(unsigned width, unsigned height);
-
-bool menu_widgets_set_paused(bool is_paused);
-bool menu_widgets_set_fast_forward(bool is_fast_forward);
-bool menu_widgets_set_rewind(bool is_rewind);
 
 bool menu_widgets_task_msg_queue_push(retro_task_t *task,
       const char *msg,

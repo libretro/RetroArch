@@ -1984,7 +1984,7 @@ static void menu_widgets_volume_timer_end(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_volume_update_and_show(void)
+void menu_widgets_volume_update_and_show(void)
 {
    settings_t *settings = config_get_ptr();
    bool mute            = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2004,8 +2004,6 @@ bool menu_widgets_volume_update_and_show(void)
    entry.userdata    = NULL;
 
    menu_timer_start(&volume_timer, &entry);
-
-   return true;
 }
 
 static void menu_widgets_screenshot_fadeout(void *userdata)

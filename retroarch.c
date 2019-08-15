@@ -2870,9 +2870,14 @@ static void command_event_set_volume(float gain)
          new_volume);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_inited || !menu_widgets_volume_update_and_show())
+   if (!menu_widgets_inited)
+#endif
+   {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      menu_widgets_volume_update_and_show();
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    RARCH_LOG("%s\n", msg);
 
@@ -4254,9 +4259,14 @@ TODO: Add a setting for these tweaks */
             audio_driver_mute_enable  = !audio_driver_mute_enable;
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-            if (!menu_widgets_volume_update_and_show())
+            if (!menu_widgets_inited)
+#endif
+            {
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+               menu_widgets_volume_update_and_show();
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
 
          }
          break;
