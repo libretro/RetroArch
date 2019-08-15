@@ -834,7 +834,7 @@ void menu_widgets_iterate(unsigned width, unsigned height)
       }
 
       /* Start expiration timer if not associated to a task */
-      if (msg_widget->task_ptr == NULL)
+      if (!msg_widget->task_ptr)
       {
          menu_widgets_start_msg_expiration_timer(msg_widget, MSG_QUEUE_ANIMATION_DURATION*2 + msg_widget->duration);
       }
@@ -858,7 +858,7 @@ void menu_widgets_iterate(unsigned width, unsigned height)
       if (!msg)
          continue;
 
-      if (msg->task_ptr != NULL && (msg->task_finished || msg->task_cancelled))
+      if (msg->task_ptr && (msg->task_finished || msg->task_cancelled))
          menu_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
 
       if (msg->expired && !widgets_moving)
