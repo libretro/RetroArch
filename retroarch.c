@@ -3285,41 +3285,6 @@ static void command_event_runtime_log_init(void)
       strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
 }
 
-static void video_driver_set_title_buf(void)
-{
-   struct retro_system_info info;
-   current_core.retro_get_system_info(&info);
-
-   fill_pathname_join_concat_noext(
-         video_driver_title_buf,
-         msg_hash_to_str(MSG_PROGRAM),
-         " ",
-         info.library_name,
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, " ",
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, info.library_version,
-         sizeof(video_driver_title_buf));
-}
-
-
-static void retroarch_system_info_init(void)
-{
-   current_core.retro_get_system_info(&runloop_system.info);
-
-   if (!runloop_system.info.library_name)
-      runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
-   if (!runloop_system.info.library_version)
-      runloop_system.info.library_version = "v0";
-
-   video_driver_set_title_buf();
-
-   strlcpy(runloop_system.valid_extensions,
-         runloop_system.info.valid_extensions ?
-         runloop_system.info.valid_extensions : DEFAULT_EXT,
-         sizeof(runloop_system.valid_extensions));
-}
-
 static void retroarch_set_frame_limit(void)
 {
    settings_t                 *settings = configuration_settings;
@@ -3343,16 +3308,33 @@ static bool command_event_init_core(enum rarch_core_type type)
       current_core.retro_run   = retro_run_null;
    current_core.symbols_inited = true;
 
-   retroarch_system_info_init();
+   current_core.retro_get_system_info(&runloop_system.info);
+
+   if (!runloop_system.info.library_name)
+      runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+   if (!runloop_system.info.library_version)
+      runloop_system.info.library_version = "v0";
+
+   fill_pathname_join_concat_noext(
+         video_driver_title_buf,
+         msg_hash_to_str(MSG_PROGRAM),
+         " ",
+         runloop_system.info.library_name,
+         sizeof(video_driver_title_buf));
+   strlcat(video_driver_title_buf, " ",
+         sizeof(video_driver_title_buf));
+   strlcat(video_driver_title_buf,
+         runloop_system.info.library_version,
+         sizeof(video_driver_title_buf));
+
+   strlcpy(runloop_system.valid_extensions,
+         runloop_system.info.valid_extensions ?
+         runloop_system.info.valid_extensions : DEFAULT_EXT,
+         sizeof(runloop_system.valid_extensions));
 
    /* auto overrides: apply overrides */
    if(settings->bools.auto_overrides_enable)
-   {
-      if (config_load_override())
-         runloop_overrides_active = true;
-      else
-         runloop_overrides_active = false;
-   }
+      runloop_overrides_active = config_load_override();
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
