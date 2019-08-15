@@ -218,9 +218,27 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
    FILE *fp = (FILE*)log_file_fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
+   int ret;
    char buffer[256];
    buffer[0] = '\0';
-   vsnprintf(buffer, sizeof(buffer), fmt, ap);
+   ret = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+
+   /* ensure null termination and line break in error case */
+   if (ret < 0)
+   {
+      int end;
+      buffer[sizeof buffer - 1]  = '\0';
+      end = strlen(buffer) - 1;
+      if (end >= 0)
+      {
+         buffer[end] = '\n';
+      }
+      else
+      {
+         buffer[0] = '\n';
+         buffer[1] = '\0';
+      }
+   }
 
    if (fp)
    {
