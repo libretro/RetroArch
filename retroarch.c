@@ -23328,10 +23328,9 @@ static enum runloop_state runloop_check_state(void)
    static bool old_focus               = true;
    settings_t *settings                = configuration_settings;
    float fastforward_ratio             = settings->floats.fastforward_ratio;
-   bool is_focused                     = video_has_focus();
-   bool is_alive                       = current_video ?
-      current_video->alive(video_driver_data) : true;
-   uint64_t frame_count                = video_driver_frame_count;
+   bool is_focused                     = false;
+   bool is_alive                       = false;
+   uint64_t frame_count                = 0;
    bool focused                        = true;
    bool pause_nonactive                = settings->bools.pause_nonactive;
    bool rarch_is_initialized           = rarch_is_inited;
@@ -23394,6 +23393,11 @@ static enum runloop_state runloop_check_state(void)
       if (application)
          application->process_events();
    }
+
+   frame_count = video_driver_frame_count;
+   is_alive    = current_video ?
+      current_video->alive(video_driver_data) : true;
+   is_focused  = video_has_focus();
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
