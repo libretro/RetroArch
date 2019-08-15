@@ -204,7 +204,7 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!state->widgets_ready)
       return;
 
-   if (state && !state->silence)
+   if (state && !state->silence && state->widgets_ready)
       menu_widgets_screenshot_taken(state->shotname, state->filename);
 
    free(state);

@@ -1501,7 +1501,8 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 

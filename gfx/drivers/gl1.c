@@ -836,7 +836,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 

@@ -311,9 +311,6 @@ static unsigned generic_message_height; /* used for both generic and libretro me
 
 bool menu_widgets_set_paused(bool is_paused)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    menu_widgets_paused = is_paused;
    return true;
 }
@@ -811,9 +808,6 @@ void menu_widgets_iterate(unsigned width, unsigned height)
    size_t i;
    settings_t *settings = config_get_ptr();
 
-   if (!menu_widgets_inited)
-      return;
-
    /* Messages queue */
 
    /* Consume one message if available */
@@ -1297,9 +1291,6 @@ void menu_widgets_frame(video_frame_info_t *video_info)
 
    settings_t *settings = config_get_ptr();
 
-   if (!menu_widgets_inited)
-      return;
-
    menu_widgets_frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
@@ -1722,13 +1713,10 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-void menu_widgets_init(bool video_is_threaded)
+bool menu_widgets_init(bool video_is_threaded)
 {
-   if (menu_widgets_inited)
-      return;
-
    if (!menu_display_init_first_driver(video_is_threaded))
-      goto err;
+      goto error;
 
    menu_widgets_frame_count = 0;
 
@@ -1737,21 +1725,24 @@ void menu_widgets_init(bool video_is_threaded)
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
    if (!msg_queue)
-      goto err;
+      goto error;
 
    current_msgs = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!current_msgs)
-      goto err;
+      goto error;
 
    if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
-      goto err;
+      goto error;
 
    menu_widgets_inited = true;
 
-   return;
-err:
-   menu_widgets_free();
+   return true;
+
+error:
+   if (menu_widgets_inited)
+      menu_widgets_free();
+   return false;
 }
 
 void menu_widgets_context_reset(bool is_threaded,
@@ -1765,9 +1756,6 @@ void menu_widgets_context_reset(bool is_threaded,
    char ozone_path[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
-
-   if (!menu_widgets_inited)
-      return;
 
    /* Textures paths */
    fill_pathname_join(
@@ -1889,8 +1877,6 @@ void menu_widgets_context_reset(bool is_threaded,
 void menu_widgets_context_destroy(void)
 {
    int i;
-   if (!menu_widgets_inited)
-      return;
 
    /* TODO: Dismiss onscreen notifications that have been freed */
 
@@ -1931,9 +1917,6 @@ void menu_widgets_free(void)
 {
    size_t i;
    menu_animation_ctx_tag libretro_tag;
-
-   if (!menu_widgets_inited)
-      return;
 
    menu_widgets_inited = false;
 
@@ -2027,9 +2010,6 @@ bool menu_widgets_volume_update_and_show(void)
    float new_volume     = settings->floats.audio_volume;
    menu_timer_ctx_entry_t entry;
 
-   if (!menu_widgets_inited)
-      return false;
-
    menu_animation_kill_by_tag(&volume_tag);
 
    volume_db         = new_volume;
@@ -2049,9 +2029,6 @@ bool menu_widgets_volume_update_and_show(void)
 
 bool menu_widgets_set_fps_text(char *new_fps_text)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    strlcpy(menu_widgets_fps_text,
          new_fps_text, sizeof(menu_widgets_fps_text));
 
@@ -2060,19 +2037,12 @@ bool menu_widgets_set_fps_text(char *new_fps_text)
 
 bool menu_widgets_set_fast_forward(bool is_fast_forward)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    menu_widgets_fast_forward = is_fast_forward;
-
    return true;
 }
 
 bool menu_widgets_set_rewind(bool is_rewind)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    menu_widgets_rewinding = is_rewind;
 
    return true;
@@ -2081,9 +2051,6 @@ bool menu_widgets_set_rewind(bool is_rewind)
 static void menu_widgets_screenshot_fadeout(void *userdata)
 {
    menu_animation_ctx_entry_t entry;
-
-   if (!menu_widgets_inited)
-      return;
 
    entry.cb             = NULL;
    entry.duration       = SCREENSHOT_DURATION_OUT;
@@ -2100,9 +2067,6 @@ static void menu_widgets_play_screenshot_flash(void)
 {
    menu_animation_ctx_entry_t entry;
 
-   if (!menu_widgets_inited)
-      return;
-
    entry.cb             = menu_widgets_screenshot_fadeout;
    entry.duration       = SCREENSHOT_DURATION_IN;
    entry.easing_enum    = EASING_IN_QUAD;
@@ -2116,9 +2080,6 @@ static void menu_widgets_play_screenshot_flash(void)
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
 {
-   if (!menu_widgets_inited)
-      return;
-
    menu_widgets_play_screenshot_flash();
    strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
@@ -2344,9 +2305,6 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
 
 bool menu_widgets_push_achievement(const char *title, const char *badge)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    menu_widgets_achievement_free(NULL);
 
    /* TODO: Make a queue of notifications to display */
@@ -2380,9 +2338,6 @@ bool menu_widgets_set_message(char *msg)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
    menu_timer_ctx_entry_t timer;
-
-   if (!menu_widgets_inited)
-      return false;
 
    snprintf(generic_message, GENERIC_MESSAGE_SIZE, "%s", msg);
 
@@ -2422,9 +2377,6 @@ bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
    menu_timer_ctx_entry_t timer;
-
-   if (!menu_widgets_inited)
-      return false;
 
    snprintf(libretro_message, LIBRETRO_MESSAGE_SIZE, "%s", msg);
 

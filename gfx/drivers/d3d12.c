@@ -1558,7 +1558,8 @@ static bool d3d12_gfx_frame(
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 

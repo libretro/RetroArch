@@ -3048,7 +3048,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))

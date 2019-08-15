@@ -504,7 +504,7 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 
    /* Show the OSD message. */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   if (!menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge))
+   if (!menu_widgets_ready() || !menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge))
 #endif
    {
       snprintf(buffer, sizeof(buffer), "Achievement Unlocked: %s", cheevo->info->title);
