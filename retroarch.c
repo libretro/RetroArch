@@ -8764,16 +8764,16 @@ static void ui_companion_driver_msg_queue_push(
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    const ui_companion_driver_t *ui = ui_companion;
-#ifdef HAVE_QT
-   settings_t *settings            = configuration_settings;
-#endif
 
    if (ui && ui->msg_queue_push)
       ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
 #ifdef HAVE_QT
-   if (settings->bools.desktop_menu_enable)
-      if (ui_companion_qt.msg_queue_push && qt_is_inited)
-         ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
+   {
+      settings_t *settings            = configuration_settings;
+      if (settings->bools.desktop_menu_enable)
+         if (ui_companion_qt.msg_queue_push && qt_is_inited)
+            ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
+   }
 #endif
 }
 
@@ -22911,40 +22911,33 @@ void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush,
       char *title,
-      enum message_queue_icon icon, enum message_queue_category category)
+      enum message_queue_icon icon,
+      enum message_queue_category category)
 {
-   runloop_ctx_msg_info_t msg_info;
-
    runloop_msg_queue_lock();
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_ready())
    {
-      ui_companion_driver_msg_queue_push(msg,
-            prio, duration * 60 / 1000, flush);
       menu_widgets_msg_queue_push(NULL, msg,
-            roundf((float)duration / 60.0f * 1000.0f), title, icon, category, prio, flush);
-      runloop_msg_queue_unlock();
-      return;
+            roundf((float)duration / 60.0f * 1000.0f),
+            title, icon, category, prio, flush);
+      duration = duration * 60 / 1000;
    }
+   else
 #endif
-
-   if (flush)
-      msg_queue_clear(runloop_msg_queue);
-
-   msg_info.msg      = msg;
-   msg_info.prio     = prio;
-   msg_info.duration = duration;
-   msg_info.flush    = flush;
-
-   if (runloop_msg_queue)
    {
-      msg_queue_push(runloop_msg_queue, msg_info.msg,
-            msg_info.prio, msg_info.duration,
-            title, icon, category);
-      ui_companion_driver_msg_queue_push(msg_info.msg,
-            msg_info.prio, msg_info.duration, msg_info.flush);
+      if (flush)
+         msg_queue_clear(runloop_msg_queue);
+
+      if (runloop_msg_queue)
+         msg_queue_push(runloop_msg_queue, msg,
+               prio, duration,
+               title, icon, category);
    }
+
+   ui_companion_driver_msg_queue_push(msg,
+         prio, duration, flush);
 
    runloop_msg_queue_unlock();
 }
