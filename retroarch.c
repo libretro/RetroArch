@@ -3023,9 +3023,10 @@ static void command_event_deinit_core(bool reinit)
    command_event_disable_overrides();
    retroarch_unset_shader_preset();
 
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
-         rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
-         rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   if (     runloop_remaps_core_active
+         || runloop_remaps_content_dir_active
+         || runloop_remaps_game_active
+      )
       input_remapping_set_defaults(true);
 }
 
@@ -4111,9 +4112,10 @@ bool command_event(enum event_command cmd, void *data)
             command_event_disable_overrides();
             retroarch_unset_shader_preset();
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
-                  rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
-                  rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+            if (     runloop_remaps_core_active
+                  || runloop_remaps_content_dir_active
+                  || runloop_remaps_game_active
+               )
                input_remapping_set_defaults(true);
 
             if (is_inited)
@@ -22951,9 +22953,10 @@ bool retroarch_main_quit(void)
       command_event_disable_overrides();
       retroarch_unset_shader_preset();
 
-      if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
-            rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
-            rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+      if (     runloop_remaps_core_active
+            || runloop_remaps_content_dir_active
+            || runloop_remaps_game_active
+         )
          input_remapping_set_defaults(true);
    }
 
