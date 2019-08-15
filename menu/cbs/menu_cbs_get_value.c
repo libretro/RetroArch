@@ -1143,6 +1143,77 @@ static void menu_action_setting_disp_set_label_playlist_label_display_mode(
    }
 }
 
+static const char *get_playlist_thumbnail_mode_value(playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id)
+{
+   enum playlist_thumbnail_mode thumbnail_mode =
+         playlist_get_thumbnail_mode(playlist, thumbnail_id);
+
+   switch (thumbnail_mode)
+   {
+      case PLAYLIST_THUMBNAIL_MODE_OFF:
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+      case PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS:
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS);
+      case PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS:
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS);
+      case PLAYLIST_THUMBNAIL_MODE_BOXARTS:
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS);
+      default:
+         /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
+         break;
+   }
+
+   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT);
+}
+
+static void menu_action_setting_disp_set_label_playlist_right_thumbnail_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   playlist_t *playlist  = playlist_get_cached();
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   if (!playlist)
+      return;
+
+   strlcpy(
+         s,
+         get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_RIGHT),
+         len);
+}
+
+static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   playlist_t *playlist  = playlist_get_cached();
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   if (!playlist)
+      return;
+
+   strlcpy(
+         s,
+         get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_LEFT),
+         len);
+}
+
 static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1393,6 +1464,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_playlist_label_display_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_playlist_right_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_playlist_left_thumbnail_mode);
             break;
          default:
             return - 1;

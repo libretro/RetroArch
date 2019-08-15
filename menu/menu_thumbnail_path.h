@@ -73,11 +73,11 @@ bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_direct
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *menu_thumbnail_get_type(enum menu_thumbnail_id thumbnail_id);
+const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool menu_thumbnail_is_enabled(enum menu_thumbnail_id thumbnail_id);
+bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
 
 /* Setters */
 

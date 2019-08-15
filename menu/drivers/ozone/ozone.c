@@ -382,7 +382,7 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
    if (string_is_equal(core_name, "imageviewer"))
    {
-      if ((pos == 'R') || (pos == 'L' && !menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT)))
+      if ((pos == 'R') || (pos == 'L' && !menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT)))
          menu_thumbnail_update_path(ozone->thumbnail_path_data, pos == 'R' ? MENU_THUMBNAIL_RIGHT : MENU_THUMBNAIL_LEFT);
    }
    else
@@ -467,7 +467,8 @@ static void ozone_refresh_thumbnail_image(void *data)
 
    /* Only refresh thumbnails if thumbnails are enabled
     * and we are currently viewing a playlist */
-   if ((menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT)) &&
+   if ((menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+        menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT)) &&
        (ozone->is_playlist && ozone->depth == 1))
       ozone_update_thumbnail_image(ozone);
 }
@@ -660,10 +661,10 @@ static void ozone_context_reset(void *data, bool is_threaded)
       }
 
       /* Thumbnails */
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+      if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
          ozone_update_thumbnail_path(ozone, 0, 'R');
 
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
          ozone_update_thumbnail_path(ozone, 0, 'L');
 
       ozone_update_thumbnail_image(ozone);
@@ -1388,14 +1389,15 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       ozone_update_scroll(ozone, allow_animation, node);
 
       /* Update thumbnail */
-      if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+      if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+          menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
       {
          bool update_thumbnails = false;
 
          /* Playlist updates */
          if (ozone->is_playlist && ozone->depth == 1)
          {
-            ozone_set_thumbnail_content( ozone, "");
+            ozone_set_thumbnail_content(ozone, "");
             update_thumbnails = true;
          }
          /* Database list updates
@@ -1408,19 +1410,19 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          /* Filebrowser image updates */
          else if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
          {
-             ozone_set_thumbnail_content(ozone, "imageviewer");
+            ozone_set_thumbnail_content(ozone, "imageviewer");
             update_thumbnails = true;
          }
 
          if (update_thumbnails)
          {
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+            if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
                 ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'R');
 
-            if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+            if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
                 ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'L');
 
-             ozone_update_thumbnail_image(ozone);
+            ozone_update_thumbnail_image(ozone);
          }
       }
 
@@ -1785,7 +1787,8 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    }
 
    /* Thumbnails */
-   if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT) || menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+   if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
+       menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
       ozone_unload_thumbnail_textures(ozone);
 
@@ -1793,10 +1796,10 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
       {
          ozone_set_thumbnail_content(ozone, "");
 
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_RIGHT))
+         if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
             ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'R');
 
-         if (menu_thumbnail_is_enabled(MENU_THUMBNAIL_LEFT))
+         if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
             ozone_update_thumbnail_path(ozone, 0 /* will be ignored */, 'L');
 
          ozone_update_thumbnail_image(ozone);

@@ -133,6 +133,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_settings_list,        MENU_
 default_sublabel_macro(action_bind_sublabel_playlist_manager_list,         MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_default_core, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_reset_cores,  MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES)
+default_sublabel_macro(action_bind_sublabel_playlist_manager_label_display_mode, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_network_on_demand_thumbnails,  MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_user_settings_list,            MENU_ENUM_SUBLABEL_USER_SETTINGS)
@@ -2474,6 +2475,37 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_reset_cores);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_label_display_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+            settings = config_get_ptr();
+            /* Uses same sublabels as MENU_ENUM_LABEL_THUMBNAILS */
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
+            }
+            else
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+            }
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+            settings = config_get_ptr();
+            /* Uses same sublabels as MENU_ENUM_LABEL_LEFT_THUMBNAILS */
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
+            }
+            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+            }
+            else
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+            }
             break;
          case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_interface_settings_list);

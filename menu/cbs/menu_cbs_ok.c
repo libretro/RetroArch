@@ -178,6 +178,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -442,6 +446,24 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -5428,6 +5450,34 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(const char *
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT, (enum playlist_thumbnail_mode)idx);
+   playlist_write_file(playlist);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT, (enum playlist_thumbnail_mode)idx);
+   playlist_write_file(playlist);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5623,6 +5673,26 @@ static int action_ok_playlist_label_display_mode(const char *path,
          NULL,
          NULL, NULL, 0, 0, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE);
+   return 0;
+}
+
+static int action_ok_playlist_right_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
+   return 0;
+}
+
+static int action_ok_playlist_left_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
    return 0;
 }
 
@@ -6446,6 +6516,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
             BIND_ACTION_OK(cbs, action_ok_playlist_label_display_mode);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_right_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_left_thumbnail_mode);
+            break;
          case MENU_ENUM_LABEL_UPDATE_ASSETS:
             BIND_ACTION_OK(cbs, action_ok_update_assets);
             break;
@@ -6615,6 +6691,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
             BIND_ACTION_OK(cbs, action_ok_playlist_label_display_mode);
             break;
+         case MENU_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_right_thumbnail_mode);
+            break;
+         case MENU_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_playlist_left_thumbnail_mode);
+            break;
          default:
             return -1;
       }
@@ -6740,6 +6822,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_label_display_mode);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_right_thumbnail_mode);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_left_thumbnail_mode);
             break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
