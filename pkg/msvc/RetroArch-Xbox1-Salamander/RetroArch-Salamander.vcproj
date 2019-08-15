@@ -344,6 +344,9 @@
 				<Filter
 					Name="string"
 					Filter="">
+					<File
+						RelativePath="..\..\..\libretro-common\string\stdstring.c">
+					</File>
 				</Filter>
 				<Filter
 					Name="streams"
