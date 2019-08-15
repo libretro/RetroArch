@@ -227,16 +227,14 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    if (ret < 0)
    {
       int end;
-      buffer[sizeof buffer - 1]  = '\0';
+      buffer[sizeof(buffer) - 1]  = '\0';
       end = strlen(buffer) - 1;
       if (end >= 0)
-      {
          buffer[end] = '\n';
-      }
       else
       {
-         buffer[0] = '\n';
-         buffer[1] = '\0';
+         buffer[0]   = '\n';
+         buffer[1]   = '\0';
       }
    }
 
