@@ -184,83 +184,73 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    asl_free(msg);
 #endif
 #elif defined(_XBOX1)
-   {
-      /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-      char msg_new[256];
-      char buffer[256];
+   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
+   char msg_new[256];
+   char buffer[256];
 
-      msg_new[0] = buffer[0] = '\0';
-      snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-            file_path_str(FILE_PATH_PROGRAM_NAME),
-            tag ? tag : "",
-            fmt);
-      wvsprintf(buffer, msg_new, ap);
-      OutputDebugStringA(buffer);
-   }
+   msg_new[0] = buffer[0] = '\0';
+   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
+         file_path_str(FILE_PATH_PROGRAM_NAME),
+         tag ? tag : "",
+         fmt);
+   wvsprintf(buffer, msg_new, ap);
+   OutputDebugStringA(buffer);
 #elif defined(ANDROID)
+   int prio = ANDROID_LOG_INFO;
+   if (tag)
    {
-      int prio = ANDROID_LOG_INFO;
-      if (tag)
-      {
-         if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
-            prio = ANDROID_LOG_WARN;
-         else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
-            prio = ANDROID_LOG_ERROR;
-      }
-
-      if (log_file_initialized)
-      {
-         vfprintf(log_file_fp, fmt, ap);
-         fflush(log_file_fp);
-      }
-      else
-         __android_log_vprint(prio,
-               file_path_str(FILE_PATH_PROGRAM_NAME),
-               fmt,
-               ap);
+      if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
+         prio = ANDROID_LOG_WARN;
+      else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
+         prio = ANDROID_LOG_ERROR;
    }
-#else
 
+   if (log_file_initialized)
    {
+      vfprintf(log_file_fp, fmt, ap);
+      fflush(log_file_fp);
+   }
+   else
+      __android_log_vprint(prio,
+            file_path_str(FILE_PATH_PROGRAM_NAME),
+            fmt,
+            ap);
+#else
+   FILE *fp = (FILE*)log_file_fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
-      char buffer[256];
-#endif
-      FILE *fp = (FILE*)retro_main_log_file();
+   char buffer[256];
+   buffer[0] = '\0';
+   vsnprintf(buffer, sizeof(buffer), fmt, ap);
 
-#if defined(HAVE_QT) || defined(__WINRT__)
-      buffer[0] = '\0';
-      vsnprintf(buffer, sizeof(buffer), fmt, ap);
-
-      if (fp)
-      {
-         fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
-         fflush(fp);
-      }
+   if (fp)
+   {
+      fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
+      fflush(fp);
+   }
 
 #if defined(HAVE_QT)
-      ui_companion_driver_log_msg(buffer);
+   ui_companion_driver_log_msg(buffer);
 #endif
 
 #if defined(__WINRT__)
-      OutputDebugStringA(buffer);
+   OutputDebugStringA(buffer);
 #endif
 #else
 #if defined(HAVE_LIBNX)
-      mutexLock(&logging_mtx);
+   mutexLock(&logging_mtx);
 #endif
-      if (fp)
-      {
-         fprintf(fp, "%s ",
-               tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-         vfprintf(fp, fmt, ap);
-         fflush(fp);
-      }
+   if (fp)
+   {
+      fprintf(fp, "%s ",
+            tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+      vfprintf(fp, fmt, ap);
+      fflush(fp);
+   }
 #if defined(HAVE_LIBNX)
-      mutexUnlock(&logging_mtx);
+   mutexUnlock(&logging_mtx);
 #endif
 
 #endif
-   }
 #endif
 }
 
@@ -301,7 +291,7 @@ void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
 
-   if (!verbosity_is_enabled())
+   if (!main_verbosity)
       return;
 
    va_start(ap, fmt);
@@ -321,7 +311,7 @@ void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
 
-   if (!verbosity_is_enabled())
+   if (!main_verbosity)
       return;
 
    va_start(ap, fmt);
@@ -333,7 +323,7 @@ void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
 
-   if (!verbosity_is_enabled())
+   if (!main_verbosity)
       return;
 
    va_start(ap, fmt);
