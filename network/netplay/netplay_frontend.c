@@ -602,6 +602,8 @@ static int16_t netplay_input_state(netplay_t *netplay,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+            return curr_input_state[0];
          return ((1 << id) & curr_input_state[0]) ? 1 : 0;
 
       case RETRO_DEVICE_ANALOG:
