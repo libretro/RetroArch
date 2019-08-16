@@ -1230,7 +1230,6 @@ MENU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
-#include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
