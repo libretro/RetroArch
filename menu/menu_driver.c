@@ -1011,10 +1011,11 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    int current;
    bool current_is_dir      = false;
    unsigned type            = 0;
-   size_t i, scroll_value   = 0;
+   size_t i                 = 0;
 
-   menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
-   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   scroll_index_size        = 0;
+
+   menu_navigation_add_scroll_index(0);
 
    current        = menu_entries_elem_get_first_char(list, 0);
 
@@ -1035,14 +1036,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
          is_dir = true;
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
+         menu_navigation_add_scroll_index(i);
 
       current        = first;
       current_is_dir = is_dir;
    }
 
-   scroll_value = list->size - 1;
-   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   menu_navigation_add_scroll_index(list->size - 1);
 }
 
 /**
@@ -3323,6 +3323,14 @@ bool menu_driver_list_get_selection(menu_ctx_list_t *list)
    return true;
 }
 
+static void menu_navigation_add_scroll_index(size_t sel)
+{
+   scroll_index_list[scroll_index_size]   = sel;
+
+   if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
+      scroll_index_size++;
+}
+
 bool menu_driver_list_get_size(menu_ctx_list_t *list)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
@@ -3745,21 +3753,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
                      menu_userdata, &menu_driver_selection_ptr);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
-         scroll_index_size = 0;
-         break;
-      case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
-         {
-            size_t *sel        = (size_t*)data;
-            if (!sel)
-               return false;
-
-            scroll_index_list[scroll_index_size]   = *sel;
-
-            if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
-               scroll_index_size++;
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
