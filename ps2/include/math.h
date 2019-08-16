@@ -33,4 +33,6 @@
 #define exp(a) ((double)expf((float)a))
 #define log(a) ((double)logf((float)a))
 
+#define fmod(a, b) (a - b * floor(a / b));
+
 #endif //MATH_H

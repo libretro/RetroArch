@@ -225,7 +225,7 @@ static void frontend_ps2_init(void *data)
    waitUntilDeviceIsReady(bootDeviceID);
 
 #if defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("retroarch.log");
+   retro_main_log_file_init("retroarch.log", false);
    verbosity_enable();
 #endif
 }
