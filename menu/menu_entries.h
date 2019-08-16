@@ -36,7 +36,6 @@ enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
    MENU_ENTRIES_CTL_DEINIT,
-   MENU_ENTRIES_CTL_INIT,
    MENU_ENTRIES_CTL_LIST_GET,
    MENU_ENTRIES_CTL_LIST_DEINIT,
    MENU_ENTRIES_CTL_LIST_INIT,
@@ -285,6 +284,8 @@ int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
 
 void menu_entry_init(menu_entry_t *entry);
+
+bool menu_entries_init(void);
 
 RETRO_END_DECLS
 

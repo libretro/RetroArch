@@ -1754,7 +1754,7 @@ static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
 
-   if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
+   if (!menu_entries_init())
       return false;
 
    if (settings->bools.menu_show_start_screen)

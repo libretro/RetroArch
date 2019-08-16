@@ -976,7 +976,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return menu_list_get_selection(menu_list, (unsigned)idx);
 }
 
-static bool menu_entries_init(void)
+bool menu_entries_init(void)
 {
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_LIST_INIT, NULL))
       goto error;
@@ -1311,8 +1311,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             file_list_clear(list);
          }
          break;
-      case MENU_ENTRIES_CTL_INIT:
-         return menu_entries_init();
       case MENU_ENTRIES_CTL_SHOW_BACK:
          /* Returns true if a Back button should be shown
           * (i.e. we are at least
