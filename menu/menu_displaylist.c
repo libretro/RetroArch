@@ -5271,8 +5271,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    int ret                       = 0;
    menu_handle_t *menu           = menu_driver_get_ptr();
 
-   if (!menu)
-      return false;
+   /* TODO/FIXME
+    * We cannot perform a:
+    *    if (!menu)
+    *       return false;
+    * sanity check here, because menu_displaylist_ctl() can be
+    * called by menu driver init functions - i.e. we can legally
+    * reach this point before the menu has been created... */
 
    disp_list.info = info;
    disp_list.type = type;
