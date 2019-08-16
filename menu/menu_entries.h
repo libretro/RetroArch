@@ -35,13 +35,9 @@ RETRO_BEGIN_DECLS
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
-   MENU_ENTRIES_CTL_DEINIT,
    MENU_ENTRIES_CTL_LIST_GET,
    MENU_ENTRIES_CTL_LIST_DEINIT,
-   MENU_ENTRIES_CTL_LIST_INIT,
    MENU_ENTRIES_CTL_SETTINGS_GET,
-   MENU_ENTRIES_CTL_SETTINGS_DEINIT,
-   MENU_ENTRIES_CTL_SETTINGS_INIT,
    MENU_ENTRIES_CTL_SET_REFRESH,
    MENU_ENTRIES_CTL_UNSET_REFRESH,
    MENU_ENTRIES_CTL_NEEDS_REFRESH,
@@ -284,8 +280,6 @@ int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
 
 void menu_entry_init(menu_entry_t *entry);
-
-bool menu_entries_init(void);
 
 RETRO_END_DECLS
 

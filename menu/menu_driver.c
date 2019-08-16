@@ -1173,19 +1173,37 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return menu_list_get_selection(menu_list, (unsigned)idx);
 }
 
-bool menu_entries_init(void)
+static void menu_entries_list_deinit(void)
 {
-   if (!menu_entries_ctl(MENU_ENTRIES_CTL_LIST_INIT, NULL))
+   if (menu_entries_list)
+      menu_list_free(menu_entries_list);
+   menu_entries_list     = NULL;
+}
+
+static void menu_entries_settings_deinit(void)
+{
+   menu_setting_free(menu_entries_list_settings);
+   if (menu_entries_list_settings)
+      free(menu_entries_list_settings);
+   menu_entries_list_settings = NULL;
+}
+
+
+static bool menu_entries_init(void)
+{
+   if (!(menu_entries_list = (menu_list_t*)menu_list_new()))
       goto error;
 
-   if (!menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_INIT, NULL))
+   menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_entries_list_settings);
+
+   if (!menu_entries_list_settings)
       goto error;
 
    return true;
 
 error:
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
+   menu_entries_settings_deinit();
+   menu_entries_list_deinit();
 
    return false;
 }
@@ -1402,14 +1420,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
    switch (state)
    {
-      case MENU_ENTRIES_CTL_DEINIT:
-         menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
-         menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
-
-         menu_entries_need_refresh        = false;
-         menu_entries_nonblocking_refresh = false;
-         menu_entries_begin               = 0;
-         break;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
          if (menu_entries_nonblocking_refresh)
             return false;
@@ -1424,15 +1434,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             *list = menu_entries_list;
          }
          return true;
-      case MENU_ENTRIES_CTL_LIST_DEINIT:
-         if (menu_entries_list)
-            menu_list_free(menu_entries_list);
-         menu_entries_list     = NULL;
-         break;
-      case MENU_ENTRIES_CTL_LIST_INIT:
-         if (!(menu_entries_list = (menu_list_t*)menu_list_new()))
-            return false;
-         break;
       case MENU_ENTRIES_CTL_SETTINGS_GET:
          {
             rarch_setting_t **settings = (rarch_setting_t**)data;
@@ -1440,18 +1441,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                return false;
             *settings = menu_entries_list_settings;
          }
-         break;
-      case MENU_ENTRIES_CTL_SETTINGS_DEINIT:
-         menu_setting_free(menu_entries_list_settings);
-         if (menu_entries_list_settings)
-            free(menu_entries_list_settings);
-         menu_entries_list_settings = NULL;
-         break;
-      case MENU_ENTRIES_CTL_SETTINGS_INIT:
-         menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_entries_list_settings);
-
-         if (!menu_entries_list_settings)
-            return false;
          break;
       case MENU_ENTRIES_CTL_SET_REFRESH:
          {
@@ -3461,7 +3450,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_display_framebuf_width  = 0;
             menu_display_framebuf_height = 0;
             menu_display_framebuf_pitch  = 0;
-            menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
+            menu_entries_settings_deinit();
+            menu_entries_list_deinit();
+
+            menu_entries_need_refresh        = false;
+            menu_entries_nonblocking_refresh = false;
+            menu_entries_begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
             rarch_favorites_deinit();
