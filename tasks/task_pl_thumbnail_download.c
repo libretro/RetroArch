@@ -471,18 +471,15 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    pl_thumb_handle_t *pl_thumb     = NULL;
    const char *thumbnail_path      = NULL;
    const char *left_thumbnail_path = NULL;
-   playlist_t *current_playlist    = playlist_get_cached();
-   menu_handle_t *menu             = NULL;
    bool do_refresh                 = false;
+   playlist_t *current_playlist    = playlist_get_cached();
+   menu_handle_t *menu             = menu_driver_get_ptr();
    
    if (!task)
       return;
    
    pl_thumb = (pl_thumb_handle_t*)task->state;
-   if (!pl_thumb)
-      return;
-   
-   if (!pl_thumb->thumbnail_path_data)
+   if (!pl_thumb || !pl_thumb->thumbnail_path_data)
       return;
    
    /* Only refresh if current playlist hasn't changed,
@@ -494,16 +491,15 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    
    if (!current_playlist)
       return;
-   
-   if (string_is_empty(playlist_get_conf_path(current_playlist)))
+   if (!menu)
       return;
-   
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (string_is_empty(playlist_get_conf_path(current_playlist)))
       return;
    
    if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
         (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
-       !string_is_equal(pl_thumb->playlist_path, playlist_get_conf_path(current_playlist)))
+         !string_is_equal(pl_thumb->playlist_path,
+            playlist_get_conf_path(current_playlist)))
       return;
    
    /* Only refresh if left/right thumbnails did not exist

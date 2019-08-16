@@ -217,9 +217,9 @@ static int action_left_mainmenu(unsigned type, const char *label,
 {
    menu_ctx_list_t list_info;
    unsigned        push_list = 0;
-   menu_handle_t       *menu  = NULL;
+   menu_handle_t       *menu  = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu_driver_list_get_selection(&list_info);

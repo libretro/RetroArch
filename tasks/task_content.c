@@ -1420,9 +1420,9 @@ static void task_push_to_history_list(
 
 #ifdef HAVE_MENU
                {
-                  menu_handle_t *menu = NULL;
+                  menu_handle_t *menu = menu_driver_get_ptr();
                   /* Set database name + checksum */
-                  if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+                  if (menu)
                   {
                      playlist_t *playlist_curr = playlist_get_cached();
 

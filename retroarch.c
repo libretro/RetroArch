@@ -1028,10 +1028,9 @@ unsigned menu_input_dialog_get_kb_idx(void)
 
 bool menu_input_dialog_start_search(void)
 {
-   menu_handle_t      *menu = NULL;
+   menu_handle_t      *menu = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(
-            RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return false;
 
    menu_input_dialog_keyboard_display = true;
@@ -1049,10 +1048,8 @@ bool menu_input_dialog_start_search(void)
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
-   menu_handle_t    *menu      = NULL;
-   if (!line)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   menu_handle_t    *menu      = menu_driver_get_ptr();
+   if (!line || !menu)
       return false;
 
    menu_input_dialog_keyboard_display = true;

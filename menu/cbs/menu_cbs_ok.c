@@ -361,10 +361,13 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *content_path       = NULL;
    const char          *info_label         = NULL;
    const char          *info_path          = NULL;
-   menu_handle_t            *menu          = NULL;
+   menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    char                  *menu_driver      = settings->arrays.menu_driver;
+
+   if (!menu || string_is_equal(menu_driver, "null"))
+      goto end;
 
 #ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
@@ -374,10 +377,6 @@ int generic_action_ok_displaylist_push(const char *path,
    menu_displaylist_info_init(&info);
 
    info.list                               = menu_stack;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu) ||
-       string_is_equal(menu_driver, "null"))
-      goto end;
 
    tmp[0] = parent_dir[0] = '\0';
 
@@ -1249,10 +1248,10 @@ static int file_load_with_detect_core_wrapper(
    char *new_core_path                 = NULL;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
-   menu_handle_t *menu                 = NULL;
    core_info_list_t *list              = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    {
@@ -1344,9 +1343,9 @@ static int action_ok_file_load_with_detect_core_carchive(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    fill_pathname_join_delim(menu->detect_content_path,
@@ -1478,7 +1477,7 @@ static int generic_action_ok(const char *path,
    const char             *menu_path = NULL;
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
-   menu_handle_t               *menu = NULL;
+   menu_handle_t               *menu = menu_driver_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    settings_t              *settings = config_get_ptr();
 
@@ -1486,7 +1485,7 @@ static int generic_action_ok(const char *path,
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       goto error;
 
    menu_entries_get_last_stack(&menu_path,
@@ -1797,8 +1796,8 @@ static int action_ok_file_load(const char *path,
       /* TODO/FIXME - this path is triggered when we try to load a
        * file from an archive while inside the load subsystem
        * action */
-      menu_handle_t *menu                 = NULL;
-      if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      menu_handle_t *menu                 = menu_driver_get_ptr();
+      if (!menu)
          return menu_cbs_exit();
 
       fill_pathname_join(menu_path_new,
@@ -1841,8 +1840,8 @@ static int action_ok_file_load(const char *path,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
          )
       {
-         menu_handle_t *menu                 = NULL;
-         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+         menu_handle_t *menu                 = menu_driver_get_ptr();
+         if (!menu)
             return menu_cbs_exit();
 
          fill_pathname_join(menu_path_new,
@@ -1876,11 +1875,11 @@ static int action_ok_playlist_entry_collection(const char *path,
    bool playlist_initialized           = false;
    playlist_t *playlist                = NULL;
    playlist_t *tmp_playlist            = NULL;
-   menu_handle_t *menu                 = NULL;
    const struct playlist_entry *entry  = NULL;
    unsigned i                          = 0;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    new_path[0]                         = '\0';
@@ -2009,14 +2008,13 @@ static int action_ok_playlist_entry(const char *path,
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    playlist_t *playlist                = playlist_get_cached();
-   menu_handle_t *menu                 = NULL;
    const struct playlist_entry *entry  = NULL;
    const char *entry_label             = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
    new_core_path[0] = '\0';
 
-   if (!playlist ||
-       !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!playlist || !menu)
       return menu_cbs_exit();
 
    selection_ptr = entry_idx;
@@ -2089,12 +2087,11 @@ static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection_ptr                = 0;
-   menu_handle_t *menu                 = NULL;
    playlist_t *playlist                = playlist_get_cached();
    const struct playlist_entry *entry  = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (  !playlist ||
-         !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!playlist || !menu)
       return menu_cbs_exit();
 
    selection_ptr                       = menu->scratchpad.unsigned_var;
@@ -2398,12 +2395,12 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu                 = NULL;
-   struct playlist_entry entry = {0};
+   struct playlist_entry entry         = {0};
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
    combined_path[0] = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    fill_pathname_join(combined_path, menu->scratch2_buf,
@@ -2429,12 +2426,12 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu                 = NULL;
-   struct playlist_entry entry = {0};
+   struct playlist_entry entry         = {0};
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
    combined_path[0] = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    fill_pathname_join(combined_path, menu->scratch2_buf,
@@ -2956,16 +2953,16 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    char resolved_core_path[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
    settings_t *settings                    = config_get_ptr();
-   menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
    struct playlist_entry entry             = {0};
+   menu_handle_t            *menu          = menu_driver_get_ptr();
 
    ext_name[0]                             = '\0';
    core_display_name[0]                    = '\0';
    resolved_core_path[0]                   = '\0';
    msg[0]                                  = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
@@ -3087,14 +3084,14 @@ static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    if (!task_push_load_content_with_new_core_from_menu(
@@ -3153,11 +3150,11 @@ static int action_ok_audio_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
    combined_path[0] = '\0';
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    fill_pathname_join(combined_path, menu->scratch2_buf,
@@ -3503,9 +3500,9 @@ static int action_ok_file_load_imageviewer(const char *path,
 static int action_ok_file_load_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    return default_action_ok_load_content_with_core_from_menu(
@@ -3516,9 +3513,9 @@ static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    content_info.argc                   = 0;
@@ -4151,9 +4148,9 @@ default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMP
 static int action_ok_set_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    return generic_action_ok_displaylist_push(path, NULL,
@@ -4164,9 +4161,9 @@ static int action_ok_set_core_association(const char *path,
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION,
@@ -4251,14 +4248,17 @@ static int action_ok_add_to_favorites(const char *path,
       }
 
       /* > crc32 + db_name */
-      if (menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       {
-         playlist_t *playlist_curr = playlist_get_cached();
-
-         if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, content_path, core_path))
+         menu_handle_t *menu                 = menu_driver_get_ptr();
+         if (menu)
          {
-            playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
-            playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+            playlist_t *playlist_curr = playlist_get_cached();
+
+            if (playlist_index_is_valid(playlist_curr, menu->rpl_entry_selection_ptr, content_path, core_path))
+            {
+               playlist_get_crc32(playlist_curr, menu->rpl_entry_selection_ptr, &crc32);
+               playlist_get_db_name(playlist_curr, menu->rpl_entry_selection_ptr, &db_name);
+            }
          }
       }
 
@@ -4293,14 +4293,14 @@ static int action_ok_add_to_favorites(const char *path,
 static int action_ok_add_to_favorites_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = NULL;
-   playlist_t *playlist_curr = playlist_get_cached();
+   playlist_t *playlist_curr           = playlist_get_cached();
    const struct playlist_entry *entry  = NULL;
-   int ret = 0;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
+   int ret                             = 0;
 
    if (!playlist_curr)
       return 0;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    /* Read current playlist parameters */
@@ -4407,10 +4407,10 @@ static int action_ok_delete_entry(const char *path,
    char *def_conf_img_path   = NULL;
 #endif
    char *def_conf_fav_path   = NULL;
-   menu_handle_t *menu       = NULL;
    playlist_t *playlist      = playlist_get_cached();
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    conf_path                 = playlist_get_conf_path(playlist);
@@ -4659,9 +4659,9 @@ static int action_ok_open_picker(const char *path,
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
@@ -5082,9 +5082,9 @@ static int action_ok_push_downloads_dir(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
@@ -5096,9 +5096,9 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 int action_ok_push_filebrowser_list_file_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    filebrowser_set_type(FILEBROWSER_SELECT_FILE);
@@ -5506,11 +5506,11 @@ static int action_ok_start_core(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu             = NULL;
    const char *menu_path           = NULL;
    const char *content_path        = NULL;
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu_path    = menu->scratch2_buf;
@@ -5533,12 +5533,12 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_content_ctx_defer_info_t def_info;
    int ret                             = 0;
    core_info_list_t *list              = NULL;
-   menu_handle_t *menu                 = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
    char *new_core_path                 = NULL;
+   menu_handle_t *menu                 = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu_path           = menu->scratch2_buf;
@@ -5844,15 +5844,15 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char system[PATH_MAX_LENGTH];
-   menu_handle_t *menu  = NULL;
    playlist_t *playlist = playlist_get_cached();
+   menu_handle_t *menu  = menu_driver_get_ptr();
 
    system[0] = '\0';
 
    if (!playlist)
       return -1;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu_driver_get_thumbnail_system(system, sizeof(system));

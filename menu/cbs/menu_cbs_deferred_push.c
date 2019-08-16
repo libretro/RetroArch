@@ -365,12 +365,12 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   settings_t                  *settings = config_get_ptr();
    char                      *newstring2 = NULL;
    core_info_list_t           *list      = NULL;
-   menu_handle_t                  *menu  = NULL;
+   settings_t                  *settings = config_get_ptr();
+   menu_handle_t                  *menu  = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    core_info_get_list(&list);

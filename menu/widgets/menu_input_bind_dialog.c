@@ -260,13 +260,11 @@ bool menu_input_key_bind_set_mode(
 {
    unsigned index_offset;
    input_keyboard_ctx_wait_t keys;
-   menu_handle_t       *menu = NULL;
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
+   menu_handle_t       *menu = menu_driver_get_ptr();
 
-   if (!setting)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!setting || !menu)
       return false;
    if (menu_input_key_bind_set_mode_common(state, setting) == -1)
       return false;

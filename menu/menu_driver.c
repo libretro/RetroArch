@@ -2047,14 +2047,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
    {
-      case RARCH_MENU_CTL_DRIVER_DATA_GET:
-         {
-            menu_handle_t **driver_data = (menu_handle_t**)data;
-            if (!driver_data)
-               return false;
-            *driver_data = menu_driver_data;
-         }
-         break;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;

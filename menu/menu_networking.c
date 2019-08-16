@@ -237,9 +237,9 @@ void cb_net_generic(retro_task_t *task,
    bool refresh                   = false;
    http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    file_transfer_t *state         = (file_transfer_t*)user_data;
-   menu_handle_t            *menu = NULL;
+   menu_handle_t            *menu = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       goto finish;
 
    if (menu->core_buf)

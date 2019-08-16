@@ -169,9 +169,9 @@ static int action_start_shader_action_parameter(
 
 static int action_start_shader_pass(unsigned type, const char *label)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;

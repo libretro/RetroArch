@@ -5264,14 +5264,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
-   menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
    static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
+   menu_handle_t *menu           = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return false;
 
    disp_list.info = info;
