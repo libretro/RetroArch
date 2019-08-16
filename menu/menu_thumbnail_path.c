@@ -225,12 +225,13 @@ static void fill_content_img(menu_thumbnail_path_data_t *path_data)
 
 /* Sets current 'system' (default database name).
  * Returns true if 'system' is valid.
+ * If playlist is provided, extracts system-specific
+ * thumbnail assignment metadata (required for accurate
+ * usage of menu_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system)
+bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist)
 {
-   playlist_t *playlist = playlist_get_cached();
-   
    if (!path_data)
       return false;
    
@@ -261,26 +262,42 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
     * menu_thumbnail_is_enabled() will go out of sync */
    if (playlist)
    {
-      /* History/favourites are a special case: 'system'
-       * can only be set to these values if we have a
-       * valid playlist (cf. menu_displaylist_parse_playlist()) */
-      bool playlist_valid =
-            string_is_equal(system, "history") ||
-            string_is_equal(system, "favorites");
+      const char *playlist_path = playlist_get_conf_path(playlist);
+      const char *playlist_file = NULL;
+      bool playlist_valid       = false;
+      
+      /* Note: This is not considered an error
+       * (just means that input playlist is ignored) */
+      if (string_is_empty(playlist_path))
+         return true;
+      
+      playlist_file = path_basename(playlist_path);
+      
+      /* Note: This is not considered an error
+       * (just means that input playlist is ignored) */
+      if (string_is_empty(playlist_file))
+         return true;
+      
+      /* Check for history/favourites playlists */
+      playlist_valid =
+            (string_is_equal(system, "history") &&
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
+            (string_is_equal(system, "favorites") &&
+             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)));
       
       if (!playlist_valid)
       {
          /* This means we have to work a little harder
           * i.e. check whether the cached playlist file
           * matches the database name */
-         const char *playlist_path = playlist_get_conf_path(playlist);
-         char playlist_name[PATH_MAX_LENGTH];
+         char *playlist_name = NULL;
+         char tmp[PATH_MAX_LENGTH];
          
-         playlist_name[0] = '\0';
-
-         if (!string_is_empty(playlist_path))
-            fill_pathname_base_noext(playlist_name, playlist_path, sizeof(playlist_name));
-
+         tmp[0] = '\0';
+         
+         strlcpy(tmp, playlist_file, sizeof(tmp));
+         playlist_name = path_remove_extension(tmp);
+         
          playlist_valid = string_is_equal(playlist_name, system);
       }
       

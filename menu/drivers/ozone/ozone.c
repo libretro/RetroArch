@@ -1340,7 +1340,8 @@ static void ozone_set_thumbnail_system(void *data, char*s, size_t len)
    if (!ozone)
       return;
 
-   menu_thumbnail_set_system(ozone->thumbnail_path_data, s);
+   menu_thumbnail_set_system(
+         ozone->thumbnail_path_data, s, playlist_get_cached());
 }
 
 static void ozone_get_thumbnail_system(void *data, char*s, size_t len)

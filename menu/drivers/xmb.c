@@ -1132,7 +1132,8 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
    if (!xmb)
       return;
 
-   menu_thumbnail_set_system(xmb->thumbnail_path_data, s);
+   menu_thumbnail_set_system(
+         xmb->thumbnail_path_data, s, playlist_get_cached());
 }
 
 static void xmb_get_thumbnail_system(void *data, char*s, size_t len)

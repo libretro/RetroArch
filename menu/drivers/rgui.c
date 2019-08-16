@@ -4260,7 +4260,8 @@ static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
    rgui_t *rgui = (rgui_t*)userdata;
    if (!rgui)
       return;
-   menu_thumbnail_set_system(rgui->thumbnail_path_data, s);
+   menu_thumbnail_set_system(
+         rgui->thumbnail_path_data, s, playlist_get_cached());
 }
 
 static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)

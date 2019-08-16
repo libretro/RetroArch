@@ -276,7 +276,8 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->thumbnail_path_data)
                goto task_finished;
             
-            if (!menu_thumbnail_set_system(pl_thumb->thumbnail_path_data, pl_thumb->system))
+            if (!menu_thumbnail_set_system(
+                  pl_thumb->thumbnail_path_data, pl_thumb->system, pl_thumb->playlist))
                goto task_finished;
             
             /* All good - can start iterating */
@@ -565,7 +566,8 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->thumbnail_path_data)
                goto task_finished;
             
-            if (!menu_thumbnail_set_system(pl_thumb->thumbnail_path_data, pl_thumb->system))
+            if (!menu_thumbnail_set_system(
+                  pl_thumb->thumbnail_path_data, pl_thumb->system, pl_thumb->playlist))
                goto task_finished;
             
             if (!menu_thumbnail_set_content_playlist(
