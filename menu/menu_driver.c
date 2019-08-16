@@ -1006,6 +1006,14 @@ static int menu_entries_elem_get_first_char(
    return ret;
 }
 
+static void menu_navigation_add_scroll_index(size_t sel)
+{
+   scroll_index_list[scroll_index_size]   = sel;
+
+   if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
+      scroll_index_size++;
+}
+
 static void menu_entries_build_scroll_indices(file_list_t *list)
 {
    int current;
@@ -3321,14 +3329,6 @@ bool menu_driver_list_get_selection(menu_ctx_list_t *list)
    list->selection = menu_driver_ctx->list_get_selection(menu_userdata);
 
    return true;
-}
-
-static void menu_navigation_add_scroll_index(size_t sel)
-{
-   scroll_index_list[scroll_index_size]   = sel;
-
-   if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
-      scroll_index_size++;
 }
 
 bool menu_driver_list_get_size(menu_ctx_list_t *list)
