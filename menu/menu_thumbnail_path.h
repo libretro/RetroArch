@@ -83,9 +83,12 @@ bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_
 
 /* Sets current 'system' (default database name).
  * Returns true if 'system' is valid.
+ * If playlist is provided, extracts system-specific
+ * thumbnail assignment metadata (required for accurate
+ * usage of menu_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system);
+bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
 
 /* Sets current thumbnail content according to the specified label.
  * Returns true if content is valid */
