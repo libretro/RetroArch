@@ -21312,6 +21312,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                break;
 
             case RA_OPT_SET_SHADER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                /* disable auto-shaders */
                if (string_is_empty(optarg))
                {
@@ -21329,6 +21330,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
 
                strlcpy(cli_shader, optarg, sizeof(cli_shader));
+#endif
                break;
 
    #ifdef HAVE_DYNAMIC

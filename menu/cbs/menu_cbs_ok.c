@@ -4218,7 +4218,6 @@ static int action_ok_add_to_favorites(const char *path,
    {
       global_t *global                 = global_get_ptr();
       struct retro_system_info *system = runloop_get_libretro_system_info();
-      menu_handle_t *menu              = NULL;
       struct string_list *str_list     = NULL;
       const char *crc32                = NULL;
       const char *db_name              = NULL;
