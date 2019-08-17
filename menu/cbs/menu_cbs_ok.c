@@ -2686,9 +2686,10 @@ default_action_dialog_start(action_ok_rename_entry,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
-   ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
-   ACTION_OK_SHADER_PRESET_SAVE_GAME,
-   ACTION_OK_SHADER_PRESET_SAVE_PARENT
+   ACTION_OK_SHADER_PRESET_SAVE_GLOBAL = 0,
+   ACTION_OK_SHADER_PRESET_SAVE_CORE,
+   ACTION_OK_SHADER_PRESET_SAVE_PARENT,
+   ACTION_OK_SHADER_PRESET_SAVE_GAME
 };
 
 static int generic_action_ok_shader_preset_save(const char *path,
@@ -2704,24 +2705,47 @@ static int generic_action_ok_shader_preset_save(const char *path,
 
    directory[0] = file[0] = tmp[0] = '\0';
 
-   if (!string_is_empty(core_name))
+   if (action_type != ACTION_OK_SHADER_PRESET_SAVE_GLOBAL)
+   {
+      if (!string_is_empty(core_name))
+      {
+         fill_pathname_join(
+               tmp,
+               settings->paths.directory_video_shader,
+               "presets",
+               sizeof(tmp));
+         fill_pathname_join(
+               directory,
+               tmp,
+               core_name,
+               sizeof(directory));
+      }
+
+      if (!path_is_directory(directory))
+          path_mkdir(directory);
+   }
+   else
    {
       fill_pathname_join(
-            tmp,
+            directory,
             settings->paths.directory_video_shader,
             "presets",
-            sizeof(tmp));
-      fill_pathname_join(
-            directory,
-            tmp,
-            core_name,
             sizeof(directory));
+
+      if (!path_is_directory(directory))
+          path_mkdir(directory);
+
+      fill_pathname_join(
+            file,
+            directory,
+            "global",
+            sizeof(file));
    }
-   if (!path_is_directory(directory))
-       path_mkdir(directory);
 
    switch (action_type)
    {
+      case ACTION_OK_SHADER_PRESET_SAVE_GLOBAL:
+         break;
       case ACTION_OK_SHADER_PRESET_SAVE_CORE:
          if (!string_is_empty(core_name))
             fill_pathname_join(file, directory, core_name, sizeof(file));
@@ -2752,6 +2776,13 @@ static int generic_action_ok_shader_preset_save(const char *path,
    return 0;
 }
 
+static int action_ok_shader_preset_save_global(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GLOBAL);
+}
+
 static int action_ok_shader_preset_save_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2759,18 +2790,18 @@ static int action_ok_shader_preset_save_core(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_CORE);
 }
 
-static int action_ok_shader_preset_save_game(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_shader_preset_save(path, label, type,
-         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
-}
-
 static int action_ok_shader_preset_save_parent(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_shader_preset_save(path, label, type,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
+}
+
+static int action_ok_shader_preset_save_game(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 #endif
 
@@ -6359,9 +6390,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
 #endif
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_global);
 #endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
@@ -6372,6 +6403,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:

@@ -22713,11 +22713,20 @@ static bool retroarch_load_shader_preset_internal(
          continue;
 
       /* Concatenate strings into full paths */
-      fill_pathname_join_special_ext(shader_path,
-            shader_directory, core_name,
-            special_name,
-            video_shader_get_preset_extension(types[i]),
-            PATH_MAX_LENGTH);
+      if (core_name)
+      {
+         fill_pathname_join_special_ext(shader_path,
+               shader_directory, core_name,
+               special_name,
+               video_shader_get_preset_extension(types[i]),
+               PATH_MAX_LENGTH);
+      }
+      else
+      {
+         /* core_name == NULL means we want the global preset */
+         fill_pathname_join(shader_path, shader_directory, "global", PATH_MAX_LENGTH);
+         strlcat(shader_path, video_shader_get_preset_extension(types[i]), PATH_MAX_LENGTH);
+      }
 
       if (!config_file_exists(shader_path))
          continue;
@@ -22738,9 +22747,10 @@ static bool retroarch_load_shader_preset_internal(
 /**
  * retroarch_load_shader_preset:
  *
- * Tries to load a supported core-, game- or folder-specific shader preset
- * from its respective location:
+ * Tries to load a supported core-, game-, folder-specific or global
+ * shader preset from its respective location:
  *
+ * global:          $SHADER_DIR/presets/global.$PRESET_EXT
  * core-specific:   $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.$PRESET_EXT
  * folder-specific: $SHADER_DIR/presets/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
  * game-specific:   $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.$PRESET_EXT
@@ -22802,6 +22812,13 @@ static bool retroarch_load_shader_preset(void)
             core_name))
    {
       RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
+      goto success;
+   }
+
+   if (retroarch_load_shader_preset_internal(shader_directory, NULL,
+            core_name))
+   {
+      RARCH_LOG("[Shaders]: global shader preset found.\n");
       goto success;
    }
 

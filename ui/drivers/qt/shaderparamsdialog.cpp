@@ -54,6 +54,7 @@ enum
    SHADER_PRESET_SAVE_CORE = 0,
    SHADER_PRESET_SAVE_GAME,
    SHADER_PRESET_SAVE_PARENT,
+   SHADER_PRESET_SAVE_GLOBAL,
    SHADER_PRESET_SAVE_NORMAL
 };
 
@@ -687,22 +688,42 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
 
    directory[0] = file[0] = tmp[0] = '\0';
 
-   if (!string_is_empty(core_name))
+   if (action_type != SHADER_PRESET_SAVE_GLOBAL)
+   {
+      if (!string_is_empty(core_name))
+      {
+         fill_pathname_join(
+               tmp,
+               settings->paths.directory_video_shader,
+               "presets",
+               sizeof(tmp));
+         fill_pathname_join(
+               directory,
+               tmp,
+               core_name,
+               sizeof(directory));
+      }
+
+      if (!path_is_directory(directory))
+          path_mkdir(directory);
+   }
+   else
    {
       fill_pathname_join(
-            tmp,
+            directory,
             settings->paths.directory_video_shader,
             "presets",
-            sizeof(tmp));
-      fill_pathname_join(
-            directory,
-            tmp,
-            core_name,
             sizeof(directory));
-   }
 
-   if (!path_is_directory(directory))
-       path_mkdir(directory);
+      if (!path_is_directory(directory))
+          path_mkdir(directory);
+
+      fill_pathname_join(
+            file,
+            directory,
+            "global",
+            sizeof(file));
+   }
 
    switch (action_type)
    {
@@ -741,6 +762,11 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
             MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_ERROR
             );
+}
+
+void ShaderParamsDialog::onShaderSaveGlobalPresetClicked()
+{
+   saveShaderPreset(NULL, SHADER_PRESET_SAVE_GLOBAL);
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
@@ -913,6 +939,7 @@ void ShaderParamsDialog::buildLayout()
 
    saveMenu = new QMenu(saveButton);
    saveMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS)) + "...", this, SLOT(onShaderSavePresetAsClicked()));
+   saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL), this, SLOT(onShaderSaveGlobalPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE), this, SLOT(onShaderSaveCorePresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT), this, SLOT(onShaderSaveParentPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME), this, SLOT(onShaderSaveGamePresetClicked()));
