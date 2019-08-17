@@ -782,10 +782,11 @@ int menu_entry_action(menu_entry_t *entry,
    {
       if (cbs && cbs->action_refresh)
       {
+         bool refresh               = false;
          file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
          cbs->action_refresh(selection_buf, menu_stack);
-         menu_entries_need_refresh        = false;
+         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
       }
    }
 
@@ -904,6 +905,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
       size_t idx, size_t *directory_ptr, bool animate)
 {
    menu_ctx_list_t list_info;
+   bool refresh           = false;
    file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
 
    if (menu_list_get_stack_size(list, idx) <= 1)
@@ -929,7 +931,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
    file_list_pop(menu_list, directory_ptr);
    menu_driver_list_set_selection(menu_list);
    if (animate)
-      menu_entries_need_refresh        = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
 }
@@ -937,14 +939,14 @@ static bool menu_list_pop_stack(menu_list_t *list,
 static void menu_list_flush_stack(menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
-   const char *path                 = NULL;
-   const char *label                = NULL;
-   unsigned type                    = 0;
-   size_t entry_idx                 = 0;
-   file_list_t *menu_list           = menu_list_get(list, (unsigned)idx);
+   bool refresh           = false;
+   const char *path       = NULL;
+   const char *label      = NULL;
+   unsigned type          = 0;
+   size_t entry_idx       = 0;
+   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
 
-   menu_entries_need_refresh        = true;
-
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    file_list_get_last(menu_list,
          &path, &label, &type, &entry_idx);
 
