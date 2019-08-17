@@ -510,7 +510,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 
    type = video_shader_parse_type(pathData);
 
-   menu_shader_manager_set_preset(menu_shader, type, pathData);
+   menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
 
 void ShaderParamsDialog::onShaderResetPass(int pass)

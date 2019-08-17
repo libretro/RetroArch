@@ -38,6 +38,7 @@
 #endif
 
 #include "audio/audio_defines.h"
+#include "gfx/video_shader_parse.h"
 
 #include "core_type.h"
 #include "core.h"
@@ -306,7 +307,9 @@ bool retroarch_is_forced_fullscreen(void);
 void retroarch_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 
-char* retroarch_get_shader_preset(void);
+bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path);
+
+const char* retroarch_get_shader_preset(void);
 
 bool retroarch_is_switching_display_mode(void);
 
@@ -762,7 +765,6 @@ void recording_driver_update_streaming_url(void);
 #include "gfx/video_defines.h"
 #include "gfx/video_coord_array.h"
 #include "gfx/video_filter.h"
-#include "gfx/video_shader_parse.h"
 
 #include "input/input_driver.h"
 #include "input/input_types.h"

@@ -786,7 +786,8 @@ enum
    RA_OPT_LOG_FILE,
    RA_OPT_MAX_FRAMES,
    RA_OPT_MAX_FRAMES_SCREENSHOT,
-   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH
+   RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
+   RA_OPT_SET_SHADER
 };
 
 enum  runloop_state
@@ -897,7 +898,9 @@ static bool shader_presets_need_reload                          = true;
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static char runtime_shader_preset[255]                          = {0};
+static char cli_shader[PATH_MAX_LENGTH]                         = {0};
+static bool cli_shader_disable                                  = false;
+static char runtime_shader_preset[PATH_MAX_LENGTH]              = {0};
 #endif
 static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
@@ -1297,8 +1300,17 @@ static bool wifi_driver_active                   = false;
 
 /* VIDEO GLOBAL VARIABLES */
 
-/* unset a runtime shader preset */
-static void retroarch_unset_shader_preset(void)
+static void retroarch_set_runtime_shader_preset(const char *arg)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   if (!string_is_empty(arg))
+      strlcpy(runtime_shader_preset, arg, sizeof(runtime_shader_preset));
+   else
+      runtime_shader_preset[0] = '\0';
+#endif
+}
+
+static void retroarch_unset_runtime_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runtime_shader_preset[0] = '\0';
@@ -2183,44 +2195,87 @@ static const struct cmd_map map[] = {
 };
 #endif
 
+bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   settings_t *settings = configuration_settings;
+   bool ret;
+   bool refresh;
+   char msg[256];
+   const char *preset_file = NULL;
+
+   if (!string_is_empty(preset_path))
+      preset_file = path_basename(preset_path);
+
+   ret = video_driver_set_shader(type, preset_path);
+
+   if (ret)
+   {
+      configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+      retroarch_set_runtime_shader_preset(preset_path);
+
+      /* reflect in shader manager */
+      menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false);
+
+      /* Display message */
+      snprintf(msg, sizeof(msg),
+            "Shader: \"%s\"", preset_file ? preset_file : "(null)");
+#ifdef HAVE_MENU_WIDGETS
+      if (menu_widgets_inited)
+         menu_widgets_set_message(msg);
+      else
+#endif
+         runloop_msg_queue_push(msg, 1, 120, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_APPLYING_SHADER),
+            preset_path);
+   }
+   else
+   {
+      retroarch_set_runtime_shader_preset(NULL);
+
+      /* reflect in shader manager */
+      menu_shader_manager_set_preset(menu_shader_get(), type, NULL, false);
+
+      /* Display error message */
+      snprintf(msg, sizeof(msg), "%s %s",
+            msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
+            preset_file ? preset_file : "(null)");
+
+      runloop_msg_queue_push(
+            msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
+   return ret;
+#else
+   return false;
+#endif
+}
+
 bool command_set_shader(const char *arg)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char msg[256];
-   bool is_preset                  = false;
-   settings_t *settings            = configuration_settings;
-   enum rarch_shader_type     type = video_shader_get_type_from_ext(
-         path_get_extension(arg), &is_preset);
+   enum rarch_shader_type type = video_shader_parse_type(arg);
 
-   if (type == RARCH_SHADER_NONE || !video_shader_is_supported(type))
-      return false;
+   if (!string_is_empty(arg))
+   {
+      if (!video_shader_is_supported(type))
+         return false;
 
-   snprintf(msg, sizeof(msg),
-         "Shader: \"%s\"", arg ? path_basename(arg) : "null");
-#ifdef HAVE_MENU_WIDGETS
-   if (menu_widgets_inited)
-      menu_widgets_set_message(msg);
-   else
-#endif
-      runloop_msg_queue_push(msg, 1, 120, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         arg);
+      /* rebase on shader directory */
+      if (!path_is_absolute(arg))
+      {
+         char abs_arg[PATH_MAX_LENGTH];
+         const char *ref_path = configuration_settings->paths.directory_video_shader;
+         fill_pathname_join(abs_arg,
+               ref_path, arg, sizeof(abs_arg));
+         arg = abs_arg;
+      }
+   }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      if (!string_is_empty(arg))
-         strlcpy(runtime_shader_preset, arg, sizeof(runtime_shader_preset));
-      else
-         runtime_shader_preset[0] = '\0';
-#ifdef HAVE_MENU
-   if (!menu_shader_manager_set_preset(menu_shader_get(), type, arg))
-      return false;
-#endif
-#endif
-   if (settings && !settings->bools.video_shader_enable)
-      settings->bools.video_shader_enable = true;
-   return true;
+   return retroarch_apply_shader(type, arg);
 #else
    return false;
 #endif
@@ -3018,7 +3073,7 @@ static void command_event_deinit_core(bool reinit)
       driver_uninit(DRIVERS_CMD_ALL);
 
    command_event_disable_overrides();
-   retroarch_unset_shader_preset();
+   retroarch_unset_runtime_shader_preset();
 
    if (     runloop_remaps_core_active
          || runloop_remaps_content_dir_active
@@ -4107,7 +4162,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
             command_event_disable_overrides();
-            retroarch_unset_shader_preset();
+            retroarch_unset_runtime_shader_preset();
 
             if (     runloop_remaps_core_active
                   || runloop_remaps_content_dir_active
@@ -20833,6 +20888,9 @@ static void retroarch_print_help(const char *arg0)
 #endif
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
+   puts("      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
+        "                        Effectively overrides core shader presets.\n"
+        "                        An empty argument \"\" will disable shader core presets.");
    puts("  -f, --fullscreen      Start the program in fullscreen regardless "
          "of config settings.");
    puts("  -c, --config=FILE     Path for config file."
@@ -20987,6 +21045,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "dualanalog",         1, NULL, 'A' },
       { "device",             1, NULL, 'd' },
       { "savestate",          1, NULL, 'S' },
+      { "set-shader",         1, NULL, RA_OPT_SET_SHADER },
       { "bsvplay",            1, NULL, 'P' },
       { "bsvrecord",          1, NULL, 'R' },
       { "sram-mode",          1, NULL, 'M' },
@@ -21250,6 +21309,26 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                      sizeof(global->record.path));
                if (recording_enable)
                   recording_enable = true;
+               break;
+
+            case RA_OPT_SET_SHADER:
+               /* disable auto-shaders */
+               if (string_is_empty(optarg))
+               {
+                  cli_shader_disable = true;
+                  break;
+               }
+
+               /* rebase on shader directory */
+               if (!path_is_absolute(optarg))
+               {
+                  char *ref_path = configuration_settings->paths.directory_video_shader;
+                  fill_pathname_join(cli_shader,
+                        ref_path, optarg, sizeof(cli_shader));
+                  break;
+               }
+
+               strlcpy(cli_shader, optarg, sizeof(cli_shader));
                break;
 
    #ifdef HAVE_DYNAMIC
@@ -22646,12 +22725,8 @@ static bool retroarch_load_shader_preset_internal(
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      if (!string_is_empty(shader_path))
-         strlcpy(runtime_shader_preset, shader_path, sizeof(runtime_shader_preset));
-      else
-         runtime_shader_preset[0] = '\0';
-#endif
+      retroarch_set_runtime_shader_preset(shader_path);
+
       free(shader_path);
       return true;
    }
@@ -22740,24 +22815,26 @@ success:
 #endif
 
 /* get the name of the current shader preset */
-char* retroarch_get_shader_preset(void)
+const char* retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    settings_t *settings = configuration_settings;
    if (!settings->bools.video_shader_enable)
       return NULL;
 
-   if (shader_presets_need_reload)
-   {
-      retroarch_load_shader_preset();
-      shader_presets_need_reload = false;
-   }
-
    if (!string_is_empty(runtime_shader_preset))
       return runtime_shader_preset;
 
-   if (!string_is_empty(settings->paths.path_shader))
-      return settings->paths.path_shader;
+   /* load auto-shader once, --set-shader works like a global auto-shader */
+   if (shader_presets_need_reload && !cli_shader_disable)
+   {
+      shader_presets_need_reload = false;
+      if (video_shader_is_supported(video_shader_parse_type(cli_shader)))
+         strlcpy(runtime_shader_preset, cli_shader, sizeof(runtime_shader_preset));
+      else
+         retroarch_load_shader_preset(); /* sets runtime_shader_preset */
+      return runtime_shader_preset;
+   }
 #endif
 
    return NULL;
@@ -22948,7 +23025,7 @@ bool retroarch_main_quit(void)
    {
       command_event_save_auto_state();
       command_event_disable_overrides();
-      retroarch_unset_shader_preset();
+      retroarch_unset_runtime_shader_preset();
 
       if (     runloop_remaps_core_active
             || runloop_remaps_content_dir_active
@@ -24749,10 +24826,10 @@ static bool rarch_write_debug_info(void)
 
       if (shader_info.data)
       {
-         if (string_is_equal(shader_info.data->path, settings->paths.path_shader))
-            filestream_printf(file, "      - Video Shader: %s\n", !string_is_empty(settings->paths.path_shader) ? settings->paths.path_shader : "n/a");
+         if (string_is_equal(shader_info.data->path, runtime_shader_preset))
+            filestream_printf(file, "      - Video Shader: %s\n", !string_is_empty(runtime_shader_preset) ? runtime_shader_preset : "n/a");
          else
-            filestream_printf(file, "      - Video Shader: %s (configured for %s)\n", !string_is_empty(shader_info.data->path) ? shader_info.data->path : "n/a", !string_is_empty(settings->paths.path_shader) ? settings->paths.path_shader : "n/a");
+            filestream_printf(file, "      - Video Shader: %s (configured for %s)\n", !string_is_empty(shader_info.data->path) ? shader_info.data->path : "n/a", !string_is_empty(runtime_shader_preset) ? runtime_shader_preset : "n/a");
       }
       else
          filestream_printf(file, "      - Video Shader: n/a\n");
