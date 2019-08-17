@@ -61,6 +61,7 @@ private slots:
    void onShaderSaveCorePresetClicked();
    void onShaderSaveParentPresetClicked();
    void onShaderSaveGamePresetClicked();
+   void onShaderSaveGlobalPresetClicked();
    void onShaderClearAllPassesClicked();
    void onShaderRemovePassClicked();
    void onShaderApplyClicked();
