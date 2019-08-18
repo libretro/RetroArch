@@ -13,31 +13,49 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SLANG_PREPROCESS_H
-#define SLANG_PREPROCESS_H
+#ifndef GLSLANG_UTIL_HPP
+#define GLSLANG_UTIL_HPP
 
-#include <boolean.h>
+#include <stdint.h>
 #include <retro_common_api.h>
 
-#include "../../retroarch.h"
-#include "glslang_util.h"
+#include <lists/string_list.h>
 
-RETRO_BEGIN_DECLS
+#include <vector>
+#include <string>
 
-/* Utility function to implement the same parameter reflection
- * which happens in the slang backend.
- * This does preprocess over the input file to handle #includes and so on. */
-bool slang_preprocess_parse_parameters(const char *shader_path,
-      struct video_shader *shader);
+struct glslang_parameter
+{
+   std::string id;
+   std::string desc;
+   float initial;
+   float minimum;
+   float maximum;
+   float step;
+};
 
-RETRO_END_DECLS
+struct glslang_meta
+{
+   std::vector<glslang_parameter> parameters;
+   std::string name;
+   glslang_format rt_format;
 
-#ifdef __cplusplus
+   glslang_meta()
+   {
+	   rt_format = SLANG_FORMAT_UNKNOWN;
+   }
+};
 
-#include "glslang_util_cxx.h"
+struct glslang_output
+{
+   std::vector<uint32_t> vertex;
+   std::vector<uint32_t> fragment;
+   glslang_meta meta;
+};
 
-bool slang_preprocess_parse_parameters(glslang_meta& meta,
-      struct video_shader *shader);
-#endif
+bool glslang_compile_shader(const char *shader_path, glslang_output *output);
+
+/* Helpers for internal use. */
+bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta);
 
 #endif

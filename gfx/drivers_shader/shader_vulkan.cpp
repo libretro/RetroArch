@@ -16,6 +16,7 @@
 
 #include "shader_vulkan.h"
 #include "glslang_util.h"
+#include "glslang_util_cxx.h"
 #include <vector>
 #include <memory>
 #include <functional>

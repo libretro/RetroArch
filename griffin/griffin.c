@@ -301,6 +301,10 @@ VIDEO SHADERS
 #include "../gfx/video_shader_parse.c"
 #endif
 
+#ifdef HAVE_SLANG
+#include "../gfx/drivers_shader/glslang_util.c"
+#endif
+
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers_shader/shader_gl_cg.c"

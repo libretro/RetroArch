@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLSLANG_UTIL_HPP
-#define GLSLANG_UTIL_HPP
+#ifndef GLSLANG_UTIL_H
+#define GLSLANG_UTIL_H
 
 #include <stdint.h>
 #include <retro_common_api.h>
@@ -70,48 +70,11 @@ RETRO_BEGIN_DECLS
 
 const char *glslang_format_to_string(glslang_format fmt);
 
+enum glslang_format glslang_find_format(const char *fmt);
+
+bool glslang_read_shader_file(const char *path,
+      struct string_list *output, bool root_file);
+
 RETRO_END_DECLS
-
-#ifdef __cplusplus
-#include <vector>
-#include <string>
-
-struct glslang_parameter
-{
-   std::string id;
-   std::string desc;
-   float initial;
-   float minimum;
-   float maximum;
-   float step;
-};
-
-struct glslang_meta
-{
-   std::vector<glslang_parameter> parameters;
-   std::string name;
-   glslang_format rt_format;
-
-   glslang_meta()
-   {
-	   rt_format = SLANG_FORMAT_UNKNOWN;
-   }
-};
-
-struct glslang_output
-{
-   std::vector<uint32_t> vertex;
-   std::vector<uint32_t> fragment;
-   glslang_meta meta;
-};
-
-bool glslang_compile_shader(const char *shader_path, glslang_output *output);
-
-/* Helpers for internal use. */
-bool glslang_read_shader_file(const char *path, struct string_list *output, bool root_file);
-bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta);
-#endif
-
-void *config_file_new_wrapper(const char *path);
 
 #endif
