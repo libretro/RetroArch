@@ -99,11 +99,6 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
    id[0]   = '\0';
    desc[0] = '\0';
 
-   if (!lines)
-      return false;
-
-   *meta   = glslang_meta{};
-
    for (i = 0; i < lines->size; i++)
    {
       const char *line = lines->elems[i].data;
@@ -224,7 +219,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    if (!glslang_read_shader_file(shader_path, lines, true))
       goto error;
-
+   output->meta = glslang_meta{};
    if (!glslang_parse_meta(lines, &output->meta))
       goto error;
 

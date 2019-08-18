@@ -102,6 +102,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 
    if (!glslang_read_shader_file(shader_path, lines, true))
       goto end;
+   meta = glslang_meta{};
    if (!glslang_parse_meta(lines, &meta))
       goto end;
 
