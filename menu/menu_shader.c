@@ -59,11 +59,12 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
-   enum rarch_shader_type type    = RARCH_SHADER_NONE;
-   bool ret                       = true;
-   bool is_preset                 = false;
-   config_file_t *conf            = NULL;
-   const char *path_shader        = NULL;
+   enum rarch_shader_type type      = RARCH_SHADER_NONE;
+   bool ret                         = true;
+   bool is_preset                   = false;
+   config_file_t *conf              = NULL;
+   const char *path_shader          = NULL;
+   struct video_shader *menu_shader = NULL;
 
    /* We get the shader preset directly from the video driver, so that
     * we are in sync with it (it could fail loading an auto-shader)
@@ -80,10 +81,10 @@ bool menu_shader_manager_init(void)
 
    menu_shader_manager_free();
 
-   menu_driver_shader          = (struct video_shader*)
-      calloc(1, sizeof(struct video_shader));
+   menu_shader          = (struct video_shader*)
+      calloc(1, sizeof(*menu_shader));
 
-   if (!menu_driver_shader)
+   if (!menu_shader)
    {
       ret = false;
       goto end;
@@ -108,18 +109,19 @@ bool menu_shader_manager_init(void)
    }
    else
    {
-      strlcpy(menu_driver_shader->pass[0].source.path, path_shader,
-            sizeof(menu_driver_shader->pass[0].source.path));
-      menu_driver_shader->passes = 1;
+      strlcpy(menu_shader->pass[0].source.path, path_shader,
+            sizeof(menu_shader->pass[0].source.path));
+      menu_shader->passes = 1;
    }
 
-   if (conf && video_shader_read_conf_preset(conf, menu_driver_shader))
-      video_shader_resolve_parameters(conf, menu_driver_shader);
+   if (conf && video_shader_read_conf_preset(conf, menu_shader))
+      video_shader_resolve_parameters(conf, menu_shader);
 
    if (conf)
       config_file_free(conf);
 
 end:
+   menu_driver_shader = menu_shader;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
