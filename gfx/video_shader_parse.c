@@ -40,7 +40,7 @@
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-#include "drivers_shader/slang_preprocess.h"
+#include "drivers_shader/slang_process.h"
 #endif
 
 static path_change_data_t *file_change_data = NULL;

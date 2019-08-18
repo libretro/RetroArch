@@ -45,7 +45,7 @@
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
-#include "../drivers_shader/slang_preprocess.h"
+#include "../drivers_shader/slang_process.h"
 #include "../../managers/state_manager.h"
 
 #include "../common/d3d_common.h"

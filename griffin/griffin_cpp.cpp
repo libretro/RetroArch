@@ -116,7 +116,6 @@ VIDEO DRIVER
 #include "../deps/SPIRV-Cross/spirv_cross_parsed_ir.cpp"
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util_cxx.cpp"
-#include "../gfx/drivers_shader/slang_preprocess.cpp"
 #include "../gfx/drivers_shader/slang_process.cpp"
 #include "../gfx/drivers_shader/slang_reflection.cpp"
 #endif

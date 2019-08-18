@@ -40,7 +40,7 @@
 
 #include "gfx/common/gx2_common.h"
 #include "gfx/video_shader_parse.h"
-#include "gfx/drivers_shader/slang_preprocess.h"
+#include "gfx/drivers_shader/slang_process.h"
 #include "system/memory.h"
 
 #include "wiiu_dbg.h"
