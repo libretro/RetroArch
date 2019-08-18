@@ -59,17 +59,18 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
-   bool ret                    = true;
-   bool is_preset              = false;
-   config_file_t *conf         = NULL;
-   enum rarch_shader_type type;
-   const char *path_shader;
+   enum rarch_shader_type type    = RARCH_SHADER_NONE;
+   bool ret                       = true;
+   bool is_preset                 = false;
+   config_file_t *conf            = NULL;
+   const char *path_shader        = NULL;
 
    /* We get the shader preset directly from the video driver, so that
     * we are in sync with it (it could fail loading an auto-shader)
     * If we can't (e.g. get_current_shader is not implemented),
     * we'll load retroarch_get_shader_preset() like always */
    video_shader_ctx_t shader_info = {0};
+
    video_shader_driver_get_current_shader(&shader_info);
 
    if (shader_info.data)
@@ -138,7 +139,7 @@ bool menu_shader_manager_set_preset(void *data,
    struct video_shader *shader   = (struct video_shader*)data;
    config_file_t *conf           = NULL;
    bool refresh                  = false;
-   bool ret;
+   bool ret                      = false;
 
    if (apply && !retroarch_apply_shader(type, preset_path))
    {
@@ -450,19 +451,19 @@ enum rarch_shader_type menu_shader_manager_get_type(const void *data)
  **/
 void menu_shader_manager_apply_changes(void)
 {
-   enum rarch_shader_type shader_type;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
    struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return;
 
-   shader_type = menu_shader_manager_get_type(shader);
+   type = menu_shader_manager_get_type(shader);
 
-   if (shader->passes && shader_type != RARCH_SHADER_NONE)
+   if (shader->passes && type != RARCH_SHADER_NONE)
    {
       menu_shader_manager_save_preset(NULL, true, false);
       return;
    }
 
-   menu_shader_manager_set_preset(NULL, shader_type, NULL, true);
+   menu_shader_manager_set_preset(NULL, type, NULL, true);
 }
