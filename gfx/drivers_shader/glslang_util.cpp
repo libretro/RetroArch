@@ -54,7 +54,8 @@ static void get_include_file(
    strlcpy(include_file, start, len);
 }
 
-bool glslang_read_shader_file(const char *path, struct string_list *output, bool root_file)
+bool glslang_read_shader_file(const char *path,
+      struct string_list *output, bool root_file)
 {
    char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
@@ -186,7 +187,8 @@ bool glslang_read_shader_file(const char *path, struct string_list *output, bool
 
       if (push_line != 0)
       {
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + push_line), basename);
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               unsigned(i + push_line), basename);
          if (!string_list_append(output, tmp, attr))
             goto error;
       }
@@ -202,59 +204,6 @@ error:
       string_list_free(lines);
 
    return false;
-}
-
-static std::string build_stage_source(const struct string_list *lines, const char *stage)
-{
-   /* Note: since we have to return a std::string anyway,
-    * there is nothing to be gained from trying to replace
-    * this ostringstream with a C-based alternative
-    * (would require a rewrite of deps/glslang/glslang.cpp) */
-   std::ostringstream str;
-   bool active = true;
-   size_t i;
-
-   if (!lines)
-      return "";
-
-   if (lines->size < 1)
-      return "";
-
-   /* Version header. */
-   str << lines->elems[0].data;;
-   str << '\n';
-
-   for (i = 1; i < lines->size; i++)
-   {
-      const char *line = lines->elems[i].data;
-
-      /* Identify 'stage' (fragment/vertex) */
-      if (!strncmp("#pragma stage ", line, STRLEN_CONST("#pragma stage ")))
-      {
-         if (!string_is_empty(stage))
-         {
-            char expected[128];
-
-            expected[0] = '\0';
-
-            strlcpy(expected, "#pragma stage ", sizeof(expected));
-            strlcat(expected, stage,            sizeof(expected));
-
-            active = strcmp(expected, line) == 0;
-         }
-      }
-      else if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")) ||
-               !strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
-      {
-         /* Ignore */
-      }
-      else if (active)
-         str << line;
-
-      str << '\n';
-   }
-
-   return str.str();
 }
 
 static const char *glslang_formats[] = {
@@ -341,6 +290,60 @@ static glslang_format glslang_find_format(const char *fmt)
    return SLANG_FORMAT_UNKNOWN;
 }
 
+static std::string build_stage_source(
+      const struct string_list *lines, const char *stage)
+{
+   /* Note: since we have to return a std::string anyway,
+    * there is nothing to be gained from trying to replace
+    * this ostringstream with a C-based alternative
+    * (would require a rewrite of deps/glslang/glslang.cpp) */
+   std::ostringstream str;
+   bool active = true;
+   size_t i;
+
+   if (!lines)
+      return "";
+
+   if (lines->size < 1)
+      return "";
+
+   /* Version header. */
+   str << lines->elems[0].data;;
+   str << '\n';
+
+   for (i = 1; i < lines->size; i++)
+   {
+      const char *line = lines->elems[i].data;
+
+      /* Identify 'stage' (fragment/vertex) */
+      if (!strncmp("#pragma stage ", line, STRLEN_CONST("#pragma stage ")))
+      {
+         if (!string_is_empty(stage))
+         {
+            char expected[128];
+
+            expected[0] = '\0';
+
+            strlcpy(expected, "#pragma stage ", sizeof(expected));
+            strlcat(expected, stage,            sizeof(expected));
+
+            active = strcmp(expected, line) == 0;
+         }
+      }
+      else if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")) ||
+               !strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
+      {
+         /* Ignore */
+      }
+      else if (active)
+         str << line;
+
+      str << '\n';
+   }
+
+   return str.str();
+}
+
 bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 {
    char id[64];
@@ -412,7 +415,8 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
              * if they are exactly the same. */
             if (parameter_found)
             {
-               const glslang_parameter *parameter = &meta->parameters[parameter_index];
+               const glslang_parameter *parameter = 
+                  &meta->parameters[parameter_index];
 
                if (   parameter->desc    != desc    ||
                       parameter->initial != initial ||
@@ -462,9 +466,9 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
    return true;
 }
 
-#if defined(HAVE_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
+#if defined(HAVE_GLSLANG)
    struct string_list *lines = string_list_new();
 
    if (!lines)
@@ -500,12 +504,7 @@ error:
 
    if (lines)
       string_list_free(lines);
+#endif
 
    return false;
 }
-#else
-bool glslang_compile_shader(const char *shader_path, glslang_output *output)
-{
-   return false;
-}
-#endif
