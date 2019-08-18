@@ -133,10 +133,9 @@ end:
  *
  * Sets shader preset.
  **/
-bool menu_shader_manager_set_preset(void *data,
+bool menu_shader_manager_set_preset(struct video_shader *shader,
       enum rarch_shader_type type, const char *preset_path, bool apply)
 {
-   struct video_shader *shader   = (struct video_shader*)data;
    config_file_t *conf           = NULL;
    bool refresh                  = false;
    bool ret                      = false;
@@ -150,14 +149,14 @@ bool menu_shader_manager_set_preset(void *data,
        *   entries in the shader options menu which can in
        *   turn lead to the menu selection pointer going out
        *   of bounds. This causes undefined behaviour/segfaults */
-      menu_shader_manager_clear_num_passes();
+      menu_shader_manager_clear_num_passes(shader);
       command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
       return false;
    }
 
    if (string_is_empty(preset_path))
    {
-      menu_shader_manager_clear_num_passes();
+      menu_shader_manager_clear_num_passes(shader);
       command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
       return true;
    }
@@ -204,6 +203,7 @@ end:
  * Save a shader preset to disk.
  **/
 bool menu_shader_manager_save_preset(
+      struct video_shader *shader,
       const char *basename, bool apply, bool fullpath)
 {
    char buffer[PATH_MAX_LENGTH];
@@ -214,7 +214,6 @@ bool menu_shader_manager_save_preset(
    enum rarch_shader_type type            = RARCH_SHADER_NONE;
    const char *dirs[3]                    = {0};
    config_file_t *conf                    = NULL;
-   struct video_shader *shader            = menu_shader_get();
 
    config_directory[0]                    = '\0';
    buffer[0]                              = '\0';
@@ -321,10 +320,9 @@ bool menu_shader_manager_save_preset(
    return false;
 }
 
-int menu_shader_manager_clear_num_passes(void)
+int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 {
    bool refresh                = false;
-   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return 0;
@@ -340,9 +338,9 @@ int menu_shader_manager_clear_num_passes(void)
    return 0;
 }
 
-int menu_shader_manager_clear_parameter(unsigned i)
+int menu_shader_manager_clear_parameter(struct video_shader *shader,
+      unsigned i)
 {
-   struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param = shader ?
       &shader->parameters[i] : NULL;
 
@@ -356,9 +354,9 @@ int menu_shader_manager_clear_parameter(unsigned i)
    return 0;
 }
 
-int menu_shader_manager_clear_pass_filter(unsigned i)
+int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
+      unsigned i)
 {
-   struct video_shader *shader           = menu_shader_get();
    struct video_shader_pass *shader_pass = shader ?
       &shader->pass[i] : NULL;
 
@@ -370,9 +368,9 @@ int menu_shader_manager_clear_pass_filter(unsigned i)
    return 0;
 }
 
-void menu_shader_manager_clear_pass_scale(unsigned i)
+void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
+      unsigned i)
 {
-   struct video_shader *shader           = menu_shader_get();
    struct video_shader_pass *shader_pass = shader ?
       &shader->pass[i] : NULL;
 
@@ -384,9 +382,9 @@ void menu_shader_manager_clear_pass_scale(unsigned i)
    shader_pass->fbo.valid   = false;
 }
 
-void menu_shader_manager_clear_pass_path(unsigned i)
+void menu_shader_manager_clear_pass_path(struct video_shader *shader,
+      unsigned i)
 {
-   struct video_shader *shader           = menu_shader_get();
    struct video_shader_pass *shader_pass = shader ?
       &shader->pass[i] : NULL;
 
@@ -402,10 +400,10 @@ void menu_shader_manager_clear_pass_path(unsigned i)
  *
  * Returns: type of shader.
  **/
-enum rarch_shader_type menu_shader_manager_get_type(const void *data)
+enum rarch_shader_type menu_shader_manager_get_type(
+      const struct video_shader *shader)
 {
    enum rarch_shader_type type       = RARCH_SHADER_NONE;
-   const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
    size_t i                         = 0;
 
@@ -449,10 +447,9 @@ enum rarch_shader_type menu_shader_manager_get_type(const void *data)
  *
  * Apply shader state changes.
  **/
-void menu_shader_manager_apply_changes(void)
+void menu_shader_manager_apply_changes(struct video_shader *shader)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return;
@@ -461,7 +458,7 @@ void menu_shader_manager_apply_changes(void)
 
    if (shader->passes && type != RARCH_SHADER_NONE)
    {
-      menu_shader_manager_save_preset(NULL, true, false);
+      menu_shader_manager_save_preset(shader, NULL, true, false);
       return;
    }
 

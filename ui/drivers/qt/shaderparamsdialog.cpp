@@ -748,7 +748,7 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
          break;
    }
 
-   if (menu_shader_manager_save_preset(file, false, true))
+   if (menu_shader_manager_save_preset(menu_shader_get(), file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true, NULL,

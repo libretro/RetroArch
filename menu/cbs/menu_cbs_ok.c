@@ -2600,7 +2600,8 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         ret = menu_shader_manager_save_preset(str, false, false);
+         ret = menu_shader_manager_save_preset(menu_shader_get(),
+               str, false, false);
 
       if (ret)
          runloop_msg_queue_push(
@@ -2762,7 +2763,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
          break;
    }
 
-   if (menu_shader_manager_save_preset(file, false, true))
+   if (menu_shader_manager_save_preset(menu_shader_get(), file, false, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true,

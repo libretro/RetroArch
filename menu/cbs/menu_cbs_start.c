@@ -164,7 +164,7 @@ static int action_start_shader_action_parameter(
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
-   return menu_shader_manager_clear_parameter(parameter);
+   return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
@@ -176,7 +176,8 @@ static int action_start_shader_pass(unsigned type, const char *label)
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_shader_manager_clear_pass_path(menu->scratchpad.unsigned_var);
+   menu_shader_manager_clear_pass_path(menu_shader_get(),
+         menu->scratchpad.unsigned_var);
 
    return 0;
 }
@@ -185,7 +186,7 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
-   menu_shader_manager_clear_pass_scale(pass);
+   menu_shader_manager_clear_pass_scale(menu_shader_get(), pass);
 
    return 0;
 }
@@ -193,7 +194,7 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
 static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   return menu_shader_manager_clear_pass_filter(pass);
+   return menu_shader_manager_clear_pass_filter(menu_shader_get(), pass);
 }
 #endif
 
@@ -214,7 +215,7 @@ static int action_start_shader_watch_for_changes(unsigned type, const char *labe
 
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
-   return menu_shader_manager_clear_num_passes();
+   return menu_shader_manager_clear_num_passes(menu_shader_get());
 }
 #endif
 

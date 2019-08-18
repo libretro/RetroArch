@@ -45,7 +45,8 @@ bool menu_shader_manager_init(void);
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(
-      void *data, enum rarch_shader_type type, const char *preset_path, bool apply);
+      struct video_shader *shader,
+      enum rarch_shader_type type, const char *preset_path, bool apply);
 
 /**
  * menu_shader_manager_save_preset:
@@ -55,6 +56,7 @@ bool menu_shader_manager_set_preset(
  * Save a shader preset to disk.
  **/
 bool menu_shader_manager_save_preset(
+      struct video_shader *shader,
       const char *basename, bool apply, bool fullpath);
 
 /**
@@ -65,24 +67,29 @@ bool menu_shader_manager_save_preset(
  *
  * Returns: type of shader.
  **/
-enum rarch_shader_type menu_shader_manager_get_type(const void *data);
+enum rarch_shader_type menu_shader_manager_get_type(
+      const struct video_shader *shader);
 
 /**
  * menu_shader_manager_apply_changes:
  *
  * Apply shader state changes.
  **/
-void menu_shader_manager_apply_changes(void);
+void menu_shader_manager_apply_changes(struct video_shader *shader);
 
-int menu_shader_manager_clear_num_passes(void);
+int menu_shader_manager_clear_num_passes(struct video_shader *shader);
 
-int menu_shader_manager_clear_parameter(unsigned i);
+int menu_shader_manager_clear_parameter(struct video_shader *shader,
+      unsigned i);
 
-int menu_shader_manager_clear_pass_filter(unsigned i);
+int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
+      unsigned i);
 
-void menu_shader_manager_clear_pass_scale(unsigned i);
+void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
+      unsigned i);
 
-void menu_shader_manager_clear_pass_path(unsigned i);
+void menu_shader_manager_clear_pass_path(struct video_shader *shader,
+      unsigned i);
 
 RETRO_END_DECLS
 
