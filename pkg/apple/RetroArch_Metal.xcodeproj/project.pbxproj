@@ -1187,8 +1187,10 @@
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C79920DB72F100FF7857 /* glslang_util.cpp */,
+				05A8C79920DB72F100FF7857 /* glslang_util.c */,
+				05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */,
 				05A8C79020DB72F100FF7857 /* glslang_util.h */,
+				05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */,
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
 				05A8C79720DB72F100FF7857 /* shader_glsl.h */,
