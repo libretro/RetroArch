@@ -12,6 +12,7 @@
     <link href="//cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.1.1/css/mdb.min.css" rel="stylesheet">
 
    <link href="libretro.css" rel="stylesheet" type="text/css">
+   <link rel="stylesheet" href="./steps.css">
    <link rel="shortcut icon" href="media/retroarch.ico" />
 
 </head>
@@ -119,7 +120,33 @@
           <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960px" height="720px" alt="RetroArch Logo">
       </div>
    </div>
-
+ <!--/.steps content-->
+       </div>
+   </nav>
+   <div class="bg-inverse webplayer-container">
+      <div class="container">
+         <div class="webplayer_border text-xs-center" id="canvas_div">
+            <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()" style="display: none"></canvas>
+            <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960px" height="720px" alt="RetroArch Logo">
+         </div>
+      </div>
+   </div>
+           <!--navbar content-->
+           <div class="navbar-toggleable-xs">
+            <div class="how-to-guide js-container">
+  <button type="button" class="button-close">×</button>
+  
+  <div class="slide-view">
+  </div>
+  
+  <div class="navigation">
+    <button type="button" class="button-nav js-nav disabled" data-nav="prev">Back</button>
+    <div class="nav-state">
+      <span class="current js-slide-no">1</span>/<span class="total">5</span>
+    </div>
+    <button type="button" class="button-nav js-nav" data-nav="next">Next</button>
+  </div>
+			   </div>
    <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>
    <script src="//rawgit.com/jeresig/jquery.hotkeys/master/jquery.hotkeys.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
@@ -131,6 +158,10 @@
    <div align="center">
    <a href="https://www.patreon.com/libretro">
       <img src="https://patreon_public_assets.s3.amazonaws.com/sized/becomeAPatronBanner.png" width="350" height="116"></a>
+	 <!-- partial -->
+  <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache.min.js'></script>
+<script  src="./steps.js"></script>   
    </div>
 </body>
 </html>
