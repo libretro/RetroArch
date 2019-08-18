@@ -671,7 +671,6 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
-   settings_t *settings    = config_get_ptr();
    unsigned sidebar_height = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
    unsigned sidebar_width  = ozone->dimensions.thumbnail_bar_width;
    unsigned x_position     = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;

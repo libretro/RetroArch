@@ -2200,7 +2200,6 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    settings_t *settings = configuration_settings;
    bool ret;
-   bool refresh;
    char msg[256];
    const char *preset_file = NULL;
 
