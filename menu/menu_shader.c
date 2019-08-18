@@ -403,17 +403,26 @@ void menu_shader_manager_clear_pass_path(unsigned i)
  **/
 enum rarch_shader_type menu_shader_manager_get_type(const void *data)
 {
-   unsigned type                     = RARCH_SHADER_NONE;
+   enum rarch_shader_type type       = RARCH_SHADER_NONE;
    const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
-   unsigned i                        = 0;
+   size_t i                         = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;
 
    type = video_shader_parse_type(shader->path);
 
-   for (i = 0; i < shader->passes; i++)
+   if (!shader->passes)
+      return type;
+
+   if (type == RARCH_SHADER_NONE)
+   {
+      type = video_shader_parse_type(shader->pass[0].source.path);
+      i = 1;
+   }
+
+   for (; i < shader->passes; i++)
    {
       enum rarch_shader_type pass_type =
          video_shader_parse_type(shader->pass[i].source.path);
@@ -424,14 +433,14 @@ enum rarch_shader_type menu_shader_manager_get_type(const void *data)
          case RARCH_SHADER_GLSL:
          case RARCH_SHADER_SLANG:
             if (type != pass_type)
-               return (enum rarch_shader_type)RARCH_SHADER_NONE;
+               return RARCH_SHADER_NONE;
             break;
          default:
             break;
       }
    }
 
-   return (enum rarch_shader_type)type;
+   return type;
 }
 
 /**
