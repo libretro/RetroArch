@@ -613,7 +613,6 @@ struct CommonResources
    GLuint quad_program = 0;
    GLuint quad_vbo = 0;
    gl_core_buffer_locations quad_loc = {};
-   void draw_quad() const;
 };
 
 CommonResources::CommonResources()
@@ -642,24 +641,6 @@ CommonResources::~CommonResources()
       glDeleteBuffers(1, &quad_vbo);
 }
 
-void CommonResources::draw_quad() const
-{
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-}
-
 class Framebuffer
 {
 public:
@@ -685,7 +666,6 @@ public:
    }
 
    unsigned get_levels() const { return levels; }
-   void generate_mips();
 
 private:
    GLuint image = 0;
@@ -812,14 +792,6 @@ void Framebuffer::clear()
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Framebuffer::generate_mips()
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glGenerateMipmap(GL_TEXTURE_2D);
-   glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 void Framebuffer::copy(const CommonResources &common, GLuint image)
 {
    if (!complete)
@@ -842,7 +814,23 @@ void Framebuffer::copy(const CommonResources &common, GLuint image)
       build_default_matrix(mvp);
       glUniform4fv(common.quad_loc.flat_ubo_vertex, 4, mvp);
    }
-   common.draw_quad();
+
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, common.quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         reinterpret_cast<void *>(uintptr_t(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         reinterpret_cast<void *>(uintptr_t(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
    glUseProgram(0);
    glBindTexture(GL_TEXTURE_2D, 0);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -918,20 +906,6 @@ public:
    std::vector<GLuint> buffers;
    unsigned buffer_index = 0;
 };
-
-static void ubo_ring_update_and_bind(
-      unsigned vertex_binding,
-      unsigned fragment_binding,
-      const void *data, size_t size, GLuint id)
-{
-   glBindBuffer(GL_UNIFORM_BUFFER, id);
-   glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
-   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-   if (vertex_binding != GL_INVALID_INDEX)
-      glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);
-   if (fragment_binding != GL_INVALID_INDEX)
-      glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
-}
 
 UBORing::~UBORing()
 {
@@ -1055,13 +1029,7 @@ private:
 
    bool init_pipeline();
 
-   void set_texture(unsigned binding,
-                    const Texture &texture);
-
    void set_semantic_texture(slang_texture_semantic semantic,
-         const Texture &texture);
-   void set_semantic_texture_array(slang_texture_semantic semantic,
-         unsigned index,
          const Texture &texture);
 
    slang_reflection reflection;
@@ -1515,15 +1483,6 @@ void Pass::build_semantic_texture(uint8_t *buffer,
    set_semantic_texture(semantic, texture);
 }
 
-void Pass::set_semantic_texture_array(
-      slang_texture_semantic semantic, unsigned index,
-      const Texture &texture)
-{
-   if (index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].texture)
-      set_texture(reflection.semantic_textures[semantic][index].binding, texture);
-}
-
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
@@ -1613,20 +1572,18 @@ void Pass::add_parameter(unsigned index, const std::string &id)
    parameters.push_back({ id, index, unsigned(parameters.size()) });
 }
 
-void Pass::set_texture(unsigned binding, const Texture &texture)
-{
-   glActiveTexture(GL_TEXTURE0 + binding);
-   glBindTexture(GL_TEXTURE_2D, texture.texture.image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, convert_filter_to_min_gl(texture.filter, texture.mip_filter));
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, address_to_gl(texture.address));
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, address_to_gl(texture.address));
-}
-
 void Pass::set_semantic_texture(slang_texture_semantic semantic, const Texture &texture)
 {
    if (reflection.semantic_textures[semantic][0].texture)
-      set_texture(reflection.semantic_textures[semantic][0].binding, texture);
+   {
+      unsigned binding = reflection.semantic_textures[semantic][0].binding;
+      glActiveTexture(GL_TEXTURE0 + binding);
+      glBindTexture(GL_TEXTURE_2D, texture.texture.image);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, convert_filter_to_min_gl(texture.filter, texture.mip_filter));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, address_to_gl(texture.address));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, address_to_gl(texture.address));
+   }
 }
 
 void Pass::build_semantic_texture_array(uint8_t *buffer,
@@ -1634,7 +1591,18 @@ void Pass::build_semantic_texture_array(uint8_t *buffer,
 {
    build_semantic_texture_array_vec4(buffer, semantic, index,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture_array(semantic, index, texture);
+
+   if (index < reflection.semantic_textures[semantic].size() &&
+         reflection.semantic_textures[semantic][index].texture)
+   {
+      unsigned binding = reflection.semantic_textures[semantic][index].binding;
+      glActiveTexture(GL_TEXTURE0 + binding);
+      glBindTexture(GL_TEXTURE_2D, texture.texture.image);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, convert_filter_to_min_gl(texture.filter, texture.mip_filter));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, address_to_gl(texture.address));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, address_to_gl(texture.address));
+   }
 }
 
 void Pass::build_semantics(uint8_t *buffer,
@@ -1769,12 +1737,20 @@ void Pass::build_commands(
    if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX 
             && locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
    {
-      ubo_ring_update_and_bind(
-            locations.buffer_index_ubo_vertex,
-            locations.buffer_index_ubo_fragment,
-            uniforms.data(), reflection.ubo_size,
-            ubo_ring.buffers[ubo_ring.buffer_index]
-            );
+      /* UBO Ring - update and bind */
+      unsigned vertex_binding   = locations.buffer_index_ubo_vertex;
+      unsigned fragment_binding = locations.buffer_index_ubo_fragment;
+      const void *data          = uniforms.data();
+      size_t size               = reflection.ubo_size;
+      GLuint id                 = ubo_ring.buffers[ubo_ring.buffer_index];
+
+      glBindBuffer(GL_UNIFORM_BUFFER, id);
+      glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+      if (vertex_binding != GL_INVALID_INDEX)
+         glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);
+      if (fragment_binding != GL_INVALID_INDEX)
+         glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
       ubo_ring.buffer_index++;
       if (ubo_ring.buffer_index >= ubo_ring.buffers.size())
@@ -1806,7 +1782,22 @@ void Pass::build_commands(
       glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
 
-   common->draw_quad();
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, common->quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         reinterpret_cast<void *>(uintptr_t(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         reinterpret_cast<void *>(uintptr_t(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
 #ifndef HAVE_OPENGLES3
    glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
@@ -1815,7 +1806,12 @@ void Pass::build_commands(
 
    if (!final_pass)
       if (framebuffer->get_levels() > 1)
-         framebuffer->generate_mips();
+      {
+         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+         glBindTexture(GL_TEXTURE_2D, framebuffer->get_image());
+         glGenerateMipmap(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, 0);
+      }
 }
 
 }
