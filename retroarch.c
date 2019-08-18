@@ -22018,9 +22018,6 @@ static void menu_driver_toggle(bool on)
 
    menu_driver_toggled = on;
 
-   if (!on)
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
-
    if (menu_data->driver_ctx && menu_data->driver_ctx->toggle)
       menu_data->driver_ctx->toggle(menu_data->userdata, on);
 
@@ -23753,7 +23750,6 @@ static enum runloop_state runloop_check_state(void)
          }
          else
          {
-            menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
             retroarch_menu_running();
          }
       }

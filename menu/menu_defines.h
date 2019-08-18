@@ -212,13 +212,6 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VGA
 };
 
-enum menu_toggle_reason
-{
-  MENU_TOGGLE_REASON_NONE = 0,
-  MENU_TOGGLE_REASON_USER,
-  MENU_TOGGLE_REASON_MESSAGE
-};
-
 enum rgui_thumbnail_scaler
 {
    RGUI_THUMB_SCALE_POINT = 0,

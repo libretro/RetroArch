@@ -290,17 +290,12 @@ void menu_dialog_reset(void)
    menu_dialog_current_id   = 0;
    menu_dialog_current_type = MENU_DIALOG_NONE;
    menu_dialog_current_msg  = MSG_UNKNOWN;
-
-   menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
 }
 
 void menu_dialog_show_message(
       enum menu_dialog_type type, enum msg_hash_enums msg)
 {
    menu_dialog_current_msg = msg;
-
-   if (!menu_driver_is_toggled())
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
 
    menu_dialog_push_pending(true, type);
    menu_dialog_push();

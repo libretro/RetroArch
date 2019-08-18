@@ -175,9 +175,6 @@ uintptr_t menu_display_white_texture;
 
 static video_coord_array_t menu_disp_ca;
 
-static enum
-menu_toggle_reason menu_display_toggle_reason    = MENU_TOGGLE_REASON_NONE;
-
 /* Width, height and pitch of the menu framebuffer */
 static unsigned menu_display_framebuf_width      = 0;
 static unsigned menu_display_framebuf_height     = 0;
@@ -1543,16 +1540,6 @@ int menu_display_osk_ptr_at_pos(void *data, int x, int y,
    }
 
    return -1;
-}
-
-enum menu_toggle_reason menu_display_toggle_get_reason(void)
-{
-  return menu_display_toggle_reason;
-}
-
-void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
-{
-  menu_display_toggle_reason = reason;
 }
 
 /* Check if the current menu driver is compatible

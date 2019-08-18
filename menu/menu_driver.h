@@ -551,9 +551,6 @@ size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
 
-enum menu_toggle_reason menu_display_toggle_get_reason(void);
-void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
-
 void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
 
