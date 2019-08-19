@@ -6276,7 +6276,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          settings_t *settings    = configuration_settings;
-         unsigned log_level      = settings->uints.libretro_log_level;
+         unsigned log_level      = settings->uints.frontend_log_level;
 
          subsystem_current_count = 0;
 
@@ -6690,7 +6690,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
          {
-            unsigned log_level         = settings->uints.libretro_log_level;
+            unsigned log_level         = settings->uints.frontend_log_level;
             struct retro_variable *var = (struct retro_variable*)data;
 
             if (!var)
@@ -6992,7 +6992,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
 
             {
-               unsigned log_level      = settings->uints.libretro_log_level;
+               unsigned log_level      = settings->uints.frontend_log_level;
                
                if (log_level == RETRO_LOG_DEBUG)
                {
@@ -7293,7 +7293,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned i;
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
-         unsigned log_level   = settings->uints.libretro_log_level;
+         unsigned log_level   = settings->uints.frontend_log_level;
 
          if (log_level == RETRO_LOG_DEBUG)
             RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
@@ -7343,7 +7343,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned i, j;
          const struct retro_controller_info *info =
             (const struct retro_controller_info*)data;
-         unsigned log_level      = settings->uints.libretro_log_level;
+         unsigned log_level      = settings->uints.frontend_log_level;
 
          RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
 

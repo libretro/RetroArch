@@ -6063,6 +6063,14 @@ void general_write_handler(rarch_setting_t *setting)
       command_event(rarch_cmd, NULL);
 }
 
+static void frontend_log_level_change_handler(rarch_setting_t *setting)
+{
+   if (!setting)
+      return;
+
+   verbosity_set_log_level(*setting->value.target.unsigned_integer);
+}
+
 #ifdef HAVE_OVERLAY
 static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
 {
@@ -7593,6 +7601,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].change_handler = frontend_log_level_change_handler;
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);

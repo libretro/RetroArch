@@ -62,12 +62,19 @@
 #include "ui/ui_companion_driver.h"
 #endif
 
+#ifdef RARCH_INTERNAL
+#include "config.def.h"
+#else
+#define DEFAULT_FRONTEND_LOG_LEVEL 1
+#endif
+
 /* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
-static FILE *log_file_fp         = NULL;
-static void* log_file_buf        = NULL;
-static bool main_verbosity       = false;
-static bool log_file_initialized = false;
+static FILE *log_file_fp            = NULL;
+static void* log_file_buf           = NULL;
+static unsigned verbosity_log_level = DEFAULT_FRONTEND_LOG_LEVEL;
+static bool main_verbosity          = false;
+static bool log_file_initialized    = false;
 
 #ifdef HAVE_LIBNX
 static Mutex logging_mtx;
@@ -75,6 +82,11 @@ static Mutex logging_mtx;
 bool nxlink_connected = false;
 #endif /* NXLINK */
 #endif /* HAVE_LIBNX */
+
+void verbosity_set_log_level(unsigned level)
+{
+   verbosity_log_level = level;
+}
 
 void verbosity_enable(void)
 {
@@ -162,112 +174,115 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+   if (verbosity_log_level <= 1)
+   {
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
+      vprintf(fmt, ap);
 #else
-   static aslclient asl_client;
-   static int asl_initialized = 0;
-   if (!asl_initialized)
-   {
-      asl_client      = asl_open(
-            file_path_str(FILE_PATH_PROGRAM_NAME),
-            "com.apple.console",
-            ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_initialized = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
-   asl_free(msg);
+      static aslclient asl_client;
+      static int asl_initialized = 0;
+      if (!asl_initialized)
+      {
+         asl_client      = asl_open(
+               file_path_str(FILE_PATH_PROGRAM_NAME),
+               "com.apple.console",
+               ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+         asl_initialized = 1;
+      }
+      aslmsg msg = asl_new(ASL_TYPE_MSG);
+      asl_set(msg, ASL_KEY_READ_UID, "-1");
+      if (tag)
+         asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
+      asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
+      asl_free(msg);
 #endif
 #elif defined(_XBOX1)
-   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-   char msg_new[256];
-   char buffer[256];
+      /* FIXME: Using arbitrary string as fmt argument is unsafe. */
+      char msg_new[256];
+      char buffer[256];
 
-   msg_new[0] = buffer[0] = '\0';
-   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-         file_path_str(FILE_PATH_PROGRAM_NAME),
-         tag ? tag : "",
-         fmt);
-   wvsprintf(buffer, msg_new, ap);
-   OutputDebugStringA(buffer);
-#elif defined(ANDROID)
-   int prio = ANDROID_LOG_INFO;
-   if (tag)
-   {
-      if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
-         prio = ANDROID_LOG_WARN;
-      else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
-         prio = ANDROID_LOG_ERROR;
-   }
-
-   if (log_file_initialized)
-   {
-      vfprintf(log_file_fp, fmt, ap);
-      fflush(log_file_fp);
-   }
-   else
-      __android_log_vprint(prio,
+      msg_new[0] = buffer[0] = '\0';
+      snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
             file_path_str(FILE_PATH_PROGRAM_NAME),
-            fmt,
-            ap);
-#else
-   FILE *fp = (FILE*)log_file_fp;
-#if defined(HAVE_QT) || defined(__WINRT__)
-   int ret;
-   char buffer[256];
-   buffer[0] = '\0';
-   ret = vsnprintf(buffer, sizeof(buffer), fmt, ap);
-
-   /* ensure null termination and line break in error case */
-   if (ret < 0)
-   {
-      int end;
-      buffer[sizeof(buffer) - 1]  = '\0';
-      end = strlen(buffer) - 1;
-      if (end >= 0)
-         buffer[end] = '\n';
-      else
+            tag ? tag : "",
+            fmt);
+      wvsprintf(buffer, msg_new, ap);
+      OutputDebugStringA(buffer);
+#elif defined(ANDROID)
+      int prio = ANDROID_LOG_INFO;
+      if (tag)
       {
-         buffer[0]   = '\n';
-         buffer[1]   = '\0';
+         if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
+            prio = ANDROID_LOG_WARN;
+         else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
+            prio = ANDROID_LOG_ERROR;
       }
-   }
 
-   if (fp)
-   {
-      fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
-      fflush(fp);
-   }
+      if (log_file_initialized)
+      {
+         vfprintf(log_file_fp, fmt, ap);
+         fflush(log_file_fp);
+      }
+      else
+         __android_log_vprint(prio,
+               file_path_str(FILE_PATH_PROGRAM_NAME),
+               fmt,
+               ap);
+#else
+      FILE *fp = (FILE*)log_file_fp;
+#if defined(HAVE_QT) || defined(__WINRT__)
+      int ret;
+      char buffer[256];
+      buffer[0] = '\0';
+      ret = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+
+      /* ensure null termination and line break in error case */
+      if (ret < 0)
+      {
+         int end;
+         buffer[sizeof(buffer) - 1]  = '\0';
+         end = strlen(buffer) - 1;
+         if (end >= 0)
+            buffer[end] = '\n';
+         else
+         {
+            buffer[0]   = '\n';
+            buffer[1]   = '\0';
+         }
+      }
+
+      if (fp)
+      {
+         fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
+         fflush(fp);
+      }
 
 #if defined(HAVE_QT)
-   ui_companion_driver_log_msg(buffer);
+      ui_companion_driver_log_msg(buffer);
 #endif
 
 #if defined(__WINRT__)
-   OutputDebugStringA(buffer);
+      OutputDebugStringA(buffer);
 #endif
 #else
 #if defined(HAVE_LIBNX)
-   mutexLock(&logging_mtx);
+      mutexLock(&logging_mtx);
 #endif
-   if (fp)
-   {
-      fprintf(fp, "%s ",
-            tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-      vfprintf(fp, fmt, ap);
-      fflush(fp);
-   }
+      if (fp)
+      {
+         fprintf(fp, "%s ",
+               tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+         vfprintf(fp, fmt, ap);
+         fflush(fp);
+      }
 #if defined(HAVE_LIBNX)
-   mutexUnlock(&logging_mtx);
+      mutexUnlock(&logging_mtx);
 #endif
 
 #endif
 #endif
+   }
 }
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
@@ -309,6 +324,8 @@ void RARCH_LOG(const char *fmt, ...)
 
    if (!main_verbosity)
       return;
+   if (verbosity_log_level > 1)
+      return;
 
    va_start(ap, fmt);
    RARCH_LOG_V(file_path_str(FILE_PATH_LOG_INFO), fmt, ap);
@@ -328,6 +345,8 @@ void RARCH_WARN(const char *fmt, ...)
    va_list ap;
 
    if (!main_verbosity)
+      return;
+   if (verbosity_log_level > 2)
       return;
 
    va_start(ap, fmt);

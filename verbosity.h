@@ -33,6 +33,8 @@ void verbosity_enable(void);
 
 void verbosity_disable(void);
 
+void verbosity_set_log_level(unsigned level);
+
 bool *verbosity_get_ptr(void);
 
 void *retro_main_log_file(void);

@@ -2640,6 +2640,7 @@ static bool config_load_file(const char *path, settings_t *settings)
    size_t path_size                                = PATH_MAX_LENGTH * sizeof(char);
    char *tmp_str                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    bool ret                                        = false;
+   unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
@@ -2741,19 +2742,9 @@ static bool config_load_file(const char *path, settings_t *settings)
       else
          verbosity_disable();
    }
+   if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
    {
-      char tmp[64];
-
-      tmp[0] = '\0';
-
-      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
-      if (config_get_bool(conf, tmp, &tmp_bool))
-      {
-         if (tmp_bool)
-            rarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
-         else
-            rarch_ctl(RARCH_CTL_UNSET_PERFCNT_ENABLE, NULL);
-      }
+      verbosity_set_log_level(tmp_uint);
    }
 
    /* Integer settings */
