@@ -62,7 +62,6 @@ int is_fd_valid(int fd)
 }
 
 void _init_ps2_io(void) {
-   int ret;
    ee_sema_t sp;
 
    memset(__ps2_fdmap, 0, sizeof(__ps2_fdmap));
@@ -72,7 +71,6 @@ void _init_ps2_io(void) {
    sp.max_count = 1;
    sp.option = 0;
    _lock_sema_id = CreateSema(&sp);
-
 }
 
 void _free_ps2_io(void) {

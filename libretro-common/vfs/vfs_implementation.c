@@ -938,7 +938,9 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       /* if fileXioGetStat fails */
       int dir_ret = fileXioDopen(path);
       is_dir      =  dir_ret > 0;
-      fileXioDclose(dir_ret);
+      if (is_dir) {
+         fileXioDclose(dir_ret);
+      }
    }
    else
       is_dir = FIO_S_ISDIR(buf.mode);

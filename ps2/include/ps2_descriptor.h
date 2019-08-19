@@ -34,8 +34,6 @@ typedef struct
    entries *FileEntry;
 } DescriptorTranslation;
 
-extern DescriptorTranslation *__ps2_fdmap[];
-
 void _init_ps2_io(void);
 void _free_ps2_io(void);
 int is_fd_valid(int fd);

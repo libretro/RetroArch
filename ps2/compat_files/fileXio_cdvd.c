@@ -191,9 +191,12 @@ int ps2fileXioDread(int fd, iox_dirent_t *dirent)
 
 int ps2fileXioDclose(int fd)
 {
+   int ret = -19;
    if (is_fd_valid(fd)) {
-      return __ps2_release_descriptor(fd);
-   } else {
-      return fileXioDclose(fd);
+      ret = __ps2_release_descriptor(fd);
+   } else if (fd > 0) {
+      ret = fileXioDclose(fd);
    }
+
+   return ret;
 }
