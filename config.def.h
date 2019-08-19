@@ -829,6 +829,9 @@ static const bool default_menu_show_start_screen = true;
 #define DEFAULT_MENU_DPI_OVERRIDE_VALUE 200
 #endif
 
+/* Log level for the frontend */
+#define DEFAULT_FRONTEND_LOG_LEVEL 1
+
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
 #define DEFAULT_LIBRETRO_LOG_LEVEL 1
 

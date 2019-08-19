@@ -7584,6 +7584,24 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.frontend_log_level,
+                  MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,
+                  MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+                  DEFAULT_FRONTEND_LOG_LEVEL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_libretro_log_level;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.libretro_log_level,
                   MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
                   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,

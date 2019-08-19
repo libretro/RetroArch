@@ -7952,3 +7952,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
     "View information about inserted media discs."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+    "Frontend Logging Level"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+    "Sets log level for the frontend. If a log level issued by the frontend is below this value, it is ignored."
+    )

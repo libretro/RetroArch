@@ -434,6 +434,7 @@ typedef struct settings
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;
+      unsigned frontend_log_level;
       unsigned libretro_log_level;
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;

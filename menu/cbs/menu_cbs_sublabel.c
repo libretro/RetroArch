@@ -315,6 +315,7 @@ default_sublabel_macro(action_bind_sublabel_cheat_reload_cheats,           MENU_
 default_sublabel_macro(action_bind_sublabel_cheat_address_bit_position,    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION)
 default_sublabel_macro(action_bind_sublabel_cheat_delete_all,              MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL)
 default_sublabel_macro(action_bind_sublabel_libretro_log_level,            MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL)
+default_sublabel_macro(action_bind_sublabel_frontend_log_level,            MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL)
 default_sublabel_macro(action_bind_sublabel_perfcnt_enable,                MENU_ENUM_SUBLABEL_PERFCNT_ENABLE)
 default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE)
 default_sublabel_macro(action_bind_sublabel_savestate_auto_load,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD)
@@ -1959,6 +1960,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PERFCNT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_perfcnt_enable);
+            break;
+         case MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frontend_log_level);
             break;
          case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_libretro_log_level);

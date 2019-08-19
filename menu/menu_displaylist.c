@@ -5068,6 +5068,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          {
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_LOG_VERBOSITY,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,    PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,    PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_LOG_TO_FILE,           PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP, PARSE_ONLY_BOOL},
