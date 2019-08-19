@@ -2887,7 +2887,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, ConfigDeleter> conf{ config_file_new_from_path_to_string(path) };
+   unique_ptr<config_file_t, ConfigDeleter> conf{ video_shader_read_preset(path) };
    if (!conf)
       return nullptr;
 

@@ -572,6 +572,234 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 }
 
 /**
+ * video_shader_write_preset:
+ * @path              : File to write to
+ * @shader            : Shader preset to write
+ * @reference         : Whether a reference preset should be written
+ *
+ * Writes a preset to disk. Can be written as a reference preset.
+ * See: video_shader_read_preset
+ **/
+bool video_shader_write_preset(const char *path,
+      const struct video_shader *shader, bool reference)
+{
+   /* We need to clean up paths to be able to properly process them
+    * path and shader->path can use '/' on Windows due to Qt being Qt */
+   char clean_path[PATH_MAX_LENGTH];
+   char clean_shader_path[PATH_MAX_LENGTH];
+   char preset_dir[PATH_MAX_LENGTH];
+
+   if (!shader || string_is_empty(path))
+      return false;
+
+   fill_pathname_join(
+      preset_dir,
+      config_get_ptr()->paths.directory_video_shader,
+      "presets",
+      sizeof(preset_dir));
+
+   strlcpy(clean_shader_path, shader->path, PATH_MAX_LENGTH);
+   path_resolve_realpath(clean_shader_path, PATH_MAX_LENGTH, false);
+
+   if (string_is_empty(shader->path))
+      reference = false;
+
+   /* Auto-shaders can be written as copies or references.
+    * If we write a reference to a copy, we could then overwrite the copy 
+    * with any reference, thus creating a reference to a reference.
+    * To prevent this, we disallow saving references to auto-shaders. */
+   if (reference && !strncmp(preset_dir, clean_shader_path, strlen(preset_dir)))
+      reference = false;
+
+   /* Don't ever create a reference to the ever-changing retroarch preset
+    * TODO remove once we don't write this preset anymore */
+   if (reference && !strncmp(path_basename(clean_shader_path), "retroarch", STRLEN_CONST("retroarch")))
+      reference = false;
+
+   if (reference)
+   {
+      /* write a reference preset */
+      char buf[STRLEN_CONST("#reference \"") + PATH_MAX_LENGTH + 1] = "#reference \"";
+      size_t len = STRLEN_CONST("#reference \"");
+
+      char *preset_ref = buf + len;
+
+      strlcpy(clean_path, path, PATH_MAX_LENGTH);
+      path_resolve_realpath(clean_path, PATH_MAX_LENGTH, false);
+
+      path_relative_to(preset_ref, clean_shader_path, clean_path, PATH_MAX_LENGTH);
+      len += strlen(preset_ref);
+
+      buf[len++] = '\"';
+
+      return filestream_write_file(clean_path, (void *)buf, len);
+   }
+   else
+   {
+      /* regular saving function */
+      config_file_t *conf;
+      bool ret;
+
+      if (!(conf = config_file_new_alloc()))
+         return false;
+
+      video_shader_write_conf_preset(conf, shader, path);
+
+      ret = config_file_write(conf, path, false);
+
+      config_file_free(conf);
+
+      return ret;
+   }
+}
+
+/**
+ * video_shader_read_reference_path:
+ * @path              : File to read
+ *
+ * Returns: the reference path of a preset if it exists,
+ * otherwise returns NULL.
+ *
+ * The returned string needs to be freed.
+ */
+char *video_shader_read_reference_path(const char *path)
+{
+   /* We want shader presets that point to other presets.
+    *
+    * While config_file_new_from_path_to_string() does support the
+    * #include directive, it will not rebase relative paths on
+    * the include path.
+    *
+    * There's a plethora of reasons why a general solution is hard:
+    *  - it's impossible to distinguish a generic string from a (relative) path
+    *  - config_file_new_from_path_to_string() doesn't return the include path,
+    *    so we cannot rebase afterwards
+    *  - #include is recursive, so we'd actually need to track the include path
+    *    for every setting
+    *
+    * So instead, we use a custom #reference directive, which is just a
+    * one-time/non-recursive redirection, e.g.
+    *
+    * #reference "<path to config>"
+    * or
+    * #reference <path to config>
+    *
+    * which we will load as config_file_new_from_path_to_string(<path to config>).
+    */
+   char *reference     = NULL;
+   config_file_t *conf = NULL;
+   RFILE *file         = NULL;
+   char *line          = NULL;
+
+   if (string_is_empty(path))
+     goto end;
+
+   if (!path_is_valid(path))
+     goto end;
+
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+     goto end;
+
+   line = filestream_getline(file);
+   filestream_close(file);
+
+   if (line && !strncmp("#reference", line, STRLEN_CONST("#reference")))
+   {
+      char *ref_path = line + STRLEN_CONST("#reference");
+
+      /* have at least 1 whitespace */
+      if (!isspace(*ref_path))
+         goto end;
+      ref_path++;
+
+      while (isspace(*ref_path))
+         ref_path++;
+
+      if (*ref_path == '\"')
+      {
+         /* remove "" */
+         char *p;
+         ref_path++;
+
+         p = ref_path;
+         while (*p != '\0' && *p != '\"')
+            p++;
+
+         if (*p == '\"')
+         {
+            *p = '\0';
+         }
+         else
+         {
+            /* if there's no second ", remove whitespace at the end */
+            p--;
+            while (isspace(*p))
+               *p-- = '\0';
+         }
+      }
+      else
+      {
+         /* remove whitespace at the end (e.g. carriage return) */
+         char *end = ref_path + strlen(ref_path) - 1;
+         while (isspace(*end))
+            *end-- = '\0';
+      }
+
+      if (string_is_empty(ref_path))
+         goto end;
+
+      reference = (char *)malloc(PATH_MAX_LENGTH);
+
+      if (!reference)
+         goto end;
+
+      /* rebase relative reference path */
+      if (!path_is_absolute(ref_path))
+      {
+         fill_pathname_resolve_relative(reference,
+               path, ref_path, PATH_MAX_LENGTH);
+      }
+      else
+         strlcpy(reference, ref_path, PATH_MAX_LENGTH);
+   }
+
+end:
+   if (line)
+      free(line);
+
+   return reference;
+}
+
+/**
+ * video_shader_read_preset:
+ * @path              : File to read
+ *
+ * Reads a preset from disk.
+ * If the preset is a reference preset, the referenced preset
+ * is loaded instead.
+ *
+ * Returns the read preset as a config object.
+ *
+ * The returned config object needs to be freed.
+ **/
+config_file_t *video_shader_read_preset(const char *path)
+{
+   config_file_t *conf;
+   char *reference = video_shader_read_reference_path(path);
+   if (reference)
+   {
+      conf = config_file_new_from_path_to_string(reference);
+      free(reference);
+   }
+   else
+      conf = config_file_new_from_path_to_string(path);
+
+   return conf;
+}
+
+/**
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -745,7 +973,7 @@ static void make_relative_path_portable(char *path)
  * relative to it.
  **/
 void video_shader_write_conf_preset(config_file_t *conf,
-      struct video_shader *shader, const char *preset_path)
+      const struct video_shader *shader, const char *preset_path)
 {
    unsigned i;
    char key[64];

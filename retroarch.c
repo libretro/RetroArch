@@ -2222,11 +2222,14 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       retroarch_set_runtime_shader_preset(preset_path);
 
       /* reflect in shader manager */
-      menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false);
+      if (menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false))
+         if (!string_is_empty(preset_path))
+            menu_shader_set_modified(false);
 
       /* Display message */
       snprintf(msg, sizeof(msg),
-            "Shader: \"%s\"", preset_file ? preset_file : "(null)");
+            preset_file ? "Shader: \"%s\"" : "Shader: %s",
+            preset_file ? preset_file : "None");
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_set_message(msg);
@@ -2236,7 +2239,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_APPLYING_SHADER),
-            preset_path);
+            preset_path ? preset_path : "null");
    }
    else
    {
@@ -2248,7 +2251,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       /* Display error message */
       snprintf(msg, sizeof(msg), "%s %s",
             msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
-            preset_file ? preset_file : "(null)");
+            preset_file ? preset_file : "null");
 
       runloop_msg_queue_push(
             msg, 1, 180, true, NULL,

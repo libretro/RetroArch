@@ -1610,6 +1610,8 @@ static int generic_action_ok(const char *path,
                      action_path,
                      sizeof(shader_pass->source.path));
                video_shader_resolve_parameters(NULL, shader);
+
+               menu_shader_set_modified(true);
             }
          }
 #endif
@@ -2591,7 +2593,7 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
-   if (str && *str)
+   if (!string_is_empty(str))
    {
       rarch_setting_t *setting = NULL;
       bool                 ret = false;
@@ -2607,7 +2609,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       }
       else if (!string_is_empty(label))
          ret = menu_shader_manager_save_preset(menu_shader_get(),
-               str, false, false);
+               str, true);
 
       if (ret)
          runloop_msg_queue_push(
@@ -2703,73 +2705,26 @@ static int generic_action_ok_shader_preset_save(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
-   char tmp[PATH_MAX_LENGTH];
-   settings_t *settings             = config_get_ptr();
-   struct retro_system_info *system = runloop_get_libretro_system_info();
-   const char *core_name            = system ? system->library_name : NULL;
-
-   directory[0] = file[0] = tmp[0] = '\0';
-
-   if (action_type != ACTION_OK_SHADER_PRESET_SAVE_GLOBAL)
-   {
-      if (!string_is_empty(core_name))
-      {
-         fill_pathname_join(
-               tmp,
-               settings->paths.directory_video_shader,
-               "presets",
-               sizeof(tmp));
-         fill_pathname_join(
-               directory,
-               tmp,
-               core_name,
-               sizeof(directory));
-      }
-
-      if (!path_is_directory(directory))
-          path_mkdir(directory);
-   }
-   else
-   {
-      fill_pathname_join(
-            directory,
-            settings->paths.directory_video_shader,
-            "presets",
-            sizeof(directory));
-
-      if (!path_is_directory(directory))
-          path_mkdir(directory);
-
-      fill_pathname_join(
-            file,
-            directory,
-            "global",
-            sizeof(file));
-   }
-
+   enum auto_shader_type preset_type;
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_SAVE_GLOBAL:
+         preset_type = SHADER_PRESET_GLOBAL;
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_CORE:
-         if (!string_is_empty(core_name))
-            fill_pathname_join(file, directory, core_name, sizeof(file));
-         break;
-      case ACTION_OK_SHADER_PRESET_SAVE_GAME:
-         {
-            const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-            fill_pathname_join(file, directory, game_name, sizeof(file));
-         }
+         preset_type = SHADER_PRESET_CORE;
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
-         fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-         fill_pathname_join(file, directory, tmp, sizeof(file));
+         preset_type = SHADER_PRESET_PARENT;
          break;
+      case ACTION_OK_SHADER_PRESET_SAVE_GAME:
+         preset_type = SHADER_PRESET_GAME;
+         break;
+      default:
+         return 0;
    }
 
-   if (menu_shader_manager_save_preset(menu_shader_get(), file, false, true))
+   if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true,

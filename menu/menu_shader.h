@@ -24,6 +24,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum auto_shader_type
+{
+   SHADER_PRESET_GLOBAL,
+   SHADER_PRESET_CORE,
+   SHADER_PRESET_PARENT,
+   SHADER_PRESET_GAME
+};
+
 struct video_shader *menu_shader_get(void);
 
 void menu_shader_manager_free(void);
@@ -49,15 +57,32 @@ bool menu_shader_manager_set_preset(
       enum rarch_shader_type type, const char *preset_path, bool apply);
 
 /**
+ * menu_shader_manager_save_auto_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader as an auto-shader to it's appropriate path:
+ *    SHADER_PRESET_GLOBAL: <shader dir>/presets/global
+ *    SHADER_PRESET_CORE:   <shader dir>/presets/<core name>/<core name>
+ *    SHADER_PRESET_PARENT: <shader dir>/presets/<core name>/<parent>
+ *    SHADER_PRESET_GAME:   <shader dir>/presets/<core name>/<game name>
+ * Needs to be consistent with retroarch_load_shader_preset()
+ * Auto-shaders will be saved as a reference if possible
+ **/
+bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
+      enum auto_shader_type type, bool apply);
+
+/**
  * menu_shader_manager_save_preset:
+ * @shader                   : shader to save
  * @basename                 : basename of preset
  * @apply                    : immediately set preset after saving
  *
  * Save a shader preset to disk.
  **/
-bool menu_shader_manager_save_preset(
-      struct video_shader *shader,
-      const char *basename, bool apply, bool fullpath);
+bool menu_shader_manager_save_preset(const struct video_shader *shader,
+      const char *basename, bool apply);
 
 /**
  * menu_shader_manager_get_type:
@@ -90,6 +115,8 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
       unsigned i);
+
+void menu_shader_set_modified(bool modified);
 
 RETRO_END_DECLS
 

@@ -51,10 +51,10 @@ extern "C" {
 
 enum
 {
-   SHADER_PRESET_SAVE_CORE = 0,
-   SHADER_PRESET_SAVE_GAME,
+   SHADER_PRESET_SAVE_GLOBAL = 0,
+   SHADER_PRESET_SAVE_CORE,
    SHADER_PRESET_SAVE_PARENT,
-   SHADER_PRESET_SAVE_GLOBAL,
+   SHADER_PRESET_SAVE_GAME,
    SHADER_PRESET_SAVE_NORMAL
 };
 
@@ -263,6 +263,8 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
             if (video_shader)
                video_shader->pass[pass].filter = filter;
 
+            menu_shader_set_modified(true);
+
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
       }
@@ -316,6 +318,8 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                video_shader->pass[pass].fbo.scale_y = scale;
                video_shader->pass[pass].fbo.valid = scale;
             }
+
+            menu_shader_set_modified(true);
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -393,6 +397,8 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
+   menu_shader_set_modified(true);
+
    reload();
 }
 
@@ -465,6 +471,8 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass - 1], &menu_shader->pass[pass], sizeof(struct video_shader_pass));
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
+
+   menu_shader_set_modified(true);
 
    reload();
 }
@@ -647,6 +655,8 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    else
       return;
 
+   menu_shader_set_modified(true);
+
    shader_pass = &menu_shader->pass[menu_shader->passes - 1];
 
    if (!shader_pass)
@@ -679,76 +689,35 @@ void ShaderParamsDialog::onShaderSavePresetAsClicked()
 
 void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type)
 {
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
-   char tmp[PATH_MAX_LENGTH];
-   settings_t *settings             = config_get_ptr();
-   struct retro_system_info *system = runloop_get_libretro_system_info();
-   const char *core_name            = system ? system->library_name : NULL;
-
-   directory[0] = file[0] = tmp[0] = '\0';
-
-   if (action_type != SHADER_PRESET_SAVE_GLOBAL)
-   {
-      if (!string_is_empty(core_name))
-      {
-         fill_pathname_join(
-               tmp,
-               settings->paths.directory_video_shader,
-               "presets",
-               sizeof(tmp));
-         fill_pathname_join(
-               directory,
-               tmp,
-               core_name,
-               sizeof(directory));
-      }
-
-      if (!path_is_directory(directory))
-          path_mkdir(directory);
-   }
-   else
-   {
-      fill_pathname_join(
-            directory,
-            settings->paths.directory_video_shader,
-            "presets",
-            sizeof(directory));
-
-      if (!path_is_directory(directory))
-          path_mkdir(directory);
-
-      fill_pathname_join(
-            file,
-            directory,
-            "global",
-            sizeof(file));
-   }
+   bool ret;
+   enum auto_shader_type preset_type;
 
    switch (action_type)
    {
+      case SHADER_PRESET_SAVE_GLOBAL:
+         preset_type = SHADER_PRESET_GLOBAL;
+         break;
       case SHADER_PRESET_SAVE_CORE:
-         if (!string_is_empty(core_name))
-            fill_pathname_join(file, directory, core_name, sizeof(file));
+         preset_type = SHADER_PRESET_PARENT;
+         break;
+      case SHADER_PRESET_SAVE_PARENT:
+         preset_type = SHADER_PRESET_PARENT;
          break;
       case SHADER_PRESET_SAVE_GAME:
-         {
-            const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-            fill_pathname_join(file, directory, game_name, sizeof(file));
-            break;
-         }
-      case SHADER_PRESET_SAVE_PARENT:
-         fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-         fill_pathname_join(file, directory, tmp, sizeof(file));
+         preset_type = SHADER_PRESET_GAME;
          break;
       case SHADER_PRESET_SAVE_NORMAL:
-      default:
-         if (!string_is_empty(path))
-            strlcpy(file, path, sizeof(file));
          break;
+      default:
+         return;
    }
 
-   if (menu_shader_manager_save_preset(menu_shader_get(), file, false, true))
+   if (action_type == SHADER_PRESET_SAVE_NORMAL)
+      ret = menu_shader_manager_save_preset(menu_shader_get(), path, true);
+   else
+      ret = menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true);
+
+   if (ret)
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true, NULL,
@@ -766,22 +735,22 @@ void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type
 
 void ShaderParamsDialog::onShaderSaveGlobalPresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_SAVE_GLOBAL);
+   saveShaderPreset(NULL, SHADER_PRESET_GLOBAL);
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_SAVE_CORE);
+   saveShaderPreset(NULL, SHADER_PRESET_CORE);
 }
 
 void ShaderParamsDialog::onShaderSaveParentPresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_SAVE_PARENT);
+   saveShaderPreset(NULL, SHADER_PRESET_PARENT);
 }
 
 void ShaderParamsDialog::onShaderSaveGamePresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_SAVE_GAME);
+   saveShaderPreset(NULL, SHADER_PRESET_GAME);
 }
 
 void ShaderParamsDialog::onShaderClearAllPassesClicked()
@@ -794,8 +763,9 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
    if (!menu_shader)
       return;
 
-   while (menu_shader->passes > 0)
-      menu_shader->passes--;
+   menu_shader->passes = 0;
+
+   menu_shader_set_modified(true);
 
    onShaderApplyClicked();
 }
@@ -833,6 +803,8 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
       std::swap(menu_shader->pass[i], menu_shader->pass[i + 1]);
 
    menu_shader->passes--;
+
+   menu_shader_set_modified(true);
 
    onShaderApplyClicked();
 }
@@ -1230,10 +1202,6 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
       slider->setValue(value);
       slider->setProperty("param", parameter);
 
-      struct video_shader *video_shader = NULL;
-
-      getShaders(NULL, &video_shader);
-
       connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onShaderParamSliderValueChanged(int)));
 
       box->addWidget(slider);
@@ -1323,6 +1291,8 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          if (param)
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
       }
+
+      menu_shader_set_modified(true);
    }
 }
 
@@ -1386,6 +1356,8 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
             param->current = newValue;
          }
       }
+
+      menu_shader_set_modified(true);
    }
 
    if (spinBoxVariant.isValid())
@@ -1490,6 +1462,8 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
             slider->blockSignals(false);
          }
       }
+
+      menu_shader_set_modified(true);
    }
 }
 
@@ -1570,5 +1544,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
             slider->blockSignals(false);
          }
       }
+
+      menu_shader_set_modified(true);
    }
 }
