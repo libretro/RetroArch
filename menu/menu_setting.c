@@ -5040,60 +5040,6 @@ int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
-static int setting_handler(rarch_setting_t *setting, unsigned action)
-{
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         if (setting->action_up)
-            return setting->action_up(setting);
-         break;
-      case MENU_ACTION_DOWN:
-         if (setting->action_down)
-            return setting->action_down(setting);
-         break;
-      case MENU_ACTION_LEFT:
-         if (setting->action_left)
-         {
-            int ret = setting->action_left(setting, false);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
-            return ret;
-         }
-         break;
-      case MENU_ACTION_RIGHT:
-         if (setting->action_right)
-         {
-            int ret = setting->action_right(setting, false);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
-            return ret;
-         }
-         break;
-      case MENU_ACTION_SELECT:
-         if (setting->action_select)
-            return setting->action_select(setting, true);
-         break;
-      case MENU_ACTION_OK:
-         if (setting->action_ok)
-            return setting->action_ok(setting, false);
-         break;
-      case MENU_ACTION_CANCEL:
-         if (setting->action_cancel)
-            return setting->action_cancel(setting);
-         break;
-      case MENU_ACTION_START:
-         if (setting->action_start)
-            return setting->action_start(setting);
-         break;
-   }
-
-   return -1;
-}
-
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
@@ -5135,8 +5081,63 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
-         if (setting_handler(setting, action) == 0)
-            return menu_setting_generic(setting, wraparound);
+         {
+            int ret = -1;
+            switch (action)
+            {
+               case MENU_ACTION_UP:
+                  if (setting->action_up)
+                     ret = setting->action_up(setting);
+                  break;
+               case MENU_ACTION_DOWN:
+                  if (setting->action_down)
+                     ret = setting->action_down(setting);
+                  break;
+               case MENU_ACTION_LEFT:
+                  if (setting->action_left)
+                  {
+                     ret = setting->action_left(setting, false);
+                     menu_driver_ctl(
+                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
+                           NULL);
+                     menu_driver_ctl(
+                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
+                           NULL);
+                  }
+                  break;
+               case MENU_ACTION_RIGHT:
+                  if (setting->action_right)
+                  {
+                     ret = setting->action_right(setting, false);
+                     menu_driver_ctl(
+                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
+                           NULL);
+                     menu_driver_ctl(
+                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
+                           NULL);
+                  }
+                  break;
+               case MENU_ACTION_SELECT:
+                  if (setting->action_select)
+                     ret = setting->action_select(setting, true);
+                  break;
+               case MENU_ACTION_OK:
+                  if (setting->action_ok)
+                     ret = setting->action_ok(setting, false);
+                  break;
+               case MENU_ACTION_CANCEL:
+                  if (setting->action_cancel)
+                     ret = setting->action_cancel(setting);
+                  break;
+               case MENU_ACTION_START:
+                  if (setting->action_start)
+                     ret = setting->action_start(setting);
+                  break;
+            }
+
+            if (ret == 0)
+               return menu_setting_generic(setting, wraparound);
+         }
          break;
       default:
          break;
@@ -15260,7 +15261,17 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!setting)
                return false;
 
-            if (setting_handler(setting, MENU_ACTION_RIGHT) == -1)
+            if (setting->action_right)
+            {
+               int ret = setting->action_right(setting, false);
+               menu_driver_ctl(
+                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+               menu_driver_ctl(
+                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+               if (ret == -1)
+                  return false;
+            }
+            else
                return false;
          }
          break;
