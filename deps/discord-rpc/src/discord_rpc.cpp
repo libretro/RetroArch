@@ -247,16 +247,17 @@ static void Discord_UpdateConnection(void)
 
 static bool RegisterForEvent(const char* evtName)
 {
-    auto qmessage = SendQueue.GetNextAddMessage();
-    if (qmessage) {
-        qmessage->length =
-          JsonWriteSubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
-        SendQueue.CommitAdd();
-        if (IoThread)
-           IoThread->Notify();
-        return true;
-    }
-    return false;
+   auto qmessage = SendQueue.GetNextAddMessage();
+   if (qmessage)
+   {
+      qmessage->length =
+         JsonWriteSubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
+      SendQueue.CommitAdd();
+      if (IoThread)
+         IoThread->Notify();
+      return true;
+   }
+   return false;
 }
 
 static bool DeregisterForEvent(const char* evtName)
@@ -279,17 +280,15 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
                                                   const char* optionalSteamId)
 {
     IoThread = new (std::nothrow) IoThreadHolder();
-    if (IoThread == nullptr) {
+    if (IoThread == nullptr)
         return;
-    }
 
-    if (autoRegister) {
-        if (optionalSteamId && optionalSteamId[0]) {
-            Discord_RegisterSteamGame(applicationId, optionalSteamId);
-        }
-        else {
-            Discord_Register(applicationId, nullptr);
-        }
+    if (autoRegister)
+    {
+       if (optionalSteamId && optionalSteamId[0])
+          Discord_RegisterSteamGame(applicationId, optionalSteamId);
+       else
+          Discord_Register(applicationId, nullptr);
     }
 
     Pid = GetProcessId();
@@ -297,29 +296,26 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
     {
         std::lock_guard<std::mutex> guard(HandlerMutex);
 
-        if (handlers) {
+        if (handlers)
             QueuedHandlers = *handlers;
-        }
-        else {
+        else
             QueuedHandlers = {};
-        }
 
         Handlers = {};
     }
 
-    if (Connection) {
+    if (Connection)
         return;
-    }
 
     Connection = RpcConnection::Create(applicationId);
     Connection->onConnect = [](JsonDocument& readyMessage)
     {
         Discord_UpdateHandlers(&QueuedHandlers);
-        auto data = GetObjMember(&readyMessage, "data");
-        auto user = GetObjMember(data, "user");
-        auto userId = GetStrMember(user, "id");
+        auto data     = GetObjMember(&readyMessage, "data");
+        auto user     = GetObjMember(data, "user");
+        auto userId   = GetStrMember(user, "id");
         auto username = GetStrMember(user, "username");
-        auto avatar = GetStrMember(user, "avatar");
+        auto avatar   = GetStrMember(user, "avatar");
         if (userId && username)
         {
             StringCopy(connectedUser.userId, userId);
@@ -367,7 +363,8 @@ extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
     RpcConnection::Destroy(Connection);
 }
 
-extern "C" DISCORD_EXPORT void Discord_UpdatePresence(const DiscordRichPresence* presence)
+extern "C" DISCORD_EXPORT void 
+Discord_UpdatePresence(const DiscordRichPresence* presence)
 {
     {
         std::lock_guard<std::mutex> guard(PresenceMutex);
