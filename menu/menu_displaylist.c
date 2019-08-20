@@ -4513,6 +4513,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          {
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,                             PARSE_ACTION     },
+               {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                             PARSE_ACTION     },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,                                   PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,                                PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,                                   PARSE_ONLY_BOOL  },
@@ -4899,6 +4900,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   count++;
             }
          }
+         break;
+      case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
          break;
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
          {
@@ -6885,6 +6888,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
       case DISPLAYLIST_CORE_SETTINGS_LIST:
+      case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SOUNDS_LIST:
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
