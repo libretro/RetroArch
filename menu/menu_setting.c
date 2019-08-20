@@ -5605,10 +5605,7 @@ void general_read_handler(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
 
-   if (!setting)
-      return;
-
-   if (setting->enum_idx == MSG_UNKNOWN)
+   if (!setting || setting->enum_idx == MSG_UNKNOWN)
       return;
 
    switch (setting->enum_idx)
