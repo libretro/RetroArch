@@ -142,33 +142,14 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    switch (mode)
    {
       case ID_M_LOAD_CORE:
-      case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
             wchar_t title_wide[PATH_MAX];
             char title_cp[PATH_MAX];
-            const char *extensions  = NULL;
-            const char *title       = NULL;
-            const char *initial_dir = NULL;
             size_t converted        = 0;
-
-            switch (mode)
-            {
-               /* OPENFILENAME.lpstrFilter requires
-                * a NULL-separated list of name/ext
-                * pairs terminated by a second null at the end. */
-               case ID_M_LOAD_CORE:
-                  extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
-                  title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
-                  initial_dir = settings->paths.directory_libretro;
-                  break;
-               case ID_M_LOAD_CONTENT:
-                  extensions  = "All Files (*.*)\0*.*\0\0";
-                  title       = msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
-                  initial_dir = settings->paths.directory_menu_content;
-                  break;
-            }
+            const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
+            const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
+            const char *initial_dir = settings->paths.directory_libretro;
 
             /* Convert UTF8 to UTF16, then back to the
              * local code page.
@@ -185,16 +166,37 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      extensions, title_cp, initial_dir))
                break;
 
-            switch (mode)
-            {
-               case ID_M_LOAD_CORE:
-                  path_set(RARCH_PATH_CORE, win32_file);
-                  cmd         = CMD_EVENT_LOAD_CORE;
-                  break;
-               case ID_M_LOAD_CONTENT:
-                  win32_load_content_from_gui(win32_file);
-                  break;
-            }
+            path_set(RARCH_PATH_CORE, win32_file);
+            cmd         = CMD_EVENT_LOAD_CORE;
+         }
+         break;
+      case ID_M_LOAD_CONTENT:
+         {
+            char win32_file[PATH_MAX_LENGTH] = {0};
+            wchar_t title_wide[PATH_MAX];
+            char title_cp[PATH_MAX];
+            size_t converted        = 0;
+            const char *extensions  = "All Files (*.*)\0*.*\0\0";
+            const char *title       = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
+            const char *initial_dir = settings->paths.directory_menu_content;
+
+            /* Convert UTF8 to UTF16, then back to the
+             * local code page.
+             * This is needed for proper multi-byte
+             * string display until Unicode is
+             * fully supported.
+             */
+            MultiByteToWideChar(CP_UTF8, 0, title, -1,
+                  title_wide,
+                  sizeof(title_wide) / sizeof(title_wide[0]));
+            wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
+
+            if (!win32_browser(owner, win32_file, sizeof(win32_file),
+                     extensions, title_cp, initial_dir))
+               break;
+
+            win32_load_content_from_gui(win32_file);
          }
          break;
       case ID_M_RESET:
