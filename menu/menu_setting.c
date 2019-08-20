@@ -567,7 +567,8 @@ void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
             (*setting->value.target.sizet)/(1024*1024));
 }
 
-void setting_get_string_representation_uint_as_enum(rarch_setting_t *setting,
+static void setting_get_string_representation_uint_as_enum(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
@@ -585,30 +586,31 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
    if ( global )
    {
       if ( global->menu.action_press_time  > _21_SECONDS)
-         step = setting->step*1000000.0f ;
+         step = setting->step*1000000.0f;
       else if ( global->menu.action_press_time  > _18_SECONDS)
-         step = setting->step*100000.0f ;
+         step = setting->step*100000.0f;
       else if ( global->menu.action_press_time  > _15_SECONDS)
-         step = setting->step*10000.0f ;
+         step = setting->step*10000.0f;
       else if ( global->menu.action_press_time  > _12_SECONDS)
-         step = setting->step*1000.0f ;
+         step = setting->step*1000.0f;
       else if ( global->menu.action_press_time  > _9_SECONDS)
-         step = setting->step*100.0f ;
+         step = setting->step*100.0f;
       else if ( global->menu.action_press_time  > _6_SECONDS)
-         step = setting->step*10.0f ;
+         step = setting->step*10.0f;
       else if ( global->menu.action_press_time  > _3_SECONDS)
-         step = setting->step*5.0f ;
+         step = setting->step*5.0f;
       else
-         step = setting->step ;
+         step = setting->step;
    }
-   return step < setting->step ? setting->step : step ;
+   return step < setting->step ? setting->step : step;
 }
 
-int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound)
+int setting_uint_action_left_default(
+      rarch_setting_t *setting, bool wraparound)
 {
    double               min        = 0.0f;
    bool                 overflowed = false;
-   float                step       = 0.0f ;
+   float                step       = 0.0f;
 
    if (!setting)
       return -1;
@@ -617,12 +619,12 @@ int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   step = recalc_step_based_on_length_of_action(setting) ;
-
+   step       = recalc_step_based_on_length_of_action(setting);
    overflowed = step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
-      *setting->value.target.unsigned_integer = *setting->value.target.unsigned_integer - step;
+      *setting->value.target.unsigned_integer = 
+         *setting->value.target.unsigned_integer - step;
 
    if (setting->enforce_minrange)
    {
@@ -642,19 +644,18 @@ int setting_uint_action_left_default(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
-int setting_uint_action_right_default(rarch_setting_t *setting, bool wraparound)
+int setting_uint_action_right_default(
+      rarch_setting_t *setting, bool wraparound)
 {
    double               max  = 0.0f;
-   float                step = 0.0f ;
+   float                step = 0.0f;
 
    if (!setting)
       return -1;
 
-   max = setting->max;
-
-   (void)wraparound; /* TODO/FIXME - handle this */
-
-   step = recalc_step_based_on_length_of_action(setting) ;
+   max                       = setting->max;
+   step                      = 
+      recalc_step_based_on_length_of_action(setting);
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + step;
@@ -677,34 +678,36 @@ int setting_uint_action_right_default(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
-int setting_uint_action_right_with_refresh(rarch_setting_t *setting, bool wraparound)
+int setting_uint_action_right_with_refresh(
+      rarch_setting_t *setting, bool wraparound)
 {
-   int retval = setting_uint_action_right_default(setting, wraparound) ;
+   int retval        = setting_uint_action_right_default(setting, wraparound);
    bool refresh      = false;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   return retval ;
+   return retval;
 }
 
 int setting_uint_action_left_with_refresh(rarch_setting_t *setting, bool wraparound)
 {
-   int retval = setting_uint_action_left_default(setting, wraparound) ;
+   int retval = setting_uint_action_left_default(setting, wraparound);
    bool refresh      = false;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   return retval ;
+   return retval;
 
 }
 
-static int setting_size_action_left_default(rarch_setting_t *setting, bool wraparound)
+static int setting_size_action_left_default(
+      rarch_setting_t *setting, bool wraparound)
 {
    double               min        = 0.0f;
    bool                 overflowed = false;
-   float                step       = 0.0f ;
+   float                step       = 0.0f;
 
    if (!setting)
       return -1;
@@ -713,8 +716,7 @@ static int setting_size_action_left_default(rarch_setting_t *setting, bool wrapa
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   step = recalc_step_based_on_length_of_action(setting) ;
-
+   step       = recalc_step_based_on_length_of_action(setting);
    overflowed = step > *setting->value.target.sizet;
 
    if (!overflowed)
@@ -738,10 +740,11 @@ static int setting_size_action_left_default(rarch_setting_t *setting, bool wrapa
    return 0;
 }
 
-static int setting_size_action_right_default(rarch_setting_t *setting, bool wraparound)
+static int setting_size_action_right_default(
+      rarch_setting_t *setting, bool wraparound)
 {
    double               max  = 0.0f;
-   float                step = 0.0f ;
+   float                step = 0.0f;
 
    if (!setting)
       return -1;
@@ -750,7 +753,7 @@ static int setting_size_action_right_default(rarch_setting_t *setting, bool wrap
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   step = recalc_step_based_on_length_of_action(setting) ;
+   step = recalc_step_based_on_length_of_action(setting);
 
    *setting->value.target.sizet =
       *setting->value.target.sizet + step;
@@ -4606,15 +4609,15 @@ static void setting_get_string_representation_uint_cheat_browse_address(rarch_se
    unsigned int address      = cheat_manager_state.browse_address;
    unsigned int address_mask = 0;
    unsigned int prev_val     = 0;
-   unsigned int curr_val     = 0 ;
+   unsigned int curr_val     = 0;
 
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 
-   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
 
-   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
+   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
 
 }
 
@@ -5962,7 +5965,7 @@ void general_write_handler(rarch_setting_t *setting)
          {
             rarch_setting_t *buffer_size_setting = menu_setting_find_enum(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
             if (buffer_size_setting)
-               buffer_size_setting->step = (*setting->value.target.unsigned_integer)*1024*1024 ;
+               buffer_size_setting->step = (*setting->value.target.unsigned_integer)*1024*1024;
          }
          break;
       case MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE:
@@ -5970,22 +5973,22 @@ void general_write_handler(rarch_setting_t *setting)
             rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_VALUE);
             if (setting)
             {
-               *(setting->value.target.unsigned_integer) = 0 ;
+               *(setting->value.target.unsigned_integer) = 0;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE);
             if (setting)
             {
-               *setting->value.target.unsigned_integer = 0 ;
+               *setting->value.target.unsigned_integer = 0;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
             if (setting)
             {
                int max_bit_position;
-               *setting->value.target.unsigned_integer = 0 ;
-               max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
-               setting->max     = max_bit_position ;
+               *setting->value.target.unsigned_integer = 0;
+               max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0;
+               setting->max     = max_bit_position;
             }
 
          }
@@ -5995,19 +5998,19 @@ void general_write_handler(rarch_setting_t *setting)
             rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT);
             if (setting)
             {
-               *setting->value.target.unsigned_integer = 0 ;
+               *setting->value.target.unsigned_integer = 0;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS);
             if (setting)
             {
-               *setting->value.target.unsigned_integer = 0 ;
+               *setting->value.target.unsigned_integer = 0;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS);
             if (setting)
             {
-               *setting->value.target.unsigned_integer = 0 ;
+               *setting->value.target.unsigned_integer = 0;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
 
@@ -7947,7 +7950,7 @@ static bool setting_append_list(
          {
             int max_bit_position;
             if (!cheat_manager_state.cheats)
-               break ;
+               break;
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS), parent_group);
 
@@ -7957,7 +7960,7 @@ static bool setting_append_list(
 
             config_uint_cbs(cheat_manager_state.working_cheat.idx, CHEAT_IDX,
                   NULL,NULL,
-                  0,&setting_get_string_representation_uint,0,cheat_manager_get_size()-1,1) ;
+                  0,&setting_get_string_representation_uint,0,cheat_manager_get_size()-1,1);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -8004,8 +8007,9 @@ static bool setting_append_list(
 
             config_uint_cbs(cheat_manager_state.working_cheat.handler, CHEAT_HANDLER,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-                  MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,&setting_get_string_representation_uint_as_enum,
-                  CHEAT_HANDLER_TYPE_EMU,CHEAT_HANDLER_TYPE_RETRO,1) ;
+                  MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
+                  &setting_get_string_representation_uint_as_enum,
+                  CHEAT_HANDLER_TYPE_EMU,CHEAT_HANDLER_TYPE_RETRO,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_STRING(
@@ -8023,29 +8027,31 @@ static bool setting_append_list(
 
             config_uint_cbs(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-                  MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
-                  0,5,1) ;
+                  MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+                  &setting_get_string_representation_uint_as_enum,
+                  0,5,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.cheat_type, CHEAT_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
-                  CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1) ;
+                  MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
+                  &setting_get_string_representation_uint_as_enum,
+                  CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-                  0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1);
 
-            max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
+            max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0;
             config_uint_cbs(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -8064,52 +8070,54 @@ static bool setting_append_list(
 
             config_uint_cbs(cheat_manager_state.working_cheat.repeat_count, CHEAT_REPEAT_COUNT,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_address, CHEAT_REPEAT_ADD_TO_ADDRESS,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_value, CHEAT_REPEAT_ADD_TO_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,0xFFFF,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,0xFFFF,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
-                  RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_END_LIST-1,1) ;
+                  MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
+                  &setting_get_string_representation_uint_as_enum,
+                  RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_END_LIST-1,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  MENU_ENUM_LABEL_RUMBLE_PORT_0,&setting_get_string_representation_uint_as_enum,
-                  0,16,1) ;
+                  MENU_ENUM_LABEL_RUMBLE_PORT_0,
+                  &setting_get_string_representation_uint_as_enum,
+                  0,16,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_strength, CHEAT_RUMBLE_PRIMARY_STRENGTH,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,65535,1);
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_duration, CHEAT_RUMBLE_PRIMARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_uint,0,5000,1) ;
+                  0,&setting_get_string_representation_uint,0,5000,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_strength, CHEAT_RUMBLE_SECONDARY_STRENGTH,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
+                  0,&setting_get_string_representation_hex_and_uint,0,65535,1);
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_duration, CHEAT_RUMBLE_SECONDARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_uint,0,5000,1) ;
+                  0,&setting_get_string_representation_uint,0,5000,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             END_SUB_GROUP(list, list_info, parent_group);
@@ -8118,7 +8126,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CHEAT_SEARCH:
          if (!cheat_manager_state.cheats)
-            break ;
+            break;
 
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS), parent_group);
 
@@ -8128,8 +8136,9 @@ static bool setting_append_list(
 
          config_uint_cbs(cheat_manager_state.search_bit_size, CHEAT_START_OR_RESTART,
                setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-               MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
-               0,5,1) ;
+               MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+               &setting_get_string_representation_uint_as_enum,
+               0,5,1);
          (*list)[list_info->index - 1].action_ok = &cheat_manager_initialize_memory;
 
          CONFIG_BOOL(
