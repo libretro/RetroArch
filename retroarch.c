@@ -18167,18 +18167,19 @@ void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   if (video_driver_scaler_ptr && data &&
-         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) &&
-         (data != RETRO_HW_FRAME_BUFFER_VALID))
+   if (
+            video_driver_scaler_ptr 
+         && data 
+         && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) 
+         && (data != RETRO_HW_FRAME_BUFFER_VALID)
+         && video_pixel_frame_scale(
+            video_driver_scaler_ptr->scaler,
+            video_driver_scaler_ptr->scaler_out,
+            data, width, height, pitch)
+      )
    {
-      if (video_pixel_frame_scale(
-               video_driver_scaler_ptr->scaler,
-               video_driver_scaler_ptr->scaler_out,
-               data, width, height, pitch))
-      {
-         data                = video_driver_scaler_ptr->scaler_out;
-         pitch               = video_driver_scaler_ptr->scaler->out_stride;
-      }
+      data                = video_driver_scaler_ptr->scaler_out;
+      pitch               = video_driver_scaler_ptr->scaler->out_stride;
    }
 
    if (data)
@@ -23237,19 +23238,19 @@ static bool input_driver_toggle_button_combo(
 static bool menu_display_libretro_running(void)
 {
    settings_t *settings = configuration_settings;
-   if (!settings->bools.menu_pause_libretro)
-   {
-      bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
-      if (rarch_is_inited && !core_type_is_dummy)
-         return true;
-   }
-   return false;
+   bool check           = 
+         !settings->bools.menu_pause_libretro
+      && rarch_is_inited
+      && (current_core_type != CORE_TYPE_DUMMY);
+   return check;
 }
 
 /* Display the libretro core's framebuffer onscreen. */
 static bool menu_display_libretro(void)
 {
-   video_driver_set_texture_enable(true, false);
+   if (video_driver_poke && video_driver_poke->set_texture_enable)
+      video_driver_poke->set_texture_enable(video_driver_data,
+            true, false);
 
    if (menu_display_libretro_running())
    {
