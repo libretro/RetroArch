@@ -38,6 +38,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
 
@@ -144,8 +145,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_LOAD_CORE:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
-            wchar_t title_wide[PATH_MAX];
-            char title_cp[PATH_MAX];
+            char    *title_cp       = NULL;
             size_t converted        = 0;
             const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
             const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
@@ -157,15 +157,25 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * string display until Unicode is
              * fully supported.
              */
-            MultiByteToWideChar(CP_UTF8, 0, title, -1,
-                  title_wide,
-                  sizeof(title_wide) / sizeof(title_wide[0]));
-            wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
+            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+
+            if (title_wide)
+               title_cp             = utf16_to_utf8_string_alloc(title_wide);
 
             if (!win32_browser(owner, win32_file, sizeof(win32_file),
                      extensions, title_cp, initial_dir))
+            {
+               if (title_wide)
+                  free(title_wide);
+               if (title_cp)
+                  free(title_cp);
                break;
+            }
 
+            if (title_wide)
+               free(title_wide);
+            if (title_cp)
+               free(title_cp);
             path_set(RARCH_PATH_CORE, win32_file);
             cmd         = CMD_EVENT_LOAD_CORE;
          }
@@ -173,8 +183,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
-            wchar_t title_wide[PATH_MAX];
-            char title_cp[PATH_MAX];
+            char *title_cp          = NULL;
             size_t converted        = 0;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
@@ -187,15 +196,25 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * string display until Unicode is
              * fully supported.
              */
-            MultiByteToWideChar(CP_UTF8, 0, title, -1,
-                  title_wide,
-                  sizeof(title_wide) / sizeof(title_wide[0]));
-            wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
+            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+
+            if (title_wide)
+               title_cp             = utf16_to_utf8_string_alloc(title_wide);
 
             if (!win32_browser(owner, win32_file, sizeof(win32_file),
                      extensions, title_cp, initial_dir))
+            {
+               if (title_wide)
+                  free(title_wide);
+               if (title_cp)
+                  free(title_cp);
                break;
+            }
 
+            if (title_wide)
+               free(title_wide);
+            if (title_cp)
+               free(title_cp);
             win32_load_content_from_gui(win32_file);
          }
          break;
