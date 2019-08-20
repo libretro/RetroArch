@@ -144,11 +144,7 @@ FONTS
 #include "../deps/discord-rpc/src/serialization.cpp"
 
 #if defined(_WIN32)
-#include "../deps/discord-rpc/src/discord_register_win.cpp"
 #include "../deps/discord-rpc/src/connection_win.cpp"
-#endif
-#if defined(__linux__)
-#include "../deps/discord-rpc/src/discord_register_linux.cpp"
 #endif
 #if defined(__unix__) || defined(__APPLE__)
 #include "../deps/discord-rpc/src/connection_unix.cpp"
