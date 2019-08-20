@@ -117,7 +117,7 @@ static bool win32_browser(
        * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
-      browser_state.startdir = strdup("");
+      browser_state.startdir = strdup(initial_dir);
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
