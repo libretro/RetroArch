@@ -55,7 +55,6 @@
 #include "frontend/frontend_driver.h"
 #endif
 
-#include "file_path_special.h"
 #include "verbosity.h"
 
 #ifdef HAVE_QT
@@ -66,6 +65,15 @@
 #include "config.def.h"
 #else
 #define DEFAULT_FRONTEND_LOG_LEVEL 1
+#endif
+
+#define FILE_PATH_LOG_INFO  "[INFO]"
+#define FILE_PATH_LOG_ERROR "[ERROR]"
+#define FILE_PATH_LOG_WARN  "[WARN]"
+#if defined(IS_SALAMANDER)
+#define FILE_PATH_PROGRAM_NAME "RetroArch Salamander"
+#else
+#define FILE_PATH_PROGRAM_NAME "RetroArch"
 #endif
 
 /* If this is non-NULL. RARCH_LOG and friends
@@ -174,8 +182,11 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-   if (verbosity_log_level <= 1)
+   if (verbosity_log_level > 1)
+      return;
+
    {
+      const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
       vprintf(fmt, ap);
@@ -185,7 +196,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       if (!asl_initialized)
       {
          asl_client      = asl_open(
-               file_path_str(FILE_PATH_PROGRAM_NAME),
+               FILE_PATH_PROGRAM_NAME,
                "com.apple.console",
                ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
          asl_initialized = 1;
@@ -204,18 +215,16 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
       msg_new[0] = buffer[0] = '\0';
       snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-            file_path_str(FILE_PATH_PROGRAM_NAME),
-            tag ? tag : "",
-            fmt);
+            FILE_PATH_PROGRAM_NAME, tag_v, fmt);
       wvsprintf(buffer, msg_new, ap);
       OutputDebugStringA(buffer);
 #elif defined(ANDROID)
       int prio = ANDROID_LOG_INFO;
       if (tag)
       {
-         if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
+         if (string_is_equal(FILE_PATH_LOG_WARN, tag))
             prio = ANDROID_LOG_WARN;
-         else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
+         else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
             prio = ANDROID_LOG_ERROR;
       }
 
@@ -225,10 +234,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(log_file_fp);
       }
       else
-         __android_log_vprint(prio,
-               file_path_str(FILE_PATH_PROGRAM_NAME),
-               fmt,
-               ap);
+         __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
       FILE *fp = (FILE*)log_file_fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
@@ -254,7 +260,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
       if (fp)
       {
-         fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
+         fprintf(fp, "%s %s", tag_v, buffer);
          fflush(fp);
       }
 
@@ -271,8 +277,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
       if (fp)
       {
-         fprintf(fp, "%s ",
-               tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+         fprintf(fp, "%s ", tag_v);
          vfprintf(fp, fmt, ap);
          fflush(fp);
       }
@@ -331,7 +336,7 @@ void RARCH_LOG(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_LOG_V(file_path_str(FILE_PATH_LOG_INFO), fmt, ap);
+   RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
    va_end(ap);
 }
 
@@ -339,7 +344,7 @@ void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
-   RARCH_LOG_OUTPUT_V(file_path_str(FILE_PATH_LOG_INFO), msg, ap);
+   RARCH_LOG_OUTPUT_V(FILE_PATH_LOG_INFO, msg, ap);
    va_end(ap);
 }
 
@@ -353,7 +358,7 @@ void RARCH_WARN(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_WARN_V(file_path_str(FILE_PATH_LOG_WARN), fmt, ap);
+   RARCH_WARN_V(FILE_PATH_LOG_WARN, fmt, ap);
    va_end(ap);
 }
 
@@ -365,7 +370,7 @@ void RARCH_ERR(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_ERR_V(file_path_str(FILE_PATH_LOG_ERROR), fmt, ap);
+   RARCH_ERR_V(FILE_PATH_LOG_ERROR, fmt, ap);
    va_end(ap);
 }
 #endif

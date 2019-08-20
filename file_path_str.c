@@ -25,13 +25,6 @@ const char *file_path_str(enum file_path_enum enum_idx)
 
    switch (enum_idx)
    {
-      case FILE_PATH_PROGRAM_NAME:
-#if defined(IS_SALAMANDER)
-         str = "RetroArch Salamander";
-#else
-         str = "RetroArch";
-#endif
-         break;
       case FILE_PATH_DETECT:
          str = "DETECT";
          break;
@@ -43,15 +36,6 @@ const char *file_path_str(enum file_path_enum enum_idx)
          break;
       case FILE_PATH_NUL:
          str = "nul";
-         break;
-      case FILE_PATH_LOG_WARN:
-         str = "[WARN]";
-         break;
-      case FILE_PATH_LOG_ERROR:
-         str = "[ERROR]";
-         break;
-      case FILE_PATH_LOG_INFO:
-         str = "[INFO]";
          break;
       case FILE_PATH_CGP_EXTENSION:
          str = ".cgp";
