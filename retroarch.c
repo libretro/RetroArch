@@ -12549,22 +12549,14 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
  */
 static void input_keys_pressed(input_bits_t *p_new_state)
 {
-   unsigned i, port;
    rarch_joypad_info_t joypad_info;
+   unsigned i, port                             = 0;
    settings_t              *settings            = configuration_settings;
-   const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   uint8_t max_users                            = 1;
-   uint8_t port_max                             = 1;
+   const struct retro_keybind *binds            = input_config_binds[0];
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
 
-   for (i = 0; i < max_users; i++)
-   {
-      binds[i]                                  = input_config_binds[i];
-   }
-
-   for (port = 0; port < port_max; port++)
    {
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
@@ -12581,19 +12573,19 @@ static void input_keys_pressed(input_bits_t *p_new_state)
          if (     enable_hotkey && enable_hotkey->valid
                && current_input->input_state(
                   current_input_data, joypad_info,
-                  &binds[port], port,
+                  &binds, port,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
             input_driver_block_libretro_input = true;
          else
             input_driver_block_hotkey         = true;
       }
 
-      if (binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+      if (binds[RARCH_GAME_FOCUS_TOGGLE].valid)
       {
          const struct retro_keybind *focus_binds_auto =
             &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
          const struct retro_keybind *focus_normal     =
-            &binds[port][RARCH_GAME_FOCUS_TOGGLE];
+            &binds[RARCH_GAME_FOCUS_TOGGLE];
 
          /* Allows rarch_focus_toggle hotkey to still work
           * even though every hotkey is blocked */
@@ -12601,7 +12593,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
                   focus_normal, focus_binds_auto))
          {
             if (current_input->input_state(current_input_data, joypad_info,
-                     &binds[port], port,
+                     &binds, port,
                      RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
                input_driver_block_hotkey = false;
          }
@@ -12611,12 +12603,12 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    /* Check the libretro input first */
    {
       int16_t ret = current_input->input_state(current_input_data,
-            joypad_info, &binds[0], 0, RETRO_DEVICE_JOYPAD, 0,
+            joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          bool bit_pressed = !input_driver_block_libretro_input 
-            && binds[0][i].valid && (ret & (1 <<  i));
+            && binds[i].valid && (ret & (1 <<  i));
          if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
@@ -12627,9 +12619,9 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    /* Check the hotkeys */
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
-      bool bit_pressed = !input_driver_block_hotkey && binds[0][i].valid 
+      bool bit_pressed = !input_driver_block_hotkey && binds[i].valid 
          && current_input->input_state(current_input_data, joypad_info,
-               &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, i);
+               &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
       if (     bit_pressed 
             || BIT64_GET(lifecycle_state, i)
             || input_keys_pressed_other_sources(i, p_new_state))
