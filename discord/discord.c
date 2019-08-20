@@ -511,8 +511,3 @@ void discord_shutdown(void)
    Discord_Shutdown();
    discord_ready = false;
 }
-
-void discord_run_callbacks(void)
-{
-   Discord_RunCallbacks();
-}

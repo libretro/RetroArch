@@ -47,8 +47,6 @@ void discord_shutdown(void);
 
 void discord_update(enum discord_presence presence);
 
-void discord_run_callbacks(void);
-
 bool discord_is_ready(void);
 
 void discord_avatar_set_ready(bool ready);

@@ -101,6 +101,10 @@
 #include "switch_performance_profiles.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "deps/discord-rpc/include/discord_rpc.h"
+#endif
+
 #include "config.def.h"
 #include "config.def.keybinds.h"
 
@@ -24167,7 +24171,7 @@ int runloop_iterate(void)
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
-      discord_run_callbacks();
+      Discord_RunCallbacks();
 #endif
 
    if (runloop_frame_time.callback)
