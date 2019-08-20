@@ -12418,7 +12418,18 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
    }
 
    {
+      int16_t ret[MAX_USERS];
       /* Check the libretro input first */
+      for (port = 0; port < port_max; port++)
+      {
+         joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
+         joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
+         joypad_info.axis_threshold        = input_driver_axis_threshold;
+         ret[port]                         = current_input->input_state(current_input_data,
+               joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK);
+      }
+
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          bool bit_pressed    = false;
@@ -12427,15 +12438,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
          {
             for (port = 0; port < port_max; port++)
             {
-               const struct retro_keybind *mtkey = &input_config_binds[port][i];
-               if (!mtkey->valid)
-                  continue;
-               joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
-               joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
-               joypad_info.axis_threshold        = input_driver_axis_threshold;
-
-               if (current_input->input_state(current_input_data, joypad_info,
-                  &binds[0], joypad_info.joy_idx, RETRO_DEVICE_JOYPAD, 0, i))
+               if (binds[port][i].valid && ret[port] & (1 << i))
                {
                   bit_pressed = true;
                   break;
