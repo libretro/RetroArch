@@ -1959,7 +1959,9 @@ static void core_free_retro_game_info(struct retro_game_info *dest);
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
 
+#ifdef HAVE_NETWORKING
 static void rarch_send_debug_info(void);
+#endif
 static bool rarch_environment_cb(unsigned cmd, void *data);
 
 static bool driver_location_get_position(double *lat, double *lon,
