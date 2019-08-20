@@ -4989,12 +4989,6 @@ enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setti
    return setting->browser_selection_type;
 }
 
-static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
-{
-   if (list_info)
-      free(list_info);
-}
-
 static void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -5146,10 +5140,27 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
-      const char *label)
+/**
+ * menu_setting_find:
+ * @settings           : pointer to settings
+ * @name               : name of setting to search for
+ *
+ * Search for a setting with a specified name (@name).
+ *
+ * Returns: pointer to setting if found, NULL otherwise.
+ **/
+rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t **list = &setting;
+   rarch_setting_t *setting = NULL;
+   rarch_setting_t **list   = &setting;
+
+   if (!label)
+      return NULL;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting)
+      return NULL;
 
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
@@ -5173,13 +5184,22 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
    return NULL;
 }
 
-static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting,
-     enum msg_hash_enums enum_idx)
+rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 {
-   rarch_setting_t **list = &setting;
+   rarch_setting_t *setting = NULL;
+   rarch_setting_t **list   = &setting;
+
+   if (enum_idx == 0)
+      return NULL;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting)
+      return NULL;
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (setting->enum_idx == enum_idx && setting_get_type(setting) <= ST_GROUP)
+      if (  setting->enum_idx == enum_idx && 
+            setting_get_type(setting) <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
          if (string_is_empty(short_description))
@@ -5193,43 +5213,6 @@ static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting
    }
 
    return NULL;
-}
-
-/**
- * menu_setting_find:
- * @settings           : pointer to settings
- * @name               : name of setting to search for
- *
- * Search for a setting with a specified name (@name).
- *
- * Returns: pointer to setting if found, NULL otherwise.
- **/
-rarch_setting_t *menu_setting_find(const char *label)
-{
-   rarch_setting_t *setting = NULL;
-
-   if (!label)
-      return NULL;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
-
-   if (!setting)
-      return NULL;
-   return menu_setting_find_internal(setting, label);
-}
-
-rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
-{
-   rarch_setting_t *setting = NULL;
-
-   if (enum_idx == 0)
-      return NULL;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
-
-   if (!setting)
-      return NULL;
-   return menu_setting_find_internal_enum(setting, enum_idx);
 }
 
 int menu_setting_set_flags(rarch_setting_t *setting)
@@ -15207,7 +15190,8 @@ static rarch_setting_t *menu_setting_new(void)
 
    list             = menu_setting_new_internal(list_info);
 
-   menu_settings_info_list_free(list_info);
+   if (list_info)
+      free(list_info);
 
    list_info        = NULL;
 
