@@ -239,7 +239,17 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
-/* This file provides an abstraction of the currently displayed
+#define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
+
+#define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
+
+#define menu_list_get_stack_size(list, idx) ((list)->menu_stack[(idx)]->size)
+
+#define menu_entries_get_selection_buf_ptr_internal(idx) ((menu_entries_list) ? menu_list_get_selection(menu_entries_list, (unsigned)idx) : NULL)
+
+/* Menu entry interface -
+ *
+ * This provides an abstraction of the currently displayed
  * menu.
  *
  * It is organized into an event-based system where the UI companion
@@ -253,7 +263,7 @@ menu_handle_t *menu_driver_get_ptr(void)
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = NULL;
    rarch_setting_t *setting   = NULL;
    
@@ -372,7 +382,7 @@ unsigned menu_entry_get_type_new(menu_entry_t *entry)
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
@@ -384,7 +394,7 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 
 struct string_list *menu_entry_enum_values(uint32_t i)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
@@ -397,7 +407,7 @@ struct string_list *menu_entry_enum_values(uint32_t i)
 
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
@@ -406,7 +416,7 @@ void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 
 int32_t menu_entry_bind_index(uint32_t i)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
@@ -418,7 +428,7 @@ int32_t menu_entry_bind_index(uint32_t i)
 
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -429,7 +439,7 @@ void menu_entry_bind_key_set(uint32_t i, int32_t value)
 
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -440,7 +450,7 @@ void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 
 void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -451,7 +461,7 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 
 void menu_entry_pathdir_selected(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -462,7 +472,7 @@ void menu_entry_pathdir_selected(uint32_t i)
 
 bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -473,7 +483,7 @@ bool menu_entry_pathdir_allow_empty(uint32_t i)
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -484,7 +494,7 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -519,7 +529,7 @@ void menu_entry_get_value(menu_entry_t *entry, const char **value)
 
 void menu_entry_set_value(uint32_t i, const char *s)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -533,7 +543,7 @@ bool menu_entry_is_password(menu_entry_t *entry)
 
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -544,7 +554,7 @@ uint32_t menu_entry_num_has_range(uint32_t i)
 
 float menu_entry_num_min(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -554,7 +564,7 @@ float menu_entry_num_min(uint32_t i)
 
 float menu_entry_num_max(uint32_t i)
 {
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -569,7 +579,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    const char *path           = NULL;
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(stack_idx);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(stack_idx);
    file_list_t *list          = (userdata) ? (file_list_t*)userdata : selection_buf;
    bool path_enabled          = entry->path_enabled;
 
@@ -708,7 +718,7 @@ int menu_entry_action(menu_entry_t *entry,
 {
    int ret                    = 0;
    file_list_t *selection_buf =
-      menu_entries_get_selection_buf_ptr(0);
+      menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 
@@ -887,12 +897,6 @@ error:
    menu_list_free(list);
    return NULL;
 }
-
-#define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
-
-#define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
-
-#define menu_list_get_stack_size(list, idx) ((list)->menu_stack[(idx)]->size)
 
 static int menu_list_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
