@@ -239,6 +239,17 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
+size_t menu_navigation_get_selection(void)
+{
+   return menu_driver_selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   menu_driver_selection_ptr = val;
+}
+
+
 #define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
 #define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
@@ -691,7 +702,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
 bool menu_entry_is_currently_selected(unsigned id)
 {
-   return (id == menu_navigation_get_selection());
+   return id == menu_driver_selection_ptr;
 }
 
 /* Performs whatever actions are associated with menu entry 'i'.
@@ -705,7 +716,7 @@ int menu_entry_select(uint32_t i)
 {
    menu_entry_t     entry;
 
-   menu_navigation_set_selection(i);
+   menu_driver_selection_ptr = i;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
@@ -787,9 +798,9 @@ int menu_entry_action(menu_entry_t *entry,
    cbs = selection_buf ? (menu_file_list_cbs_t*)
       selection_buf->list[i].actiondata : NULL;
 
-   if (menu_entries_need_refresh())
+   if (cbs && cbs->action_refresh)
    {
-      if (cbs && cbs->action_refresh)
+      if (menu_entries_need_refresh())
       {
          bool refresh               = false;
          file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
@@ -956,12 +967,12 @@ static void menu_list_flush_stack(menu_list_t *list,
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      size_t new_selection_ptr = menu_navigation_get_selection();
+      size_t new_selection_ptr = menu_driver_selection_ptr;
 
       if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
          break;
 
-      menu_navigation_set_selection(new_selection_ptr);
+      menu_driver_selection_ptr = new_selection_ptr;
 
       menu_list = menu_list_get(list, (unsigned)idx);
 
@@ -1068,7 +1079,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 static bool menu_entries_refresh(file_list_t *list)
 {
    size_t list_size;
-   size_t selection  = menu_navigation_get_selection();
+   size_t selection  = menu_driver_selection_ptr;
 
    if (list->size)
       menu_entries_build_scroll_indices(list);
@@ -1077,8 +1088,8 @@ static bool menu_entries_refresh(file_list_t *list)
 
    if ((selection >= list_size) && list_size)
    {
-      size_t idx  = list_size - 1;
-      menu_navigation_set_selection(idx);
+      size_t idx                = list_size - 1;
+      menu_driver_selection_ptr = idx;
       menu_driver_navigation_set(true);
    }
    else if (!list_size)
@@ -3149,7 +3160,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       generic_action_ok_displaylist_push("", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-      menu_navigation_set_selection(0);
+      menu_driver_selection_ptr = 0;
 
       return true;
    }
@@ -3572,7 +3583,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
          {
-            size_t selection = menu_navigation_get_selection();
+            size_t selection = menu_driver_selection_ptr;
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
                return false;
@@ -3596,7 +3607,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
          {
-            size_t selection = menu_navigation_get_selection();
+            size_t selection = menu_driver_selection_ptr;
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_path)
                return false;
@@ -3615,7 +3626,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             bool *pending_push = (bool*)data;
 
             /* Always set current selection to first entry */
-            menu_navigation_set_selection(0);
+            menu_driver_selection_ptr = 0;
 
             /* menu_driver_navigation_set() will be called
              * at the next 'push'.
@@ -3646,7 +3657,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             {
                size_t idx  = menu_driver_selection_ptr + scroll_speed;
 
-               menu_navigation_set_selection(idx);
+               menu_driver_selection_ptr = idx;
                menu_driver_navigation_set(true);
             }
             else
@@ -3684,7 +3695,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   idx = 0;
             }
 
-            menu_navigation_set_selection(idx);
+            menu_driver_selection_ptr = idx;
             menu_driver_navigation_set(true);
 
             if (menu_driver_ctx->navigation_decrement)
@@ -3693,9 +3704,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
-            size_t menu_list_size = menu_entries_get_size();
-            size_t new_selection  = menu_list_size - 1;
-            menu_navigation_set_selection(new_selection);
+            size_t menu_list_size     = menu_entries_get_size();
+            size_t new_selection      = menu_list_size - 1;
+            menu_driver_selection_ptr = new_selection;
 
             if (menu_driver_ctx->navigation_set_last)
                menu_driver_ctx->navigation_set_last(menu_userdata);
@@ -3772,16 +3783,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    }
 
    return true;
-}
-
-size_t menu_navigation_get_selection(void)
-{
-   return menu_driver_selection_ptr;
-}
-
-void menu_navigation_set_selection(size_t val)
-{
-   menu_driver_selection_ptr = val;
 }
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
