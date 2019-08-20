@@ -1321,8 +1321,6 @@ static void retroarch_unset_runtime_shader_preset(void)
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
-#define FPS_UPDATE_INTERVAL 256
-
 #ifdef HAVE_THREADS
 #define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
 #else
@@ -18223,15 +18221,18 @@ void video_driver_frame(const void *data, unsigned width,
          strlcat(video_info.fps_text, frames_text, sizeof(video_info.fps_text));
       }
 
-      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
       {
-         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+         last_fps = TIME_TO_FPS(curr_time, new_time,
+               video_info.fps_update_interval);
 
-         strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
+         strlcpy(video_driver_window_title,
+               title, sizeof(video_driver_window_title));
 
          if (!string_is_empty(video_info.fps_text))
          {
-            strlcat(video_driver_window_title, "|| ", sizeof(video_driver_window_title));
+            strlcat(video_driver_window_title, "|| ",
+                  sizeof(video_driver_window_title));
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }
@@ -18509,6 +18510,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
+   video_info->fps_update_interval   = settings->uints.fps_update_interval;
    video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;

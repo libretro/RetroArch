@@ -7808,3 +7808,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
     "Sets log level for the frontend. If a log level issued by the frontend is below this value, it is ignored."
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+      "Framerate Update Interval (in frames)")
+MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+      "Framerate display will be updated at the set interval (in frames).")

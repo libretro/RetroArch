@@ -8386,6 +8386,20 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.fps_update_interval,
+                  MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+                  DEFAULT_FPS_UPDATE_INTERVAL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
+            menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_memory_show,

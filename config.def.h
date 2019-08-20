@@ -660,6 +660,9 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 #define DEFAULT_FPS_SHOW false
 
+/* FPS display will be updated at the set interval (in frames) */
+#define DEFAULT_FPS_UPDATE_INTERVAL 256
+
 /* Enables displaying the current frame count. */
 #define DEFAULT_FRAMECOUNT_SHOW false
 

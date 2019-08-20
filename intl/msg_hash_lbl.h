@@ -1977,3 +1977,5 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,
       "video_record_threads")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
       "gpu_index")
+MSG_HASH(MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,
+      "fps_update_interval")

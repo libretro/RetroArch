@@ -1157,6 +1157,7 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
 
+   unsigned fps_update_interval;
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;

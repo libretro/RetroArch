@@ -4675,6 +4675,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,            PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_STATISTICS_SHOW,              PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                  PARSE_ONLY_BOOL },
