@@ -578,8 +578,10 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (!list)
       return;
 
-   file_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
-         &entry->entry_idx);
+   path                       = list->list[i].path;
+   entry_label                = list->list[i].label;
+   entry->type                = list->list[i].type;
+   entry->entry_idx           = list->list[i].entry_idx;
 
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
@@ -988,11 +990,11 @@ static int menu_entries_elem_get_first_char(
    int ret          = 0;
    const char *path = NULL;
 
-   file_list_get_at_offset(list, offset, NULL, NULL, NULL, NULL);
-   file_list_get_alt_at_offset(list, offset, &path);
-
-   if (path)
-      ret = tolower((int)*path);
+   if (list)
+      if ((path = list->list[offset].alt
+         ? list->list[offset].alt 
+         : list->list[offset].path))
+         ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */
@@ -1022,9 +1024,8 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
    menu_navigation_add_scroll_index(0);
 
-   current        = menu_entries_elem_get_first_char(list, 0);
-
-   file_list_get_at_offset(list, 0, NULL, NULL, &type, NULL);
+   current                  = menu_entries_elem_get_first_char(list, 0);
+   type                     = list->list[0].type;
 
    if (type == FILE_TYPE_DIRECTORY)
       current_is_dir = true;
@@ -1034,8 +1035,8 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
       bool is_dir  = false;
       unsigned idx = (unsigned)i;
-      
-      file_list_get_at_offset(list, idx, NULL, NULL, &type, NULL);
+
+      type         = list->list[idx].type;
 
       if (type == FILE_TYPE_DIRECTORY)
          is_dir = true;
