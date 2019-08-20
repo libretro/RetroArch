@@ -971,7 +971,10 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       size_t *entry_idx, const char **alt)
 {
    file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
-   file_list_get_alt_at_offset(list, idx, alt);
+   if (list && alt)
+      *alt = list->list[idx].alt 
+         ? list->list[idx].alt 
+         : list->list[idx].path;
 }
 
 /**
