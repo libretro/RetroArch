@@ -3120,7 +3120,7 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (menu_driver_is_alive() && menu_driver_ctx->frame)
+   if (video_info->menu_is_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
