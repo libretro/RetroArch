@@ -335,6 +335,12 @@
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
 #endif
 
+#define DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT true
+
+#define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
+
+#define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
+
 static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;

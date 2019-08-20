@@ -470,6 +470,9 @@ default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,          
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_resume_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_restart_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_close_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
@@ -1379,6 +1382,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_GOTO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_resume_content);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_restart_content);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_close_content);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_take_screenshot);

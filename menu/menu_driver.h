@@ -513,10 +513,6 @@ void menu_driver_frame(video_frame_info_t *video_info);
 
 bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
 
-/* Is a background texture set for the current menu driver?  Should
- * return true for RGUI, for instance. */
-bool menu_driver_is_texture_set(void);
-
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
 bool menu_driver_list_clear(file_list_t *list);

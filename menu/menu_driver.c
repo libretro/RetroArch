@@ -3130,16 +3130,6 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
-/* Checks if the menu framebuffer is set.
- * This would usually only return true
- * for framebuffer-based menu drivers, like RGUI. */
-bool menu_driver_is_texture_set(void)
-{
-   if (menu_driver_ctx && menu_driver_ctx->set_texture)
-      return true;
-   return false;
-}
-
 /* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
 {

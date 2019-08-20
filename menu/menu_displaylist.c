@@ -1803,23 +1803,26 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
-            msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
-            MENU_ENUM_LABEL_RESUME_CONTENT,
-            MENU_SETTING_ACTION_RUN, 0, 0);
+      if (settings->bools.quick_menu_show_resume_content)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
+               msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
+               MENU_ENUM_LABEL_RESUME_CONTENT,
+               MENU_SETTING_ACTION_RUN, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
-            msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
-            MENU_ENUM_LABEL_RESTART_CONTENT,
-            MENU_SETTING_ACTION_RUN, 0, 0);
+      if (settings->bools.quick_menu_show_restart_content)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
+               msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
+               MENU_ENUM_LABEL_RESTART_CONTENT,
+               MENU_SETTING_ACTION_RUN, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
-            msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
-            MENU_ENUM_LABEL_CLOSE_CONTENT,
-            MENU_SETTING_ACTION_CLOSE, 0, 0);
+      if (settings->bools.quick_menu_show_close_content)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
+               msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
+               MENU_ENUM_LABEL_CLOSE_CONTENT,
+               MENU_SETTING_ACTION_CLOSE, 0, 0);
 
       if (settings->bools.quick_menu_show_take_screenshot)
       {
@@ -4900,6 +4903,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,   PARSE_ONLY_BOOL},

@@ -11780,7 +11780,14 @@ static unsigned menu_event(
       size_t fb_pitch;
       unsigned fb_width, fb_height;
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      int pointer_device                           = menu_driver_is_texture_set()
+      menu_handle_t *menu_data                     = menu_driver_get_ptr();
+      /* Is a background texture set for the current menu driver?
+       * Checks if the menu framebuffer is set.
+       * This would usually only return true
+       * for framebuffer-based menu drivers, like RGUI. */
+      int pointer_device                           = (menu_data 
+            && menu_data->driver_ctx 
+            && menu_data->driver_ctx->set_texture)
          ?
          RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
 
