@@ -9119,3 +9119,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
     "Show or hide elements on the Settings screen."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+    "Show Input"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+    "Show or hide 'Input Settings' on the Settings screen."
+    )

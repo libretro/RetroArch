@@ -1987,3 +1987,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
       "quick_menu_show_restart_content")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
       "quick_menu_show_close_content")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
+      "settings_show_input")

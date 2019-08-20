@@ -4779,34 +4779,36 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_SETTINGS_ALL:
          {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_DRIVER_SETTINGS, PARSE_ACTION},
-               {MENU_ENUM_LABEL_VIDEO_SETTINGS,  PARSE_ACTION},
-               {MENU_ENUM_LABEL_AUDIO_SETTINGS,  PARSE_ACTION},
-               {MENU_ENUM_LABEL_INPUT_SETTINGS,  PARSE_ACTION},
-               {MENU_ENUM_LABEL_LATENCY_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_CORE_SETTINGS,   PARSE_ACTION},
-               {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, PARSE_ACTION},
-               {MENU_ENUM_LABEL_SAVING_SETTINGS, PARSE_ACTION},
-               {MENU_ENUM_LABEL_LOGGING_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS, PARSE_ACTION},
-               {MENU_ENUM_LABEL_RECORDING_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,  PARSE_ACTION},
-               {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_WIFI_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_NETWORK_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_LAKKA_SERVICES,PARSE_ACTION},
-               {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_USER_SETTINGS,PARSE_ACTION},
-               {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,PARSE_ACTION},
+            settings_t      *settings     = config_get_ptr();
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_DRIVER_SETTINGS, PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_VIDEO_SETTINGS,  PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_AUDIO_SETTINGS,  PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_INPUT_SETTINGS,  PARSE_ACTION, settings->bools.settings_show_input},
+               {MENU_ENUM_LABEL_LATENCY_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CORE_SETTINGS,   PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_SAVING_SETTINGS, PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_LOGGING_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS, PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_RECORDING_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,  PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_WIFI_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_NETWORK_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_LAKKA_SERVICES,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_USER_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,PARSE_ACTION, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (menu_displaylist_parse_settings_enum(list,
+               if (build_list[i].checked &&
+                     menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
@@ -4902,6 +4904,19 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          }
          break;
       case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,        PARSE_ONLY_BOOL},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
          {

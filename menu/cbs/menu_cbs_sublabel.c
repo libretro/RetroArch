@@ -470,6 +470,7 @@ default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,           
 default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
+default_sublabel_macro(action_bind_sublabel_settings_show_input,       MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_resume_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_restart_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT)
@@ -1383,6 +1384,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_GOTO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_input);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_resume_content);
