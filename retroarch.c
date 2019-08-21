@@ -2686,10 +2686,7 @@ static void handle_translation_cb(
    uint8_t* raw_output_data          = NULL;
    char* raw_bmp_data                = NULL;
    struct scaler_ctx* scaler         = NULL;
-   bool is_paused                    = false;
-   bool is_idle                      = false;
-   bool is_slowmotion                = false;
-   bool is_perfcnt_enable            = false;
+   bool is_paused                    = runloop_paused;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
    const char ch                     = '\"';
@@ -2708,9 +2705,6 @@ static void handle_translation_cb(
    int start                         = -1;
    char* found_string                = NULL;
    int curr_state                    = 0;
-
-   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
-       &is_perfcnt_enable);
 
    if (!is_paused && settings->uints.ai_service_mode != 1)
       goto finish;
@@ -2825,7 +2819,7 @@ static void handle_translation_cb(
          times the byte depth. 
          */
 
-      if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
       {
          raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
          scaler->out_fmt    = SCALER_FMT_ARGB8888;
@@ -2957,7 +2951,7 @@ static bool run_translation_service(void)
    uint8_t *bit24_image_prev             = NULL;
 
    settings_t *settings                  = configuration_settings;
-   enum retro_pixel_format pixel_format  = video_driver_get_pixel_format();
+   enum retro_pixel_format pixel_format  = video_driver_pix_fmt;
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
@@ -3020,7 +3014,7 @@ static bool run_translation_service(void)
       if (!bit24_image)
           goto finish;
 
-      if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
       {
          scaler->in_fmt = SCALER_FMT_ARGB8888;
          RARCH_LOG("IN FORMAT ARGB8888\n");
@@ -9678,8 +9672,9 @@ static bool recording_init(void)
    params.filename   = output;
    params.fps        = av_info->timing.fps;
    params.samplerate = av_info->timing.sample_rate;
-   params.pix_fmt    = (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) ?
-      FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+   params.pix_fmt    = (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) 
+      ? FFEMU_PIX_ARGB8888 
+      : FFEMU_PIX_RGB565;
    params.config     = NULL;
 
    if (!string_is_empty(global->record.config))
