@@ -4784,7 +4784,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_DRIVER_SETTINGS, PARSE_ACTION, true},
                {MENU_ENUM_LABEL_VIDEO_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_AUDIO_SETTINGS,  PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_INPUT_SETTINGS,  PARSE_ACTION, settings->bools.settings_show_input},
+               {MENU_ENUM_LABEL_INPUT_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LATENCY_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_CORE_SETTINGS,   PARSE_ACTION, true},
                {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, PARSE_ACTION, true},
@@ -4804,6 +4804,17 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_USER_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,PARSE_ACTION, true},
             };
+
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_INPUT_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_input;
+                     break;
+               }
+            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
