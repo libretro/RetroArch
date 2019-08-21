@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <boolean.h>
+
 static bool Mkdir(const char* path)
 {
    int result = mkdir(path, 0755);
