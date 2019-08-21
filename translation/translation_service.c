@@ -316,9 +316,9 @@ bool run_translation_service(void)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
 
-   uint8_t* bmp_buffer                   = NULL;
-   char* bmp64_buffer                    = NULL;
-   char* json_buffer                     = NULL;
+   uint8_t *bmp_buffer                   = NULL;
+   char *bmp64_buffer                    = NULL;
+   char *json_buffer                     = NULL;
 
    bool retval                           = false;
    int out_length                        = 0;
@@ -365,27 +365,8 @@ bool run_translation_service(void)
 
       /* Rescale down to regular resolution */
 
-#if 0
-      scaler->in_fmt      = SCALER_FMT_BGR24;
-      scaler->in_width    = vp.width;
-      scaler->in_height   = vp.height;
-
-      scaler->out_width   = width;
-      scaler->out_height  = height;
-      scaler->out_fmt     = SCALER_FMT_BGR24;
-
-      scaler->scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(scaler);
-
-      scaler->in_stride   = vp.width * 3;
-      scaler->out_stride  = width * 3;
-
-      scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev)
-#endif
-
-      bit24_image = bit24_image_prev;
+      bit24_image      = bit24_image_prev;
       bit24_image_prev = NULL;
-
    }
    else
    {
