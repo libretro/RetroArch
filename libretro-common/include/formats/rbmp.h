@@ -51,6 +51,10 @@ bool rbmp_save_image(
 int rbmp_process_image(rbmp_t *rbmp, void **buf,
       size_t size, unsigned *width, unsigned *height);
 
+void form_bmp_header(uint8_t *header,
+      unsigned width, unsigned height,
+      bool is32bpp);
+
 bool rbmp_set_buf_ptr(rbmp_t *rbmp, void *data);
 
 void rbmp_free(rbmp_t *rbmp);

@@ -339,9 +339,9 @@ VIDEO IMAGE
 #endif
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
-#include "../libretro-common/formats/bmp/rbmp_encode.c"
 #endif
 
+#include "../libretro-common/formats/bmp/rbmp_encode.c"
 #include "../libretro-common/formats/wav/rwav.c"
 
 /*============================================================
