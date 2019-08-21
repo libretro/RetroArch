@@ -24859,6 +24859,7 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "      - CRT SwitchRes: %s\n", (settings->uints.crt_switch_resolution > CRT_SWITCH_NONE) ? "yes" : "no");
    filestream_printf(file, "      - Video Shared Context: %s\n", settings->bools.video_shared_context ? "yes" : "no");
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    {
       video_shader_ctx_t shader_info = {0};
 
@@ -24874,6 +24875,7 @@ static bool rarch_write_debug_info(void)
       else
          filestream_printf(file, "      - Video Shader: n/a\n");
    }
+#endif
 
    filestream_printf(file, "  - Audio:\n");
    filestream_printf(file, "      - Audio Enabled: %s\n", settings->bools.audio_enable ? "yes" : "no (WARNING: content framerate will be incorrect)");
