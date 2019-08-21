@@ -4813,6 +4813,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   case MENU_ENUM_LABEL_INPUT_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_input;
                      break;
+                  default:
+                     break;
                }
             }
 
