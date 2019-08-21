@@ -2820,7 +2820,10 @@ static void rgui_blit_cursor(void)
    }
 }
 
-static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
+static void rgui_render_osk(
+      rgui_t *rgui,
+      menu_animation_ctx_ticker_t *ticker, menu_animation_ctx_ticker_smooth_t *ticker_smooth,
+      bool use_smooth_ticker)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
@@ -2945,17 +2948,33 @@ static void rgui_render_osk(rgui_t *rgui, menu_animation_ctx_ticker_t *ticker)
       char input_label_buf[255];
       unsigned input_label_length;
       int input_label_x, input_label_y;
+      unsigned ticker_x_offset = 0;
       
       input_label_buf[0] = '\0';
       
-      ticker->s        = input_label_buf;
-      ticker->len      = input_label_max_length;
-      ticker->str      = input_label;
-      ticker->selected = true;
-      menu_animation_ticker(ticker);
+      if (use_smooth_ticker)
+      {
+         ticker_smooth->selected    = true;
+         ticker_smooth->field_width = input_label_max_length * FONT_WIDTH_STRIDE;
+         ticker_smooth->src_str     = input_label;
+         ticker_smooth->dst_str     = input_label_buf;
+         ticker_smooth->dst_str_len = sizeof(input_label_buf);
+         ticker_smooth->x_offset    = &ticker_x_offset;
+         
+         menu_animation_ticker_smooth(ticker_smooth);
+      }
+      else
+      {
+         ticker->s        = input_label_buf;
+         ticker->len      = input_label_max_length;
+         ticker->str      = input_label;
+         ticker->selected = true;
+         
+         menu_animation_ticker(ticker);
+      }
 
       input_label_length = (unsigned)(utf8len(input_label_buf) * FONT_WIDTH_STRIDE);
-      input_label_x      = osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
+      input_label_x      = ticker_x_offset + osk_x + input_offset_x + ((input_label_max_length * FONT_WIDTH_STRIDE) - input_label_length) / 2;
       input_label_y      = osk_y + input_offset_y;
       
       blit_line(fb_width, input_label_x, input_label_y, input_label_buf,
@@ -3087,11 +3106,14 @@ static void rgui_render(void *data,
       bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
+   menu_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = RGUI_TICKER_SPACER;
+   bool use_smooth_ticker;
    unsigned x, y;
    size_t i, end, fb_pitch, old_start, new_start;
    unsigned fb_width, fb_height;
    int bottom;
+   unsigned ticker_x_offset       = 0;
    size_t entries_end             = 0;
    bool msg_force                 = false;
    bool fb_size_changed           = false;
@@ -3231,14 +3253,27 @@ static void rgui_render(void *data,
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
-   ticker.idx = menu_animation_get_ticker_idx();
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   use_smooth_ticker = settings->bools.menu_ticker_smooth;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.font          = NULL;
+      ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
+      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.dst_str_width = NULL;
+   }
+   else
+   {
+      ticker.idx       = menu_animation_get_ticker_idx();
+      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer    = ticker_spacer;
+   }
 
    /* Note: On-screen keyboard takes precedence over
     * normal menu thumbnail/text list display modes */
    if (current_display_cb)
-      rgui_render_osk(rgui, &ticker);
+      rgui_render_osk(rgui, &ticker, &ticker_smooth, use_smooth_ticker);
    else if (rgui->show_fs_thumbnail && rgui->entry_has_thumbnail && (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
    {
       /* If fullscreen thumbnails are enabled and we are viewing a playlist,
@@ -3260,14 +3295,34 @@ static void rgui_render(void *data,
       if (menu_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
       {
          /* Format thumbnail title */
-         ticker.s        = thumbnail_title_buf;
-         ticker.len      = rgui_term_layout.width - 10;
-         ticker.str      = thumbnail_title;
-         ticker.selected = true;
-         menu_animation_ticker(&ticker);
+         if (use_smooth_ticker)
+         {
+            ticker_smooth.selected    = true;
+            ticker_smooth.field_width = (rgui_term_layout.width - 10) * FONT_WIDTH_STRIDE;
+            ticker_smooth.src_str     = thumbnail_title;
+            ticker_smooth.dst_str     = thumbnail_title_buf;
+            ticker_smooth.dst_str_len = sizeof(thumbnail_title_buf);
+            ticker_smooth.x_offset    = &ticker_x_offset;
 
-         title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
-         title_x         = rgui_term_layout.start_x + ((rgui_term_layout.width * FONT_WIDTH_STRIDE) - title_width) / 2;
+            /* If title is scrolling, then width == field_width */
+            if (menu_animation_ticker_smooth(&ticker_smooth))
+               title_width            = ticker_smooth.field_width;
+            else
+               title_width            = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
+         }
+         else
+         {
+            ticker.s        = thumbnail_title_buf;
+            ticker.len      = rgui_term_layout.width - 10;
+            ticker.str      = thumbnail_title;
+            ticker.selected = true;
+
+            menu_animation_ticker(&ticker);
+
+            title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
+         }
+
+         title_x = rgui_term_layout.start_x + ((rgui_term_layout.width * FONT_WIDTH_STRIDE) - title_width) / 2;
 
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui_frame_buf.data, fb_width, fb_height,
@@ -3275,7 +3330,7 @@ static void rgui_render(void *data,
                rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
 
          /* Draw thumbnail title */
-         blit_line(fb_width, (int)title_x, 0, thumbnail_title_buf,
+         blit_line(fb_width, ticker_x_offset + title_x, 0, thumbnail_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
    }
@@ -3390,17 +3445,36 @@ static void rgui_render(void *data,
       title_max_len = rgui_term_layout.width - 5 - (powerstate_len > 5 ? powerstate_len : 5);
       title_buf[0] = '\0';
 
-      ticker.s        = title_buf;
-      ticker.len      = title_max_len;
-      ticker.str      = rgui->menu_title;
-      ticker.selected = true;
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.selected    = true;
+         ticker_smooth.field_width = title_max_len * FONT_WIDTH_STRIDE;
+         ticker_smooth.src_str     = rgui->menu_title;
+         ticker_smooth.dst_str     = title_buf;
+         ticker_smooth.dst_str_len = sizeof(title_buf);
+         ticker_smooth.x_offset    = &ticker_x_offset;
 
-      menu_animation_ticker(&ticker);
+         /* If title is scrolling, then title_len == title_max_len */
+         if (menu_animation_ticker_smooth(&ticker_smooth))
+            title_len = title_max_len;
+         else
+            title_len = utf8len(title_buf);
+      }
+      else
+      {
+         ticker.s        = title_buf;
+         ticker.len      = title_max_len;
+         ticker.str      = rgui->menu_title;
+         ticker.selected = true;
+
+         menu_animation_ticker(&ticker);
+
+         title_len = utf8len(title_buf);
+      }
 
       string_to_upper(title_buf);
 
-      title_len = utf8len(title_buf);
-      title_x   = rgui_term_layout.start_x +
+      title_x = ticker_x_offset + rgui_term_layout.start_x +
                 (rgui_term_layout.width - title_len) * FONT_WIDTH_STRIDE / 2;
 
       /* Title is always centred, unless it is long enough
@@ -3509,15 +3583,29 @@ static void rgui_render(void *data,
          }
 
          /* Format entry title string */
-         ticker.s        = entry_title_buf;
-         ticker.len      = entry_title_max_len;
-         ticker.str      = entry_label;
-         ticker.selected = entry_selected;
+         if (use_smooth_ticker)
+         {
+            ticker_smooth.selected    = entry_selected;
+            ticker_smooth.field_width = entry_title_max_len * FONT_WIDTH_STRIDE;
+            ticker_smooth.src_str     = entry_label;
+            ticker_smooth.dst_str     = entry_title_buf;
+            ticker_smooth.dst_str_len = sizeof(entry_title_buf);
+            ticker_smooth.x_offset    = &ticker_x_offset;
 
-         menu_animation_ticker(&ticker);
+            menu_animation_ticker_smooth(&ticker_smooth);
+         }
+         else
+         {
+            ticker.s        = entry_title_buf;
+            ticker.len      = entry_title_max_len;
+            ticker.str      = entry_label;
+            ticker.selected = entry_selected;
+
+            menu_animation_ticker(&ticker);
+         }
 
          /* Print entry title */
-         blit_line(fb_width, x + (2 * FONT_WIDTH_STRIDE), y,
+         blit_line(fb_width, ticker_x_offset + x + (2 * FONT_WIDTH_STRIDE), y,
                entry_title_buf,
                entry_color, rgui->colors.shadow_color);
 
@@ -3525,14 +3613,27 @@ static void rgui_render(void *data,
          if (entry_value_len > 0)
          {
             /* Format entry value string */
-            ticker.s        = type_str_buf;
-            ticker.len      = entry_value_len;
-            ticker.str      = entry_value;
+            if (use_smooth_ticker)
+            {
+               ticker_smooth.field_width = entry_value_len * FONT_WIDTH_STRIDE;
+               ticker_smooth.src_str     = entry_value;
+               ticker_smooth.dst_str     = type_str_buf;
+               ticker_smooth.dst_str_len = sizeof(type_str_buf);
+               ticker_smooth.x_offset    = &ticker_x_offset;
 
-            menu_animation_ticker(&ticker);
+               menu_animation_ticker_smooth(&ticker_smooth);
+            }
+            else
+            {
+               ticker.s        = type_str_buf;
+               ticker.len      = entry_value_len;
+               ticker.str      = entry_value;
+
+               menu_animation_ticker(&ticker);
+            }
 
             /* Print entry value */
-            blit_line(fb_width, term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
+            blit_line(fb_width, ticker_x_offset + term_end_x - ((entry_value_len + 1) * FONT_WIDTH_STRIDE), y,
                   type_str_buf,
                   entry_color, rgui->colors.shadow_color);
          }
@@ -3564,16 +3665,30 @@ static void rgui_render(void *data,
          char sublabel_buf[MENU_SUBLABEL_MAX_LENGTH];
          sublabel_buf[0] = '\0';
 
-         ticker.s        = sublabel_buf;
-         ticker.len      = core_name_len;
-         ticker.str      = rgui->menu_sublabel;
-         ticker.selected = true;
+         if (use_smooth_ticker)
+         {
+            ticker_smooth.selected    = true;
+            ticker_smooth.field_width = core_name_len * FONT_WIDTH_STRIDE;
+            ticker_smooth.src_str     = rgui->menu_sublabel;
+            ticker_smooth.dst_str     = sublabel_buf;
+            ticker_smooth.dst_str_len = sizeof(sublabel_buf);
+            ticker_smooth.x_offset    = &ticker_x_offset;
 
-         menu_animation_ticker(&ticker);
+            menu_animation_ticker_smooth(&ticker_smooth);
+         }
+         else
+         {
+            ticker.s        = sublabel_buf;
+            ticker.len      = core_name_len;
+            ticker.str      = rgui->menu_sublabel;
+            ticker.selected = true;
+
+            menu_animation_ticker(&ticker);
+         }
 
          blit_line(
                fb_width,
-               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               ticker_x_offset + rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
                (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
                rgui_term_layout.start_y + 2, sublabel_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
@@ -3586,16 +3701,30 @@ static void rgui_render(void *data,
 
          menu_entries_get_core_title(core_title, sizeof(core_title));
 
-         ticker.s        = core_title_buf;
-         ticker.len      = core_name_len;
-         ticker.str      = core_title;
-         ticker.selected = true;
+         if (use_smooth_ticker)
+         {
+            ticker_smooth.selected    = true;
+            ticker_smooth.field_width = core_name_len * FONT_WIDTH_STRIDE;
+            ticker_smooth.src_str     = core_title;
+            ticker_smooth.dst_str     = core_title_buf;
+            ticker_smooth.dst_str_len = sizeof(core_title_buf);
+            ticker_smooth.x_offset    = &ticker_x_offset;
 
-         menu_animation_ticker(&ticker);
+            menu_animation_ticker_smooth(&ticker_smooth);
+         }
+         else
+         {
+            ticker.s        = core_title_buf;
+            ticker.len      = core_name_len;
+            ticker.str      = core_title;
+            ticker.selected = true;
+
+            menu_animation_ticker(&ticker);
+         }
 
          blit_line(
                fb_width,
-               rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
+               ticker_x_offset + rgui_term_layout.start_x + FONT_WIDTH_STRIDE,
                (rgui_term_layout.height * FONT_HEIGHT_STRIDE) +
                rgui_term_layout.start_y + 2, core_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);

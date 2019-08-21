@@ -2845,7 +2845,9 @@ static int xmb_draw_item(
 {
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
+   menu_animation_ctx_ticker_smooth_t ticker_smooth;
    char tmp[255];
+   unsigned ticker_x_offset          = 0;
    const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
@@ -2856,10 +2858,25 @@ static int xmb_draw_item(
    xmb_node_t *   node               = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
+   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = NULL;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.font          = xmb->font;
+      ticker_smooth.font_scale    = 1.0f;
+      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.spacer        = NULL;
+      ticker_smooth.x_offset      = &ticker_x_offset;
+      ticker_smooth.dst_str_width = NULL;
+   }
+   else
+   {
+      ticker.idx       = menu_animation_get_ticker_idx();
+      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer    = NULL;
+   }
 
    if (!node)
       return 0;
@@ -2979,14 +2996,27 @@ static int xmb_draw_item(
 
    menu_entry_get_rich_label(entry, &ticker_str);
 
-   ticker.s        = tmp;
-   ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_idx();
-   ticker.str      = ticker_str;
-   ticker.selected = (i == current);
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.selected    = (i == current);
+      ticker_smooth.field_width = xmb->font_size * 0.5f * ticker_limit;
+      ticker_smooth.src_str     = ticker_str;
+      ticker_smooth.dst_str     = tmp;
+      ticker_smooth.dst_str_len = sizeof(tmp);
 
-   if (ticker.str)
-      menu_animation_ticker(&ticker);
+      if (ticker_smooth.src_str)
+         menu_animation_ticker_smooth(&ticker_smooth);
+   }
+   else
+   {
+      ticker.s        = tmp;
+      ticker.len      = ticker_limit;
+      ticker.str      = ticker_str;
+      ticker.selected = (i == current);
+
+      if (ticker.str)
+         menu_animation_ticker(&ticker);
+   }
 
    label_offset = xmb->margins_label_top;
 
@@ -3028,7 +3058,7 @@ static int xmb_draw_item(
    }
 
    xmb_draw_text(video_info, xmb, tmp,
-         node->x + xmb->margins_screen_left +
+         (float)ticker_x_offset + node->x + xmb->margins_screen_left +
          xmb->icon_spacing_horizontal + xmb->margins_label_left,
          xmb->margins_screen_top + node->y + label_offset,
          1, node->label_alpha, TEXT_ALIGN_LEFT,
@@ -3036,23 +3066,31 @@ static int xmb_draw_item(
 
    tmp[0]          = '\0';
 
-   ticker.s        = tmp;
-   ticker.len      = 35 * scale_mod[7];
-   ticker.idx      = menu_animation_get_ticker_idx();
-   ticker.selected = (i == current);
-
-   if (!string_is_empty(entry->value))
+   if (use_smooth_ticker)
    {
-      const char *entry_value = NULL;
-      menu_entry_get_value(entry, &entry_value);
-      ticker.str   = entry_value;
+      ticker_smooth.selected    = (i == current);
+      ticker_smooth.field_width = xmb->font_size * 0.5f * 35 * scale_mod[7];
+      ticker_smooth.src_str     = entry->value;
+      ticker_smooth.dst_str     = tmp;
+      ticker_smooth.dst_str_len = sizeof(tmp);
 
-      menu_animation_ticker(&ticker);
+      if (!string_is_empty(entry->value))
+         menu_animation_ticker_smooth(&ticker_smooth);
+   }
+   else
+   {
+      ticker.s        = tmp;
+      ticker.len      = 35 * scale_mod[7];
+      ticker.selected = (i == current);
+      ticker.str      = entry->value;
+
+      if (!string_is_empty(entry->value))
+         menu_animation_ticker(&ticker);
    }
 
    if (do_draw_text)
       xmb_draw_text(video_info, xmb, tmp,
-            node->x +
+            (float)ticker_x_offset + node->x +
             + xmb->margins_screen_left
             + xmb->icon_spacing_horizontal
             + xmb->margins_label_left

@@ -743,9 +743,14 @@ static void materialui_render_label_value(
 {
    menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
+   menu_animation_ctx_ticker_smooth_t ticker_smooth;
    char label_str[255];
    char value_str[255];
    char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+   unsigned ticker_label_x_offset  = 0;
+   unsigned ticker_value_x_offset  = 0;
+   unsigned ticker_str_width       = 0;
+   int value_x_offset              = 0;
    unsigned entry_type             = 0;
    const char *sublabel_str        = NULL;
    bool switch_is_on               = true;
@@ -760,10 +765,23 @@ static void materialui_render_label_value(
    float scale_factor              = menu_display_get_dpi(video_info->width,
          video_info->height);
    settings_t *settings            = config_get_ptr();
+   bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = NULL;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.font          = mui->font;
+      ticker_smooth.font_scale    = 1.0f;
+      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.spacer        = NULL;
+      ticker_smooth.dst_str_width = &ticker_str_width;
+   }
+   else
+   {
+      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer    = NULL;
+   }
 
    label_str[0] = value_str[0] = wrapped_sublabel_str[0] = '\0';
 
@@ -778,21 +796,48 @@ static void materialui_render_label_value(
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len    = (int)((usable_width/2) / mui->glyph_width);
 
-   ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 2));
+   ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 3));
 
-   ticker.s        = label_str;
-   ticker.len      = ticker_limit;
-   ticker.idx      = index;
-   ticker.str      = label;
-   ticker.selected = selected;
+   if (use_smooth_ticker)
+   {
+      /* Label */
+      ticker_smooth.selected    = selected;
+      ticker_smooth.field_width = ticker_limit * mui->glyph_width;
+      ticker_smooth.src_str     = label;
+      ticker_smooth.dst_str     = label_str;
+      ticker_smooth.dst_str_len = sizeof(label_str);
+      ticker_smooth.x_offset    = &ticker_label_x_offset;
 
-   menu_animation_ticker(&ticker);
+      menu_animation_ticker_smooth(&ticker_smooth);
 
-   ticker.s        = value_str;
-   ticker.len      = value_len;
-   ticker.str      = value;
+      /* Value */
+      ticker_smooth.field_width = (value_len + 1) * mui->glyph_width;
+      ticker_smooth.src_str     = value;
+      ticker_smooth.dst_str     = value_str;
+      ticker_smooth.dst_str_len = sizeof(value_str);
+      ticker_smooth.x_offset    = &ticker_value_x_offset;
 
-   menu_animation_ticker(&ticker);
+      /* Value text is right aligned, so have to offset x
+       * by the 'padding' width at the end of the ticker string... */
+      if (menu_animation_ticker_smooth(&ticker_smooth))
+         value_x_offset = (ticker_value_x_offset + ticker_str_width) - ticker_smooth.field_width;
+   }
+   else
+   {
+      ticker.s        = label_str;
+      ticker.len      = ticker_limit;
+      ticker.idx      = index;
+      ticker.str      = label;
+      ticker.selected = selected;
+
+      menu_animation_ticker(&ticker);
+
+      ticker.s        = value_str;
+      ticker.len      = value_len;
+      ticker.str      = value;
+
+      menu_animation_ticker(&ticker);
+   }
 
    /* set switch_is_on */
    /* set texture_switch */
@@ -889,13 +934,13 @@ static void materialui_render_label_value(
    }
 
    menu_display_draw_text(mui->font, label_str,
-         mui->margin + icon_margin,
+         ticker_label_x_offset + mui->margin + icon_margin,
          y + (scale_factor / 5),
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
-            width - mui->margin,
+            value_x_offset + width - mui->margin,
             y + (scale_factor / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
@@ -1080,9 +1125,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    menu_display_ctx_clearcolor_t clearcolor;
 
    menu_animation_ctx_ticker_t ticker;
+   menu_animation_ctx_ticker_smooth_t ticker_smooth;
+   unsigned ticker_x_offset = 0;
    menu_display_ctx_draw_t draw;
    char msg[255];
-   char title_buf[255];
+   char menu_title[640];
+   char title_buf[640];
    char title_msg[255];
 
    float black_bg[16]   = {
@@ -1179,17 +1227,30 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    settings_t *settings            = config_get_ptr();
    materialui_handle_t *mui        = (materialui_handle_t*)data;
+   bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
 
    if (!mui)
       return;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = NULL;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.font          = mui->font;
+      ticker_smooth.font_scale    = 1.0f;
+      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.spacer        = NULL;
+      ticker_smooth.x_offset      = &ticker_x_offset;
+      ticker_smooth.dst_str_width = NULL;
+   }
+   else
+   {
+      ticker.idx       = menu_animation_get_ticker_idx();
+      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer    = NULL;
+   }
 
-   usable_width                    = width - (mui->margin * 2);
-
-   msg[0] = title_buf[0] = title_msg[0] = '\0';
+   msg[0] = menu_title[0] = title_buf[0] = title_msg[0] = '\0';
 
    switch (video_info->materialui_color_theme)
    {
@@ -1536,44 +1597,40 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             );
    }
 
-   ticker_limit    = (unsigned)(usable_width / mui->glyph_width);
-
-   ticker.s        = title_buf;
-   ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_slow_idx();
-   ticker.str      = mui->menu_title;
-   ticker.selected = true;
-
-   menu_animation_ticker(&ticker);
-
    /* Title */
+   usable_width = width - (mui->margin * 2) - title_margin;
+
+   strlcpy(menu_title, mui->menu_title, sizeof(menu_title));
    if (materialui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
-      int ticker_limit, value_len;
-      char title_buf_msg_tmp[255];
-      char title_buf_msg[640];
+      strlcat(menu_title, " (", sizeof(menu_title));
+      strlcat(menu_title, title_msg, sizeof(menu_title));
+      strlcat(menu_title, ")", sizeof(menu_title));
+   }
 
-      title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.selected    = true;
+      ticker_smooth.field_width = (unsigned)usable_width;
+      ticker_smooth.src_str     = menu_title;
+      ticker_smooth.dst_str     = title_buf;
+      ticker_smooth.dst_str_len = sizeof(title_buf);
 
-      snprintf(title_buf_msg, sizeof(title_buf_msg), "%s (%s)",
-            title_buf, title_msg);
-      value_len       = (int)utf8len(title_buf);
-      ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 2));
-
-      ticker.s        = title_buf_msg_tmp;
-      ticker.len      = ticker_limit;
-      ticker.idx      = menu_animation_get_ticker_idx();
-      ticker.str      = title_buf_msg;
+      menu_animation_ticker_smooth(&ticker_smooth);
+   }
+   else
+   {
+      ticker.s        = title_buf;
+      ticker.len      = (unsigned)(usable_width / mui->glyph_width);
+      ticker.str      = menu_title;
       ticker.selected = true;
 
       menu_animation_ticker(&ticker);
-
-      strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
    if (mui->font)
       menu_display_draw_text(mui->font, title_buf,
-            title_margin,
+            ticker_x_offset + title_margin,
             header_height / 2 + mui->font->size / 3,
             width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 

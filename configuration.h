@@ -203,6 +203,7 @@ typedef struct settings
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
+      bool menu_ticker_smooth;
       bool settings_show_input;
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
