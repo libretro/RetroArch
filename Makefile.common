@@ -1866,7 +1866,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_TRANSLATE), 1)
       DEFINES += -DHAVE_TRANSLATE
-      OBJ += translation/translation_service.o
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)

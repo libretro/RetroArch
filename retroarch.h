@@ -1745,18 +1745,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 
 unsigned video_pixel_get_alignment(unsigned pitch);
 
-/**
- * video_driver_frame:
- * @data                 : pointer to data of the video frame.
- * @width                : width of the video frame.
- * @height               : height of the video frame.
- * @pitch                : pitch of the video frame.
- *
- * Video frame render callback function.
- **/
-void video_driver_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
-
 void crt_switch_driver_reinit(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
