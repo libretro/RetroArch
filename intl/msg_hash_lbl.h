@@ -357,6 +357,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
       "deferred_input_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST,
       "deferred_latency_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,
+      "deferred_ai_service_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
       "deferred_lakka_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,
@@ -1991,3 +1993,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
       "quick_menu_show_close_content")
 MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
       "settings_show_input")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
+      "ai_service_settings")

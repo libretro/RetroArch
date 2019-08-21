@@ -4794,6 +4794,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,  PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_WIFI_SETTINGS,PARSE_ACTION, true},
@@ -4810,6 +4811,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_AI_SERVICE_SETTINGS:
+#ifndef HAVE_TRANSLATE
+                     build_list[i].checked = false;
+#endif
+                     break;
                   case MENU_ENUM_LABEL_INPUT_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_input;
                      break;
@@ -7338,6 +7344,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                PARSE_ONLY_INT, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;

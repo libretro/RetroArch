@@ -8784,3 +8784,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
     "Show or hide 'Input Settings' on the Settings screen."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+    "AI Service"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+    "Change settings for the AI Service (Translation/TTS/Misc)."
+    )
