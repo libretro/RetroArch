@@ -392,7 +392,8 @@ static bool menu_show_sublabels          = true;
 
 static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
 static float menu_ticker_speed           = 1.0f;
-static bool menu_ticker_smooth           = false;
+
+#define DEFAULT_MENU_TICKER_SMOOTH true
 
 #if defined(HAVE_THREADS)
 static bool menu_savestate_resume     = true;

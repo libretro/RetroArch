@@ -11572,7 +11572,7 @@ static bool setting_append_list(
                &settings->bools.menu_ticker_smooth,
                MENU_ENUM_LABEL_MENU_TICKER_SMOOTH,
                MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
-               menu_ticker_smooth,
+               DEFAULT_MENU_TICKER_SMOOTH,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
