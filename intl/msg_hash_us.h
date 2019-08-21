@@ -3403,6 +3403,14 @@ MSG_HASH(
     "Animation speed when scrolling long menu text strings."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+    "Smooth Ticker Text"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+    "Use smooth scrolling animation when displaying long menu text strings. Has a small performance impact."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
     "Menu Color Theme"
     )

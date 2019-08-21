@@ -1027,27 +1027,56 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    char title[255];
    menu_animation_ctx_ticker_t ticker;
+   menu_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = OZONE_TICKER_SPACER;
+   unsigned ticker_x_offset = 0;
    settings_t *settings     = config_get_ptr();
    unsigned timedate_offset = 0;
+   bool use_smooth_ticker   = settings->bools.menu_ticker_smooth;
 
    /* Initial ticker configuration */
-   ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-   ticker.spacer = ticker_spacer;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.font_scale    = 1.0f;
+      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.x_offset      = &ticker_x_offset;
+      ticker_smooth.dst_str_width = NULL;
+   }
+   else
+   {
+      ticker.idx       = menu_animation_get_ticker_idx();
+      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer    = ticker_spacer;
+   }
 
    /* Separator */
    menu_display_draw_quad(video_info, 30, ozone->dimensions.header_height, video_info->width - 60, 1, video_info->width, video_info->height, ozone->theme->header_footer_separator);
 
    /* Title */
-   ticker.s = title;
-   ticker.len = (video_info->width - 128 - 47 - 130) / ozone->title_font_glyph_width;
-   ticker.idx = menu_animation_get_ticker_idx();
-   ticker.str = ozone->title;
-   ticker.selected = true;
+   if (use_smooth_ticker)
+   {
+      ticker_smooth.font        = ozone->fonts.title;
+      ticker_smooth.selected    = true;
+      ticker_smooth.field_width = (video_info->width - 128 - 47 - 180);
+      ticker_smooth.src_str     = ozone->title;
+      ticker_smooth.dst_str     = title;
+      ticker_smooth.dst_str_len = sizeof(title);
 
-   menu_animation_ticker(&ticker);
+      menu_animation_ticker_smooth(&ticker_smooth);
+   }
+   else
+   {
+      ticker.s        = title;
+      ticker.len      = (video_info->width - 128 - 47 - 180) / ozone->title_font_glyph_width;
+      ticker.str      = ozone->title;
+      ticker.selected = true;
 
-   ozone_draw_text(video_info, ozone, title, 128, ozone->dimensions.header_height / 2 + FONT_SIZE_TITLE * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.title, ozone->theme->text_rgba, false);
+      menu_animation_ticker(&ticker);
+   }
+
+   ozone_draw_text(video_info, ozone, title, ticker_x_offset + 128, ozone->dimensions.header_height / 2 + FONT_SIZE_TITLE * 3/8, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.title, ozone->theme->text_rgba, false);
 
    /* Icon */
    menu_display_blend_begin(video_info);

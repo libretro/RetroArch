@@ -11567,6 +11567,21 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_ticker_smooth,
+               MENU_ENUM_LABEL_MENU_TICKER_SMOOTH,
+               MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+               menu_ticker_smooth,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Navigation", &group_info, &subgroup_info, parent_group);

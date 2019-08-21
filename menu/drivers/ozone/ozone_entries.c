@@ -474,7 +474,11 @@ border_iterate:
       menu_texture_item tex;
       menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
+      menu_animation_ctx_ticker_smooth_t ticker_smooth;
       static const char* const ticker_spacer = OZONE_TICKER_SPACER;
+      unsigned ticker_x_offset = 0;
+      unsigned ticker_str_width = 0;
+      int value_x_offset = 0;
       char rich_label[255];
       char entry_value_ticker[255];
       char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
@@ -485,10 +489,25 @@ border_iterate:
       bool entry_selected          = false;
       int text_offset              = -ozone->dimensions.entry_icon_padding - ozone->dimensions.entry_icon_size;
       float *icon_color            = NULL;
+      bool use_smooth_ticker       = settings->bools.menu_ticker_smooth;
 
       /* Initial ticker configuration */
-      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-      ticker.spacer = ticker_spacer;
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+         ticker_smooth.font          = ozone->fonts.entries_label;
+         ticker_smooth.font_scale    = 1.0f;
+         ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         ticker_smooth.spacer        = ticker_spacer;
+         ticker_smooth.x_offset      = &ticker_x_offset;
+         ticker_smooth.dst_str_width = &ticker_str_width;
+      }
+      else
+      {
+         ticker.idx       = menu_animation_get_ticker_idx();
+         ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         ticker.spacer    = ticker_spacer;
+      }
 
       entry_selected         = selection == i;
       node                   = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, i);
@@ -510,16 +529,30 @@ border_iterate:
       /* Prepare text */
       menu_entry_get_rich_label(&entry, &entry_rich_label);
 
-      ticker.idx      = menu_animation_get_ticker_idx();
-      ticker.s        = rich_label;
-      ticker.str      = entry_rich_label;
-      ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len      = (entry_width - entry_padding) / ozone->entry_font_glyph_width;
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.selected    = entry_selected && !ozone->cursor_in_sidebar;
+         ticker_smooth.field_width = entry_width - entry_padding - 10 - ozone->dimensions.entry_icon_padding;
+         ticker_smooth.src_str     = entry_rich_label;
+         ticker_smooth.dst_str     = rich_label;
+         ticker_smooth.dst_str_len = sizeof(rich_label);
 
-      menu_animation_ticker(&ticker);
+         menu_animation_ticker_smooth(&ticker_smooth);
+      }
+      else
+      {
+         ticker.s        = rich_label;
+         ticker.str      = entry_rich_label;
+         ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
+         ticker.len      = (entry_width - entry_padding - 10 - ozone->dimensions.entry_icon_padding) / ozone->entry_font_glyph_width;
+
+         menu_animation_ticker(&ticker);
+      }
 
       if (ozone->empty_playlist)
       {
+         /* Note: This entry can never be selected, so ticker_x_offset
+          * is irrelevant here (i.e. this text will never scroll) */
          unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label, rich_label, (unsigned)strlen(rich_label), 1);
          x_offset = (video_info_width - (unsigned) ozone->dimensions.sidebar_width - entry_padding * 2) / 2 - text_width / 2 - 60;
          y = video_info_height / 2 - 60;
@@ -588,24 +621,41 @@ border_iterate:
       }
 
       /* Draw text */
-      ozone_draw_text(video_info, ozone, rich_label, text_offset + (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
+      ozone_draw_text(video_info, ozone, rich_label, ticker_x_offset + text_offset + (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
          y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
       if (!string_is_empty(sublabel_str))
          ozone_draw_text(video_info, ozone, sublabel_str, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
             y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
-      ticker.idx      = menu_animation_get_ticker_idx();
-      ticker.s        = entry_value_ticker;
-      ticker.str      = entry_value;
-      ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-      ticker.len      = (entry_width - ozone->dimensions.entry_icon_size - ozone->dimensions.entry_icon_padding * 2 -
-         ((int)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.selected    = entry_selected && !ozone->cursor_in_sidebar;
+         ticker_smooth.field_width = (entry_width - ozone->dimensions.entry_icon_size - ozone->dimensions.entry_icon_padding * 2 -
+               ((unsigned)utf8len(entry_rich_label) * ozone->entry_font_glyph_width));
+         ticker_smooth.src_str     = entry_value;
+         ticker_smooth.dst_str     = entry_value_ticker;
+         ticker_smooth.dst_str_len = sizeof(entry_value_ticker);
 
-      menu_animation_ticker(&ticker);
+         /* Value text is right aligned, so have to offset x
+          * by the 'padding' width at the end of the ticker string... */
+         if (menu_animation_ticker_smooth(&ticker_smooth))
+            value_x_offset = (ticker_x_offset + ticker_str_width) - ticker_smooth.field_width;
+      }
+      else
+      {
+         ticker.s        = entry_value_ticker;
+         ticker.str      = entry_value;
+         ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
+         ticker.len      = (entry_width - ozone->dimensions.entry_icon_size - ozone->dimensions.entry_icon_padding * 2 -
+               ((unsigned)utf8len(entry_rich_label) * ozone->entry_font_glyph_width)) / ozone->entry_font_glyph_width;
 
-      ozone_draw_entry_value(ozone, video_info, entry_value_ticker, (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
-         y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, alpha_uint32, &entry);
+         menu_animation_ticker(&ticker);
+      }
+
+      ozone_draw_entry_value(ozone, video_info, entry_value_ticker,
+            value_x_offset + (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
+            y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, alpha_uint32, &entry);
 
 icons_iterate:
       y += node->height;
