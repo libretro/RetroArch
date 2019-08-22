@@ -9167,3 +9167,15 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
     "Change settings for the AI Service (Translation/TTS/Misc)."
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+      "AI Service Output")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+      "AI Service URL")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+      "AI Service Enabled")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+      "Pauses gameplay during translation (Image mode), or continues to run (Speech mode)")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+      "A http:// url pointing to the translation service to use.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+      "Enable AI Service to run when the AI Service hotkey is pressed.")

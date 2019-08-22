@@ -3720,6 +3720,23 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_AI_SERVICE_MODE,                               PARSE_ONLY_UINT, true  },
+               {MENU_ENUM_LABEL_AI_SERVICE_URL,                               PARSE_ONLY_STRING, true },
+               {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,                                   PARSE_ONLY_BOOL, true},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
 #ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(list,
@@ -6947,6 +6964,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:
+      case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -7344,19 +7362,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                PARSE_ONLY_INT, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;

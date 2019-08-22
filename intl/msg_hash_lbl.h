@@ -1995,3 +1995,9 @@ MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
       "settings_show_input")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
       "ai_service_settings")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_MODE,
+      "ai_service_mode")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_URL,
+      "ai_service_url")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_ENABLE,
+      "ai_service_enable")

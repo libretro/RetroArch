@@ -136,6 +136,7 @@ enum settings_list_type
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
+   SETTINGS_LIST_AI_SERVICE,
    SETTINGS_LIST_USER_INTERFACE,
    SETTINGS_LIST_POWER_MANAGEMENT,
    SETTINGS_LIST_MENU_SOUNDS,
@@ -12846,6 +12847,62 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_AI_SERVICE:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_mode,
+               MENU_ENUM_LABEL_AI_SERVICE_MODE,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+               DEFAULT_AI_SERVICE_MODE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.ai_service_url,
+               sizeof(settings->arrays.ai_service_url),
+               MENU_ENUM_LABEL_AI_SERVICE_URL,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+               DEFAULT_AI_SERVICE_URL,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ai_service_enable,
+               MENU_ENUM_LABEL_AI_SERVICE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+               DEFAULT_AI_SERVICE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_USER_INTERFACE:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS),
@@ -15206,6 +15263,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,
+#ifdef HAVE_TRANSLATE
+      SETTINGS_LIST_AI_SERVICE,
+#endif
       SETTINGS_LIST_USER_INTERFACE,
       SETTINGS_LIST_POWER_MANAGEMENT,
       SETTINGS_LIST_MENU_SOUNDS,

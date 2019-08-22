@@ -1053,6 +1053,10 @@ static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/
 
 static char default_discord_app_id[] = "475456035851599874";
 
-static char default_ai_service_url[] = "http://localhost:4404/";
+#define DEFAULT_AI_SERVICE_ENABLE false
+
+#define DEFAULT_AI_SERVICE_MODE 1
+
+#define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
 
 #endif

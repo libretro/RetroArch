@@ -1167,7 +1167,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, default_discord_app_id, true);
-   SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, default_ai_service_url, true);
+   SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 
    *size = count;
 
@@ -1633,7 +1633,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
-   SETTING_BOOL("ai_service_enable", &settings->bools.ai_service_enable, true, false, false);
+   SETTING_BOOL("ai_service_enable", &settings->bools.ai_service_enable, DEFAULT_AI_SERVICE_ENABLE, false, false);
 
    *size = count;
 
@@ -1825,7 +1825,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
    SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
-   SETTING_UINT("ai_service_mode",            &settings->uints.ai_service_mode,    true, 0, false);
+   SETTING_UINT("ai_service_mode",            &settings->uints.ai_service_mode,    DEFAULT_AI_SERVICE_MODE, 0, false);
 
    SETTING_UINT("video_record_threads",            &settings->uints.video_record_threads,    true, DEFAULT_VIDEO_RECORD_THREADS, false);
 
@@ -2040,7 +2040,7 @@ void config_set_defaults(void)
       default_discord_app_id,  sizeof(settings->arrays.discord_app_id));
 
    strlcpy(settings->arrays.ai_service_url,
-      default_ai_service_url,  sizeof(settings->arrays.ai_service_url));
+      DEFAULT_AI_SERVICE_URL,  sizeof(settings->arrays.ai_service_url));
 
 
 #ifdef HAVE_MATERIALUI
