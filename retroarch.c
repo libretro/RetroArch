@@ -12907,7 +12907,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
                joypad_info.axis_threshold        = input_driver_axis_threshold;
 
                if (current_input->input_state(current_input_data, joypad_info,
-                  &binds[0], joypad_info.joy_idx, RETRO_DEVICE_JOYPAD, 0, i))
+                  &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i))
                {
                   bit_pressed = true;
                   break;
