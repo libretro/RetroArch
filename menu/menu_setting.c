@@ -3033,13 +3033,7 @@ static void setting_get_string_representation_uint_ai_service_lang(
    if (enum_idx != 0)
       strlcpy(s, msg_hash_to_str(enum_idx), len);
    else
-   {
-      char arr[10];
-      arr[0] = '\0';
-      if (itoa(*setting->value.target.unsigned_integer,
-               arr, 10))
-         strlcpy(s, arr, len);
-   }
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 #endif
 
