@@ -1206,7 +1206,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    unsigned width                  = video_info->width;
    unsigned height                 = video_info->height;
-   unsigned ticker_limit           = 0;
    unsigned i                      = 0;
    unsigned header_height          = 0;
    uint32_t sublabel_color         = 0x888888ff;

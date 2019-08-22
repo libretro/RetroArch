@@ -2681,11 +2681,6 @@ static void handle_translation_cb(
    bool is_paused                    = runloop_paused;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
-   const char ch                     = '\"';
-   const char s[2]                   = "\"";
-   char* ret;
-   char* string                      = NULL;
-
    int new_image_size                = 0;
    int new_sound_size                = 0;
    const void* dummy_data            = NULL;
@@ -2846,7 +2841,6 @@ static void handle_translation_cb(
    if (raw_sound_data)
    {
       audio_mixer_stream_params_t params;
-      retro_task_t       *t       = task_init();
       nbio_buf_t *task_data       = (nbio_buf_t*)calloc(1, sizeof(nbio_buf_t));
       nbio_buf_t *img             = (nbio_buf_t*)task_data;
 
@@ -3081,7 +3075,6 @@ static bool run_translation_service(void)
    uint8_t *bit24_image_prev             = NULL;
 
    settings_t *settings                  = configuration_settings;
-   enum retro_pixel_format pixel_format  = video_driver_pix_fmt;
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
@@ -3090,7 +3083,6 @@ static bool run_translation_service(void)
    char *bmp64_buffer                    = NULL;
    char *json_buffer                     = NULL;
 
-   bool retval                           = false;
    int out_length                        = 0;
    const char *rf1                       = "{\"image\": \"";
    const char *rf2                       = "\"}\0";
