@@ -2001,3 +2001,7 @@ MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_URL,
       "ai_service_url")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_ENABLE,
       "ai_service_enable")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,
+      "ai_service_target_lang")
+MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
+      "ai_service_source_lang")

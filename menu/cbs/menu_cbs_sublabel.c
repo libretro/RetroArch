@@ -127,6 +127,8 @@ default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_mode,  MENU_ENUM_SUBLABEL_AI_SERVICE_MODE)
+default_sublabel_macro(action_bind_sublabel_ai_service_target_lang,  MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG)
+default_sublabel_macro(action_bind_sublabel_ai_service_source_lang,  MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG)
 default_sublabel_macro(action_bind_sublabel_ai_service_url,  MENU_ENUM_SUBLABEL_AI_SERVICE_URL)
 default_sublabel_macro(action_bind_sublabel_ai_service_enable,  MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_power_management_settings_list,  MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS)
@@ -2546,6 +2548,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AI_SERVICE_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_url);
+            break;
+         case MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_target_lang);
+            break;
+         case MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_source_lang);
             break;
          case MENU_ENUM_LABEL_AI_SERVICE_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_mode);

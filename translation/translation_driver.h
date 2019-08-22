@@ -82,7 +82,8 @@ enum translation_lang
    TRANSLATION_LANG_UR,    /* Urdu */
    TRANSLATION_LANG_VI,    /* Vietnamese */
    TRANSLATION_LANG_CY,    /* Welsh */
-   TRANSLATION_LANG_YI     /* Yiddish */
+   TRANSLATION_LANG_YI,    /* Yiddish */
+   TRANSLATION_LANG_LAST
 };
 
 struct translation_driver_info

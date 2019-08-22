@@ -56,6 +56,10 @@
 #include "../cheevos-new/cheevos.h"
 #endif
 
+#ifdef HAVE_TRANSLATE
+#include "../translation/translation_driver.h"
+#endif
+
 #include "../frontend/frontend_driver.h"
 
 #include "widgets/menu_input_bind_dialog.h"
@@ -12848,6 +12852,7 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_AI_SERVICE:
+#ifdef HAVE_TRANSLATE
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS),
                parent_group);
@@ -12900,8 +12905,37 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_source_lang,
+               MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+               DEFAULT_AI_SERVICE_SOURCE_LANG,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_target_lang,
+               MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+               DEFAULT_AI_SERVICE_TARGET_LANG,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+#endif
          break;
       case SETTINGS_LIST_USER_INTERFACE:
          START_GROUP(list, list_info, &group_info,

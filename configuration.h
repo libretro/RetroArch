@@ -547,6 +547,8 @@ typedef struct settings
 
       unsigned libnx_overclock;
       unsigned ai_service_mode;
+      unsigned ai_service_target_lang;
+      unsigned ai_service_source_lang;
    } uints;
 
    struct
