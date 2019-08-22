@@ -3206,7 +3206,7 @@ static bool run_translation_service(void)
    memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
   
    {
-      bool prefix_set = false;
+      char separator  = '?';
       char new_ai_service_url[PATH_MAX_LENGTH];
 
       strlcpy(new_ai_service_url,
@@ -3219,14 +3219,10 @@ static bool run_translation_service(void)
 
          if (!string_is_empty(lang_source))
          {
-            if (!prefix_set)
-            {
-               strlcat(new_ai_service_url, "?mode=fast",
-                     sizeof(new_ai_service_url));
-               prefix_set = true;
-            }
-            strlcat(new_ai_service_url, "&source_lang=",
-                  sizeof(new_ai_service_url));
+            snprintf(new_ai_service_url,
+                  sizeof(new_ai_service_url),
+                  "%csource_lang=", separator);
+            separator = '&';
             strlcat(new_ai_service_url, lang_source,
                   sizeof(new_ai_service_url));
          }
@@ -3239,14 +3235,10 @@ static bool run_translation_service(void)
 
          if (!string_is_empty(lang_target))
          {
-            if (!prefix_set)
-            {
-               strlcat(new_ai_service_url, "?mode=fast",
-                     sizeof(new_ai_service_url));
-               prefix_set = true;
-            }
-            strlcat(new_ai_service_url, "&target_lang=",
-                  sizeof(new_ai_service_url));
+            snprintf(new_ai_service_url,
+                  sizeof(new_ai_service_url),
+                  "%ctarget_lang=", separator);
+            separator = '&';
             strlcat(new_ai_service_url, lang_target,
                   sizeof(new_ai_service_url));
          }
