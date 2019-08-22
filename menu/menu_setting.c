@@ -2822,6 +2822,137 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
 }
 #endif
 
+#ifdef HAVE_TRANSLATE
+static void setting_get_string_representation_uint_ai_service_lang(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   enum msg_hash_enums enum_idx = 0;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case TRANSLATION_LANG_EN:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ENGLISH;
+         break;
+      case TRANSLATION_LANG_ES:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SPANISH;
+         break;
+      case TRANSLATION_LANG_FR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_FRENCH;
+         break;
+      case TRANSLATION_LANG_IT:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ITALIAN;
+         break;
+      case TRANSLATION_LANG_DE:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_GERMAN;
+         break;
+      case TRANSLATION_LANG_JP:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_JAPANESE;
+         break;
+      case TRANSLATION_LANG_NL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_DUTCH;
+         break;
+         /* TODO/FIXME */
+      case TRANSLATION_LANG_CS:   /* Czech   */
+      case TRANSLATION_LANG_DA:   /* Danish  */
+      case TRANSLATION_LANG_SV:   /* Swedish */
+      case TRANSLATION_LANG_HR:   /* Croatian */
+      case TRANSLATION_LANG_CA:   /* Catalan */
+      case TRANSLATION_LANG_BG:   /* Bulgarian */
+      case TRANSLATION_LANG_BN:   /* Bengali */
+      case TRANSLATION_LANG_EU:   /* Basque */
+      case TRANSLATION_LANG_AZ:   /* Azerbaijani */
+      case TRANSLATION_LANG_SQ:   /* Albanian */
+      case TRANSLATION_LANG_AF:   /* Afrikaans */
+      case TRANSLATION_LANG_ET:   /* Estonian */
+      case TRANSLATION_LANG_FI:   /* Finnish */
+      case TRANSLATION_LANG_GL:   /* Galician */
+      case TRANSLATION_LANG_KA:   /* Georgian */
+      case TRANSLATION_LANG_GU:   /* Gujarati */
+      case TRANSLATION_LANG_HT:   /* Haitian Creole */
+      case TRANSLATION_LANG_IW:   /* Hebrew */
+      case TRANSLATION_LANG_HI:   /* Hindi */
+      case TRANSLATION_LANG_HU:   /* Hungarian */
+      case TRANSLATION_LANG_IS:   /* Icelandic */
+      case TRANSLATION_LANG_ID:   /* Indonesian */
+      case TRANSLATION_LANG_GA:   /* Irish */
+      case TRANSLATION_LANG_KN:   /* Kannada */
+      case TRANSLATION_LANG_LA:   /* Latin */
+      case TRANSLATION_LANG_LV:   /* Latvian */
+      case TRANSLATION_LANG_LT:   /* Lithuanian */
+      case TRANSLATION_LANG_MK:   /* Macedonian */
+      case TRANSLATION_LANG_MS:   /* Malay */
+      case TRANSLATION_LANG_MT:   /* Maltese */
+      case TRANSLATION_LANG_NO:   /* Norwegian */
+      case TRANSLATION_LANG_FA:   /* Persian */
+      case TRANSLATION_LANG_RO:   /* Romanian */
+      case TRANSLATION_LANG_SR:   /* Serbian */
+      case TRANSLATION_LANG_SK:   /* Slovak */
+      case TRANSLATION_LANG_SL:   /* Slovenian */
+      case TRANSLATION_LANG_SW:   /* Swahili */
+      case TRANSLATION_LANG_TA:   /* Tamil */
+      case TRANSLATION_LANG_TE:   /* Telugu */
+      case TRANSLATION_LANG_TH:   /* Thai */
+      case TRANSLATION_LANG_UK:   /* Ukrainian */
+      case TRANSLATION_LANG_UR:   /* Urdu */
+      case TRANSLATION_LANG_CY:   /* Welsh */
+      case TRANSLATION_LANG_YI:   /* Yiddish */
+         break;
+      case TRANSLATION_LANG_RU:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN;
+         break;
+      case TRANSLATION_LANG_PT:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL;
+         break;
+      case TRANSLATION_LANG_TR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_TURKISH;
+         break;
+      case TRANSLATION_LANG_PL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_POLISH;
+         break;
+      case TRANSLATION_LANG_VI:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE;
+         break;
+      case TRANSLATION_LANG_EL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_GREEK;
+         break;
+      case TRANSLATION_LANG_KO:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_KOREAN;
+         break;
+      case TRANSLATION_LANG_EO:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO;
+         break;
+      case TRANSLATION_LANG_AR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ARABIC;
+         break;
+      case TRANSLATION_LANG_ZH_CN:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED;
+         break;
+      case TRANSLATION_LANG_ZH_TW:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL;
+         break;
+      case TRANSLATION_LANG_DONT_CARE:
+         enum_idx = MENU_ENUM_LABEL_VALUE_DONT_CARE;
+         break;
+      default:
+         break;
+   }
+
+   if (enum_idx != 0)
+      strlcpy(s, msg_hash_to_str(enum_idx), len);
+   else
+   {
+      char arr[10];
+      arr[0] = '\0';
+      if (itoa(*setting->value.target.unsigned_integer,
+               arr, 10))
+         strlcpy(s, arr, len);
+   }
+}
+#endif
+
 static void setting_get_string_representation_uint_menu_thumbnails(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -12916,6 +13047,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_ai_service_lang;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
 
@@ -12930,6 +13063,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_ai_service_lang;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
 
