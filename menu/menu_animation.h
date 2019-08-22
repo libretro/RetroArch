@@ -175,7 +175,7 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
-bool menu_animation_update(void);
+bool menu_animation_update(unsigned video_width, unsigned video_height);
 
 bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
 
@@ -201,7 +201,7 @@ uint64_t menu_animation_get_ticker_idx(void);
 
 uint64_t menu_animation_get_ticker_slow_idx(void);
 
-uint64_t menu_animation_get_ticker_fast_idx(void);
+uint64_t menu_animation_get_ticker_pixel_idx(void);
 
 RETRO_END_DECLS
 

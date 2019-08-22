@@ -494,7 +494,7 @@ border_iterate:
       /* Initial ticker configuration */
       if (use_smooth_ticker)
       {
-         ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+         ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
          ticker_smooth.font          = ozone->fonts.entries_label;
          ticker_smooth.font_scale    = 1.0f;
          ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;

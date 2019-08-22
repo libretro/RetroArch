@@ -770,7 +770,7 @@ static void materialui_render_label_value(
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = mui->font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
@@ -1235,7 +1235,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = mui->font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;

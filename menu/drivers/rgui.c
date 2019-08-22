@@ -3256,7 +3256,7 @@ static void rgui_render(void *data,
    use_smooth_ticker = settings->bools.menu_ticker_smooth;
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_fast_idx();
+      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = NULL;
       ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
       ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;

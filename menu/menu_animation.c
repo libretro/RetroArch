@@ -63,21 +63,25 @@ struct menu_animation
 
 typedef struct menu_animation menu_animation_t;
 
-#define TICKER_SPEED       333
-#define TICKER_SLOW_SPEED  1600
-#define TICKER_FAST_SPEED  16
+#define TICKER_SPEED       333333
+#define TICKER_SLOW_SPEED  1666666
+
+/* Pixel ticker nominally increases by one after each
+ * ticker_pixel_period ms (actual increase depends upon
+ * ticker speed setting and display resolution) */
+static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static menu_animation_t anim    = {{0}};
-static retro_time_t cur_time    = 0;
-static retro_time_t old_time    = 0;
-static uint64_t ticker_idx      = 0; /* updated every TICKER_SPEED ms */
-static uint64_t ticker_slow_idx = 0; /* updated every TICKER_SLOW_SPEED ms */
-static uint64_t ticker_fast_idx = 0; /* updated every TICKER_FAST_SPEED ms */
-static float delta_time         = 0.0f;
-static bool animation_is_active = false;
-static bool ticker_is_active    = false;
+static menu_animation_t anim     = {{0}};
+static retro_time_t cur_time     = 0;
+static retro_time_t old_time     = 0;
+static uint64_t ticker_idx       = 0; /* updated every TICKER_SPEED us */
+static uint64_t ticker_slow_idx  = 0; /* updated every TICKER_SLOW_SPEED us */
+static uint64_t ticker_pixel_idx = 0; /* updated every frame */
+static float delta_time          = 0.0f;
+static bool animation_is_active  = false;
+static bool ticker_is_active     = false;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -842,7 +846,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-static void menu_animation_update_time(bool timedate_enable)
+static void menu_animation_update_time(bool timedate_enable, unsigned video_width, unsigned video_height)
 {
    static retro_time_t
       last_clock_update       = 0;
@@ -850,24 +854,23 @@ static void menu_animation_update_time(bool timedate_enable)
       last_ticker_update      = 0;
    static retro_time_t
       last_ticker_slow_update = 0;
-   static retro_time_t
-      last_ticker_fast_update = 0;
 
-   static float ticker_fast_accumulator  = 0.0L;
-   unsigned ticker_fast_accumulator_uint = 0;
+   static float ticker_pixel_accumulator  = 0.0f;
+   unsigned ticker_pixel_accumulator_uint = 0;
+   float ticker_pixel_increment           = 0.0f;
 
    /* Adjust ticker speed */
-   settings_t *settings = config_get_ptr();
-   float speed_factor = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
-   unsigned ticker_speed = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   settings_t *settings       = config_get_ptr();
+   float speed_factor         = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
+   unsigned ticker_speed      = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
    unsigned ticker_slow_speed = (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
 
-   cur_time                 = cpu_features_get_time_usec() / 1000;
-   delta_time               = old_time == 0 ? 0 : cur_time - old_time;
+   /* Note: cur_time & old_time are in us, delta_time is in ms */
+   cur_time   = cpu_features_get_time_usec();
+   delta_time = old_time == 0 ? 0.0f : (float)(cur_time - old_time) / 1000.0f;
+   old_time   = cur_time;
 
-   old_time                 = cur_time;
-
-   if (((cur_time - last_clock_update) > 1000)
+   if (((cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
    {
       animation_is_active   = true;
@@ -888,30 +891,60 @@ static void menu_animation_update_time(bool timedate_enable)
          last_ticker_slow_update = cur_time;
       }
 
-      if (cur_time - last_ticker_fast_update >= TICKER_FAST_SPEED)
+      /* Pixel ticker updates every frame (regardless of time delta),
+       * so requires special handling */
+
+      /* > Get base increment size (+1 every ticker_pixel_period ms) */
+      ticker_pixel_increment = delta_time / ticker_pixel_period;
+
+      /* > Apply ticker speed adjustment */
+      ticker_pixel_increment *= speed_factor;
+
+      /* > Apply display resolution adjustment
+       *   (baseline resolution: 1920x1080)
+       *   Note 1: RGUI framebuffer size is independent of
+       *   display resolution, so have to use a fixed multiplier.
+       *   We choose a value such that text is scrolled
+       *   1 pixel every 4 frames when ticker speed is 1x,
+       *   which matches almost exactly the scroll speed
+       *   of non-smooth ticker text (scrolling 1 pixel
+       *   every 2 frames is optimal, but may be too fast
+       *   for some users - so play it safe. Users can always
+       *   set ticker speed to 2x if they prefer)
+       *   Note 2: It turns out that resolution adjustment
+       *   also fails for Ozone, because it doesn't implement
+       *   any kind of DPI scaling - i.e. text gets smaller
+       *   as resolution increases. This is annoying. It
+       *   means we have to use a fixed multiplier for
+       *   Ozone as well... */
+      if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         ticker_pixel_increment *= 0.25f;
+      /* TODO/FIXME: Remove this Ozone special case if/when
+       * Ozone gets proper DPI scaling */
+      else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         ticker_pixel_increment *= 0.5f;
+      else if (video_width > 0)
+         ticker_pixel_increment *= ((float)video_width / 1920.0f);
+
+      /* > Update accumulator */
+      ticker_pixel_accumulator += ticker_pixel_increment;
+      ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
+
+      /* > Check whether we've accumulated enough for an idx update */
+      if (ticker_pixel_accumulator_uint > 0)
       {
-         /* ticker fast updates approximately every frame, so
-          * have to handle the speed setting differently... */
-         ticker_fast_accumulator += speed_factor * 0.5f;
-         ticker_fast_accumulator_uint = (unsigned)ticker_fast_accumulator;
-
-         if (ticker_fast_accumulator_uint > 0)
-         {
-            ticker_fast_idx += ticker_fast_accumulator_uint;
-            ticker_fast_accumulator -= (float)ticker_fast_accumulator_uint;
-         }
-
-         last_ticker_fast_update = cur_time;
+         ticker_pixel_idx += ticker_pixel_accumulator_uint;
+         ticker_pixel_accumulator -= (float)ticker_pixel_accumulator_uint;
       }
    }
 }
 
-bool menu_animation_update(void)
+bool menu_animation_update(unsigned video_width, unsigned video_height)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   menu_animation_update_time(settings->bools.menu_timedate_enable);
+   menu_animation_update_time(settings->bools.menu_timedate_enable, video_width, video_height);
 
    anim.in_update       = true;
    anim.pending_deletes = false;
@@ -1634,7 +1667,7 @@ uint64_t menu_animation_get_ticker_slow_idx(void)
    return ticker_slow_idx;
 }
 
-uint64_t menu_animation_get_ticker_fast_idx(void)
+uint64_t menu_animation_get_ticker_pixel_idx(void)
 {
-   return ticker_fast_idx;
+   return ticker_pixel_idx;
 }
