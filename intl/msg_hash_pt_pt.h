@@ -3669,6 +3669,10 @@ MSG_HASH(
    "Estonian"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+   "Filipino"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
    "Finnish"
    )

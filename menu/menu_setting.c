@@ -2854,51 +2854,141 @@ static void setting_get_string_representation_uint_ai_service_lang(
       case TRANSLATION_LANG_NL:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_DUTCH;
          break;
+      case TRANSLATION_LANG_CS:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CZECH;
+         break;
+      case TRANSLATION_LANG_DA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_DANISH;
+         break;
          /* TODO/FIXME */
-      case TRANSLATION_LANG_CS:   /* Czech   */
-      case TRANSLATION_LANG_DA:   /* Danish  */
-      case TRANSLATION_LANG_SV:   /* Swedish */
-      case TRANSLATION_LANG_HR:   /* Croatian */
-      case TRANSLATION_LANG_CA:   /* Catalan */
-      case TRANSLATION_LANG_BG:   /* Bulgarian */
-      case TRANSLATION_LANG_BN:   /* Bengali */
-      case TRANSLATION_LANG_EU:   /* Basque */
-      case TRANSLATION_LANG_AZ:   /* Azerbaijani */
-      case TRANSLATION_LANG_SQ:   /* Albanian */
-      case TRANSLATION_LANG_AF:   /* Afrikaans */
-      case TRANSLATION_LANG_ET:   /* Estonian */
-      case TRANSLATION_LANG_FI:   /* Finnish */
-      case TRANSLATION_LANG_GL:   /* Galician */
-      case TRANSLATION_LANG_KA:   /* Georgian */
-      case TRANSLATION_LANG_GU:   /* Gujarati */
-      case TRANSLATION_LANG_HT:   /* Haitian Creole */
-      case TRANSLATION_LANG_IW:   /* Hebrew */
-      case TRANSLATION_LANG_HI:   /* Hindi */
-      case TRANSLATION_LANG_HU:   /* Hungarian */
-      case TRANSLATION_LANG_IS:   /* Icelandic */
-      case TRANSLATION_LANG_ID:   /* Indonesian */
-      case TRANSLATION_LANG_GA:   /* Irish */
-      case TRANSLATION_LANG_KN:   /* Kannada */
-      case TRANSLATION_LANG_LA:   /* Latin */
-      case TRANSLATION_LANG_LV:   /* Latvian */
-      case TRANSLATION_LANG_LT:   /* Lithuanian */
-      case TRANSLATION_LANG_MK:   /* Macedonian */
-      case TRANSLATION_LANG_MS:   /* Malay */
-      case TRANSLATION_LANG_MT:   /* Maltese */
-      case TRANSLATION_LANG_NO:   /* Norwegian */
-      case TRANSLATION_LANG_FA:   /* Persian */
-      case TRANSLATION_LANG_RO:   /* Romanian */
-      case TRANSLATION_LANG_SR:   /* Serbian */
-      case TRANSLATION_LANG_SK:   /* Slovak */
-      case TRANSLATION_LANG_SL:   /* Slovenian */
-      case TRANSLATION_LANG_SW:   /* Swahili */
-      case TRANSLATION_LANG_TA:   /* Tamil */
-      case TRANSLATION_LANG_TE:   /* Telugu */
-      case TRANSLATION_LANG_TH:   /* Thai */
-      case TRANSLATION_LANG_UK:   /* Ukrainian */
-      case TRANSLATION_LANG_UR:   /* Urdu */
-      case TRANSLATION_LANG_CY:   /* Welsh */
-      case TRANSLATION_LANG_YI:   /* Yiddish */
+      case TRANSLATION_LANG_SV:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SWEDISH;
+         break;
+      case TRANSLATION_LANG_HR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CROATIAN;
+         break;
+      case TRANSLATION_LANG_CA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CATALAN;
+         break;
+      case TRANSLATION_LANG_BG:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN;
+         break;
+      case TRANSLATION_LANG_BN:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BENGALI;
+         break;
+      case TRANSLATION_LANG_EU:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BASQUE;
+         break;
+      case TRANSLATION_LANG_AZ:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI;
+         break;
+      case TRANSLATION_LANG_SQ:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN;
+         break;
+      case TRANSLATION_LANG_AF:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS;
+         break;
+      case TRANSLATION_LANG_ET:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN;
+         break;
+      case TRANSLATION_LANG_TL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_FILIPINO;
+         break;
+      case TRANSLATION_LANG_FI:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_FINNISH;
+         break;
+      case TRANSLATION_LANG_GL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_GALICIAN;
+         break;
+      case TRANSLATION_LANG_KA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN;
+         break;
+      case TRANSLATION_LANG_GU:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_GUJARATI;
+         break;
+      case TRANSLATION_LANG_HT:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE;
+         break;
+      case TRANSLATION_LANG_IW:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HEBREW;
+         break;
+      case TRANSLATION_LANG_HI:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HINDI;
+         break;
+      case TRANSLATION_LANG_HU:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN;
+         break;
+      case TRANSLATION_LANG_IS:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC;
+         break;
+      case TRANSLATION_LANG_ID:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN;
+         break;
+      case TRANSLATION_LANG_GA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_IRISH;
+         break;
+      case TRANSLATION_LANG_KN:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_KANNADA;
+         break;
+      case TRANSLATION_LANG_LA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_LATIN;
+         break;
+      case TRANSLATION_LANG_LV:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_LATVIAN;
+         break;
+      case TRANSLATION_LANG_LT:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN;
+         break;
+      case TRANSLATION_LANG_MK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN;
+         break;
+      case TRANSLATION_LANG_MS:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_MALAY;
+         break;
+      case TRANSLATION_LANG_MT:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_MALTESE;
+         break;
+      case TRANSLATION_LANG_NO:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN;
+         break;
+      case TRANSLATION_LANG_FA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_PERSIAN;
+         break;
+      case TRANSLATION_LANG_RO:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN;
+         break;
+      case TRANSLATION_LANG_SR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SERBIAN;
+         break;
+      case TRANSLATION_LANG_SK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SLOVAK;
+         break;
+      case TRANSLATION_LANG_SL:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN;
+         break;
+      case TRANSLATION_LANG_SW:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_SWAHILI;
+         break;
+      case TRANSLATION_LANG_TA:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_TAMIL;
+         break;
+      case TRANSLATION_LANG_TE:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_TELUGU;
+         break;
+      case TRANSLATION_LANG_TH:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_THAI;
+         break;
+      case TRANSLATION_LANG_UK:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN;
+         break;
+      case TRANSLATION_LANG_UR:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_URDU;
+         break;
+      case TRANSLATION_LANG_CY:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_WELSH;
+         break;
+      case TRANSLATION_LANG_YI:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_YIDDISH;
          break;
       case TRANSLATION_LANG_RU:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN;
