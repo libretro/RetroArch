@@ -393,6 +393,178 @@ static void menu_animation_ticker_loop(uint64_t idx,
    *width3  = width;
 }
 
+static unsigned get_ticker_smooth_generic_scroll_offset(
+      uint64_t idx, unsigned str_width, unsigned field_width)
+{
+   unsigned scroll_width   = str_width - field_width;
+   unsigned scroll_offset  = 0;
+
+   unsigned pause_duration = 32;
+   unsigned ticker_period  = 2 * (scroll_width + pause_duration);
+   unsigned phase          = idx % ticker_period;
+
+   /* Determine scroll offset */
+   if (phase < pause_duration)
+      scroll_offset = 0;
+   else if (phase < ticker_period >> 1)
+      scroll_offset = phase - pause_duration;
+   else if (phase < (ticker_period >> 1) + pause_duration)
+      scroll_offset = (ticker_period - (2 * pause_duration)) >> 1;
+   else
+      scroll_offset = ticker_period - phase;
+
+   return scroll_offset;
+}
+
+/* 'Fixed width' font version of ticker_smooth_scan_characters() */
+static void ticker_smooth_scan_string_fw(
+      size_t num_chars, unsigned glyph_width, unsigned field_width, unsigned scroll_offset,
+      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset)
+{
+   unsigned chars_remaining = 0;
+
+   /* Initialise output variables to 'sane' values */
+   *char_offset       = 0;
+   *num_chars_to_copy = 0;
+   *x_offset          = 0;
+
+   /* Determine index of first character to copy */
+   if (scroll_offset > 0)
+   {
+      *char_offset = (scroll_offset / glyph_width) + 1;
+      *x_offset    = glyph_width - (scroll_offset % glyph_width);
+   }
+
+   /* Determine number of characters remaining in
+    * string once offset has been subtracted */
+   chars_remaining = (*char_offset >= num_chars) ? 0 : num_chars - *char_offset;
+
+   /* Determine number of characters to copy */
+   if ((chars_remaining > 0) && (field_width > *x_offset))
+   {
+      *num_chars_to_copy = (field_width - *x_offset) / glyph_width;
+      *num_chars_to_copy = (*num_chars_to_copy > chars_remaining) ? chars_remaining : *num_chars_to_copy;
+   }
+}
+
+/* 'Fixed width' font version of menu_animation_ticker_smooth_generic() */
+static void menu_animation_ticker_smooth_generic_fw(uint64_t idx,
+      unsigned str_width, size_t num_chars,
+      unsigned glyph_width, unsigned field_width,
+      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset)
+{
+   unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
+      idx, str_width, field_width);
+
+   /* Initialise output variables to 'sane' values */
+   *char_offset       = 0;
+   *num_chars_to_copy = 0;
+   *x_offset          = 0;
+
+   /* Sanity check */
+   if (num_chars < 1)
+      return;
+
+   ticker_smooth_scan_string_fw(
+         num_chars, glyph_width, field_width, scroll_offset,
+         char_offset, num_chars_to_copy, x_offset);
+}
+
+/* 'Fixed width' font version of menu_animation_ticker_smooth_loop() */
+static void menu_animation_ticker_smooth_loop_fw(uint64_t idx,
+      unsigned str_width, size_t num_chars,
+      unsigned spacer_width, size_t num_spacer_chars,
+      unsigned glyph_width, unsigned field_width,
+      unsigned *char_offset1, unsigned *num_chars_to_copy1,
+      unsigned *char_offset2, unsigned *num_chars_to_copy2,
+      unsigned *char_offset3, unsigned *num_chars_to_copy3,
+      unsigned *x_offset)
+{
+   unsigned ticker_period   = str_width + spacer_width;
+   unsigned phase           = idx % ticker_period;
+
+   unsigned remaining_width = field_width;
+
+   /* Initialise output variables to 'sane' values */
+   *char_offset1       = 0;
+   *num_chars_to_copy1 = 0;
+   *char_offset2       = 0;
+   *num_chars_to_copy2 = 0;
+   *char_offset3       = 0;
+   *num_chars_to_copy3 = 0;
+   *x_offset           = 0;
+
+   /* Sanity check */
+   if ((num_chars < 1) || (num_spacer_chars < 1))
+      return;
+
+   /* Looping text is composed of up to three strings,
+    * where string 1 and 2 are different regions of the
+    * source text and string 2 is a spacer:
+    * 
+    *     |----field_width----|
+    * [string 1][string 2][string 3]
+    */
+
+   /* String 1 */
+   if (phase < str_width)
+   {
+      unsigned scroll_offset = phase;
+
+      ticker_smooth_scan_string_fw(
+            num_chars, glyph_width, remaining_width, scroll_offset,
+            char_offset1, num_chars_to_copy1, x_offset);
+
+      /* Update remaining width
+       * Note: We can avoid all the display_width shenanigans
+       * here (c.f. menu_animation_ticker_smooth_loop()) because
+       * the font width is constant - i.e. we don't have to wrangle
+       * out the width of the last 'non-copied' character since it
+       * is known a priori, so we can just subtract the string width
+       * + offset here, and perform an 'if (remaining_width > glyph_width)'
+       * for strings 2 and 3 */
+      remaining_width -= (*x_offset + (*num_chars_to_copy1 * glyph_width));
+   }
+
+   /* String 2 */
+   if (remaining_width > glyph_width)
+   {
+      unsigned scroll_offset = 0;
+      unsigned x_offset2     = 0;
+
+      /* Check whether we've passed the end of string 1 */
+      if (phase > str_width)
+         scroll_offset = phase - str_width;
+      else
+         scroll_offset = 0;
+
+      ticker_smooth_scan_string_fw(
+            num_spacer_chars, glyph_width, remaining_width, scroll_offset,
+            char_offset2, num_chars_to_copy2, &x_offset2);
+
+      /* > Update remaining width */
+      remaining_width -= (x_offset2 + (*num_chars_to_copy2 * glyph_width));
+
+      /* If scroll_offset is greater than zero, it means
+       * string 2 is the first string to be displayed
+       * > ticker x offset is therefore string 2's offset */
+      if (scroll_offset > 0)
+         *x_offset = x_offset2;
+   }
+
+   /* String 3 */
+   if (remaining_width > glyph_width)
+   {
+      /* String 3 is only shown when string 2 is shown,
+       * so we can take some shortcuts... */
+      *char_offset3       = 0;
+
+      /* Determine number of characters to copy */
+      *num_chars_to_copy3 = remaining_width / glyph_width;
+      *num_chars_to_copy3 = (*num_chars_to_copy3 > num_chars) ? num_chars : *num_chars_to_copy3;
+   }
+}
+
 static void ticker_smooth_scan_characters(
       const unsigned *char_widths, size_t num_chars, unsigned field_width, unsigned scroll_offset,
       unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset,
@@ -413,12 +585,7 @@ static void ticker_smooth_scan_characters(
       *display_width  = 0;
 
    /* Determine index of first character to copy */
-   if (scroll_pos == 0)
-   {
-      *char_offset = 0;
-      *x_offset    = 0;
-   }
-   else
+   if (scroll_pos > 0)
    {
       for (i = 0; i < num_chars; i++)
       {
@@ -477,12 +644,8 @@ static void menu_animation_ticker_smooth_generic(uint64_t idx,
       const unsigned *char_widths, size_t num_chars, unsigned str_width, unsigned field_width,
       unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset, unsigned *dst_str_width)
 {
-   unsigned scroll_width   = str_width - field_width;
-   unsigned scroll_offset  = 0;
-
-   unsigned pause_duration = 32;
-   unsigned ticker_period  = 2 * (scroll_width + pause_duration);
-   unsigned phase          = idx % ticker_period;
+   unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
+      idx, str_width, field_width);
 
    /* Initialise output variables to 'sane' values */
    *char_offset       = 0;
@@ -494,16 +657,6 @@ static void menu_animation_ticker_smooth_generic(uint64_t idx,
    /* Sanity check */
    if (num_chars < 1)
       return;
-
-   /* Determine scroll offset */
-   if (phase < pause_duration)
-      scroll_offset = 0;
-   else if (phase < ticker_period >> 1)
-      scroll_offset = phase - pause_duration;
-   else if (phase < (ticker_period >> 1) + pause_duration)
-      scroll_offset = (ticker_period - (2 * pause_duration)) >> 1;
-   else
-      scroll_offset = ticker_period - phase;
 
    ticker_smooth_scan_characters(
       char_widths, num_chars, field_width, scroll_offset,
@@ -535,6 +688,10 @@ static void menu_animation_ticker_smooth_loop(uint64_t idx,
    *x_offset           = 0;
    if (dst_str_width)
       *dst_str_width   = 0;
+
+   /* Sanity check */
+   if ((num_chars < 1) || (num_spacer_chars < 1))
+      return;
 
    /* Looping text is composed of up to three strings,
     * where string 1 and 2 are different regions of the
@@ -1004,6 +1161,47 @@ bool menu_animation_update(unsigned video_width, unsigned video_height)
    return animation_is_active;
 }
 
+static void build_ticker_loop_string(
+      const char* src_str, const char *spacer,
+      unsigned char_offset1, unsigned num_chars1,
+      unsigned char_offset2, unsigned num_chars2,
+      unsigned char_offset3, unsigned num_chars3,
+      char *dest_str, size_t dest_str_len)
+{
+   char tmp[PATH_MAX_LENGTH];
+
+   tmp[0] = '\0';
+   dest_str[0] = '\0';
+
+   /* Copy 'trailing' chunk of source string, if required */
+   if (num_chars1 > 0)
+   {
+      utf8cpy(
+            dest_str, dest_str_len,
+            utf8skip(src_str, char_offset1), num_chars1);
+   }
+
+   /* Copy chunk of spacer string, if required */
+   if (num_chars2 > 0)
+   {
+      utf8cpy(
+            tmp, sizeof(tmp),
+            utf8skip(spacer, char_offset2), num_chars2);
+
+      strlcat(dest_str, tmp, dest_str_len);
+   }
+
+   /* Copy 'leading' chunk of source string, if required */
+   if (num_chars3 > 0)
+   {
+      utf8cpy(
+            tmp, sizeof(tmp),
+            utf8skip(src_str, char_offset3), num_chars3);
+
+      strlcat(dest_str, tmp, dest_str_len);
+   }
+}
+
 bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 {
    size_t str_len = utf8len(ticker->str);
@@ -1037,14 +1235,6 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
          size_t offset1, offset2, offset3;
          size_t width1, width2, width3;
          
-         /* Horribly oversized temporary buffer
-          * > utf8 support makes this whole thing incredibly
-          *   ugly/inefficient. Not much we can do about it... */
-         char tmp[PATH_MAX_LENGTH];
-         
-         tmp[0] = '\0';
-         ticker->s[0] = '\0';
-         
          menu_animation_ticker_loop(
                ticker->idx,
                ticker->len,
@@ -1053,36 +1243,12 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
                &offset2, &width2,
                &offset3, &width3);
          
-         if (width1 > 0)
-         {
-            utf8cpy(
-                  ticker->s,
-                  PATH_MAX_LENGTH,
-                  utf8skip(ticker->str, offset1),
-                  width1);
-         }
-         
-         if (width2 > 0)
-         {
-            utf8cpy(
-                  tmp,
-                  PATH_MAX_LENGTH,
-                  utf8skip(ticker->spacer, offset2),
-                  width2);
-            
-            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
-         }
-         
-         if (width3 > 0)
-         {
-            utf8cpy(
-                  tmp,
-                  PATH_MAX_LENGTH,
-                  utf8skip(ticker->str, offset3),
-                  width3);
-            
-            strlcat(ticker->s, tmp, PATH_MAX_LENGTH);
-         }
+         build_ticker_loop_string(
+               ticker->str, ticker->spacer,
+               offset1, width1,
+               offset2, width2,
+               offset3, width3,
+               ticker->s, PATH_MAX_LENGTH);
          
          break;
       }
@@ -1112,6 +1278,159 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    return true;
 }
 
+/* 'Fixed width' font version of menu_animation_ticker_smooth() */
+bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
+{
+   size_t src_str_len           = 0;
+   size_t spacer_len            = 0;
+   unsigned glyph_width         = ticker->glyph_width;
+   unsigned src_str_width       = 0;
+   unsigned spacer_width        = 0;
+   bool success                 = false;
+   bool is_active               = false;
+
+   /* Sanity check has already been performed by
+    * menu_animation_ticker_smooth() - no need to
+    * repeat */
+
+   /* Get length + width of src string */
+   src_str_len = utf8len(ticker->src_str);
+   if (src_str_len < 1)
+      goto end;
+
+   src_str_width = src_str_len * glyph_width;
+
+   /* If src string width is <= text field width, we
+    * can just copy the entire string */
+   if (src_str_width <= ticker->field_width)
+   {
+      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, src_str_len);
+
+      if (ticker->dst_str_width)
+         *ticker->dst_str_width = src_str_width;
+      *ticker->x_offset = 0;
+      success = true;
+      goto end;
+   }
+
+   /* If entry is not selected, just clip input string
+    * and add '...' suffix */
+   if (!ticker->selected)
+   {
+      unsigned num_chars    = 0;
+      unsigned suffix_len   = 3;
+      unsigned suffix_width = suffix_len * glyph_width;
+
+      /* Sanity check */
+      if (ticker->field_width < suffix_width)
+         goto end;
+
+      /* Determine number of characters to copy */
+      num_chars = (ticker->field_width - suffix_width) / glyph_width;
+
+      /* Copy string segment + add suffix */
+      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
+
+      if (ticker->dst_str_width)
+         *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
+      *ticker->x_offset = 0;
+      success = true;
+      goto end;
+   }
+
+   /* If we get this far, then a scrolling animation
+    * is required... */
+
+   /* Use default spacer, if none is provided */
+   if (!ticker->spacer)
+      ticker->spacer = ticker_spacer_default;
+
+   /* Get length + width of spacer */
+   spacer_len = utf8len(ticker->spacer);
+   if (spacer_len < 1)
+      goto end;
+
+   spacer_width = spacer_len * glyph_width;
+
+   /* Determine animation type */
+   switch (ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+      {
+         unsigned char_offset1 = 0;
+         unsigned num_chars1   = 0;
+         unsigned char_offset2 = 0;
+         unsigned num_chars2   = 0;
+         unsigned char_offset3 = 0;
+         unsigned num_chars3   = 0;
+
+         menu_animation_ticker_smooth_loop_fw(
+               ticker->idx,
+               src_str_width, src_str_len, spacer_width, spacer_len,
+               glyph_width, ticker->field_width,
+               &char_offset1, &num_chars1,
+               &char_offset2, &num_chars2,
+               &char_offset3, &num_chars3,
+               ticker->x_offset);
+
+         build_ticker_loop_string(
+               ticker->src_str, ticker->spacer,
+               char_offset1, num_chars1,
+               char_offset2, num_chars2,
+               char_offset3, num_chars3,
+               ticker->dst_str, ticker->dst_str_len);
+
+         if (ticker->dst_str_width)
+            *ticker->dst_str_width = (num_chars1 + num_chars2 + num_chars3) * glyph_width;
+
+         break;
+      }
+      case TICKER_TYPE_BOUNCE:
+      default:
+      {
+         unsigned char_offset = 0;
+         unsigned num_chars   = 0;
+
+         ticker->dst_str[0] = '\0';
+
+         menu_animation_ticker_smooth_generic_fw(
+               ticker->idx,
+               src_str_width, src_str_len, glyph_width, ticker->field_width,
+               &char_offset, &num_chars, ticker->x_offset);
+
+         /* Copy required substring */
+         if (num_chars > 0)
+         {
+            utf8cpy(
+                  ticker->dst_str, ticker->dst_str_len,
+                  utf8skip(ticker->src_str, char_offset), num_chars);
+         }
+
+         if (ticker->dst_str_width)
+            *ticker->dst_str_width = num_chars * glyph_width;
+
+         break;
+      }
+   }
+
+   success          = true;
+   is_active        = true;
+   ticker_is_active = true;
+
+end:
+
+   if (!success)
+   {
+      *ticker->x_offset = 0;
+
+      if (ticker->dst_str_len > 0)
+         ticker->dst_str[0] = '\0';
+   }
+
+   return is_active;
+}
+
 bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
 {
    size_t i;
@@ -1121,6 +1440,7 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
    unsigned spacer_width        = 0;
    unsigned *src_char_widths    = NULL;
    unsigned *spacer_char_widths = NULL;
+   const char *str_ptr          = NULL;
    bool success                 = false;
    bool is_active               = false;
 
@@ -1130,6 +1450,11 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
        (ticker->field_width < 1) ||
        (!ticker->font && (ticker->glyph_width < 1)))
       goto end;
+
+   /* If we are using a fixed width font (ticker->font == NULL),
+    * switch to optimised code path */
+   if (!ticker->font)
+      return menu_animation_ticker_smooth_fw(ticker);
 
    /* Find the display width of each character in
     * the src string + total width */
@@ -1141,38 +1466,19 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
    if (!src_char_widths)
       goto end;
 
-   /* > If a font is provided, have to do this
-    *   'the hard way'
-    *   (Note: we branch externally rather than inside
-    *   for loop - this is ugly, but improves performance) */
-   if (ticker->font)
+   str_ptr = ticker->src_str;
+   for (i = 0; i < src_str_len; i++)
    {
-      const char *str_ptr = ticker->src_str;
+      int glyph_width = font_driver_get_message_width(
+            ticker->font, str_ptr, 1, ticker->font_scale);
 
-      for (i = 0; i < src_str_len; i++)
-      {
-         int glyph_width = font_driver_get_message_width(
-               ticker->font, str_ptr, 1, ticker->font_scale);
+      if (glyph_width < 0)
+         goto end;
 
-         if (glyph_width < 0)
-            goto end;
+      src_char_widths[i] = (unsigned)glyph_width;
+      src_str_width += (unsigned)glyph_width;
 
-         src_char_widths[i] = (unsigned)glyph_width;
-         src_str_width += (unsigned)glyph_width;
-
-         str_ptr = utf8skip(str_ptr, 1);
-      }
-   }
-   /* > If font is not provided, just use fallback width */
-   else
-   {
-      unsigned glyph_width = ticker->glyph_width;
-
-      for (i = 0; i < src_str_len; i++)
-      {
-         src_char_widths[i] = glyph_width;
-         src_str_width += glyph_width;
-      }
+      str_ptr = utf8skip(str_ptr, 1);
    }
 
    /* If total src string width is <= text field width, we
@@ -1195,17 +1501,13 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       unsigned text_width;
       unsigned current_width = 0;
       unsigned num_chars     = 0;
-      int period_width       = 0;
+      int period_width       =
+            font_driver_get_message_width(ticker->font, ".", 1, ticker->font_scale);
 
-      if (ticker->font)
-         period_width = font_driver_get_message_width(ticker->font, ".", 1, ticker->font_scale);
-      else
-         period_width = ticker->glyph_width;
-
+      /* Sanity check */
       if (period_width < 0)
          goto end;
 
-      /* Sanity check */
       if (ticker->field_width < (3 * period_width))
          goto end;
 
@@ -1254,37 +1556,19 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
    if (!spacer_char_widths)
       goto end;
 
-   /* > If a font is provided, have to do this
-    *   'the hard way'
-    *   (Note: we branch externally rather than inside
-    *   for loop - this is ugly, but improves performance) */
-   if (ticker->font)
+   str_ptr = ticker->spacer;
+   for (i = 0; i < spacer_len; i++)
    {
-      const char *str_ptr = ticker->spacer;
+      int glyph_width = font_driver_get_message_width(
+            ticker->font, str_ptr, 1, ticker->font_scale);
 
-      for (i = 0; i < spacer_len; i++)
-      {
-         int glyph_width = font_driver_get_message_width(
-               ticker->font, str_ptr, 1, ticker->font_scale);
+      if (glyph_width < 0)
+         goto end;
 
-         if (glyph_width < 0)
-            goto end;
+      spacer_char_widths[i] = (unsigned)glyph_width;
+      spacer_width += (unsigned)glyph_width;
 
-         spacer_char_widths[i] = (unsigned)glyph_width;
-         spacer_width += (unsigned)glyph_width;
-
-         str_ptr = utf8skip(str_ptr, 1);
-      }
-   }
-   else
-   {
-      unsigned glyph_width = ticker->glyph_width;
-
-      for (i = 0; i < spacer_len; i++)
-      {
-         spacer_char_widths[i] = glyph_width;
-         spacer_width += glyph_width;
-      }
+      str_ptr = utf8skip(str_ptr, 1);
    }
 
    /* Determine animation type */
@@ -1299,11 +1583,6 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
          unsigned char_offset3 = 0;
          unsigned num_chars3   = 0;
 
-         char tmp[PATH_MAX_LENGTH];
-
-         tmp[0] = '\0';
-         ticker->dst_str[0] = '\0';
-
          menu_animation_ticker_smooth_loop(
                ticker->idx,
                src_char_widths, src_str_len,
@@ -1314,33 +1593,12 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
                &char_offset3, &num_chars3,
                ticker->x_offset, ticker->dst_str_width);
 
-         /* Copy 'trailing' chunk of source string, if required */
-         if (num_chars1 > 0)
-         {
-            utf8cpy(
-               ticker->dst_str, ticker->dst_str_len,
-               utf8skip(ticker->src_str, char_offset1), num_chars1);
-         }
-
-         /* Copy chunk of spacer string, if required */
-         if (num_chars2 > 0)
-         {
-            utf8cpy(
-               tmp, sizeof(tmp),
-               utf8skip(ticker->spacer, char_offset2), num_chars2);
-
-            strlcat(ticker->dst_str, tmp, ticker->dst_str_len);
-         }
-
-         /* Copy 'leading' chunk of source string, if required */
-         if (num_chars3 > 0)
-         {
-            utf8cpy(
-               tmp, sizeof(tmp),
-               utf8skip(ticker->src_str, char_offset3), num_chars3);
-
-            strlcat(ticker->dst_str, tmp, ticker->dst_str_len);
-         }
+         build_ticker_loop_string(
+               ticker->src_str, ticker->spacer,
+               char_offset1, num_chars1,
+               char_offset2, num_chars2,
+               char_offset3, num_chars3,
+               ticker->dst_str, ticker->dst_str_len);
 
          break;
       }
