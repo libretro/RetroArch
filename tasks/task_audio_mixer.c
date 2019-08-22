@@ -35,13 +35,6 @@
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
-typedef struct nbio_buf
-{
-   void *buf;
-   unsigned bufsize;
-   char *path;
-} nbio_buf_t;
-
 struct audio_mixer_userdata
 {
    enum audio_mixer_stream_type stream_type;

@@ -2667,14 +2667,6 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-typedef struct nbio_buf
-{
-   void *buf;
-   unsigned bufsize;
-   char *path;
-} nbio_buf_t;
-
-
 static void handle_translation_cb(
       retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
