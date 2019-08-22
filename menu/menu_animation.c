@@ -627,9 +627,9 @@ static size_t get_line_display_ticks(size_t line_width)
    /* Mean human reading speed for all western languages,
     * characters per minute */
    float cpm            = 1000.0f;
-   /* Base time for which a line should be shown, in ms */
-   float line_duration  = (line_width * 60.0f * 1000.0f) / cpm;
-   /* Ticker updates (nominally) once every TICKER_SPEED ms
+   /* Base time for which a line should be shown, in us */
+   float line_duration  = (line_width * 60.0f * 1000.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_SPEED us
     * > Return base number of ticks for which line should be shown */
    return (size_t)(line_duration / (float)TICKER_SPEED);
 }
