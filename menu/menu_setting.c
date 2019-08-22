@@ -2827,7 +2827,7 @@ static void setting_get_string_representation_uint_ai_service_lang(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   enum msg_hash_enums enum_idx = 0;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
       return;
 
