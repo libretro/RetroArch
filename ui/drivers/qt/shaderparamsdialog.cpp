@@ -558,6 +558,8 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
       }
    }
 
+   menu_shader_set_modified(true);
+
    reload();
 }
 
@@ -601,6 +603,8 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
       if (param)
          param->current = param->initial;
    }
+
+   menu_shader_set_modified(true);
 
    reload();
 }

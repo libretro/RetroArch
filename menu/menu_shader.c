@@ -446,6 +446,8 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
+   menu_driver_shader_modified = true;
+
    return 0;
 }
 
