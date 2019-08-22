@@ -2914,6 +2914,144 @@ finish:
       free(raw_output_data);
 }
 
+static const char *ai_service_get_str(enum translation_lang id)
+{
+   switch (id)
+   {
+      case TRANSLATION_LANG_EN:
+         return "en";
+      case TRANSLATION_LANG_ES:
+         return "es";
+      case TRANSLATION_LANG_FR:
+         return "fr";
+      case TRANSLATION_LANG_IT:
+         return "it";
+      case TRANSLATION_LANG_DE:
+         return "de";
+      case TRANSLATION_LANG_JP:
+         return "jp";
+      case TRANSLATION_LANG_NL:
+         return "nl";
+      case TRANSLATION_LANG_CS:
+         return "cs";
+      case TRANSLATION_LANG_DA:
+         return "da";
+      case TRANSLATION_LANG_SV:
+         return "sv";
+      case TRANSLATION_LANG_HR:
+         return "hr";
+      case TRANSLATION_LANG_KO:
+         return "ko";
+      case TRANSLATION_LANG_ZH_CN:
+         return "zh-CN";
+      case TRANSLATION_LANG_ZH_TW:
+         return "zh-TW";
+      case TRANSLATION_LANG_CA:
+         return "ca";
+      case TRANSLATION_LANG_BG:
+         return "bg";
+      case TRANSLATION_LANG_BN:
+         return "bn";
+      case TRANSLATION_LANG_EU:
+         return "eu";
+      case TRANSLATION_LANG_AZ:
+         return "az";
+      case TRANSLATION_LANG_AR:
+         return "ar";
+      case TRANSLATION_LANG_SQ:
+         return "sq";
+      case TRANSLATION_LANG_AF:
+         return "af";
+      case TRANSLATION_LANG_EO:
+         return "eo";
+      case TRANSLATION_LANG_ET:
+         return "et";
+      case TRANSLATION_LANG_TL:
+         return "tl";
+      case TRANSLATION_LANG_FI:
+         return "fi";
+      case TRANSLATION_LANG_GL:
+         return "gl";
+      case TRANSLATION_LANG_KA:
+         return "ka";
+      case TRANSLATION_LANG_EL:
+         return "el";
+      case TRANSLATION_LANG_GU:
+         return "gu";
+      case TRANSLATION_LANG_HT:
+         return "ht";
+      case TRANSLATION_LANG_IW:
+         return "iw";
+      case TRANSLATION_LANG_HI:
+         return "hi";
+      case TRANSLATION_LANG_HU:
+         return "hu";
+      case TRANSLATION_LANG_IS:
+         return "is";
+      case TRANSLATION_LANG_ID:
+         return "id";
+      case TRANSLATION_LANG_GA:
+         return "ga";
+      case TRANSLATION_LANG_KN:
+         return "kn";
+      case TRANSLATION_LANG_LA:
+         return "la";
+      case TRANSLATION_LANG_LV:
+         return "lv";
+      case TRANSLATION_LANG_LT:
+         return "lt";
+      case TRANSLATION_LANG_MK:
+         return "mk";
+      case TRANSLATION_LANG_MS:
+         return "ms";
+      case TRANSLATION_LANG_MT:
+         return "mt";
+      case TRANSLATION_LANG_NO:
+         return "no";
+      case TRANSLATION_LANG_FA:
+         return "fa";
+      case TRANSLATION_LANG_PL:
+         return "pl";
+      case TRANSLATION_LANG_PT:
+         return "pt";
+      case TRANSLATION_LANG_RO:
+         return "ro";
+      case TRANSLATION_LANG_RU:
+         return "ru";
+      case TRANSLATION_LANG_SR:
+         return "sr";
+      case TRANSLATION_LANG_SK:
+         return "sk";
+      case TRANSLATION_LANG_SL:
+         return "sl";
+      case TRANSLATION_LANG_SW:
+         return "sw";
+      case TRANSLATION_LANG_TA:
+         return "ta";
+      case TRANSLATION_LANG_TE:
+         return "te";
+      case TRANSLATION_LANG_TH:
+         return "th";
+      case TRANSLATION_LANG_TR:
+         return "tr";
+      case TRANSLATION_LANG_UK:
+         return "uk";
+      case TRANSLATION_LANG_UR:
+         return "ur";
+      case TRANSLATION_LANG_VI:
+         return "vi";
+      case TRANSLATION_LANG_CY:
+         return "cy";
+      case TRANSLATION_LANG_YI:
+         return "yi";
+      case TRANSLATION_LANG_DONT_CARE:
+      case TRANSLATION_LANG_LAST:
+         break;
+   }
+
+   return "";
+}
+
 /*
    This function does all the stuff needed to translate the game screen, 
    using the URL given in the settings.  Once the image from the frame
@@ -3067,9 +3205,44 @@ static bool run_translation_service(void)
    memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
    memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
   
-   RARCH_LOG("Server URL:  %s\n", settings->arrays.ai_service_url);
-   task_push_http_post_transfer(settings->arrays.ai_service_url, 
-         json_buffer, true, NULL, handle_translation_cb, NULL);
+   {
+      char new_ai_service_url[PATH_MAX_LENGTH];
+
+      strlcpy(new_ai_service_url,
+            settings->arrays.ai_service_url, sizeof(new_ai_service_url));
+
+      if (settings->uints.ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
+      {
+         const char *lang_source = ai_service_get_str(
+               (enum translation_lang)settings->uints.ai_service_source_lang);
+
+         if (!string_is_empty(lang_source))
+         {
+            strlcat(new_ai_service_url, "&source_lang=",
+                  sizeof(new_ai_service_url));
+            strlcat(new_ai_service_url, lang_source,
+                  sizeof(new_ai_service_url));
+         }
+      }
+
+      if (settings->uints.ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
+      {
+         const char *lang_target = ai_service_get_str(
+               (enum translation_lang)settings->uints.ai_service_target_lang);
+
+         if (!string_is_empty(lang_target))
+         {
+            strlcat(new_ai_service_url, "&target_lang=",
+                  sizeof(new_ai_service_url));
+            strlcat(new_ai_service_url, lang_target,
+                  sizeof(new_ai_service_url));
+         }
+      }
+
+      RARCH_LOG("Server URL:  %s\n", new_ai_service_url);
+      task_push_http_post_transfer(new_ai_service_url, 
+            json_buffer, true, NULL, handle_translation_cb, NULL);
+   }
 
    error = false;
 finish:
