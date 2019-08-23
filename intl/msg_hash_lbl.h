@@ -265,6 +265,10 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER,
       "database_manager")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
       "database_manager_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,
+      "deferred_video_shader_preset_remove_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,
+      "deferred_video_shader_preset_save_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST,
       "deferred_cdrom_info_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_DETAIL_LIST,
@@ -1395,6 +1399,18 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
       "video_shader_preset")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
       "video_shader_preset_parameters")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,
+      "video_shader_preset_remove")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+      "video_shader_preset_remove_global")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+      "video_shader_preset_remove_core")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+      "video_shader_preset_remove_parent")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+      "video_shader_preset_remove_game")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
+      "video_shader_preset_save")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
       "video_shader_preset_save_as")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,

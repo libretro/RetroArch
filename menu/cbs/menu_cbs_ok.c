@@ -300,6 +300,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
       case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST;
+      case ACTION_OK_DL_SHADER_PRESET_SAVE:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST;
+      case ACTION_OK_DL_SHADER_PRESET_REMOVE:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST;
       default:
          break;
    }
@@ -1044,6 +1048,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_IMAGES_LIST:
       case ACTION_OK_DL_LOAD_DISC_LIST:
       case ACTION_OK_DL_DUMP_DISC_LIST:
+      case ACTION_OK_DL_SHADER_PRESET_REMOVE:
+      case ACTION_OK_DL_SHADER_PRESET_SAVE:
       case ACTION_OK_DL_CDROM_INFO_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
@@ -2701,6 +2707,51 @@ enum
    ACTION_OK_SHADER_PRESET_SAVE_GAME
 };
 
+enum
+{
+   ACTION_OK_SHADER_PRESET_REMOVE_GLOBAL = 0,
+   ACTION_OK_SHADER_PRESET_REMOVE_CORE,
+   ACTION_OK_SHADER_PRESET_REMOVE_PARENT,
+   ACTION_OK_SHADER_PRESET_REMOVE_GAME
+};
+
+static int generic_action_ok_shader_preset_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
+{
+   enum auto_shader_type preset_type;
+   switch (action_type)
+   {
+      case ACTION_OK_SHADER_PRESET_REMOVE_GLOBAL:
+         preset_type = SHADER_PRESET_GLOBAL;
+         break;
+      case ACTION_OK_SHADER_PRESET_REMOVE_CORE:
+         preset_type = SHADER_PRESET_CORE;
+         break;
+      case ACTION_OK_SHADER_PRESET_REMOVE_PARENT:
+         preset_type = SHADER_PRESET_PARENT;
+         break;
+      case ACTION_OK_SHADER_PRESET_REMOVE_GAME:
+         preset_type = SHADER_PRESET_GAME;
+         break;
+      default:
+         return 0;
+   }
+
+   if (menu_shader_manager_remove_auto_preset(preset_type))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   else
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   return 0;
+}
+
 static int generic_action_ok_shader_preset_save(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
@@ -2764,6 +2815,34 @@ static int action_ok_shader_preset_save_game(const char *path,
 {
    return generic_action_ok_shader_preset_save(path, label, type,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
+}
+
+static int action_ok_shader_preset_remove_global(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_remove(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_GLOBAL);
+}
+
+static int action_ok_shader_preset_remove_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_remove(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_CORE);
+}
+
+static int action_ok_shader_preset_remove_parent(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_remove(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_PARENT);
+}
+
+static int action_ok_shader_preset_remove_game(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_remove(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_GAME);
 }
 #endif
 
@@ -4525,6 +4604,8 @@ default_action_ok_func(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL
 default_action_ok_func(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
 default_action_ok_func(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+default_action_ok_func(action_ok_shader_preset_save, ACTION_OK_DL_SHADER_PRESET_SAVE)
+default_action_ok_func(action_ok_shader_preset_remove, ACTION_OK_DL_SHADER_PRESET_REMOVE)
 default_action_ok_func(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
 #endif
 default_action_ok_func(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
@@ -6351,6 +6432,16 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save);
+#endif
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
@@ -6374,6 +6465,26 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_global);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_core);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_parent);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_game);
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
@@ -6634,6 +6745,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
          case MENU_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
+            break;
+#endif
+         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save);
             break;
 #endif
          case MENU_LABEL_VIDEO_SHADER_PARAMETERS:

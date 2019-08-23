@@ -80,6 +80,8 @@ static int (name)(menu_displaylist_info_t *info) \
 
 generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
+generic_deferred_push(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
+generic_deferred_push(deferred_push_video_shader_preset_remove,       DISPLAYLIST_SHADER_PRESET_REMOVE)
 generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
 generic_deferred_push(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
@@ -1099,6 +1101,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_twitch_list);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_save);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_remove);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1594,6 +1606,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_save);
                break;
             case MENU_LABEL_CORE_CHEAT_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);

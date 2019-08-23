@@ -587,11 +587,17 @@ default_sublabel_macro(action_bind_sublabel_shader_apply_changes,               
 default_sublabel_macro(action_bind_sublabel_shader_watch_for_changes,              MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES)
 default_sublabel_macro(action_bind_sublabel_shader_num_passes,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES)
 default_sublabel_macro(action_bind_sublabel_shader_preset,                         MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET)
+default_sublabel_macro(action_bind_sublabel_shader_preset_save,                    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE)
+default_sublabel_macro(action_bind_sublabel_shader_preset_remove,                    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_as,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_global,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_parent,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_game,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME)
+default_sublabel_macro(action_bind_sublabel_shader_preset_remove_global,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL)
+default_sublabel_macro(action_bind_sublabel_shader_preset_remove_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE)
+default_sublabel_macro(action_bind_sublabel_shader_preset_remove_parent,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT)
+default_sublabel_macro(action_bind_sublabel_shader_preset_remove_game,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME)
 default_sublabel_macro(action_bind_sublabel_shader_parameters,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS)
 default_sublabel_macro(action_bind_sublabel_shader_preset_parameters,              MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS)
 default_sublabel_macro(action_bind_sublabel_cheat_apply_changes,                   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES)
@@ -1271,6 +1277,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_parameters);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_as);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_global);
             break;
@@ -1283,8 +1298,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_game);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_as);
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove_global);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove_core);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove_parent);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove_game);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset);

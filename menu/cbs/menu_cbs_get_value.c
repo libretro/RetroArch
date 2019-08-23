@@ -1437,6 +1437,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
          case MENU_ENUM_LABEL_FRONTEND_COUNTERS:

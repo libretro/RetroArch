@@ -316,22 +316,9 @@ static bool menu_shader_manager_save_preset_internal(
    return ret;
 }
 
-/**
- * menu_shader_manager_save_auto_preset:
- * @shader                   : shader to save
- * @type                     : type of shader preset which determines save path
- * @apply                    : immediately set preset after saving
- *
- * Save a shader as an auto-shader to it's appropriate path:
- *    SHADER_PRESET_GLOBAL: <shader dir>/presets/global
- *    SHADER_PRESET_CORE:   <shader dir>/presets/<core name>/<core name>
- *    SHADER_PRESET_PARENT: <shader dir>/presets/<core name>/<parent>
- *    SHADER_PRESET_GAME:   <shader dir>/presets/<core name>/<game name>
- * Needs to be consistent with retroarch_load_shader_preset()
- * Auto-shaders will be saved as a reference if possible
- **/
-bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
-      enum auto_shader_type type, bool apply)
+/** Saves or deletes an auto-shader, save = false requires no other parameters */
+static bool menu_shader_manager_operate_auto_preset(bool save,
+      const struct video_shader *shader, enum auto_shader_type type, bool apply)
 {
    char tmp[PATH_MAX_LENGTH];
    char directory[PATH_MAX_LENGTH];
@@ -392,10 +379,61 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
          return false;
    }
 
-   if (!path_is_directory(directory))
-       path_mkdir(directory);
+   if (save)
+   {
+      if (!path_is_directory(directory))
+          path_mkdir(directory);
 
-   return menu_shader_manager_save_preset_internal(shader, file, apply, true);
+      return menu_shader_manager_save_preset_internal(shader, file, apply, true);
+   }
+   else
+   {
+      char *end = file + strlen(file);
+      size_t i;
+      bool success = false;
+
+      static enum rarch_shader_type shader_types[] =
+      {
+         RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
+      };
+
+      /* remove all supported auto-shaders of given type */
+      for (i = 0; i < ARRAY_SIZE(shader_types); i++)
+      {
+         const char *preset_ext;
+
+         if (!video_shader_is_supported(shader_types[i]))
+            continue;
+
+         preset_ext = video_shader_get_preset_extension(shader_types[i]);
+         strlcpy(end, preset_ext, sizeof(file) - (end-file));
+
+         if (!filestream_delete(file))
+            success = true;
+      }
+
+      return success;
+   }
+}
+
+/**
+ * menu_shader_manager_save_auto_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader as an auto-shader to it's appropriate path:
+ *    SHADER_PRESET_GLOBAL: <shader dir>/presets/global
+ *    SHADER_PRESET_CORE:   <shader dir>/presets/<core name>/<core name>
+ *    SHADER_PRESET_PARENT: <shader dir>/presets/<core name>/<parent>
+ *    SHADER_PRESET_GAME:   <shader dir>/presets/<core name>/<game name>
+ * Needs to be consistent with retroarch_load_shader_preset()
+ * Auto-shaders will be saved as a reference if possible
+ **/
+bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
+      enum auto_shader_type type, bool apply)
+{
+   return menu_shader_manager_operate_auto_preset(true, shader, type, apply);
 }
 
 /**
@@ -411,6 +449,17 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       const char *basename, bool apply)
 {
    return menu_shader_manager_save_preset_internal(shader, basename, apply, false);
+}
+
+/**
+ * menu_shader_manager_remove_auto_preset:
+ * @type                     : type of shader preset to delete
+ *
+ * Deletes an auto-shader.
+ **/
+bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
+{
+   return menu_shader_manager_operate_auto_preset(false, NULL, type, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)

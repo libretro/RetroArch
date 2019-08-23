@@ -268,6 +268,7 @@ default_title_copy_macro(action_get_title_input_settings,         MENU_ENUM_LABE
 default_title_copy_macro(action_get_title_cheevos_list,           MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST)
 default_title_copy_macro(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 default_title_copy_macro(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
+default_title_copy_macro(action_get_title_video_shader_preset_save,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
 
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 default_title_macro(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
@@ -948,6 +949,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
+            break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_disk_image_append);
             break;
@@ -1268,6 +1272,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_parameters);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_save);
             break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);

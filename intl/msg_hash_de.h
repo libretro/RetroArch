@@ -3987,3 +3987,33 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    "Speech Mode"
    )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+      "Remove ...")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+      "Remove shader presets of a specific type.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+      "Remove Global Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+      "Remove the Global Preset, used by all content and all cores.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+      "Remove Core Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+      "Remove the Core Preset, used by all content ran with the currently loaded core.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+      "Remove Content Directory Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+      "Remove the Content Directory Preset, used by all content inside the current working directory.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+      "Remove Game Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+      "Remove the Game Preset, used only for the specific game in question.")
