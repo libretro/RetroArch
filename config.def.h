@@ -864,7 +864,7 @@ static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABL
 
 static const bool scan_without_core_match      = false;
 
-static const bool playlist_show_sublabels      = false;
+#define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 
 static const bool playlist_fuzzy_archive_match = false;
 

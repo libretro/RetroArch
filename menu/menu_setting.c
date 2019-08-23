@@ -14145,7 +14145,7 @@ static bool setting_append_list(
                &settings->bools.playlist_show_sublabels,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
-               playlist_show_sublabels,
+               DEFAULT_PLAYLIST_SHOW_SUBLABELS,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
