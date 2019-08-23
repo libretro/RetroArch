@@ -392,6 +392,7 @@ typedef struct settings
       float menu_footer_opacity;
       float menu_header_opacity;
       float menu_ticker_speed;
+      float menu_rgui_particle_effect_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
