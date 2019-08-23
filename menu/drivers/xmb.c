@@ -215,6 +215,7 @@ enum
    XMB_TEXTURE_DEFAULT_CONTENT,
    XMB_TEXTURE_MENU_APPLY_TOGGLE,
    XMB_TEXTURE_MENU_APPLY_COG,
+   XMB_TEXTURE_DISC,
    XMB_TEXTURE_LAST
 };
 
@@ -2393,6 +2394,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
 
+      case MENU_ENUM_LABEL_LOAD_DISC:
+      case MENU_ENUM_LABEL_DUMP_DISC:
+      case MENU_ENUM_LABEL_DISC_INFORMATION:
+         return xmb->textures.list[XMB_TEXTURE_DISC];
+
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
@@ -2611,6 +2617,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                break;
          }
          return xmb->textures.list[XMB_TEXTURE_FILE];
+      case MENU_SET_CDROM_INFO:
+      case MENU_SET_CDROM_LIST:
+      case MENU_SET_LOAD_CDROM_LIST:
+         return xmb->textures.list[XMB_TEXTURE_DISC];
       case FILE_TYPE_SHADER:
       case FILE_TYPE_SHADER_PRESET:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
@@ -4946,6 +4956,8 @@ static const char *xmb_texture_path(unsigned id)
          return "menu_privacy.png";
       case XMB_TEXTURE_PLAYLIST:
          return "menu_playlist.png";
+      case XMB_TEXTURE_DISC:
+         return "disc.png";
       case XMB_TEXTURE_QUICKMENU:
          return "menu_quickmenu.png";
       case XMB_TEXTURE_REWIND:
