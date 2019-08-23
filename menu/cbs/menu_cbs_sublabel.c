@@ -484,6 +484,7 @@ default_sublabel_macro(action_bind_sublabel_settings_show_latency,              
 default_sublabel_macro(action_bind_sublabel_settings_show_core,                    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE)
 default_sublabel_macro(action_bind_sublabel_settings_show_configuration,           MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION)
 default_sublabel_macro(action_bind_sublabel_settings_show_saving,                  MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING)
+default_sublabel_macro(action_bind_sublabel_settings_show_logging,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING)
 default_sublabel_macro(action_bind_sublabel_settings_show_frame_throttle,          MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE)
 default_sublabel_macro(action_bind_sublabel_settings_show_recording,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING)
 default_sublabel_macro(action_bind_sublabel_settings_show_onscreen_display,        MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY)
@@ -1433,6 +1434,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_saving);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_logging)
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_frame_throttle);
