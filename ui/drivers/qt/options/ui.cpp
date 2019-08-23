@@ -108,6 +108,8 @@ QWidget *ViewsPage::widget()
 
    {
       unsigned i;
+      unsigned tabs_begin   = 0;
+      unsigned status_begin = 0;
       file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
       menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST);
 
@@ -117,9 +119,39 @@ QWidget *ViewsPage::widget()
             file_list_get_actiondata_at_offset(list, i);
 
          if (cbs->enum_idx == MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS)
+         {
+            tabs_begin = i;
             break;
+         }
 
          mainMenu->add(cbs->enum_idx);
+      }
+
+      for (i = tabs_begin; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         if (cbs->enum_idx == MENU_ENUM_LABEL_TIMEDATE_ENABLE)
+         {
+            status_begin = i;
+            break;
+         }
+
+         tabs->add(cbs->enum_idx);
+      }
+
+      for (i = status_begin; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         if (cbs->enum_idx == MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS)
+         {
+            break;
+         }
+
+         status->add(cbs->enum_idx);
       }
 
       file_list_free(list);
@@ -140,22 +172,6 @@ QWidget *ViewsPage::widget()
 
       file_list_free(list);
    }
-
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_ADD);
-   tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS);
-
-   status->add(MENU_ENUM_LABEL_TIMEDATE_ENABLE);
-   status->add(MENU_ENUM_LABEL_TIMEDATE_STYLE);
-   status->add(MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE);
-   status->add(MENU_ENUM_LABEL_CORE_ENABLE);
 
    startScreen->add(MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN);
 
