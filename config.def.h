@@ -502,6 +502,7 @@ static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
 static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static bool rgui_shadows = false;
 static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
+#define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
 static bool rgui_extended_ascii = false;
 #endif
 

@@ -580,6 +580,10 @@ typedef struct
 
 static rgui_particle_t particles[NUM_PARTICLES] = {{ 0.0f }};
 
+/* Particle effect animations update at a base rate
+ * of 60Hz (-> 16.666 ms update period) */
+static const float particle_effect_period = (1.0f / 60.0f) * 1000.0f;
+
 /* ==============================
  * Custom Symbols (glyphs) START
  * ============================== */
@@ -1328,12 +1332,26 @@ static void rgui_render_particle_effect(rgui_t *rgui)
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    size_t i;
+   /* Give speed factor a long, awkward name to minimise
+    * risk of clashing with specific particle effect
+    * implementation variables... */
+   float global_speed_factor;
+   settings_t *settings = config_get_ptr();
    
    /* Sanity check */
-   if (!rgui || !rgui_frame_buf.data)
+   if (!rgui || !rgui_frame_buf.data || !settings)
       return;
    
    menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   
+   /* Adjust global animation speed */
+   /* > Apply user configured speed multiplier */
+   global_speed_factor =
+         (settings->floats.menu_rgui_particle_effect_speed > 0.0001f) ?
+               settings->floats.menu_rgui_particle_effect_speed : 1.0f;
+   /* > Account for non-standard frame times
+    *   (high/low refresh rates, or frame drops) */
+   global_speed_factor *= menu_animation_get_delta_time() / particle_effect_period;
    
    /* Note: It would be more elegant to have 'update' and 'draw'
     * as separate functions, since 'update' is the part that
@@ -1376,8 +1394,8 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                particle->d = (particle->d >  0.4f) ?  0.4f : particle->d;
                
                /* Update particle location */
-               particle->a = fmod(particle->a + particle->c, fb_width);
-               particle->b = fmod(particle->b + particle->d, fb_height);
+               particle->a = fmod(particle->a + (global_speed_factor * particle->c), fb_width);
+               particle->b = fmod(particle->b + (global_speed_factor * particle->d), fb_height);
                
                /* Get particle size */
                particle_size = 1;
@@ -1434,7 +1452,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                                  2, (unsigned)particle->c, rgui->colors.particle_color);
                
                /* Update y pos */
-               particle->b += particle->d;
+               particle->b += particle->d * global_speed_factor;
                
                /* Reset particle if it has fallen off the bottom of the screen */
                if (!on_screen)
@@ -1477,8 +1495,8 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                      x, y, particle_size, particle_size, rgui->colors.particle_color);
                
                /* Update particle speed */
-               r_speed     = particle->c;
-               theta_speed = particle->d;
+               r_speed     = particle->c * global_speed_factor;
+               theta_speed = particle->d * global_speed_factor;
                if ((particle->a > 0.0f) && (particle->a < (float)fb_height))
                {
                   float base_scale_factor = ((float)fb_height - particle->a) / (float)fb_height;
@@ -1537,7 +1555,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                                  x, y, particle_size, particle_size, rgui->colors.particle_color);
                
                /* Update depth */
-               particle->c -= particle->d;
+               particle->c -= particle->d * global_speed_factor;
                
                /* Reset particle if it has:
                 * - Dropped off the edge of the screen
