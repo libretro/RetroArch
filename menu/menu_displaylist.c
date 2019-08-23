@@ -6951,6 +6951,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,   PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
