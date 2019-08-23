@@ -864,7 +864,13 @@ static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABL
 
 static const bool scan_without_core_match      = false;
 
+#ifdef __WINRT__
+/* Be paranoid about WinRT file I/O performance, and leave this disabled by
+ * default */
+#define DEFAULT_PLAYLIST_SHOW_SUBLABELS false
+#else
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
+#endif
 
 static const bool playlist_fuzzy_archive_match = false;
 
@@ -954,7 +960,14 @@ static const bool ui_companion_toggle = false;
 static const bool desktop_menu_enable = true;
 
 /* Keep track of how long each core+content has been running for over time */
+
+#ifdef __WINRT__
+/* Be paranoid about WinRT file I/O performance, and leave this disabled by
+ * default */
+#define DEFAULT_CONTENT_RUNTIME_LOG false
+#else
 #define DEFAULT_CONTENT_RUNTIME_LOG true
+#endif
 
 /* Keep track of how long each content has been running for over time (ignores core) */
 static const bool content_runtime_log_aggregate = false;
