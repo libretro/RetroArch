@@ -4831,13 +4831,74 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_AI_SERVICE_SETTINGS:
-#ifndef HAVE_TRANSLATE
+#ifdef HAVE_TRANSLATE
+                     build_list[i].checked = settings->bools.settings_show_ai_service;
+#else
                      build_list[i].checked = false;
 #endif
+                     break;
+                  case MENU_ENUM_LABEL_DRIVER_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_drivers;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_video;
+                     break;
+                  case MENU_ENUM_LABEL_AUDIO_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_audio;
                      break;
                   case MENU_ENUM_LABEL_INPUT_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_input;
                      break;
+                  case MENU_ENUM_LABEL_LATENCY_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_latency;
+                     break;
+                  case MENU_ENUM_LABEL_CORE_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_core;
+                     break;
+                  case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_configuration;
+                     break;
+                  case MENU_ENUM_LABEL_SAVING_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_saving;
+                     break;
+                  case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_logging;
+                     break;
+                  case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_frame_throttle;
+                     break;
+                  case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_recording;
+                     break;
+                  case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_onscreen_display;
+                     break;
+                  case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_user_interface;
+                     break;
+                  case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_power_management;
+                     break;
+                  case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_achievements;
+                     break;
+                  case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_network;
+                     break;
+                  case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_playlists;
+                     break;
+                  case MENU_ENUM_LABEL_USER_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_user;
+                     break;
+                  case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_directory;
+                     break;
+                     /* MISSING:
+                      * MENU_ENUM_LABEL_WIFI_SETTINGS
+                      * MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS
+                      * MENU_ENUM_LABEL_LAKKA_SERVICES
+                      */
                   default:
                      break;
                }
@@ -4944,7 +5005,26 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,           PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS,     PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_USER,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,        PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

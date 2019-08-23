@@ -9343,3 +9343,155 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
    "Yiddish"
    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+    "Show Drivers"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+    "Show or hide 'Driver Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+    "Show Video"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+    "Show or hide 'Video Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+    "Show Audio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+    "Show or hide 'Audio Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+    "Show Latency"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+    "Show or hide 'Latency Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+    "Show Core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+    "Show or hide 'Core Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+    "Show Configuration"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+    "Show or hide 'Configuration Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+    "Show Saving"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+    "Show or hide 'Saving Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+    "Show Logging"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+    "Show or hide 'Logging Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Show Frame Throttle"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Show or hide 'Frame Throttle Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+    "Show Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+    "Show or hide 'Recording Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Show Onscreen Display"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Show or hide 'Onscreen Display Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+    "Show User Interface"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+    "Show or hide 'User Interface Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+    "Show AI Service"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+    "Show or hide 'AI Service Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Show Power Management"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Show or hide 'Power Management Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Show Achievements"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Show or hide 'Achievements Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+    "Show Network"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+    "Show or hide 'Network Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+    "Show Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+    "Show or hide 'Playlists Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+    "Show User"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+    "Show or hide 'User Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+    "Show Directory"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+    "Show or hide 'Directory Settings' on the Settings screen."
+    )

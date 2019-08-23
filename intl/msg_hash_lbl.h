@@ -2005,3 +2005,41 @@ MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,
       "ai_service_target_lang")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
       "ai_service_source_lang")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
+      "settings_show_drivers")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO,
+      "settings_show_video")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO,
+      "settings_show_audio")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY,
+      "settings_show_latency")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,
+      "settings_show_core")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,
+      "settings_show_configuration")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,
+      "settings_show_saving")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING,
+      "settings_show_logging")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+      "settings_show_frame_throttle")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,
+      "settings_show_recording")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+      "settings_show_onscreen_display")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,
+      "settings_show_user_interface")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,
+      "settings_show_ai_service")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+      "settings_show_power_management")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+      "settings_show_achievements")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,
+      "settings_show_network")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS,
+      "settings_show_playlists")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_USER,
+      "settings_show_user")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,
+      "settings_show_directory")

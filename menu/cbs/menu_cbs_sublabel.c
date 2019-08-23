@@ -476,11 +476,29 @@ default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,           
 default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
-default_sublabel_macro(action_bind_sublabel_settings_show_input,       MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT)
+default_sublabel_macro(action_bind_sublabel_settings_show_drivers,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS)
+default_sublabel_macro(action_bind_sublabel_settings_show_video,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO)
+default_sublabel_macro(action_bind_sublabel_settings_show_audio,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO)
+default_sublabel_macro(action_bind_sublabel_settings_show_input,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT)
+default_sublabel_macro(action_bind_sublabel_settings_show_latency,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY)
+default_sublabel_macro(action_bind_sublabel_settings_show_core,                    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE)
+default_sublabel_macro(action_bind_sublabel_settings_show_configuration,           MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION)
+default_sublabel_macro(action_bind_sublabel_settings_show_saving,                  MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING)
+default_sublabel_macro(action_bind_sublabel_settings_show_frame_throttle,          MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE)
+default_sublabel_macro(action_bind_sublabel_settings_show_recording,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING)
+default_sublabel_macro(action_bind_sublabel_settings_show_onscreen_display,        MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY)
+default_sublabel_macro(action_bind_sublabel_settings_show_user_interface,          MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE)
+default_sublabel_macro(action_bind_sublabel_settings_show_ai_service,              MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE)
+default_sublabel_macro(action_bind_sublabel_settings_show_power_management,        MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT)
+default_sublabel_macro(action_bind_sublabel_settings_show_achievements,            MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS)
+default_sublabel_macro(action_bind_sublabel_settings_show_network,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK)
+default_sublabel_macro(action_bind_sublabel_settings_show_playlists,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS)
+default_sublabel_macro(action_bind_sublabel_settings_show_user,                    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER)
+default_sublabel_macro(action_bind_sublabel_settings_show_directory,               MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
-default_sublabel_macro(action_bind_sublabel_quick_menu_show_resume_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_resume_content,        MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_restart_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT)
-default_sublabel_macro(action_bind_sublabel_quick_menu_show_close_content,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_close_content,         MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
@@ -1392,8 +1410,62 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_GOTO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
             break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_drivers);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_video);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_audio);
+            break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_input);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_latency);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_core);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_configuration);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_saving);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_frame_throttle);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_recording);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_onscreen_display);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_user_interface);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_ai_service);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_power_management);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_achievements);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_network);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_playlists);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_USER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_user);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_directory);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_resume_content);

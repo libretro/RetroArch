@@ -13296,10 +13296,295 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.settings_show_drivers,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+               DEFAULT_SETTINGS_SHOW_DRIVERS,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_video,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+               DEFAULT_SETTINGS_SHOW_VIDEO,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_audio,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+               DEFAULT_SETTINGS_SHOW_AUDIO,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.settings_show_input,
                MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
                MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
                DEFAULT_SETTINGS_SHOW_INPUT,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_latency,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+               DEFAULT_SETTINGS_SHOW_LATENCY,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_core,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+               DEFAULT_SETTINGS_SHOW_CORE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_configuration,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+               DEFAULT_SETTINGS_SHOW_CONFIGURATION,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_saving,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+               DEFAULT_SETTINGS_SHOW_SAVING,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_logging,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+               DEFAULT_SETTINGS_SHOW_LOGGING,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_frame_throttle,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+               DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_recording,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+               DEFAULT_SETTINGS_SHOW_RECORDING,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_onscreen_display,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+               DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_user_interface,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+               DEFAULT_SETTINGS_SHOW_USER_INTERFACE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_ai_service,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+               DEFAULT_SETTINGS_SHOW_AI_SERVICE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_power_management,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+               DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_achievements,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+               DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_network,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+               DEFAULT_SETTINGS_SHOW_NETWORK,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_playlists,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+               DEFAULT_SETTINGS_SHOW_PLAYLISTS,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_user,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_USER,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+               DEFAULT_SETTINGS_SHOW_USER,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_directory,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+               DEFAULT_SETTINGS_SHOW_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
