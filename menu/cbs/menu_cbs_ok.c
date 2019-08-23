@@ -2739,10 +2739,16 @@ static int generic_action_ok_shader_preset_remove(const char *path,
    }
 
    if (menu_shader_manager_remove_auto_preset(preset_type))
+   {
+      bool refresh = false;
+
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),

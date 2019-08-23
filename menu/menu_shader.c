@@ -45,6 +45,18 @@ void menu_shader_set_modified(bool modified)
    menu_driver_shader_modified = modified;
 }
 
+static enum rarch_shader_type shader_types[] =
+{
+   RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
+};
+
+enum auto_shader_operation
+{
+   AUTO_SHADER_OP_SAVE = 0,
+   AUTO_SHADER_OP_REMOVE,
+   AUTO_SHADER_OP_EXISTS
+};
+
 struct video_shader *menu_shader_get(void)
 {
    if (video_shader_any_supported())
@@ -316,8 +328,7 @@ static bool menu_shader_manager_save_preset_internal(
    return ret;
 }
 
-/** Saves or deletes an auto-shader, save = false requires no other parameters */
-static bool menu_shader_manager_operate_auto_preset(bool save,
+static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation op,
       const struct video_shader *shader, enum auto_shader_type type, bool apply)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -379,25 +390,20 @@ static bool menu_shader_manager_operate_auto_preset(bool save,
          return false;
    }
 
-   if (save)
+   if (op == AUTO_SHADER_OP_SAVE)
    {
       if (!path_is_directory(directory))
           path_mkdir(directory);
 
       return menu_shader_manager_save_preset_internal(shader, file, apply, true);
    }
-   else
+   else if (op == AUTO_SHADER_OP_REMOVE)
    {
+      /* remove all supported auto-shaders of given type */
       char *end = file + strlen(file);
       size_t i;
       bool success = false;
 
-      static enum rarch_shader_type shader_types[] =
-      {
-         RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
-      };
-
-      /* remove all supported auto-shaders of given type */
       for (i = 0; i < ARRAY_SIZE(shader_types); i++)
       {
          const char *preset_ext;
@@ -414,6 +420,30 @@ static bool menu_shader_manager_operate_auto_preset(bool save,
 
       return success;
    }
+   else if (op == AUTO_SHADER_OP_EXISTS)
+   {
+      /* test if any supported auto-shaders of given type exists */
+      char *end = file + strlen(file);
+      size_t i;
+
+      for (i = 0; i < ARRAY_SIZE(shader_types); i++)
+      {
+         const char *preset_ext;
+
+         if (!video_shader_is_supported(shader_types[i]))
+            continue;
+
+         preset_ext = video_shader_get_preset_extension(shader_types[i]);
+         strlcpy(end, preset_ext, sizeof(file) - (end-file));
+
+         if (path_is_valid(file))
+            return true;
+      }
+
+      return false;
+   }
+
+   return false;
 }
 
 /**
@@ -433,7 +463,7 @@ static bool menu_shader_manager_operate_auto_preset(bool save,
 bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
       enum auto_shader_type type, bool apply)
 {
-   return menu_shader_manager_operate_auto_preset(true, shader, type, apply);
+   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_SAVE, shader, type, apply);
 }
 
 /**
@@ -459,7 +489,18 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
  **/
 bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
 {
-   return menu_shader_manager_operate_auto_preset(false, NULL, type, false);
+   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_REMOVE, NULL, type, false);
+}
+
+/**
+ * menu_shader_manager_auto_preset_exists:
+ * @type                     : type of shader preset
+ *
+ * Tests if an auto-shader of the given type exists.
+ **/
+bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type)
+{
+   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_EXISTS, NULL, type, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)

@@ -8218,7 +8218,7 @@ MSG_HASH(
    )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-      "Remove ...")
+      "Remove")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
       "Remove shader presets of a specific type.")
