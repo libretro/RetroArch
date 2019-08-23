@@ -7450,7 +7450,9 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#ifdef HAVE_LAKKA
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+#endif
 
 #ifdef HAVE_LAKKA
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
