@@ -2437,6 +2437,12 @@ static void materialui_list_insert(void *userdata,
    {
       switch (type)
       {
+         case MENU_SET_CDROM_INFO:
+         case MENU_SET_CDROM_LIST:
+         case MENU_SET_LOAD_CDROM_LIST:
+            node->texture_switch2_index = MUI_TEXTURE_DISK;
+            node->texture_switch2_set   = true;
+            break;
          case FILE_TYPE_DOWNLOAD_CORE:
          case FILE_TYPE_CORE:
             node->texture_switch2_index = MUI_TEXTURE_CORES;
@@ -2484,18 +2490,23 @@ static void materialui_list_insert(void *userdata,
             break;
          default:
             if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))
-                  ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE))
-                  ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))
-                  ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))
-                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION))            ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))                      ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))     ||
+                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)))                 ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))
                )
             {
                node->texture_switch2_index = MUI_TEXTURE_INFO;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_DATABASE;
                node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)))
@@ -2624,8 +2635,10 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_set   = true;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
-                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
                   )
             {
@@ -2680,7 +2693,9 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_index = MUI_TEXTURE_REMOVE;
                node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION))
+                  )
             {
                node->texture_switch2_index = MUI_TEXTURE_NETPLAY;
                node->texture_switch2_set   = true;
@@ -2713,7 +2728,9 @@ static void materialui_list_insert(void *userdata,
                node->texture_switch2_index = MUI_TEXTURE_ADD;
                node->texture_switch2_set = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_RETROARCH))
+                  )
             {
                node->texture_switch2_index = MUI_TEXTURE_QUIT;
                node->texture_switch2_set   = true;
@@ -2737,6 +2754,7 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH)) ||
