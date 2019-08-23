@@ -99,6 +99,7 @@ QWidget *ViewsPage::widget()
    SettingsGroup *quickMenu   = new SettingsGroup("Quick Menu");
    QuickMenuPage *quickPage   = new QuickMenuPage(this);
    SettingsGroup *mainMenu    = new SettingsGroup("Main Menu");
+   SettingsGroup *settings    = new SettingsGroup("Settings");
    SettingsGroup *tabs        = new SettingsGroup("Tabs");
    SettingsGroup *status      = new SettingsGroup("Status");
    SettingsGroup *startScreen = new SettingsGroup("StartScreen");
@@ -117,6 +118,22 @@ QWidget *ViewsPage::widget()
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_REBOOT);
    mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN);
+
+   {
+      unsigned i;
+      file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
+      menu_displaylist_build_list(list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST);
+
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         settings->add(cbs->enum_idx);
+      }
+
+      file_list_free(list);
+   }
 
    tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS);
    tabs->add(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD);
@@ -140,6 +157,7 @@ QWidget *ViewsPage::widget()
    quickMenu->addRow(quickPage->widget());
 
    leftLayout->addRow(mainMenu);
+   leftLayout->addRow(settings);
    leftLayout->addRow(tabs);
    leftLayout->addRow(startScreen);
    leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
