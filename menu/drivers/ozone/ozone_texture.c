@@ -33,6 +33,10 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 {
    switch (enum_idx)
    {
+      case MENU_ENUM_LABEL_LOAD_DISC:
+      case MENU_ENUM_LABEL_DUMP_DISC:
+      case MENU_ENUM_LABEL_DISC_INFORMATION:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
@@ -311,6 +315,10 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 
    switch(type)
    {
+      case MENU_SET_CDROM_INFO:
+      case MENU_SET_CDROM_LIST:
+      case MENU_SET_LOAD_CDROM_LIST:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
       case FILE_TYPE_DIRECTORY:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case FILE_TYPE_PLAIN:
@@ -602,6 +610,8 @@ switch (id)
          return "on.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_SWITCH_OFF:
          return "off.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_DISC:
+         return "disc.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ADD:
          return "add.png";
 #ifdef HAVE_NETWORKING

@@ -257,6 +257,8 @@ default_sublabel_macro(action_bind_sublabel_start_core,                    MENU_
 default_sublabel_macro(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
 default_sublabel_macro(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 default_sublabel_macro(action_bind_sublabel_sideload_core_list,            MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST)
+default_sublabel_macro(action_bind_sublabel_load_disc,                  MENU_ENUM_SUBLABEL_LOAD_DISC)
+default_sublabel_macro(action_bind_sublabel_dump_disc,                  MENU_ENUM_SUBLABEL_DUMP_DISC)
 default_sublabel_macro(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
 default_sublabel_macro(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 default_sublabel_macro(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
@@ -1563,6 +1565,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_core);
+            break;
+         case MENU_ENUM_LABEL_LOAD_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_disc);
+            break;
+         case MENU_ENUM_LABEL_DUMP_DISC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dump_disc);
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_load_content);
