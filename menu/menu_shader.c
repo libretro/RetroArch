@@ -37,6 +37,13 @@
 /* Menu shader */
 
 static struct video_shader *menu_driver_shader = NULL;
+/* indicative of whether shader was modified from the menus: */
+static bool menu_driver_shader_modified = true;
+
+void menu_shader_set_modified(bool modified)
+{
+   menu_driver_shader_modified = modified;
+}
 
 struct video_shader *menu_shader_get(void)
 {
@@ -62,7 +69,6 @@ bool menu_shader_manager_init(void)
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
    bool is_preset                   = false;
-   config_file_t *conf              = NULL;
    const char *path_shader          = NULL;
    struct video_shader *menu_shader = NULL;
 
@@ -104,8 +110,22 @@ bool menu_shader_manager_init(void)
 
    if (is_preset)
    {
-      if (path_is_valid(path_shader))
-         conf = config_file_new_from_path_to_string(path_shader);
+      config_file_t *conf = NULL;
+
+      conf = video_shader_read_preset(path_shader);
+
+      if (!conf)
+      {
+         ret = false;
+         goto end;
+      }
+
+      if (video_shader_read_conf_preset(conf, menu_shader))
+         video_shader_resolve_parameters(conf, menu_shader);
+
+      menu_driver_shader_modified = false;
+
+      config_file_free(conf);
    }
    else
    {
@@ -113,12 +133,6 @@ bool menu_shader_manager_init(void)
             sizeof(menu_shader->pass[0].source.path));
       menu_shader->passes = 1;
    }
-
-   if (conf && video_shader_read_conf_preset(conf, menu_shader))
-      video_shader_resolve_parameters(conf, menu_shader);
-
-   if (conf)
-      config_file_free(conf);
 
 end:
    menu_driver_shader = menu_shader;
@@ -173,7 +187,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   if (!(conf = config_file_new_from_path_to_string(preset_path)))
+   if (!(conf = video_shader_read_preset(preset_path)))
    {
       ret = false;
       goto end;
@@ -197,31 +211,20 @@ end:
    return ret;
 }
 
-/**
- * menu_shader_manager_save_preset:
- * @basename                 : basename of preset
- * @apply                    : immediately set preset after saving
- *
- * Save a shader preset to disk.
- **/
-bool menu_shader_manager_save_preset(
-      struct video_shader *shader,
-      const char *basename, bool apply, bool fullpath)
+static bool menu_shader_manager_save_preset_internal(
+      const struct video_shader *shader, const char *basename,
+      bool apply, bool save_reference)
 {
+   bool ret                       = false;
+   enum rarch_shader_type type    = RARCH_SHADER_NONE;
+   char *preset_path              = NULL;
+   size_t i                       = 0;
+   char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
-   char preset_path[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
-   bool ret                               = false;
-   unsigned d;
-   enum rarch_shader_type type            = RARCH_SHADER_NONE;
-   const char *dirs[3]                    = {0};
-   config_file_t *conf                    = NULL;
 
-   config_directory[0]                    = '\0';
-   buffer[0]                              = '\0';
-   preset_path[0]                         = '\0';
+   fullname[0] = buffer[0] = '\0';
 
-   if (!shader)
+   if (!shader || !shader->passes)
       return false;
 
    type = menu_shader_manager_get_type(shader);
@@ -229,33 +232,47 @@ bool menu_shader_manager_save_preset(
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   if (basename)
+   if (menu_driver_shader_modified)
+      save_reference = false;
+
+   if (!string_is_empty(basename))
    {
-      strlcpy(buffer, basename, sizeof(buffer));
+      strlcpy(fullname, basename, sizeof(fullname));
 
       /* Append extension automatically as appropriate. */
-      if (     !strstr(basename,
-               file_path_str(FILE_PATH_CGP_EXTENSION))
-            && !strstr(basename,
-               file_path_str(FILE_PATH_GLSLP_EXTENSION))
-            && !strstr(basename,
-               file_path_str(FILE_PATH_SLANGP_EXTENSION)))
+      if (     !strstr(basename, file_path_str(FILE_PATH_CGP_EXTENSION))
+            && !strstr(basename, file_path_str(FILE_PATH_GLSLP_EXTENSION))
+            && !strstr(basename, file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
          const char *preset_ext = video_shader_get_preset_extension(type);
-         if (!string_is_empty(preset_ext))
-            strlcat(buffer, preset_ext, sizeof(buffer));
+         strlcat(fullname, preset_ext, sizeof(fullname));
       }
    }
    else
    {
       const char *preset_ext = video_shader_get_preset_extension(type);
-      strlcpy(buffer, "retroarch", sizeof(buffer));
-      strlcat(buffer, preset_ext, sizeof(buffer));
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+      strlcat(fullname, preset_ext, sizeof(fullname));
    }
 
-   if (!fullpath)
+   if (path_is_absolute(fullname))
    {
+      preset_path = fullname;
+
+      ret = video_shader_write_preset(preset_path, shader, save_reference);
+
+      if (ret)
+         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+      else
+         RARCH_ERR("Failed writing shader preset to %s.\n", preset_path);
+   }
+   else
+   {
+      const char *dirs[3]  = {0};
       settings_t *settings = config_get_ptr();
+      char config_directory[PATH_MAX_LENGTH];
+
+      config_directory[0] = '\0';
 
       if (!path_is_empty(RARCH_PATH_CONFIG))
          fill_pathname_basedir(
@@ -263,63 +280,137 @@ bool menu_shader_manager_save_preset(
                path_get(RARCH_PATH_CONFIG),
                sizeof(config_directory));
 
-      dirs[0]              = settings->paths.directory_video_shader;
-      dirs[1]              = settings->paths.directory_menu_config;
-      dirs[2]              = config_directory;
-   }
+      dirs[0] = settings->paths.directory_video_shader;
+      dirs[1] = settings->paths.directory_menu_config;
+      dirs[2] = config_directory;
 
-   if (!(conf = config_file_new_alloc()))
-      return false;
-
-   if (fullpath)
-   {
-      if (!string_is_empty(basename))
-         strlcpy(preset_path, buffer, sizeof(preset_path));
-
-      video_shader_write_conf_preset(conf, shader, preset_path);
-
-      if (config_file_write(conf, preset_path, false))
+      for (i = 0; i < ARRAY_SIZE(dirs); i++)
       {
-         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
-         if (apply)
-            menu_shader_manager_set_preset(NULL, type, preset_path, true);
-         ret = true;
-      }
-      else
-         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
-   }
-   else
-   {
-      for (d = 0; d < ARRAY_SIZE(dirs); d++)
-      {
-         if (!*dirs[d])
+         if (string_is_empty(dirs[i]))
             continue;
 
-         fill_pathname_join(preset_path, dirs[d],
-               buffer, sizeof(preset_path));
+         fill_pathname_join(buffer, dirs[i],
+               fullname, sizeof(buffer));
 
-         video_shader_write_conf_preset(conf, shader, preset_path);
+         preset_path = buffer;
 
-         if (config_file_write(conf, preset_path, false))
+         ret = video_shader_write_preset(preset_path, shader, save_reference);
+
+         if (ret)
          {
             RARCH_LOG("Saved shader preset to %s.\n", preset_path);
-            if (apply)
-               menu_shader_manager_set_preset(NULL, type, preset_path, true);
-            ret = true;
             break;
          }
          else
-            RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
+            RARCH_WARN("Failed writing shader preset to %s.\n", preset_path);
       }
+
+      if (!ret)
+         RARCH_ERR("Failed to write shader preset. Make sure shader directory"
+               " and/or config directory are writable.\n");
    }
 
-   config_file_free(conf);
-   if (ret)
-      return true;
+   if (ret && apply)
+      menu_shader_manager_set_preset(NULL, type, preset_path, true);
 
-   RARCH_ERR("Failed to save shader preset. Make sure config directory"
-         " and/or shader dir are writable.\n");
-   return false;
+   return ret;
+}
+
+/**
+ * menu_shader_manager_save_auto_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader as an auto-shader to it's appropriate path:
+ *    SHADER_PRESET_GLOBAL: <shader dir>/presets/global
+ *    SHADER_PRESET_CORE:   <shader dir>/presets/<core name>/<core name>
+ *    SHADER_PRESET_PARENT: <shader dir>/presets/<core name>/<parent>
+ *    SHADER_PRESET_GAME:   <shader dir>/presets/<core name>/<game name>
+ * Needs to be consistent with retroarch_load_shader_preset()
+ * Auto-shaders will be saved as a reference if possible
+ **/
+bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
+      enum auto_shader_type type, bool apply)
+{
+   char tmp[PATH_MAX_LENGTH];
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
+
+   tmp[0] = directory[0] = file[0] = '\0';
+
+   if (type == SHADER_PRESET_GLOBAL)
+   {
+      fill_pathname_join(
+            directory,
+            settings->paths.directory_video_shader,
+            "presets",
+            sizeof(directory));
+   }
+   else if (string_is_empty(core_name))
+   {
+      return false;
+   }
+   else
+   {
+      fill_pathname_join(
+            tmp,
+            settings->paths.directory_video_shader,
+            "presets",
+            sizeof(tmp));
+      fill_pathname_join(
+            directory,
+            tmp,
+            core_name,
+            sizeof(directory));
+   }
+
+   switch (type)
+   {
+      case SHADER_PRESET_GLOBAL:
+         fill_pathname_join(file, directory, "global", sizeof(file));
+         break;
+      case SHADER_PRESET_CORE:
+         fill_pathname_join(file, directory, core_name, sizeof(file));
+         break;
+      case SHADER_PRESET_PARENT:
+         {
+            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+            fill_pathname_join(file, directory, tmp, sizeof(file));
+            break;
+         }
+      case SHADER_PRESET_GAME:
+         {
+            const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+            fill_pathname_join(file, directory, game_name, sizeof(file));
+            break;
+         }
+      default:
+         return false;
+   }
+
+   if (!path_is_directory(directory))
+       path_mkdir(directory);
+
+   return menu_shader_manager_save_preset_internal(shader, file, apply, true);
+}
+
+/**
+ * menu_shader_manager_save_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @basename                 : basename of preset
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader preset to disk.
+ **/
+bool menu_shader_manager_save_preset(const struct video_shader *shader,
+      const char *basename, bool apply)
+{
+   return menu_shader_manager_save_preset_internal(shader, basename, apply, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
@@ -337,6 +428,8 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    video_shader_resolve_parameters(NULL, shader);
 
+   menu_driver_shader_modified = true;
+
    return 0;
 }
 
@@ -353,6 +446,8 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
+   menu_driver_shader_modified = true;
+
    return 0;
 }
 
@@ -366,6 +461,8 @@ int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
       return -1;
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
+
+   menu_driver_shader_modified = true;
 
    return 0;
 }
@@ -382,6 +479,8 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
    shader_pass->fbo.scale_x = 0;
    shader_pass->fbo.scale_y = 0;
    shader_pass->fbo.valid   = false;
+
+   menu_driver_shader_modified = true;
 }
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
@@ -392,6 +491,8 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
 
    if (shader_pass)
       *shader_pass->source.path = '\0';
+
+   menu_driver_shader_modified = true;
 }
 
 /**
@@ -460,7 +561,7 @@ void menu_shader_manager_apply_changes(struct video_shader *shader)
 
    if (shader->passes && type != RARCH_SHADER_NONE)
    {
-      menu_shader_manager_save_preset(shader, NULL, true, false);
+      menu_shader_manager_save_preset(shader, NULL, true);
       return;
    }
 

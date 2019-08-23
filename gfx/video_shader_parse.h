@@ -160,6 +160,43 @@ struct video_shader
 };
 
 /**
+ * video_shader_write_preset:
+ * @path              : File to write to
+ * @shader            : Shader preset to write
+ * @reference         : Whether a reference preset should be written
+ *
+ * Writes a preset to disk. Can be written as a reference preset.
+ * See: video_shader_read_preset
+ **/
+bool video_shader_write_preset(const char *path,
+      const struct video_shader *shader, bool reference);
+
+/**
+ * video_shader_read_reference_path:
+ * @path              : File to read
+ *
+ * Returns: the reference path of a preset if it exists,
+ * otherwise returns NULL.
+ *
+ * The returned string needs to be freed.
+ */
+char *video_shader_read_reference_path(const char *path);
+
+/**
+ * video_shader_read_preset:
+ * @path              : File to read
+ *
+ * Reads a preset from disk.
+ * If the preset is a reference preset, the referenced preset
+ * is loaded instead.
+ *
+ * Returns: the read preset as a config object.
+ *
+ * The returned config object needs to be freed.
+ **/
+config_file_t *video_shader_read_preset(const char *path);
+
+/**
  * video_shader_read_conf_preset:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -183,7 +220,7 @@ bool video_shader_read_conf_preset(config_file_t *conf,
  * relative to it.
  **/
 void video_shader_write_conf_preset(config_file_t *conf,
-      struct video_shader *shader, const char *preset_path);
+      const struct video_shader *shader, const char *preset_path);
 
 /**
  * video_shader_resolve_parameters:

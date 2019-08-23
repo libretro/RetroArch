@@ -84,6 +84,8 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 
    param_menu->current = param_prev->current;
 
+   menu_shader_set_modified(true);
+
    return ret;
 }
 #endif
@@ -315,6 +317,9 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
 
    shader_pass->fbo.valid   = current_scale;
    shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
+
+   menu_shader_set_modified(true);
+
    return 0;
 }
 
@@ -330,6 +335,9 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
       return menu_cbs_exit();
 
    shader_pass->filter = ((shader_pass->filter + delta) % 3);
+
+   menu_shader_set_modified(true);
+
    return 0;
 }
 
@@ -376,6 +384,8 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, shader);
+
+   menu_shader_set_modified(true);
 
    return 0;
 }

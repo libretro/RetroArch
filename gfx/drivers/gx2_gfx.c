@@ -1425,7 +1425,7 @@ static bool wiiu_gfx_set_shader(void *data,
       return false;
    }
 
-   if (!(conf = config_file_new_from_path_to_string(path)))
+   if (!(conf = video_shader_read_preset(path)))
       return false;
 
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
