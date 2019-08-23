@@ -140,3 +140,32 @@ QWidget *LoggingPage::widget()
 {
    return create_widget(DISPLAYLIST_LOGGING_SETTINGS_LIST);
 }
+
+/* AI SERVICE */
+
+AIServiceCategory::AIServiceCategory(QWidget *parent) :
+   OptionsCategory(parent)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS);
+   setCategoryIcon("menu_drivers");
+}
+
+QVector<OptionsPage*> AIServiceCategory::pages()
+{
+   QVector<OptionsPage*> pages;
+
+   pages << new AIServicePage(this);
+
+   return pages;
+}
+
+AIServicePage::AIServicePage(QObject *parent) :
+   OptionsPage(parent)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS);
+}
+
+QWidget *AIServicePage::widget()
+{
+   return create_widget(DISPLAYLIST_AI_SERVICE_SETTINGS_LIST);
+}

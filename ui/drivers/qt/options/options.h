@@ -89,6 +89,24 @@ public:
    QWidget *widget();
 };
 
+/***********************************************************
+   AI Service 
+************************************************************/
+class AIServiceCategory : public OptionsCategory
+{
+public:
+   AIServiceCategory(QWidget *parent);
+   QVector<OptionsPage*> pages();
+};
+
+class AIServicePage : public OptionsPage
+{
+   Q_OBJECT
+public:
+   AIServicePage(QObject *parent = nullptr);
+   QWidget *widget();
+};
+
 /************************************************************
    Video
 ************************************************************/
