@@ -437,6 +437,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_CACA
    &video_caca,
 #endif
+#ifdef HAVE_NETWORK_VIDEO
+   &video_network,
+#endif
    &video_null,
    NULL,
 };
@@ -512,10 +515,12 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #ifdef HAVE_SIXEL
    &gfx_ctx_sixel,
 #endif
+#ifdef HAVE_NETWORK_VIDEO
+   &gfx_ctx_network,
+#endif
    &gfx_ctx_null,
    NULL
 };
-
 
 static input_driver_t *input_drivers[] = {
 #ifdef ORBIS
@@ -19829,6 +19834,8 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_ident, "metal"))
          return GFX_CTX_METAL_API;
+      else if (string_is_equal(video_ident, "network"))
+         return GFX_CTX_NETWORK_VIDEO_API;
 
       return GFX_CTX_NONE;
    }

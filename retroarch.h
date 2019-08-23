@@ -836,6 +836,7 @@ enum gfx_ctx_api
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
    GFX_CTX_SIXEL_API,
+   GFX_CTX_NETWORK_VIDEO_API,
    GFX_CTX_METAL_API,
    GFX_CTX_GDI_API,
    GFX_CTX_GX_API,
@@ -1942,6 +1943,7 @@ extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
 extern video_driver_t video_vga;
 extern video_driver_t video_sixel;
+extern video_driver_t video_network;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
@@ -1964,6 +1966,7 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
+extern const gfx_ctx_driver_t gfx_ctx_network;
 extern const gfx_ctx_driver_t switch_ctx;
 extern const gfx_ctx_driver_t orbis_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;

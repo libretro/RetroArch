@@ -161,3 +161,4 @@ HAVE_SPIRV_CROSS=auto      # SPIRV-Cross support (requires C++11)
 C89_SPIRV_CROSS=no
 HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
+HAVE_NETWORK_VIDEO=no

@@ -185,7 +185,8 @@ static int net_http_new_socket(struct http_connection_t *conn)
 #endif
 
    next_addr = addr;
-   while(fd >= 0)
+
+   while (fd >= 0)
    {
 #ifdef HAVE_SSL
       if (conn->sock_state.ssl)

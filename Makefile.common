@@ -1129,6 +1129,24 @@ ifeq ($(HAVE_SIXEL), 1)
    endif
 endif
 
+ifeq ($(HAVE_NETWORK_VIDEO), 1)
+   ifneq ($(NETWORK_VIDEO_HOST),)
+      DEFINES += -DNETWORK_VIDEO_HOST=$(NETWORK_VIDEO_HOST)
+   else
+      DEFINES += -DNETWORK_VIDEO_HOST=127.0.0.1
+   endif
+
+   ifneq ($(NETWORK_VIDEO_PORT),)
+      DEFINES += -DNETWORK_VIDEO_PORT=$(NETWORK_VIDEO_PORT)
+   else
+      DEFINES += -DNETWORK_VIDEO_PORT=4953
+   endif
+
+   DEFINES += -DHAVE_NETWORK_VIDEO
+   OBJ += gfx/drivers/network_gfx.o \
+          gfx/drivers_context/network_ctx.o
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    INCLUDE_DIRS += -I/usr/include/libdrm
