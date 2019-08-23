@@ -8364,40 +8364,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                0, 0, 0))
             count++;
          if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE),
-               MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOADING_CONTENT),
-               MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
-               0, 0, 0))
-            count++;
-#ifdef HAVE_LIBRETRODB
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT),
-               MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
-               0, 0, 0))
-            count++;
-#endif
-#ifdef HAVE_OVERLAY
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD),
-               MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
-               0, 0, 0))
-            count++;
-#endif
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
-               MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
                msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
                MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
