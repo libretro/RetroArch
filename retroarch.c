@@ -3196,6 +3196,11 @@ static bool run_translation_service(void)
       strlcpy(new_ai_service_url,
             settings->arrays.ai_service_url, sizeof(new_ai_service_url));
 
+      /* if query already exists in url, then use &'s instead */
+      if (strrchr(new_ai_service_url, '?') != NULL)
+          separator = '&';
+
+      /* source lang */
       if (settings->uints.ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
       {
          const char *lang_source = ai_service_get_str(
@@ -3203,15 +3208,16 @@ static bool run_translation_service(void)
 
          if (!string_is_empty(lang_source))
          {
-            snprintf(new_ai_service_url,
-                  sizeof(new_ai_service_url),
-                  "%csource_lang=", separator);
+            char temp_string[PATH_MAX_LENGTH];
+            snprintf(temp_string,
+                  sizeof(temp_string),
+                  "%csource_lang=%s", separator, lang_source);
             separator = '&';
-            strlcat(new_ai_service_url, lang_source,
-                  sizeof(new_ai_service_url));
+            strlcat(new_ai_service_url, temp_string, sizeof(new_ai_service_url));
          }
       }
 
+      /* target lang */
       if (settings->uints.ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
       {
          const char *lang_target = ai_service_get_str(
@@ -3219,14 +3225,35 @@ static bool run_translation_service(void)
 
          if (!string_is_empty(lang_target))
          {
-            snprintf(new_ai_service_url,
-                  sizeof(new_ai_service_url),
-                  "%ctarget_lang=", separator);
+            char temp_string[PATH_MAX_LENGTH];
+            snprintf(temp_string,
+                  sizeof(temp_string),
+                  "%ctarget_lang=%s", separator, lang_target);
             separator = '&';
-            strlcat(new_ai_service_url, lang_target,
+
+            strlcat(new_ai_service_url, temp_string,
                   sizeof(new_ai_service_url));
          }
       }
+
+      /* mode */
+      {
+         char temp_string[PATH_MAX_LENGTH];         
+         char* mode_chr = "image";
+
+         if (settings->uints.ai_service_mode == 1)
+            mode_chr = "sound";
+         
+         snprintf(temp_string,
+               sizeof(temp_string),
+               "%coutput=%s", separator, mode_chr);
+         separator = '&';
+
+         strlcat(new_ai_service_url, temp_string,
+                 sizeof(new_ai_service_url));
+      }
+
+
 
       RARCH_LOG("Server URL:  %s\n", new_ai_service_url);
       task_push_http_post_transfer(new_ai_service_url, 
