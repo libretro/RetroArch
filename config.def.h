@@ -954,7 +954,7 @@ static const bool ui_companion_toggle = false;
 static const bool desktop_menu_enable = true;
 
 /* Keep track of how long each core+content has been running for over time */
-static const bool content_runtime_log = false;
+#define DEFAULT_CONTENT_RUNTIME_LOG true
 
 /* Keep track of how long each content has been running for over time (ignores core) */
 static const bool content_runtime_log_aggregate = false;
