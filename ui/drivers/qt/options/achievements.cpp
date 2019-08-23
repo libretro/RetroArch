@@ -23,18 +23,29 @@ AchievementsPage::AchievementsPage(QObject *parent) :
 
 QWidget *AchievementsPage::widget()
 {
-   QWidget               *widget = new QWidget;
-   QVBoxLayout           *layout = new QVBoxLayout;
-   CheckableSettingsGroup *group = new CheckableSettingsGroup(MENU_ENUM_LABEL_CHEEVOS_ENABLE);
+   QWidget               *widget     = new QWidget;
+   QVBoxLayout           *layout     = new QVBoxLayout;
+   enum msg_hash_enums check_setting = MENU_ENUM_LABEL_CHEEVOS_ENABLE;
+   CheckableSettingsGroup *group     = new CheckableSettingsGroup(check_setting);
 
-   group->add(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE);
-   group->add(MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT);
+   {
+      unsigned i;
+      file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
+      menu_displaylist_build_list(list, DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST);
+
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         if (cbs->enum_idx == check_setting)
+            continue;
+
+         group->add(cbs->enum_idx);
+      }
+
+      file_list_free(list);
+   }
 
    layout->addWidget(group);
 
