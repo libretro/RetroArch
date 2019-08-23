@@ -2823,6 +2823,30 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
 #endif
 
 #ifdef HAVE_TRANSLATE
+static void setting_get_string_representation_uint_ai_service_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE;
+         break;
+      case 1:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE;
+         break;
+      default:
+         break;
+   }
+
+   if (enum_idx != 0)
+      strlcpy(s, msg_hash_to_str(enum_idx), len);
+}
+
 static void setting_get_string_representation_uint_ai_service_lang(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -13103,6 +13127,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_ai_service_mode;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
 

@@ -9507,3 +9507,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DISC,
       "Load a physical media disc. You should first select the core (Load Core)  you intend to use with the disc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DUMP_DISC,
       "Dump the physical media disc to internal storage. It will be saved as an image file.")
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+   "Image Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   "Speech Mode"
+   )
