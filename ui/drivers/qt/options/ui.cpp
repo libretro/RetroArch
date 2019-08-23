@@ -1,3 +1,5 @@
+#include <string/stdstring.h>
+
 #include "options.h"
 #include "../viewoptionsdialog.h"
 #include "../../verbosity.h"
@@ -104,20 +106,24 @@ QWidget *ViewsPage::widget()
    SettingsGroup *status      = new SettingsGroup("Status");
    SettingsGroup *startScreen = new SettingsGroup("StartScreen");
 
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT);
-   /* mainMenu->add(MENU_ENUM_LABEL_SHOW_WIMP); */
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_INFORMATION);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_HELP);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_REBOOT);
-   mainMenu->add(MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN);
+   {
+      unsigned i;
+      file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
+      menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST);
+
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         if (cbs->enum_idx == MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS)
+            break;
+
+         mainMenu->add(cbs->enum_idx);
+      }
+
+      file_list_free(list);
+   }
 
    {
       unsigned i;
