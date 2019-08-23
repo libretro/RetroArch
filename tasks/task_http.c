@@ -185,7 +185,7 @@ task_finished:
 
          if (task_get_cancelled(task))
             task_set_error(task, strdup("Task cancelled."));
-         else
+         else if (!task->mute)
             task_set_error(task, strdup("Download failed."));
       }
       else
