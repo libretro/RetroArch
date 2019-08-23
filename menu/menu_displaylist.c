@@ -7908,6 +7908,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 #endif
 #endif
+
+#ifdef HAVE_NETWORKING
+            if (menu_displaylist_parse_settings_enum(info->list,
+                     MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                     PARSE_ONLY_BOOL, false) != -1)
+               count++;
+#endif
          }
 
          if (count == 0)
