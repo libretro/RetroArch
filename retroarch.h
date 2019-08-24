@@ -64,6 +64,20 @@ RETRO_BEGIN_DECLS
                                             * between the core and the frontend to gracefully stop all threads.
                                             */
 
+#define RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE (4 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* unsigned * --
+                                            * Tells the frontend to override the poll type behavior. 
+                                            * Allows the frontend to influence the polling behavior of the
+                                            * frontend.
+                                            *
+                                            * Will be unset when retro_unload_game is called.
+                                            *
+                                            * 0 - Don't Care, no changes, frontend still determines polling type behavior.
+                                            * 1 - Early
+                                            * 2 - Normal
+                                            * 3 - Late
+                                            */
+
 enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,

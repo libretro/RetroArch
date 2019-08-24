@@ -824,6 +824,16 @@ static settings_t *configuration_settings                       = NULL;
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 
+/*
+ * Override poll type behavior, is set by the core.
+ *
+ * 0 - Don't Care
+ * 1 - Early
+ * 2 - Normal
+ * 3 - Late
+ */
+static unsigned core_poll_type_override                         = 0;
+
 static bool has_set_username                                    = false;
 
 #ifdef HAVE_THREAD_STORAGE
@@ -7736,15 +7746,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
-      {
-         bool state = *(const bool*)data;
-         RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
-
-         set_save_state_in_background(state);
-
-         break;
-      }
 
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
@@ -8294,10 +8295,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          *(bool *)data = runloop_fastmotion;
          break;
 
-      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
-         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
-         break;
-
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          /* Just falldown, the function will return true */
          break;
@@ -8320,6 +8317,35 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          *(float *)data = target_refresh_rate;
          break;
       }
+
+      /* Private environment callbacks.
+       *
+       * Should all be properly addressed in version 2.
+       * */
+
+      case RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE:
+         {
+            const unsigned *poll_type_data = (const unsigned*)data;
+            
+            if (poll_type_data)
+               core_poll_type_override = *poll_type_data;
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
+         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
+         break;
+
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+
+            set_save_state_in_background(state);
+
+         }
+      break;
+
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
@@ -8776,6 +8802,8 @@ static void secondary_core_destroy(void)
    /* unload game from core */
    if (secondary_core.retro_unload_game)
       secondary_core.retro_unload_game();
+   core_poll_type_override = 0;
+
    /* deinit */
    if (secondary_core.retro_deinit)
       secondary_core.retro_deinit();
@@ -21098,6 +21126,7 @@ static void unload_hook(void)
    secondary_core_destroy();
    if (current_core.retro_unload_game)
       current_core.retro_unload_game();
+   core_poll_type_override = 0;
 }
 
 static void runahead_deinit_hook(void)
@@ -26026,14 +26055,20 @@ static int16_t core_input_state_poll_late(unsigned port,
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   if (current_core.poll_type == POLL_TYPE_LATE)
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
    return core_input_state_poll;
 }
 
 static void core_input_state_poll_maybe(void)
 {
-   if (current_core.poll_type == POLL_TYPE_NORMAL)
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_NORMAL)
       input_driver_poll();
 }
 
@@ -26273,6 +26308,7 @@ static bool core_unload_game(void)
    if (current_core.game_loaded)
    {
       current_core.retro_unload_game();
+      core_poll_type_override  = 0;
       current_core.game_loaded = false;
    }
 
@@ -26283,8 +26319,11 @@ static bool core_unload_game(void)
 
 bool core_run(void)
 {
-   bool early_polling    = current_core.poll_type == POLL_TYPE_EARLY;
-   bool late_polling     = current_core.poll_type == POLL_TYPE_LATE;
+   unsigned new_poll_type = (core_poll_type_override != 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   bool early_polling     = new_poll_type == POLL_TYPE_EARLY;
+   bool late_polling      = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
    bool netplay_preframe = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
