@@ -833,9 +833,7 @@ static int ozone_list_push(void *data, void *userdata,
             entry.parse_type      = PARSE_ACTION;
             entry.add_empty_entry = false;
 
-            if (!string_is_empty(system->info.library_name) &&
-                  !string_is_equal(system->info.library_name,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
                if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
@@ -843,21 +841,23 @@ static int ozone_list_push(void *data, void *userdata,
                   menu_displaylist_setting(&entry);
                }
             }
-
-            if (system->load_no_content)
+            else
             {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_setting(&entry);
-            }
+               if (system->load_no_content)
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+                  menu_displaylist_setting(&entry);
+               }
 
 #ifndef HAVE_DYNAMIC
-            if (frontend_driver_has_fork())
+               if (frontend_driver_has_fork())
 #endif
-            {
-               if (settings->bools.menu_show_load_core)
                {
-                  entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
-                  menu_displaylist_setting(&entry);
+                  if (settings->bools.menu_show_load_core)
+                  {
+                     entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
+                     menu_displaylist_setting(&entry);
+                  }
                }
             }
 
