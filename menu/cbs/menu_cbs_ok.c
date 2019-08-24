@@ -316,6 +316,8 @@ static const char *get_default_shader_dir(void)
 {
    settings_t *settings       = config_get_ptr();
    const char *def_shader_dir = settings->paths.directory_video_shader;
+   return def_shader_dir;
+#if 0
    bool slang_supported       = video_shader_is_supported(RARCH_SHADER_SLANG);
    bool glsl_supported        = video_shader_is_supported(RARCH_SHADER_GLSL);
    bool cg_supported          = video_shader_is_supported(RARCH_SHADER_CG);
@@ -352,6 +354,7 @@ static const char *get_default_shader_dir(void)
    }
 
    return def_shader_dir;
+#endif
 }
 #endif
 
