@@ -4388,6 +4388,7 @@ static bool command_event_main_state(unsigned cmd)
       {
          case CMD_EVENT_SAVE_STATE:
             content_save_state(state_path, true, false);
+            video_driver_monitor_reset();
             ret      = true;
             push_msg = false;
             break;
@@ -4402,6 +4403,7 @@ static bool command_event_main_state(unsigned cmd)
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
+               video_driver_monitor_reset();
             }
             push_msg = false;
             break;
