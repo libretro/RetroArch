@@ -888,6 +888,7 @@ static bool runloop_slowmotion                                  = false;
 static bool runloop_fastmotion                                  = false;
 static bool runloop_shutdown_initiated                          = false;
 static bool runloop_core_shutdown_initiated                     = false;
+static bool runloop_core_running                                = false;
 static bool runloop_perfcnt_enable                              = false;
 static bool runloop_overrides_active                            = false;
 static bool runloop_remaps_core_active                          = false;
@@ -4784,6 +4785,8 @@ bool command_event(enum event_command cmd, void *data)
             content_ctx_info_t content_info = {0};
 
             content_get_status(&contentless, &is_inited);
+
+            runloop_core_running            = false;
 
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
@@ -22944,6 +22947,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
    {
+      case RARCH_CTL_CORE_IS_RUNNING:
+         return runloop_core_running;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
@@ -24148,7 +24153,8 @@ static enum runloop_state runloop_check_state(void)
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_core_shutdown_initiated && settings->bools.load_dummy_on_core_shutdown)
+         if (runloop_core_shutdown_initiated && 
+               settings->bools.load_dummy_on_core_shutdown)
          {
             content_ctx_info_t content_info;
 
@@ -24165,10 +24171,12 @@ static enum runloop_state runloop_check_state(void)
                runloop_core_shutdown_initiated = false;
             }
             else
-               quit_runloop = true;
+               quit_runloop   = true;
          }
          else
-            quit_runloop = true;
+            quit_runloop      = true;
+
+         runloop_core_running = false;
 
          if (quit_runloop)
          {
@@ -24831,6 +24839,7 @@ int runloop_iterate(void)
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
+         runloop_core_running  = false;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
@@ -24859,6 +24868,7 @@ int runloop_iterate(void)
 #endif
          return 0;
       case RUNLOOP_STATE_ITERATE:
+         runloop_core_running = true;
          break;
    }
 
