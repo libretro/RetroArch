@@ -53,6 +53,10 @@ typedef struct
    unsigned last_frame_lba;
    unsigned char last_frame[2352];
    bool last_frame_valid;
+   unsigned char* xfer_buf;
+   unsigned xfer_buf_size;
+   unsigned xfer_buf_start_lba;
+   unsigned xfer_buf_num_lbas;
 } vfs_cdrom_t;
 #endif
 

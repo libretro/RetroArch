@@ -370,8 +370,7 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 
 static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
-   unsigned char *xfer_buf = NULL;
-   unsigned char *xfer_buf_pos = xfer_buf;
+   unsigned char *xfer_buf_pos = NULL;
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
    unsigned char retries_left = CDROM_MAX_RETRIES;
    int i, rv = 0;
@@ -398,13 +397,18 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       padded_req_bytes = len + skip;
    }
 
-   xfer_buf = (unsigned char*)memalign_alloc(4096, padded_req_bytes);
-   xfer_buf_pos = xfer_buf;
+   if (stream->cdrom.xfer_buf == NULL && dir != DIRECTION_NONE)
+   {
+      stream->cdrom.xfer_buf_num_lbas = 26; /* ~64K buffer */
+      stream->cdrom.xfer_buf_size = stream->cdrom.xfer_buf_num_lbas * 2352;
+      stream->cdrom.xfer_buf = (unsigned char*)memalign_alloc(4096, stream->cdrom.xfer_buf_size);
+      if (!stream->cdrom.xfer_buf)
+         return 1;
 
-   if (!xfer_buf)
-      return 1;
 
-   memset(xfer_buf, 0, padded_req_bytes);
+      stream->cdrom.xfer_buf_start_lba = 0x7FFFFF00;
+   }
+
 #ifdef CDROM_DEBUG
    printf("Number of frames to read: %d\n", frames);
    fflush(stdout);
@@ -442,18 +446,30 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
 
-         if (stream->cdrom.last_frame_valid && lba_req == stream->cdrom.last_frame_lba)
+         if (lba_req >= stream->cdrom.xfer_buf_start_lba && lba_req < stream->cdrom.xfer_buf_start_lba + stream->cdrom.xfer_buf_num_lbas)
          {
             /* use cached frame */
             cached_read = true;
+            xfer_buf_pos = stream->cdrom.xfer_buf + (lba_req - stream->cdrom.xfer_buf_start_lba) * 2352;
+
 #ifdef CDROM_DEBUG
             printf("[CDROM] Using cached frame\n");
             fflush(stdout);
 #endif
-            /* assumes request_len is always equal to the size of last_frame */
-            memcpy(xfer_buf_pos, stream->cdrom.last_frame, sizeof(stream->cdrom.last_frame));
          }
+         else
+         {
+            xfer_buf_pos = stream->cdrom.xfer_buf;
+            stream->cdrom.xfer_buf_start_lba = lba_req;
+            request_len = stream->cdrom.xfer_buf_size;
 
+            cdrom_lba_to_msf(lba_req + stream->cdrom.xfer_buf_num_lbas, &cmd[6], &cmd[7], &cmd[8]);
+         }
+      }
+      else
+      {
+         xfer_buf_pos = stream->cdrom.xfer_buf;
+         stream->cdrom.xfer_buf_start_lba = 0x7FFFFF00;
       }
 
 #ifdef CDROM_DEBUG
@@ -497,24 +513,10 @@ retry:
             memcpy((char*)buf + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
-            if (read_cd && !cached_read && request_len >= 2352)
-            {
-               unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
-
-               /* cache the last received frame */
-               memcpy(stream->cdrom.last_frame, xfer_buf_pos, sizeof(stream->cdrom.last_frame));
-               stream->cdrom.last_frame_valid = true;
-               /* the ending frame is never actually read, so what we really just read is the one right before that */
-               stream->cdrom.last_frame_lba = frame_end - 1;
-            }
-            else
-               stream->cdrom.last_frame_valid = false;
-
 #if 0
             printf("Frame %d, adding %" PRId64 " to buf_pos, is now %" PRId64 ". skip is %" PRId64 "\n", i, request_len, (xfer_buf_pos + request_len) - xfer_buf, skip);
             fflush(stdout);
 #endif
-            xfer_buf_pos += request_len;
          }
       }
       else
@@ -562,9 +564,6 @@ retry:
          rv = 1;
       }
    }
-
-   if (xfer_buf)
-      memalign_free(xfer_buf);
 
    return rv;
 }

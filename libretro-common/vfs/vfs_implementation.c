@@ -187,6 +187,8 @@
 
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
+
+#include "memalign.h"
 #endif
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
@@ -560,6 +562,9 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 end:
    if (stream->cdrom.cue_buf)
       free(stream->cdrom.cue_buf);
+
+   if (stream->cdrom.xfer_buf)
+      memalign_free(stream->cdrom.xfer_buf);
 #endif
    if (stream->buf)
       free(stream->buf);
