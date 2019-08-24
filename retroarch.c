@@ -849,6 +849,9 @@ static retro_keyboard_event_t runloop_key_event                 = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
 static core_option_manager_t *runloop_core_options              = NULL;
 static msg_queue_t *runloop_msg_queue                           = NULL;
+#ifdef HAVE_MENU
+static bool runloop_set_deferred_menu_context_reset             = false;
+#endif
 
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
@@ -20591,9 +20594,7 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       if (!menu_widgets_inited)
-      {
          menu_widgets_inited = menu_widgets_init(video_is_threaded);
-      }
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
@@ -22991,6 +22992,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
    {
+      case RARCH_CTL_SET_DEFERRED_MENU_CONTEXT_RESET:
+#ifdef HAVE_MENU
+         runloop_set_deferred_menu_context_reset = true;
+#endif
+         break;
       case RARCH_CTL_CORE_IS_RUNNING:
          return runloop_core_running;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
@@ -24324,6 +24330,14 @@ static enum runloop_state runloop_check_state(void)
 
          if (menu_data)
          {
+            if (runloop_set_deferred_menu_context_reset)
+            {
+               if (menu_data->driver_ctx && menu_data->driver_ctx->context_reset)
+                  menu_data->driver_ctx->context_reset(menu_data->userdata, video_driver_is_threaded_internal());
+               video_driver_frame_count                = 0;
+               runloop_set_deferred_menu_context_reset = false;
+            }
+
             if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
                   != BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX))
                BIT64_SET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
