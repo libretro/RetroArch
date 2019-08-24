@@ -6291,13 +6291,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (settings->bools.video_shader_enable)
             {
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
-                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
-                        MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
                if (frontend_driver_can_watch_for_changes())
                {
                   if (menu_entries_append_enum(info->list,
@@ -6329,11 +6322,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
 
                if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
+                        MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+               if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
                         MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
+
                if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES),
@@ -8214,33 +8215,44 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL))
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
 
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE))
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
 
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT))
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
 
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME))
+               if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND),
+                  MENU_ENUM_LABEL_NO_PRESETS_FOUND,
+                  0, 0, 0);
 #endif
          }
 

@@ -18,6 +18,7 @@
 
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
+#include "../../../menu/menu_entries.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -51,11 +52,11 @@ extern "C" {
 
 enum
 {
-   SHADER_PRESET_SAVE_GLOBAL = 0,
-   SHADER_PRESET_SAVE_CORE,
-   SHADER_PRESET_SAVE_PARENT,
-   SHADER_PRESET_SAVE_GAME,
-   SHADER_PRESET_SAVE_NORMAL
+   QT_SHADER_PRESET_GLOBAL = 0,
+   QT_SHADER_PRESET_CORE,
+   QT_SHADER_PRESET_PARENT,
+   QT_SHADER_PRESET_GAME,
+   QT_SHADER_PRESET_NORMAL
 };
 
 ShaderPass::ShaderPass(struct video_shader_pass *passToCopy) :
@@ -688,76 +689,128 @@ void ShaderParamsDialog::onShaderSavePresetAsClicked()
    pathArray = path.toUtf8();
    pathData = pathArray.constData();
 
-   saveShaderPreset(pathData, SHADER_PRESET_SAVE_NORMAL);
+   operateShaderPreset(true, pathData, QT_SHADER_PRESET_NORMAL);
 }
 
-void ShaderParamsDialog::saveShaderPreset(const char *path, unsigned action_type)
+/** save or remove shader preset */
+void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsigned action_type)
 {
    bool ret;
    enum auto_shader_type preset_type;
 
    switch (action_type)
    {
-      case SHADER_PRESET_SAVE_GLOBAL:
+      case QT_SHADER_PRESET_GLOBAL:
          preset_type = SHADER_PRESET_GLOBAL;
          break;
-      case SHADER_PRESET_SAVE_CORE:
+      case QT_SHADER_PRESET_CORE:
+         preset_type = SHADER_PRESET_CORE;
+         break;
+      case QT_SHADER_PRESET_PARENT:
          preset_type = SHADER_PRESET_PARENT;
          break;
-      case SHADER_PRESET_SAVE_PARENT:
-         preset_type = SHADER_PRESET_PARENT;
-         break;
-      case SHADER_PRESET_SAVE_GAME:
+      case QT_SHADER_PRESET_GAME:
          preset_type = SHADER_PRESET_GAME;
          break;
-      case SHADER_PRESET_SAVE_NORMAL:
+      case QT_SHADER_PRESET_NORMAL:
          break;
       default:
          return;
    }
 
-   if (action_type == SHADER_PRESET_SAVE_NORMAL)
-      ret = menu_shader_manager_save_preset(menu_shader_get(), path, true);
-   else
-      ret = menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true);
+   if (save)
+   {
+      if (action_type == QT_SHADER_PRESET_NORMAL)
+         ret = menu_shader_manager_save_preset(menu_shader_get(), path, true);
+      else
+         ret = menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true);
 
-   if (ret)
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO
-            );
+      if (ret)
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
+               1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO
+               );
+      else
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
+               1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_ERROR
+               );
+   }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_ERROR
-            );
+   {
+      if (action_type != QT_SHADER_PRESET_NORMAL &&
+            menu_shader_manager_remove_auto_preset(preset_type))
+      {
+#ifdef HAVE_MENU
+         bool refresh = false;
+#endif
+
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
+               1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO
+               );
+
+#ifdef HAVE_MENU
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
+      }
+      else
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),
+               1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_ERROR
+               );
+   }
 }
 
 void ShaderParamsDialog::onShaderSaveGlobalPresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_GLOBAL);
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_GLOBAL);
 }
 
 void ShaderParamsDialog::onShaderSaveCorePresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_CORE);
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_CORE);
 }
 
 void ShaderParamsDialog::onShaderSaveParentPresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_PARENT);
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_PARENT);
 }
 
 void ShaderParamsDialog::onShaderSaveGamePresetClicked()
 {
-   saveShaderPreset(NULL, SHADER_PRESET_GAME);
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_GAME);
 }
 
-void ShaderParamsDialog::onShaderClearAllPassesClicked()
+void ShaderParamsDialog::onShaderRemoveGlobalPresetClicked()
+{
+   operateShaderPreset(false, NULL, QT_SHADER_PRESET_GLOBAL);
+}
+
+void ShaderParamsDialog::onShaderRemoveCorePresetClicked()
+{
+   operateShaderPreset(false, NULL, QT_SHADER_PRESET_CORE);
+}
+
+void ShaderParamsDialog::onShaderRemoveParentPresetClicked()
+{
+   operateShaderPreset(false, NULL, QT_SHADER_PRESET_PARENT);
+}
+
+void ShaderParamsDialog::onShaderRemoveGamePresetClicked()
+{
+   operateShaderPreset(false, NULL, QT_SHADER_PRESET_GAME);
+}
+
+void ShaderParamsDialog::onShaderRemoveAllPassesClicked()
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
@@ -776,19 +829,13 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
 
 void ShaderParamsDialog::onShaderRemovePassClicked()
 {
-   int i;
    QVariant passVariant;
    QAction                   *action = qobject_cast<QAction*>(sender());
-   struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
    int pass                          = 0;
    bool ok                           = false;
 
-   getShaders(&menu_shader, &video_shader);
-
-   if (!menu_shader || menu_shader->passes == 0 || !action)
+   if (!action)
       return;
-
    passVariant = action->data();
 
    if (!passVariant.isValid())
@@ -797,6 +844,20 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
    pass = passVariant.toInt(&ok);
 
    if (!ok)
+      return;
+
+   onShaderRemovePass(pass);
+}
+
+void ShaderParamsDialog::onShaderRemovePass(int pass)
+{
+   int i;
+   struct video_shader *menu_shader  = NULL;
+   struct video_shader *video_shader = NULL;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (!menu_shader || menu_shader->passes == 0)
       return;
 
    if (pass < 0 || pass > static_cast<int>(menu_shader->passes))
@@ -818,6 +879,18 @@ void ShaderParamsDialog::onShaderApplyClicked()
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 }
 
+void ShaderParamsDialog::updateRemovePresetButtonsState()
+{
+   if (removeGlobalPresetAction)
+      removeGlobalPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL));
+   if (removeCorePresetAction)
+      removeCorePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE));
+   if (removeParentPresetAction)
+      removeParentPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT));
+   if (removeGamePresetAction)
+      removeGamePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME));
+}
+
 void ShaderParamsDialog::reload()
 {
    buildLayout();
@@ -828,11 +901,13 @@ void ShaderParamsDialog::buildLayout()
    QPushButton *loadButton = NULL;
    QPushButton *saveButton = NULL;
    QPushButton *removeButton = NULL;
+   QPushButton *removePassButton = NULL;
    QPushButton *applyButton = NULL;
    QHBoxLayout *topButtonLayout = NULL;
    QMenu *loadMenu = NULL;
    QMenu *saveMenu = NULL;
    QMenu *removeMenu = NULL;
+   QMenu *removePassMenu = NULL;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
    struct video_shader *avail_shader = NULL;
@@ -905,6 +980,7 @@ void ShaderParamsDialog::buildLayout()
    loadButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD), this);
    saveButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SAVE), this);
    removeButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_REMOVE), this);
+   removePassButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES), this);
    applyButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_APPLY), this);
 
    loadMenu = new QMenu(loadButton);
@@ -923,6 +999,16 @@ void ShaderParamsDialog::buildLayout()
    saveButton->setMenu(saveMenu);
 
    removeMenu = new QMenu(removeButton);
+   removeGlobalPresetAction = removeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL), this, SLOT(onShaderRemoveGlobalPresetClicked()));
+   removeCorePresetAction   = removeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),   this, SLOT(onShaderRemoveCorePresetClicked()));
+   removeParentPresetAction = removeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT), this, SLOT(onShaderRemoveParentPresetClicked()));
+   removeGamePresetAction   = removeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),   this, SLOT(onShaderRemoveGamePresetClicked()));
+
+   removeButton->setMenu(removeMenu);
+
+   connect(removeMenu, SIGNAL(aboutToShow()), this, SLOT(updateRemovePresetButtonsState()));
+
+   removePassMenu = new QMenu(removeButton);
 
    /* When there are no passes, at least on first startup, it seems video_shader erroneously shows 1 pass, with an empty source file.
     * So we use menu_shader instead for that.
@@ -933,15 +1019,15 @@ void ShaderParamsDialog::buildLayout()
       {
          QFileInfo fileInfo(menu_shader->pass[i].source.path);
          QString shaderBasename = fileInfo.completeBaseName();
-         QAction *action = removeMenu->addAction(shaderBasename, this, SLOT(onShaderRemovePassClicked()));
+         QAction *action = removePassMenu->addAction(shaderBasename, this, SLOT(onShaderRemovePassClicked()));
 
          action->setData(i);
       }
    }
 
-   removeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES), this, SLOT(onShaderClearAllPassesClicked()));
+   removePassMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES), this, SLOT(onShaderRemoveAllPassesClicked()));
 
-   removeButton->setMenu(removeMenu);
+   removePassButton->setMenu(removePassMenu);
 
    connect(applyButton, SIGNAL(clicked()), this, SLOT(onShaderApplyClicked()));
 
@@ -949,6 +1035,7 @@ void ShaderParamsDialog::buildLayout()
    topButtonLayout->addWidget(loadButton);
    topButtonLayout->addWidget(saveButton);
    topButtonLayout->addWidget(removeButton);
+   topButtonLayout->addWidget(removePassButton);
    topButtonLayout->addWidget(applyButton);
 
    m_layout->addLayout(topButtonLayout);
@@ -1337,6 +1424,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
+            newValue = round(newValue / param->step) * param->step;
             param->current = newValue;
          }
       }
@@ -1357,6 +1445,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
+            newValue = round(newValue / param->step) * param->step;
             param->current = newValue;
          }
       }

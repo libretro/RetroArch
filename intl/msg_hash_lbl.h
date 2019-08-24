@@ -843,6 +843,8 @@ MSG_HASH(MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
       "no_playlist_entries_available")
 MSG_HASH(MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
       "menu_label_no_settings_found")
+MSG_HASH(MENU_ENUM_LABEL_NO_PRESETS_FOUND,
+      "menu_label_no_presets_found")
 MSG_HASH(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
       "no_shader_parameters.")
 MSG_HASH(MENU_ENUM_LABEL_ONLINE,

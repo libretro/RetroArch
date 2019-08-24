@@ -2222,10 +2222,12 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       configuration_set_bool(settings, settings->bools.video_shader_enable, true);
       retroarch_set_runtime_shader_preset(preset_path);
 
+#ifdef HAVE_MENU
       /* reflect in shader manager */
       if (menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false))
          if (!string_is_empty(preset_path))
             menu_shader_set_modified(false);
+#endif
 
       /* Display message */
       snprintf(msg, sizeof(msg),

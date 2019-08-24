@@ -2033,6 +2033,10 @@ MSG_HASH(
     "No settings found."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+    "No automatic shader presets found."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
     "No shader parameters."
     )
@@ -3874,7 +3878,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-    "Save ..."
+    "Save"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -6594,7 +6598,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-    "Save shader preset as ..."
+    "Save the current shader preset."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -8543,6 +8547,10 @@ MSG_HASH(
     "Remove"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+    "Remove Passes"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_APPLY,
     "Apply"
     )
@@ -9525,10 +9533,10 @@ MSG_HASH(
    )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-      "Remove ...")
+      "Remove")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-      "Remove shader presets of a specific type.")
+      "Remove an automatic shader preset.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
       "Remove Global Preset")
