@@ -385,7 +385,6 @@ ifeq ($(HAVE_QT), 1)
               ui/drivers/qt/options/playlists.o \
               ui/drivers/qt/options/recording.o \
               ui/drivers/qt/options/saving.o \
-              ui/drivers/qt/options/throttle.o \
               ui/drivers/qt/options/ui.o \
               ui/drivers/qt/options/user.o \
               ui/drivers/qt/options/video.o

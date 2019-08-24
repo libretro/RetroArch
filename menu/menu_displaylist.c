@@ -3720,6 +3720,154 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_INPUT_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_MAX_USERS,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_BIND_HOLD,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_BIND_MODE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+
+#ifdef HAVE_LIBNX
+         {
+            unsigned user;
+
+            for (user = 0; user < 8; user++)
+            {
+               char key_split_joycon[PATH_MAX_LENGTH];
+               unsigned val = user + 1;
+
+               key_split_joycon[0] = '\0';
+
+               snprintf(key_split_joycon, sizeof(key_split_joycon),
+                     "%s_%u",
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
+
+               if (menu_displaylist_parse_settings(list,
+                        key_split_joycon, PARSE_ONLY_UINT, true, 0) != -1)
+                  count++;
+            }
+         }
+#endif
+
+         {
+            unsigned user;
+            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            for (user = 0; user < max_users; user++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
+                        PARSE_ACTION, false) != -1)
+                  count++;
+            }
+
+         }
+         break;
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -4677,11 +4825,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,          PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL },
-               {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7054,6 +7202,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
+      case DISPLAYLIST_INPUT_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -7362,183 +7511,101 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,          PARSE_ACTION, false) == 0)
+               MENU_ENUM_LABEL_MIDI_SETTINGS,
+               PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,   PARSE_ACTION, false) == 0)
+               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
+               PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MENU_SOUNDS,            PARSE_ACTION, false) == 0)
+               MENU_ENUM_LABEL_MENU_SOUNDS,
+               PARSE_ACTION, false) == 0)
             count++;
-         menu_displaylist_parse_settings_enum(info->list,
+         if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MUTE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_VOLUME,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_SYNC,
-               PARSE_ONLY_BOOL, false);
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_DEVICE,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
          if (menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                PARSE_ONLY_UINT, false) == 0)
             count++;
+
+         /* Volume */
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_MUTE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_VOLUME,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         /* Resampler */
          {
             settings_t *settings      = config_get_ptr();
             if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
             {
-               menu_displaylist_parse_settings_enum(info->list,
+               if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                     PARSE_ONLY_UINT, false);
-               count++;
+                     PARSE_ONLY_UINT, false) == 0)
+                  count++;
             }
          }
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_DEVICE,
-               PARSE_ONLY_STRING, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-               PARSE_ONLY_PATH, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-               PARSE_ONLY_INT, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_INPUT_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_MAX_USERS,
-               PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
-               PARSE_ONLY_BOOL, false);
          if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
+               MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                PARSE_ONLY_UINT, false) == 0)
             count++;
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-               PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,
-               PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND, PARSE_ONLY_BOOL, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD, PARSE_ONLY_FLOAT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE, PARSE_ONLY_FLOAT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY, PARSE_ONLY_FLOAT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_BIND_HOLD, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_TURBO_PERIOD, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_DUTY_CYCLE, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_BIND_MODE, PARSE_ONLY_UINT, false);
-         ret = menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, PARSE_ACTION, false);
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
 
-#ifdef HAVE_LIBNX
-         {
-            unsigned user;
-
-            for (user = 0; user < 8; user++)
-            {
-               char key_split_joycon[PATH_MAX_LENGTH];
-               unsigned val = user + 1;
-
-               key_split_joycon[0] = '\0';
-
-               snprintf(key_split_joycon, sizeof(key_split_joycon),
-                     "%s_%u",
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
-
-               if (menu_displaylist_parse_settings(info->list,
-                     key_split_joycon, PARSE_ONLY_UINT, true, 0) != -1)
-                  count++;
-            }
-         }
-#endif
-
-         {
-            unsigned user;
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-            for (user = 0; user < max_users; user++)
-            {
-               if (menu_displaylist_parse_settings_enum(info->list,
-                     (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
-                     PARSE_ACTION, false) != -1)
-                  count++;
-            }
-
-         }
+         /* Synchronization */
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_SYNC,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
+               PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
+               PARSE_ONLY_PATH, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+               PARSE_ONLY_INT, false) == 0)
+            count++;
 
          info->need_refresh = true;
          info->need_push    = true;

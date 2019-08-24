@@ -67,7 +67,6 @@ UI
 #include "../ui/drivers/qt/options/video.cpp"
 #include "../ui/drivers/qt/options/audio.cpp"
 #include "../ui/drivers/qt/options/saving.cpp"
-#include "../ui/drivers/qt/options/throttle.cpp"
 #include "../ui/drivers/qt/options/osd.cpp"
 #include "../ui/drivers/qt/options/input.cpp"
 #include "../ui/drivers/qt/options/latency.cpp"
