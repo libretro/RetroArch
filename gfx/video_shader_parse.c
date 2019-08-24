@@ -687,13 +687,11 @@ char *video_shader_read_reference_path(const char *path)
     * which we will load as config_file_new_from_path_to_string(<path to config>).
     */
    char *reference     = NULL;
-   config_file_t *conf = NULL;
    RFILE *file         = NULL;
    char *line          = NULL;
 
    if (string_is_empty(path))
      goto end;
-
    if (!path_is_valid(path))
      goto end;
 

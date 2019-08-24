@@ -245,7 +245,7 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    }
    else
 #endif
-   if (!filestream_read_file(font_path, (void**)&self->font_data, NULL))
+   if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, NULL))
       goto error;
 
    if (!stbtt_InitFont(&self->info, self->font_data,
