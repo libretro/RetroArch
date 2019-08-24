@@ -1,17 +1,26 @@
 # 1.7.8 (future)
 - 3DS: Fix C-Stick y-axis inversion
 - 3DS: Update all icon/banner images
+- AI: Add AI Service functionality (enabled for Windows/Mac/Linux/Android/iOS).
+- APPLE (MAC/IOS/TVOS): Fix autodetect for mFI controllers: properly call autodetect add on the connect notification, and add call to disconnect on GameController disconnect notification.
 - ANDROID: Implemented multi-touch touchscreen support
+- ANDROID: Now can be built with Gradle/Android Studio
+- AUDIO/WINDOWS: You can now select between audio devices for XAudio2/DirectSound/XAudio2 by pressing left/right on the Audio Device option.
+- AUDIO/WINDOWS: Setting the device by either index number or name string should work.
 - BLISS-BOX: Add 4 new pad types from firmware 3.0
+- BPS/UPS: Re-allocation target_data variable for target patch size (can now apply bigger patches without extra-bytes on memory)
+- CDROM: Added real CD-ROM functionality for Windows and Linux.
+- CDROM: Added disc dumping.
+- COMMON: Add separate frontend logging
+- COMMON: Ability to set FPS update interval (used in the window titlebar/FPS widget)
+- COMMON: Add 'Reset Frame Time Counter' functionality, enable it by default for resizing the window, loading/saving shader presets, fastforwarding, etc.
 - COMMON: Add optional 'on demand' thumbnail downloads
 - COMMON: Add new playlist-based thumbnail downloader. Hide the legacy thumbnail pack version by default
 - COMMON: Show license per core (if available) inside 'Load Core'
 - COMMON: Add option to load content from (and dump) CD-ROM discs
-- COMMON: New core options interface, allows for localization, sublabels and more
 - COMMON: Re-enable '--log-file' command line option
 - COMMON: Default playlist core association is now stored as metadata inside each playlist
 - COMMON: Fix playlist format detection
-- COMMON: When saving core option overrides, only include settings for the current core
 - COMMON: Favorites playlist size can now be set independently of content history size. Values can be set from 0-999, or '-1' for unlimited (99999)
 - COMMON: Prevent adding new items to favorites when playlist is full (old entries are no longer overwritten)
 - COMMON: Prevent loading content with cores that require an incompatible graphics API version from the current one
@@ -19,8 +28,12 @@
 - COMMON: Add '--set-shader' command line option which works like an override for automatic shader presets
 - COMMON: Add global shader presets
 - COMMON: Remove 'video_shader' setting, shaders are not saved automatically anymore
+- CORE OPTIONS: When saving core option overrides, only include settings for the current core
+- CORE OPTIONS: Add option to save core options per-core
 - CPU FILTERS: Add Scanline2x filter
+- DINPUT: Cleanup magic numbers mess surrounding hat code
 - GAMECUBE: Add default video/audio filter directories
+- GL/MALI400: Fix menu issues on Mali 400 series GPUs, should also fix 'RetroArch flickers black on ARM Mali GPUs (Android/ARM Linux)
 - GL/GLCORE: Use highest supported OpenGL Core version on Windows and X11
 - GL1: Ignore alpha in core video, fixes XRGB8888 rendering in some cores
 - GLCORE: Don't hardcode shader cross compilation target version but poll it. glcore would always only use the minimum target shader version, i.e. GLSL ES 3.00 for OpenGL ES 3.0+ or GLSL 1.50 for OpenGL 3.2+
@@ -28,17 +41,23 @@
 - D3D10/11/12: Add option to select which GPU to render with
 - D3D10/11: Fix maintaining aspect ratio when resizing window
 - GLCORE/SLANG: Added "FrameDirection" slang semantic
+- HID: Add Retrode support. Should work on Wii/WiiU.
 - INPUT: Menu toggle hotkey can now be bound to another keyboard key and it will toggle properly
 - IOS: Correctly centers screen on iPhone X landscape
 - IOS: Implemented multi-touch touchscreen support
+- IOS: Add in more Apple Model numbers for RetroRating Added in all current Apple Model numbers and set a base rating of 19
+- IOS: Remove pause indicator; show the native UI menu using 4-finger swipe down gesture
+- IOS: Support L3/R3 in iOS 12.1, Options buttons in MFi/PS4/XBox One controllers in iOS 13
+- LIBRETRO: Add new core options interface, allows for localization, sublabels and more
+- LIBRETRO: Add new bitmask input codepath, for RETRO_DEVICE_ID_JOYPAD only for now
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Turkish translation
-- MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content
-- MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan
-- MENU/WIDGETS: Fine tune progress bar colors
+- MENU: Add smooth ticker text
+- MENU: Ability to hide every settings submenu (User Interface -> Views -> Settings)
+- MENU: Ability to hide nearly every quick menu entry (User Interface -> Views -> Quick Menu)
 - MENU: Fix longstanding menu display issues on Mali400 GPUs (on ARM hardware, SBCs and mobile phones/tablets)
 - MENU: Fix Record -> Streaming Quality, and Record -> Recording Threads settings
 - MENU: Fix history playlist navigation after running content
@@ -48,39 +67,80 @@
 - MENU: Add new 'Playlist Management' submenu. Allows default core associations to be set (via dropdown list), and all existing associations to be reset
 - MENU: Add 'Set Core Association' option to Quick Menu
 - MENU: Add option to remain in menu after saving/loading states
+- MENU: Pressing the Start button on 'Load Core' will unload the core.
+- MENU: After a core is running, Load Core will be hidden from view until you select 'Close Content' from the Quick Menu.
+- MENU/WIDGETS: All widgets are now properly cleaned up, fixing the frozen widgets bug when loading / closing content
+- MENU/WIDGETS: Fix crash with tasks
+- MENU/WIDGETS: Widgets are now drawn above the overlay with OpenGL and Vulkan
+- MENU/WIDGETS: Fine tune progress bar colors
+- MENU/WIDGETS: Have the progression widget always resize
 - MENU/THUMBNAILS: Ensure that displayed thumbnails are always refreshed correctly after selecting 'Download Thumbnails' from Quick Menu
 - MENU/THUMBNAILS: Make PNG image loading/processing non-blocking on non-threaded systems
 - MENU/OZONE: Add it for PS3
 - MENU/OZONE: Fix regression in 1.7.7 - OSX/macOS - was unable to start it
 - MENU/OZONE: Fix sublabel spacing
+- MENU/OZONE: Add toggle to enable/disable playlist name truncation in Ozone
+- MENU/OZONE: (Ozone) Fix display of (semi-)transparent thumbnails
 - MENU/XMB: Add menu animation settings
 - MENU/XMB: Add optional thumbnail scaling
 - MENU/XMB: Fix display of long sublabels. Text that would exceed the display area now scrolls line-by-line
 - MENU/XMB/OZONE: Add optional thumbnail upscaling
+- MENU/QT/WIMP: Add core option sublabels as tooltips, add buttons to reset one/all core options
+- MENU/QT/WIMP: Word-wrap core option tooltips
 - MENU/QT/WIMP: Path selector fixes
 - MENU/RGUI: Enable playlist display on platforms without database support
+- MENU/RGUI: Make particle effects framerate independent + add animation speed setting
+- MIDI: correct pitch bend in ALSA driver - MIDI standard pitch bend center position is 0x2000 but ALSA's is 0
+- MIDI: Fix SysEx handling. We need to clear the event status after each message. Otherwise, after a SysEx message the first byte of the next event will incorrectly inherit its delta_time. This causes a delay of several seconds in nearly every MT-32 games which uses a lot of long SysEx.
 - METAL/SLANG: Added "FrameDirection" slang semantic
 - NETBSD: Audioio is now the default audio driver
 - NETBSD: Fix a segfault when starting RetroArch with an empty configuration file and LANG unset in the environment
 - OSD: OSD is now drawn above the overlay with Vulkan
 - OSX: Fix regression with Cocoa GL - shader / preset loading was getting stuck in an infinite loop
+- OSX: Add improved menu resizing for window resizing
+- PLAYLISTS: Add history/favourites to 'Playlist Management' menu
 - RECORD: Fix Twitch streaming
+- REMOTE RETROPAD: Fix for Remote RetroPad input - fixes processing of Remote RetroPad input. None of the remote inputs are being executed both in menu and in game. This is due to the way current key binds are being detected which block processing of any remote input. It's been tested using Remote RetroPad core on Android including digital dpad and analog control input.
+- RUNAHEAD/MSVC2010:  Build in runahead support for MSVC2010 and up
+- RUNAHEAD/VITA: Build in runahead support for Vita version
+- SAVESTATES: Allow auto save states also in cores that support no content as long as some content is loaded
 - SCALER: Fix SSE2 path for ARGB/BGRA -> BGR24 - should fix screenshots being taken for XRGB888 (viewport)
 - SCANNER: Skip all databases with incompatible file extensions, whether content is inside an archive or not
 - SCANNER: Fix hang on empty files inside archives
 - SHADERS: Add proper shader compatibility checks
 - SHADERS: Enable Cg shaders for D3D9
+- SHADERS: Remove 'video_shader' setting, replace it with global presets that make more sense
+- SHADERS: #reference directive for shaders. Presets can point to other existing presets if they are unchanged
+- SHADERS: Will attempt to cache the shader/preset into memory before loading to avoid costly getline/gets/getc operations
+- SHADERS: New --set-shader commandline option
+- SHADERS/MENU: Prevent undefined behaviour when failing to load shaders
+- SHADERS/MENU: Pressing the Start button on 'Load Shader Preset' will reset all shader passes and apply changes, effectively disabling the shaders
+- SHADERS/MENU: New menu options for removing shader presets (global/core/parent/etc).
+- SWITCH :Add Audren audio driver.
+- SWITCH: Fix splitting and joining of joycon controllers. Before this fix, splitting and joining of joycons only ever worked sporadically
+- SWITCH: Proper x/y scaling for pointer devices, fixes touch lightgun
+- THUMBNAILS: Add optional On-Demand Thumbnails.
+- UDEV: Fix wrong udev devices order
+- UDEV/X11: Mouse pointer should work now in X11 environment with no Display
+- VITA: Update Vita2D
 - VULKAN/SLANG: Added "FrameDirection" slang semantic
 - VULKAN: Add option to select which GPU to render with
+- VULKAN: Validate non-causal filter chain for texture inputs. We only validated for UBO inputs apparently.
+- WINDOWS: Menubar should no longer be disabled when threaded video is enabled
+- WINDOWS: Add improved menu resizing for window resizing
+- WINDOWS: Properly set initial directory for menubar 'Load Core' option
 - WII: Add default video/audio filter directories
 - WII: Fix RGUI display corruption
 - WII: Fix HID joypad drivers
 - WII: Add optional overscan correction
 - WII: Fix recursive path_mkdir() operations
 - WII: Add widescreen RGUI support
+- WIIU: Scale menu to viewport size; respect filtering settings for menu
+- WIIU/RGUI: RGUI does its own transparency effects in the texture, so we don't have to add another 50% on that
+- WIIU/RGUI: Use correct pixelformat ordering for menu texture
 - WIIU/SLANG: Added "FrameDirection" slang semantic
+- X11: Add improved menu resizing for window resizing
 - X11: Add non-evdev keycodes to fix keyboard input on non-Linux systems with X11
-- X11/UDEV: Mouse pointer should work now in X11 environment with no Display
 
 # 1.7.7
 - 3DS: Add unique IDs to prevent cores overwriting each other
@@ -798,3 +858,4 @@ Skipped this one
 - WINDOWS: Logging to file no longer spawns an empty window
 
 # 1.4.1
+
