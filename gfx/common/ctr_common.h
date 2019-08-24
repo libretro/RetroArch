@@ -16,6 +16,7 @@
 #ifndef CTR_COMMON_H__
 #define CTR_COMMON_H__
 
+#include <3ds.h>
 #include <retro_inline.h>
 
 #define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
