@@ -3864,7 +3864,10 @@ static bool event_init_content(void)
       path_fill_names();
 
    if (!content_init())
+   {
+      runloop_core_running = false;
       return false;
+   }
 
    command_event_set_savestate_auto_index();
 
