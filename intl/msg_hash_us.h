@@ -9585,3 +9585,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
       "Reset the frame time counter after saving a state.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
       "Use modern decorated animations, notifications, indicators and controls instead of the old text only system.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+      "The animation that triggers when scrolling between tabs.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+      "The animation that triggers when moving up or down.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+      "The animation that triggers when opening a submenu.")
