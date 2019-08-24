@@ -3734,6 +3734,7 @@ static void stripes_context_reset(void *data, bool is_threaded)
 
       free(iconpath);
    }
+   video_driver_monitor_reset();
 }
 
 static void stripes_navigation_clear(void *data, bool pending_push)

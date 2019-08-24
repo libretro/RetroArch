@@ -1133,7 +1133,8 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)
-   if (video_driver_is_threaded())
+   bool video_is_threaded = video_driver_is_threaded();
+   if (video_is_threaded)
       ui_companion_win32.application->process_events();
    *quit                  = g_win32_quit;
 
@@ -1143,6 +1144,10 @@ void win32_check_window(bool *quit, bool *resize,
       *width              = g_win32_resize_width;
       *height             = g_win32_resize_height;
       g_win32_resized     = false;
+
+#ifdef HAVE_MENU
+      rarch_ctl(RARCH_CTL_SET_DEFERRED_MENU_CONTEXT_RESET, NULL);
+#endif
    }
 #endif
 }

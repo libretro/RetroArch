@@ -265,6 +265,8 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER,
       "database_manager")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
       "database_manager_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST,
+      "deferred_frame_time_counter_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,
       "deferred_video_shader_preset_remove_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,
@@ -843,6 +845,8 @@ MSG_HASH(MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
       "no_playlist_entries_available")
 MSG_HASH(MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
       "menu_label_no_settings_found")
+MSG_HASH(MENU_ENUM_LABEL_NO_PRESETS_FOUND,
+      "menu_label_no_presets_found")
 MSG_HASH(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
       "no_shader_parameters.")
 MSG_HASH(MENU_ENUM_LABEL_ONLINE,
@@ -1091,6 +1095,8 @@ MSG_HASH(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
       "rewind_buffer_size_step")
 MSG_HASH(MENU_ENUM_LABEL_REWIND_SETTINGS,
       "rewind_settings")
+MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,
+      "frame_time_counter_settings")
 MSG_HASH(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
       "vrr_runloop_enable")
 MSG_HASH(MENU_ENUM_LABEL_CHEAT_SETTINGS,
@@ -2061,3 +2067,9 @@ MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_USER,
       "settings_show_user")
 MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,
       "settings_show_directory")
+MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+      "frame_time_counter_reset_after_fastforwarding")
+MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+      "frame_time_counter_reset_after_load_state")
+MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+      "frame_time_counter_reset_after_save_state")

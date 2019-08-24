@@ -2366,6 +2366,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_RESTART_RETROARCH:
       case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
       case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
+      case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RENAME_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_RENAME];
@@ -5271,6 +5272,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
       xmb_context_reset_internal(xmb, is_threaded, true);
+   video_driver_monitor_reset();
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)

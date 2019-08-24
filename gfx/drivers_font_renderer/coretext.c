@@ -31,6 +31,8 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
+#include <file/file_path.h>
+
 #include "../font_driver.h"
 
 #define CT_ATLAS_ROWS 16
@@ -262,7 +264,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    ct_font_renderer_t *handle = (ct_font_renderer_t*)
       calloc(1, sizeof(*handle));
 
-   if (!handle || !string_is_valid(font_path))
+   if (!handle || !path_is_valid(font_path))
    {
       err = 1;
       goto error;

@@ -673,6 +673,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       ozone_restart_cursor_animation(ozone);
    }
+   video_driver_monitor_reset();
 }
 
 static void ozone_collapse_end(void *userdata)

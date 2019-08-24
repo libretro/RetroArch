@@ -824,6 +824,16 @@ static settings_t *configuration_settings                       = NULL;
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 
+/*
+ * Override poll type behavior, is set by the core.
+ *
+ * 0 - Don't Care
+ * 1 - Early
+ * 2 - Normal
+ * 3 - Late
+ */
+static unsigned core_poll_type_override                         = 0;
+
 static bool has_set_username                                    = false;
 
 #ifdef HAVE_THREAD_STORAGE
@@ -839,6 +849,9 @@ static retro_keyboard_event_t runloop_key_event                 = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
 static core_option_manager_t *runloop_core_options              = NULL;
 static msg_queue_t *runloop_msg_queue                           = NULL;
+#ifdef HAVE_MENU
+static bool runloop_set_deferred_menu_context_reset             = false;
+#endif
 
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
@@ -2222,10 +2235,12 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       configuration_set_bool(settings, settings->bools.video_shader_enable, true);
       retroarch_set_runtime_shader_preset(preset_path);
 
+#ifdef HAVE_MENU
       /* reflect in shader manager */
       if (menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false))
          if (!string_is_empty(preset_path))
             menu_shader_set_modified(false);
+#endif
 
       /* Display message */
       snprintf(msg, sizeof(msg),
@@ -3864,7 +3879,10 @@ static bool event_init_content(void)
       path_fill_names();
 
    if (!content_init())
+   {
+      runloop_core_running = false;
       return false;
+   }
 
    command_event_set_savestate_auto_index();
 
@@ -4383,6 +4401,11 @@ static bool command_event_main_state(unsigned cmd)
       {
          case CMD_EVENT_SAVE_STATE:
             content_save_state(state_path, true, false);
+            {
+               settings_t *settings   = configuration_settings;
+               if (settings->bools.frame_time_counter_reset_after_save_state)
+                  video_driver_frame_time_count = 0;
+            }
             ret      = true;
             push_msg = false;
             break;
@@ -4397,6 +4420,11 @@ static bool command_event_main_state(unsigned cmd)
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
+               {
+                  settings_t *settings   = configuration_settings;
+                  if (settings->bools.frame_time_counter_reset_after_load_state)
+                     video_driver_frame_time_count = 0;
+               }
             }
             push_msg = false;
             break;
@@ -7721,15 +7749,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
-      {
-         bool state = *(const bool*)data;
-         RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
-
-         set_save_state_in_background(state);
-
-         break;
-      }
 
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
@@ -8279,10 +8298,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          *(bool *)data = runloop_fastmotion;
          break;
 
-      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
-         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
-         break;
-
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          /* Just falldown, the function will return true */
          break;
@@ -8305,6 +8320,35 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          *(float *)data = target_refresh_rate;
          break;
       }
+
+      /* Private environment callbacks.
+       *
+       * Should all be properly addressed in version 2.
+       * */
+
+      case RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE:
+         {
+            const unsigned *poll_type_data = (const unsigned*)data;
+            
+            if (poll_type_data)
+               core_poll_type_override = *poll_type_data;
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
+         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
+         break;
+
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+
+            set_save_state_in_background(state);
+
+         }
+      break;
+
 
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
@@ -8761,6 +8805,8 @@ static void secondary_core_destroy(void)
    /* unload game from core */
    if (secondary_core.retro_unload_game)
       secondary_core.retro_unload_game();
+   core_poll_type_override = 0;
+
    /* deinit */
    if (secondary_core.retro_deinit)
       secondary_core.retro_deinit();
@@ -20475,7 +20521,7 @@ static void drivers_init(int flags)
       struct retro_hw_render_callback *hwr =
          video_driver_get_hw_context_internal();
 
-      video_driver_monitor_reset();
+      video_driver_frame_time_count = 0;
 
       video_driver_lock_new();
       video_driver_filter_free();
@@ -20548,9 +20594,7 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       if (!menu_widgets_inited)
-      {
          menu_widgets_inited = menu_widgets_init(video_is_threaded);
-      }
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
@@ -21083,6 +21127,7 @@ static void unload_hook(void)
    secondary_core_destroy();
    if (current_core.retro_unload_game)
       current_core.retro_unload_game();
+   core_poll_type_override = 0;
 }
 
 static void runahead_deinit_hook(void)
@@ -22947,6 +22992,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
    {
+      case RARCH_CTL_SET_DEFERRED_MENU_CONTEXT_RESET:
+#ifdef HAVE_MENU
+         runloop_set_deferred_menu_context_reset = true;
+#endif
+         break;
       case RARCH_CTL_CORE_IS_RUNNING:
          return runloop_core_running;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
@@ -23961,7 +24011,14 @@ static void update_fastforwarding_state(void)
    else
    {
       if (menu_widgets_inited)
+      {
          menu_widgets_fast_forward = false;
+         {
+            settings_t *settings   = configuration_settings;
+            if (settings->bools.frame_time_counter_reset_after_fastforwarding)
+               video_driver_frame_time_count = 0;
+         }
+      }
    }
 #endif
 }
@@ -24273,6 +24330,14 @@ static enum runloop_state runloop_check_state(void)
 
          if (menu_data)
          {
+            if (runloop_set_deferred_menu_context_reset)
+            {
+               if (menu_data->driver_ctx && menu_data->driver_ctx->context_reset)
+                  menu_data->driver_ctx->context_reset(menu_data->userdata, video_driver_is_threaded_internal());
+               video_driver_frame_count                = 0;
+               runloop_set_deferred_menu_context_reset = false;
+            }
+
             if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
                   != BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX))
                BIT64_SET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
@@ -26004,14 +26069,20 @@ static int16_t core_input_state_poll_late(unsigned port,
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   if (current_core.poll_type == POLL_TYPE_LATE)
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
    return core_input_state_poll;
 }
 
 static void core_input_state_poll_maybe(void)
 {
-   if (current_core.poll_type == POLL_TYPE_NORMAL)
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_NORMAL)
       input_driver_poll();
 }
 
@@ -26251,6 +26322,7 @@ static bool core_unload_game(void)
    if (current_core.game_loaded)
    {
       current_core.retro_unload_game();
+      core_poll_type_override  = 0;
       current_core.game_loaded = false;
    }
 
@@ -26261,8 +26333,11 @@ static bool core_unload_game(void)
 
 bool core_run(void)
 {
-   bool early_polling    = current_core.poll_type == POLL_TYPE_EARLY;
-   bool late_polling     = current_core.poll_type == POLL_TYPE_LATE;
+   unsigned new_poll_type = (core_poll_type_override != 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   bool early_polling     = new_poll_type == POLL_TYPE_EARLY;
+   bool late_polling      = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
    bool netplay_preframe = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);

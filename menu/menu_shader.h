@@ -124,6 +124,8 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
  **/
 bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type);
 
+bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type);
+
 void menu_shader_set_modified(bool modified);
 
 RETRO_END_DECLS
