@@ -94,7 +94,7 @@ struct ups_data
 };
 
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
-      const uint8_t*, uint64_t, uint8_t*, uint64_t*);
+      const uint8_t*, uint64_t, uint8_t**, uint64_t*);
 
 static uint8_t bps_read(struct bps_data *bps)
 {
@@ -130,7 +130,7 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 static enum patch_error bps_apply_patch(
       const uint8_t *modify_data, uint64_t modify_length,
       const uint8_t *source_data, uint64_t source_length,
-      uint8_t *target_data, uint64_t *target_length)
+      uint8_t **target_data, uint64_t *target_length)
 {
    size_t i;
    uint32_t checksum;
@@ -147,7 +147,7 @@ static enum patch_error bps_apply_patch(
 
    bps.modify_data            = modify_data;
    bps.source_data            = source_data;
-   bps.target_data            = target_data;
+   bps.target_data            = *target_data;
    bps.modify_length          = modify_length;
    bps.source_length          = source_length;
    bps.target_length          = *target_length;
@@ -176,8 +176,16 @@ static enum patch_error bps_apply_patch(
 
    if (modify_source_size > bps.source_length)
       return PATCH_SOURCE_TOO_SMALL;
-   if (modify_target_size > bps.target_length)
-      return PATCH_TARGET_TOO_SMALL;
+   if (modify_target_size > bps.target_length){
+      uint8_t *prov=(uint8_t*)malloc((size_t)modify_target_size);
+      if (prov!=NULL){
+         free(*target_data);
+	 bps.target_data=prov;
+         *target_data=prov;
+         bps.target_length=modify_target_size;
+      }else
+         return PATCH_TARGET_TOO_SMALL;
+   }
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
@@ -311,7 +319,7 @@ static uint64_t ups_decode(struct ups_data *data)
 static enum patch_error ups_apply_patch(
       const uint8_t *patchdata, uint64_t patchlength,
       const uint8_t *sourcedata, uint64_t sourcelength,
-      uint8_t *targetdata, uint64_t *targetlength)
+      uint8_t **targetdata, uint64_t *targetlength)
 {
    size_t i;
    struct ups_data data;
@@ -324,7 +332,7 @@ static enum patch_error ups_apply_patch(
 
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;
-   data.target_data     = targetdata;
+   data.target_data     = *targetdata;
    data.patch_length    = (unsigned)patchlength;
    data.source_length   = (unsigned)sourcelength;
    data.target_length   = (unsigned)*targetlength;
@@ -356,11 +364,18 @@ static enum patch_error ups_apply_patch(
    *targetlength = (data.source_length == source_read_length ?
          target_read_length : source_read_length);
 
-   if (data.target_length < *targetlength)
-      return PATCH_TARGET_TOO_SMALL;
+   if (data.target_length < *targetlength){
+      uint8_t *prov=(uint8_t*)malloc((size_t)*targetlength);
+      if(prov!=NULL){
+         free(*targetdata);
+         *targetdata=prov;
+         data.target_data=prov;
+      }else
+         return PATCH_TARGET_TOO_SMALL;
+   }
 
    data.target_length = (unsigned)*targetlength;
-
+   
    while (data.patch_offset < data.patch_length - 12)
    {
       unsigned length = (unsigned)ups_decode(&data);
@@ -418,7 +433,7 @@ static enum patch_error ups_apply_patch(
 static enum patch_error ips_apply_patch(
       const uint8_t *patchdata, uint64_t patchlen,
       const uint8_t *sourcedata, uint64_t sourcelength,
-      uint8_t *targetdata, uint64_t *targetlength)
+      uint8_t **targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
 
@@ -430,7 +445,7 @@ static enum patch_error ips_apply_patch(
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
 
-   memcpy(targetdata, sourcedata, (size_t)sourcelength);
+   memcpy(*targetdata, sourcedata, (size_t)sourcelength);
 
    *targetlength = sourcelength;
 
@@ -472,7 +487,7 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            targetdata[address++] = patchdata[offset++];
+            *targetdata[address++] = patchdata[offset++];
       }
       else /* RLE */
       {
@@ -486,7 +501,7 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            targetdata[address++] = patchdata[offset];
+            *targetdata[address++] = patchdata[offset];
 
          offset++;
       }
@@ -523,7 +538,7 @@ static bool apply_patch_content(uint8_t **buf,
    }
 
    err = func((const uint8_t*)patch_data, patch_size, ret_buf,
-         ret_size, patched_content, &target_size);
+         ret_size, &patched_content, &target_size);
 
    if (err == PATCH_SUCCESS)
    {
