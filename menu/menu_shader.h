@@ -116,6 +116,14 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
       unsigned i);
 
+/**
+ * menu_shader_manager_remove_auto_preset:
+ * @type                     : type of shader preset to delete
+ *
+ * Deletes an auto-shader.
+ **/
+bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type);
+
 void menu_shader_set_modified(bool modified);
 
 RETRO_END_DECLS
