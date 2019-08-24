@@ -1148,9 +1148,14 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    if (new_width != *width * wl->last_buffer_scale || new_height != *height * wl->last_buffer_scale)
    {
-      *resize = true;
       *width  = new_width;
       *height = new_height;
+      *resize = true;
+
+#ifdef HAVE_MENU
+      rarch_ctl(RARCH_CTL_SET_DEFERRED_MENU_CONTEXT_RESET, NULL);
+#endif
+
       wl->last_buffer_scale = wl->buffer_scale;
    }
 
