@@ -333,7 +333,7 @@ static int action_start_load_core(unsigned type, const char *label)
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   return 0;
+   return ret;
 }
 
 static int action_start_lookup_setting(unsigned type, const char *label)
