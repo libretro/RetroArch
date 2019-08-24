@@ -1410,7 +1410,7 @@ static int set_path_generic(const char *label, const char *action_path)
    return 0;
 }
 
-static int generic_action_ok_command(enum event_command cmd)
+int generic_action_ok_command(enum event_command cmd)
 {
 #ifdef HAVE_AUDIOMIXER
    settings_t *settings = config_get_ptr();

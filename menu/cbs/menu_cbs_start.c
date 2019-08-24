@@ -49,6 +49,8 @@
    cbs->action_start_ident = #name;
 #endif
 
+int generic_action_ok_command(enum event_command cmd);
+
 #ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
 {
@@ -323,6 +325,17 @@ static int action_start_video_resolution(unsigned type, const char *label)
    return 0;
 }
 
+static int action_start_load_core(unsigned type, const char *label)
+{
+   int ret                     = generic_action_ok_command(
+         CMD_EVENT_UNLOAD_CORE);
+   bool refresh                = false;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0;
+}
+
 static int action_start_lookup_setting(unsigned type, const char *label)
 {
    return menu_setting_set(type, MENU_ACTION_START, false);
@@ -334,6 +347,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CORE_LIST:
+            BIND_ACTION_START(cbs, action_start_load_core);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_START(cbs, action_start_shader_preset);
             break;
