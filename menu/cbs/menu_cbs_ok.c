@@ -206,6 +206,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST;
       case ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST;
+      case ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST;
       case ACTION_OK_DL_REWIND_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST;
       case ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST:
@@ -1003,6 +1005,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_SAVING_SETTINGS_LIST:
       case ACTION_OK_DL_LOGGING_SETTINGS_LIST:
       case ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST:
+      case ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST:
       case ACTION_OK_DL_REWIND_SETTINGS_LIST:
       case ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST:
       case ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
@@ -4626,6 +4629,7 @@ default_action_ok_func(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSE
 default_action_ok_func(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
 default_action_ok_func(action_ok_logging_list, ACTION_OK_DL_LOGGING_SETTINGS_LIST)
 default_action_ok_func(action_ok_frame_throttle_list, ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST)
+default_action_ok_func(action_ok_frame_time_counter_list, ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST)
 default_action_ok_func(action_ok_rewind_list, ACTION_OK_DL_REWIND_SETTINGS_LIST)
 default_action_ok_func(action_ok_cheat, ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST)
 default_action_ok_func(action_ok_cheat_start_or_cont, ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST)
@@ -6546,6 +6550,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_frame_throttle_list);
+            break;
+         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_frame_time_counter_list);
             break;
          case MENU_ENUM_LABEL_REWIND_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_rewind_list);

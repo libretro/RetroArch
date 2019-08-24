@@ -4388,7 +4388,11 @@ static bool command_event_main_state(unsigned cmd)
       {
          case CMD_EVENT_SAVE_STATE:
             content_save_state(state_path, true, false);
-            video_driver_monitor_reset();
+            {
+               settings_t *settings   = configuration_settings;
+               if (settings->bools.frame_time_counter_reset_after_save_state)
+                  video_driver_frame_time_count = 0;
+            }
             ret      = true;
             push_msg = false;
             break;
@@ -4403,7 +4407,11 @@ static bool command_event_main_state(unsigned cmd)
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
-               video_driver_monitor_reset();
+               {
+                  settings_t *settings   = configuration_settings;
+                  if (settings->bools.frame_time_counter_reset_after_load_state)
+                     video_driver_frame_time_count = 0;
+               }
             }
             push_msg = false;
             break;
@@ -20482,7 +20490,7 @@ static void drivers_init(int flags)
       struct retro_hw_render_callback *hwr =
          video_driver_get_hw_context_internal();
 
-      video_driver_monitor_reset();
+      video_driver_frame_time_count = 0;
 
       video_driver_lock_new();
       video_driver_filter_free();
@@ -23970,7 +23978,11 @@ static void update_fastforwarding_state(void)
       if (menu_widgets_inited)
       {
          menu_widgets_fast_forward = false;
-         video_driver_monitor_reset();
+         {
+            settings_t *settings   = configuration_settings;
+            if (settings->bools.frame_time_counter_reset_after_fastforwarding)
+               video_driver_frame_time_count = 0;
+         }
       }
    }
 #endif

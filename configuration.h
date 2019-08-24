@@ -139,6 +139,11 @@ typedef struct settings
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
 
+      /* Frame time counter */
+      bool frame_time_counter_reset_after_fastforwarding;
+      bool frame_time_counter_reset_after_load_state;
+      bool frame_time_counter_reset_after_save_state;
+
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
