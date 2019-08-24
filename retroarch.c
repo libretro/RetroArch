@@ -23964,7 +23964,10 @@ static void update_fastforwarding_state(void)
    else
    {
       if (menu_widgets_inited)
+      {
          menu_widgets_fast_forward = false;
+         video_driver_monitor_reset();
+      }
    }
 #endif
 }
