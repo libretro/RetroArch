@@ -558,6 +558,10 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
       *width  = new_width;
       *height = new_height;
       *resize = true;
+       
+#ifdef HAVE_MENU
+      rarch_ctl(RARCH_CTL_SET_DEFERRED_MENU_CONTEXT_RESET, NULL);
+#endif
    }
 }
 
