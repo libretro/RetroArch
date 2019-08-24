@@ -31,6 +31,8 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
+#include <file/file_path.h>
+
 #include "../font_driver.h"
 
 #define CT_ATLAS_ROWS 16
