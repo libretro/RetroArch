@@ -5272,6 +5272,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
       xmb_context_reset_internal(xmb, is_threaded, true);
+   video_driver_monitor_reset();
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)

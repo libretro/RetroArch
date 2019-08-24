@@ -4959,6 +4959,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
 
    if (rgui->widgets_supported)
       menu_display_allocate_white_texture();
+   video_driver_monitor_reset();
 }
 
 static void rgui_context_destroy(void *data)
