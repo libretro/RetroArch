@@ -168,7 +168,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    bool refresh                  = false;
    bool ret                      = false;
 
-   if (apply && !retroarch_apply_shader(type, preset_path))
+   if (apply && !retroarch_apply_shader(type, preset_path, true))
    {
       /* We don't want to disable shaders entirely here,
        * just reset number of passes

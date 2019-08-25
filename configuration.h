@@ -504,6 +504,7 @@ typedef struct settings
       unsigned video_overscan_correction_top;
       unsigned video_overscan_correction_bottom;
 #endif
+      unsigned video_shader_delay;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;

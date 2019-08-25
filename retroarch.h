@@ -323,7 +323,8 @@ bool retroarch_is_forced_fullscreen(void);
 void retroarch_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 
-bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path);
+bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path,
+      bool message);
 
 const char* retroarch_get_shader_preset(void);
 

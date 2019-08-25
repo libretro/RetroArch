@@ -1475,6 +1475,14 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Maximum is 15.");
             break;
+        case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
+            snprintf(s, len,
+                     "Sets by how many milliseconds auto-loading shaders\n"
+                             "are delayed.\n"
+                             "\n"
+                             "Can work around graphical glitches due to using\n"
+                             "'screen grabbing' software like streaming software.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             snprintf(s, len,
                      "Sets how many frames CPU can \n"
