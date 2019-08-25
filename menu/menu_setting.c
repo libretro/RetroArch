@@ -5763,8 +5763,7 @@ static void get_string_representation_split_joycon(rarch_setting_t *setting, cha
       size_t len)
 {
    settings_t      *settings = config_get_ptr();
-   unsigned index_offset     = setting->index_offset;
-   unsigned map              = settings->uints.input_split_joycon[index_offset];
+   unsigned map              = settings->uints.input_split_joycon;
 
    if (map == 0)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -6490,8 +6489,8 @@ static bool setting_append_list_input_player_options(
       static char key_analog[MAX_USERS][64];
       static char key_bind_all[MAX_USERS][64];
       static char key_bind_all_save_autoconfig[MAX_USERS][64];
-      static char split_joycon[MAX_USERS][64];
-      static char split_joycon_lbl[MAX_USERS][64];
+      static char split_joycon[64];
+      static char split_joycon_lbl[64];
       static char key_bind_defaults[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
 
@@ -6515,10 +6514,9 @@ static bool setting_append_list_input_player_options(
       snprintf(key_analog[user], sizeof(key_analog[user]),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
                user + 1);
-      snprintf(split_joycon[user], sizeof(split_joycon[user]),
-            "%s_%u",
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON),
-               user + 1);
+      snprintf(split_joycon, sizeof(split_joycon),
+            "%s",
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON));
       fill_pathname_join_delim(key_bind_all[user], tmp_string, "bind_all", '_',
             sizeof(key_bind_all[user]));
       fill_pathname_join_delim(key_bind_all_save_autoconfig[user],
@@ -6530,8 +6528,8 @@ static bool setting_append_list_input_player_options(
       fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
             sizeof(mouse_index[user]));
 
-      snprintf(split_joycon_lbl[user], sizeof(label[user]),
-               "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
+      snprintf(split_joycon_lbl, sizeof(label),
+               "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON));
 
       snprintf(label[user], sizeof(label[user]),
                "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
@@ -6604,9 +6602,9 @@ static bool setting_append_list_input_player_options(
 #ifdef HAVE_LIBNX
       CONFIG_UINT_ALT(
             list, list_info,
-            &settings->uints.input_split_joycon[user],
-            split_joycon[user],
-            split_joycon_lbl[user],
+            &settings->uints.input_split_joycon,
+            split_joycon,
+            split_joycon_lbl,
             user,
             &group_info,
             &subgroup_info,
