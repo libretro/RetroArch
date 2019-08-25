@@ -17754,8 +17754,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
 
-   video_driver_set_aspect_ratio_value(
-      aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
+   {
+      /* Guard against aspect ratio index possibly being out of bounds */
+      unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
+      if (new_aspect_idx > ASPECT_RATIO_END)
+         new_aspect_idx = settings->uints.video_aspect_ratio_idx = 0;
+
+      video_driver_set_aspect_ratio_value(
+            aspectratio_lut[new_aspect_idx].value);
+   }
 
    if (settings->bools.video_fullscreen|| retroarch_is_forced_fullscreen())
    {
