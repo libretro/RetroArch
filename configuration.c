@@ -1775,7 +1775,14 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("rgui_particle_effect",         &settings->uints.menu_rgui_particle_effect, true, rgui_particle_effect, false);
 #endif
 #ifdef HAVE_LIBNX
-   SETTING_UINT("split_joycon", &settings->uints.input_split_joycon, true, 0, false);
+   SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
+   SETTING_UINT("split_joycon_p2", &settings->uints.input_split_joycon[1], true, 0, false);
+   SETTING_UINT("split_joycon_p3", &settings->uints.input_split_joycon[2], true, 0, false);
+   SETTING_UINT("split_joycon_p4", &settings->uints.input_split_joycon[3], true, 0, false);
+   SETTING_UINT("split_joycon_p5", &settings->uints.input_split_joycon[4], true, 0, false);
+   SETTING_UINT("split_joycon_p6", &settings->uints.input_split_joycon[5], true, 0, false);
+   SETTING_UINT("split_joycon_p7", &settings->uints.input_split_joycon[6], true, 0, false);
+   SETTING_UINT("split_joycon_p8", &settings->uints.input_split_joycon[7], true, 0, false);
 #endif
 #ifdef HAVE_XMB
    SETTING_UINT("menu_xmb_animation_opening_main_menu",   &settings->uints.menu_xmb_animation_opening_main_menu, true, 0 /* TODO/FIXME - implement */, false);
