@@ -2934,7 +2934,7 @@ static const char *ai_service_get_str(enum translation_lang id)
       case TRANSLATION_LANG_DE:
          return "de";
       case TRANSLATION_LANG_JP:
-         return "jp";
+         return "ja";
       case TRANSLATION_LANG_NL:
          return "nl";
       case TRANSLATION_LANG_CS:
