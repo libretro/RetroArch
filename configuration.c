@@ -1191,7 +1191,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("netplay_nickname",           settings->paths.username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",           settings->paths.path_audio_dsp_plugin, false, NULL, true);
-   SETTING_PATH("core_update_buildbot_url", settings->paths.network_buildbot_url, false, NULL, true);
+   SETTING_PATH("core_updater_buildbot_cores_url", settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",       settings->paths.netplay_server, false, NULL, true);
