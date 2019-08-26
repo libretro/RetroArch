@@ -1,7 +1,7 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch.legacy"
-    android:versionCode="1556806340"
+    android:versionCode="1556806341"
     android:versionName="1.7.8"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
