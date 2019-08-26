@@ -543,7 +543,7 @@ typedef struct settings
 
       unsigned input_overlay_show_physical_inputs_port;
 
-      unsigned input_split_joycon;
+      unsigned input_split_joycon[MAX_USERS];
       unsigned input_joypad_map[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];

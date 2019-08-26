@@ -3835,17 +3835,23 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
 #ifdef HAVE_LIBNX
          {
-            char key_split_joycon[PATH_MAX_LENGTH];
+            unsigned user;
 
-            key_split_joycon[0] = '\0';
+            for (user = 0; user < 8; user++)
+            {
+               char key_split_joycon[PATH_MAX_LENGTH];
+               unsigned val = user + 1;
 
-            snprintf(key_split_joycon, sizeof(key_split_joycon),
-                  "%s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON));
+               key_split_joycon[0] = '\0';
 
-            if (menu_displaylist_parse_settings(list,
-                     key_split_joycon, PARSE_ONLY_UINT, true, 0) != -1)
-            count++;
+               snprintf(key_split_joycon, sizeof(key_split_joycon),
+                     "%s_%u",
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
+
+               if (menu_displaylist_parse_settings(list,
+                        key_split_joycon, PARSE_ONLY_UINT, true, 0) != -1)
+                  count++;
+            }
          }
 #endif
 
