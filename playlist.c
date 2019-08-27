@@ -71,7 +71,8 @@ typedef struct
    struct string_list **current_entry_string_list_val;
    char *current_meta_string;
    char **current_meta_val;
-   int *current_meta_int_val;
+   enum playlist_label_display_mode *current_meta_label_display_mode_val;
+   enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
    char *current_items_string;
    bool in_items;
    bool in_subsystem_roms;
@@ -1805,13 +1806,22 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
             free(pCtx->current_meta_string);
             pCtx->current_meta_string = NULL;
 
-            *pCtx->current_meta_int_val = (int)strtoul(pValue, NULL, 10);
+            if (pCtx->current_meta_label_display_mode_val)
+               *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_thumbnail_mode_val)
+               *pCtx->current_meta_thumbnail_mode_val = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+            else
+            {
+               /* must be a value for an unknown member we aren't tracking, skip it */
+            }
          }
       }
    }
 
-   pCtx->current_entry_int_val = NULL;
-   pCtx->current_entry_uint_val = NULL;
+   pCtx->current_entry_int_val               = NULL;
+   pCtx->current_entry_uint_val              = NULL;
+   pCtx->current_meta_label_display_mode_val = NULL;
+   pCtx->current_meta_thumbnail_mode_val     = NULL;
 
    return JSON_Parser_Continue;
 }
@@ -1915,11 +1925,11 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
             else if (string_is_equal(pValue, "default_core_name"))
                pCtx->current_meta_val = &pCtx->playlist->default_core_name;
             else if (string_is_equal(pValue, "label_display_mode"))
-               pCtx->current_meta_int_val = (int*)&pCtx->playlist->label_display_mode;
+               pCtx->current_meta_label_display_mode_val = &pCtx->playlist->label_display_mode;
             else if (string_is_equal(pValue, "right_thumbnail_mode"))
-               pCtx->current_meta_int_val = (int*)&pCtx->playlist->right_thumbnail_mode;
+               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->right_thumbnail_mode;
             else if (string_is_equal(pValue, "left_thumbnail_mode"))
-               pCtx->current_meta_int_val = (int*)&pCtx->playlist->left_thumbnail_mode;
+               pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->left_thumbnail_mode;
             else
             {
                /* ignore unknown members */
