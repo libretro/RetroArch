@@ -31,7 +31,11 @@ cd ~/dist
 FILENAME=$(date +%F)_RetroArch_Metal.dmg
 
 hdiutil create -volname RetroArch -srcfolder ./ -ov -format UDZO ~/${FILENAME}
+cp -f ~/${FILENAME} ~/RetroArch_Metal.dmg
 
 echo "Uploading to server..."
 
 rsync -avhP -e 'ssh -p 12346 -o StrictHostKeyChecking=no' ~/${FILENAME} travis@bot.libretro.com:~/nightly/apple/osx/x86_64/
+rsync -avhP -e 'ssh -p 12346 -o StrictHostKeyChecking=no' ~/RetroArch_Metal.dmg travis@bot.libretro.com:~/nightly/apple/osx/x86_64/
+
+rm -f ~/RetroArch_Metal.dmg
