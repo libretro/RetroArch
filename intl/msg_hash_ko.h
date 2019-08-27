@@ -1621,9 +1621,9 @@ MSG_HASH(
     "컨텐츠 불러오기"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "디스크 불러오기")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "디스크 덤프")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "상태저장 불러오기"
@@ -2162,39 +2162,39 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Label Display Mode"
+    "라벨 디스플레이 모드"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Change how the content labels are displayed in this playlist."
+    "컨텐츠 라벨이 실행목록에서 표시되는 방법을 변경합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-    "Show full labels"
+    "전체 라벨 표시"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-    "Remove () content"
+    "()컨텐츠 제외"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-    "Remove [] content"
+    "[]컨텐츠 제외"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
-    "Remove () and []"
+    "() 및 [] 제외"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-    "Keep region"
+    "지역 유지"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-    "Keep disc index"
+    "디스크 인덱스 유지"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-    "Keep region and disc index"
+    "지역 미치 디스크 인덱스 유지"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -8941,309 +8941,309 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-    "Disc Information"
+    "디스크 정보"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-    "View information about inserted media discs."
+    "삽입된 미디어 디스크의 정보를 봅니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-    "Frontend Logging Level"
+    "프론트엔드 로그 레벨"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-    "Sets log level for the frontend. If a log level issued by the frontend is below this value, it is ignored."
+    "프론트 엔드의 로그 레벨을 설정합니다. 프론트엔드에서 제기된 로그 레벨이 아래 이하일 경우 무시됩니다."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-      "Framerate Update Interval (in frames)")
+      "프레임레이트 업데이트 주기 (프레임)")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-      "Framerate display will be updated at the set interval (in frames).")
+      "정해진 간격(프레임) 프레임레이트 표시를 업데이트 하게됩니다.")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-    "Show Restart Content"
+    "컨텐츠 다시 시작 표시"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-    "Show/hide the 'Restart Content' option."
+    "'컨텐츠 다시 시작' 옵션을 표시/해제합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-    "Show Close Content"
+    "컨텐츠 종료 표시"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-    "Show/hide the 'Close Content' option."
+    "'컨텐츠 종료' 옵션을 표시/해제합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-    "Show Resume Content"
+    "컨텐츠 이어하기 표시"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-    "Show/hide the 'Resume Content' option."
+    "'컨텐츠 이어하기' 옵션을 표시/해제합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
-    "Show Input"
+    "입력 표시"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
-    "Show or hide 'Input Settings' on the Settings screen."
+    "'입력 설정'을 설정 화면에 표시/해제합니다."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-    "AI Service"
+    "AI 서비스"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-    "Change settings for the AI Service (Translation/TTS/Misc)."
+    "AI 서비스(번역/TTS/기타 등등) 설정을 변경합니다."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
-      "AI Service Output")
+      "AI 서비스 출력")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
-      "AI Service URL")
+      "AI 서비스 URL")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-      "AI Service Enabled")
+      "AI 서비스 사용")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-      "Pauses gameplay during translation (Image mode), or continues to run (Speech mode)")
+      "번역하는 동안 게임을 일시정지(이미지모드) 하거나 계속해서 실행(음성모드)합니다")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
-      "A http:// url pointing to the translation service to use.")
+      "번역 서비스에서 사용할 http:// 주소입니다.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-      "Enable AI Service to run when the AI Service hotkey is pressed.")
+      "AI 서비스 핫키가 눌러지면 AI 서비스를 실행합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
-      "Target Language")
+      "대상 언어")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
-      "The language the service will translate to. If set to 'Don't Care', it will default to English.")
+      "서비스에서 번역할 대상 언어입니다. '상관없음'을 선택하면 영어가 기본 값이 됩니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
-      "Source Language")
+      "원본 언어")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-      "The language the service will translate from. If set to 'Don't Care', it will attempt to auto-detect the language. Setting it to a specific language will make the translation more accurate.")
+      "서비스에서 번역할 원본 언어입니다. '상관없음'을 선택하면 자동-탐지하게 됩니다. 특정 언어를 지정하면 번역이 좀더 정확하게 됩니다.")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CZECH,
-    "Czech"
+    "체코어"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_DANISH,
-    "Danish"
+    "덴마크어"
     )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
-   "Swedish"
+   "스웨덴어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
-   "Croatian"
+   "크로아티아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
-   "Catalan"
+   "카탈로니아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
-   "Bulgarian"
+   "불가리아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
-   "Bengali"
+   "벵골어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
-   "Basque"
+   "바스크어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
-   "Azerbaijani"
+   "아제르바이잔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanian"
+   "알바니아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
-   "Afrikaans"
+   "아프리칸스어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
-   "Estonian"
+   "에스토니아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Filipino"
+   "필리핀어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
-   "Finnish"
+   "핀란드"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
-   "Galician"
+   "갈리시아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian"
+   "그루지야"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
-   "Gujarati"
+   "구자라트어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
-   "Haitian Creole"
+   "아이티 프랑스"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hebrew"
+   "히브리어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HINDI,
-   "Hindi"
+   "힌디어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
-   "Hungarian"
+   "헝가리어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Icelandic"
+   "아이슬란드"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
-   "Indonesian"
+   "인도네시아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Irish"
+   "아일랜드어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
-   "Kannada"
+   "카르나타카"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
-   "Latin"
+   "라틴"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
-   "Latvian"
+   "라트비아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
-   "Lithuanian"
+   "리투아니아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
-   "Macedonian"
+   "마케도니아"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_MALAY,
-   "Malay"
+   "말레이"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
-   "Maltese"
+   "몰타어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
-   "Norwegian"
+   "노르웨이어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian"
+   "페르시아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
-   "Romanian"
+   "루마니아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
-   "Serbian"
+   "세르비아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
-   "Slovak"
+   "슬로바키아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
-   "Slovenian"
+   "슬로베니아어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
-   "Swahili"
+   "스와할리어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamil"
+   "타밀어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
-   "Telugu"
+   "텔루구어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thai"
+   "타이어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
-   "Ukrainian"
+   "우크라이나어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdu"
+   "우르두어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Welsh"
+   "웨일스어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish"
+   "이디시어"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DISC,
-      "Load a physical media disc. You should first select the core (Load Core)  you intend to use with the disc.")
+      "물리 미디어 디스크를 불러옵니다. 먼저 디스크와 사용할 코어를 선택해야 합니다.(코어 불러오기)")
 MSG_HASH(MENU_ENUM_SUBLABEL_DUMP_DISC,
-      "Dump the physical media disc to internal storage. It will be saved as an image file.")
+      "물리 미디어 디스크를 내부 저장장치에 덤프합니다. 이미지 파일로 저장되게 됩니다.")
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
-   "Image Mode"
+   "이미지 모드"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
-   "Speech Mode"
+   "음성 모드"
    )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-      "Remove")
+      "제거")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-      "Remove shader presets of a specific type.")
+      "특정 형식의 쉐이더 프리셋을 제거합니다.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-      "Remove Global Preset")
+      "통합 프리셋 삭제")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-      "Remove the Global Preset, used by all content and all cores.")
+      "모든 컨텐츠와 코어에 사용하는 통합 프리셋을 삭제합니다.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
-      "Remove Core Preset")
+      "코어 프리셋 삭제")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-      "Remove the Core Preset, used by all content ran with the currently loaded core.")
+      "현재 불러온 코어에 적용되는 코어 프리셋을 삭제합니다.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-      "Remove Content Directory Preset")
+      "컨텐츠 디렉토리 프리셋 삭제")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-      "Remove the Content Directory Preset, used by all content inside the current working directory.")
+      "현재 작업중인 디렉토리 안의 모든 컨테츠에 적용되는 디렉토리 프리셋을 삭제합니다.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
-      "Remove Game Preset")
+      "게임 프리셋 삭제")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-      "Remove the Game Preset, used only for the specific game in question.")
+      "특정 게임에만 적용되는 게임 프리셋을 삭제합니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-      "Frame Time Counter")
+      "프레임 타임 카운터")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-      "Adjust settings influencing the frame time counter (only active when threaded video is disabled).")
+      "프레임 타임 카운터에 영향을 주는 설정을 조정합니다.(스레드된 비디오가 해제 되었을 경우에만 사용가능합니다)")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-      "Use modern decorated animations, notifications, indicators and controls instead of the old text only system.")
+      "이전 문자 위주의 시스템 텍스트 대신 모던하고 세련된 애니메이션, 알림, 표시 및  컨트롤을 사용합니다.")
