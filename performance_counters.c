@@ -133,7 +133,7 @@ int rarch_timer_get_timeout(rarch_timer_t *timer)
 {
    if (!timer)
       return 0;
-   return (int)timer->timeout_us / 1000000;
+   return (int)(timer->timeout_us / 1000000);
 }
 
 bool rarch_timer_is_running(rarch_timer_t *timer)
@@ -185,3 +185,13 @@ void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
    timer->timer_begin = true;
    timer->timer_end   = false;
 }
+
+void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec)
+{
+   if (!timer)
+      return;
+   rarch_timer_begin_new_time_us(timer, usec);
+   timer->timer_begin = true;
+   timer->timer_end   = false;
+}
+

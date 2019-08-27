@@ -921,6 +921,7 @@ static bool shader_presets_need_reload                          = true;
 static char cli_shader[PATH_MAX_LENGTH]                         = {0};
 static bool cli_shader_disable                                  = false;
 static char runtime_shader_preset[PATH_MAX_LENGTH]              = {0};
+static rarch_timer_t shader_delay_timer                         = {0};
 #endif
 static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
@@ -2217,7 +2218,7 @@ static const struct cmd_map map[] = {
 };
 #endif
 
-bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path)
+bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path, bool message)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    settings_t *settings = configuration_settings;
@@ -2242,17 +2243,21 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
             menu_shader_set_modified(false);
 #endif
 
-      /* Display message */
-      snprintf(msg, sizeof(msg),
-            preset_file ? "Shader: \"%s\"" : "Shader: %s",
-            preset_file ? preset_file : "None");
+      if (message)
+      {
+         /* Display message */
+         snprintf(msg, sizeof(msg),
+               preset_file ? "Shader: \"%s\"" : "Shader: %s",
+               preset_file ? preset_file : "None");
 #ifdef HAVE_MENU_WIDGETS
-      if (menu_widgets_inited)
-         menu_widgets_set_message(msg);
-      else
+         if (menu_widgets_inited)
+            menu_widgets_set_message(msg);
+         else
 #endif
-         runloop_msg_queue_push(msg, 1, 120, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, 1, 120, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_APPLYING_SHADER),
             preset_path ? preset_path : "null");
@@ -2301,7 +2306,7 @@ bool command_set_shader(const char *arg)
       }
    }
 
-   return retroarch_apply_shader(type, arg);
+   return retroarch_apply_shader(type, arg, true);
 #else
    return false;
 #endif
@@ -4060,6 +4065,8 @@ static bool command_event_init_core(enum rarch_core_type type)
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    shader_presets_need_reload = true;
+   shader_delay_timer.timer_begin = false; /* not initialized */
+   shader_delay_timer.timer_end = false; /* not expired */
 #endif
 
    /* reset video format to libretro's default */
@@ -21589,8 +21596,8 @@ static void retroarch_print_help(const char *arg0)
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
    puts("      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
-        "                        Effectively overrides core shader presets.\n"
-        "                        An empty argument \"\" will disable shader core presets.");
+        "                        Effectively overrides automatic shader presets.\n"
+        "                        An empty argument \"\" will disable automatic shader presets.");
    puts("  -f, --fullscreen      Start the program in fullscreen regardless "
          "of config settings.");
    puts("  -c, --config=FILE     Path for config file."
@@ -23545,6 +23552,9 @@ const char* retroarch_get_shader_preset(void)
    if (!settings->bools.video_shader_enable)
       return NULL;
 
+   if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
+      return NULL;
+
    if (!string_is_empty(runtime_shader_preset))
       return runtime_shader_preset;
 
@@ -24820,14 +24830,7 @@ static enum runloop_state runloop_check_state(void)
          need_to_apply = true;
 
          if (!rarch_timer_is_running(&timer))
-         {
-            /* rarch_timer_t convenience functions only support whole seconds. */
-
-            /* rarch_timer_begin */
-            timer.timeout_end = cpu_features_get_time_usec() + SHADER_FILE_WATCH_DELAY_MSEC * 1000;
-            timer.timer_begin = true;
-            timer.timer_end   = false;
-         }
+            rarch_timer_begin_us(&timer, SHADER_FILE_WATCH_DELAY_MSEC * 1000);
       }
 
       /* If a file is modified atomically (moved/renamed from a different file), 
@@ -24840,15 +24843,34 @@ static enum runloop_state runloop_check_state(void)
        */
       if (need_to_apply)
       {
-         /* rarch_timer_tick */
-         timer.current    = cpu_features_get_time_usec();
-         timer.timeout_us = (timer.timeout_end - timer.current);
+         rarch_timer_tick(&timer);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
             rarch_timer_end(&timer);
             need_to_apply = false;
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+         }
+      }
+   }
+
+   if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
+   {
+      if (!rarch_timer_is_running(&shader_delay_timer))
+         rarch_timer_begin_us(&shader_delay_timer, settings->uints.video_shader_delay * 1000);
+      else
+      {
+         rarch_timer_tick(&shader_delay_timer);
+
+         if (rarch_timer_has_expired(&shader_delay_timer))
+         {
+            rarch_timer_end(&shader_delay_timer);
+
+            {
+               const char *preset = retroarch_get_shader_preset();
+               enum rarch_shader_type type = video_shader_parse_type(preset);
+               retroarch_apply_shader(type, preset, false);
+            }
          }
       }
    }

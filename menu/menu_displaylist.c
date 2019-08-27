@@ -7488,6 +7488,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_SMOOTH,
                PARSE_ONLY_BOOL, false);
+         if (menu_displaylist_parse_settings_enum(info->list,
+               MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(info->list,
                MENU_ENUM_LABEL_VIDEO_FILTER,
                PARSE_ONLY_PATH, false);

@@ -3781,6 +3781,10 @@ MSG_HASH(
     "Frame Delay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+    "Auto-Shader Delay"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
     "Start in Fullscreen Mode"
     )
@@ -4418,6 +4422,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
     "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay after V-Sync (in ms)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+    "Delays auto-loading shaders (in ms). Can work around graphical glitches when using 'screen grabbing' software."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,

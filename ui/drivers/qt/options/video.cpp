@@ -144,6 +144,7 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
