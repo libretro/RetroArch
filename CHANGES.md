@@ -1,4 +1,7 @@
-# 1.7.8 (future)
+# 1.7.9 (future)
+- LOCALIZATION: Update Japanese translation
+
+# 1.7.8
 - 3DS: Fix C-Stick y-axis inversion
 - 3DS: Update all icon/banner images
 - AI: Add AI Service functionality (enabled for Windows/Mac/Linux/Android/iOS).
