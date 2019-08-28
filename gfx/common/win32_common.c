@@ -1605,3 +1605,21 @@ void win32_get_video_output_size(unsigned *width, unsigned *height)
       *height = dm.dmPelsHeight;
    }
 }
+
+void win32_setup_pixel_format(HDC hdc, bool supports_gl)
+{
+   PIXELFORMATDESCRIPTOR pfd = {0};
+   pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
+   pfd.nVersion     = 1;
+   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+   pfd.iPixelType   = PFD_TYPE_RGBA;
+   pfd.cColorBits   = 32;
+   pfd.cDepthBits   = 0;
+   pfd.cStencilBits = 0;
+   pfd.iLayerType   = PFD_MAIN_PLANE;
+
+   if (supports_gl)
+      pfd.dwFlags  |= PFD_SUPPORT_OPENGL;
+
+   SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
+}

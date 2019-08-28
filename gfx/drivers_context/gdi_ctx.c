@@ -56,21 +56,6 @@ typedef struct gfx_ctx_gdi_data
 
 void *dinput_gdi;
 
-static void setup_gdi_pixel_format(HDC hdc)
-{
-   PIXELFORMATDESCRIPTOR pfd = {0};
-   pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
-   pfd.nVersion     = 1;
-   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-   pfd.iPixelType   = PFD_TYPE_RGBA;
-   pfd.cColorBits   = 32;
-   pfd.cDepthBits   = 0;
-   pfd.cStencilBits = 0;
-   pfd.iLayerType   = PFD_MAIN_PLANE;
-
-   SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
-}
-
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
@@ -345,10 +330,9 @@ static void gfx_ctx_gdi_swap_buffers(void *data, void *data2)
 
 void create_gdi_context(HWND hwnd, bool *quit)
 {
-   (void)quit;
    win32_gdi_hdc = GetDC(hwnd);
 
-   setup_gdi_pixel_format(win32_gdi_hdc);
+   win32_setup_pixel_format(win32_gdi_hdc, false);
 
    g_win32_inited = true;
 }
