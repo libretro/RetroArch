@@ -23393,7 +23393,7 @@ static bool retroarch_load_shader_preset_internal(
          continue;
 
       /* Concatenate strings into full paths */
-      if (core_name)
+      if (!string_is_empty(core_name))
       {
          fill_pathname_join_special_ext(shader_path,
                shader_directory, core_name,
@@ -23403,8 +23403,10 @@ static bool retroarch_load_shader_preset_internal(
       }
       else
       {
-         /* core_name == NULL means we want the global preset */
-         fill_pathname_join(shader_path, shader_directory, "global", PATH_MAX_LENGTH);
+         if (string_is_empty(special_name))
+            break;
+
+         fill_pathname_join(shader_path, shader_directory, special_name, PATH_MAX_LENGTH);
          strlcat(shader_path, video_shader_get_preset_extension(types[i]), PATH_MAX_LENGTH);
       }
 
@@ -23454,9 +23456,7 @@ static bool retroarch_load_shader_preset(void)
    if (!settings->bools.auto_shaders_enable)
       return false;
 
-   if (string_is_empty(video_shader_directory) ||
-         string_is_empty(core_name) ||
-         string_is_empty(game_name))
+   if (string_is_empty(video_shader_directory))
       return false;
 
    shader_directory = (char*)malloc(PATH_MAX_LENGTH);
@@ -23468,7 +23468,7 @@ static bool retroarch_load_shader_preset(void)
    RARCH_LOG("[Shaders]: preset directory: %s\n", shader_directory);
 
    if (retroarch_load_shader_preset_internal(shader_directory, core_name,
-            game_name))
+         game_name))
    {
       RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
       goto success;
@@ -23481,7 +23481,7 @@ static bool retroarch_load_shader_preset(void)
                rarch_path_basename, sizeof(content_dir_name));
 
       if (retroarch_load_shader_preset_internal(shader_directory, core_name,
-               content_dir_name))
+            content_dir_name))
       {
          RARCH_LOG("[Shaders]: folder-specific shader preset found.\n");
          goto success;
@@ -23489,14 +23489,14 @@ static bool retroarch_load_shader_preset(void)
    }
 
    if (retroarch_load_shader_preset_internal(shader_directory, core_name,
-            core_name))
+         core_name))
    {
       RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
       goto success;
    }
 
    if (retroarch_load_shader_preset_internal(shader_directory, NULL,
-            core_name))
+         "global"))
    {
       RARCH_LOG("[Shaders]: global shader preset found.\n");
       goto success;
