@@ -1863,8 +1863,6 @@ bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate);
 
-bool video_context_driver_show_mouse(bool *bool_data);
-
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);

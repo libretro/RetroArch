@@ -2162,8 +2162,10 @@ static void vulkan_apply_state_changes(void *data)
 
 static void vulkan_show_mouse(void *data, bool state)
 {
-   (void)data;
-   video_context_driver_show_mouse(&state);
+   vk_t                            *vk = (vk_t*)data;
+
+   if (vk && vk->ctx_driver->show_mouse)
+      vk->ctx_driver->show_mouse(vk->ctx_data, state);
 }
 
 static struct video_shader *vulkan_get_current_shader(void *data)
@@ -2581,8 +2583,8 @@ static void vulkan_overlay_enable(void *data, bool enable)
       return;
 
    vk->overlay.enable = enable;
-   if (vk->fullscreen)
-      video_context_driver_show_mouse(&enable);
+   if (vk->ctx_driver->show_mouse)
+      vk->ctx_driver->show_mouse(vk->ctx_data, enable);
 }
 
 static void vulkan_overlay_full_screen(void *data, bool enable)

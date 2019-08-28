@@ -1277,8 +1277,8 @@ static void gl_core_overlay_enable(void *data, bool state)
 
    gl->overlay_enable = state;
 
-   if (gl->fullscreen)
-      video_context_driver_show_mouse(&state);
+   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl_core_overlay_full_screen(void *data, bool enable)
@@ -1892,7 +1892,10 @@ static void gl_core_set_video_mode(void *data, unsigned width, unsigned height,
 
 static void gl_core_show_mouse(void *data, bool state)
 {
-   video_context_driver_show_mouse(&state);
+   gl_core_t                            *gl = (gl_core_t*)data;
+
+   if (gl && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl_core_set_osd_msg(void *data,

@@ -1464,8 +1464,8 @@ static void gl1_overlay_enable(void *data, bool state)
 
    gl->overlay_enable = state;
 
-   if (gl->fullscreen)
-      video_context_driver_show_mouse(&state);
+   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl1_overlay_full_screen(void *data, bool enable)

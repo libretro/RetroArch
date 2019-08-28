@@ -19737,14 +19737,6 @@ bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
    return true;
 }
 
-bool video_context_driver_show_mouse(bool *bool_data)
-{
-   if (!current_video_context.show_mouse)
-      return false;
-   current_video_context.show_mouse(video_context_data, *bool_data);
-   return true;
-}
-
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    if (!current_video_context.get_flags)

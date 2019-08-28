@@ -2399,7 +2399,10 @@ static void gl2_set_osd_msg(void *data,
 
 static void gl2_show_mouse(void *data, bool state)
 {
-   video_context_driver_show_mouse(&state);
+   gl_t                            *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static struct video_shader *gl2_get_current_shader(void *data)
@@ -4278,8 +4281,8 @@ static void gl2_overlay_enable(void *data, bool state)
 
    gl->overlay_enable = state;
 
-   if (gl->fullscreen)
-      video_context_driver_show_mouse(&state);
+   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl2_overlay_full_screen(void *data, bool enable)
