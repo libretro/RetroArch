@@ -436,7 +436,7 @@ static enum patch_error ips_apply_patch(
       uint8_t **targetdata_fix, uint64_t *targetlength)
 {
    uint32_t offset = 5;
-   uint8_t* target_data=*target_data_fix;
+   uint8_t* targetdata=*targetdata_fix;
    if (patchlen < 8 ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
