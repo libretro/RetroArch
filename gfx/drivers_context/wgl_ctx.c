@@ -173,17 +173,20 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-static void setup_pixel_format(HDC hdc)
+static void setup_pixel_format(HDC hdc, bool supports_gl)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
    pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
    pfd.nVersion     = 1;
-   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
    pfd.iPixelType   = PFD_TYPE_RGBA;
    pfd.cColorBits   = 32;
    pfd.cDepthBits   = 0;
    pfd.cStencilBits = 0;
    pfd.iLayerType   = PFD_MAIN_PLANE;
+
+   if (supports_gl)
+      pfd.dwFlags  |= PFD_SUPPORT_OPENGL;
 
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
@@ -195,7 +198,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
    win32_hdc                            = GetDC(hwnd);
 
-   setup_pixel_format(win32_hdc);
+   setup_pixel_format(win32_hdc, true);
 
 #ifdef GL_DEBUG
    debug = true;
