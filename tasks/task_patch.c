@@ -180,7 +180,7 @@ static enum patch_error bps_apply_patch(
       uint8_t *prov=(uint8_t*)malloc((size_t)modify_target_size);
       if (prov!=NULL){
          free(*target_data);
-	 bps.target_data=prov;
+	      bps.target_data=prov;
          *target_data=prov;
          bps.target_length=modify_target_size;
       }else
@@ -433,10 +433,10 @@ static enum patch_error ups_apply_patch(
 static enum patch_error ips_apply_patch(
       const uint8_t *patchdata, uint64_t patchlen,
       const uint8_t *sourcedata, uint64_t sourcelength,
-      uint8_t **targetdata, uint64_t *targetlength)
+      uint8_t **targetdata_fix, uint64_t *targetlength)
 {
    uint32_t offset = 5;
-
+   uint8_t* target_data=*target_data_fix;
    if (patchlen < 8 ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
@@ -445,7 +445,7 @@ static enum patch_error ips_apply_patch(
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
 
-   memcpy(*targetdata, sourcedata, (size_t)sourcelength);
+   memcpy(targetdata, sourcedata, (size_t)sourcelength);
 
    *targetlength = sourcelength;
 
@@ -487,7 +487,7 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            *targetdata[address++] = patchdata[offset++];
+            targetdata[address++] = patchdata[offset++];
       }
       else /* RLE */
       {
@@ -501,7 +501,7 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            *targetdata[address++] = patchdata[offset];
+            targetdata[address++] = patchdata[offset];
 
          offset++;
       }
