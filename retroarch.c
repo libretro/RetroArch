@@ -19645,16 +19645,6 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
    return true;
 }
 
-bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc)
-{
-   if (!current_video_context.get_proc_address)
-      return false;
-
-   proc->addr = current_video_context.get_proc_address(proc->sym);
-
-   return true;
-}
-
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
    if (

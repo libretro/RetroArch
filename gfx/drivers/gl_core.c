@@ -1982,13 +1982,14 @@ static uintptr_t gl_core_get_current_framebuffer(void *data)
    return gl->hw_render_fbo;
 }
 
-static retro_proc_address_t gl_core_get_proc_address(void *data, const char *sym)
+static retro_proc_address_t gl_core_get_proc_address(
+      void *data, const char *sym)
 {
-   gfx_ctx_proc_address_t proc_address;
-   proc_address.addr = NULL;
-   proc_address.sym  = sym;
-   video_context_driver_get_proc_address(&proc_address);
-   return proc_address.addr;
+   gl_core_t *gl = (gl_core_t*)data;
+   if (gl && gl->ctx_driver->get_proc_address)
+      return gl->ctx_driver->get_proc_address(sym);
+
+   return NULL;
 }
 
 static const video_poke_interface_t gl_core_poke_interface = {

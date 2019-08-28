@@ -1405,12 +1405,6 @@ typedef struct gfx_ctx_input
    void **input_data;
 } gfx_ctx_input_t;
 
-typedef struct gfx_ctx_proc_address
-{
-   const char *sym;
-   retro_proc_address_t addr;
-} gfx_ctx_proc_address_t;
-
 typedef struct gfx_ctx_ident
 {
    const char *ident;
@@ -1858,8 +1852,6 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 void video_context_driver_destroy(void);
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
-
-bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc);
 
 bool video_context_driver_suppress_screensaver(bool *bool_data);
 
