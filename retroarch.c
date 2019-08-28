@@ -17309,7 +17309,15 @@ void video_driver_set_threaded(bool val)
 
 const char *video_driver_get_ident(void)
 {
-   return (current_video) ? current_video->ident : NULL;
+   if (!current_video)
+      return NULL;
+
+#ifdef HAVE_THREADS
+   if (video_driver_is_threaded_internal())
+      return video_thread_get_ident();
+#endif
+
+   return current_video->ident;
 }
 
 static void video_context_driver_reset(void)
@@ -25461,12 +25469,7 @@ static bool rarch_write_debug_info(void)
                ? settings->arrays.menu_driver 
                : "n/a");
 #endif
-      driver =
-#ifdef HAVE_THREADS
-      (video_driver_is_threaded_internal()) ?
-      video_thread_get_ident() :
-#endif
-      video_driver_get_ident();
+      driver = video_driver_get_ident();
 
       if (string_is_equal(driver, settings->arrays.video_driver))
          filestream_printf(file, "  - Video: %s\n",
