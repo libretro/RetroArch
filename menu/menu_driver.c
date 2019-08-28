@@ -1567,12 +1567,7 @@ static bool menu_display_check_compatibility(
       enum menu_display_driver_type type,
       bool video_is_threaded)
 {
-   const char *video_driver =
-#ifdef HAVE_THREADS
-      (video_is_threaded) ?
-      video_thread_get_ident() :
-#endif
-      video_driver_get_ident();
+   const char *video_driver = video_driver_get_ident();
 
    switch (type)
    {
