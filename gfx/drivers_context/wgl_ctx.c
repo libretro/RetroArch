@@ -752,17 +752,6 @@ static bool gfx_ctx_wgl_has_focus(void *data)
    return win32_has_focus();
 }
 
-static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
-{
-   return win32_suppress_screensaver(data, enable);
-}
-
-static bool gfx_ctx_wgl_get_metrics(void *data,
-   enum display_metric_types type, float *value)
-{
-   return win32_get_metrics(data, type, value);
-}
-
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
 {
    return win32_api;
@@ -913,13 +902,13 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_video_output_size,
    gfx_ctx_wgl_get_video_output_prev,
    gfx_ctx_wgl_get_video_output_next,
-   gfx_ctx_wgl_get_metrics,
+   win32_get_metrics,
    NULL,
    gfx_ctx_wgl_update_title,
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
    gfx_ctx_wgl_has_focus,
-   gfx_ctx_wgl_suppress_screensaver,
+   win32_suppress_screensaver,
    true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,
