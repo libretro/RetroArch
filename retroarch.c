@@ -13104,7 +13104,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
    }
 
    {
-      int64_t ret[MAX_USERS];
+      int16_t ret[MAX_USERS];
       /* Check the libretro input first */
       for (port = 0; port < port_max; port++)
       {
@@ -13124,7 +13124,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
          {
             for (port = 0; port < port_max; port++)
             {
-               if (binds[port][i].valid && ret[port] & (1 << i))
+               if (binds[port][i].valid && ret[port] & (UINT32_C(1) << i))
                {
                   bit_pressed = true;
                   break;
@@ -13288,13 +13288,13 @@ static void input_keys_pressed(input_bits_t *p_new_state)
 
    /* Check the libretro input first */
    {
-      int64_t ret = current_input->input_state(current_input_data,
+      int16_t ret = current_input->input_state(current_input_data,
             joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          bool bit_pressed = !input_driver_block_libretro_input 
-            && binds[i].valid && (ret & (1 <<  i));
+            && binds[i].valid && (ret & (UINT32_C(1) <<  i));
          if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
