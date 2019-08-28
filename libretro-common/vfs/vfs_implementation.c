@@ -1229,9 +1229,6 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
 {
-   if (!rdir)
-      return NULL;
-
 #if defined(_WIN32)
 #if defined(LEGACY_WIN32)
    {
@@ -1258,6 +1255,8 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 #elif defined(PS2)
    return rdir->entry.name;
 #else
+   if (!rdir || !rdir->entry)
+      return NULL;
    return rdir->entry->d_name;
 #endif
 }
