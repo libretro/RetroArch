@@ -13104,7 +13104,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
    }
 
    {
-      int32_t ret[MAX_USERS];
+      int64_t ret[MAX_USERS];
       /* Check the libretro input first */
       for (port = 0; port < port_max; port++)
       {
@@ -13288,7 +13288,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
 
    /* Check the libretro input first */
    {
-      int32_t ret = current_input->input_state(current_input_data,
+      int64_t ret = current_input->input_state(current_input_data,
             joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
