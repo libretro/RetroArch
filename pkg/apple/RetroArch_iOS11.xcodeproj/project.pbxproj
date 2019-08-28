@@ -28,6 +28,8 @@
 		9204BE261D319EF300BD49DB /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
 		9222F2002314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
+		9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9222F2082315DAD50097C0FD /* Launch Screen.storyboard */; };
+		9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 9222F20A2315DD3D0097C0FD /* retroarch_logo.png */; };
 		926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 926C77E221FD1E6700103EDE /* Assets.xcassets */; };
 		926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
@@ -85,6 +87,8 @@
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS11.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
+		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
 		926C77D721FD1E6500103EDE /* RetroArchTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		926C77E221FD1E6700103EDE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		926C77E421FD1E6700103EDE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -178,6 +182,7 @@
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
@@ -277,6 +282,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
 				9222F1FE2314BA7C0097C0FD /* assets.zip */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				83D632D719ECFCC4009E3161 /* iOS */,
@@ -434,8 +440,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */,
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
+				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */,
 				9204BE261D319EF300BD49DB /* iOS/modules in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
@@ -556,7 +564,6 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -646,7 +653,6 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
