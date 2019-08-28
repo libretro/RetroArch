@@ -72,7 +72,7 @@ void form_bmp_header(uint8_t *header,
    header[26] = 1;
    header[27] = 0;
    /* Bits per pixel */
-   header[28] = 24;
+   header[28] = is32bpp ? 32 : 24;
    header[29] = 0;
    /* Compression method */
    header[30] = 0;
