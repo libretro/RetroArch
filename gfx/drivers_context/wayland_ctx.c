@@ -107,8 +107,6 @@ typedef struct gfx_ctx_wayland_data
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
-   struct wl_shell_surface *shell_surf;
-   struct wl_shell *shell;
    struct zxdg_surface_v6 *zxdg_surface;
    struct zxdg_shell_v6 *zxdg_shell;
    struct zxdg_toplevel_v6 *zxdg_toplevel;
@@ -272,7 +270,7 @@ void keyboard_handle_repeat_info(void *data,
    (void)wl_keyboard;
    (void)rate;
    (void)delay;
-   /* TODO: Seems like we'll need this to get 
+   /* TODO: Seems like we'll need this to get
     * repeat working. We'll have to do it on our own. */
 }
 
@@ -355,8 +353,6 @@ static void pointer_handle_button(void *data,
 			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
 			 else if (wl->zxdg_toplevel)
 			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
-			 else if (wl->shell)
-			   wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
          }
       }
       else if (button == BTN_RIGHT)
@@ -443,9 +439,9 @@ static void reorder_touches(void)
          {
             if (active_touch_positions[j].active)
             {
-               active_touch_positions[i].active = 
+               active_touch_positions[i].active =
                   active_touch_positions[j].active;
-               active_touch_positions[i].id     = 
+               active_touch_positions[i].id     =
                   active_touch_positions[j].id;
                active_touch_positions[i].x      = active_touch_positions[j].x;
                active_touch_positions[i].y      = active_touch_positions[j].y;
@@ -474,7 +470,7 @@ static void touch_handle_up(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (  active_touch_positions[i].active && 
+      if (  active_touch_positions[i].active &&
             active_touch_positions[i].id == id)
       {
          active_touch_positions[i].active = false;
@@ -498,7 +494,7 @@ static void touch_handle_motion(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (  active_touch_positions[i].active && 
+      if (  active_touch_positions[i].active &&
             active_touch_positions[i].id == id)
       {
          active_touch_positions[i].x = (unsigned) wl_fixed_to_int(x);
@@ -800,43 +796,6 @@ static const struct zxdg_toplevel_v6_listener zxdg_toplevel_v6_listener = {
     handle_zxdg_toplevel_close,
 };
 
-static void shell_surface_handle_ping(void *data,
-      struct wl_shell_surface *shell_surface,
-      uint32_t serial)
-{
-   (void)data;
-   wl_shell_surface_pong(shell_surface, serial);
-}
-
-static void shell_surface_handle_configure(void *data,
-      struct wl_shell_surface *shell_surface,
-      uint32_t edges, int32_t width, int32_t height)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   (void)shell_surface;
-   (void)edges;
-
-   wl->width  = width;
-   wl->height = height;
-
-   RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
-         wl->width, wl->height);
-}
-
-static void shell_surface_handle_popup_done(void *data,
-      struct wl_shell_surface *shell_surface)
-{
-   (void)data;
-   (void)shell_surface;
-}
-
-static const struct wl_shell_surface_listener shell_surface_listener = {
-   shell_surface_handle_ping,
-   shell_surface_handle_configure,
-   shell_surface_handle_popup_done,
-};
-
 static void display_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
@@ -937,9 +896,6 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "zxdg_shell_v6"))
       wl->zxdg_shell = (struct zxdg_shell_v6*)
          wl_registry_bind(reg, id, &zxdg_shell_v6_interface, 1);
-   else if (string_is_equal(interface, "wl_shell"))
-      wl->shell = (struct wl_shell*)
-         wl_registry_bind(reg, id, &wl_shell_interface, 1);
    else if (string_is_equal(interface, "wl_shm"))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
@@ -1038,8 +994,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       xdg_wm_base_destroy(wl->xdg_shell);
    if (wl->zxdg_shell)
       zxdg_shell_v6_destroy(wl->zxdg_shell);
-   if (wl->shell)
-      wl_shell_destroy(wl->shell);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
@@ -1054,8 +1008,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->zxdg_toplevel)
       zxdg_toplevel_v6_destroy(wl->zxdg_toplevel);
-   if (wl->shell_surf)
-      wl_shell_surface_destroy(wl->shell_surf);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
    if (wl->deco)
@@ -1076,7 +1028,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 #endif
    wl->xdg_shell        = NULL;
    wl->zxdg_shell       = NULL;
-   wl->shell            = NULL;
    wl->compositor       = NULL;
    wl->registry         = NULL;
    wl->input.dpy        = NULL;
@@ -1084,7 +1035,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->surface          = NULL;
    wl->xdg_toplevel     = NULL;
    wl->zxdg_toplevel    = NULL;
-   wl->shell_surf       = NULL;
 
    wl->width            = 0;
    wl->height           = 0;
@@ -1228,8 +1178,6 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 		  }
 		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
 	  }
-	   else if (wl->shell_surf)
-		 wl_shell_surface_set_title(wl->shell_surf, title);
 	}
 }
 
@@ -1396,11 +1344,6 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    }
 
    if (!wl->xdg_shell && !wl->zxdg_shell)
-   {
-	   RARCH_WARN("[Wayland]: Fallback to deprecated wl_shell interface!.\n");
-   }
-
-   if (!wl->xdg_shell && !wl->zxdg_shell && !wl->shell)
    {
 	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
 	   goto error;
@@ -1691,14 +1634,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       wl_display_roundtrip(wl->input.dpy);
       zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
    }
-   else if (wl->shell)
-   {
-	   wl->shell_surf = wl_shell_get_shell_surface(wl->shell, wl->surface);
-	   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, wl);
-	   wl_shell_surface_set_toplevel(wl->shell_surf);
-	   wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
-	   wl_shell_surface_set_title(wl->shell_surf, "RetroArch");
-   }
 
    switch (wl_api)
    {
@@ -1729,11 +1664,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 		   xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 	   else if (wl->zxdg_toplevel)
 		   zxdg_toplevel_v6_set_fullscreen(wl->zxdg_toplevel, NULL);
-	   else if (wl->shell)
-      {
-		   wl_shell_surface_set_fullscreen(wl->shell_surf,
-            WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
-		}
 	}
 
    flush_wayland_fd(&wl->input);
@@ -1777,7 +1707,7 @@ static void gfx_ctx_wl_input_driver(void *data,
       input_driver_t **input, void **input_data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   /* Input is heavily tied to the window stuff 
+   /* Input is heavily tied to the window stuff
     * on Wayland, so just implement the input driver here. */
    if (!input_wl_init(&wl->input, joypad_name))
    {
