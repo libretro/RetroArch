@@ -79,8 +79,18 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
 static void vg_set_nonblock_state(void *data, bool state)
 {
+   vg_t *vg     = (vg_t*)data;
    int interval = state ? 0 : 1;
-   video_context_driver_swap_interval(&interval);
+
+   if (vg->ctx_driver && vg->ctx_driver->swap_interval)
+   {
+      settings_t *settings                   = config_get_ptr();
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      vg->ctx_driver->swap_interval(vg->ctx_data, interval);
+   }
 }
 
 static INLINE bool vg_query_extension(const char *ext)
@@ -134,7 +144,14 @@ static void *vg_init(const video_info_t *video,
 
    interval = video->vsync ? 1 : 0;
 
-   video_context_driver_swap_interval(&interval);
+   if (ctx->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      ctx->swap_interval(vg->ctx_data, interval);
+   }
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;

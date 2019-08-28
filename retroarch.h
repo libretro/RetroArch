@@ -1094,6 +1094,8 @@ typedef struct video_info
 
    int swap_interval;
 
+   bool adaptive_vsync;
+
 #ifdef GEKKO
    bool vfilter;
 #endif
@@ -1856,8 +1858,6 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 void video_context_driver_destroy(void);
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
-
-bool video_context_driver_swap_interval(int *interval);
 
 bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc);
 

@@ -17830,7 +17830,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.vsync         = settings->bools.video_vsync && !runloop_force_nonblock;
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
-   video.swap_interval = settings->uints.video_swap_interval;
+   video.swap_interval  = settings->uints.video_swap_interval;
+   video.adaptive_vsync = settings->bools.video_adaptive_vsync;
 #ifdef GEKKO
    video.viwidth       = settings->uints.video_viwidth;
    video.vfilter       = settings->bools.video_vfilter;
@@ -19641,21 +19642,6 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
       return false;
    current_video_context.get_video_output_size(video_context_data,
          size_data->width, size_data->height);
-   return true;
-}
-
-bool video_context_driver_swap_interval(int *interval)
-{
-   int current_interval                   = *interval;
-   settings_t *settings                   = configuration_settings;
-   bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-         GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
-
-   if (!current_video_context.swap_interval)
-      return false;
-   if (adaptive_vsync_enabled && current_interval == 1)
-      current_interval = -1;
-   current_video_context.swap_interval(video_context_data, current_interval);
    return true;
 }
 

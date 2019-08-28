@@ -985,7 +985,14 @@ static void *gl_core_init(const video_info_t *video,
    if (video->vsync)
       interval = video->swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+   }
 
    win_width   = video->width;
    win_height  = video->height;
@@ -1370,7 +1377,16 @@ static void gl_core_set_nonblock_state(void *data, bool state)
    if (!state)
       interval = settings->uints.video_swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.
+         video_adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+   }
+
    gl_core_context_bind_hw_render(gl, true);
 }
 

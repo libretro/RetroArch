@@ -309,7 +309,14 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    interval = video->swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      ctx_driver->swap_interval(gl1->ctx_data, interval);
+   }
 
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
@@ -905,7 +912,14 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state)
    if (!state)
       interval = settings->uints.video_swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl1->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl1->ctx_driver->swap_interval(gl1->ctx_data, interval);
+   }
    gl1_context_bind_hw_render(gl1, true);
 }
 
