@@ -1365,9 +1365,11 @@ static bool vulkan_alive(void *data)
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   (void)data;
+   vk_t *vk     = (vk_t*)data;
 
-   return video_context_driver_suppress_screensaver(&enabled);
+   if (vk->ctx_data && vk->ctx_driver->suppress_screensaver)
+      return vk->ctx_driver->suppress_screensaver(vk->ctx_data, enabled);
+   return false;
 }
 
 static bool vulkan_set_shader(void *data,

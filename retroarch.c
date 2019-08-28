@@ -19695,15 +19695,6 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
    return true;
 }
 
-bool video_context_driver_suppress_screensaver(bool *bool_data)
-{
-   if (     video_context_data
-         && current_video_context.suppress_screensaver(
-            video_context_data, *bool_data))
-      return true;
-   return false;
-}
-
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 {
    if (!ident)

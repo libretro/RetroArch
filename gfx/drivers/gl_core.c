@@ -1392,8 +1392,11 @@ static void gl_core_set_nonblock_state(void *data, bool state)
 
 static bool gl_core_suppress_screensaver(void *data, bool enable)
 {
-   bool enabled = enable;
-   return video_context_driver_suppress_screensaver(&enabled);
+   bool enabled                = enable;
+   gl_core_t         *gl       = (gl_core_t*)data;
+   if (gl->ctx_data && gl->ctx_driver->suppress_screensaver)
+      return gl->ctx_driver->suppress_screensaver(gl->ctx_data, enabled);
+   return false;
 }
 
 static bool gl_core_set_shader(void *data,

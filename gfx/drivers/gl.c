@@ -3973,7 +3973,11 @@ static bool gl2_alive(void *data)
 static bool gl2_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   return video_context_driver_suppress_screensaver(&enabled);
+   gl_t *gl     = (gl_t*)data;
+
+   if (gl->ctx_data && gl->ctx_driver->suppress_screensaver)
+      return gl->ctx_driver->suppress_screensaver(gl->ctx_data, enabled);
+   return false;
 }
 
 static void gl2_update_tex_filter_frame(gl_t *gl)

@@ -1843,8 +1843,6 @@ bool video_context_driver_get_video_output_prev(void);
 
 bool video_context_driver_get_video_output_next(void);
 
-bool video_context_driver_bind_hw_render(bool *enable);
-
 void video_context_driver_make_current(bool restore);
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
@@ -1852,8 +1850,6 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 void video_context_driver_destroy(void);
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
-
-bool video_context_driver_suppress_screensaver(bool *bool_data);
 
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
 

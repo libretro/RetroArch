@@ -469,8 +469,11 @@ static bool vg_alive(void *data)
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
-   bool enabled = enable;
-   return video_context_driver_suppress_screensaver(&enabled);
+   bool enabled         = enable;
+   vg_t            *vg  = (vg_t*)data;
+   if (vg->ctx_data && vg->ctx_driver->suppress_screensaver)
+      return vg->ctx_driver->suppress_screensaver(vg->ctx_data, enabled);
+   return false;
 }
 
 static bool vg_set_shader(void *data,
