@@ -65,17 +65,6 @@ static void gfx_ctx_gdi_check_window(void *data, bool *quit,
 static bool gfx_ctx_gdi_set_resize(void *data,
       unsigned width, unsigned height)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    return false;
 }
 
@@ -155,13 +144,6 @@ static void *gfx_ctx_gdi_init(
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    return gdi;
 
 error:
@@ -174,13 +156,6 @@ static void gfx_ctx_gdi_destroy(void *data)
 {
    gfx_ctx_gdi_data_t *gdi = (gfx_ctx_gdi_data_t*)data;
    HWND     window         = win32_get_window();
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    if (window && win32_gdi_hdc)
    {
@@ -216,21 +191,11 @@ static bool gfx_ctx_gdi_set_video_mode(void *data,
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[GDI]: win32_set_video_mode failed.\n");
-      goto error;
-   }
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
+      gfx_ctx_gdi_destroy(data);
+      return false;
    }
 
    return true;
-
-error:
-   gfx_ctx_gdi_destroy(data);
-   return false;
 }
 
 static void gfx_ctx_gdi_input_driver(void *data,
@@ -246,7 +211,7 @@ static void gfx_ctx_gdi_input_driver(void *data,
       *input_data = input_winraw.init(joypad_name);
       if (*input_data)
       {
-         *input = &input_winraw;
+         *input     = &input_winraw;
          dinput_gdi = NULL;
          return;
       }
