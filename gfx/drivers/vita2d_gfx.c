@@ -455,8 +455,6 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
    aspect_data.width        = viewport_width;
    aspect_data.height       = viewport_height;
 
-   video_context_driver_translate_aspect(&aspect_data);
-
    if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&vita->vp,
