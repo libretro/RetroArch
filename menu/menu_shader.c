@@ -383,6 +383,8 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
       case SHADER_PRESET_GAME:
          {
             const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+            if (string_is_empty(game_name))
+               return false;
             fill_pathname_join(file, directory, game_name, sizeof(file));
             break;
          }
