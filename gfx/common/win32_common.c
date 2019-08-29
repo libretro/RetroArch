@@ -558,86 +558,6 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    return false;
 }
 
-#ifndef _XBOX
-static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   uint16_t mod          = 0;
-
-   if (GetKeyState(VK_SHIFT)   & 0x80)
-      mod |= RETROKMOD_SHIFT;
-   if (GetKeyState(VK_CONTROL) & 0x80)
-      mod |=  RETROKMOD_CTRL;
-   if (GetKeyState(VK_MENU)    & 0x80)
-      mod |=  RETROKMOD_ALT;
-   if (GetKeyState(VK_CAPITAL) & 0x81)
-      mod |= RETROKMOD_CAPSLOCK;
-   if (GetKeyState(VK_SCROLL)  & 0x81)
-      mod |= RETROKMOD_SCROLLOCK;
-   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-      mod |= RETROKMOD_META;
-
-   switch (message)
-   {
-      /* Seems to be hard to synchronize
-       * WM_CHAR and WM_KEYDOWN properly.
-       */
-      case WM_CHAR:
-         input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return TRUE;
-
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_KEYDOWN:
-      case WM_SYSKEYDOWN:
-         {
-            unsigned keycode      = 0;
-            bool keydown          = true;
-            unsigned keysym       = (lparam >> 16) & 0xff;
-#if _WIN32_WINNT >= 0x0501 /* XP */
-            settings_t *settings  = config_get_ptr();
-            if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
-               keysym             = (unsigned)wparam;
-            else
-#endif
-#ifdef HAVE_DINPUT
-            {
-               /* extended keys will map to dinput if the high bit is set */
-               if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
-                  keysym |= 0x80;
-            }
-#else
-            {
-               /* fix key binding issues on winraw when DirectInput is not available */
-            }
-#endif
-            /* Key released? */
-            if (message == WM_KEYUP || message == WM_SYSKEYUP)
-               keydown            = false;
-
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
-
-            input_keyboard_event(keydown, keycode,
-                  0, mod, RETRO_DEVICE_KEYBOARD);
-
-            if (message != WM_SYSKEYDOWN)
-               return 0;
-
-            if (
-                  wparam == VK_F10  ||
-                  wparam == VK_MENU ||
-                  wparam == VK_RSHIFT
-               )
-               return 0;
-         }
-         break;
-   }
-
-   return DefWindowProc(hwnd, message, wparam, lparam);
-}
-#endif
-
 static void win32_set_position_from_config(void)
 {
    settings_t *settings  = config_get_ptr();
@@ -713,13 +633,89 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          DragFinish((HDROP)wparam);
          break;
       case WM_CHAR:
-      case WM_KEYDOWN:
+         {
+            uint16_t mod          = 0;
+
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |=  RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |=  RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
+
+            /* Seems to be hard to synchronize
+             * WM_CHAR and WM_KEYDOWN properly.
+             */
+            input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,
+                  RETRO_DEVICE_KEYBOARD);
+         }
+         return TRUE;
       case WM_KEYUP:
       case WM_SYSKEYUP:
+      case WM_KEYDOWN:
       case WM_SYSKEYDOWN:
          *quit = true;
-         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
+         {
+            uint16_t mod          = 0;
+            unsigned keycode      = 0;
+            bool keydown          = true;
+            unsigned keysym       = (lparam >> 16) & 0xff;
 
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |=  RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |=  RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
+
+#if _WIN32_WINNT >= 0x0501 /* XP */
+            settings_t *settings  = config_get_ptr();
+            if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
+               keysym             = (unsigned)wparam;
+            else
+#endif
+            {
+#ifdef HAVE_DINPUT
+               /* extended keys will map to dinput if the high bit is set */
+               if (input_get_ptr() == &input_dinput && (lparam >> 24 & 0x1))
+                  keysym |= 0x80;
+#else
+               /* fix key binding issues on winraw when DirectInput is not available */
+#endif
+            }
+
+            /* Key released? */
+            if (message == WM_KEYUP || message == WM_SYSKEYUP)
+               keydown            = false;
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
+
+            input_keyboard_event(keydown, keycode,
+                  0, mod, RETRO_DEVICE_KEYBOARD);
+
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                  wparam == VK_F10  ||
+                  wparam == VK_MENU ||
+                  wparam == VK_RSHIFT
+               )
+               return 0;
+         }
+         return DefWindowProc(hwnd, message, wparam, lparam);
       case WM_MOVE:
          win32_save_position();
          break;
@@ -905,20 +901,10 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             {
                /* draw menu contents behind a gradient background */
                if (gdi && gdi->memDC)
-               {
-                  /*RECT rect;
-                  HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
-
-                  GetClientRect(hwnd, &rect);*/
-
                   StretchBlt(gdi->winDC,
                         0, 0,
                         gdi->screen_width, gdi->screen_height,
                         gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
-
-                  /*FillRect(gdi->memDC, &rect, brush);
-                  DeleteObject(brush);*/
-               }
            }
            else
 #endif
