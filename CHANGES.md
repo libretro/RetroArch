@@ -1,6 +1,11 @@
 # 1.7.9 (future)
 - LOCALIZATION: Update Japanese translation
 
+# 1.7.8 (v2)
+- D3D12: Fix runtime error at startup
+- CHEEVOS: Fix Achievements badges
+- LOCALIZATION: Update Polish translation
+
 # 1.7.8
 - 3DS: Fix C-Stick y-axis inversion
 - 3DS: Update all icon/banner images
