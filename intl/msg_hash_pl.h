@@ -3747,10 +3747,6 @@ MSG_HASH(
     "Jakość strumienia"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-    "Streaming URL"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
     "Port Strumienia UDP"
     )
@@ -4275,10 +4271,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
     "Ustawia poziom dziennika dla interfejsu użytkownika. Jeśli poziom dziennika wydany przez interfejs użytkownika jest poniżej tej wartości, jest on ignorowany."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-      "Interwał aktualizacji klatek na sekundę (w klatkach)")
-MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-      "Wyświetlanie klatek będzie aktualizowane w ustalonych odstępach czasu (w ramkach).")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
     "Pokaż ponownie treść"
@@ -4596,10 +4588,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
     "Włącz dźwięk BGM"
     )
- MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-      "Licznik czasu klatek")
-MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-      "Dostosuj ustawienia wpływające na licznik czasu klatek (aktywne tylko, gdy wątkowe wideo jest wyłączone).")
    MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
     "Niestandardowa konfiguracja strumienia"
