@@ -1,6 +1,7 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2017 - Ali Bouhlel
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -49,6 +50,7 @@
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../frontend/drivers/platform_win32.h"
 
 #include "ui_win32.h"
 
@@ -61,6 +63,10 @@ typedef struct ui_companion_win32
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
+#if _WIN32_WINNT >= 0x0501
+   /* Use the language set in the config for the menubar... also changes the console language. */
+   SetThreadUILanguage(win32_get_langid_from_retro_lang(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)));
+#endif
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->hInstance     = GetModuleHandle(NULL);
