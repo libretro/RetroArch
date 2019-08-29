@@ -1625,8 +1625,10 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
       chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    /* Use regular textures if we use HW render. */
-   chain->egl_images                = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer(video);
+   chain->egl_images                = !gl->hw_render_use 
+      && gl_check_capability(GL_CAPS_EGLIMAGE) 
+      && gl->ctx_driver->image_buffer_init
+      && gl->ctx_driver->image_buffer_init(gl->ctx_data, video);
 }
 
 static void gl_load_texture_data(

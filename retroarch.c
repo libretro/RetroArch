@@ -19574,16 +19574,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    return NULL;
 }
 
-bool video_context_driver_init_image_buffer(const video_info_t *data)
-{
-   if (
-            current_video_context.image_buffer_init
-         && current_video_context.image_buffer_init(
-            video_context_data, data))
-      return true;
-   return false;
-}
-
 bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img)
 {
    if (

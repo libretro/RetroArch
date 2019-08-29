@@ -254,7 +254,8 @@ static void *vg_init(const video_info_t *video,
    }
 
    if (vg_query_extension("KHR_EGL_image")
-         && video_context_driver_init_image_buffer((void*)video))
+         && vg->ctx_driver->image_buffer_init
+         && vg->ctx_driver->image_buffer_init(vg->ctx_data, (void*)video))
    {
       if (vg->ctx_driver->get_proc_address)
          pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)vg->ctx_driver->get_proc_address("vgCreateEGLImageTargetKHR");
