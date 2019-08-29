@@ -276,11 +276,6 @@ bool win32_taskbar_is_created(void)
    return g_taskbar_is_created;
 }
 
-void win32_set_taskbar_created(bool created)
-{
-   g_taskbar_is_created = created;
-}
-
 bool doubleclick_on_titlebar_pressed(void)
 {
    return doubleclick_on_titlebar;
@@ -459,9 +454,7 @@ bool win32_load_content_from_gui(const char *szFilename)
       (const char*)szFilename, &core_info, &list_size);
 
    if (!list_size)
-   {
       return false;
-   }
 
    path_set(RARCH_PATH_CONTENT, szFilename);
 
@@ -754,12 +747,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
-static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
-{
-   if (DragAcceptFiles_func != NULL)
-      DragAcceptFiles_func(window->hwnd, droppable);
-}
-
 #if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -791,21 +778,19 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          break;
       case WM_CREATE:
          {
-            ui_window_win32_t win32_window;
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_win32_inited        = true;
 
-            win32_window.hwnd     = hwnd;
-
-            win32_set_droppable(&win32_window, true);
+            if (DragAcceptFiles_func)
+               DragAcceptFiles_func(hwnd, true);
          }
          return 0;
    }
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         win32_set_taskbar_created(true);
+         g_taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT
@@ -852,20 +837,16 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
             return ret;
          break;
       case WM_CREATE:
-         {
-            ui_window_win32_t win32_window;
-            win32_window.hwnd           = hwnd;
+         create_graphics_context(hwnd, &g_win32_quit);
 
-            create_graphics_context(hwnd, &g_win32_quit);
-
-            win32_set_droppable(&win32_window, true);
-         }
+         if (DragAcceptFiles_func)
+            DragAcceptFiles_func(hwnd, true);
          return 0;
    }
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         win32_set_taskbar_created(true);
+         g_taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT
@@ -942,20 +923,16 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             return ret;
          break;
       case WM_CREATE:
-         {
-            ui_window_win32_t win32_window;
-            win32_window.hwnd = hwnd;
+         create_gdi_context(hwnd, &g_win32_quit);
 
-            create_gdi_context(hwnd, &g_win32_quit);
-
-            win32_set_droppable(&win32_window, true);
-         }
+         if (DragAcceptFiles_func)
+            DragAcceptFiles_func(hwnd, true);
          return 0;
    }
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         win32_set_taskbar_created(true);
+         g_taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT
