@@ -5,6 +5,7 @@
 - AI SERVICE: Fix 'Japanese' setting
 - D3D12: Fix runtime error at startup
 - CHEEVOS: Fix Achievements badges
+- CHEEVOS: Add hashing support for PSX (bin/cue, chd, or real CD)
 - GLCORE: Fix regression - shaders don't work
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Korean translation
