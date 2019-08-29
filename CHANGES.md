@@ -1,7 +1,7 @@
 # 1.7.9 (future)
 
 # 1.7.8 (v2)
-- 3DS: Fix 3DS build
+- 3DS: Fix 3DS startup crash
 - AI SERVICE: Fix 'Japanese' setting
 - D3D12: Fix runtime error at startup
 - CHEEVOS: Fix Achievements badges
@@ -10,8 +10,9 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
+- OSX: Fix potential OSX startup crash
 - PATCH: Fix IPS patches
-- PLAYLISTS: Fix playlist heap corruption bug. Would also cause potential crashes on OSX at startup
+- PLAYLISTS: Fix playlist heap corruption bug. Would also cause potential crashes on OSX and 3DS at startup
 - SHADERS: Fix shader loading and saving in content-less cores
 - SHADERS: Implement video_shader_delay setting. Screen grabbing software like streaming software can interfere with the loading of shaders, resulting in graphical glitches or freezes. This PR adds a video_shader_delay setting (in ms) and (advanced) menu entries Video -> Auto-Shader Delay, allowing to work around the issue
 
