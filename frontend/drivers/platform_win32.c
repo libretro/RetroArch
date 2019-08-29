@@ -630,10 +630,21 @@ enum retro_language frontend_win32_get_user_language(void)
 
    for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
    {
-      if ((langid & pairs[i].lang_ident) == pairs[i].lang_ident)
+      if (pairs[i].lang_ident > 0x3ff)
       {
-         lang = pairs[i].lang;
-         break;
+         if (langid == pairs[i].lang_ident)
+         {
+            lang = pairs[i].lang;
+            break;
+         }
+      }
+      else
+      {
+         if ((langid & 0x3ff) == pairs[i].lang_ident)
+         {
+            lang = pairs[i].lang;
+            break;
+         }
       }
    }
 #endif
