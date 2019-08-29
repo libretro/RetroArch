@@ -4603,12 +4603,20 @@ MSG_HASH(
    MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
       "Interwał aktualizacji klatek na sekundę (w klatkach)")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-      "Wyświetlanie klatek będzie aktualizowane w ustalonych odstępach czasu (w klatkach).")
+     "Wyświetlanie klatek będzie aktualizowane w ustalonych odstępach czasu (w klatkach).")
    MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
     "Wyświetla bieżącą liczbę klatek na ekranie."
-    )
+   )
    MSG_HASH(
     MENU_ENUM_SUBLABEL_MEMORY_SHOW,
     "Obejmuje bieżące użycie pamięci/sumę na ekranie z FPS/klatek."
     )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+    "Opóźnienie Auto-Shadera"
+    )
+ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+    "Opóźnia automatyczne ładowanie shaderów (w ms). Może obejść usterki graficzne podczas korzystania z oprogramowania do przechwytywania ekranu."
+    )
+   
