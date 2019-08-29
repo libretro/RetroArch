@@ -286,7 +286,8 @@ void unset_doubleclick_on_titlebar(void)
    doubleclick_on_titlebar = false;
 }
 
-INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
+static INT_PTR_COMPAT CALLBACK PickCoreProc(
+      HWND hDlg, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
