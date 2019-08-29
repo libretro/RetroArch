@@ -661,6 +661,9 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
             unsigned keycode      = 0;
             bool keydown          = true;
             unsigned keysym       = (lparam >> 16) & 0xff;
+#if _WIN32_WINNT >= 0x0501 /* XP */
+            settings_t *settings  = config_get_ptr();
+#endif
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -676,7 +679,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                mod |= RETROKMOD_META;
 
 #if _WIN32_WINNT >= 0x0501 /* XP */
-            settings_t *settings  = config_get_ptr();
             if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
                keysym             = (unsigned)wparam;
             else
