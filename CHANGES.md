@@ -2,9 +2,19 @@
 - LOCALIZATION: Update Japanese translation
 
 # 1.7.8 (v2)
+- 3DS: Fix 3DS build
+- AI SERVICE: Fix 'Japanese' setting
 - D3D12: Fix runtime error at startup
 - CHEEVOS: Fix Achievements badges
+- GLCORE: Fix regression - shaders don't work
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
+- PATCH: Fix IPS patches
+- PLAYLISTS: Fix playlist heap corruption bug. Would also cause potential crashes on OSX at startup
+- SHADERS: Fix shader loading and saving in content-less cores
+- SHADERS: Implement video_shader_delay setting. Screen grabbing software like streaming software can interfere with the loading of shaders, resulting in graphical glitches or freezes. This PR adds a video_shader_delay setting (in ms) and (advanced) menu entries Video -> Auto-Shader Delay, allowing to work around the issue
+
 
 # 1.7.8
 - 3DS: Fix C-Stick y-axis inversion
