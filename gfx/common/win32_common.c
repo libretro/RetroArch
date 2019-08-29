@@ -633,6 +633,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          DragFinish((HDROP)wparam);
          break;
       case WM_CHAR:
+         *quit = true;
          {
             uint16_t mod          = 0;
 
