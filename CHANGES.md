@@ -1,5 +1,4 @@
 # 1.7.9 (future)
-- LOCALIZATION: Update Japanese translation
 
 # 1.7.8 (v2)
 - 3DS: Fix 3DS build
