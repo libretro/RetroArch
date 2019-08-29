@@ -67,7 +67,13 @@ static void gl_raster_font_free_font(void *data,
       font->font_driver->free(font->font_data);
 
    if (is_threaded)
-      video_context_driver_make_current(true);
+   {
+      if (
+            font->gl && 
+            font->gl->ctx_driver &&
+            font->gl->ctx_driver->make_current)
+         font->gl->ctx_driver->make_current(true);
+   }
 
    if (font->tex)
    {
@@ -193,7 +199,11 @@ static void *gl_raster_font_init_font(void *data,
    }
 
    if (is_threaded)
-      video_context_driver_make_current(false);
+      if (
+            font->gl && 
+            font->gl->ctx_driver &&
+            font->gl->ctx_driver->make_current)
+         font->gl->ctx_driver->make_current(false);
 
    glGenTextures(1, &font->tex);
 

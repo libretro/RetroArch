@@ -19179,7 +19179,8 @@ bool video_driver_texture_load(void *data,
 
 #ifdef HAVE_THREADS
    if (is_threaded)
-      video_context_driver_make_current(false);
+      if (current_video_context.make_current)
+         current_video_context.make_current(false);
 #endif
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
@@ -19199,7 +19200,8 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 #ifdef HAVE_THREADS
    if (is_threaded)
-      video_context_driver_make_current(false);
+      if (current_video_context.make_current)
+         current_video_context.make_current(false);
 #endif
 
    video_driver_poke->unload_texture(video_driver_data, *id);
@@ -19607,12 +19609,6 @@ bool video_context_driver_get_video_output_next(void)
       return false;
    current_video_context.get_video_output_next(video_context_data);
    return true;
-}
-
-void video_context_driver_make_current(bool release)
-{
-   if (current_video_context.make_current)
-      current_video_context.make_current(release);
 }
 
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)

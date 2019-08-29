@@ -1843,8 +1843,6 @@ bool video_context_driver_get_video_output_prev(void);
 
 bool video_context_driver_get_video_output_next(void);
 
-void video_context_driver_make_current(bool restore);
-
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
