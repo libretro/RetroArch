@@ -1037,6 +1037,10 @@ void chd_close(chd_file *chd)
 		for (i = 0 ; i < 4 ; i++)
       {
          void* codec = NULL;
+
+         if (!chd->codecintf[i])
+            continue;
+
          switch (chd->codecintf[i]->compression)
          {
             case CHD_CODEC_CD_LZMA:
