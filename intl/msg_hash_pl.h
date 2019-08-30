@@ -4619,4 +4619,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
  MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
     "Opóźnia automatyczne ładowanie shaderów (w ms). Może obejść usterki graficzne podczas korzystania z oprogramowania do przechwytywania ekranu."
     )
-   
+ MSG_HASH(MENU_ENUM_SUBLABEL_START_CORE,
+    "Zacznij rdzeń bez zawartości."
+    )
