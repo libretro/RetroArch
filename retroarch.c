@@ -5211,6 +5211,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
          {
+            settings_t *settings         = configuration_settings;
             struct string_list *str_list = (struct string_list*)data;
 
             /* Check whether favourties playlist is at capacity */
@@ -5237,11 +5238,15 @@ TODO: Add a setting for these tweaks */
                   entry.db_name   = str_list->elems[5].data; /* db_name */
 
                   /* Write playlist entry */
-                  command_playlist_push_write(
-                        g_defaults.content_favorites,
-                        &entry
-                        );
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  if (playlist_push(g_defaults.content_favorites, &entry))
+                  {
+                     /* New addition - need to resort if option is enabled */
+                     if (settings->bools.playlist_sort_alphabetical)
+                        playlist_qsort(g_defaults.content_favorites);
+
+                     playlist_write_file(g_defaults.content_favorites);
+                     runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
                }
             }
 
@@ -25999,6 +26004,11 @@ void rarch_favorites_init(void)
    g_defaults.content_favorites = playlist_init(
          settings->paths.path_content_favorites,
          content_favorites_size);
+
+   /* Ensure that playlist is sorted alphabetically,
+    * if required */
+   if (settings->bools.playlist_sort_alphabetical)
+      playlist_qsort(g_defaults.content_favorites);
 }
 
 void rarch_favorites_deinit(void)
