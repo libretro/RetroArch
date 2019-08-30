@@ -2218,10 +2218,15 @@ static const struct cmd_map map[] = {
 bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path, bool message)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   settings_t *settings = configuration_settings;
+   settings_t *settings  = configuration_settings;
+   const char *core_name = runloop_system.info.library_name;
    bool ret;
    char msg[256];
    const char *preset_file = NULL;
+
+   /* disallow loading shaders when no core is loaded */
+   if (string_is_empty(core_name))
+      return false;
 
    if (!string_is_empty(preset_path))
       preset_file = path_basename(preset_path);
@@ -23388,7 +23393,7 @@ static bool retroarch_load_shader_preset_internal(
          strlcat(shader_path, video_shader_get_preset_extension(types[i]), PATH_MAX_LENGTH);
       }
 
-      if (!config_file_exists(shader_path))
+      if (!path_is_valid(shader_path))
          continue;
 
       /* Shader preset exists, load it. */
@@ -23423,9 +23428,8 @@ static bool retroarch_load_shader_preset_internal(
 static bool retroarch_load_shader_preset(void)
 {
    settings_t *settings               = configuration_settings;
-   const rarch_system_info_t *system  = &runloop_system;
    const char *video_shader_directory = settings->paths.directory_video_shader;
-   const char *core_name              = system->info.library_name;
+   const char *core_name              = runloop_system.info.library_name;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
@@ -23438,6 +23442,9 @@ static bool retroarch_load_shader_preset(void)
       return false;
 
    shader_directory = (char*)malloc(PATH_MAX_LENGTH);
+
+   if (!shader_directory)
+      return false;
 
    fill_pathname_join(shader_directory,
          video_shader_directory,
@@ -23454,6 +23461,7 @@ static bool retroarch_load_shader_preset(void)
 
    {
       char content_dir_name[PATH_MAX_LENGTH];
+      content_dir_name[0] = '\0';
       if (!string_is_empty(rarch_path_basename))
          fill_pathname_parent_dir_name(content_dir_name,
                rarch_path_basename, sizeof(content_dir_name));
@@ -23493,11 +23501,17 @@ success:
 const char* retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   settings_t *settings = configuration_settings;
+   settings_t *settings  = configuration_settings;
+   const char *core_name = runloop_system.info.library_name;
+
    if (!settings->bools.video_shader_enable)
       return NULL;
 
    if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
+      return NULL;
+
+   /* disallow loading auto-shaders when no core is loaded */
+   if (string_is_empty(core_name))
       return NULL;
 
    if (!string_is_empty(runtime_shader_preset))
