@@ -31,8 +31,8 @@
 #include "config.h"
 #endif
 
-#include <streams/file_stream.h>
 #define VFS_FRONTEND
+#include <streams/file_stream.h>
 #include <vfs/vfs_implementation.h>
 #include <vfs/vfs_implementation_cdrom.h>
 
