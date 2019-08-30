@@ -550,8 +550,8 @@ Frees the patchdata
 void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
 {
    unsigned i = 0, count = 0;
-   rcheevos_racheevo_t* cheevo = NULL;
-   rcheevos_ralboard_t* lboard = NULL;
+   const rcheevos_racheevo_t* cheevo = NULL;
+   const rcheevos_ralboard_t* lboard = NULL;
 
    cheevo = patchdata->core;
 

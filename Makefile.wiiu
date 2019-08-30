@@ -66,7 +66,6 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/file/config_file.o
    OBJ += libretro-common/streams/file_stream.o
    OBJ += libretro-common/vfs/vfs_implementation.o
-   OBJ += libretro-common/vfs/vfs_implementation_cdrom.o
    OBJ += libretro-common/hash/rhash.o
    OBJ += file_path_str.o
    OBJ += verbosity.o

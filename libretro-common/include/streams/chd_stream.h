@@ -45,27 +45,15 @@ void chdstream_close(chdstream_t *stream);
 
 ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes);
 
-ssize_t chdstream_read_file(chdstream_t *stream, int64_t file_start, void *data, size_t bytes);
-
 int chdstream_getc(chdstream_t *stream);
-
-int chdstream_getc_file(chdstream_t *stream, int64_t file_start);
 
 char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len);
 
-char *chdstream_gets_file(chdstream_t *stream, int64_t file_start, char *buffer, size_t len);
-
 uint64_t chdstream_tell(chdstream_t *stream);
-
-uint64_t chdstream_tell_file(chdstream_t *stream, int64_t file_start);
 
 void chdstream_rewind(chdstream_t *stream);
 
-void chdstream_rewind_file(chdstream_t *stream, int64_t file_start);
-
 int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence);
-
-int64_t chdstream_seek_file(chdstream_t* stream, const char* filename);
 
 ssize_t chdstream_get_size(chdstream_t *stream);
 

@@ -177,7 +177,6 @@ OBJ += frontend/frontend_driver.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o \
-       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.o \
        $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
@@ -1668,7 +1667,8 @@ ifeq ($(HAVE_CDROM), 1)
    endif
 
    DEFINES += -DHAVE_CDROM
-   OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o
+   OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o \
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.o
 endif
 
 ifeq ($(HAVE_RTGA), 1)
