@@ -846,10 +846,53 @@ static size_t get_line_smooth_scroll_ticks(size_t line_len)
    return (size_t)(line_duration / ticker_pixel_period);
 }
 
+static void set_line_smooth_fade_parameters(
+      bool scroll_up, size_t scroll_ticks, size_t line_phase, size_t line_height,
+      size_t num_lines, size_t num_display_lines, size_t line_offset, float y_offset,
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+{
+   float fade_out_alpha     = 0.0f;
+   float fade_in_alpha      = 0.0f;
+
+   /* When a line fades out, alpha transitions from
+    * 1 to 0 over the course of one half of the
+    * scrolling line height. When a line fades in,
+    * it's the other way around */
+   fade_out_alpha           = ((float)scroll_ticks - ((float)line_phase * 2.0f)) / (float)scroll_ticks;
+   fade_in_alpha            = -1.0f * fade_out_alpha;
+   fade_out_alpha           = (fade_out_alpha < 0.0f) ? 0.0f : fade_out_alpha;
+   fade_in_alpha            = (fade_in_alpha < 0.0f)  ? 0.0f : fade_in_alpha;
+
+   *top_fade_line_offset    = (line_offset > 0) ? line_offset - 1 : num_lines;
+   *top_fade_y_offset       = y_offset - (float)line_height;
+   *top_fade_alpha          = scroll_up ? fade_out_alpha : fade_in_alpha;
+
+   *bottom_fade_line_offset = line_offset + num_display_lines;
+   *bottom_fade_y_offset    = y_offset + (float)(line_height * num_display_lines);
+   *bottom_fade_alpha       = scroll_up ? fade_in_alpha : fade_out_alpha;
+}
+
+static void set_line_smooth_fade_parameters_default(
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+{
+   *top_fade_line_offset    = 0;
+   *top_fade_y_offset       = 0.0f;
+   *top_fade_alpha          = 0.0f;
+
+   *bottom_fade_line_offset = 0;
+   *bottom_fade_y_offset    = 0.0f;
+   *bottom_fade_alpha       = 0.0f;
+}
+
 static void menu_animation_line_ticker_smooth_generic(uint64_t idx,
-      bool scissor_enabled, size_t line_len, size_t line_height,
+      bool fade_enabled, size_t line_len, size_t line_height,
       size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset, float *y_offset)
+      size_t *num_display_lines, size_t *line_offset, float *y_offset,
+      bool *fade_active,
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
 {
    size_t scroll_ticks  = get_line_smooth_scroll_ticks(line_len);
    /* Note: This function is only called if num_lines > max_display_lines */
@@ -880,72 +923,96 @@ static void menu_animation_line_ticker_smooth_generic(uint64_t idx,
          phase -= (excess_lines + 1) * scroll_ticks;
    }
 
-   /* If we are currently paused, can use static offsets */
-   if (pause)
+   line_phase = phase % scroll_ticks;
+
+   if (pause || (line_phase == 0))
    {
+      /* Static display of max_display_lines
+       * (no animation) */
       *num_display_lines = max_display_lines;
-      *line_offset = scroll_up ? 0 : excess_lines;
-      *y_offset = 0.0f;
+      *y_offset          = 0.0f;
+      *fade_active       = false;
+
+      if (pause)
+         *line_offset    = scroll_up ? 0 : excess_lines;
+      else
+         *line_offset    = scroll_up ? (phase / scroll_ticks) : (excess_lines - (phase / scroll_ticks));
    }
    else
    {
-      line_phase = phase % scroll_ticks;
+      /* Scroll animation is active */
+      *num_display_lines = max_display_lines - 1;
+      *fade_active       = fade_enabled;
 
-      if (scissor_enabled)
+      if (scroll_up)
       {
-         *num_display_lines = max_display_lines + 1;
-
-         if (scroll_up)
-         {
-            *line_offset = phase / scroll_ticks;
-            *y_offset = (float)line_height * (((float)(scroll_ticks - line_phase) / (float)scroll_ticks) - 1.0f);
-         }
-         else
-         {
-            *line_offset = (excess_lines - 1) - (phase / scroll_ticks);
-            *y_offset = (float)line_height * ((1.0f - (float)(scroll_ticks - line_phase) / (float)scroll_ticks) - 1.0f);
-         }
+         *line_offset    = (phase / scroll_ticks) + 1;
+         *y_offset       = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
       }
       else
       {
-         *num_display_lines = max_display_lines - 1;
-
-         if (scroll_up)
-         {
-            *line_offset = (phase / scroll_ticks) + 1;
-            *y_offset = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
-         }
-         else
-         {
-            *line_offset = excess_lines - (phase / scroll_ticks);
-            *y_offset = (float)line_height * (1.0f - (float)(scroll_ticks - line_phase) / (float)scroll_ticks);
-         }
+         *line_offset = excess_lines - (phase / scroll_ticks);
+         *y_offset    = (float)line_height * (1.0f - (float)(scroll_ticks - line_phase) / (float)scroll_ticks);
       }
+
+      /* Set fade parameters if fade animation is active */
+      if (*fade_active)
+         set_line_smooth_fade_parameters(
+               scroll_up, scroll_ticks, line_phase, line_height,
+               num_lines, *num_display_lines, *line_offset, *y_offset,
+               top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+               bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
    }
+
+   /* Set 'default' fade parameters if fade animation
+    * is inactive */
+   if (!*fade_active)
+      set_line_smooth_fade_parameters_default(
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
 }
 
 static void menu_animation_line_ticker_smooth_loop(uint64_t idx,
-      bool scissor_enabled, size_t line_len, size_t line_height,
+      bool fade_enabled, size_t line_len, size_t line_height,
       size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset, float *y_offset)
+      size_t *num_display_lines, size_t *line_offset, float *y_offset,
+      bool *fade_active,
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
 {
    size_t scroll_ticks  = get_line_smooth_scroll_ticks(line_len);
    size_t ticker_period = (num_lines + 1) * scroll_ticks;
    size_t phase         = idx % ticker_period;
    size_t line_phase    = phase % scroll_ticks;
 
-   *line_offset = phase / scroll_ticks;
+   *line_offset         = phase / scroll_ticks;
 
-   if (scissor_enabled)
+   if (line_phase == (scroll_ticks - 1))
    {
-      *num_display_lines = max_display_lines + 1;
-      *y_offset = (float)line_height * (((float)(scroll_ticks - line_phase) / (float)scroll_ticks) - 1.0f);
+      /* Static display of max_display_lines
+       * (no animation) */
+      *num_display_lines = max_display_lines;
+      *fade_active       = false;
    }
    else
    {
       *num_display_lines = max_display_lines - 1;
-      *y_offset = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
+      *fade_active       = fade_enabled;
    }
+
+   *y_offset             = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
+
+   /* Set fade parameters */
+   if (*fade_active)
+      set_line_smooth_fade_parameters(
+            true, scroll_ticks, line_phase, line_height,
+            num_lines, *num_display_lines, *line_offset, *y_offset,
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
+   else
+      set_line_smooth_fade_parameters_default(
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
 }
 
 static void menu_delayed_animation_cb(void *userdata)
@@ -1898,16 +1965,19 @@ end:
 
 bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
-   char *wrapped_str         = NULL;
-   struct string_list *lines = NULL;
-   int glyph_width           = 0;
-   int glyph_height          = 0;
-   size_t line_len           = 0;
-   size_t max_display_lines  = 0;
-   size_t num_display_lines  = 0;
-   size_t line_offset        = 0;
-   bool success              = false;
-   bool is_active            = false;
+   char *wrapped_str              = NULL;
+   struct string_list *lines      = NULL;
+   int glyph_width                = 0;
+   int glyph_height               = 0;
+   size_t line_len                = 0;
+   size_t max_display_lines       = 0;
+   size_t num_display_lines       = 0;
+   size_t line_offset             = 0;
+   size_t top_fade_line_offset    = 0;
+   size_t bottom_fade_line_offset = 0;
+   bool fade_active               = false;
+   bool success                   = false;
+   bool is_active                 = false;
 
    /* Sanity check */
    if (!line_ticker)
@@ -1941,8 +2011,6 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
    if (glyph_height < 0)
       goto end;
 
-   *line_ticker->line_height = (unsigned)glyph_height;
-
    /* Determine line wrap parameters */
    line_len          = (size_t)(line_ticker->field_width  / glyph_width);
    max_display_lines = (size_t)(line_ticker->field_height / glyph_height);
@@ -1974,13 +2042,27 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
    if (lines->size <= max_display_lines)
    {
       strlcpy(line_ticker->dst_str, wrapped_str, line_ticker->dst_str_len);
-      *line_ticker->num_lines = (unsigned)lines->size;
       *line_ticker->y_offset = 0.0f;
+
+      /* No fade animation is required */
+      if (line_ticker->fade_enabled)
+      {
+         if (line_ticker->top_fade_str_len > 0)
+            line_ticker->top_fade_str[0] = '\0';
+
+         if (line_ticker->bottom_fade_str_len > 0)
+            line_ticker->bottom_fade_str[0] = '\0';
+
+         *line_ticker->top_fade_y_offset = 0.0f;
+         *line_ticker->bottom_fade_y_offset = 0.0f;
+
+         *line_ticker->top_fade_alpha = 0.0f;
+         *line_ticker->bottom_fade_alpha = 0.0f;
+      }
+
       success = true;
       goto end;
    }
-
-   *line_ticker->num_lines = (unsigned)max_display_lines;
 
    /* Determine which lines should be shown, along with
     * y axis draw offset */
@@ -1990,14 +2072,13 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
       {
          menu_animation_line_ticker_smooth_loop(
                line_ticker->idx,
-               line_ticker->scissor_enabled,
-               line_len,
-               (size_t)glyph_height,
-               max_display_lines,
-               lines->size,
-               &num_display_lines,
-               &line_offset,
-               line_ticker->y_offset);
+               line_ticker->fade_enabled,
+               line_len, (size_t)glyph_height,
+               max_display_lines, lines->size,
+               &num_display_lines, &line_offset, line_ticker->y_offset,
+               &fade_active,
+               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
+               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
 
          break;
       }
@@ -2006,14 +2087,13 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
       {
          menu_animation_line_ticker_smooth_generic(
                line_ticker->idx,
-               line_ticker->scissor_enabled,
-               line_len,
-               (size_t)glyph_height,
-               max_display_lines,
-               lines->size,
-               &num_display_lines,
-               &line_offset,
-               line_ticker->y_offset);
+               line_ticker->fade_enabled,
+               line_len, (size_t)glyph_height,
+               max_display_lines, lines->size,
+               &num_display_lines, &line_offset, line_ticker->y_offset,
+               &fade_active,
+               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
+               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
 
          break;
       }
@@ -2021,8 +2101,23 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
 
    /* Build output string from required lines */
    build_line_ticker_string(
-      num_display_lines, line_offset, lines,
-      line_ticker->dst_str, line_ticker->dst_str_len);
+         num_display_lines, line_offset, lines,
+         line_ticker->dst_str, line_ticker->dst_str_len);
+
+   /* Extract top/bottom fade strings, if required */
+   if (fade_active)
+   {
+      /* We waste a handful of clock cycles by using
+       * build_line_ticker_string() here, but it saves
+       * rewriting a heap of code... */
+      build_line_ticker_string(
+            1, top_fade_line_offset, lines,
+            line_ticker->top_fade_str, line_ticker->top_fade_str_len);
+
+      build_line_ticker_string(
+            1, bottom_fade_line_offset, lines,
+            line_ticker->bottom_fade_str, line_ticker->bottom_fade_str_len);
+   }
 
    success          = true;
    is_active        = true;
@@ -2043,8 +2138,22 @@ end:
    }
 
    if (!success)
+   {
       if (line_ticker->dst_str_len > 0)
          line_ticker->dst_str[0] = '\0';
+
+      if (line_ticker->fade_enabled)
+      {
+         if (line_ticker->top_fade_str_len > 0)
+            line_ticker->top_fade_str[0] = '\0';
+
+         if (line_ticker->bottom_fade_str_len > 0)
+            line_ticker->bottom_fade_str[0] = '\0';
+
+         *line_ticker->top_fade_alpha = 0.0f;
+         *line_ticker->bottom_fade_alpha = 0.0f;
+      }
+   }
 
    return is_active;
 }

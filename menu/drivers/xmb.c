@@ -3038,42 +3038,57 @@ static int xmb_draw_item(
             && !string_is_empty(entry->sublabel))
       {
          char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+         char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
+         char entry_sublabel_bottom_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
          menu_animation_ctx_line_ticker_t line_ticker;
-         menu_animation_ctx_line_ticker_smooth_t line_ticker_smooth = {0};
-         unsigned ticker_line_height = 0;
-         unsigned ticker_num_lines   = 0;
-         float ticker_y_offset       = 0.0f;
-         bool do_scissor             = false;
-         float sublabel_x            = 0.0f;
-         float sublabel_y            = 0.0f;
+         menu_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+         float ticker_y_offset             = 0.0f;
+         float ticker_top_fade_y_offset    = 0.0f;
+         float ticker_bottom_fade_y_offset = 0.0f;
+         float ticker_top_fade_alpha       = 0.0f;
+         float ticker_bottom_fade_alpha    = 0.0f;
+         float sublabel_x                  = node->x + xmb->margins_screen_left +
+               xmb->icon_spacing_horizontal + xmb->margins_label_left;
+         float sublabel_y                  = xmb->margins_screen_top +
+               node->y + (xmb->margins_label_top * 3.5f);
 
-         entry_sublabel[0] = '\0';
+         entry_sublabel[0]             = '\0';
+         entry_sublabel_top_fade[0]    = '\0';
+         entry_sublabel_bottom_fade[0] = '\0';
 
          if (use_smooth_ticker)
          {
-            line_ticker_smooth.scissor_enabled = true;
-            line_ticker_smooth.type_enum       = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-            line_ticker_smooth.idx             = menu_animation_get_ticker_pixel_idx();
+            line_ticker_smooth.fade_enabled         = true;
+            line_ticker_smooth.type_enum            = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker_smooth.idx                  = menu_animation_get_ticker_pixel_idx();
 
-            line_ticker_smooth.font            = xmb->font2;
-            line_ticker_smooth.font_scale      = 1.0f;
+            line_ticker_smooth.font                 = xmb->font2;
+            line_ticker_smooth.font_scale           = 1.0f;
 
-            line_ticker_smooth.field_width     = (unsigned)(xmb->font2_size * 0.6f * line_ticker_width);
+            line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.6f * line_ticker_width);
             /* The calculation here is incredibly obtuse. I think
              * this is correct... (c.f. xmb_item_y()) */
-            line_ticker_smooth.field_height    = (unsigned)(
+            line_ticker_smooth.field_height         = (unsigned)(
                   (xmb->icon_spacing_vertical * ((1 + xmb->under_item_offset) - xmb->active_item_factor)) -
-                     (xmb->margins_label_top * 4.0f)); /* Should be 3.5f, but prefer the extra padding */
+                     (xmb->margins_label_top * 3.5f) -
+                     xmb->under_item_offset); /* This last one is just a little extra padding (seems to help) */
 
-            line_ticker_smooth.src_str         = entry->sublabel;
-            line_ticker_smooth.dst_str         = entry_sublabel;
-            line_ticker_smooth.dst_str_len     = sizeof(entry_sublabel);
+            line_ticker_smooth.src_str              = entry->sublabel;
+            line_ticker_smooth.dst_str              = entry_sublabel;
+            line_ticker_smooth.dst_str_len          = sizeof(entry_sublabel);
+            line_ticker_smooth.y_offset             = &ticker_y_offset;
 
-            line_ticker_smooth.line_height     = &ticker_line_height;
-            line_ticker_smooth.num_lines       = &ticker_num_lines;
-            line_ticker_smooth.y_offset        = &ticker_y_offset;
+            line_ticker_smooth.top_fade_str         = entry_sublabel_top_fade;
+            line_ticker_smooth.top_fade_str_len     = sizeof(entry_sublabel_top_fade);
+            line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
+            line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
 
-            do_scissor = menu_animation_line_ticker_smooth(&line_ticker_smooth);
+            line_ticker_smooth.bottom_fade_str      = entry_sublabel_bottom_fade;
+            line_ticker_smooth.bottom_fade_str_len  = sizeof(entry_sublabel_bottom_fade);
+            line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
+            line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
+
+            menu_animation_line_ticker_smooth(&line_ticker_smooth);
          }
          else
          {
@@ -3096,67 +3111,28 @@ static int xmb_draw_item(
 
          label_offset = - xmb->margins_label_top;
 
-         /* Base draw position */
-         sublabel_x = node->x + xmb->margins_screen_left +
-               xmb->icon_spacing_horizontal + xmb->margins_label_left;
-         sublabel_y = xmb->margins_screen_top +
-               node->y + (xmb->margins_label_top * 3.5f);
-
-         if (do_scissor)
-         {
-            /* We are currently 'blending', so stop */
-            menu_display_blend_end(video_info);
-            /* These font shenanigans seem to be requied before
-             * calling menu_display_scissor_begin() */
-            font_driver_flush(video_info->width, video_info->height, xmb->font2, video_info);
-            xmb->raster_block2.carr.coords.vertices = 0;
-            /* TODO/FIXME
-             * Okay, font handling in RetroArch sucks...
-             * - It seems that text is drawn relative to the baseline,
-             *   which kinda-sorta makes sense...
-             * - But there's no way to extract any useful font metrics
-             *   such as descender/ascender height and baseline position
-             * So basically, when drawing text you pick a y postion and
-             * hope for the best - the text will appear somewhere near the
-             * place you want it to, but not quite, and trying to clip text
-             * to a specified draw area is basically impossible.
-             * The *correct* way to implement a font library/handler is to
-             * deal with all font metrics internally such that the y draw
-             * position is the vertical centre of the line. Since you know
-             * the line height, this makes all layout operations trivial.
-             * This should be done at some point, but I don't have time
-             * to rewrite all of the font handling code for the sake of a
-             * single line ticker, so for now we'll just make do...
-             * So here it is: we want to clip the scrolling text such that
-             * it fills a vertical region eqivalent to the maximum number
-             * of static sublabel lines that can be shown. Since we don't
-             * know any font metrics, we have to use a fudge factor for
-             * the scissor start position (the 0.75 comes from the fact that
-             * for a typical font, the descender is ~20-30% of the line
-             * height). *This is not robust*, but it works well enough for
-             * all existing XMB themes */
-            menu_display_scissor_begin(
-                  video_info, (int)sublabel_x, (int)((float)sublabel_y - ((float)ticker_line_height * 0.75f)),
-                  (unsigned)((float)video_info->width - sublabel_x),
-                  ticker_num_lines * ticker_line_height);
-         }
-
-         /* Only apply ticker y offset when actually
-          * drawing the text */
+         /* Draw sublabel */
          xmb_draw_text(video_info, xmb, entry_sublabel,
                sublabel_x, ticker_y_offset + sublabel_y,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
 
-         if (do_scissor)
+         /* Draw top/bottom line fade effect, if required */
+         if (use_smooth_ticker)
          {
-            /* These font shenanigans seem to be requied before
-             * calling menu_display_scissor_end() */
-            font_driver_flush(video_info->width, video_info->height, xmb->font2, video_info);
-            xmb->raster_block2.carr.coords.vertices = 0;
-            menu_display_scissor_end(video_info);
-            /* Resume 'blending' */
-            menu_display_blend_begin(video_info);
+            if (!string_is_empty(entry_sublabel_top_fade) &&
+                ticker_top_fade_alpha > 0.0f)
+               xmb_draw_text(video_info, xmb, entry_sublabel_top_fade,
+                     sublabel_x, ticker_top_fade_y_offset + sublabel_y,
+                     1, ticker_top_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     width, height, xmb->font2);
+
+            if (!string_is_empty(entry_sublabel_bottom_fade) &&
+                ticker_bottom_fade_alpha > 0.0f)
+               xmb_draw_text(video_info, xmb, entry_sublabel_bottom_fade,
+                     sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
+                     1, ticker_bottom_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     width, height, xmb->font2);
          }
       }
    }

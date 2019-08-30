@@ -158,7 +158,7 @@ typedef struct menu_animation_ctx_line_ticker
 
 typedef struct menu_animation_ctx_line_ticker_smooth
 {
-   bool scissor_enabled;
+   bool fade_enabled;
    font_data_t *font;
    float font_scale;
    unsigned field_width;
@@ -168,9 +168,15 @@ typedef struct menu_animation_ctx_line_ticker_smooth
    const char *src_str;
    char *dst_str;
    size_t dst_str_len;
-   unsigned *line_height;
-   unsigned *num_lines;
    float *y_offset;
+   char *top_fade_str;
+   size_t top_fade_str_len;
+   float *top_fade_y_offset;
+   float *top_fade_alpha;
+   char *bottom_fade_str;
+   size_t bottom_fade_str_len;
+   float *bottom_fade_y_offset;
+   float *bottom_fade_alpha;
 } menu_animation_ctx_line_ticker_smooth_t;
 
 typedef float menu_timer_t;
@@ -200,16 +206,6 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker);
 
 bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker);
 
-/* Note: When line_ticker->scissor_enabled is true,
- * resultant string must be drawn in conjunction with
- * menu_display_scissor_*()
- * i.e. draw area must be scissored vertically by
- * (line_ticker->line_height * line_ticker->num_lines),
- * with a scissor y start position of text y postion
- * (ignoring line_ticker->y_offset) *minus*
- * (line_ticker->line_height - font_descender_size).
- * font_descender_size is typically 20-30% of the line
- * height... */
 bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 float menu_animation_get_delta_time(void);
