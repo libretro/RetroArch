@@ -52,7 +52,6 @@ struct intfstream_internal
    struct
    {
       int32_t track;
-      int32_t file_start;
       chdstream_t *fp;
    } chd;
 #endif
@@ -69,12 +68,12 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
          return filestream_get_size(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return intf->memory.buf.size;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
-         return chdstream_get_size(intf->chd.fp);
+#ifdef HAVE_CHD
+        return chdstream_get_size(intf->chd.fp);
+#else
+        break;
 #endif
-      default:
-         break;
    }
 
    return 0;
@@ -96,11 +95,9 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
          memstream_set_buffer(intf->memory.buf.data,
                intf->memory.buf.size);
          break;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
-         break;
+#ifdef HAVE_CHD
 #endif
-      default:
          break;
    }
 
@@ -125,15 +122,15 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
          if (!intf->memory.fp)
             return false;
          break;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          intf->chd.fp = chdstream_open(path, intf->chd.track);
          if (!intf->chd.fp)
             return false;
          break;
-#endif
-      default:
+#else
          return false;
+#endif
    }
 
    return true;
@@ -151,8 +148,6 @@ int intfstream_flush(intfstream_internal_t *intf)
       case INTFSTREAM_MEMORY:
       case INTFSTREAM_CHD:
          /* Should we stub this for these interfaces? */
-         break;
-      default:
          break;
    }
 
@@ -174,17 +169,12 @@ int intfstream_close(intfstream_internal_t *intf)
          if (intf->memory.fp)
             memstream_close(intf->memory.fp);
          return 0;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          if (intf->chd.fp)
             chdstream_close(intf->chd.fp);
-         return 0;
-      case INTFSTREAM_CHD_FILE:
-         /* handle owned by INTFSTREAM_CHD */
-         return 0;
 #endif
-      default:
-         break;
+         return 0;
    }
 
    return -1;
@@ -212,13 +202,13 @@ void *intfstream_init(intfstream_info_t *info)
          if (!intfstream_resize(intf, info))
             goto error;
          break;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          intf->chd.track = info->chd.track;
          break;
-#endif
-      default:
+#else
          goto error;
+#endif
    }
 
    return intf;
@@ -256,12 +246,12 @@ int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
          }
       case INTFSTREAM_MEMORY:
          return (int64_t)memstream_seek(intf->memory.fp, offset, whence);
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          return (int64_t)chdstream_seek(intf->chd.fp, offset, whence);
-#endif
-      default:
+#else
          break;
+#endif
    }
 
    return -1;
@@ -278,14 +268,12 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
          return filestream_read(intf->file.fp, s, len);
       case INTFSTREAM_MEMORY:
          return memstream_read(intf->memory.fp, s, len);
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          return chdstream_read(intf->chd.fp, s, len);
-      case INTFSTREAM_CHD_FILE:
-         return chdstream_read_file(intf->chd.fp, intf->chd.file_start, s, len);
-#endif
-      default:
+#else
          break;
+#endif
    }
 
    return -1;
@@ -304,7 +292,6 @@ int64_t intfstream_write(intfstream_internal_t *intf,
       case INTFSTREAM_MEMORY:
          return memstream_write(intf->memory.fp, s, len);
       case INTFSTREAM_CHD:
-      case INTFSTREAM_CHD_FILE:
          return -1;
    }
 
@@ -325,14 +312,12 @@ char *intfstream_gets(intfstream_internal_t *intf,
       case INTFSTREAM_MEMORY:
          return memstream_gets(intf->memory.fp,
                buffer, (size_t)len);
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          return chdstream_gets(intf->chd.fp, buffer, len);
-      case INTFSTREAM_CHD_FILE:
-         return chdstream_gets_file(intf->chd.fp, intf->chd.file_start, buffer, len);
-#endif
-      default:
+#else
          break;
+#endif
    }
 
    return NULL;
@@ -349,14 +334,12 @@ int intfstream_getc(intfstream_internal_t *intf)
          return filestream_getc(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return memstream_getc(intf->memory.fp);
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          return chdstream_getc(intf->chd.fp);
-      case INTFSTREAM_CHD_FILE:
-         return chdstream_getc_file(intf->chd.fp, intf->chd.file_start);
-#endif
-      default:
+#else
          break;
+#endif
    }
 
    return -1;
@@ -373,14 +356,12 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
          return (int64_t)filestream_tell(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return (int64_t)memstream_pos(intf->memory.fp);
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          return (int64_t)chdstream_tell(intf->chd.fp);
-      case INTFSTREAM_CHD_FILE:
-         return (int64_t)chdstream_tell_file(intf->chd.fp, intf->chd.file_start);
-#endif
-      default:
+#else
          break;
+#endif
    }
 
    return -1;
@@ -396,15 +377,10 @@ void intfstream_rewind(intfstream_internal_t *intf)
       case INTFSTREAM_MEMORY:
          memstream_rewind(intf->memory.fp);
          break;
-#ifdef HAVE_CHD
       case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
          chdstream_rewind(intf->chd.fp);
-         break;
-      case INTFSTREAM_CHD_FILE:
-         chdstream_rewind_file(intf->chd.fp, intf->chd.file_start);
-         break;
 #endif
-      default:
          break;
    }
 }
@@ -422,7 +398,7 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
       case INTFSTREAM_MEMORY:
          memstream_putc(intf->memory.fp, c);
          break;
-      default:
+      case INTFSTREAM_CHD:
          break;
    }
 }
@@ -440,55 +416,6 @@ intfstream_t* intfstream_open_file(const char *path,
       return NULL;
 
    if (!intfstream_open(fd, path, mode, hints))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
-intfstream_t* intfstream_open_file_child(intfstream_internal_t* intf, const char* path)
-{
-   intfstream_info_t info;
-   intfstream_t *fd = NULL;
-
-   if (!intf)
-      return NULL;
-
-   info.type        = INTFSTREAM_FILE;
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
-      return NULL;
-
-   switch (intf->type)
-   {
-      case INTFSTREAM_FILE:
-         fd->file.fp = filestream_open_child(intf->file.fp, path);
-         break;
-      case INTFSTREAM_MEMORY:
-         break;
-#ifdef HAVE_CHD
-      case INTFSTREAM_CHD:
-         if (chdstream_seek_file(intf->chd.fp, path) < 0)
-            goto error;
-
-         fd->type = INTFSTREAM_CHD_FILE;
-         fd->chd.fp = intf->chd.fp;
-         fd->chd.file_start = chdstream_tell(intf->chd.fp);
-         return fd;
-#endif
-      default:
-         goto error;
-   }
-
-   if (!fd->file.fp)
       goto error;
 
    return fd;

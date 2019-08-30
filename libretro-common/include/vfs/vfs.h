@@ -38,40 +38,28 @@ RETRO_BEGIN_DECLS
 typedef void* HANDLE;
 #endif
 
+#ifdef HAVE_CDROM
 typedef struct
 {
-   char* cue_buf;
+   char *cue_buf;
    size_t cue_len;
-   size_t cue_pos;
-   char drive;
-} vfs_cdrom_t;
-
-typedef struct
-{
    int64_t byte_pos;
-   unsigned cur_lba;
-   unsigned char cur_track;
+   char drive;
    unsigned char cur_min;
    unsigned char cur_sec;
    unsigned char cur_frame;
-
-   unsigned sector_size;
-   unsigned char sector_header_size;
-   unsigned char mode;
-
+   unsigned char cur_track;
+   unsigned cur_lba;
    unsigned last_frame_lba;
    unsigned char last_frame[2352];
-} vfs_cdrom_track_t;
+   bool last_frame_valid;
+} vfs_cdrom_t;
+#endif
 
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
-   VFS_SCHEME_CDROM,
-   VFS_SCHEME_CDROM_TRACK,
-   VFS_SCHEME_CDROM_FILE,
-   VFS_SCHEME_CUE,
-   VFS_SCHEME_CUE_BIN,
-   VFS_SCHEME_CUE_BIN_FILE
+   VFS_SCHEME_CDROM
 };
 
 #ifndef __WINRT__
@@ -93,18 +81,10 @@ struct libretro_vfs_implementation_file
    uint64_t mappos;
    uint64_t mapsize;
    uint8_t *mapped;
-
-#ifdef VFS_FRONTEND
-   struct retro_vfs_file_handle* parent;
-#else
-   struct libretro_vfs_implementation_file* parent;
-#endif
-   uint64_t parent_offset;
-
    enum vfs_scheme scheme;
-
+#ifdef HAVE_CDROM
    vfs_cdrom_t cdrom;
-   vfs_cdrom_track_t* track;
+#endif
 };
 #endif
 

@@ -63,8 +63,6 @@ int64_t filestream_truncate(RFILE *stream, int64_t length);
  **/
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints);
 
-RFILE* filestream_open_child(RFILE *stream, const char* path);
-
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position);
 
 int64_t filestream_read(RFILE *stream, void *data, int64_t len);

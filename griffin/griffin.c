@@ -973,11 +973,11 @@ FILE
 #include "../libretro-common/streams/memory_stream.c"
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
-#include "../libretro-common/vfs/vfs_implementation_cdrom.c"
 #endif
 
 #ifdef HAVE_CDROM
 #include "../libretro-common/cdrom/cdrom.c"
+#include "../libretro-common/vfs/vfs_implementation_cdrom.c"
 #include "../libretro-common/media/media_detect_cd.c"
 #endif
 
