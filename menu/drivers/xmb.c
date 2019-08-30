@@ -3037,35 +3037,103 @@ static int xmb_draw_item(
       if (i == current && width > 320 && height > 240
             && !string_is_empty(entry->sublabel))
       {
-         menu_animation_ctx_line_ticker_t line_ticker;
          char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+         char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
+         char entry_sublabel_bottom_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
+         menu_animation_ctx_line_ticker_t line_ticker;
+         menu_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+         float ticker_y_offset             = 0.0f;
+         float ticker_top_fade_y_offset    = 0.0f;
+         float ticker_bottom_fade_y_offset = 0.0f;
+         float ticker_top_fade_alpha       = 0.0f;
+         float ticker_bottom_fade_alpha    = 0.0f;
+         float sublabel_x                  = node->x + xmb->margins_screen_left +
+               xmb->icon_spacing_horizontal + xmb->margins_label_left;
+         float sublabel_y                  = xmb->margins_screen_top +
+               node->y + (xmb->margins_label_top * 3.5f);
 
-         entry_sublabel[0] = '\0';
+         entry_sublabel[0]             = '\0';
+         entry_sublabel_top_fade[0]    = '\0';
+         entry_sublabel_bottom_fade[0] = '\0';
 
-         line_ticker.type_enum  = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-         line_ticker.idx        = menu_animation_get_ticker_idx();
+         if (use_smooth_ticker)
+         {
+            line_ticker_smooth.fade_enabled         = true;
+            line_ticker_smooth.type_enum            = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker_smooth.idx                  = menu_animation_get_ticker_pixel_idx();
 
-         line_ticker.line_width = (size_t)(line_ticker_width);
-         /* Note: max_lines should be calculated at runtime,
-          * but this is a nuisance. There is room for 4 lines
-          * to be displayed when using all existing XMB themes,
-          * so leave this value hard coded for now. */
-         line_ticker.max_lines  = 4;
+            line_ticker_smooth.font                 = xmb->font2;
+            line_ticker_smooth.font_scale           = 1.0f;
 
-         line_ticker.s          = entry_sublabel;
-         line_ticker.len        = sizeof(entry_sublabel);
-         line_ticker.str        = entry->sublabel;
+            line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.6f * line_ticker_width);
+            /* The calculation here is incredibly obtuse. I think
+             * this is correct... (c.f. xmb_item_y()) */
+            line_ticker_smooth.field_height         = (unsigned)(
+                  (xmb->icon_spacing_vertical * ((1 + xmb->under_item_offset) - xmb->active_item_factor)) -
+                     (xmb->margins_label_top * 3.5f) -
+                     xmb->under_item_offset); /* This last one is just a little extra padding (seems to help) */
 
-         menu_animation_line_ticker(&line_ticker);
+            line_ticker_smooth.src_str              = entry->sublabel;
+            line_ticker_smooth.dst_str              = entry_sublabel;
+            line_ticker_smooth.dst_str_len          = sizeof(entry_sublabel);
+            line_ticker_smooth.y_offset             = &ticker_y_offset;
+
+            line_ticker_smooth.top_fade_str         = entry_sublabel_top_fade;
+            line_ticker_smooth.top_fade_str_len     = sizeof(entry_sublabel_top_fade);
+            line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
+            line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
+
+            line_ticker_smooth.bottom_fade_str      = entry_sublabel_bottom_fade;
+            line_ticker_smooth.bottom_fade_str_len  = sizeof(entry_sublabel_bottom_fade);
+            line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
+            line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
+
+            menu_animation_line_ticker_smooth(&line_ticker_smooth);
+         }
+         else
+         {
+            line_ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker.idx       = menu_animation_get_ticker_idx();
+
+            line_ticker.line_len  = (size_t)(line_ticker_width);
+            /* Note: max_lines should be calculated at runtime,
+             * but this is a nuisance. There is room for 4 lines
+             * to be displayed when using all existing XMB themes,
+             * so leave this value hard coded for now. */
+            line_ticker.max_lines = 4;
+
+            line_ticker.s         = entry_sublabel;
+            line_ticker.len       = sizeof(entry_sublabel);
+            line_ticker.str       = entry->sublabel;
+
+            menu_animation_line_ticker(&line_ticker);
+         }
 
          label_offset = - xmb->margins_label_top;
 
+         /* Draw sublabel */
          xmb_draw_text(video_info, xmb, entry_sublabel,
-               node->x + xmb->margins_screen_left +
-               xmb->icon_spacing_horizontal + xmb->margins_label_left,
-               xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
+               sublabel_x, ticker_y_offset + sublabel_y,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
+
+         /* Draw top/bottom line fade effect, if required */
+         if (use_smooth_ticker)
+         {
+            if (!string_is_empty(entry_sublabel_top_fade) &&
+                ticker_top_fade_alpha > 0.0f)
+               xmb_draw_text(video_info, xmb, entry_sublabel_top_fade,
+                     sublabel_x, ticker_top_fade_y_offset + sublabel_y,
+                     1, ticker_top_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     width, height, xmb->font2);
+
+            if (!string_is_empty(entry_sublabel_bottom_fade) &&
+                ticker_bottom_fade_alpha > 0.0f)
+               xmb_draw_text(video_info, xmb, entry_sublabel_bottom_fade,
+                     sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
+                     1, ticker_bottom_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     width, height, xmb->font2);
+         }
       }
    }
 

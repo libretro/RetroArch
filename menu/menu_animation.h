@@ -147,7 +147,7 @@ typedef struct menu_animation_ctx_ticker_smooth
 
 typedef struct menu_animation_ctx_line_ticker
 {
-   size_t line_width;
+   size_t line_len;
    size_t max_lines;
    uint64_t idx;
    enum menu_animation_ticker_type type_enum;
@@ -155,6 +155,29 @@ typedef struct menu_animation_ctx_line_ticker
    size_t len;
    const char *str;
 } menu_animation_ctx_line_ticker_t;
+
+typedef struct menu_animation_ctx_line_ticker_smooth
+{
+   bool fade_enabled;
+   font_data_t *font;
+   float font_scale;
+   unsigned field_width;
+   unsigned field_height;
+   enum menu_animation_ticker_type type_enum;
+   uint64_t idx;
+   const char *src_str;
+   char *dst_str;
+   size_t dst_str_len;
+   float *y_offset;
+   char *top_fade_str;
+   size_t top_fade_str_len;
+   float *top_fade_y_offset;
+   float *top_fade_alpha;
+   char *bottom_fade_str;
+   size_t bottom_fade_str_len;
+   float *bottom_fade_y_offset;
+   float *bottom_fade_alpha;
+} menu_animation_ctx_line_ticker_smooth_t;
 
 typedef float menu_timer_t;
 
@@ -182,6 +205,8 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
 bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker);
 
 bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker);
+
+bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 float menu_animation_get_delta_time(void);
 
