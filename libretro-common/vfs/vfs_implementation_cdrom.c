@@ -130,8 +130,11 @@ static bool retro_vfs_file_open_cdrom_handle(libretro_vfs_implementation_file* s
 
    stream->orig_path = strdup(path);
 
-   cdrom_write_cue(stream, &stream->cdrom.cue_buf, &stream->cdrom.cue_len, stream->cdrom.drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
-   cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
+   if (cdrom_is_media_inserted(stream))
+   {
+      cdrom_write_cue(stream, &stream->cdrom.cue_buf, &stream->cdrom.cue_len, stream->cdrom.drive, &vfs_cdrom_toc.num_tracks, &vfs_cdrom_toc);
+      cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
+   }
 
    return true;
 }
