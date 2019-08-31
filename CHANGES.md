@@ -11,6 +11,7 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
+- MENU/XMB: Smooth vertical ticker scrolling
 - OSX: Fix potential OSX startup crash
 - PATCH: Fix IPS patches
 - PLAYLISTS: Fix playlist heap corruption bug. Would also cause potential crashes on OSX and 3DS at startup
