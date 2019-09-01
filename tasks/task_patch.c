@@ -435,9 +435,9 @@ static enum patch_error ips_alloc_targetdata(
       uint64_t sourcelength,
       uint8_t **targetdata, uint64_t *targetlength)
 {
-   *targetlength = sourcelength;
    uint8_t *prov_alloc;
    uint32_t offset = 5;
+   *targetlength = sourcelength;
 
    for (;;)
    {
@@ -524,6 +524,7 @@ static enum patch_error ips_apply_patch(
       uint8_t **targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
+   enum patch_error error_patch = PATCH_UNKNOWN;
    if (patchlen < 8 ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
@@ -532,9 +533,9 @@ static enum patch_error ips_apply_patch(
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
    
-   enum patch_error error_patch = ips_alloc_targetdata( patchdata,     patchlen,
-                                                         sourcelength,  targetdata,
-                                                                        targetlength);
+   error_patch = ips_alloc_targetdata( patchdata,     patchlen,
+                                       sourcelength,  targetdata,
+                                                      targetlength);
    if ( error_patch != PATCH_SUCCESS)
       return error_patch;
 
