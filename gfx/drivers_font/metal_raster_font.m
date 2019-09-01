@@ -80,6 +80,12 @@
          _buffer = [_context.device newBufferWithBytes:_atlas->buffer
                                                 length:(NSUInteger)(_stride * _atlas->height)
                                                options:MTLResourceStorageModeManaged];
+
+         // Even though newBufferWithBytes will copy the initial contents
+         // from our atlas, it doesn't seem to invalidate the buffer when
+         // doing so, causing corrupted text rendering if we hit this code
+         // path. To work around it we manually invalidate the buffer.
+         [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
       }
       else
       {
