@@ -50,7 +50,7 @@ enum patch_error
    PATCH_PATCH_INVALID_HEADER,
    PATCH_PATCH_INVALID,
    PATCH_SOURCE_TOO_SMALL,
-   PATCH_TARGET_TOO_SMALL,
+   PATCH_TARGET_ALLOC_FAILED,
    PATCH_SOURCE_INVALID,
    PATCH_TARGET_INVALID,
    PATCH_SOURCE_CHECKSUM_INVALID,
@@ -184,7 +184,7 @@ static enum patch_error bps_apply_patch(
          *target_data=prov;
          bps.target_length=modify_target_size;
       }else
-         return PATCH_TARGET_TOO_SMALL;
+         return PATCH_TARGET_ALLOC_FAILED;
    }
 
    while (bps.modify_offset < bps.modify_length - 12)
@@ -371,7 +371,7 @@ static enum patch_error ups_apply_patch(
          *targetdata=prov;
          data.target_data=prov;
       }else
-         return PATCH_TARGET_TOO_SMALL;
+         return PATCH_TARGET_ALLOC_FAILED;
    }
 
    data.target_length = (unsigned)*targetlength;
@@ -430,13 +430,101 @@ static enum patch_error ups_apply_patch(
    return PATCH_SOURCE_INVALID;
 }
 
+static enum patch_error ips_alloc_targetdata(
+      const uint8_t *patchdata, uint64_t patchlen,
+      uint64_t sourcelength,
+      uint8_t **targetdata, uint64_t *targetlength)
+{
+   uint8_t *prov_alloc;
+   uint32_t offset = 5;
+   *targetlength = sourcelength;
+
+   for (;;)
+   {
+      uint32_t address;
+      unsigned length;
+
+      if (offset > patchlen - 3)
+         break;
+
+      address  = patchdata[offset++] << 16;
+      address |= patchdata[offset++] << 8;
+      address |= patchdata[offset++] << 0;
+
+      if (address == 0x454f46) /* EOF */
+      {
+         if (offset == patchlen)
+         {
+            prov_alloc=(uint8_t*)malloc((size_t)*targetlength);
+            if (!prov_alloc)
+               return PATCH_TARGET_ALLOC_FAILED;
+            free(*targetdata);
+            *targetdata=prov_alloc;
+            return PATCH_SUCCESS;
+         }
+         else if (offset == patchlen - 3)
+         {
+            uint32_t size = patchdata[offset++] << 16;
+            size |= patchdata[offset++] << 8;
+            size |= patchdata[offset++] << 0;
+            *targetlength = size;
+            prov_alloc=(uint8_t*)malloc((size_t)*targetlength);
+            if (!prov_alloc)
+               return PATCH_TARGET_ALLOC_FAILED;
+            free(*targetdata);
+            *targetdata=prov_alloc;
+            return PATCH_SUCCESS;
+         }
+      }
+
+      if (offset > patchlen - 2)
+         break;
+
+      length  = patchdata[offset++] << 8;
+      length |= patchdata[offset++] << 0;
+
+      if (length) /* Copy */
+      {
+         if (offset > patchlen - length)
+            break;
+
+         while (length--)
+         {
+            address++;
+            offset++;
+         }
+      }
+      else /* RLE */
+      {
+         if (offset > patchlen - 3)
+            break;
+
+         length  = patchdata[offset++] << 8;
+         length |= patchdata[offset++] << 0;
+
+         if (length == 0) /* Illegal */
+            break;
+
+         while (length--)
+            address++;
+
+         offset++;
+      }
+
+      if (address > *targetlength)
+         *targetlength = address;
+   }
+
+   return PATCH_PATCH_INVALID;
+}
+
 static enum patch_error ips_apply_patch(
       const uint8_t *patchdata, uint64_t patchlen,
       const uint8_t *sourcedata, uint64_t sourcelength,
-      uint8_t **targetdata_fix, uint64_t *targetlength)
+      uint8_t **targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
-   uint8_t* targetdata=*targetdata_fix;
+   enum patch_error error_patch = PATCH_UNKNOWN;
    if (patchlen < 8 ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
@@ -444,10 +532,14 @@ static enum patch_error ips_apply_patch(
          patchdata[3] != 'C' ||
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
+   
+   error_patch = ips_alloc_targetdata( patchdata,     patchlen,
+                                       sourcelength,  targetdata,
+                                                      targetlength);
+   if ( error_patch != PATCH_SUCCESS)
+      return error_patch;
 
-   memcpy(targetdata, sourcedata, (size_t)sourcelength);
-
-   *targetlength = sourcelength;
+   memcpy(*targetdata, sourcedata, (size_t)sourcelength);
 
    for (;;)
    {
@@ -470,7 +562,6 @@ static enum patch_error ips_apply_patch(
             uint32_t size = patchdata[offset++] << 16;
             size |= patchdata[offset++] << 8;
             size |= patchdata[offset++] << 0;
-            *targetlength = size;
             return PATCH_SUCCESS;
          }
       }
@@ -487,7 +578,7 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            targetdata[address++] = patchdata[offset++];
+            (*targetdata)[address++] = patchdata[offset++];
       }
       else /* RLE */
       {
@@ -501,13 +592,10 @@ static enum patch_error ips_apply_patch(
             break;
 
          while (length--)
-            targetdata[address++] = patchdata[offset];
+            (*targetdata)[address++] = patchdata[offset];
 
          offset++;
       }
-
-      if (address > *targetlength)
-         *targetlength = address;
    }
 
    return PATCH_PATCH_INVALID;
@@ -520,22 +608,11 @@ static bool apply_patch_content(uint8_t **buf,
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
-   uint64_t target_size     = ret_size * 4; /* Just to be sure. */
-   uint8_t *patched_content = (uint8_t*)malloc((size_t)target_size);
+   uint64_t target_size     = 0;
+   uint8_t *patched_content = NULL;
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
-
-   if (!patched_content)
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT));
-
-      *buf  = ret_buf;
-      *size = ret_size;
-
-      return false;
-   }
 
    err = func((const uint8_t*)patch_data, patch_size, ret_buf,
          ret_size, &patched_content, &target_size);
