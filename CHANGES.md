@@ -1,5 +1,9 @@
 # 1.7.9 (future)
 
+# 1.7.8 (v3)
+- IPS: Soft-Patch any IPS size
+- METAL/STB: Fix font driver issue with AMD GPUs on MacOS.
+
 # 1.7.8 (v2)
 - 3DS: Fix 3DS startup crash
 - AI SERVICE: Fix 'Japanese' setting
