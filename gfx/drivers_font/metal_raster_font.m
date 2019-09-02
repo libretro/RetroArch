@@ -330,7 +330,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
 
-   [_context resetRenderViewport];
+   [_context resetRenderViewport:kFullscreenViewport];
    [rce setRenderPipelineState:_state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_vert offset:start atIndex:BufferIndexPositions];

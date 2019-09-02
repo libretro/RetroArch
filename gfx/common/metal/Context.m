@@ -583,13 +583,14 @@
    return _rce;
 }
 
-- (void)resetRenderViewport
+- (void)resetRenderViewport:(ViewportResetMode)mode
 {
+   bool fullscreen = mode == kFullscreenViewport;
    MTLViewport vp = {
-      .originX = 0,
-      .originY = 0,
-      .width   = _viewport.full_width,
-      .height  = _viewport.full_height,
+      .originX = fullscreen ? 0 : _viewport.x,
+      .originY = fullscreen ? 0 : _viewport.y,
+      .width   = fullscreen ? _viewport.full_width : _viewport.width,
+      .height  = fullscreen ? _viewport.full_height : _viewport.height,
       .znear   = 0,
       .zfar    = 1,
    };

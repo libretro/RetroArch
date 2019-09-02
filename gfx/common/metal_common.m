@@ -269,7 +269,8 @@
          [_frameView updateFrame:data pitch:pitch];
       }
 
-      [self _drawViews:video_info];
+      [self _drawCore:video_info];
+      [self _drawMenu:video_info];
 
       if (video_info->statistics_show)
       {
@@ -286,6 +287,7 @@
       {
          id<MTLRenderCommandEncoder> rce = _context.rce;
          [rce pushDebugGroup:@"overlay"];
+         [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
          [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
@@ -339,7 +341,7 @@
       float g = settings->uints.video_msg_bgcolor_green / 255.0f;
       float b = settings->uints.video_msg_bgcolor_blue / 255.0f;
       float a = settings->floats.video_msg_bgcolor_opacity;
-      [_context resetRenderViewport];
+      [_context resetRenderViewport:kFullscreenViewport];
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
 
@@ -357,7 +359,7 @@
    [_context begin];
 }
 
-- (void)_drawViews:(video_frame_info_t *)video_info
+- (void)_drawCore:(video_frame_info_t *)video_info
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
@@ -380,8 +382,16 @@
       [_frameView drawWithEncoder:rce];
    }
    [rce popDebugGroup];
+}
 
-   if (_menu.enabled && _menu.hasFrame)
+- (void)_drawMenu:(video_frame_info_t *)video_info
+{
+   if (!_menu.enabled)
+      return;
+
+   id<MTLRenderCommandEncoder> rce = _context.rce;
+
+   if (_menu.hasFrame)
    {
       [rce pushDebugGroup:@"menu frame"];
       [_menu.view drawWithContext:_context];
@@ -398,20 +408,11 @@
       [_menu.view drawWithEncoder:rce];
       [rce popDebugGroup];
    }
-
 #if defined(HAVE_MENU)
-   if (_menu.enabled)
+   else
    {
-      MTLViewport viewport = {
-         .originX = 0.0f,
-         .originY = 0.0f,
-         .width = _viewport->full_width,
-         .height = _viewport->full_height,
-         .znear = 0.0f,
-         .zfar = 1.0,
-      };
-      [rce setViewport:viewport];
       [rce pushDebugGroup:@"menu"];
+      [_context resetRenderViewport:kFullscreenViewport];
       menu_driver_frame(video_info);
       [rce popDebugGroup];
    }
