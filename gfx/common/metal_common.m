@@ -299,10 +299,11 @@
       [self _drawCore:video_info];
       [self _drawMenu:video_info];
 
+      id<MTLRenderCommandEncoder> rce = _context.rce;
+
 #ifdef HAVE_OVERLAY
       if (_overlay.enabled)
       {
-         id<MTLRenderCommandEncoder> rce = _context.rce;
          [rce pushDebugGroup:@"overlay"];
          [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
@@ -319,19 +320,29 @@
 
          if (osd_params)
          {
+            [rce pushDebugGroup:@"video stats"];
             font_driver_render_msg(video_info, NULL, video_info->stat_text, osd_params);
+            [rce popDebugGroup];
          }
       }
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
       if (video_info->widgets_inited)
+      {
+         [rce pushDebugGroup:@"menu widgets"];
          menu_widgets_frame(video_info);
+         [rce popDebugGroup];
+      }
 #endif
 #endif
 
       if (msg && *msg)
+      {
+         [rce pushDebugGroup:@"message"];
          [self _renderMessage:msg info:video_info];
+         [rce popDebugGroup];
+      }
 
       [self _endFrame];
    }
