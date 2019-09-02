@@ -287,6 +287,7 @@
       {
          id<MTLRenderCommandEncoder> rce = _context.rce;
          [rce pushDebugGroup:@"overlay"];
+         [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
          [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
@@ -340,7 +341,7 @@
       float g = settings->uints.video_msg_bgcolor_green / 255.0f;
       float b = settings->uints.video_msg_bgcolor_blue / 255.0f;
       float a = settings->floats.video_msg_bgcolor_opacity;
-      [_context resetRenderViewport];
+      [_context resetRenderViewport:kFullscreenViewport];
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
 
@@ -411,15 +412,7 @@
    else
    {
       [rce pushDebugGroup:@"menu"];
-      MTLViewport viewport = {
-         .originX = 0.0f,
-         .originY = 0.0f,
-         .width = _viewport->full_width,
-         .height = _viewport->full_height,
-         .znear = 0.0f,
-         .zfar = 1.0,
-      };
-      [rce setViewport:viewport];
+      [_context resetRenderViewport:kFullscreenViewport];
       menu_driver_frame(video_info);
       [rce popDebugGroup];
    }

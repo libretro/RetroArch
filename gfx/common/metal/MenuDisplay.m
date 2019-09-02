@@ -173,7 +173,7 @@
    id<MTLRenderCommandEncoder> rce = _context.rce;
    if (_clearNextRender)
    {
-      [_context resetRenderViewport];
+      [_context resetRenderViewport:kFullscreenViewport];
       [_context drawQuadX:0
                         y:0
                         w:1
