@@ -272,16 +272,6 @@
       [self _drawCore:video_info];
       [self _drawMenu:video_info];
 
-      if (video_info->statistics_show)
-      {
-         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
-
-         if (osd_params)
-         {
-            font_driver_render_msg(video_info, NULL, video_info->stat_text, osd_params);
-         }
-      }
-
 #ifdef HAVE_OVERLAY
       if (_overlay.enabled)
       {
@@ -295,6 +285,16 @@
          [rce popDebugGroup];
       }
 #endif
+
+      if (video_info->statistics_show)
+      {
+         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
+
+         if (osd_params)
+         {
+            font_driver_render_msg(video_info, NULL, video_info->stat_text, osd_params);
+         }
+      }
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
