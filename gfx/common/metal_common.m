@@ -269,7 +269,8 @@
          [_frameView updateFrame:data pitch:pitch];
       }
 
-      [self _drawViews:video_info];
+      [self _drawCore:video_info];
+      [self _drawMenu:video_info];
 
       if (video_info->statistics_show)
       {
@@ -357,7 +358,7 @@
    [_context begin];
 }
 
-- (void)_drawViews:(video_frame_info_t *)video_info
+- (void)_drawCore:(video_frame_info_t *)video_info
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
@@ -380,8 +381,16 @@
       [_frameView drawWithEncoder:rce];
    }
    [rce popDebugGroup];
+}
 
-   if (_menu.enabled && _menu.hasFrame)
+- (void)_drawMenu:(video_frame_info_t *)video_info
+{
+   if (!_menu.enabled)
+      return;
+
+   id<MTLRenderCommandEncoder> rce = _context.rce;
+
+   if (_menu.hasFrame)
    {
       [rce pushDebugGroup:@"menu frame"];
       [_menu.view drawWithContext:_context];
@@ -398,10 +407,10 @@
       [_menu.view drawWithEncoder:rce];
       [rce popDebugGroup];
    }
-
 #if defined(HAVE_MENU)
-   if (_menu.enabled)
+   else
    {
+      [rce pushDebugGroup:@"menu"];
       MTLViewport viewport = {
          .originX = 0.0f,
          .originY = 0.0f,
@@ -411,7 +420,6 @@
          .zfar = 1.0,
       };
       [rce setViewport:viewport];
-      [rce pushDebugGroup:@"menu"];
       menu_driver_frame(video_info);
       [rce popDebugGroup];
    }
