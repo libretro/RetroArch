@@ -83,7 +83,6 @@
    id<MTLSamplerState> _samplerStateNearest;
 
    // other state
-   Uniforms _uniforms;
    Uniforms _viewportMVP;
 }
 
@@ -384,8 +383,9 @@
 
    if (_menu.enabled && _menu.hasFrame)
    {
+      [rce pushDebugGroup:@"menu frame"];
       [_menu.view drawWithContext:_context];
-      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineState];
       if (_menu.view.filter == RTextureFilterNearest)
       {
@@ -396,6 +396,7 @@
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
       }
       [_menu.view drawWithEncoder:rce];
+      [rce popDebugGroup];
    }
 
 #if defined(HAVE_MENU)
