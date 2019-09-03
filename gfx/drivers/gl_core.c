@@ -1593,6 +1593,8 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
 
    if (gl->menu_texture_full_screen)
       glViewport(0, 0, video_info->width, video_info->height);
+   else
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 
    glActiveTexture(GL_TEXTURE0 + 1);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
