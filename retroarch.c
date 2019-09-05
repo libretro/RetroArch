@@ -11648,7 +11648,7 @@ static void input_driver_poll(void)
                      {
                         for (j = 0; j < 2; j++)
                         {
-                           unsigned offset = 0 + (i * 4) + (j * 2);
+                           unsigned offset = 0 + (k * 4) + (j * 2);
                            int16_t     val = input_joypad_analog(joypad_driver,
                                  joypad_info[i], i, k, j, libretro_input_binds[i]);
 
