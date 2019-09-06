@@ -5,6 +5,7 @@
 - IPS: Soft-Patch any IPS size
 - METAL: Fix overlay issue - setup correct viewport before rendering overlay
 - METAL/STB: Fix font driver issue with AMD GPUs on MacOS.
+- MENU/RGUI: Correctly rescale menu when resizing window if aspect ratio lock is enabled.
 - OSX: Remove OSX suffix in window title
 - REMAPS: Fix analog remapping regression -analog remapping would break controls
 
