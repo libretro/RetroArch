@@ -524,6 +524,7 @@ typedef struct
    unsigned last_height;
    unsigned window_width;
    unsigned window_height;
+   bool ignore_resize_events;
    bool bg_thickness;
    bool border_thickness;
    bool border_enable;
@@ -4240,8 +4241,9 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
-   rgui->window_width  = vp.full_width;
-   rgui->window_height = vp.full_height;
+   rgui->window_width         = vp.full_width;
+   rgui->window_height        = vp.full_height;
+   rgui->ignore_resize_events = false;
 
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
@@ -4743,7 +4745,12 @@ static void rgui_populate_entries(void *data,
          rgui_video_settings_t current_video_settings = {0};
          rgui_get_video_config(&current_video_settings);
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
+         {
             rgui_set_video_config(rgui, &rgui->content_video_settings, false);
+            /* Menu viewport has been overridden - must ignore
+             * resize events until the menu is next toggled off */
+            rgui->ignore_resize_events = true;
+         }
       }
    }
 }
@@ -4904,7 +4911,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    if ((rgui->window_width  != video_info->width) ||
        (rgui->window_height != video_info->height))
    {
-      if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+      if ((settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
+          !rgui->ignore_resize_events)
       {
          rgui_update_menu_viewport(rgui);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
@@ -4962,6 +4970,10 @@ static void rgui_toggle(void *userdata, bool menu_on)
          
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
             rgui_set_video_config(rgui, &rgui->content_video_settings, false);
+         
+         /* Any modified video settings have now been registered,
+          * so it is again 'safe' to respond to window resize events */
+         rgui->ignore_resize_events = false;
       }
    }
    
