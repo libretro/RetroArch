@@ -4888,7 +4888,16 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    /* > Check for changes in aspect ratio */
    if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
+   {
       rgui_set_aspect_ratio(rgui, true);
+
+      /* If user changes aspect ratio directly after opening
+       * the video settings menu, then all bets are off - we
+       * can no longer guarantee that changes to aspect ratio
+       * and custom viewport settings will be preserved. So it
+       * no longer makes sense to ignore resize events */
+      rgui->ignore_resize_events = false;
+   }
 
    /* > Check for changes in aspect ratio lock setting */
    if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
@@ -4903,6 +4912,11 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       {
          rgui_update_menu_viewport(rgui);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
+
+         /* As with changes in aspect ratio, if we reach this point
+          * after visiting the video settings menu, resize events
+          * should be monitored again */
+         rgui->ignore_resize_events = false;
       }
    }
 
