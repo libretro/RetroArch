@@ -1,8 +1,12 @@
 # 1.7.9 (future)
 
 # 1.7.8 (v3)
+- GLCORE: Ensure correct scaling of menu texture (with RGUI)
 - IPS: Soft-Patch any IPS size
+- METAL: Fix overlay issue - setup correct viewport before rendering overlay
 - METAL/STB: Fix font driver issue with AMD GPUs on MacOS.
+- OSX: Remove OSX suffix in window title
+- REMAPS: Fix analog remapping regression -analog remapping would break controls
 
 # 1.7.8 (v2)
 - 3DS: Fix 3DS startup crash
