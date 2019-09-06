@@ -522,6 +522,8 @@ typedef struct
    bool mouse_show;
    unsigned last_width;
    unsigned last_height;
+   unsigned window_width;
+   unsigned window_height;
    bool bg_thickness;
    bool border_thickness;
    bool border_enable;
@@ -4162,6 +4164,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    unsigned new_font_height;
    size_t start;
+   struct video_viewport vp;
    rgui_t               *rgui = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -4234,6 +4237,11 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui->last_width  = rgui_frame_buf.width;
    rgui->last_height = rgui_frame_buf.height;
+
+   /* Get initial 'window' dimensions */
+   video_driver_get_viewport_info(&vp);
+   rgui->window_width  = vp.full_width;
+   rgui->window_height = vp.full_height;
 
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
@@ -4870,9 +4878,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
     * We therefore have to set the 'delay_update' argument, which causes
     * command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL) to be called at
     * the next instance of rgui_render() */
+
+   /* > Check for changes in aspect ratio */
    if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
       rgui_set_aspect_ratio(rgui, true);
 
+   /* > Check for changes in aspect ratio lock setting */
    if (settings->uints.menu_rgui_aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
    {
       rgui->menu_aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
@@ -4886,6 +4897,21 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_update_menu_viewport(rgui);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
+   }
+
+   /* > If aspect ratio is locked, have to rescale if window
+    *   dimensions change */
+   if ((rgui->window_width  != video_info->width) ||
+       (rgui->window_height != video_info->height))
+   {
+      if (settings->uints.menu_rgui_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+      {
+         rgui_update_menu_viewport(rgui);
+         rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
+      }
+
+      rgui->window_width  = video_info->width;
+      rgui->window_height = video_info->height;
    }
 
    /* Handle pending thumbnail load operations */
