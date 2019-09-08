@@ -89,16 +89,16 @@ struct InputSection
 static ElfFile::Symbol *
 findSymbol(ElfFile &file, uint32_t address)
 {
-   for (auto &symbol : file.symbols) {
-      if (symbol->address == address && symbol->type != elf::STT_NOTYPE) {
+   for (auto &symbol : file.symbols)
+   {
+      if (symbol->address == address && symbol->type != elf::STT_NOTYPE)
          return symbol.get();
-      }
    }
 
-   for (auto &symbol : file.symbols) {
-      if (symbol->address == address) {
+   for (auto &symbol : file.symbols)
+   {
+      if (symbol->address == address)
          return symbol.get();
-      }
    }
 
    return nullptr;
@@ -107,11 +107,12 @@ findSymbol(ElfFile &file, uint32_t address)
 static ElfFile::RplImport *
 findImport(ElfFile &file, uint32_t address)
 {
-   for (auto &lib : file.rplImports) {
-      for (auto &import : lib->imports) {
-         if (import->stubAddr == address || import->trampAddr == address) {
+   for (auto &lib : file.rplImports)
+   {
+      for (auto &import : lib->imports)
+      {
+         if (import->stubAddr == address || import->trampAddr == address)
             return import.get();
-         }
       }
    }
 
@@ -122,11 +123,13 @@ template<typename Type>
 static Type *
 getLoaderDataPtr(std::vector<InputSection> &inSections, uint32_t address)
 {
-   for (auto &section : inSections) {
+   for (auto &section : inSections)
+   {
       auto start = section.header.addr;
-      auto end = start + section.data.size();
+      auto end   = start + section.data.size();
 
-      if (start <= address && end > address) {
+      if (start <= address && end > address)
+      {
          auto offset = address - start;
          return reinterpret_cast<Type *>(section.data.data() + offset);
       }
@@ -205,22 +208,22 @@ read(ElfFile &file, const std::string &filename)
    auto shStrTab = inSections[header.shstrndx].data.data();
 
    /* Process any loader relocations */
-   for (auto &section : inSections) {
-      if (section.header.type != elf::SHT_RELA) {
+   for (auto &section : inSections)
+   {
+      if (section.header.type != elf::SHT_RELA)
          continue;
-      }
 
       auto name = std::string { shStrTab + section.header.name };
 
-      if (name.compare(".rela.dyn") != 0) {
+      if (name.compare(".rela.dyn") != 0)
          continue;
-      }
 
       auto symSection = inSections[section.header.link];
       auto relas = reinterpret_cast<elf::Rela *>(section.data.data());
       auto count = section.data.size() / sizeof(elf::Rela);
 
-      for (auto i = 0u; i < count; ++i) {
+      for (unsigned i = 0u; i < count; ++i)
+      {
          auto &rela = relas[i];
          auto index = rela.info >> 8;
          auto symbol = getSectionSymbol(symSection, index);
@@ -229,7 +232,8 @@ read(ElfFile &file, const std::string &filename)
          auto type = rela.info & 0xff;
          auto ptr = getLoaderDataPtr<uint32_t>(inSections, rela.offset);
 
-         if (!ptr) {
+         if (!ptr)
+         {
             std::cout << "Unexpected relocation offset in .rela.dyn section" << std::endl;
             return false;
          }
@@ -309,14 +313,15 @@ read(ElfFile &file, const std::string &filename)
    file.symbols.emplace_back(symUndef);
 
    /* Read symbols */
-   for (auto &section : inSections) {
-      if (section.header.type != elf::SHT_SYMTAB) {
+   for (auto &section : inSections)
+   {
+      if (section.header.type != elf::SHT_SYMTAB)
          continue;
-      }
 
       auto name = std::string { shStrTab + section.header.name };
 
-      if (name.compare(".symtab") != 0) {
+      if (name.compare(".symtab") != 0)
+      {
          std::cout << "Unexpected symbol section " << name << std::endl;
          return false;
       }
@@ -325,13 +330,13 @@ read(ElfFile &file, const std::string &filename)
       auto symTab = reinterpret_cast<elf::Symbol *>(section.data.data());
       auto count = section.data.size() / sizeof(elf::Symbol);
 
-      for (auto i = 0u; i < count; ++i) {
+      for (unsigned i = 0u; i < count; ++i)
+      {
          auto &sym = symTab[i];
 
-         if (sym.value >= LoadAddress && sym.value < CodeAddress) {
-            /* Skip any load symbols */
+         /* Skip any load symbols */
+         if (sym.value >= LoadAddress && sym.value < CodeAddress)
             continue;
-         }
 
          auto type = static_cast<elf::SymbolType>(sym.info & 0xF);
          auto binding = static_cast<elf::SymbolBinding>((sym.info >> 4) & 0xF);
@@ -360,14 +365,14 @@ read(ElfFile &file, const std::string &filename)
    for (auto &section : inSections) {
       auto name = std::string { shStrTab + section.header.name };
 
-      if (name.compare(".lib.rplLibs") != 0) {
+      if (name.compare(".lib.rplLibs") != 0)
          continue;
-      }
 
       auto rplTab = reinterpret_cast<RplLibsDef *>(section.data.data());
       auto count = section.data.size() / sizeof(RplLibsDef);
 
-      for (auto i = 0u; i < count; ++i) {
+      for (unsigned i = 0u; i < count; ++i)
+      {
          auto &rpl = rplTab[i];
          auto lib = new ElfFile::RplImportLibrary();
          lib->name = getLoaderDataPtr<char>(inSections, rpl.name);
@@ -402,9 +407,8 @@ read(ElfFile &file, const std::string &filename)
 
    /* Read relocations */
    for (auto &section : inSections) {
-      if (section.header.type != elf::SHT_RELA) {
+      if (section.header.type != elf::SHT_RELA)
          continue;
-      }
 
       auto name = std::string { shStrTab + section.header.name };
 
@@ -417,7 +421,8 @@ read(ElfFile &file, const std::string &filename)
       auto relTab = reinterpret_cast<elf::Rela *>(section.data.data());
       auto count = section.data.size() / sizeof(elf::Rela);
 
-      for (auto i = 0u; i < count; ++i) {
+      for (unsigned i = 0u; i < count; ++i)
+      {
          auto relocation = new ElfFile::Relocation();
          auto &rela = relTab[i];
 
@@ -463,22 +468,21 @@ read(ElfFile &file, const std::string &filename)
    }
 
    /* Read dyn relocations */
-   for (auto &section : inSections) {
-      if (section.header.type != elf::SHT_RELA) {
+   for (auto &section : inSections)
+   {
+      if (section.header.type != elf::SHT_RELA)
          continue;
-      }
 
       auto name = std::string { shStrTab + section.header.name };
 
-      if (name.compare(".rela.dyn") != 0) {
+      if (name.compare(".rela.dyn") != 0)
          continue;
-      }
 
       auto symSection = inSections[section.header.link];
       auto relas = reinterpret_cast<elf::Rela *>(section.data.data());
       auto count = section.data.size() / sizeof(elf::Rela);
 
-      for (auto i = 0u; i < count; ++i) {
+      for (unsigned i = 0u; i < count; ++i) {
          auto relocation = new ElfFile::Relocation();
          auto &rela = relas[i];
 
@@ -564,14 +568,14 @@ SymbolIterator addSection(ElfFile &file, std::vector<OutputSection *> &outSectio
 static uint32_t
 getSectionIndex(std::vector<OutputSection *> &outSections, uint32_t address)
 {
-   for (auto i = 0u; i < outSections.size(); ++i) {
+   for (unsigned i = 0u; i < outSections.size(); ++i)
+   {
       auto &section = outSections[i];
       auto start = section->header.addr;
       auto end = start + section->header.size;
 
-      if (address >= start && address < end) {
+      if (address >= start && address < end)
          return i;
-      }
    }
 
    return -1;
@@ -580,12 +584,12 @@ getSectionIndex(std::vector<OutputSection *> &outSections, uint32_t address)
 static uint32_t
 getSectionIndex(std::vector<OutputSection *> &outSections, const std::string &name)
 {
-   for (auto i = 0u; i < outSections.size(); ++i) {
+   for (unsigned i = 0u; i < outSections.size(); ++i)
+   {
       auto &section = outSections[i];
 
-      if (section->name.compare(name) == 0) {
+      if (section->name.compare(name) == 0)
          return i;
-      }
    }
 
    return -1;
@@ -603,7 +607,8 @@ write(ElfFile &file, const std::string &filename)
    outSections.push_back(nullSection);
 
    /* Create text/data sections */
-   for (auto &section : file.dataSections) {
+   for (auto &section : file.dataSections)
+   {
       auto out = new OutputSection();
       out->header.name = -1;
       out->header.type = section->type;
@@ -611,21 +616,21 @@ write(ElfFile &file, const std::string &filename)
       out->header.addr = section->address;
       out->header.offset = -1;
 
-      if (section->type == elf::SHT_NOBITS) {
+      if (section->type == elf::SHT_NOBITS)
          out->header.size = section->size;
-      } else {
+      else
          out->header.size = section->data.size();
-      }
 
       out->header.link = 0;
       out->header.info = 0;
 
-      if (section->address == DataAddress) {
+      if (section->address == DataAddress)
+      {
          out->header.addralign = 4096;
          out->header.flags |= elf::SHF_WRITE; /* .rodata needs to be writable? */
-      } else {
-         out->header.addralign = 256;
       }
+      else
+         out->header.addralign = 256;
 
       out->header.entsize = 0;
 
@@ -649,12 +654,14 @@ write(ElfFile &file, const std::string &filename)
          }
       }
 
-      if (!targetSection) {
+      if (!targetSection)
+      {
          std::cout << "Error could not find section for relocation" << std::endl;
          return false;
       }
 
-      if (!targetSection->relocationSection) {
+      if (!targetSection->relocationSection)
+      {
          /* Create new relocation section */
          auto out = new OutputSection();
          out->header.name = -1;
@@ -681,14 +688,14 @@ write(ElfFile &file, const std::string &filename)
    auto predictSymTabSize = 1;
    auto predictShstrTabSize = 1;
 
-   for (auto &symbol : file.symbols) {
+   for (auto &symbol : file.symbols)
+   {
       predictStrTabSize += symbol->name.size() + 1;
       predictSymTabSize += sizeof(elf::Symbol);
    }
 
-   for (auto &section : outSections) {
+   for (auto &section : outSections)
       predictShstrTabSize += section->name.size() + 1;
-   }
 
    predictStrTabSize = align_up(predictStrTabSize, 0x10);
    predictSymTabSize = align_up(predictSymTabSize, 0x10);
@@ -696,7 +703,8 @@ write(ElfFile &file, const std::string &filename)
    loadAddress += predictStrTabSize + predictSymTabSize + predictShstrTabSize;
 
    /* Create RPL import sections, .fimport_*, .dimport_* */
-   for (auto &lib : file.rplImports) {
+   for (auto &lib : file.rplImports)
+   {
       auto out = new OutputSection();
       out->header.name = -1;
       out->header.type = elf::SHT_RPL_IMPORTS;
@@ -723,9 +731,8 @@ write(ElfFile &file, const std::string &filename)
       imports->name[lib->name.size()] = 0;
 
       /* Update address of import symbols */
-      for (auto i = 0u; i < lib->imports.size(); ++i) {
+      for (unsigned i = 0u; i < lib->imports.size(); ++i)
          lib->imports[i]->stubSymbol->address = loadAddress + 8 + i * 8;
-      }
 
       loadAddress = align_up(loadAddress + out->header.size, 4);
 
@@ -734,8 +741,10 @@ write(ElfFile &file, const std::string &filename)
    }
 
    /* Prune out unneeded symbols */
-   for (auto i = 0u; i < file.symbols.size(); ++i) {
-      if (!file.symbols[i]->name.empty() && file.symbols[i]->type == elf::STT_NOTYPE && file.symbols[i]->size == 0) {
+   for (unsigned i = 0u; i < file.symbols.size(); ++i)
+   {
+      if (!file.symbols[i]->name.empty() && file.symbols[i]->type == elf::STT_NOTYPE && file.symbols[i]->size == 0)
+      {
          file.symbols.erase(file.symbols.begin() + i);
          i--;
       }
@@ -792,9 +801,8 @@ write(ElfFile &file, const std::string &filename)
       elf::Rela rela;
       rela.info = relocation->type | idx << 8;
 
-      if(relocation->type == elf::R_PPC_RELATIVE) {
+      if(relocation->type == elf::R_PPC_RELATIVE)
          rela.info = elf::R_PPC_ADDR32 | idx << 8;
-      }
 
       rela.addend = relocation->addend;
       rela.offset = relocation->target;
@@ -823,16 +831,16 @@ write(ElfFile &file, const std::string &filename)
    outSections.push_back(shStrTabSection);
 
    /* Update relocation sections to link to symtab */
-   for (auto &section : outSections) {
-      if (section->header.type == elf::SHT_RELA) {
+   for (auto &section : outSections)
+   {
+      if (section->header.type == elf::SHT_RELA)
          section->header.link = symTabIndex;
-      }
 
-      if (section->header.type != elf::SHT_NOBITS) {
+      if (section->header.type != elf::SHT_NOBITS)
          section->header.size = section->data.size();
-      }
 
-      if (section->sectionSymbol) {
+      if (section->sectionSymbol)
+      {
          section->sectionSymbol->address = section->header.addr;
          section->sectionSymbol->size = section->header.size;
       }
@@ -853,10 +861,12 @@ write(ElfFile &file, const std::string &filename)
    /* Add all symbol names to data, update symbol->outNamePos */
    strTabSection->data.push_back(0);
 
-   for (auto &symbol : file.symbols) {
-      if (symbol->name.empty()) {
+   for (auto &symbol : file.symbols)
+   {
+      if (symbol->name.empty())
          symbol->outNamePos = 0;
-      } else {
+      else
+      {
          symbol->outNamePos = static_cast<uint32_t>(strTabSection->data.size());
          std::copy(symbol->name.begin(), symbol->name.end(), std::back_inserter(strTabSection->data));
          strTabSection->data.push_back(0);
@@ -875,15 +885,16 @@ write(ElfFile &file, const std::string &filename)
    symTabSection->header.addralign = 4;
    symTabSection->header.entsize = sizeof(elf::Symbol);
 
-   for (auto &symbol : file.symbols) {
+   for (auto &symbol : file.symbols)
+   {
       elf::Symbol sym;
       auto shndx = getSectionIndex(outSections, symbol->address);
 
-      if (symbol->type == elf::STT_SECTION && symbol->address == 0) {
+      if (symbol->type == elf::STT_SECTION && symbol->address == 0)
          shndx = getSectionIndex(outSections, symbol->name);
-      }
 
-      if (shndx == (uint32_t)-1) {
+      if (shndx == (uint32_t)-1)
+      {
          std::cout << "Could not find section for symbol" << std::endl;
          return false;
       }
@@ -897,7 +908,8 @@ write(ElfFile &file, const std::string &filename)
 
       /* Compound symbol crc into section crc */
       auto crcSection = outSections[shndx];
-      if(crcSection->header.type == elf::SHT_RPL_IMPORTS && symbol->type != elf::STT_SECTION) {
+      if(crcSection->header.type == elf::SHT_RPL_IMPORTS && symbol->type != elf::STT_SECTION)
+      {
          auto rplImport = reinterpret_cast<elf::RplImport*>(crcSection->data.data());
          rplImport->signature = crc32(rplImport->signature, reinterpret_cast<Bytef *>(strTabSection->data.data() + sym.name),strlen(strTabSection->data.data() + sym.name)+1);
       }
@@ -909,8 +921,10 @@ write(ElfFile &file, const std::string &filename)
 
    /* Finish SHT_RPL_IMPORTS signatures */
    Bytef *zero_buffer = reinterpret_cast<Bytef *>(calloc(0x10, 1));
-   for (auto &section : outSections) {
-      if(section->header.type == elf::SHT_RPL_IMPORTS) {
+   for (auto &section : outSections)
+   {
+      if(section->header.type == elf::SHT_RPL_IMPORTS)
+      {
          auto rplImport = reinterpret_cast<elf::RplImport*>(section->data.data());
          rplImport->signature = crc32(rplImport->signature, zero_buffer, 0xE);
       }
@@ -932,10 +946,12 @@ write(ElfFile &file, const std::string &filename)
    /* Add all section header names to data, update section->header.name */
    shStrTabSection->data.push_back(0);
 
-   for (auto &section : outSections) {
-      if (section->name.empty()) {
+   for (auto &section : outSections)
+   {
+      if (section->name.empty())
          section->header.name = 0;
-      } else {
+      else
+      {
          section->header.name = shStrTabSection->data.size();
          std::copy(section->name.begin(), section->name.end(), std::back_inserter(shStrTabSection->data));
          shStrTabSection->data.push_back(0);
@@ -997,31 +1013,33 @@ write(ElfFile &file, const std::string &filename)
    fileInfo.tagOffset = 0;
 
    /* Count file info textSize, dataSize, loadSize */
-   for (auto &section : outSections) {
+   for (auto &section : outSections)
+   {
       auto size = section->data.size();
 
-      if (section->header.type == elf::SHT_NOBITS) {
+      if (section->header.type == elf::SHT_NOBITS)
          size = section->header.size;
-      }
 
-      if (section->header.addr >= CodeAddress && section->header.addr < DataAddress) {
+      if (section->header.addr >= CodeAddress && section->header.addr < DataAddress)
+      {
          auto val = section->header.addr.value() + section->header.size.value() - CodeAddress;
-         if(val > fileInfo.textSize) {
+         if(val > fileInfo.textSize)
             fileInfo.textSize = val;
-         }
-      } else if (section->header.addr >= DataAddress && section->header.addr < WiiuLoadAddress) {
-         auto val = section->header.addr.value() + section->header.size.value() - DataAddress;
-         if(val > fileInfo.dataSize) {
-            fileInfo.dataSize = val;
-         }
-      } else if (section->header.addr >= WiiuLoadAddress) {
-         auto val = section->header.addr.value() + section->header.size.value() - WiiuLoadAddress;
-         if(val > fileInfo.loadSize) {
-            fileInfo.loadSize = val;
-         }
-      } else if (section->header.addr == 0 && section->header.type != elf::SHT_RPL_CRCS && section->header.type != elf::SHT_RPL_FILEINFO) {
-         fileInfo.tempSize += (size + 128);
       }
+      else if (section->header.addr >= DataAddress && section->header.addr < WiiuLoadAddress)
+      {
+         auto val = section->header.addr.value() + section->header.size.value() - DataAddress;
+         if(val > fileInfo.dataSize)
+            fileInfo.dataSize = val;
+      }
+      else if (section->header.addr >= WiiuLoadAddress)
+      {
+         auto val = section->header.addr.value() + section->header.size.value() - WiiuLoadAddress;
+         if(val > fileInfo.loadSize)
+            fileInfo.loadSize = val;
+      }
+      else if (section->header.addr == 0 && section->header.type != elf::SHT_RPL_CRCS && section->header.type != elf::SHT_RPL_FILEINFO)
+         fileInfo.tempSize += (size + 128);
    }
 
    /* TODO: These were calculated based on observation, however some games differ. */
@@ -1049,10 +1067,12 @@ write(ElfFile &file, const std::string &filename)
 
    std::vector<uint32_t> sectionCRCs;
 
-   for (auto &section : outSections) {
+   for (auto &section : outSections)
+   {
       auto crc = 0u;
 
-      if (!section->data.empty()) {
+      if (!section->data.empty())
+      {
          crc = crc32(0, Z_NULL, 0);
          crc = crc32(crc, reinterpret_cast<Bytef *>(section->data.data()), section->data.size());
       }
@@ -1068,58 +1088,55 @@ write(ElfFile &file, const std::string &filename)
    auto dataOffset = align_up(shoff + outSections.size() * sizeof(elf::SectionHeader), 64);
 
    /* Add CRC and FileInfo sections first */
-   for (auto &section : outSections) {
-      if (section->header.type != elf::SHT_RPL_CRCS && section->header.type != elf::SHT_RPL_FILEINFO) {
+   for (auto &section : outSections)
+   {
+      if (section->header.type != elf::SHT_RPL_CRCS && section->header.type != elf::SHT_RPL_FILEINFO)
          continue;
-      }
 
-      if (section->header.type != elf::SHT_NOBITS) {
+      if (section->header.type != elf::SHT_NOBITS)
          section->header.size = section->data.size();
-      }
 
-      if (!section->data.empty()) {
+      if (!section->data.empty())
+      {
          section->header.offset = dataOffset;
          dataOffset = align_up(section->header.offset + section->data.size(), 64);
-      } else {
-         section->header.offset = 0;
       }
+      else
+         section->header.offset = 0;
    }
 
    /* Add data sections next */
-   for (auto &section : outSections) {
-      if(section->header.offset != -1) {
+   for (auto &section : outSections)
+   {
+      if(section->header.offset != -1)
          continue;
-      }
 
-      if (section->header.addr < DataAddress || section->header.addr >= WiiuLoadAddress) {
+      if (section->header.addr < DataAddress || section->header.addr >= WiiuLoadAddress)
          continue;
-      }
 
-      if (section->header.type != elf::SHT_NOBITS) {
+      if (section->header.type != elf::SHT_NOBITS)
          section->header.size = section->data.size();
-      }
 
-      if (!section->data.empty()) {
+      if (!section->data.empty())
+      {
          section->header.offset = dataOffset;
          dataOffset = align_up(section->header.offset + section->data.size(), 64);
-      } else {
-         section->header.offset = 0;
       }
+      else
+         section->header.offset = 0;
    }
 
    /* Add load sections next */
-   for (auto &section : outSections) {
-      if(section->header.offset != -1) {
+   for (auto &section : outSections)
+   {
+      if(section->header.offset != -1)
          continue;
-      }
 
-      if (section->header.addr < WiiuLoadAddress) {
+      if (section->header.addr < WiiuLoadAddress)
          continue;
-      }
 
-      if (section->header.type != elf::SHT_NOBITS) {
+      if (section->header.type != elf::SHT_NOBITS)
          section->header.size = section->data.size();
-      }
 
       if (!section->data.empty()) {
          section->header.offset = dataOffset;
@@ -1131,27 +1148,27 @@ write(ElfFile &file, const std::string &filename)
 
    /* Everything else */
    for (auto &section : outSections) {
-      if(section->header.offset != -1) {
+      if(section->header.offset != -1)
          continue;
-      }
 
-      if (section->header.type != elf::SHT_NOBITS) {
+      if (section->header.type != elf::SHT_NOBITS)
          section->header.size = section->data.size();
-      }
 
-      if (!section->data.empty()) {
+      if (!section->data.empty())
+      {
          section->header.offset = dataOffset;
          dataOffset = align_up(section->header.offset + section->data.size(), 64);
-      } else {
-         section->header.offset = 0;
       }
+      else
+         section->header.offset = 0;
    }
 
    /* Write to file */
    std::ofstream out { filename, std::ofstream::binary };
    std::vector<char> padding;
 
-   if (!out.is_open()) {
+   if (!out.is_open())
+   {
       std::cout << "Could not open " << filename << " for writing" << std::endl;
       return false;
    }
@@ -1181,13 +1198,14 @@ write(ElfFile &file, const std::string &filename)
    /* Write section headers */
    out.seekp(header.shoff.value());
 
-   for (auto &section : outSections) {
+   for (auto &section : outSections)
       out.write(reinterpret_cast<char *>(&section->header), sizeof(elf::SectionHeader));
-   }
 
    /* Write section data */
-   for (auto &section : outSections) {
-      if (!section->data.empty()) {
+   for (auto &section : outSections)
+   {
+      if (!section->data.empty())
+      {
          out.seekp(section->header.offset.value());
          out.write(section->data.data(), section->data.size());
       }
@@ -1198,7 +1216,8 @@ write(ElfFile &file, const std::string &filename)
 
 int main(int argc, char **argv)
 {
-   if (argc < 3) {
+   if (argc < 3)
+   {
       std::cout << "Usage: " << argv[0] << " <src> <dst>" << std::endl;
       return -1;
    }
@@ -1207,13 +1226,11 @@ int main(int argc, char **argv)
    auto src = argv[1];
    auto dst = argv[2];
 
-   if (!read(elf, src)) {
+   if (!read(elf, src))
       return -1;
-   }
 
-   if (!write(elf, dst)) {
+   if (!write(elf, dst))
       return -1;
-   }
 
    return 0;
 }
