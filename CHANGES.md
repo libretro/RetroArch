@@ -7,6 +7,7 @@
 - METAL/STB: Fix font driver issue with AMD GPUs on MacOS.
 - MENU/RGUI: Correctly rescale menu when resizing window if aspect ratio lock is enabled.
 - OSX: Remove OSX suffix in window title
+- PSP: Fix audio conversion code
 - REMAPS: Fix analog remapping regression -analog remapping would break controls
 
 # 1.7.8 (v2)
