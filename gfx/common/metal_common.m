@@ -939,6 +939,7 @@ typedef struct MTLALIGN(16)
    }
 
    id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
+   [cb pushDebugGroup:@"shaders"];
 
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
    rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
@@ -960,11 +961,10 @@ typedef struct MTLALIGN(16)
          rce = [cb renderCommandEncoderWithDescriptor:rpd];
       }
 
-#if DEBUG && METAL_DEBUG
-      rce.label = [NSString stringWithFormat:@"pass %d", i];
-#endif
-
       [rce setRenderPipelineState:_engine.pass[i]._state];
+
+      NSURL *shaderPath = [NSURL fileURLWithPath:_engine.pass[i]._state.label];
+      rce.label = shaderPath.lastPathComponent.stringByDeletingPathExtension;
 
       _engine.pass[i].frame_count = (uint32_t)_frameCount;
       if (_shader->pass[i].frame_count_mod)
@@ -1037,6 +1037,8 @@ typedef struct MTLALIGN(16)
       _drawState = ViewDrawStateContext;
    else
       _drawState = ViewDrawStateAll;
+
+   [cb popDebugGroup];
 }
 
 - (void)_updateRenderTargets
@@ -1181,6 +1183,9 @@ typedef struct MTLALIGN(16)
    config_file_t         *conf = video_shader_read_preset(path.UTF8String);
    struct video_shader *shader = (struct video_shader *)calloc(1, sizeof(*shader));
 
+   settings_t *settings = config_get_ptr();
+   NSString *shadersPath = [NSString stringWithFormat:@"%s/", settings->paths.directory_video_shader];
+
    @try
    {
       unsigned i;
@@ -1256,7 +1261,9 @@ typedef struct MTLALIGN(16)
             vd.layouts[4].stepFunction = MTLVertexStepFunctionPerVertex;
 
             MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-            psd.label = [NSString stringWithFormat:@"pass %d", i];
+
+            psd.label = [[NSString stringWithUTF8String:shader->pass[i].source.path]
+                          stringByReplacingOccurrencesOfString:shadersPath withString:@""];
 
             MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
 
