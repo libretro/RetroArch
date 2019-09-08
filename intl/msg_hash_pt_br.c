@@ -1523,6 +1523,14 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "O máximo é 15.");
             break;
+        case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
+            snprintf(s, len,
+                     "Define por quantos milissegundos o carregamento automático\n"
+                             "de shaders será atrasado.\n"
+                             "\n"
+                             "Pode solucionar problemas gráficos devido ao uso de \n"
+                             "software de 'captura de tela', como software de streaming.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             snprintf(s, len,
                      "Define quantos quadros a CPU pode rodar \n"
