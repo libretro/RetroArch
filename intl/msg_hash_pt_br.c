@@ -742,7 +742,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                             " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
-                             "'Video Paralelizado'. A taxa de atualização \n"
+                             "'Vídeo Paralelizado'. A taxa de atualização \n"
                              "não irá importar neste modo, a taxa de \n"
                              "quadros será maior, mas o vídeo será \n"
                              "menos fluído. \n"
