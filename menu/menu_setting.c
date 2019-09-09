@@ -57,7 +57,7 @@
 #endif
 
 #ifdef HAVE_TRANSLATE
-#include "../translation/translation_driver.h"
+#include "../translation_defines.h"
 #endif
 
 #include "../frontend/frontend_driver.h"

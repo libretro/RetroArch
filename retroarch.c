@@ -148,7 +148,7 @@
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
 #include <formats/rbmp.h>
-#include "translation/translation_driver.h"
+#include "translation_defines.h"
 #endif
 
 #ifdef HAVE_DISCORD
