@@ -40,7 +40,8 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 
 #if defined(MAC_OS_X_VERSION_10_5)
    [panel setMessage:BOXSTRING(state->title)];
-   if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
+   [panel setDirectoryURL:[NSURL fileURLWithPath:BOXSTRING(state->startdir) isDirectory:YES]];
+   if ([panel runModal] != 1)
       return false;
 #else
    panel.title                           = NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"));
