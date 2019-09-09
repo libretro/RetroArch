@@ -3133,44 +3133,74 @@ static void setting_get_string_representation_uint_menu_timedate_style(
 
    switch (*setting->value.target.unsigned_integer)
    {
-   case 0:
-      strlcpy(s, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
-      break;
-   case 1:
-      strlcpy(s, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
-      break;
-   case 2:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
-      break;
-   case 3:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
-      break;
-   case 4:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
-      break;
-   case 5:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
-      break;
-   case 6:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
-      break;
-   case 7:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM), len);
-      break;
+      case MENU_TIMEDATE_STYLE_YMD_HMS:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HM:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HMS:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DM_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HMS_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DM_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM), len);
+         break;
    }
 }
 
@@ -13005,7 +13035,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
-         menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(

@@ -941,7 +941,7 @@ static const unsigned menu_left_thumbnails_default = 0;
 
 static const unsigned menu_thumbnail_upscale_threshold = 0;
 
-static const unsigned menu_timedate_style = 5;
+static const unsigned menu_timedate_style = MENU_TIMEDATE_STYLE_DM_HM;
 
 static const bool xmb_vertical_thumbnails = false;
 
