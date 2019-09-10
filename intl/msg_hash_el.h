@@ -2951,7 +2951,7 @@ MSG_HASH(
    "ΜΜ/ΗΗ ΩΩ:ΛΛ"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM,
    "ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
     )
 MSG_HASH(

@@ -3761,7 +3761,7 @@ static void rgui_render(void *data,
 
          datetime.s = timedate;
          datetime.len = sizeof(timedate);
-         datetime.time_mode = 4;
+         datetime.time_mode = MENU_TIMEDATE_STYLE_HM;
 
          menu_display_timedate(&datetime);
 

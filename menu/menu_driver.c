@@ -1650,6 +1650,30 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+#if defined(__linux__) && !defined(ANDROID)
+   strftime(ptr, maxsize, format, timeptr);
+#else
+   strftime(ptr, maxsize, format, timeptr);
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
@@ -1677,55 +1701,62 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       /* Format string representation */
       switch (datetime->time_mode)
       {
-         case 0: /* Date and time */
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M:%S", tm_);
             break;
-         case 1: /* YY-MM-DD HH:MM */
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M", tm_);
             break;
-         case 2: /* MM-DD-YYYY HH:MM  */
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m-%d-%Y %H:%M", tm_);
             break;
-         case 3: /* Time */
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M:%S", tm_);
             break;
-         case 4: /* Time (hours-minutes) */
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M", tm_);
             break;
-         case 5: /* Date and time, without year and seconds */
+         case MENU_TIMEDATE_STYLE_DM_HM: /* DD/MM HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m %H:%M", tm_);
             break;
-         case 6:
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m/%d %H:%M", tm_);
             break;
-         case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
-#if defined(__linux__) && !defined(ANDROID)
-            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-               "%I : %M : %S %p", tm_);
-#else
-            {
-               char *local;
-
-               strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM: /* YYYY-MM-DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M:%S %p", tm_);
-               local = local_to_utf8_string_alloc(menu_datetime_cache);
-
-               if (local)
-               {
-                  strlcpy(menu_datetime_cache,
-                        local, sizeof(menu_datetime_cache));
-                  free(local);
-               }
-            }
-#endif
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %I:%M %p", tm_);
+            break;
       }
    }
 
