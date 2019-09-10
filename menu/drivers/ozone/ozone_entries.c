@@ -702,8 +702,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 }
 
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
-   unsigned *y, unsigned column_x,
-   const char *text, unsigned lines_count)
+   unsigned *y, unsigned column_x, const char *text)
 {
    ozone_draw_text(video_info, ozone,
       text,
@@ -716,7 +715,7 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
       true
    );
 
-   *y += (font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5) * lines_count;
+   *y += font_driver_get_line_height(ozone->fonts.footer, 1) * 1.5;
 }
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
@@ -805,10 +804,43 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
    else if (!ozone->selection_core_is_viewer)
    {
-      unsigned y                          = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
-      unsigned content_metadata_padding   = ozone->dimensions.sidebar_entry_icon_padding*3;
-      unsigned separator_padding          = ozone->dimensions.sidebar_entry_icon_padding*2;
-      unsigned column_x                   = x_position + content_metadata_padding;
+      char ticker_buf[255];
+      menu_animation_ctx_ticker_t ticker;
+      menu_animation_ctx_ticker_smooth_t ticker_smooth;
+      static const char* const ticker_spacer = OZONE_TICKER_SPACER;
+      unsigned ticker_x_offset               = 0;
+      settings_t *settings                   = config_get_ptr();
+      bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
+      unsigned y                             = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
+      unsigned separator_padding             = ozone->dimensions.sidebar_entry_icon_padding*2;
+      unsigned column_x                      = x_position + separator_padding;
+
+      /* Initial ticker configuration */
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+         ticker_smooth.font_scale    = 1.0f;
+         ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         ticker_smooth.spacer        = ticker_spacer;
+         ticker_smooth.x_offset      = &ticker_x_offset;
+         ticker_smooth.dst_str_width = NULL;
+
+         ticker_smooth.font          = ozone->fonts.footer;
+         ticker_smooth.selected      = true;
+         ticker_smooth.field_width   = sidebar_width - (separator_padding * 2);
+         ticker_smooth.dst_str       = ticker_buf;
+         ticker_smooth.dst_str_len   = sizeof(ticker_buf);
+      }
+      else
+      {
+         ticker.idx       = menu_animation_get_ticker_idx();
+         ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+         ticker.spacer    = ticker_spacer;
+
+         ticker.selected  = true;
+         ticker.len       = (sidebar_width - (separator_padding * 2)) / ozone->footer_font_glyph_width;
+         ticker.s         = ticker_buf;
+      }
 
       /* Content metadata */
       y += 10;
@@ -823,25 +855,58 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       y += 18;
 
       /* Core association */
+      ticker_buf[0] = '\0';
+
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.src_str = ozone->selection_core_name;
+         menu_animation_ticker_smooth(&ticker_smooth);
+      }
+      else
+      {
+         ticker.str = ozone->selection_core_name;
+         menu_animation_ticker(&ticker);
+      }
+
       ozone_content_metadata_line(video_info, ozone,
-         &y, column_x,
-         ozone->selection_core_name,
-         ozone->selection_core_name_lines
-      );
+         &y, ticker_x_offset + column_x,
+         ticker_buf);
 
       /* Playtime */
+      ticker_buf[0] = '\0';
+
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.src_str = ozone->selection_playtime;
+         menu_animation_ticker_smooth(&ticker_smooth);
+      }
+      else
+      {
+         ticker.str = ozone->selection_playtime;
+         menu_animation_ticker(&ticker);
+      }
+
       ozone_content_metadata_line(video_info, ozone,
-         &y, column_x,
-         ozone->selection_playtime,
-         1
-      );
+         &y, ticker_x_offset + column_x,
+         ticker_buf);
 
       /* Last played */
+      ticker_buf[0] = '\0';
+
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.src_str = ozone->selection_lastplayed;
+         menu_animation_ticker_smooth(&ticker_smooth);
+      }
+      else
+      {
+         ticker.str = ozone->selection_lastplayed;
+         menu_animation_ticker(&ticker);
+      }
+
       ozone_content_metadata_line(video_info, ozone,
-         &y, column_x,
-         ozone->selection_lastplayed,
-         2
-      );
+         &y, ticker_x_offset + column_x,
+         ticker_buf);
    }
 }
 

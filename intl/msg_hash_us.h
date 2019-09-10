@@ -9008,6 +9008,58 @@ MSG_HASH(
     "Per Core"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+    "Aggregate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+    "Playlist sublabel runtime 'last played' format"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+    "Selects date/time formatting style used when displaying runtime log record 'last played' timestamp information. Note: '(AM/PM)' options will have a small performance impact on some platforms."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS,
+    "YYYY/MM/DD - HH:MM:SS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM,
+    "YYYY/MM/DD - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY,
+    "MM/DD/YYYY - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM,
+    "DD/MM - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM,
+    "MM/DD - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS_AM_PM,
+    "YYYY/MM/DD - HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM,
+    "YYYY/MM/DD - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_AM_PM,
+    "MM/DD/YYYY - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM_AM_PM,
+    "DD/MM - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM,
+    "MM/DD - HH:MM (AM/PM)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "Fuzzy archive matching"
     )
@@ -9015,10 +9067,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
     )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
-    "Aggregate"
-    )
+
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
     "Send Debug Info"

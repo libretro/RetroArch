@@ -3110,60 +3110,28 @@ static unsigned menu_displaylist_parse_content_information(
       {
          if (runtime_log_has_runtime(runtime_log))
          {
-            unsigned runtime_hours;
-            unsigned runtime_minutes;
-            unsigned runtime_seconds;
-            unsigned last_played_year;
-            unsigned last_played_month;
-            unsigned last_played_day;
-            unsigned last_played_hour;
-            unsigned last_played_minute;
-            unsigned last_played_second;
-
             /* Play time */
-            runtime_log_get_runtime_hms(runtime_log,
-                  &runtime_hours, &runtime_minutes, &runtime_seconds);
-
             tmp[0] = '\0';
+            runtime_log_get_runtime_str(runtime_log, tmp, sizeof(tmp));
 
-            n = snprintf(tmp, sizeof(tmp),
-                  "%s: %02u:%02u:%02u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME),
-                  runtime_hours, runtime_minutes, runtime_seconds);
-
-            /* Silence gcc compiler warning
-             * (getting so sick of these...) */
-            if ((n < 0) || (n >= PATH_MAX_LENGTH))
-               n = 0;
-
-            if (menu_entries_append_enum(info->list, tmp,
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_RUNTIME),
-                  MENU_ENUM_LABEL_CONTENT_INFO_RUNTIME,
-                  0, 0, 0))
-               count++;
+            if (!string_is_empty(tmp))
+               if (menu_entries_append_enum(info->list, tmp,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_RUNTIME),
+                     MENU_ENUM_LABEL_CONTENT_INFO_RUNTIME,
+                     0, 0, 0))
+                  count++;
 
             /* Last Played */
-            runtime_log_get_last_played(runtime_log,
-                  &last_played_year, &last_played_month, &last_played_day,
-                  &last_played_hour, &last_played_minute, &last_played_second);
-
             tmp[0] = '\0';
+            runtime_log_get_last_played_str(runtime_log, tmp, sizeof(tmp),
+                  settings->uints.playlist_sublabel_last_played_style);
 
-            n = snprintf(tmp, sizeof(tmp),
-                  "%s: %04u/%02u/%02u - %02u:%02u:%02u",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED),
-                  last_played_year, last_played_month, last_played_day,
-                  last_played_hour, last_played_minute, last_played_second);
-
-            /* Silence gcc compiler warning
-             * (getting so sick of these...) */
-            if ((n < 0) || (n >= PATH_MAX_LENGTH))
-               n = 0;
-
-            if (menu_entries_append_enum(info->list, tmp,
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED),
-                  MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED,
-                  0, 0, 0))
-               count++;
+            if (!string_is_empty(tmp))
+               if (menu_entries_append_enum(info->list, tmp,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED),
+                     MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED,
+                     0, 0, 0))
+                  count++;
          }
 
          free(runtime_log);
@@ -7091,21 +7059,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,             PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,            PARSE_ONLY_UINT},
-               {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,          PARSE_ONLY_INT },
-               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,           PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,           PARSE_ONLY_UINT},
-               {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,      PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,         PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,  PARSE_ONLY_UINT},
-               {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,         PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,  PARSE_ONLY_UINT},
-               {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,         PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,             PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,              PARSE_ONLY_INT },
+               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,               PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,               PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,      PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,      PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

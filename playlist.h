@@ -83,6 +83,8 @@ struct playlist_entry
    char *crc32;
    char *subsystem_ident;
    char *subsystem_name;
+   char *runtime_str;
+   char *last_played_str;
    struct string_list *subsystem_roms;
    enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;

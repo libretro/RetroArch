@@ -678,6 +678,7 @@ default_sublabel_macro(action_bind_sublabel_content_runtime_log,                
 default_sublabel_macro(action_bind_sublabel_content_runtime_log_aggregate,                 MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE)
 default_sublabel_macro(action_bind_sublabel_scan_without_core_match,                 MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH)
 default_sublabel_macro(action_bind_sublabel_playlist_sublabel_runtime_type,                MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE)
+default_sublabel_macro(action_bind_sublabel_playlist_sublabel_last_played_style,           MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_internal_upscale_level,              MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_aspect_ratio,                        MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO)
 default_sublabel_macro(action_bind_sublabel_menu_ticker_type,                              MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE)
@@ -1043,24 +1044,12 @@ static int action_bind_sublabel_playlist_entry(
       int n = 0;
       char tmp[64];
       
-      /* Runtime label */
       tmp[0] = '\0';
-      n = snprintf(tmp, sizeof(tmp), "\n%s %02u:%02u:%02u",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-         entry->runtime_hours, entry->runtime_minutes, entry->runtime_seconds);
       
-      if ((n < 0) || (n >= 64))
-         n = 0; /* Silence GCC warnings... */
-      
-      if (!string_is_empty(tmp))
-         strlcat(s, tmp, len);
-      
-      /* Last played label */
-      tmp[0] = '\0';
-      n = snprintf(tmp, sizeof(tmp), "\n%s %04u/%02u/%02u - %02u:%02u:%02u",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-         entry->last_played_year, entry->last_played_month, entry->last_played_day,
-         entry->last_played_hour, entry->last_played_minute, entry->last_played_second);
+      /* Runtime/last played strings are now cached in the
+       * playlist, so we can add both in one go */
+      n = snprintf(tmp, sizeof(tmp), "\n%s\n%s",
+            entry->runtime_str, entry->last_played_str);
       
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
@@ -2924,6 +2913,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_sublabel_runtime_type);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_sublabel_last_played_style);
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_internal_upscale_level);

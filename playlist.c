@@ -278,6 +278,10 @@ static void playlist_free_entry(struct playlist_entry *entry)
       free(entry->subsystem_ident);
    if (entry->subsystem_name != NULL)
       free(entry->subsystem_name);
+   if (entry->runtime_str != NULL)
+      free(entry->runtime_str);
+   if (entry->last_played_str != NULL)
+      free(entry->last_played_str);
    if (entry->subsystem_roms != NULL)
       string_list_free(entry->subsystem_roms);
 
@@ -289,6 +293,8 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->crc32     = NULL;
    entry->subsystem_ident = NULL;
    entry->subsystem_name = NULL;
+   entry->runtime_str = NULL;
+   entry->last_played_str = NULL;
    entry->subsystem_roms = NULL;
    entry->runtime_status = PLAYLIST_RUNTIME_UNKNOWN;
    entry->runtime_hours = 0;
@@ -532,6 +538,24 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       entry->last_played_second = update_entry->last_played_second;
       playlist->modified = playlist->modified || register_update;
    }
+
+   if (update_entry->runtime_str && (update_entry->runtime_str != entry->runtime_str))
+   {
+      if (entry->runtime_str != NULL)
+         free(entry->runtime_str);
+      entry->runtime_str = NULL;
+      entry->runtime_str = strdup(update_entry->runtime_str);
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (update_entry->last_played_str && (update_entry->last_played_str != entry->last_played_str))
+   {
+      if (entry->last_played_str != NULL)
+         free(entry->last_played_str);
+      entry->last_played_str = NULL;
+      entry->last_played_str = strdup(update_entry->last_played_str);
+      playlist->modified = playlist->modified || register_update;
+   }
 }
 
 bool playlist_push_runtime(playlist_t *playlist,
@@ -633,6 +657,14 @@ bool playlist_push_runtime(playlist_t *playlist,
       playlist->entries[0].last_played_hour = entry->last_played_hour;
       playlist->entries[0].last_played_minute = entry->last_played_minute;
       playlist->entries[0].last_played_second = entry->last_played_second;
+
+      playlist->entries[0].runtime_str        = NULL;
+      playlist->entries[0].last_played_str    = NULL;
+
+      if (!string_is_empty(entry->runtime_str))
+         playlist->entries[0].runtime_str     = strdup(entry->runtime_str);
+      if (!string_is_empty(entry->last_played_str))
+         playlist->entries[0].last_played_str = strdup(entry->last_played_str);
    }
 
    playlist->size++;
@@ -881,6 +913,8 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].crc32              = NULL;
       playlist->entries[0].subsystem_ident    = NULL;
       playlist->entries[0].subsystem_name     = NULL;
+      playlist->entries[0].runtime_str        = NULL;
+      playlist->entries[0].last_played_str    = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
       playlist->entries[0].runtime_hours      = 0;

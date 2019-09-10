@@ -861,6 +861,9 @@ static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISP
 /* Specifies which runtime record to use on playlist sublabels */
 static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
 
+/* Specifies time/date display format for runtime 'last played' data */
+#define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
+
 static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
 #endif
 
