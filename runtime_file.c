@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <locale.h>
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -36,9 +37,9 @@
 #include "core_info.h"
 #include "configuration.h"
 #include "verbosity.h"
+#include "msg_hash.h"
 
 #include "runtime_file.h"
-#include "menu/menu_defines.h"
 
 #define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
 #define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"
@@ -530,7 +531,7 @@ void runtime_log_set_last_played(runtime_log_t *runtime_log,
 void runtime_log_set_last_played_now(runtime_log_t *runtime_log)
 {
    time_t current_time;
-   struct tm * time_info;
+   struct tm *time_info;
    
    if (!runtime_log)
       return;
@@ -598,6 +599,27 @@ void runtime_log_get_runtime_usec(
             usec);
 }
 
+/* Gets runtime as a pre-formatted string */
+void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t len)
+{
+   int n = 0;
+
+   if (runtime_log)
+   {
+      n = snprintf(str, len, "%s %02u:%02u:%02u",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+            runtime_log->runtime.hours, runtime_log->runtime.minutes, runtime_log->runtime.seconds);
+   }
+   else
+   {
+      n = snprintf(str, len, "%s 00:00:00",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME));
+   }
+
+   if ((n < 0) || (n >= 64))
+      n = 0; /* Silence GCC warnings... */
+}
+
 /* Gets last played entry values */
 void runtime_log_get_last_played(runtime_log_t *runtime_log,
       unsigned *year, unsigned *month, unsigned *day,
@@ -614,26 +636,152 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
    *second = runtime_log->last_played.second;
 }
 
-/* Gets last played entry values as a time_t 'object'
+/* Gets last played entry values as a struct tm 'object'
  * (e.g. for printing with strftime()) */
-void runtime_log_get_last_played_time(runtime_log_t *runtime_log, time_t *time)
+void runtime_log_get_last_played_time(runtime_log_t *runtime_log, struct tm *time_info)
 {
-   struct tm time_info;
-   
-   if (!runtime_log || !time)
+   if (!runtime_log || !time_info)
       return;
    
    /* Set tm values */
-   time_info.tm_year  = (int)runtime_log->last_played.year  - 1900;
-   time_info.tm_mon   = (int)runtime_log->last_played.month - 1;
-   time_info.tm_mday  = (int)runtime_log->last_played.day;
-   time_info.tm_hour  = (int)runtime_log->last_played.hour;
-   time_info.tm_min   = (int)runtime_log->last_played.minute;
-   time_info.tm_sec   = (int)runtime_log->last_played.second;
-   time_info.tm_isdst = -1;
+   time_info->tm_year  = (int)runtime_log->last_played.year  - 1900;
+   time_info->tm_mon   = (int)runtime_log->last_played.month - 1;
+   time_info->tm_mday  = (int)runtime_log->last_played.day;
+   time_info->tm_hour  = (int)runtime_log->last_played.hour;
+   time_info->tm_min   = (int)runtime_log->last_played.minute;
+   time_info->tm_sec   = (int)runtime_log->last_played.second;
+   time_info->tm_isdst = -1;
    
+   /* Perform any required range adjustment + populate
+    * missing entries */
+   mktime(time_info);
+}
+
+static void last_played_strftime(runtime_log_t *runtime_log, char *str, size_t len, const char *format)
+{
+   struct tm time_info;
+   char *local = NULL;
+
+   if (!runtime_log)
+      return;
+
    /* Get time */
-   *time              = mktime(&time_info);
+   runtime_log_get_last_played_time(runtime_log, &time_info);
+
+   /* Ensure correct locale is set */
+   setlocale(LC_TIME, "");
+
+   /* Generate string */
+#if defined(__linux__) && !defined(ANDROID)
+   strftime(str, len, format, &time_info);
+#else
+   strftime(str, len, format, &time_info);
+   local = local_to_utf8_string_alloc(str);
+
+   if (!string_is_empty(local))
+      strlcpy(str, local, len);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
+/* Gets last played entry value as a pre-formatted string */
+void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
+      char *str, size_t len, enum playlist_sublabel_last_played_style_type timedate_style)
+{
+   settings_t *settings = config_get_ptr();
+   int n                = 0;
+   char tmp[64];
+
+   tmp[0] = '\0';
+
+   if (!settings)
+      return;
+
+   if (runtime_log)
+   {
+      /* Handle 12-hour clock options
+       * > These require extra work, due to AM/PM localisation */
+      switch (timedate_style)
+      {
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM:
+            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %Y/%m/%d - %I:%M:%S %p");
+            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            strlcat(str, tmp, len);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM:
+            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %Y/%m/%d - %I:%M %p");
+            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            strlcat(str, tmp, len);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM:
+            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %m/%d/%Y - %I:%M %p");
+            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            strlcat(str, tmp, len);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM:
+            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %d/%m - %I:%M %p");
+            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            strlcat(str, tmp, len);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM:
+            last_played_strftime(runtime_log, tmp, sizeof(tmp), " %m/%d - %I:%M %p");
+            strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            strlcat(str, tmp, len);
+            return;
+         default:
+            break;
+      }
+
+      /* Handle non-12-hour clock options */
+      switch (timedate_style)
+      {
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
+            n = snprintf(str, len, "%s %04u/%02u/%02u - %02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
+                  runtime_log->last_played.hour, runtime_log->last_played.minute);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+            n = snprintf(str, len, "%s %02u/%02u/%04u - %02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  runtime_log->last_played.month, runtime_log->last_played.day, runtime_log->last_played.year,
+                  runtime_log->last_played.hour, runtime_log->last_played.minute);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_DM_HM:
+            n = snprintf(str, len, "%s %02u/%02u - %02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  runtime_log->last_played.day, runtime_log->last_played.month,
+                  runtime_log->last_played.hour, runtime_log->last_played.minute);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
+            n = snprintf(str, len, "%s %02u/%02u - %02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  runtime_log->last_played.month, runtime_log->last_played.day,
+                  runtime_log->last_played.hour, runtime_log->last_played.minute);
+            return;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
+         default:
+            n = snprintf(str, len, "%s %04u/%02u/%02u - %02u:%02u:%02u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+                  runtime_log->last_played.year, runtime_log->last_played.month, runtime_log->last_played.day,
+                  runtime_log->last_played.hour, runtime_log->last_played.minute, runtime_log->last_played.second);
+            return;
+      }
+   }
+   else
+   {
+      n = snprintf(str, len, "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
+   }
+
+   if ((n < 0) || (n >= 64))
+      n = 0; /* Silence GCC warnings... */
 }
 
 /* Status */
@@ -793,7 +941,6 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
    *minutes -= *hours * 60;
 }
 
-
 /* Playlist manipulation */
 
 /* Updates specified playlist entry runtime values with
@@ -804,6 +951,9 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    runtime_log_t *runtime_log         = NULL;
    const struct playlist_entry *entry = NULL;
    struct playlist_entry update_entry = {0};
+   enum playlist_sublabel_last_played_style_type timedate_style;
+   char runtime_str[64];
+   char last_played_str[64];
    
    /* Sanity check */
    if (!playlist || !settings)
@@ -815,6 +965,20 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    /* Set fallback playlist 'runtime_status'
     * (saves 'if' checks later...) */
    update_entry.runtime_status = PLAYLIST_RUNTIME_MISSING;
+   
+   /* Get current last played formatting type
+    * > Have to include a 'HAVE_MENU' check here... */
+#ifdef HAVE_MENU
+   timedate_style = settings->uints.playlist_sublabel_last_played_style;
+#else
+   timedate_style = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
+#endif
+
+   /* 'Attach' runtime/last played strings */
+   runtime_str[0]               = '\0';
+   last_played_str[0]           = '\0';
+   update_entry.runtime_str     = runtime_str;
+   update_entry.last_played_str = last_played_str;
    
    /* Read current playlist entry */
    playlist_get_index(playlist, idx, &entry);
@@ -831,18 +995,33 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
          /* Read current runtime */
          runtime_log_get_runtime_hms(runtime_log,
                &update_entry.runtime_hours, &update_entry.runtime_minutes, &update_entry.runtime_seconds);
-
+         
+         runtime_log_get_runtime_str(runtime_log, runtime_str, sizeof(runtime_str));
+         
          /* Read last played timestamp */
          runtime_log_get_last_played(runtime_log,
                &update_entry.last_played_year, &update_entry.last_played_month, &update_entry.last_played_day,
                &update_entry.last_played_hour, &update_entry.last_played_minute, &update_entry.last_played_second);
-
+         
+         runtime_log_get_last_played_str(runtime_log, last_played_str, sizeof(last_played_str), timedate_style);
+         
          /* Playlist entry now contains valid runtime data */
          update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
       }
-
+      
       /* Clean up */
       free(runtime_log);
+   }
+   
+   /* Ozone requires runtime/last played strings to be
+    * populated even when no runtime is recorded */
+   if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+   {
+      if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
+      {
+         runtime_log_get_runtime_str(NULL, runtime_str, sizeof(runtime_str));
+         runtime_log_get_last_played_str(NULL, last_played_str, sizeof(last_played_str), timedate_style);
+      }
    }
    
    /* Update playlist */

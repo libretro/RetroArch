@@ -4102,6 +4102,78 @@ static void setting_get_string_representation_uint_playlist_sublabel_runtime_typ
    }
 }
 
+static void setting_get_string_representation_uint_playlist_sublabel_last_played_style(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM),
+               len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_playlist_inline_core_display_type(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -14278,6 +14350,22 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_playlist_sublabel_runtime_type;
          menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_RUNTIME_LAST-1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.playlist_sublabel_last_played_style,
+               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_playlist_sublabel_last_played_style;
+         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_LAST_PLAYED_STYLE_LAST-1, 1, true, true);
 
          CONFIG_UINT(
                list, list_info,

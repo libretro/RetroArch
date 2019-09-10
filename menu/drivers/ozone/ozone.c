@@ -1252,9 +1252,6 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
             || string_is_equal(core_label, "musicplayer")
             || string_is_equal(core_label, "movieplayer");
 
-      word_wrap(ozone->selection_core_name, ozone->selection_core_name, (unsigned)((float)ozone->dimensions.thumbnail_bar_width * (float)0.85) / ozone->footer_font_glyph_width, false, 0);
-      ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
-
       /* Fill play time if applicable */
       if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
       {
@@ -1265,26 +1262,10 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
             runtime_update_playlist(playlist, selection);
 
-         if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
-         {
-            snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s %02u:%02u:%02u",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-                  entry->runtime_hours, entry->runtime_minutes, entry->runtime_seconds);
-
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %04u/%02u/%02u -\n%02u:%02u:%02u",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-                  entry->last_played_year, entry->last_played_month, entry->last_played_day,
-                  entry->last_played_hour, entry->last_played_minute, entry->last_played_second);
-         }
-         else
-         {
-            snprintf(ozone->selection_playtime, sizeof(ozone->selection_playtime), "%s 00:00:00",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME));
-
-            snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
-         }
+         if (!string_is_empty(entry->runtime_str))
+            strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));
+         if (!string_is_empty(entry->last_played_str))
+            strlcpy(ozone->selection_lastplayed, entry->last_played_str, sizeof(ozone->selection_lastplayed));
       }
       else
       {
