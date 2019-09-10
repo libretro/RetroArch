@@ -3124,7 +3124,7 @@ static unsigned menu_displaylist_parse_content_information(
             /* Last Played */
             tmp[0] = '\0';
             runtime_log_get_last_played_str(runtime_log, tmp, sizeof(tmp),
-                  settings->uints.playlist_sublabel_last_played_style);
+                  (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style);
 
             if (!string_is_empty(tmp))
                if (menu_entries_append_enum(info->list, tmp,
