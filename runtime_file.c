@@ -31,6 +31,7 @@
 #include <streams/file_stream.h>
 #include <formats/jsonsax_full.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #include "file_path_special.h"
 #include "paths.h"
@@ -969,7 +970,7 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    /* Get current last played formatting type
     * > Have to include a 'HAVE_MENU' check here... */
 #ifdef HAVE_MENU
-   timedate_style = settings->uints.playlist_sublabel_last_played_style;
+   timedate_style = (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style;
 #else
    timedate_style = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
 #endif
