@@ -21,6 +21,7 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
+#include <formats/cdfs.h>
 #include <compat/strl.h>
 #include <rhash.h>
 #include <retro_miscellaneous.h>
@@ -1123,6 +1124,7 @@ typedef struct
    struct http_connection_t *conn;
    struct http_t *http;
    const rcheevos_cheevo_t *cheevo_end;
+   cdfs_file_t cdfp;
 
    /* co-routine required fields */
    CORO_FIELDS
@@ -1146,7 +1148,8 @@ enum
    RCHEEVOS_HTTP_GET     = -13,
    RCHEEVOS_DEACTIVATE   = -14,
    RCHEEVOS_PLAYING      = -15,
-   RCHEEVOS_DELAY        = -16
+   RCHEEVOS_DELAY        = -16,
+   RCHEEVOS_PSX_MD5      = -17
 };
 
 static int rcheevos_iterate(rcheevos_coro_t* coro)
@@ -1155,8 +1158,13 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
    const int lynx_header_len = 0x40;
    ssize_t num_read = 0;
    size_t to_read   = 4096;
-   uint8_t *buffer  = NULL;
+   uint8_t *ptr     = NULL;
    const char *end  = NULL;
+   size_t exe_name_size = 0;
+   char exe_name_buffer[64];
+   char* exe_name   = NULL;
+   char* scan       = NULL;
+   char buffer[2048];
 
    static const uint32_t genesis_exts[] =
    {
@@ -1192,12 +1200,24 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       0
    };
 
+   static const uint32_t psx_exts[] =
+   {
+      0x0b886782U, /* cue */
+      0x0b88899aU, /* m3u */
+      /*0x0b88af0bU,* toc */
+      /*0x0b88652fU,* ccd */
+      /*0x0b889c67U,* pbp */
+      0x0b8865d4U, /* chd */
+      0
+   };
+
    static rcheevos_finder_t finders[] =
    {
       {RCHEEVOS_SNES_MD5,    "SNES (discards header)",            snes_exts},
       {RCHEEVOS_GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
-      {RCHEEVOS_LYNX_MD5,    "Atari Lynx (discards header)", lynx_exts},
+      {RCHEEVOS_LYNX_MD5,    "Atari Lynx (discards header)",      lynx_exts},
       {RCHEEVOS_NES_MD5,     "NES (discards header)",             NULL},
+      {RCHEEVOS_PSX_MD5,     "Playstation (main executable)",     psx_exts},
       {RCHEEVOS_GENERIC_MD5, "Generic (plain content)",           NULL},
       {RCHEEVOS_FILENAME_MD5, "Generic (filename)",               NULL}
    };
@@ -1243,15 +1263,13 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
          for (;;)
          {
-            buffer   = (uint8_t*)coro->data + coro->len;
+            ptr      = (uint8_t*)coro->data + coro->len;
             to_read  = 4096;
 
             if (to_read > coro->count)
                to_read = coro->count;
 
-            num_read = intfstream_read(coro->stream,
-                  (void*)buffer, to_read);
-
+            num_read = intfstream_read(coro->stream, (void*)ptr, to_read);
             if (num_read <= 0)
                break;
 
@@ -1544,6 +1562,157 @@ found:
 
       MD5_Final(coro->hash, &coro->md5);
       CORO_GOTO(RCHEEVOS_GET_GAMEID);
+
+
+   /**************************************************************************
+    * Info   Tries to identify a Playstation game
+    * Input  CHEEVOS_VAR_INFO the content info
+    * Output CHEEVOS_VAR_GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(RCHEEVOS_PSX_MD5)
+   {
+      MD5_Init(&coro->md5);
+
+      /* if we're looking at an m3u file, get the first disc from the playlist */
+      end = path_get_extension(coro->path);
+      if (string_is_equal_noncase(end, "m3u"))
+      {
+         intfstream_t* m3u_stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (m3u_stream)
+         {
+            char disc_path[PATH_MAX_LENGTH];
+            char* tmp;
+
+            intfstream_read(m3u_stream, buffer, sizeof(buffer));
+            intfstream_close(m3u_stream);
+
+            tmp = buffer;
+            while (*tmp && *tmp != '\n')
+               ++tmp;
+            if (tmp > buffer && tmp[-1] == '\r')
+               --tmp;
+            *tmp = '\0';
+
+            fill_pathname_basedir(disc_path, coro->path, sizeof(disc_path));
+            strlcat(disc_path, buffer, sizeof(disc_path));
+
+            free((void*)coro->path);
+            coro->path = strdup(disc_path);
+         }
+      }
+
+      /* find the data track - it should be the first one */
+      coro->stream = cdfs_open_data_track(coro->path);
+      if (coro->stream)
+      {
+         /* open the SYSTEM.CNF file and find the BOOT= record */
+         if (cdfs_open_file(&coro->cdfp, coro->stream, "SYSTEM.CNF"))
+         {
+            cdfs_read_file(&coro->cdfp, buffer, sizeof(buffer));
+
+            for (scan = buffer; scan < &buffer[sizeof(buffer)] && *scan; ++scan)
+            {
+               if (strncmp(scan, "BOOT", 4) == 0)
+               {
+                  exe_name = scan + 4;
+                  while (isspace(*exe_name))
+                     ++exe_name;
+                  if (*exe_name == '=')
+                  {
+                     ++exe_name;
+                     while (isspace(*exe_name))
+                        ++exe_name;
+
+                     if (strncmp(exe_name, "cdrom:", 6) == 0)
+                        exe_name += 6;
+                     if (*exe_name == '\\')
+                        ++exe_name;
+                     break;
+                  }
+               }
+
+               while (*scan && *scan != '\n')
+                  ++scan;
+            }
+
+            cdfs_close_file(&coro->cdfp);
+
+            if (exe_name)
+            {
+               scan = exe_name;
+               while (*scan != '\n' && *scan != ';' && *scan != ' ')
+                  ++scan;
+               *scan = '\0';
+
+               exe_name_size = scan - exe_name;
+               if (exe_name_size < sizeof(exe_name_buffer))
+                  strcpy(exe_name_buffer, exe_name);
+
+               /* open the file pointed to by the BOOT= record */
+               if (exe_name_buffer[0] && cdfs_open_file(&coro->cdfp, coro->stream, exe_name_buffer))
+               {
+                  cdfs_read_file(&coro->cdfp, buffer, sizeof(buffer));
+
+                  /* the PSX-E header specifies the executable size as a 4-byte value 28 bytes into the header, which doesn't
+                   * include the header itself. We want to include the header in the hash, so append another 2048 to that value.
+                   * ASSERT: this results in the same value as coro->cdfp->size */
+                  coro->count = 2048 + (((uint8_t)buffer[28 + 3] << 24) | ((uint8_t)buffer[28 + 2] << 16) |
+                     ((uint8_t)buffer[28 + 1] << 8) | (uint8_t)buffer[28]);
+
+                  if (coro->count > CHEEVOS_MB(16)) /* sanity check */
+                  {
+                     cdfs_close_file(&coro->cdfp);
+                  }
+                  else
+                  {
+                     /* there's a few games that are use a singular engine and only differ via their data files.
+                      * luckily, they have unique serial numbers, and use the serial number as the boot file in the
+                      * standard way. include the boot executable name in the hash */
+                     coro->count += exe_name_size;
+
+                     free(coro->data);
+                     coro->data = (uint8_t*)malloc(coro->count);
+                     memcpy(coro->data, exe_name_buffer, exe_name_size);
+                     coro->len = exe_name_size;
+
+                     memcpy((uint8_t*)coro->data + coro->len, buffer, sizeof(buffer));
+                     coro->len += sizeof(buffer);
+
+                     while (coro->len < coro->count)
+                     {
+                        CORO_YIELD();
+
+                        to_read = coro->count - coro->len;
+                        if (to_read > 2048)
+                           to_read = 2048;
+
+                        cdfs_read_file(&coro->cdfp, (uint8_t*)coro->data + coro->len, to_read);
+
+                        coro->len += to_read;
+                     };
+
+                     CORO_GOSUB(RCHEEVOS_EVAL_MD5);
+                     MD5_Final(coro->hash, &coro->md5);
+
+                     cdfs_close_file(&coro->cdfp);
+
+                     intfstream_close(coro->stream);
+                     CHEEVOS_FREE(coro->stream);
+
+                     CORO_GOTO(RCHEEVOS_GET_GAMEID);
+                  }
+               }
+            }
+         }
+
+         intfstream_close(coro->stream);
+         CHEEVOS_FREE(coro->stream);
+      }
+
+      coro->gameid = 0;
+      CORO_RET();
+   }
+
 
       /**************************************************************************
        * Info   Tries to identify a "generic" game
