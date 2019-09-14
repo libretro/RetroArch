@@ -972,7 +972,7 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
 #ifdef HAVE_MENU
    timedate_style = (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style;
 #else
-   timedate_style = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
+   timedate_style = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
 #endif
 
    /* 'Attach' runtime/last played strings */

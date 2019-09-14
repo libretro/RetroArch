@@ -2268,8 +2268,10 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
    {
       retroarch_set_runtime_shader_preset(NULL);
 
+#ifdef HAVE_MENU
       /* reflect in shader manager */
       menu_shader_manager_set_preset(menu_shader_get(), type, NULL, false);
+#endif
 
       /* Display error message */
       snprintf(msg, sizeof(msg), "%s %s",
