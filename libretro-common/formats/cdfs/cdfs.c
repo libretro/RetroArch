@@ -226,7 +226,7 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
       intfstream_read(file->stream, file->sector_buffer, 2048);
       memcpy(buffer, file->sector_buffer, len);
       file->current_sector_offset = len;
-      file->sector_buffer_valid = 1;
+      file->sector_buffer_valid   = 1;
 
       bytes_read += len;
    }

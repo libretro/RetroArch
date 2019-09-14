@@ -1136,7 +1136,7 @@ bool core_info_hw_api_supported(core_info_t *info)
       if (string_is_empty(cur_api))
          continue;
 
-      cur_api_len = strlen(cur_api);
+      cur_api_len                = (int)strlen(cur_api);
 
       for (j = 0; j < cur_api_len; j++)
       {

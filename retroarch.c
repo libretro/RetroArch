@@ -11629,14 +11629,14 @@ static void input_driver_poll(void)
                      if (current_input && current_input->input_state)
                         ret = current_input->input_state(current_input_data, joypad_info[i],
                               libretro_input_binds,
-                              i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+                              (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
                      for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
                      {
                         if (ret & (1 << k))
                         {
                            int16_t      val = input_joypad_analog(
-                                 joypad_driver, joypad_info[i], i,
+                                 joypad_driver, joypad_info[i], (unsigned)i,
                                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, k, libretro_input_binds[i]);
 
                            BIT256_SET_PTR(p_new_state, k);
@@ -11652,7 +11652,7 @@ static void input_driver_poll(void)
                         {
                            unsigned offset = 0 + (k * 4) + (j * 2);
                            int16_t     val = input_joypad_analog(joypad_driver,
-                                 joypad_info[i], i, k, j, libretro_input_binds[i]);
+                                 joypad_info[i], (unsigned)i, k, j, libretro_input_binds[i]);
 
                            if (val >= 0)
                               p_new_state->analogs[offset]   = val;
