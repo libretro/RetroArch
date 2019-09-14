@@ -130,14 +130,11 @@
 		92CC05C121FE3C6D00FF79F0 /* WebServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebServer.m; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
-		92D3D569232D86AC001B0D86 /* ui_cocoa_application.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoa_application.m; path = ../../../../../../ui/drivers/cocoa/ui_cocoa_application.m; sourceTree = "<group>"; };
-		92D3D56A232D86AC001B0D86 /* ui_cocoa_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoa_window.m; path = ../../../../../../ui/drivers/cocoa/ui_cocoa_window.m; sourceTree = "<group>"; };
 		92D3D56B232D86AC001B0D86 /* cocoa_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_common.h; path = ../../../../../../ui/drivers/cocoa/cocoa_common.h; sourceTree = "<group>"; };
 		92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoatouch_menu.m; path = ../../../../../../ui/drivers/cocoa/cocoatouch_menu.m; sourceTree = "<group>"; };
 		92D3D56D232D86AC001B0D86 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoa_common.m; path = ../../../../../../ui/drivers/cocoa/cocoa_common.m; sourceTree = "<group>"; };
-		92D3D56E232D86AC001B0D86 /* ui_cocoa_msg_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoa_msg_window.m; path = ../../../../../../ui/drivers/cocoa/ui_cocoa_msg_window.m; sourceTree = "<group>"; };
 		92D3D56F232D86AC001B0D86 /* cocoa_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_defines.h; path = ../../../../../../ui/drivers/cocoa/cocoa_defines.h; sourceTree = "<group>"; };
-		92D3D570232D86AC001B0D86 /* ui_cocoa_browser_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoa_browser_window.m; path = ../../../../../../ui/drivers/cocoa/ui_cocoa_browser_window.m; sourceTree = "<group>"; };
+		92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoatouch.m; path = ../../../../ui/drivers/ui_cocoatouch.m; sourceTree = "<group>"; };
 		92E5DCD3231A5786006491BF /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -301,6 +298,7 @@
 			isa = PBXGroup;
 			children = (
 				92D3D567232D8688001B0D86 /* drivers */,
+				92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */,
 			);
 			path = ui;
 			sourceTree = "<group>";
@@ -320,10 +318,6 @@
 				92D3D56D232D86AC001B0D86 /* cocoa_common.m */,
 				92D3D56F232D86AC001B0D86 /* cocoa_defines.h */,
 				92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */,
-				92D3D569232D86AC001B0D86 /* ui_cocoa_application.m */,
-				92D3D570232D86AC001B0D86 /* ui_cocoa_browser_window.m */,
-				92D3D56E232D86AC001B0D86 /* ui_cocoa_msg_window.m */,
-				92D3D56A232D86AC001B0D86 /* ui_cocoa_window.m */,
 			);
 			path = cocoa;
 			sourceTree = "<group>";
@@ -457,7 +451,6 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = R72X3BF4KE;
 						DevelopmentTeamName = RetroArch;
 					};
 					926C77D621FD1E6500103EDE = {
@@ -619,7 +612,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -708,7 +701,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
