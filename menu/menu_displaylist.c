@@ -3768,6 +3768,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   PARSE_ONLY_FLOAT, false) == 0)
             count++;
+#if defined(GEKKO)
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+#endif
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
                   PARSE_ONLY_FLOAT, false) == 0)

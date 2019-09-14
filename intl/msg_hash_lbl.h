@@ -567,6 +567,10 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
       "input_analog_deadzone")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
       "input_analog_sensitivity")
+#ifdef GEKKO
+MSG_HASH(MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
+      "input_mouse_scale")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_INPUT_BIND_MODE,
       "input_bind_mode")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
