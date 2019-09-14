@@ -129,7 +129,6 @@ wiiu/wut/elf2rpl/elf2rpl
 
 pkg/apple/iOS/build/
 pkg/apple/build/
-pkg/apple/tvOS/modules/
 ui/drivers/qt/moc_*
 ui/drivers/moc_*
 
