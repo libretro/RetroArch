@@ -1196,12 +1196,9 @@ bool rpng_start(rpng_t *rpng)
 
 bool rpng_is_valid(rpng_t *rpng)
 {
-   if (!rpng)
-      return false;
-
    /* A valid PNG image must contain an IHDR chunk,
     * one or more IDAT chunks, and an IEND chunk */
-   if (rpng->has_ihdr && rpng->has_idat && rpng->has_iend)
+   if (rpng && rpng->has_ihdr && rpng->has_idat && rpng->has_iend)
       return true;
 
    return false;
