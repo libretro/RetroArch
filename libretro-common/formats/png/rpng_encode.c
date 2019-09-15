@@ -86,11 +86,8 @@ static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
    if (filestream_write(file, ihdr_raw, sizeof(ihdr_raw)) != sizeof(ihdr_raw))
       return false;
 
-   if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t),
-            sizeof(ihdr_raw) - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc(file, ihdr_raw + sizeof(uint32_t),
+         sizeof(ihdr_raw) - sizeof(uint32_t));
 }
 
 static bool png_write_idat(RFILE *file, const uint8_t *data, size_t size)
@@ -98,10 +95,7 @@ static bool png_write_idat(RFILE *file, const uint8_t *data, size_t size)
    if (filestream_write(file, data, size) != (ssize_t)size)
       return false;
 
-   if (!png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t));
 }
 
 static bool png_write_iend(RFILE *file)
@@ -114,11 +108,8 @@ static bool png_write_iend(RFILE *file)
    if (filestream_write(file, data, sizeof(data)) != sizeof(data))
       return false;
 
-   if (!png_write_crc(file, data + sizeof(uint32_t),
-            sizeof(data) - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc(file, data + sizeof(uint32_t),
+         sizeof(data) - sizeof(uint32_t));
 }
 
 static void copy_argb_line(uint8_t *dst, const uint32_t *src, unsigned width)
@@ -344,9 +335,7 @@ static bool rpng_save_image(const char *path,
          (unsigned)(encode_buf_size * 2));
 
    if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
-   {
       GOTO_END_ERROR();
-   }
 
    memcpy(deflate_buf + 4, "IDAT", 4);
    dword_write_be(deflate_buf + 0,        ((uint32_t)total_out));
