@@ -2274,9 +2274,11 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
 #endif
 
       /* Display error message */
-      snprintf(msg, sizeof(msg), "%s %s",
+      fill_pathname_join_delim(msg,
             msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
-            preset_file ? preset_file : "null");
+            preset_file ? preset_file : "null",
+            ' ',
+            sizeof(msg));
 
       runloop_msg_queue_push(
             msg, 1, 180, true, NULL,
@@ -14525,7 +14527,8 @@ static void input_config_get_bind_string_joykey(
    {
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label) && label_show)
-         snprintf(buf, size, "%s %s (hat)", prefix, bind->joykey_label);
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (hat)", size);
       else
       {
          const char *dir = "?";
@@ -14556,7 +14559,8 @@ static void input_config_get_bind_string_joykey(
    {
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label) && label_show)
-         snprintf(buf, size, "%s%s (btn)", prefix, bind->joykey_label);
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (btn)", size);
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
