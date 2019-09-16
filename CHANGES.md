@@ -1,6 +1,7 @@
 # 1.7.9 (future)
 
 # 1.7.8 (v4)
+- COMMON: Enable customisation of runtime 'last played' display format.
 - CHEEVOS:  Add hashing support for PSX (bin/cue, chd, or real CD) (for real this time, got added in the CHANGELOG for v2 then reverted before it hit release)
 - IOS: Update for iOS 13, fix the asset packaging issues
 - SWITCH: Add 'AI Service' option to Switch (untested)
