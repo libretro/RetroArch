@@ -4,6 +4,8 @@
 - COMMON: Enable customisation of runtime 'last played' display format.
 - CHEEVOS:  Add hashing support for PSX (bin/cue, chd, or real CD) (for real this time, got added in the CHANGELOG for v2 then reverted before it hit release)
 - IOS: Update for iOS 13, fix the asset packaging issues
+- LOCALIZATION: Update Portuguese Brazilian Translation
+- MENU: Add 12-hour time/date versions of all formats
 - SWITCH: Add 'AI Service' option to Switch (untested)
 - SWITCH: Update to newest libnx
 
