@@ -1659,16 +1659,13 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
          flush_char = msg_hash_to_str(flush_id);
-         cheat_manager_free();
+         cheat_manager_state_free();
 
          if (!cheat_manager_load(action_path,false))
             goto error;
          break;
       case ACTION_OK_LOAD_CHEAT_FILE_APPEND:
          flush_char = msg_hash_to_str(flush_id);
-#if 0
-         cheat_manager_free();
-#endif
 
          if (!cheat_manager_load(action_path,true))
             goto error;

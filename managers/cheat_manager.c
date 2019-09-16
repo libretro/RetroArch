@@ -270,6 +270,51 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
    return true;
 }
 
+static void cheat_manager_free(void)
+{
+   unsigned i = 0;
+
+   if (cheat_manager_state.cheats)
+   {
+      for (i = 0; i < cheat_manager_state.size; i++)
+      {
+         if (cheat_manager_state.cheats[i].desc)
+            free(cheat_manager_state.cheats[i].desc);
+         if (cheat_manager_state.cheats[i].code)
+            free(cheat_manager_state.cheats[i].code);
+      }
+
+      free(cheat_manager_state.cheats);
+   }
+
+   if (cheat_manager_state.prev_memory_buf)
+      free(cheat_manager_state.prev_memory_buf);
+
+   if (cheat_manager_state.matches)
+      free(cheat_manager_state.matches);
+
+   if (cheat_manager_state.memory_buf_list)
+      free(cheat_manager_state.memory_buf_list);
+
+   if (cheat_manager_state.memory_size_list)
+      free(cheat_manager_state.memory_size_list);
+
+   cheat_manager_state.cheats = NULL;
+   cheat_manager_state.size = 0;
+   cheat_manager_state.buf_size = 0;
+   cheat_manager_state.prev_memory_buf = NULL;
+   cheat_manager_state.curr_memory_buf = NULL;
+   cheat_manager_state.memory_buf_list = NULL;
+   cheat_manager_state.memory_size_list = NULL;
+   cheat_manager_state.matches = NULL;
+   cheat_manager_state.num_memory_buffers = 0;
+   cheat_manager_state.total_memory_size = 0;
+   cheat_manager_state.memory_initialized = false;
+   cheat_manager_state.memory_search_initialized = false;
+
+}
+
+
 static void cheat_manager_new(unsigned size)
 {
    unsigned i;
@@ -516,50 +561,6 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    }
 
    return true;
-}
-
-void cheat_manager_free(void)
-{
-   unsigned i = 0;
-
-   if (cheat_manager_state.cheats)
-   {
-      for (i = 0; i < cheat_manager_state.size; i++)
-      {
-         if (cheat_manager_state.cheats[i].desc)
-            free(cheat_manager_state.cheats[i].desc);
-         if (cheat_manager_state.cheats[i].code)
-            free(cheat_manager_state.cheats[i].code);
-      }
-
-      free(cheat_manager_state.cheats);
-   }
-
-   if (cheat_manager_state.prev_memory_buf)
-      free(cheat_manager_state.prev_memory_buf);
-
-   if (cheat_manager_state.matches)
-      free(cheat_manager_state.matches);
-
-   if (cheat_manager_state.memory_buf_list)
-      free(cheat_manager_state.memory_buf_list);
-
-   if (cheat_manager_state.memory_size_list)
-      free(cheat_manager_state.memory_size_list);
-
-   cheat_manager_state.cheats = NULL;
-   cheat_manager_state.size = 0;
-   cheat_manager_state.buf_size = 0;
-   cheat_manager_state.prev_memory_buf = NULL;
-   cheat_manager_state.curr_memory_buf = NULL;
-   cheat_manager_state.memory_buf_list = NULL;
-   cheat_manager_state.memory_size_list = NULL;
-   cheat_manager_state.matches = NULL;
-   cheat_manager_state.num_memory_buffers = 0;
-   cheat_manager_state.total_memory_size = 0;
-   cheat_manager_state.memory_initialized = false;
-   cheat_manager_state.memory_search_initialized = false;
-
 }
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)

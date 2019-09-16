@@ -207,8 +207,6 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler);
 
 void cheat_manager_set_code(unsigned index, const char *str);
 
-void cheat_manager_free(void);
-
 void cheat_manager_index_next(void);
 
 void cheat_manager_index_prev(void);
