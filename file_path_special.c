@@ -179,9 +179,6 @@ void fill_pathname_application_special(char *s,
             fill_pathname_join(s2, s1, "png",
                   PATH_MAX_LENGTH * sizeof(char)
                   );
-            fill_pathname_slash(s2,
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
             strlcpy(s, s2, len);
             free(s1);
             free(s2);
@@ -324,9 +321,6 @@ void fill_pathname_application_special(char *s,
             fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_slash(s1,
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
             strlcpy(s, s1, len);
 
             free(s1);
@@ -390,9 +384,6 @@ void fill_pathname_application_special(char *s,
               s1, "avatars",
               PATH_MAX_LENGTH * sizeof(char)
               );
-        fill_pathname_slash(s2,
-              PATH_MAX_LENGTH * sizeof(char)
-              );
         strlcpy(s, s2, len);
         free(s1);
         free(s2);
@@ -413,9 +404,6 @@ void fill_pathname_application_special(char *s,
               len);
         fill_pathname_join(s2,
               s1, "badges",
-              PATH_MAX_LENGTH * sizeof(char)
-              );
-        fill_pathname_slash(s2,
               PATH_MAX_LENGTH * sizeof(char)
               );
         strlcpy(s, s2, len);
