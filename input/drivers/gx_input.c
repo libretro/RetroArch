@@ -32,10 +32,102 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
+/* gx joypad functions */
+bool gxpad_mousevalid(unsigned port);
+void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button);
+
+typedef struct
+{
+   int x_abs, y_abs;
+   int x_last, y_last;
+   uint32_t button;
+} gx_input_mouse_t;
+
 typedef struct gx_input
 {
    const input_device_driver_t *joypad;
+   int mouse_max;
+   gx_input_mouse_t *mouse;
 } gx_input_t;
+
+static int16_t gx_lightgun_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
+{
+   struct video_viewport vp = {0};
+   video_driver_get_viewport_info(&vp);
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+   int16_t x = 0;
+   int16_t y = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
+
+   x = gx->mouse[joy_idx].x_abs;
+   y = gx->mouse[joy_idx].y_abs;
+
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         return res_screen_x;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         return res_screen_y;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_C);
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_START);
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_LIGHTGUN_SELECT);
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return !gxpad_mousevalid(joy_idx);
+      default:
+         return 0;
+   }
+
+   return 0;
+}
+
+static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
+{
+   int x = 0;
+   int y = 0;
+
+   settings_t *settings = config_get_ptr();
+   int x_scale = settings->uints.input_mouse_scale;
+   int y_scale = settings->uints.input_mouse_scale;
+
+   x = (gx->mouse[joy_idx].x_abs - gx->mouse[joy_idx].x_last) * x_scale;
+   y = (gx->mouse[joy_idx].y_abs - gx->mouse[joy_idx].y_last) * y_scale;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return y;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_MOUSE_LEFT);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return gx->mouse[joy_idx].button & (1 << RETRO_DEVICE_ID_MOUSE_RIGHT);
+      default:
+         return 0;
+   }
+}
 
 static int16_t gx_input_state(void *data,
       rarch_joypad_info_t joypad_info,
@@ -96,6 +188,12 @@ static int16_t gx_input_state(void *data,
             return input_joypad_analog(gx->joypad,
                   joypad_info, port, idx, id, binds[port]);
          break;
+
+      case RETRO_DEVICE_MOUSE:
+         return gx_mouse_state(gx, id, joypad_info.joy_idx);
+
+      case RETRO_DEVICE_LIGHTGUN:
+         return gx_lightgun_state(gx, id, joypad_info.joy_idx);
    }
 
    return 0;
@@ -111,7 +209,31 @@ static void gx_input_free_input(void *data)
    if (gx->joypad)
       gx->joypad->destroy();
 
+   if(gx->mouse)
+      free(gx->mouse);
+
    free(gx);
+}
+
+static inline int gx_count_mouse(gx_input_t *gx)
+{
+   int count = 0;
+
+   if(gx)
+   {
+      for(int i=0; i<DEFAULT_MAX_PADS; i++)
+      {
+         if(gx->joypad->name(i))
+         {
+            if(!strcmp(gx->joypad->name(i), "Wiimote Controller"))
+            {
+               count++;
+            }
+         }
+      }
+   }
+
+   return count;
 }
 
 static void *gx_input_init(const char *joypad_driver)
@@ -122,7 +244,49 @@ static void *gx_input_init(const char *joypad_driver)
 
    gx->joypad = input_joypad_init_driver(joypad_driver, gx);
 
+   /* Allocate at least 1 mouse at startup */
+   gx->mouse_max = 1;
+   gx->mouse = (gx_input_mouse_t*) calloc(gx->mouse_max, sizeof(gx_input_mouse_t));
+
    return gx;
+}
+
+static void gx_input_poll_mouse(gx_input_t *gx)
+{
+   int count = 0;
+   count = gx_count_mouse(gx);
+
+   if(gx && count > 0)
+   {
+      if(count != gx->mouse_max)
+      {
+         gx_input_mouse_t* tmp = NULL;
+
+         tmp = (gx_input_mouse_t*)realloc(gx->mouse, count * sizeof(gx_input_mouse_t));
+         if(!tmp) 
+         {
+            free(gx->mouse);
+         }
+         else
+         {
+            gx->mouse = tmp;
+            gx->mouse_max = count;
+
+            for(int i=0; i<gx->mouse_max; i++)
+            {
+               gx->mouse[i].x_last = 0;
+               gx->mouse[i].y_last = 0;
+            }
+         }
+      }
+      
+      for(unsigned i=0; i<gx->mouse_max; i++)
+      {
+         gx->mouse[i].x_last = gx->mouse[i].x_abs;
+         gx->mouse[i].y_last = gx->mouse[i].y_abs;
+         gx_joypad_read_mouse(i, &gx->mouse[i].x_abs, &gx->mouse[i].y_abs, &gx->mouse[i].button);
+      } 
+   }
 }
 
 static void gx_input_poll(void *data)
@@ -130,14 +294,22 @@ static void gx_input_poll(void *data)
    gx_input_t *gx = (gx_input_t*)data;
 
    if (gx && gx->joypad)
+   {
       gx->joypad->poll();
+
+      if(gx->mouse)
+         gx_input_poll_mouse(gx);
+   }
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
 {
    (void)data;
 
-   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
+   return (1 << RETRO_DEVICE_JOYPAD) |
+          (1 << RETRO_DEVICE_ANALOG) |
+          (1 << RETRO_DEVICE_MOUSE) |
+          (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static const input_device_driver_t  *gx_input_get_joypad_driver(void *data)

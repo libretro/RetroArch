@@ -454,7 +454,9 @@ typedef struct settings
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;
-
+#ifdef GEKKO
+      unsigned input_mouse_scale;
+#endif
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;

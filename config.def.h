@@ -93,6 +93,10 @@
 #define DEFAULT_MAX_PADS 16
 #endif
 
+#if defined(GEKKO)
+#define DEFAULT_MOUSE_SCALE 1
+#endif
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
 #define DEFAULT_POINTER_ENABLE true
 #else
