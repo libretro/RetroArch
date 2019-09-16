@@ -3454,8 +3454,7 @@ static bool command_event_disk_control_append_image(const char *path)
    info.path = path;
    control->replace_image_index(new_idx, &info);
 
-   snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
-   strlcat(msg, path, sizeof(msg));
+   snprintf(msg, sizeof(msg), "%s: %s", msg_hash_to_str(MSG_APPENDED_DISK), path);
    RARCH_LOG("%s\n", msg);
    runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -14733,17 +14732,18 @@ void input_config_set_device_name(unsigned port, const char *name)
 
 void input_config_set_device_config_path(unsigned port, const char *path)
 {
-   if (string_is_empty(path))
-      return;
+   if (!string_is_empty(path))
+   {
+      char parent_dir_name[128];
 
-   fill_pathname_parent_dir_name(input_device_config_paths[port],
-         path, sizeof(input_device_config_paths[port]));
-   strlcat(input_device_config_paths[port],
-         "/",
-         sizeof(input_device_config_paths[port]));
-   strlcat(input_device_config_paths[port],
-         path_basename(path),
-         sizeof(input_device_config_paths[port]));
+      parent_dir_name[0] = '\0';
+
+      if (fill_pathname_parent_dir_name(parent_dir_name,
+               path, sizeof(parent_dir_name)))
+         fill_pathname_join(input_device_config_paths[port],
+               parent_dir_name, path_basename(path),
+               sizeof(input_device_config_paths[port]));
+   }
 }
 
 void input_config_set_device_config_name(unsigned port, const char *name)
