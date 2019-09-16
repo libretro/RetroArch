@@ -2,8 +2,9 @@
 
 # 1.7.8 (v4)
 - CHEEVOS:  Add hashing support for PSX (bin/cue, chd, or real CD) (for real this time, got added in the CHANGELOG for v2 then reverted before it hit release)
-- IOS: Update for iOS 13, fix the asset packaging issues.
-- SWITCH: Add 'AI Service' option to Switch (untested).
+- IOS: Update for iOS 13, fix the asset packaging issues
+- SWITCH: Add 'AI Service' option to Switch (untested)
+- SWITCH: Update to newest libnx
 
 # 1.7.8 (v3)
 - GLCORE: Ensure correct scaling of menu texture (with RGUI)
