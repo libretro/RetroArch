@@ -169,14 +169,23 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_XMB
          {
             char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
             s1[0]    = '\0';
+            s2[0]    = '\0';
 
             fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-            fill_pathname_join(s, s1, "png", len);
+            fill_pathname_join(s2, s1, "png",
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
+            fill_pathname_slash(s2,
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
+            strlcpy(s, s2, len);
             free(s1);
+            free(s2);
          }
 #endif
          break;
@@ -311,6 +320,9 @@ void fill_pathname_application_special(char *s,
             fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_slash(s1,
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
             strlcpy(s, s1, len);
 
             free(s1);
@@ -361,34 +373,52 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
       {
         char *s1             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
         settings_t *settings = config_get_ptr();
 
         s1[0]                = '\0';
+        s2[0]                = '\0';
 
         fill_pathname_join(s1,
               settings->paths.directory_thumbnails,
               "discord",
               len);
-        fill_pathname_join(s,
-              s1, "avatars", len);
+        fill_pathname_join(s2,
+              s1, "avatars",
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        fill_pathname_slash(s2,
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        strlcpy(s, s2, len);
         free(s1);
+        free(s2);
       }
       break;
 
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
         char *s1             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
         settings_t *settings = config_get_ptr();
 
         s1[0]                = '\0';
+        s2[0]                = '\0';
 
         fill_pathname_join(s1,
               settings->paths.directory_thumbnails,
               "cheevos",
               len);
-        fill_pathname_join(s,
-              s1, "badges", len);
+        fill_pathname_join(s2,
+              s1, "badges",
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        fill_pathname_slash(s2,
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        strlcpy(s, s2, len);
         free(s1);
+        free(s2);
       }
       break;
 
