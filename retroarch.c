@@ -4050,8 +4050,6 @@ static bool command_event_init_core(enum rarch_core_type type)
          " ",
          runloop_system.info.library_name,
          sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, " ",
-         sizeof(video_driver_title_buf));
    strlcat(video_driver_title_buf,
          runloop_system.info.library_version,
          sizeof(video_driver_title_buf));
@@ -18930,10 +18928,17 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
       {
-         snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+         size_t copied = snprintf(
+               video_info.fps_text, sizeof(video_info.fps_text),
                "FPS: %6.2f", last_fps);
          if (video_info.framecount_show)
-            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
+         {
+            video_info.fps_text[copied]   = ' ';
+            video_info.fps_text[copied+1] = '|';
+            video_info.fps_text[copied+2] = '|';
+            video_info.fps_text[copied+3] = ' ';
+            video_info.fps_text[copied+4] = '\0';
+         }
       }
 
       if (video_info.framecount_show)
@@ -18948,16 +18953,21 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
       {
+         size_t copied;
+
          last_fps = TIME_TO_FPS(curr_time, new_time,
                video_info.fps_update_interval);
 
-         strlcpy(video_driver_window_title,
+         copied = strlcpy(video_driver_window_title,
                title, sizeof(video_driver_window_title));
 
          if (!string_is_empty(video_info.fps_text))
          {
-            strlcat(video_driver_window_title, "|| ",
-                  sizeof(video_driver_window_title));
+            video_driver_window_title[copied]   = ' ';
+            video_driver_window_title[copied+1] = '|';
+            video_driver_window_title[copied+2] = '|';
+            video_driver_window_title[copied+3] = ' ';
+            video_driver_window_title[copied+4] = '\0';
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }
