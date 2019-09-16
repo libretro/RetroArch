@@ -130,6 +130,11 @@
 		92CC05C121FE3C6D00FF79F0 /* WebServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebServer.m; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		92D3D56B232D86AC001B0D86 /* cocoa_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_common.h; path = ../../../../../../ui/drivers/cocoa/cocoa_common.h; sourceTree = "<group>"; };
+		92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoatouch_menu.m; path = ../../../../../../ui/drivers/cocoa/cocoatouch_menu.m; sourceTree = "<group>"; };
+		92D3D56D232D86AC001B0D86 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoa_common.m; path = ../../../../../../ui/drivers/cocoa/cocoa_common.m; sourceTree = "<group>"; };
+		92D3D56F232D86AC001B0D86 /* cocoa_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_defines.h; path = ../../../../../../ui/drivers/cocoa/cocoa_defines.h; sourceTree = "<group>"; };
+		92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoatouch.m; path = ../../../../ui/drivers/ui_cocoatouch.m; sourceTree = "<group>"; };
 		92E5DCD3231A5786006491BF /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -281,6 +286,42 @@
 			path = WebServer;
 			sourceTree = "<group>";
 		};
+		92D3D565232D8661001B0D86 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D566232D867C001B0D86 /* ui */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		92D3D566232D867C001B0D86 /* ui */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D567232D8688001B0D86 /* drivers */,
+				92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */,
+			);
+			path = ui;
+			sourceTree = "<group>";
+		};
+		92D3D567232D8688001B0D86 /* drivers */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D568232D868E001B0D86 /* cocoa */,
+			);
+			path = drivers;
+			sourceTree = "<group>";
+		};
+		92D3D568232D868E001B0D86 /* cocoa */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D56B232D86AC001B0D86 /* cocoa_common.h */,
+				92D3D56D232D86AC001B0D86 /* cocoa_common.m */,
+				92D3D56F232D86AC001B0D86 /* cocoa_defines.h */,
+				92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */,
+			);
+			path = cocoa;
+			sourceTree = "<group>";
+		};
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
@@ -289,6 +330,7 @@
 				96AFAE9C16C1D976009DE44C /* core */,
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
+				92D3D565232D8661001B0D86 /* Sources */,
 				92CC05CC21FF782C00FF79F0 /* WebServer */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
