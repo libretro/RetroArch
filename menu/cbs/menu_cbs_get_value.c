@@ -272,9 +272,9 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
    if (settings)
    {
       if (settings->bools.video_shader_watch_files)
-         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE));
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), len);
       else
-         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE));
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE), len);
    }
 }
 
