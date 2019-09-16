@@ -1,4 +1,5 @@
-# 1.7.9 (future)
+# Future
+- WII: Add Wiimote lightgun support
 
 # 1.7.8 (v4)
 - COMMON: Enable customisation of runtime 'last played' display format.
