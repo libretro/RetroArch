@@ -1,4 +1,5 @@
 # Future
+- GONG: Stability fixes
 - WII: Add Wiimote lightgun support
 
 # 1.7.8 (v4)
