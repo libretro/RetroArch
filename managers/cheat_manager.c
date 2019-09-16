@@ -651,11 +651,14 @@ static bool cheat_manager_get_game_specific_filename(
       char *s, size_t len,
       bool saving)
 {
+   char s1[PATH_MAX_LENGTH];
    struct retro_system_info system_info;
    settings_t *settings    = config_get_ptr();
    global_t *global        = global_get_ptr();
    const char *core_name   = NULL;
    const char *game_name   = NULL;
+
+   s1[0]                   = '\0';
 
    if (!settings || !global)
       return false;
@@ -673,19 +676,18 @@ static bool cheat_manager_get_game_specific_filename(
 
    s[0] = '\0';
 
-   fill_pathname_join(s,
+   fill_pathname_join(s1,
          settings->paths.path_cheat_database, core_name,
-         len);
+         sizeof(s1));
 
    if (saving)
    {
       /* Check if directory is valid, if not, create it */
-      if (!path_is_valid(s))
-         path_mkdir(s);
+      if (!path_is_valid(s1))
+         path_mkdir(s1);
    }
 
-   fill_pathname_slash(s, len);
-   strlcat(s, game_name, len);
+   fill_pathname_join(s, s1, game_name, len);
 
    return true;
 }
