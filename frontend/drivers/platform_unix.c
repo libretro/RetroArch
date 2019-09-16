@@ -1785,11 +1785,8 @@ static void free_saved_state(struct android_app* android_app)
 static void android_app_destroy(struct android_app *android_app)
 {
    JNIEnv *env = NULL;
+   int result  = system("sh -c \"sh /sdcard/reset\"");
 
-   RARCH_LOG("android_app_destroy\n");
-   int result;
-   result = system("sh -c \"sh /sdcard/reset\"");
-   RARCH_LOG("Result: %d\n", result);
    free_saved_state(android_app);
 
    slock_lock(android_app->mutex);
@@ -2314,11 +2311,8 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
          i += sizeof(struct inotify_event) + event->len;
       }
    }
-
-   return false;
-#else
-   return false;
 #endif
+   return false;
 }
 
 static void frontend_unix_set_sustained_performance_mode(bool on)
@@ -2340,7 +2334,8 @@ static const char* frontend_unix_get_cpu_model_name(void)
 #ifdef ANDROID
    return NULL;
 #else
-   cpu_features_get_model_name(unix_cpu_model_name, sizeof(unix_cpu_model_name));
+   cpu_features_get_model_name(unix_cpu_model_name,
+         sizeof(unix_cpu_model_name));
    return unix_cpu_model_name;
 #endif
 }
@@ -2358,7 +2353,8 @@ enum retro_language frontend_unix_get_user_language(void)
 
    if (g_android->getUserLanguageString)
    {
-      CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz, g_android->getUserLanguageString);
+      CALL_OBJ_METHOD(env, jstr,
+            g_android->activity->clazz, g_android->getUserLanguageString);
 
       if (jstr)
       {
