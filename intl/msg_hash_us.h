@@ -1085,6 +1085,16 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
     "Analog Sensitivity"
     )
+#ifdef GEKKO
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+    "Mouse Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+    "Adjust x/y scale for Wiimote lightgun speed."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
     "Menu Swap OK & Cancel Buttons"

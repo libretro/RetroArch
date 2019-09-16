@@ -400,7 +400,6 @@ enum
                   ^{
                   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
                   });
-   [self showPauseMenu: self];
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation

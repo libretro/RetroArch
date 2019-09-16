@@ -10349,6 +10349,21 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef GEKKO
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_mouse_scale,
+                  MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+                  DEFAULT_MOUSE_SCALE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+#endif
+
 #ifdef VITA
             CONFIG_BOOL(
                   list, list_info,

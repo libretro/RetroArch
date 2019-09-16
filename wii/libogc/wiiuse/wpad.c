@@ -1104,3 +1104,41 @@ void WPAD_Accel(int chan, struct vec3w_t *accel)
 	//if(chan<0 || chan>=WPAD_MAX_WIIMOTES || accel==NULL ) return;
 	*accel = wpaddata[chan].accel;
 }
+
+s32 WPAD_SetDataFormat(s32 chan, s32 fmt)
+{
+	u32 level;
+	s32 ret;
+	int i;
+
+	if(chan == WPAD_CHAN_ALL) {
+		for(i=WPAD_CHAN_0; i<WPAD_MAX_WIIMOTES; i++)
+			if((ret = WPAD_SetDataFormat(i, fmt)) < WPAD_ERR_NONE)
+				return ret;
+		return WPAD_ERR_NONE;
+	}
+
+	if(chan<WPAD_CHAN_0 || chan>=WPAD_MAX_WIIMOTES) return WPAD_ERR_BAD_CHANNEL;
+
+	_CPU_ISR_Disable(level);
+	if(__wpads_inited==WPAD_STATE_DISABLED) {
+		_CPU_ISR_Restore(level);
+		return WPAD_ERR_NOT_READY;
+	}
+
+	if(__wpads[chan]!=NULL) {
+		switch(fmt) {
+			case WPAD_FMT_BTNS:
+			case WPAD_FMT_BTNS_ACC:
+			case WPAD_FMT_BTNS_ACC_IR:
+				__wpdcb[chan].data_fmt = fmt;
+				__wpad_setfmt(chan);
+				break;
+			default:
+				_CPU_ISR_Restore(level);
+				return WPAD_ERR_BADVALUE;
+		}
+	}
+	_CPU_ISR_Restore(level);
+	return WPAD_ERR_NONE;
+}
