@@ -937,65 +937,20 @@ static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *
    }
 }
 
-int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
-}
-
-int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_LT);
-}
-
-int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_GT);
-}
-
-int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_LTE);
-}
-
-int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_GTE);
-}
-
-int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQ);
-}
-
-int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_NEQ);
-}
-
-int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQPLUS);
-}
-
-int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
-{
-   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS);
-}
-
-int cheat_manager_search(enum cheat_search_type search_type)
+static int cheat_manager_search(enum cheat_search_type search_type)
 {
    char msg[100];
-   unsigned char *curr = cheat_manager_state.curr_memory_buf;
-   unsigned char *prev = cheat_manager_state.prev_memory_buf;
-   unsigned int idx = 0;
-   unsigned int curr_val = 0;
-   unsigned int prev_val = 0;
-   unsigned int mask = 0;
+   unsigned char *curr         = cheat_manager_state.curr_memory_buf;
+   unsigned char *prev         = cheat_manager_state.prev_memory_buf;
+   unsigned int idx            = 0;
+   unsigned int curr_val       = 0;
+   unsigned int prev_val       = 0;
+   unsigned int mask           = 0;
    unsigned int bytes_per_item = 1;
-   unsigned int bits = 8;
-   unsigned int offset = 0;
-   unsigned int i = 0;
-   bool refresh = false;
+   unsigned int bits           = 8;
+   unsigned int offset         = 0;
+   unsigned int i              = 0;
+   bool refresh                = false;
 
    if (cheat_manager_state.num_memory_buffers == 0)
    {
@@ -1114,6 +1069,52 @@ int cheat_manager_search(enum cheat_search_type search_type)
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 #endif
    return 0;
+}
+
+
+int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
+}
+
+int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_LT);
+}
+
+int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_GT);
+}
+
+int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_LTE);
+}
+
+int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_GTE);
+}
+
+int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQ);
+}
+
+int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_NEQ);
+}
+
+int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQPLUS);
+}
+
+int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
+{
+   return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS);
 }
 
 bool cheat_manager_add_new_code(unsigned int memory_search_size, unsigned int address, unsigned int address_mask,
