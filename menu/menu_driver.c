@@ -3904,9 +3904,13 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
-                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     size_t copied = strlcat(rom_buff,
+                           path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
-                        strlcat(rom_buff, "|", sizeof(rom_buff));
+                     {
+                        rom_buff[copied]   = '|';
+                        rom_buff[copied+1] = '\0';
+                     }
                   }
 
                   if (!string_is_empty(rom_buff))

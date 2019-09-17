@@ -301,30 +301,32 @@ struct http_connection_t *net_http_connection_new(const char *url,
      
    uri = strchr(conn->scan, (char) '/');
    
-   if (strchr(conn->scan, (char) ':') != NULL)
+   if (strchr(conn->scan, (char) ':'))
    {
-      url_dup      = strdup(conn->scan);
-      domain_port  = strtok(url_dup, ":");
-      domain_port2 = strtok(NULL, ":");
-      url_port     = domain_port2;
-      if (strchr(domain_port2, (char) '/') != NULL)
-         url_port  = strtok(domain_port2, "/");
+      size_t copied;
+      url_dup       = strdup(conn->scan);
+      domain_port   = strtok(url_dup, ":");
+      domain_port2  = strtok(NULL, ":");
+      url_port      = domain_port2;
+      if (strchr(domain_port2, (char) '/'))
+         url_port   = strtok(domain_port2, "/");
 
-      if (url_port != NULL)
+      if (url_port)
          conn->port = atoi(url_port);
 
-      strlcpy(new_domain, domain_port, sizeof(new_domain));
-
+      copied = strlcpy(new_domain, domain_port, sizeof(new_domain));
       free(url_dup);
 
-      if (uri != NULL)
+      if (uri)
       {
-         if (strchr(uri, (char) '/') == NULL)
+         if (!strchr(uri, (char) '/'))
             strlcat(new_domain, uri, sizeof(new_domain));
          else
          {
-            strlcat(new_domain, "/", sizeof(new_domain));
-            strlcat(new_domain, strchr(uri, (char) '/')+sizeof(char), sizeof(new_domain));
+            new_domain[copied]   = '/';
+            new_domain[copied+1] = '\0';
+            strlcat(new_domain, strchr(uri, (char)'/') + sizeof(char),
+                  sizeof(new_domain));
          }
          strlcpy(conn->scan, new_domain, strlen(conn->scan) + 1);
       }

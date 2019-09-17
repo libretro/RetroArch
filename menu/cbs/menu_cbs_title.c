@@ -368,6 +368,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
    {
       char elem0[255];
       char elem1[255];
+      size_t copied;
       struct string_list *list_label = string_split(label, "|");
 
       elem0[0] = elem1[0] = '\0';
@@ -383,11 +384,14 @@ static int action_get_title_group_settings(const char *path, const char *label,
          string_list_free(list_label);
       }
 
-      strlcpy(s, elem0, len);
+      copied = strlcpy(s, elem0, len);
 
       if (!string_is_empty(elem1))
       {
-         strlcat(s, " - ", len);
+         s[copied]   = ' ';
+         s[copied+1] = '-';
+         s[copied+2] = ' ';
+         s[copied+3] = '\0';
          strlcat(s, elem1, len);
       }
    }

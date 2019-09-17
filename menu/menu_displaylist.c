@@ -625,7 +625,8 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       if (frontend->get_powerstate)
       {
-         int seconds = 0, percent = 0;
+         size_t copied = 0;
+         int seconds   = 0, percent = 0;
          enum frontend_powerstate state =
             frontend->get_powerstate(&seconds, &percent);
 
@@ -637,42 +638,55 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
-               strlcat(tmp2, " ", sizeof(tmp2));
+               tmp2[copied]   = ' ';
+               tmp2[copied+1] = '\0';
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp2));
-               strlcat(tmp2,
+               tmp2[copied]   = ' ';
+               tmp2[copied+1] = '(';
+               tmp2[copied+2] = '\0';
+               copied         = strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
                      sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
+               tmp2[copied]   = ')';
+               tmp2[copied+1] = '\0';
                break;
             case FRONTEND_POWERSTATE_CHARGING:
-               strlcat(tmp2, " (", sizeof(tmp2));
-               strlcat(tmp2,
+               tmp2[copied]   = ' ';
+               tmp2[copied+1] = '(';
+               tmp2[copied+2] = '\0';
+               copied         = strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING),
                      sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
+               tmp2[copied]   = ')';
+               tmp2[copied+1] = '\0';
                break;
             case FRONTEND_POWERSTATE_CHARGED:
-               strlcat(tmp2, " (", sizeof(tmp2));
-               strlcat(tmp2,
+               tmp2[copied]   = ' ';
+               tmp2[copied+1] = '(';
+               tmp2[copied+2] = '\0';
+               copied         = strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED),
                      sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
+               tmp2[copied]   = ')';
+               tmp2[copied+1] = '\0';
                break;
             case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp2));
-               strlcat(tmp2,
+               tmp2[copied]   = ' ';
+               tmp2[copied+1] = '(';
+               tmp2[copied+2] = '\0';
+               copied         = strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING),
                      sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
+               tmp2[copied]   = ')';
+               tmp2[copied+1] = '\0';
                break;
          }
 
