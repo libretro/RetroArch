@@ -142,6 +142,7 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
+   size_t copied                     = 0;
    char *tmp                         = NULL;
    char url_domain[PATH_MAX_LENGTH]  = {0};
    char url_path[PATH_MAX_LENGTH]    = {0};
@@ -164,9 +165,12 @@ void net_http_urlencode_full(char *dest,
          strlen(tmp) + 1
          );
 
-   tmp = NULL;
+   tmp            = NULL;
    net_http_urlencode(&tmp, url_path);
-   snprintf(dest, size, "%s/%s", url_domain, tmp);
+   copied         = strlcpy(dest, url_domain, size);
+   dest[copied]   = '/';
+   dest[copied+1] = '\0';
+   copied         = strlcat(dest, tmp, size);
    free (tmp);
 }
 
@@ -478,7 +482,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    net_http_send_str(&conn->sock_state, &error, "\r\n");
 
-   /* this is not being set anywhere yet */
+   /* This is not being set anywhere yet */
    if (conn->contenttypecopy)
    {
       net_http_send_str(&conn->sock_state, &error, "Content-Type: ");
