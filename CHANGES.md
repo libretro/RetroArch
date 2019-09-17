@@ -1,4 +1,5 @@
 # Future
+- FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue
 - GONG: Stability fixes
 - WII: Add Wiimote lightgun support
 
