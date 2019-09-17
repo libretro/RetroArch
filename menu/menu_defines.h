@@ -228,7 +228,8 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_SIXEL,
    MENU_VIDEO_DRIVER_GDI,
    MENU_VIDEO_DRIVER_SWITCH,
-   MENU_VIDEO_DRIVER_VGA
+   MENU_VIDEO_DRIVER_VGA,
+   MENU_VIDEO_DRIVER_FPGA
 };
 
 enum rgui_thumbnail_scaler

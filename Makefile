@@ -53,6 +53,10 @@ ifneq ($(findstring DOS,$(OS)),)
    LDFLAGS += -lemu
 endif
 
+ifneq ($(findstring FPGA,$(OS)),)
+   DEFINES += -DHAVE_FPGA
+endif
+
 ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -static-libgcc -lwinmm
 endif

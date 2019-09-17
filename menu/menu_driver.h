@@ -711,6 +711,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_wiiu;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
 extern menu_display_ctx_driver_t menu_display_ctx_vga;
+extern menu_display_ctx_driver_t menu_display_ctx_fpga;
 extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;

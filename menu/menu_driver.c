@@ -167,6 +167,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
 #endif
+#ifdef HAVE_FPGA
+   &menu_display_ctx_fpga,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -1639,6 +1642,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_VGA:
          if (string_is_equal(video_driver, "vga"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_FPGA:
+         if (string_is_equal(video_driver, "fpga"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_SWITCH:

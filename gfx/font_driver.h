@@ -177,6 +177,7 @@ extern font_renderer_t d3d12_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;
+extern font_renderer_t fpga_font;
 extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
 

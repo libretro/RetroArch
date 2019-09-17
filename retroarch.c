@@ -431,6 +431,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef DJGPP
    &video_vga,
 #endif
+#ifdef HAVE_FPGA
+   &video_fpga,
+#endif
 #ifdef HAVE_SIXEL
    &video_sixel,
 #endif
@@ -517,6 +520,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #ifdef HAVE_NETWORK_VIDEO
    &gfx_ctx_network,
+#endif
+#if defined(HAVE_FPGA)
+   &gfx_ctx_fpga,
 #endif
    &gfx_ctx_null,
    NULL
