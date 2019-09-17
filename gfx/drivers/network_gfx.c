@@ -16,6 +16,7 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 #include <stdlib.h>
 #include <compat/strl.h>
 
@@ -45,7 +46,7 @@
 #define str(s) #s
 
 enum {
-   NETWORK_VIDEO_PIXELFORMAT_RGBA8888,
+   NETWORK_VIDEO_PIXELFORMAT_RGBA8888 = 0,
    NETWORK_VIDEO_PIXELFORMAT_BGRA8888,
    NETWORK_VIDEO_PIXELFORMAT_RGB565
 } network_video_pixelformat;
@@ -61,7 +62,7 @@ static unsigned network_video_bits       = 0;
 static unsigned network_menu_bits        = 0;
 static bool network_rgb32                = false;
 static bool network_menu_rgb32           = false;
-static unsigned *network_video_temp_buf        = NULL;
+static unsigned *network_video_temp_buf  = NULL;
 
 static void *network_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
@@ -77,8 +78,8 @@ static void *network_gfx_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   network_rgb32                          = video->rgb32;
-   network_video_bits                     = video->rgb32 ? 32 : 16;
+   network_rgb32                        = video->rgb32;
+   network_video_bits                   = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
       network_video_pitch = video->width * 4;
@@ -124,7 +125,7 @@ try_connect:
       {
          int ret = socket_connect(fd, (void*)next_addr, true);
 
-         if (ret >= 0)// && socket_nonblock(fd))
+         if (ret >= 0) /* && socket_nonblock(fd)) */
             break;
 
          socket_close(fd);
@@ -138,14 +139,16 @@ try_connect:
 
    network->fd = fd;
 
-   //socket_nonblock(network->fd);
+#if 0
+   socket_nonblock(network->fd);
+#endif
 
    if (network->fd > 0)
       RARCH_LOG("[network]: Connected to host.\n");
    else
    {
       RARCH_LOG("[network]: Could not connect to host, retrying...\n");
-      usleep(1000 * 1000);
+      retro_sleep(1000);
       goto try_connect;
    }
 
