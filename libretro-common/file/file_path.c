@@ -1295,20 +1295,25 @@ void fill_pathname_application_path(char *s, size_t len)
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
 #ifdef HAVE_COCOATOUCH
-       // This needs to be done so that the path becomes /private/var/... and this
-       // is used consistently throughout for the iOS bundle path
-       char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
-       if (realpath(s, resolved_bundle_dir_buf))
-       {
-           strlcpy(s,resolved_bundle_dir_buf, len);
-           strlcat(s,"/",len);
-       }
+      {
+         /* This needs to be done so that the path becomes 
+          * /private/var/... and this
+          * is used consistently throughout for the iOS bundle path */
+         char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+         if (realpath(s, resolved_bundle_dir_buf))
+         {
+            size_t copied = strlcpy(s,resolved_bundle_dir_buf, len);
+            s[copied]     = '/';
+            s[copied+1]   = '\0';
+         }
+      }
 #endif
 
       CFRelease(bundle_path);
       CFRelease(bundle_url);
 #ifndef HAVE_COCOATOUCH
-      // Not sure what this does but it breaks stuff for iOS so skipping
+      /* Not sure what this does but it breaks 
+       * stuff for iOS, so skipping */
       retro_assert(strlcat(s, "nobin", len) < len);
 #endif
       return;
