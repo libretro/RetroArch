@@ -293,14 +293,22 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
    if (list_path)
    {
       char elem0_path[255];
+      size_t written;
 
       elem0_path[0] = '\0';
 
       if (list_path->size > 0)
          strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
       string_list_free(list_path);
-      snprintf(s, len, "%s - %s", text,
-            (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
+      written      = strlcpy(s, text, len);
+      s[written  ] = '\n';
+
+      if (!string_is_empty(elem0_path))
+      {
+         s[written  ] = '-';
+         s[written+1] = ' ';
+         strlcat(s, path_basename(elem0_path), len);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -335,7 +343,10 @@ default_title_generic_macro(action_get_title_list_rdb_entry_database_info,MENU_E
 static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), path);
+   size_t written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
+   s[written]   = ' ';
+   s[written+1] = '\0';
+   strlcat(s, path, len);
    return 0;
 }
 

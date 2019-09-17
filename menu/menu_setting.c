@@ -5904,9 +5904,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
                   device_name,
                   idx);
          else
-            snprintf(s, len,
-                  "%s",
-                  device_name);
+            strlcpy(s, device_name, len);
       }
       else
          snprintf(s, len,

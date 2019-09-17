@@ -997,8 +997,9 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   settings_t *settings = config_get_ptr();
-   playlist_t *playlist = NULL;
+   size_t written;
+   settings_t *settings               = config_get_ptr();
+   playlist_t *playlist               = NULL;
    const struct playlist_entry *entry = NULL;
    
    if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
@@ -1021,9 +1022,10 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
    
    /* Add core name */
-   snprintf(s, len, "%s %s",
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-      entry->core_name);
+   written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+   s[written ]  = ' ';
+   s[written+1] = '\0';
+   written = strlcat(s, entry->core_name, len);
    
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
