@@ -776,9 +776,10 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
    }
    else
    {
-      n = snprintf(str, len, "%s %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
+      n = strlcpy(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+      str[n  ]    = ' ';
+      str[n+1]    = '\0';
+      n = strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
    }
 
    if ((n < 0) || (n >= 64))

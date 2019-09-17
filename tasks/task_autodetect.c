@@ -233,10 +233,14 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    if (string_is_equal(device_type, "remote"))
    {
       static bool remote_is_bound        = false;
+      const char *autoconfig_str         = (string_is_empty(display_name) &&
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+      size_t written                     = strlcpy(
+            msg, autoconfig_str, sizeof(msg));
 
-      snprintf(msg, sizeof(msg), "%s configured.",
-            (string_is_empty(display_name) &&
-            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
+      msg[written  ]                     = ' ';
+      msg[written+1]                     = '\0';
+      strlcat(msg, "configured.", sizeof(msg));
 
       if (!remote_is_bound)
       {
@@ -249,11 +253,13 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      bool tmp = false;
-      snprintf(msg, sizeof(msg), "%s %s #%u.",
-            (string_is_empty(display_name) &&
+      bool tmp                    = false;
+      const char *autoconfig_str  = (string_is_empty(display_name) &&
             !string_is_empty(params->name))
-            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
+            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+
+      snprintf(msg, sizeof(msg), "%s %s #%u.",
+            autoconfig_str,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 

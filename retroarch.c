@@ -4155,20 +4155,30 @@ static bool command_event_save_config(
 
    if (path_exists && config_save_file(config_path))
    {
+      size_t written;
+
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
-      snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
+
+      written        = strlcpy(log, "[config] ", sizeof(log));
+      log[written]   = '\0';
+      written        = strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
    }
 
    if (!string_is_empty(str))
    {
+      size_t written;
+
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
-      snprintf(log, PATH_MAX_LENGTH, "[config] %s", s);
+
+      written        = strlcpy(log, "[config] ", sizeof(log));
+      log[written]   = '\0';
+      written        = strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
 
