@@ -1119,11 +1119,13 @@ static bool dirent_check_error(libretro_vfs_implementation_dir *rdir)
 #endif
 }
 
-libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool include_hidden)
+libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
+      const char *name, bool include_hidden)
 {
 #if defined(_WIN32)
    unsigned path_len;
    char path_buf[1024];
+   size_t copied      = 0;
 #if defined(LEGACY_WIN32)
    char *path_local   = NULL;
 #else
@@ -1147,11 +1149,20 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool i
    path_buf[0]           = '\0';
    path_len              = strlen(name);
 
+   copied                = strlcpy(path_buf, name, sizeof(path_buf));
+
    /* Non-NT platforms don't like extra slashes in the path */
    if (name[path_len - 1] == '\\')
-      snprintf(path_buf, sizeof(path_buf), "%s*", name);
+   {
+      path_buf[copied]   = '*';
+      path_buf[copied+1] = '\0';
+   }
    else
-      snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
+   {
+      path_buf[copied]   = '\\';
+      path_buf[copied+1] = '*';
+      path_buf[copied+2] = '\0';
+   }
 
 #if defined(LEGACY_WIN32)
    path_local            = utf8_to_local_string_alloc(path_buf);
