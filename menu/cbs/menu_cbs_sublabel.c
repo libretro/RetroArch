@@ -735,14 +735,17 @@ static int action_bind_sublabel_cheevos_entry(
       char *s, size_t len)
 {
 #ifdef HAVE_CHEEVOS
+   rcheevos_ctx_desc_t desc_info;
+   unsigned new_id;
    char fetched_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+
    fetched_sublabel[0] = '\0';
 
-   rcheevos_ctx_desc_t desc_info;
-   unsigned new_id = type - MENU_SETTINGS_CHEEVOS_START;
-   desc_info.idx   = new_id;
-   desc_info.s     = fetched_sublabel;
-   desc_info.len   = len;
+   new_id              = type - MENU_SETTINGS_CHEEVOS_START;
+   desc_info.idx       = new_id;
+   desc_info.s         = fetched_sublabel;
+   desc_info.len       = len;
+
    rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
 
    strlcpy(s, desc_info.s, len);
