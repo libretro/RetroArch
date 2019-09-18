@@ -144,10 +144,13 @@ int system_property_get(const char *command,
    char buffer[PATH_MAX_LENGTH] = {0};
    char cmd[PATH_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
+   size_t copied                = strlcpy(cmd, command, sizeof(cmd));
 
-   snprintf(cmd, sizeof(cmd), "%s %s", command, args);
+   string_add_space_fast(cmd, copied);
 
-   pipe = popen(cmd, "r");
+   copied                       = strlcat(cmd, args, sizeof(cmd));
+
+   pipe                         = popen(cmd, "r");
 
    if (!pipe)
       goto error;
@@ -1689,13 +1692,21 @@ static void frontend_unix_get_env(int *argc,
    const char *home         = getenv("HOME");
 
    if (xdg)
-      snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", xdg);
+   {
+      size_t copied = strlcpy(base_path, xdg, sizeof(base_path));
+      string_add_backslash_fast(base_path, copied);
+      copied        = strlcat(base_path, "retroarch", sizeof(base_path));
+   }
    else if (home)
-      snprintf(base_path, sizeof(base_path),
-            "%s/.config/retroarch", home);
+   {
+      size_t copied = strlcpy(base_path, home, sizeof(base_path));
+      string_add_backslash_fast(base_path, copied);
+      copied        = strlcat(base_path, ".config", sizeof(base_path));
+      string_add_backslash_fast(base_path, copied);
+      copied        = strlcat(base_path, "retroarch", sizeof(base_path));
+   }
    else
-      snprintf(base_path, sizeof(base_path), "retroarch");
+      strlcpy(base_path, "retroarch", sizeof(base_path));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
