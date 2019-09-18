@@ -73,22 +73,9 @@ static void rtga_skip(rtga_context *s, int n)
    s->img_buffer += n;
 }
 
-static int rtga_getn(rtga_context *s, uint8_t *buffer, int n)
-{
-   if (s->img_buffer+n <= s->img_buffer_end)
-   {
-      memcpy(buffer, s->img_buffer, n);
-      s->img_buffer += n;
-      return 1;
-   }
-
-   return 0;
-}
-
 static int rtga_get16le(rtga_context *s)
 {
-   int z = rtga_get8(s);
-   return z + (rtga_get8(s) << 8);
+   return rtga_get8(s) + (rtga_get8(s) << 8);
 }
 
 static unsigned char *rtga_convert_format(
@@ -266,7 +253,13 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       {
          int _y           = tga_inverted ? (tga_height -i - 1) : i;
          uint8_t *tga_row = tga_data + _y * tga_width * tga_comp;
-         rtga_getn(s, tga_row, tga_width * tga_comp);
+         int n            = tga_width * tga_comp;
+
+         if (s->img_buffer + n <= s->img_buffer_end)
+         {
+            memcpy(tga_row, s->img_buffer, n);
+            s->img_buffer += n;
+         }
       }
    }
    else
@@ -281,9 +274,10 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       /*   Do I need to load a palette? */
       if (tga_indexed)
       {
-         /*   any data to skip? (offset usually = 0) */
+         int n;
+         /* Any data to skip? (offset usually = 0) */
          rtga_skip(s, tga_palette_start );
-         /*   load the palette */
+         /* Load the palette */
          tga_palette = (unsigned char*)malloc(tga_palette_len * tga_palette_bits / 8);
 
          if (!tga_palette)
@@ -292,7 +286,14 @@ static uint8_t *rtga_tga_load(rtga_context *s,
             return NULL;
          }
 
-         if (!rtga_getn(s, tga_palette, tga_palette_len * tga_palette_bits / 8 ))
+         n = tga_palette_len * tga_palette_bits / 8;
+
+         if (s->img_buffer+n <= s->img_buffer_end)
+         {
+            memcpy(tga_palette, s->img_buffer, n);
+            s->img_buffer += n;
+         }
+         else
          {
             free(tga_data);
             free(tga_palette);
