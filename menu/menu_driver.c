@@ -1177,9 +1177,14 @@ int menu_entries_get_core_title(char *s, size_t len)
 #else
    const char *extra_version           = "";
 #endif
-
-   snprintf(s, len, "%s%s - %s %s", PACKAGE_VERSION, extra_version,
-         core_name, core_version);
+   size_t copied  = strlcpy(s, PACKAGE_VERSION, len);
+   copied         = strlcat(s, extra_version, len);
+   string_add_space_fast(s, copied);
+   s[copied+1] = '-';
+   string_add_space_fast(s, copied+2);
+   copied         = strlcat(s, core_name, len);
+   string_add_space_fast(s, copied);
+   copied         = strlcat(s, core_version, len);
 
    return 0;
 }
