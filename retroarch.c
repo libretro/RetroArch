@@ -3790,8 +3790,7 @@ static void command_event_load_auto_state(void)
          sizeof(*savestate_name_auto));
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         file_path_str(FILE_PATH_AUTO_EXTENSION),
-         savestate_name_auto_size);
+         ".auto", savestate_name_auto_size);
 
    if (!path_is_valid(savestate_name_auto))
    {
@@ -4137,8 +4136,7 @@ static bool command_event_save_auto_state(void)
       calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         file_path_str(FILE_PATH_AUTO_EXTENSION),
-         savestate_name_auto_size);
+         ".auto", savestate_name_auto_size);
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
@@ -4258,12 +4256,15 @@ static bool command_event_save_core_config(void)
 
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u%s",
-                  i,
-                  file_path_str(FILE_PATH_CONFIG_EXTENSION));
+                  i, ".cfg");
          else
-            strlcpy(tmp,
-                  file_path_str(FILE_PATH_CONFIG_EXTENSION),
-                  sizeof(tmp));
+         {
+            tmp[0] = '.';
+            tmp[1] = 'c';
+            tmp[2] = 'f';
+            tmp[3] = 'g';
+            tmp[4] = '\0';
+         }
 
          strlcat(config_path, tmp, config_size);
          if (!path_is_valid(config_path))
@@ -4279,9 +4280,7 @@ static bool command_event_save_core_config(void)
       /* Fallback to system time... */
       RARCH_WARN("[config] %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
-      fill_dated_filename(config_name,
-            file_path_str(FILE_PATH_CONFIG_EXTENSION),
-            config_size);
+      fill_dated_filename(config_name, ".cfg", config_size);
       fill_pathname_join(config_path, config_dir, config_name,
             config_size);
    }
@@ -10440,6 +10439,7 @@ static void bsv_movie_deinit(void)
 static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
+   size_t copied;
    settings_t *settings       = configuration_settings;
 
    msg[0] = path[0]           = '\0';
@@ -10447,15 +10447,17 @@ static bool runloop_check_movie_init(void)
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
    if (settings->ints.state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
+      copied = snprintf(path, sizeof(path), "%s%d",
             bsv_movie_state.movie_path,
             settings->ints.state_slot);
    else
-      strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
+      copied = strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
-   strlcat(path,
-         file_path_str(FILE_PATH_BSV_EXTENSION),
-         sizeof(path));
+   path[copied  ] = '.';
+   path[copied+1] = 'b';
+   path[copied+2] = 's';
+   path[copied+3] = 'v';
+   path[copied+4] = '\0';
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -14398,7 +14400,7 @@ static void input_config_parse_joy_button(
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
-      if (string_is_equal(btn, file_path_str(FILE_PATH_NUL)))
+      if (string_is_equal(btn, "nul"))
          bind->joykey = NO_BTN;
       else
       {
@@ -14444,7 +14446,7 @@ static void input_config_parse_joy_axis(
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      if (string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
+      if (string_is_equal(tmp, "nul"))
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
@@ -14642,7 +14644,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       key[0] = '\0';
 
       input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
-      if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
+      if (string_is_equal(key, "nul"))
          *key = '\0';
       /*empty?*/
       if (*key != '\0')
@@ -15024,7 +15026,7 @@ static void save_keybind_joykey(config_file_t *conf,
    if (bind->joykey == NO_BTN)
    {
        if (save_empty)
-         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+         config_set_string(conf, key, "nul");
    }
    else if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, key, bind);
@@ -15051,7 +15053,7 @@ static void save_keybind_axis(config_file_t *conf,
    if (bind->joyaxis == AXIS_NONE)
    {
       if (save_empty)
-         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+         config_set_string(conf, key, "nul");
    }
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
@@ -15118,7 +15120,7 @@ static void save_keybind_mbutton(config_file_t *conf,
          break;
       default:
          if (save_empty)
-            config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+            config_set_string(conf, key, "nul");
          break;
    }
 }
@@ -22374,8 +22376,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join_special_ext(s,
          config_directory, core_name, game_name,
-         file_path_str(FILE_PATH_OPT_EXTENSION),
-         len);
+         ".opt", len);
 
    /* No need to make a directory if file already exists... */
    if (mkdir && !path_is_valid(s))
@@ -22414,8 +22415,7 @@ bool retroarch_validate_per_core_options(char *s, size_t len, bool mkdir)
    /* Concatenate strings into full paths for core options path */
    fill_pathname_join_special_ext(s,
          config_directory, core_name, core_name,
-         file_path_str(FILE_PATH_OPT_EXTENSION),
-         len);
+         ".opt", len);
 
    /* No need to make a directory if file already exists... */
    if (mkdir && !path_is_valid(s))
@@ -22966,7 +22966,7 @@ static void rarch_init_core_options_path(
          {
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
-                  file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(global_options_path));
+                  "retroarch-core-options.cfg", sizeof(global_options_path));
          }
       }
 
@@ -25652,10 +25652,10 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "Auto-extract downloaded archives: %s\n", settings->bools.network_buildbot_auto_extract_archive ? "yes" : "no");
 
    {
-      size_t count = 0;
+      size_t count                     = 0;
       core_info_list_t *core_info_list = NULL;
-      struct string_list *list = NULL;
-      const char *ext = file_path_str(FILE_PATH_RDB_EXTENSION);
+      struct string_list *list         = NULL;
+      const char *ext                  = ".rdb";
 
       /* remove dot */
       if (!string_is_empty(ext) && ext[0] == '.' && strlen(ext) > 1)
@@ -25990,7 +25990,7 @@ void rarch_log_file_init(void)
       format[0] = '\0';
       strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
       fill_pathname_noext(timestamped_log_file_name, format,
-            file_path_str(FILE_PATH_EVENT_LOG_EXTENSION),
+            ".log",
             sizeof(timestamped_log_file_name));
    }
    
@@ -26046,7 +26046,7 @@ void rarch_log_file_init(void)
       fill_pathname_join(log_file_path, settings->paths.log_dir,
             log_to_file_timestamp 
             ? timestamped_log_file_name 
-            : file_path_str(FILE_PATH_DEFAULT_EVENT_LOG),
+            : ".log",
             sizeof(log_file_path));
    }
    

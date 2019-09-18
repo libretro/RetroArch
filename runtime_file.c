@@ -303,7 +303,7 @@ runtime_log_t *runtime_log_init(const char *content_path,
       return NULL;
    
    if (  string_is_equal(core_path, "builtin") || 
-         string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)))
+         string_is_equal(core_path, "DETECT"))
       return NULL;
    
    /* Get core name
@@ -411,7 +411,7 @@ runtime_log_t *runtime_log_init(const char *content_path,
    
    /* Build final log file path */
    fill_pathname_join(log_file_path, log_file_dir, content_name, sizeof(log_file_path));
-   strlcat(log_file_path, file_path_str(FILE_PATH_RUNTIME_EXTENSION), sizeof(log_file_path));
+   strlcat(log_file_path, ".lrtl", sizeof(log_file_path));
    
    if (string_is_empty(log_file_path))
       return NULL;

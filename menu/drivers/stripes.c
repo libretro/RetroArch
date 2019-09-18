@@ -983,9 +983,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
    /* Append png extension */
    if (!string_is_empty(new_path))
-      strlcat(new_path,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            sizeof(new_path));
+      strlcat(new_path, ".png", sizeof(new_path));
 
 end:
    if (stripes && !string_is_empty(new_path))
@@ -1040,7 +1038,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
                strlcpy(path, global->name.savestate, path_size);
          }
 
-         strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
+         strlcat(path, ".png", path_size);
 
          if (path_is_valid(path))
          {
@@ -1506,9 +1504,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
          free(tmp);
       }
 
-      strlcat(path,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            path_size);
+      strlcat(path, ".png", path_size);
 
       if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
@@ -1809,7 +1805,7 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!path || !strstr(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1833,8 +1829,7 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 #endif
-   info.exts                    = strdup(
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
 
    if (!string_is_empty(info.path))
@@ -1911,7 +1906,7 @@ static void stripes_context_reset_horizontal_list(
       if (!path)
          continue;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!strstr(path, ".lpl"))
          continue;
 
       {
@@ -1934,7 +1929,7 @@ static void stripes_context_reset_horizontal_list(
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          ti.width         = 0;
@@ -1956,7 +1951,7 @@ static void stripes_context_reset_horizontal_list(
 
          strlcat(iconpath, sysname, PATH_MAX_LENGTH * sizeof(char));
          fill_pathname_join_delim(content_texturepath, iconpath,
-               file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+               "content.png", '-',
                PATH_MAX_LENGTH * sizeof(char));
 
          if (image_texture_load(&ti, content_texturepath))
@@ -4368,8 +4363,7 @@ static bool stripes_menu_init_list(void *data)
 
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-   info.exts                    =
-      strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 

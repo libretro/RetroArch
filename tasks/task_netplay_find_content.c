@@ -76,7 +76,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
             &content_info, CORE_TYPE_PLAIN, NULL, NULL);
       content_clear_subsystem();
       if (!content_set_subsystem_by_name(state->subsystem_name))
-         RARCH_LOG("[lobby] subsystem not found in implementation\n");
+         RARCH_LOG("[Lobby] Subsystem not found in implementation\n");
 
       for (i = 0; i < game_list->size; i++)
          content_add_subsystem(game_list->elems[i].data);
@@ -93,7 +93,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
 
-      RARCH_LOG("[lobby] loading core %s with content file %s\n",
+      RARCH_LOG("[Lobby] Loading core %s with content file %s\n",
          state->core_path, state->content_path);
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
@@ -121,7 +121,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       content_ctx_info_t content_info  = {0};
       struct retro_system_info *system = runloop_get_libretro_system_info();
 
-      RARCH_LOG("[lobby] loading contentless core %s\n", state->core_path);
+      RARCH_LOG("[Lobby] Loading contentless core %s\n", state->core_path);
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
@@ -135,14 +135,14 @@ static void netplay_crc_scan_callback(retro_task_t *task,
    else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && state->current)
    {
-      RARCH_LOG("[lobby] loading core %s with current content\n", state->core_path);
+      RARCH_LOG("[Lobby] Loading core %s with current content\n", state->core_path);
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, state->hostname);
       command_event(CMD_EVENT_RESUME, NULL);
    }
    /* no match found */
    else
    {
-      RARCH_LOG("[lobby] couldn't find a suitable %s\n",
+      RARCH_LOG("[Lobby] Couldn't find a suitable %s\n",
          string_is_empty(state->content_path) ? "content file" : "core");
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
@@ -238,14 +238,14 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    {
       char current[PATH_MAX_LENGTH];
 
-      RARCH_LOG("[lobby] testing CRC matching for: %s\n", state->content_crc);
+      RARCH_LOG("[Lobby] Testing CRC matching for: %s\n", state->content_crc);
 
       snprintf(current, sizeof(current), "%X|crc", content_get_crc());
-      RARCH_LOG("[lobby] current content crc: %s\n", current);
+      RARCH_LOG("[Lobby] Current content crc: %s\n", current);
 
       if (string_is_equal(current, state->content_crc))
       {
-         RARCH_LOG("[lobby] CRC match %s with currently loaded content\n", current);
+         RARCH_LOG("[Lobby] CRC match %s with currently loaded content\n", current);
          strlcpy(state->content_path, "N/A", sizeof(state->content_path));
          state->found = true;
          state->current = true;
@@ -266,10 +266,10 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          const char *lpl_path   = state->lpl_list->elems[i].data;
 
          /* skip files without .lpl file extension */
-         if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+         if (!strstr(lpl_path, ".lpl"))
             continue;
 
-         RARCH_LOG("[lobby] searching playlist: %s\n", lpl_path);
+         RARCH_LOG("[Lobby] Searching playlist: %s\n", lpl_path);
          playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
          playlist_size = playlist_get_size(playlist);
 
@@ -286,7 +286,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
             if (have_crc && string_is_equal(playlist_crc32, state->content_crc))
             {
-               RARCH_LOG("[lobby] CRC match %s\n", playlist_crc32);
+               RARCH_LOG("[Lobby] CRC match %s\n", playlist_crc32);
                strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
                state->found = true;
                task_set_data(task, state);
@@ -307,7 +307,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                string_is_equal(entry, state->content_path) &&
                strstr(state->core_extensions, path_get_extension(playlist_path)))
             {
-               RARCH_LOG("[lobby] filename match %s\n", playlist_path);
+               RARCH_LOG("[Lobby] Filename match %s\n", playlist_path);
 
                strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
                state->found = true;
@@ -340,10 +340,10 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             const char *lpl_path   = state->lpl_list->elems[j].data;
 
             /* skip files without .lpl file extension */
-            if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+            if (!strstr(lpl_path, ".lpl"))
                continue;
 
-            RARCH_LOG("[lobby] searching rom %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
+            RARCH_LOG("[Lobby] Searching content %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);
             playlist      = playlist_init(lpl_path, COLLECTION_SIZE);
             playlist_size = playlist_get_size(playlist);
 
@@ -359,7 +359,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                   strstr(game_list->elems[i].data, entry) &&
                   strstr(state->core_extensions, path_get_extension(playlist_entry->path)))
                {
-                  RARCH_LOG("[lobby] filename match %s\n", playlist_entry->path);
+                  RARCH_LOG("[Lobby] filename match %s\n", playlist_entry->path);
 
                   if (i == 0)
                   {
@@ -394,7 +394,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
       if (state->found)
       {
-         RARCH_LOG("[lobby] subsystem matching set found %s\n", state->content_path);
+         RARCH_LOG("[Lobby] Subsystem matching set found %s\n", state->content_path);
          task_set_data(task, state);
          finish_task(task, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND));
       }

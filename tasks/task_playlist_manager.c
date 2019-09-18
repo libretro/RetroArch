@@ -153,7 +153,13 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
                
                /* Reset core association */
-               strlcpy(detect_string, file_path_str(FILE_PATH_DETECT), sizeof(detect_string));
+               detect_string[0] = 'D';
+               detect_string[1] = 'E';
+               detect_string[2] = 'T';
+               detect_string[3] = 'E';
+               detect_string[4] = 'C';
+               detect_string[5] = 'T';
+               detect_string[6] = '\0';
                
                update_entry.core_path = detect_string;
                update_entry.core_name = detect_string;

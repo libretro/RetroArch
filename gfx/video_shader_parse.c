@@ -1256,12 +1256,12 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
    switch (type)
    {
       case RARCH_SHADER_GLSL:
-         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+         return ".glslp";
       case RARCH_SHADER_SLANG:
-         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+         return ".slangp";
       case RARCH_SHADER_HLSL:
       case RARCH_SHADER_CG:
-         return file_path_str(FILE_PATH_CGP_EXTENSION);
+         return ".cgp";
       default:
          break;
    }

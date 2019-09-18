@@ -252,9 +252,9 @@ static bool menu_shader_manager_save_preset_internal(
       strlcpy(fullname, basename, sizeof(fullname));
 
       /* Append extension automatically as appropriate. */
-      if (     !strstr(basename, file_path_str(FILE_PATH_CGP_EXTENSION))
-            && !strstr(basename, file_path_str(FILE_PATH_GLSLP_EXTENSION))
-            && !strstr(basename, file_path_str(FILE_PATH_SLANGP_EXTENSION)))
+      if (     !strstr(basename, ".cgp")
+            && !strstr(basename, ".glslp")
+            && !strstr(basename, ".slangp"))
       {
          const char *preset_ext = video_shader_get_preset_extension(type);
          strlcat(fullname, preset_ext, sizeof(fullname));
@@ -262,9 +262,18 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      const char *preset_ext = video_shader_get_preset_extension(type);
-      strlcpy(fullname, "retroarch", sizeof(fullname));
-      strlcat(fullname, preset_ext, sizeof(fullname));
+      fullname[0] = 'r';
+      fullname[1] = 'e';
+      fullname[2] = 't';
+      fullname[3] = 'r';
+      fullname[4] = 'o';
+      fullname[5] = 'a';
+      fullname[6] = 'r';
+      fullname[7] = 'c';
+      fullname[8] = 'h';
+      fullname[9] = '\0';
+      strlcat(fullname, 
+            video_shader_get_preset_extension(type), sizeof(fullname));
    }
 
    if (path_is_absolute(fullname))

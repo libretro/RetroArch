@@ -500,13 +500,13 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 
    /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
-      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_CGP_EXTENSION);
+      filter += QLatin1Literal(" *") + ".cgp";
 
    if (video_shader_is_supported(RARCH_SHADER_GLSL))
-      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
+      filter += QLatin1Literal(" *") + ".glslp";
 
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
-      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
+      filter += QLatin1Literal(" *") + ".slangp";
 
    filter += ")";
 

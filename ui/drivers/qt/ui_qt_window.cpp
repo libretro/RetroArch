@@ -2045,7 +2045,7 @@ void MainWindow::setCoreActions()
             coreName = "<n/a>";
          else
          {
-            const char *detect_str = file_path_str(FILE_PATH_DETECT);
+            const char *detect_str = "DETECT";
 
             if (coreName != detect_str)
             {

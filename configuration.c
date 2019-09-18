@@ -3111,7 +3111,7 @@ static bool config_load_file(const char *path, settings_t *settings)
                   sizeof(global->name.savefile));
             fill_pathname_dir(global->name.savefile,
                   path_get(RARCH_PATH_BASENAME),
-                  file_path_str(FILE_PATH_SRM_EXTENSION),
+                  ".srm",
                   sizeof(global->name.savefile));
          }
       }
@@ -3136,7 +3136,7 @@ static bool config_load_file(const char *path, settings_t *settings)
                   sizeof(global->name.savestate));
             fill_pathname_dir(global->name.savestate,
                   path_get(RARCH_PATH_BASENAME),
-                  file_path_str(FILE_PATH_STATE_EXTENSION),
+                  ".state",
                   sizeof(global->name.savestate));
          }
       }
@@ -3261,19 +3261,19 @@ bool config_load_override(void)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
       config_directory, core_name,
       content_dir_name,
-      file_path_str(FILE_PATH_CONFIG_EXTENSION),
+      ".cfg",
       path_size);
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    free(config_directory);
@@ -3488,19 +3488,19 @@ bool config_load_remap(const char *directory_input_remapping)
    fill_pathname_join_special_ext(core_path,
          remap_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
          remap_directory, core_name,
          content_dir_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    fill_pathname_join_special_ext(game_path,
          remap_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    input_remapping_set_defaults(false);
@@ -3644,7 +3644,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       fill_pathname_join(buf_new, buf,
             path, path_size);
       fill_pathname_noext(autoconf_file, buf_new,
-            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            ".cfg",
             path_size);
 
       free(buf_new);
@@ -3654,7 +3654,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       fill_pathname_join(buf, autoconf_dir,
             path, path_size);
       fill_pathname_noext(autoconf_file, buf,
-            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            ".cfg",
             path_size);
    }
 
@@ -4003,19 +4003,19 @@ bool config_save_overrides(int override_type)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
          config_directory, core_name,
          content_dir_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    if (!conf)

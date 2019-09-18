@@ -219,8 +219,7 @@ static void fill_content_img(menu_thumbnail_path_data_t *path_data)
       *scrub_char_pointer = '_';
    
    /* Add PNG extension */
-   strlcat(path_data->content_img,
-         file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path_data->content_img));
+   strlcat(path_data->content_img, ".png", sizeof(path_data->content_img));
 }
 
 /* Sets current 'system' (default database name).

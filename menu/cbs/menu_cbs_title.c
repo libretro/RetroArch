@@ -101,7 +101,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       return 0;
 
    if (string_is_equal_noncase(path_get_extension(playlist_file),
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+            "lpl"))
    {
       /* Handle content history */
       if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)))

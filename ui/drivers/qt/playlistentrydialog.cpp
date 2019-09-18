@@ -122,7 +122,7 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    m_databaseComboBox->clear();
 
    m_coreComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
-   m_databaseComboBox->addItem(QString("<") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) + ">", QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION)));
+   m_databaseComboBox->addItem(QString("<") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) + ">", QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(".lpl"));
 
    core_info_get_list(&core_info_list);
 

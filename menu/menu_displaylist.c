@@ -964,7 +964,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (show_inline_core_name)
          {
-            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, file_path_str(FILE_PATH_DETECT)))
+            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, "DETECT"))
             {
                strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
                strlcat(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
@@ -1127,10 +1127,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    menu_driver_set_thumbnail_system(path_base, sizeof(path_base));
 
-   strlcat(path_base,
-         file_path_str(FILE_PATH_LPL_EXTENSION),
-         sizeof(path_base)
-         );
+   strlcat(path_base, ".lpl", sizeof(path_base));
 
    fill_pathname_join(path_playlist,
          settings->paths.directory_playlist, path_base,
@@ -2453,7 +2450,7 @@ static unsigned menu_displaylist_parse_playlists(
 
       /* Ignore non-playlist files */
       if (!string_is_equal_noncase(path_get_extension(playlist_file),
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+               "lpl"))
          continue;
 
       /* Ignore history/favourites */
@@ -2725,7 +2722,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
 
          /* Ignore non-playlist files */
          if (!string_is_equal_noncase(path_get_extension(playlist_file),
-               file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+                  "lpl"))
             continue;
 
          /* Ignore history/favourites
@@ -2909,7 +2906,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
             continue;
 
          if (!string_is_equal_noncase(path_get_extension(path),
-                  file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+                  "lpl"))
             continue;
 
          strlcpy(path_base, path, sizeof(path_base));
@@ -3056,7 +3053,7 @@ static unsigned menu_displaylist_parse_content_information(
 
    /* Core name */
    if (!string_is_empty(core_name) &&
-       !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
+       !string_is_equal(core_name, "DETECT"))
    {
       tmp[0]   = '\0';
 
@@ -3172,9 +3169,7 @@ static unsigned menu_displaylist_parse_content_information(
             settings->paths.path_content_database,
             db_name,
             sizeof(db_path));
-      strlcat(db_path,
-            file_path_str(FILE_PATH_RDB_EXTENSION),
-            sizeof(db_path));
+      strlcat(db_path, ".rdb", sizeof(db_path));
 
       if (path_is_valid(db_path))
          if (menu_entries_append_enum(info->list,
@@ -3225,8 +3220,7 @@ static bool menu_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup(
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+      info->exts  = strdup("lpl");
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -3244,8 +3238,7 @@ static bool menu_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup(
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+      info->exts  = strdup("lpl");
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -3263,8 +3256,7 @@ static bool menu_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup(
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+      info->exts  = strdup("lpl");
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -3295,8 +3287,7 @@ static bool menu_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts = strdup(
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+      info->exts  = strdup("lpl");
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -4071,7 +4062,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   count++;
 
                if (string_is_empty(current_core_name) ||
-                   string_is_equal(current_core_name, file_path_str(FILE_PATH_DETECT)))
+                   string_is_equal(current_core_name, "DETECT"))
                   menu_entries_set_checked(list, 0, true);
 
                /* Loop through cores */
@@ -8649,8 +8640,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (info->path)
                free(info->path);
             info->type_default = FILE_TYPE_RDB;
-            info->exts         = strdup(
-                  file_path_str(FILE_PATH_RDB_EXTENSION));
+            info->exts         = strdup(".rdb");
             info->enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
             load_content       = false;
             use_filebrowser    = true;

@@ -181,7 +181,7 @@ void path_set_redirect(void)
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               file_path_str(FILE_PATH_SRM_EXTENSION),
+               ".srm",
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -193,7 +193,7 @@ void path_set_redirect(void)
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               file_path_str(FILE_PATH_STATE_EXTENSION),
+               ".state",
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -205,7 +205,7 @@ void path_set_redirect(void)
          /* FIXME: Should this optionally use system->library_name like the others? */
          fill_pathname_dir(global->name.cheatfile,
                !string_is_empty(path_main_basename) ? path_main_basename : "",
-               file_path_str(FILE_PATH_STATE_EXTENSION),
+               ".state",
                sizeof(global->name.cheatfile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
@@ -297,7 +297,7 @@ void path_set_special(char **argv, unsigned num_content)
       {
          fill_pathname_dir(global->name.savestate,
                str,
-               file_path_str(FILE_PATH_STATE_EXTENSION),
+               ".state",
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -382,14 +382,14 @@ static bool path_init_subsystem(void)
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
                path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION),
+               ".srm",
                sizeof(global->name.savefile));
 
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
                path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION),
+               ".srm",
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -449,17 +449,17 @@ void path_fill_names(void)
    {
       if (string_is_empty(global->name.ups))
          fill_pathname_noext(global->name.ups, path_main_basename,
-               file_path_str(FILE_PATH_UPS_EXTENSION),
+               ".ups",
                sizeof(global->name.ups));
 
       if (string_is_empty(global->name.bps))
          fill_pathname_noext(global->name.bps, path_main_basename,
-               file_path_str(FILE_PATH_BPS_EXTENSION),
+               ".bps",
                sizeof(global->name.bps));
 
       if (string_is_empty(global->name.ips))
          fill_pathname_noext(global->name.ips, path_main_basename,
-               file_path_str(FILE_PATH_IPS_EXTENSION),
+               ".ips",
                sizeof(global->name.ips));
    }
 }
@@ -570,14 +570,14 @@ static void path_set_names(const char *path)
    {
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile, path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
+               ".srm", sizeof(global->name.savefile));
 
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
          fill_pathname_noext(global->name.savestate, path_main_basename,
-               file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
+               ".state", sizeof(global->name.savestate));
 
       fill_pathname_noext(global->name.cheatfile, path_main_basename,
-            file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
+            ".cht", sizeof(global->name.cheatfile));
    }
 
    path_set_redirect();
