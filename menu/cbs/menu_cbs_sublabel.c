@@ -1054,12 +1054,17 @@ static int action_bind_sublabel_playlist_entry(
       int n = 0;
       char tmp[64];
       
-      tmp[0] = '\0';
+      tmp[0  ] = '\n';
+      tmp[1  ] = '\0';
+
+      n = strlcat(tmp, entry->runtime_str, sizeof(tmp));
+
+      tmp[n  ] = '\n';
+      tmp[n+1] = '\0';
       
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
-      n = snprintf(tmp, sizeof(tmp), "\n%s\n%s",
-            entry->runtime_str, entry->last_played_str);
+      n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
       
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
