@@ -306,7 +306,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
       if (!string_is_empty(elem0_path))
       {
          s[written  ] = '-';
-         s[written+1] = ' ';
+         string_add_space_fast(s, written+1);
          strlcat(s, path_basename(elem0_path), len);
       }
    }
@@ -344,8 +344,7 @@ static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    size_t written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-   s[written]   = ' ';
-   s[written+1] = '\0';
+   string_add_space_fast(s, written);
    strlcat(s, path, len);
    return 0;
 }
@@ -399,10 +398,9 @@ static int action_get_title_group_settings(const char *path, const char *label,
 
       if (!string_is_empty(elem1))
       {
-         s[copied]   = ' ';
+         string_add_space_fast(s, copied);
          s[copied+1] = '-';
-         s[copied+2] = ' ';
-         s[copied+3] = '\0';
+         string_add_space_fast(s, copied+2);
          strlcat(s, elem1, len);
       }
    }

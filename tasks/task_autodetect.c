@@ -238,8 +238,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       size_t written                     = strlcpy(
             msg, autoconfig_str, sizeof(msg));
 
-      msg[written  ]                     = ' ';
-      msg[written+1]                     = '\0';
+      string_add_space_fast(msg, written);
       strlcat(msg, "configured.", sizeof(msg));
 
       if (!remote_is_bound)

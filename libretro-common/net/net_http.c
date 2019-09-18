@@ -168,8 +168,7 @@ void net_http_urlencode_full(char *dest,
    tmp            = NULL;
    net_http_urlencode(&tmp, url_path);
    copied         = strlcpy(dest, url_domain, size);
-   dest[copied]   = '/';
-   dest[copied+1] = '\0';
+   string_add_backslash_fast(dest, copied);
    copied         = strlcat(dest, tmp, size);
    free (tmp);
 }
@@ -328,8 +327,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
             strlcat(new_domain, uri, sizeof(new_domain));
          else
          {
-            new_domain[copied]   = '/';
-            new_domain[copied+1] = '\0';
+            string_add_backslash_fast(new_domain, copied);
             strlcat(new_domain, strchr(uri, (char)'/') + sizeof(char),
                   sizeof(new_domain));
          }

@@ -3880,7 +3880,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
 
@@ -3915,8 +3915,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                            path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                      {
-                        rom_buff[copied]   = '|';
-                        rom_buff[copied+1] = '\0';
+                        string_add_vertical_bar_fast(rom_buff, copied);
                      }
                   }
 
@@ -3929,7 +3928,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      {
                         if (verbosity_is_enabled())
                         {
-                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                           RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                         }
                      }
                      
@@ -3970,7 +3969,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
                   

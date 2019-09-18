@@ -18959,11 +18959,10 @@ static void video_driver_frame(const void *data, unsigned width,
                "FPS: %6.2f", last_fps);
          if (video_info.framecount_show)
          {
-            video_info.fps_text[copied]   = ' ';
-            video_info.fps_text[copied+1] = '|';
-            video_info.fps_text[copied+2] = '|';
-            video_info.fps_text[copied+3] = ' ';
-            video_info.fps_text[copied+4] = '\0';
+            string_add_space_fast(video_info.fps_text,        copied);
+            string_add_vertical_bar_fast(video_info.fps_text, copied+1);
+            string_add_vertical_bar_fast(video_info.fps_text, copied+2);
+            string_add_space_fast(video_info.fps_text,        copied+3);
          }
       }
 
@@ -18989,11 +18988,10 @@ static void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(video_info.fps_text))
          {
-            video_driver_window_title[copied]   = ' ';
-            video_driver_window_title[copied+1] = '|';
-            video_driver_window_title[copied+2] = '|';
-            video_driver_window_title[copied+3] = ' ';
-            video_driver_window_title[copied+4] = '\0';
+            string_add_space_fast(video_driver_window_title,        copied);
+            string_add_vertical_bar_fast(video_driver_window_title, copied+1);
+            string_add_vertical_bar_fast(video_driver_window_title, copied+2);
+            string_add_space_fast(video_driver_window_title,        copied+3);
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }

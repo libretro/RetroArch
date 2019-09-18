@@ -1023,8 +1023,7 @@ static int action_bind_sublabel_playlist_entry(
    
    /* Add core name */
    written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   s[written ]  = ' ';
-   s[written+1] = '\0';
+   string_add_space_fast(s, written);
    written = strlcat(s, entry->core_name, len);
    
    /* Get runtime info *if* required runtime log is enabled

@@ -145,14 +145,11 @@ static bool get_thumbnail_paths(
    
    /* Generate remote path */
    copied = strlcpy(raw_url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(raw_url));
-   raw_url[copied]   = '/';
-   raw_url[copied+1] = '\0';
+   string_add_backslash_fast(raw_url, copied);
    copied = strlcat(raw_url, system_name, sizeof(raw_url));
-   raw_url[copied]   = '/';
-   raw_url[copied+1] = '\0';
+   string_add_backslash_fast(raw_url, copied);
    copied = strlcat(raw_url, sub_dir, sizeof(raw_url));
-   raw_url[copied]   = '/';
-   raw_url[copied+1] = '\0';
+   string_add_backslash_fast(raw_url, copied);
    strlcat(raw_url, img_name, sizeof(raw_url));
    
    if (string_is_empty(raw_url))

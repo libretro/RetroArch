@@ -59,9 +59,33 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 #define string_add_glob_open(s, size)     strlcat((s), "glob('*",  (size))
 #define string_add_glob_close(s, size)    strlcat((s), "*')",  (size))
 
+#define string_add_backslash_fast(s, size) \
+   (s)[(size)]   = '/'; \
+   (s)[(size)+1] = '\0'
+
+#define string_add_colon_fast(s, size) \
+   (s)[(size)]   = ':'; \
+   (s)[(size)+1] = '\0'
+
+#define string_add_star_fast(s, size) \
+   (s)[(size)]   = '*'; \
+   (s)[(size)+1] = '\0'
+
+#define string_add_space_fast(s, size) \
+   (s)[(size)]   = ' '; \
+   (s)[(size)+1] = '\0'
+
+#define string_add_vertical_bar_fast(s, size) \
+   (s)[(size)]   = '|'; \
+   (s)[(size)+1] = '\0'
+
+#define string_add_pair_open_fast(s, size) \
+   (s)[(size)]   = '('; \
+   (s)[(size)+1] = '\0'
+
 #define string_add_pair_close_fast(s, size) \
-   (s)[size]   = ')'; \
-   (s)[size+1] = '\0'
+   (s)[(size)]   = ')'; \
+   (s)[(size)+1] = '\0'
 
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)

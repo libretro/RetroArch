@@ -303,8 +303,7 @@ static void* task_push_http_transfer_generic(
    copied        = strlcpy(tmp,
          msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
 
-   tmp[copied]   = ' ';
-   tmp[copied+1] = '\0';
+   string_add_space_fast(tmp, copied);
 
    if (strstr(s, ".index"))
       strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
