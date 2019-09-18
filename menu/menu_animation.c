@@ -1402,8 +1402,11 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 
    if (!ticker->selected)
    {
-      utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      strlcat(ticker->s, "...", PATH_MAX_LENGTH);
+      size_t copied = utf8cpy(ticker->s,
+            PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
+      string_add_dot_fast(ticker->s, copied);
+      string_add_dot_fast(ticker->s, copied+1);
+      string_add_dot_fast(ticker->s, copied+2);
       return false;
    }
 
@@ -1499,6 +1502,7 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
+      size_t copied;
       unsigned num_chars    = 0;
       unsigned suffix_len   = 3;
       unsigned suffix_width = suffix_len * glyph_width;
@@ -1511,8 +1515,10 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
 
       /* Copy string segment + add suffix */
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
+      copied = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      string_add_dot_fast(ticker->dst_str, copied);
+      string_add_dot_fast(ticker->dst_str, copied+1);
+      string_add_dot_fast(ticker->dst_str, copied+2);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1680,6 +1686,7 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
+      size_t copied;
       unsigned text_width;
       unsigned current_width = 0;
       unsigned num_chars     = 0;
@@ -1711,8 +1718,10 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
+      copied = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      string_add_dot_fast(ticker->dst_str, copied);
+      string_add_dot_fast(ticker->dst_str, copied+1);
+      string_add_dot_fast(ticker->dst_str, copied+2);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);
