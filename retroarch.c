@@ -23640,46 +23640,165 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    {
       case RARCH_CAPABILITIES_CPU:
          {
-            uint64_t cpu = cpu_features_get();
+            unsigned written = strlen(s);
+            uint64_t cpu     = cpu_features_get();
 
             if (cpu & RETRO_SIMD_MMX)
-               strlcat(s, "MMX ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'M';
+               s[written++] = 'M';
+               s[written++] = 'X';
+            }
             if (cpu & RETRO_SIMD_MMXEXT)
-               strlcat(s, "MMXEXT ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'M';
+               s[written++] = 'M';
+               s[written++] = 'X';
+               s[written++] = 'E';
+               s[written++] = 'X';
+               s[written++] = 'T';
+            }
             if (cpu & RETRO_SIMD_SSE)
-               strlcat(s, "SSE1 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+            }
             if (cpu & RETRO_SIMD_SSE2)
-               strlcat(s, "SSE2 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+               s[written++] = '2';
+            }
             if (cpu & RETRO_SIMD_SSE3)
-               strlcat(s, "SSE3 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+               s[written++] = '3';
+            }
             if (cpu & RETRO_SIMD_SSSE3)
-               strlcat(s, "SSSE3 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+               s[written++] = '3';
+            }
             if (cpu & RETRO_SIMD_SSE4)
-               strlcat(s, "SSE4 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+               s[written++] = '4';
+            }
             if (cpu & RETRO_SIMD_SSE42)
-               strlcat(s, "SSE4.2 ", len);
-            if (cpu & RETRO_SIMD_AVX)
-               strlcat(s, "AVX ", len);
-            if (cpu & RETRO_SIMD_AVX2)
-               strlcat(s, "AVX2 ", len);
-            if (cpu & RETRO_SIMD_VFPU)
-               strlcat(s, "VFPU ", len);
-            if (cpu & RETRO_SIMD_NEON)
-               strlcat(s, "NEON ", len);
-            if (cpu & RETRO_SIMD_VFPV3)
-               strlcat(s, "VFPv3 ", len);
-            if (cpu & RETRO_SIMD_VFPV4)
-               strlcat(s, "VFPv4 ", len);
-            if (cpu & RETRO_SIMD_PS)
-               strlcat(s, "PS ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'S';
+               s[written++] = 'S';
+               s[written++] = 'E';
+               s[written++] = '4';
+               s[written++] = '.';
+               s[written++] = '2';
+            }
             if (cpu & RETRO_SIMD_AES)
-               strlcat(s, "AES ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'A';
+               s[written++] = 'E';
+               s[written++] = 'S';
+            }
+            if (cpu & RETRO_SIMD_AVX)
+            {
+               s[written++] = ' ';
+               s[written++] = 'A';
+               s[written++] = 'V';
+               s[written++] = 'X';
+            }
+            if (cpu & RETRO_SIMD_AVX2)
+            {
+               s[written++] = ' ';
+               s[written++] = 'A';
+               s[written++] = 'V';
+               s[written++] = 'X';
+               s[written++] = '2';
+            }
+            if (cpu & RETRO_SIMD_NEON)
+            {
+               s[written++] = ' ';
+               s[written++] = 'N';
+               s[written++] = 'E';
+               s[written++] = 'O';
+               s[written++] = 'N';
+            }
+            if (cpu & RETRO_SIMD_VFPV3)
+            {
+               s[written++] = ' ';
+               s[written++] = 'V';
+               s[written++] = 'F';
+               s[written++] = 'P';
+               s[written++] = 'v';
+               s[written++] = '3';
+            }
+            if (cpu & RETRO_SIMD_VFPV4)
+            {
+               s[written++] = ' ';
+               s[written++] = 'V';
+               s[written++] = 'F';
+               s[written++] = 'P';
+               s[written++] = 'v';
+               s[written++] = '4';
+            }
             if (cpu & RETRO_SIMD_VMX)
-               strlcat(s, "VMX ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'V';
+               s[written++] = 'M';
+               s[written++] = 'X';
+            }
             if (cpu & RETRO_SIMD_VMX128)
-               strlcat(s, "VMX128 ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'V';
+               s[written++] = 'M';
+               s[written++] = 'X';
+               s[written++] = '1';
+               s[written++] = '2';
+               s[written++] = '8';
+            }
+            if (cpu & RETRO_SIMD_VFPU)
+            {
+               s[written++] = ' ';
+               s[written++] = 'V';
+               s[written++] = 'F';
+               s[written++] = 'P';
+               s[written++] = 'U';
+            }
+            if (cpu & RETRO_SIMD_PS)
+            {
+               s[written++] = ' ';
+               s[written++] = 'P';
+               s[written++] = 'S';
+            }
             if (cpu & RETRO_SIMD_ASIMD)
-               strlcat(s, "ASIMD ", len);
+            {
+               s[written++] = ' ';
+               s[written++] = 'A';
+               s[written++] = 'S';
+               s[written++] = 'I';
+               s[written++] = 'M';
+               s[written++] = 'D';
+            }
+            s[written++] = '\0';
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
