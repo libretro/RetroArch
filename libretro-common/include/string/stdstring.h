@@ -71,6 +71,10 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    (s)[(size)]   = '*'; \
    (s)[(size)+1] = '\0'
 
+#define string_add_dot_fast(s, size) \
+   (s)[(size)]   = '.'; \
+   (s)[(size)+1] = '\0'
+
 #define string_add_space_fast(s, size) \
    (s)[(size)]   = ' '; \
    (s)[(size)+1] = '\0'
