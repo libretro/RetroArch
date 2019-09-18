@@ -3009,10 +3009,14 @@ static unsigned menu_displaylist_parse_content_information(
    /* Content label */
    if (!string_is_empty(content_label))
    {
-      tmp[0] = '\0';
+      tmp[0]   = '\0';
 
-      n = snprintf(tmp, sizeof(tmp),
-            "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), content_label);
+      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), sizeof(tmp));
+      tmp[n  ] = ':';
+      tmp[n+1] = ' ';
+      tmp[n+2] = '\0';
+      n        = strlcat(tmp, content_label, sizeof(tmp));
+      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3029,10 +3033,14 @@ static unsigned menu_displaylist_parse_content_information(
    /* Content path */
    if (!string_is_empty(content_path))
    {
-      tmp[0] = '\0';
+      tmp[0]   = '\0';
 
-      n = snprintf(tmp, sizeof(tmp),
-            "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), content_path);
+      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), sizeof(tmp));
+      tmp[n  ] = ':';
+      tmp[n+1] = ' ';
+      tmp[n+2] = '\0';
+      n        = strlcat(tmp, content_path, sizeof(tmp));
+      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3050,10 +3058,14 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(core_name) &&
        !string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
-      tmp[0] = '\0';
+      tmp[0]   = '\0';
 
-      n = snprintf(tmp, sizeof(tmp),
-            "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), core_name);
+      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), sizeof(tmp));
+      tmp[n  ] = ':';
+      tmp[n+1] = ' ';
+      tmp[n+2] = '\0';
+      n        = strlcat(tmp, core_name, sizeof(tmp));
+      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3083,10 +3095,14 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (!string_is_empty(db_name_no_ext))
       {
-         tmp[0] = '\0';
+         tmp[0]   = '\0';
 
-         n = snprintf(tmp, sizeof(tmp),
-               "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), db_name_no_ext);
+         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
+         tmp[n  ] = ':';
+         tmp[n+1] = ' ';
+         tmp[n+2] = '\0';
+         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
+         tmp[n  ] = '\0';
 
          /* Silence gcc compiler warning
           * (getting so sick of these...) */
