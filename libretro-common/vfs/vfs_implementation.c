@@ -1152,15 +1152,10 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    copied                = strlcpy(path_buf, name, sizeof(path_buf));
 
    /* Non-NT platforms don't like extra slashes in the path */
-   if (name[path_len - 1] == '\\')
-   {
-      string_add_star_fast(path_buf, copied);
-   }
-   else
-   {
-      path_buf[copied]   = '\\';
-      string_add_star_fast(path_buf, copied+1);
-   }
+   if (name[path_len - 1] != '\\')
+      path_buf[copied++]   = '\\';
+
+   string_add_star_fast(path_buf, copied);
 
 #if defined(LEGACY_WIN32)
    path_local            = utf8_to_local_string_alloc(path_buf);
