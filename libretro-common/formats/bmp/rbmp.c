@@ -106,40 +106,40 @@ static unsigned char *rbmp_convert_format(
 
       switch (((img_n)*8+(req_comp)))
       {
-         case ((1)*8+(2)):
+         case 10:
             for(i = x-1; i >= 0; --i, src += 1, dest += 2)
             {
                dest[0]=src[0];
                dest[1]=255;
             }
             break;
-         case ((1)*8+(3)):
+         case 11:
             for(i = x-1; i >= 0; --i, src += 1, dest += 3)
                dest[0]=dest[1]=dest[2]=src[0];
             break;
-         case ((1)*8+(4)):
+         case 12:
             for(i = x-1; i >= 0; --i, src += 1, dest += 4)
             {
                dest[0]=dest[1]=dest[2]=src[0];
                dest[3]=255;
             }
             break;
-         case ((2)*8+(1)):
+         case 17:
             for(i = x-1; i >= 0; --i, src += 2, dest += 1)
                dest[0]=src[0];
             break;
-         case ((2)*8+(3)):
+         case 19:
             for(i = x-1; i >= 0; --i, src += 2, dest += 3)
                dest[0]=dest[1]=dest[2]=src[0];
             break;
-         case ((2)*8+(4)):
+         case 20:
             for(i = x-1; i >= 0; --i, src += 2, dest += 4)
             {
                dest[0]=dest[1]=dest[2]=src[0];
                dest[3]=src[1];
             }
             break;
-         case ((3)*8+(4)):
+         case 28:
             for(i = x-1; i >= 0; --i, src += 3, dest += 4)
             {
                dest[0]=src[0];
@@ -148,29 +148,29 @@ static unsigned char *rbmp_convert_format(
                dest[3]=255;
             }
             break;
-         case ((3)*8+(1)):
+         case 25:
             for(i = x-1; i >= 0; --i, src += 3, dest += 1)
                dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
             break;
-         case ((3)*8+(2)):
+         case 26:
             for(i = x-1; i >= 0; --i, src += 3, dest += 2)
             {
                dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
                dest[1] = 255;
             }
             break;
-         case ((4)*8+(1)):
+         case 33:
             for(i = x-1; i >= 0; --i, src += 4, dest += 1)
                dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
             break;
-         case ((4)*8+(2)):
+         case 34:
             for(i = x-1; i >= 0; --i, src += 4, dest += 2)
             {
                dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
                dest[1] = src[3];
             }
             break;
-         case ((4)*8+(3)):
+         case 35:
             for(i = x-1; i >= 0; --i, src += 4, dest += 3)
             {
                dest[0]=src[0];
@@ -314,7 +314,7 @@ static unsigned char *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
       if (compress == 1 || compress == 2)
          return 0;
 
-      /* discord sizeof */
+      /* discard sizeof */
       rbmp_get16le(s);
       rbmp_get16le(s);
       /* discard hres */
