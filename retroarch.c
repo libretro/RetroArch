@@ -14365,13 +14365,32 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if      (string_is_equal(dir, "up"))
+   if (     dir[0] == 'u'
+         && dir[1] == 'p'
+         && dir[2] == '\0'
+      )
       hat_dir = HAT_UP_MASK;
-   else if (string_is_equal(dir, "down"))
+   else if (     dir[0] == 'd'
+              && dir[1] == 'o'
+              && dir[2] == 'w'
+              && dir[3] == 'n'
+              && dir[4] == '\0'
+      )
       hat_dir = HAT_DOWN_MASK;
-   else if (string_is_equal(dir, "left"))
+   else if (     dir[0] == 'l'
+              && dir[1] == 'e'
+              && dir[2] == 'f'
+              && dir[3] == 't'
+              && dir[4] == '\0'
+      )
       hat_dir = HAT_LEFT_MASK;
-   else if (string_is_equal(dir, "right"))
+   else if (     dir[0] == 'r'
+              && dir[1] == 'i'
+              && dir[2] == 'g'
+              && dir[3] == 'h'
+              && dir[4] == 't'
+              && dir[5] == '\0'
+      )
       hat_dir = HAT_RIGHT_MASK;
 
    if (hat_dir)
@@ -14400,7 +14419,11 @@ static void input_config_parse_joy_button(
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
-      if (string_is_equal(btn, "nul"))
+      if (     btn[0] == 'n' 
+            && btn[1] == 'u'
+            && btn[2] == 'l'
+            && btn[3] == '\0'
+         )
          bind->joykey = NO_BTN;
       else
       {
@@ -14446,7 +14469,11 @@ static void input_config_parse_joy_axis(
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      if (string_is_equal(tmp, "nul"))
+      if (     tmp[0] == 'n' 
+            && tmp[1] == 'u'
+            && tmp[2] == 'l'
+            && tmp[3] == '\0'
+         )
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
@@ -14644,7 +14671,11 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       key[0] = '\0';
 
       input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
-      if (string_is_equal(key, "nul"))
+      if (     key[0] == 'n' 
+            && key[1] == 'u'
+            && key[2] == 'l'
+            && key[3] == '\0'
+         )
          *key = '\0';
       /*empty?*/
       if (*key != '\0')
