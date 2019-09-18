@@ -65,6 +65,17 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 
    core_info_get_list(&core_list);
 
+   s[0]   = 'L';
+   s[1]   = 'i';
+   s[2]   = 'c';
+   s[3]   = 'e';
+   s[4]   = 'n';
+   s[5]   = 's';
+   s[6]   = 'e';
+   s[7]   = ':';
+   s[8]   = ' ';
+   s[9]   = '\0';
+
    if (core_list)
    {
       unsigned j;
@@ -80,14 +91,17 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 
                string_list_join_concat(tmp, sizeof(tmp),
                      core_list->list[j].licenses_list, ", ");
-               snprintf(s, len, "License: %s", tmp);
+               strlcat(s, tmp, len);
                return 1;
             }
          }
       }
    }
 
-   strlcpy(s, "License: N/A", len);
+   s[9]   = 'N';
+   s[10]  = '/';
+   s[11]  = 'A';
+   s[12]  = '\0';
    return 1;
 }
 
@@ -898,9 +912,9 @@ static int action_bind_sublabel_cheat_desc(
    if (cheat_manager_state.cheats)
    {
       if (cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
-         snprintf(s, len, "Emulator-Handled") ;
+         strlcpy(s, "Emulator-Handled", len);
       else
-         snprintf(s, len, "RetroArch-Handled") ;
+         strlcpy(s, "RetroArch-Handled", len);
    }
 
    return 0;
@@ -984,9 +998,6 @@ static int action_bind_sublabel_netplay_room(
             gamecrc);
       }
    }
-#if 0
-   strlcpy(s, corename, len);
-#endif
    return 0;
 }
 #endif
