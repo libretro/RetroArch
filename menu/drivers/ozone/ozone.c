@@ -574,15 +574,21 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
+         size_t copied;
          char filename[PATH_MAX_LENGTH];
+         filename[0] = '\0';
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
-            strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
+            copied = strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
          else
 #endif
-            strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
+            copied = strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
 
-         strlcat(filename, ".png", sizeof(filename));
+         string_add_dot_fast(filename, copied);
+         filename[copied+1] = 'p';
+         filename[copied+2] = 'n';
+         filename[copied+3] = 'g';
+         filename[copied+4] = '\0';
 
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
@@ -610,9 +616,17 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* Sidebar textures */
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
+         size_t copied;
          char filename[PATH_MAX_LENGTH];
-         strlcpy(filename, OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
-         strlcat(filename, ".png", sizeof(filename));
+
+         filename[0]        = '\0';
+         copied             = strlcpy(filename,
+               OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
+         string_add_dot_fast(filename, copied);
+         filename[copied+1] = 'p';
+         filename[copied+2] = 'n';
+         filename[copied+3] = 'g';
+         filename[copied+4] = '\0';
 
          if (!menu_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {

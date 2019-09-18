@@ -1121,6 +1121,7 @@ static void materialui_draw_bg(menu_display_ctx_draw_t *draw,
    and the menu list */
 static void materialui_frame(void *data, video_frame_info_t *video_info)
 {
+   size_t copied;
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
 
@@ -1599,12 +1600,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Title */
    usable_width = width - (mui->margin * 2) - title_margin;
 
-   strlcpy(menu_title, mui->menu_title, sizeof(menu_title));
+   copied = strlcpy(menu_title, mui->menu_title, sizeof(menu_title));
+
    if (materialui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
-      strlcat(menu_title, " (", sizeof(menu_title));
-      strlcat(menu_title, title_msg, sizeof(menu_title));
-      strlcat(menu_title, ")", sizeof(menu_title));
+      string_add_space_fast(menu_title,     copied);
+      string_add_pair_open_fast(menu_title, copied+1);
+      copied = strlcat(menu_title, title_msg, sizeof(menu_title));
+      string_add_pair_close_fast(menu_title, copied);
    }
 
    if (use_smooth_ticker)
