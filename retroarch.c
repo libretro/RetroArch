@@ -14621,14 +14621,9 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
    int delim = 0;
-#ifndef RARCH_CONSOLE
-   char key[64];
-   char keybuf[64];
-
-   key[0] = keybuf[0] = '\0';
-#endif
 
    *buf = '\0';
+
    if (bind->joykey != NO_BTN)
       input_config_get_bind_string_joykey(buf, "", bind, size);
    else if (bind->joyaxis != AXIS_NONE)
@@ -14642,17 +14637,27 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       delim = 1;
 
 #ifndef RARCH_CONSOLE
-   input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
-   if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
-      *key = '\0';
-   /*empty?*/
-   if (*key != '\0')
    {
-      if (delim)
-         strlcat(buf, ", ", size);
-      snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-      strlcat(buf, keybuf, size);
-      delim = 1;
+      char key[64];
+      key[0] = '\0';
+
+      input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
+      if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
+         *key = '\0';
+      /*empty?*/
+      if (*key != '\0')
+      {
+         char keybuf[64];
+
+         keybuf[0] = '\0';
+
+         if (delim)
+            strlcat(buf, ", ", size);
+         snprintf(keybuf, sizeof(keybuf),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+         strlcat(buf, keybuf, size);
+         delim = 1;
+      }
    }
 #endif
 
@@ -21786,8 +21791,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
       {
-         strlcat(launch_arguments, argv[i], sizeof(launch_arguments));
-         strlcat(launch_arguments, " ", sizeof(launch_arguments));
+         size_t copied = strlcat(launch_arguments,
+               argv[i], sizeof(launch_arguments));
+         string_add_space_fast(launch_arguments, copied);
       }
       string_trim_whitespace_left(launch_arguments);
       string_trim_whitespace_right(launch_arguments);
@@ -23433,7 +23439,9 @@ static bool retroarch_load_shader_preset_internal(
             break;
 
          fill_pathname_join(shader_path, shader_directory, special_name, PATH_MAX_LENGTH);
-         strlcat(shader_path, video_shader_get_preset_extension(types[i]), PATH_MAX_LENGTH);
+         strlcat(shader_path,
+               video_shader_get_preset_extension(types[i]),
+               PATH_MAX_LENGTH);
       }
 
       if (!path_is_valid(shader_path))
