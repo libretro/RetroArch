@@ -587,17 +587,11 @@ unsigned cpu_features_get_core_amount(void)
  **/
 uint64_t cpu_features_get(void)
 {
-   int flags[4];
-   int vendor_shuffle[3];
-   char vendor[13];
-   uint64_t cpu_flags  = 0;
    uint64_t cpu        = 0;
-   unsigned max_flag   = 0;
 #if defined(CPU_X86) && !defined(__MACH__)
    int vendor_is_intel = 0;
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
-   size_t written      = 0;
 #if defined(__MACH__)
    size_t len          = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
@@ -661,6 +655,11 @@ uint64_t cpu_features_get(void)
    cpu |= RETRO_SIMD_SSE;
    cpu |= RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
+   unsigned max_flag   = 0;
+   int flags[4];
+   int vendor_shuffle[3];
+   char vendor[13];
+   uint64_t cpu_flags  = 0;
    x86_cpuid(0, flags);
    vendor_shuffle[0] = flags[1];
    vendor_shuffle[1] = flags[3];
