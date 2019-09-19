@@ -134,8 +134,10 @@ static void reset_cb(void)
    g_menu = true;
 }
 
-static inline void gx_mouse_info(uint32_t joybutton, unsigned port) {
+static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
+{
    uint8_t i;
+#ifdef HW_RVL
    ir_t ir;
 
    /* Get the IR data from the wiimote */
@@ -147,13 +149,15 @@ static inline void gx_mouse_info(uint32_t joybutton, unsigned port) {
       gx_mouse[port].y = ir.y;
    }
    else
+#endif
    {
       gx_mouse[port].valid = false;
    }
    
    /* reset button state */
    gx_mouse[port].mouse_button = 0; 
-   for (i = 0; i < MAX_MOUSEBUTTONS; i++) {
+   for (i = 0; i < MAX_MOUSEBUTTONS; i++)
+   {
       gx_mouse[port].mouse_button |= (joybutton & gx_mousemask[i]) ? (1 << i) : 0;
    }
 
