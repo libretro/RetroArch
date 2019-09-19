@@ -431,12 +431,8 @@ void fill_pathname_slash(char *path, size_t size)
    /* Try to preserve slash type. */
    if (last_slash != (path + path_len - 1))
    {
-      char join_str[2];
-
-      join_str[0] = '\0';
-
-      strlcpy(join_str, last_slash, sizeof(join_str));
-      strlcat(path, join_str, size);
+      path[path_len]   = last_slash[0];
+      path[path_len+1] = '\0';
    }
 }
 
@@ -901,7 +897,7 @@ end:
 void path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   size_t i;
+   size_t i, written = 0;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
@@ -924,8 +920,16 @@ void path_relative_to(char *out,
    /* Each segment of base turns into ".." */
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
+   {
       if (trimmed_base[i] == path_default_slash_c())
-         strlcat(out, ".." path_default_slash(), size);
+      {
+         out[written++] = '.';
+         out[written++] = '.';
+         out[written++] = path_default_slash_c();
+         out[written++] = '\0';
+      }
+   }
+
    strlcat(out, trimmed_path, size);
 }
 
