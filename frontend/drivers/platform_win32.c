@@ -623,6 +623,8 @@ static void frontend_win32_attach_console(void)
       if(!AttachConsole( ATTACH_PARENT_PROCESS))
          AllocConsole();
 
+      SetConsoleTitle("Log Console");
+
       if(need_stdout) freopen( "CONOUT$", "w", stdout );
       if(need_stderr) freopen( "CONOUT$", "w", stderr );
 
