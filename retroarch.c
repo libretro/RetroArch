@@ -945,27 +945,16 @@ static char error_string[255]                                   = {0};
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
-enum menu_mouse_action
-{
-   MENU_MOUSE_ACTION_NONE = 0,
-   MENU_MOUSE_ACTION_BUTTON_L,
-   MENU_MOUSE_ACTION_BUTTON_L_TOGGLE,
-   MENU_MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
-   MENU_MOUSE_ACTION_BUTTON_R,
-   MENU_MOUSE_ACTION_WHEEL_UP,
-   MENU_MOUSE_ACTION_WHEEL_DOWN,
-   MENU_MOUSE_ACTION_HORIZ_WHEEL_UP,
-   MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
-};
+static const char **menu_input_dialog_keyboard_buffer     = {NULL};
+static unsigned menu_input_dialog_keyboard_type           = 0;
+static unsigned menu_input_dialog_keyboard_idx            = 0;
+static char menu_input_dialog_keyboard_label_setting[256] = {0};
+static char menu_input_dialog_keyboard_label[256]         = {0};
+static bool menu_input_dialog_keyboard_display            = false;
+static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
-static const char **menu_input_dialog_keyboard_buffer      = {NULL};
-static unsigned menu_input_dialog_keyboard_type            = 0;
-static unsigned menu_input_dialog_keyboard_idx             = 0;
-static char menu_input_dialog_keyboard_label_setting[256]  = {0};
-static char menu_input_dialog_keyboard_label[256]          = {0};
-static bool menu_input_dialog_keyboard_display             = false;
-static unsigned char menu_keyboard_key_state[RETROK_LAST]       = {0};
-
+/* Since these are static/global, they are initialised to zero */
+static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
 static menu_input_t menu_input_state;
 
 /* Is the menu driver still running? */
@@ -12279,13 +12268,306 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 
 /* MENU INPUT */
 #ifdef HAVE_MENU
+
+void menu_input_driver_toggle(bool on)
+{
+   menu_input_t *menu_input = &menu_input_state;
+#ifdef HAVE_OVERLAY
+   settings_t *settings     = configuration_settings;
+
+   if (on)
+   {
+      /* If an overlay was displayed before the toggle
+       * and overlays are disabled in menu, need to
+       * inhibit 'select' input */
+      if (settings->bools.input_overlay_hide_in_menu)
+         if (settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive)
+            menu_input->select_inhibit = true;
+   }
+   else
+      menu_input->select_inhibit = false;
+#else
+   menu_input->select_inhibit = false;
+#endif
+}
+
+int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
+{
+   rarch_joypad_info_t joypad_info;
+   unsigned type                   = 0;
+   unsigned device                 = RETRO_DEVICE_MOUSE;
+
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
+
+   switch (id)
+   {
+      case MENU_MOUSE_X_AXIS:
+         device = RARCH_DEVICE_MOUSE_SCREEN;
+         type = RETRO_DEVICE_ID_MOUSE_X;
+         break;
+      case MENU_MOUSE_Y_AXIS:
+         device = RARCH_DEVICE_MOUSE_SCREEN;
+         type = RETRO_DEVICE_ID_MOUSE_Y;
+         break;
+      case MENU_MOUSE_LEFT_BUTTON:
+         type = RETRO_DEVICE_ID_MOUSE_LEFT;
+         break;
+      case MENU_MOUSE_RIGHT_BUTTON:
+         type = RETRO_DEVICE_ID_MOUSE_RIGHT;
+         break;
+      case MENU_MOUSE_WHEEL_UP:
+         type = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+         break;
+      case MENU_MOUSE_WHEEL_DOWN:
+         type = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+         break;
+      case MENU_MOUSE_HORIZ_WHEEL_UP:
+         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+         break;
+      case MENU_MOUSE_HORIZ_WHEEL_DOWN:
+         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+         break;
+   }
+
+   return current_input->input_state(current_input_data, joypad_info,
+         NULL, 0, device, 0, type);
+}
+
+static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_state)
+{
+   settings_t *settings            = configuration_settings;
+   static int16_t last_x           = 0;
+   static int16_t last_y           = 0;
+   static bool last_select_pressed = false;
+   static bool last_cancel_pressed = false;
+   bool overlay_active             = false;
+   bool mouse_enabled              = settings->bools.menu_mouse_enable;
+   bool is_rgui                    = string_is_equal(settings->arrays.menu_driver, "rgui");
+
+   /* Easiest to set inactive by default, and toggle
+    * when input is detected */
+   hw_state->active  = false;
+
+#ifdef HAVE_OVERLAY
+   /* Menu pointer controls are ignored when overlays are enabled. */
+   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   if (overlay_active)
+      mouse_enabled = false;
+#endif
+
+   if (!mouse_enabled)
+   {
+      hw_state->x              = 0;
+      hw_state->y              = 0;
+      hw_state->select_pressed = false;
+      hw_state->cancel_pressed = false;
+      hw_state->up_pressed     = false;
+      hw_state->down_pressed   = false;
+      hw_state->left_pressed   = false;
+      hw_state->right_pressed  = false;
+      return;
+   }
+
+   /* X pos */
+   hw_state->x = menu_input_read_mouse_hw(MENU_MOUSE_X_AXIS);
+   if (hw_state->x != last_x)
+      hw_state->active = true;
+   last_x = hw_state->x;
+
+   /* Y pos */
+   hw_state->y = menu_input_read_mouse_hw(MENU_MOUSE_Y_AXIS);
+   if (hw_state->y != last_y)
+      hw_state->active = true;
+   last_y = hw_state->y;
+
+   /* > X/Y adjustment */
+   if (is_rgui)
+   {
+      /* RGUI uses a framebuffer texture + custom viewports,
+       * which means we have to convert from screen space to
+       * menu space... */
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+      struct video_viewport vp = {0};
+
+      /* Read display/framebuffer info */
+      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      video_driver_get_viewport_info(&vp);
+
+      /* Adjust X pos */
+      hw_state->x = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
+      hw_state->x = hw_state->x <  0        ? 0            : hw_state->x;
+      hw_state->x = hw_state->x >= fb_width ? fb_width - 1 : hw_state->x;
+
+      /* Adjust Y pos */
+      hw_state->y = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
+      hw_state->y = hw_state->y <  0         ? 0             : hw_state->y;
+      hw_state->y = hw_state->y >= fb_height ? fb_height - 1 : hw_state->y;
+   }
+
+   /* Select (LMB)
+    * Note that releasing select also counts as activity */
+   hw_state->select_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_LEFT_BUTTON);
+   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
+      hw_state->active = true;
+   last_select_pressed = hw_state->select_pressed;
+
+   /* Cancel (RMB)
+    * Note that releasing cancel also counts as activity */
+   hw_state->cancel_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_RIGHT_BUTTON);
+   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
+      hw_state->active = true;
+   last_cancel_pressed = hw_state->cancel_pressed;
+
+   /* Up (mouse wheel up) */
+   hw_state->up_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_WHEEL_UP);
+   if (hw_state->up_pressed)
+      hw_state->active = true;
+
+   /* Down (mouse wheel down) */
+   hw_state->down_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_WHEEL_DOWN);
+   if (hw_state->down_pressed)
+      hw_state->active = true;
+
+   /* Left (mouse wheel horizontal left) */
+   hw_state->left_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_HORIZ_WHEEL_DOWN);
+   if (hw_state->left_pressed)
+      hw_state->active = true;
+
+   /* Right (mouse wheel horizontal right) */
+   hw_state->right_pressed = (bool)menu_input_read_mouse_hw(MENU_MOUSE_HORIZ_WHEEL_UP);
+   if (hw_state->right_pressed)
+      hw_state->active = true;
+}
+
+static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *hw_state)
+{
+   rarch_joypad_info_t joypad_info;
+   int pointer_x, pointer_y;
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   settings_t *settings                         = configuration_settings;
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   menu_handle_t *menu_data                     = menu_driver_get_ptr();
+   /* Is a background texture set for the current menu driver?
+    * Checks if the menu framebuffer is set.
+    * This would usually only return true
+    * for framebuffer-based menu drivers, like RGUI. */
+   int pointer_device                           =
+         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture) ?
+               RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+   static int16_t last_x                        = 0;
+   static int16_t last_y                        = 0;
+   static bool last_select_pressed              = false;
+   static bool last_cancel_pressed              = false;
+   bool overlay_active                          = false;
+   bool pointer_enabled                         = settings->bools.menu_pointer_enable;
+
+   /* Easiest to set inactive by default, and toggle
+    * when input is detected */
+   hw_state->active  = false;
+
+   /* Touch screens don't have mouse wheels, so these
+    * are always disabled */
+   hw_state->up_pressed    = false;
+   hw_state->down_pressed  = false;
+   hw_state->left_pressed  = false;
+   hw_state->right_pressed = false;
+
+#ifdef HAVE_OVERLAY
+   /* Menu pointer controls are ignored when overlays are enabled. */
+   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   if (overlay_active)
+      pointer_enabled = false;
+#endif
+
+   /* If touchscreen is disabled, ignore all input */
+   if (!pointer_enabled)
+   {
+      hw_state->x              = 0;
+      hw_state->y              = 0;
+      hw_state->select_pressed = false;
+      hw_state->cancel_pressed = false;
+      return;
+   }
+
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = NULL;
+   joypad_info.axis_threshold = 0.0f;
+
+   /* X pos */
+   pointer_x = current_input->input_state(
+         current_input_data, joypad_info, binds,
+         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
+   hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+
+   /* > An annoyance - we get different starting positions
+    *   depending upon whether pointer_device is
+    *   RETRO_DEVICE_POINTER or RARCH_DEVICE_POINTER_SCREEN,
+    *   so different 'activity' checks are required to prevent
+    *   false positives on first run */
+   if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
+   {
+      if (hw_state->x != last_x)
+         hw_state->active = true;
+      last_x = hw_state->x;
+   }
+   else
+   {
+      if (pointer_x != last_x)
+         hw_state->active = true;
+      last_x = pointer_x;
+   }
+
+   /* Y pos */
+   pointer_y = current_input->input_state(
+         current_input_data, joypad_info, binds,
+         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+   hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+
+   if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
+   {
+      if (hw_state->y != last_y)
+         hw_state->active = true;
+      last_y = hw_state->y;
+   }
+   else
+   {
+      if (pointer_y != last_y)
+         hw_state->active = true;
+      last_y = pointer_y;
+   }
+
+   /* Select (touch screen contact)
+    * Note that releasing select also counts as activity */
+   hw_state->select_pressed = (bool)current_input->input_state(
+         current_input_data, joypad_info, binds,
+         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
+      hw_state->active = true;
+   last_select_pressed = hw_state->select_pressed;
+
+   /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
+    * Note that releasing cancel also counts as activity */
+   hw_state->cancel_pressed = (bool)current_input->input_state(
+         current_input_data, joypad_info, binds,
+         0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
+   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
+      hw_state->active = true;
+   last_cancel_pressed = hw_state->cancel_pressed;
+}
+
 /*
  * This function gets called in order to process all input events
  * for the current frame.
  *
  * Sends input code to menu for one frame.
  *
- * It uses as input the local variables' input' and 'trigger_input'.
+ * It uses as input the local variables 'input' and 'trigger_input'.
  *
  * Mouse and touch input events get processed inside this function.
  *
@@ -12304,30 +12586,30 @@ static unsigned menu_event(
       bool display_kb)
 {
    /* Used for key repeat */
-   static float delay_timer                = 0.0f;
-   static float delay_count                = 0.0f;
-   static bool initial_held                = true;
-   static bool first_held                  = false;
-   static unsigned ok_old                  = 0;
-   unsigned ret                            = MENU_ACTION_NOOP;
-   bool set_scroll                         = false;
-   bool mouse_enabled                      = false;
-   size_t new_scroll_accel                 = 0;
-   menu_input_t *menu_input                = &menu_input_state;
-   settings_t *settings                    = configuration_settings;
-   bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool input_swap_override                = input_autoconfigure_get_swap_override();
-   unsigned menu_ok_btn                    = (!input_swap_override &&
-      swap_ok_cancel_btns) ?
-      RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                = (!input_swap_override &&
-      swap_ok_cancel_btns) ?
-      RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                     = BIT256_GET_PTR(p_input, menu_ok_btn);
-   unsigned ok_trigger                     = ok_current & ~ok_old;
-   bool is_rgui                            = string_is_equal(settings->arrays.menu_driver, "rgui");
+   static float delay_timer                        = 0.0f;
+   static float delay_count                        = 0.0f;
+   static bool initial_held                        = true;
+   static bool first_held                          = false;
+   static unsigned ok_old                          = 0;
+   unsigned ret                                    = MENU_ACTION_NOOP;
+   bool set_scroll                                 = false;
+   size_t new_scroll_accel                         = 0;
+   menu_input_t *menu_input                        = &menu_input_state;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
+   settings_t *settings                            = configuration_settings;
+   bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
+   bool input_swap_override                        = input_autoconfigure_get_swap_override();
+   unsigned menu_ok_btn                            =
+         (!input_swap_override && swap_ok_cancel_btns) ?
+               RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+   unsigned menu_cancel_btn                        =
+         (!input_swap_override && swap_ok_cancel_btns) ?
+               RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_trigger                             = ok_current & ~ok_old;
+   bool is_rgui                                    = string_is_equal(settings->arrays.menu_driver, "rgui");
 
-   ok_old                                  = ok_current;
+   ok_old                                          = ok_current;
 
    if (bits_any_set(p_input->data, ARRAY_SIZE(p_input->data)))
    {
@@ -12476,526 +12758,321 @@ static unsigned menu_event(
       menu_keyboard_key_state[RETROK_F11] = 0;
    }
 
-   mouse_enabled                      = settings->bools.menu_mouse_enable;
-#ifdef HAVE_OVERLAY
-   if (!mouse_enabled)
-      mouse_enabled = !(settings->bools.input_overlay_enable
-            && overlay_ptr && overlay_ptr->alive);
-#endif
+   /* Get pointer (mouse + touchscreen) input */
 
-   if (!mouse_enabled)
-      menu_input->mouse.ptr = 0;
-
-   if (settings->bools.menu_pointer_enable)
+   /* > If pointer input is disabled, do nothing */
+   if (!settings->bools.menu_mouse_enable && !settings->bools.menu_pointer_enable)
+      menu_input->pointer.type = MENU_POINTER_DISABLED;
+   else
    {
-      /* This function gets called for handling pointer events.
-       *
-       * Pointer events are touchscreen events that are spawned
-       * by touchpad/touchscreen. */
-      rarch_joypad_info_t joypad_info;
-      int pointer_x, pointer_y;
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-      const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      menu_handle_t *menu_data                     = menu_driver_get_ptr();
-      /* Is a background texture set for the current menu driver?
-       * Checks if the menu framebuffer is set.
-       * This would usually only return true
-       * for framebuffer-based menu drivers, like RGUI. */
-      int pointer_device                           = (menu_data 
-            && menu_data->driver_ctx 
-            && menu_data->driver_ctx->set_texture)
-         ?
-         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+      menu_input_pointer_hw_state_t mouse_hw_state       = {0};
+      menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
 
-      menu_display_get_fb_size(&fb_width, &fb_height,
-            &fb_pitch);
+      /* Read mouse */
+      if (settings->bools.menu_mouse_enable)
+         menu_input_get_mouse_hw_state(&mouse_hw_state);
 
-      joypad_info.joy_idx                          = 0;
-      joypad_info.auto_binds                       = NULL;
-      joypad_info.axis_threshold                   = 0.0f;
+      /* Read touchscreen
+       * Note: Could forgo this if mouse is currently active,
+       * but this is 'cleaner' code... (if performance is a
+       * concern - and it isn't - user can just disable touch
+       * screen support) */
+      if (settings->bools.menu_pointer_enable)
+         menu_input_get_touchscreen_hw_state(&touchscreen_hw_state);
 
-      pointer_x                                    =
-         current_input->input_state(
-               current_input_data, joypad_info, binds,
-               0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
-      pointer_y                                    =
-         current_input->input_state(
-               current_input_data, joypad_info, binds,
-               0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
+      /* Mouse takes precedence */
+      if (mouse_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_MOUSE;
+      else if (touchscreen_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
 
-      menu_input->pointer.pressed[0]  = current_input->input_state(
-            current_input_data, joypad_info, binds,
-            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
-      menu_input->pointer.pressed[1]  = current_input->input_state(
-            current_input_data, joypad_info, binds,
-            0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
-      menu_input->pointer.back        = current_input->input_state(
-            current_input_data, joypad_info, binds,
-            0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
+      /* Copy input from the current device */
+      if (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
+      else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
+         memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
+   }
 
-      menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
-      menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+   /* Populate menu_input_state
+    * Note: dx, dy, ptr, accel entries are set elsewhere */
+   if (menu_input->select_inhibit)
+   {
+      menu_input->pointer.pressed = false;
+      menu_input->pointer.x       = 0;
+      menu_input->pointer.y       = 0;
    }
    else
    {
-      menu_input->pointer.x          = 0;
-      menu_input->pointer.y          = 0;
-      menu_input->pointer.dx         = 0;
-      menu_input->pointer.dy         = 0;
-      menu_input->pointer.accel      = 0;
-      menu_input->pointer.pressed[0] = false;
-      menu_input->pointer.pressed[1] = false;
-      menu_input->pointer.back       = false;
-      menu_input->pointer.ptr        = 0;
+      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+      menu_input->pointer.x       = pointer_hw_state->x;
+      menu_input->pointer.y       = pointer_hw_state->y;
    }
 
    return ret;
 }
 
-bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox)
+bool menu_input_pointer_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox)
 {
-   int16_t  mouse_x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t  mouse_y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-   bool     inside_hitbox =
-      (mouse_x    >= hitbox->x1)
-      && (mouse_x <= hitbox->x2)
-      && (mouse_y >= hitbox->y1)
-      && (mouse_y <= hitbox->y2)
-      ;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
+   int16_t x                                       = pointer_hw_state->x;
+   int16_t y                                       = pointer_hw_state->y;
+   bool inside_hitbox                              =
+         (x >= hitbox->x1) &&
+         (x <= hitbox->x2) &&
+         (y >= hitbox->y1) &&
+         (y <= hitbox->y2);
 
    return inside_hitbox;
 }
 
-static bool pointer_dragging                 = false;
-
-bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
+void menu_input_get_pointer_state(menu_input_pointer_t *pointer)
 {
-   menu_input_t *menu_input                     = &menu_input_state;
-
-   if (!menu_input)
-      return false;
-
-   switch (state)
-   {
-      case MENU_INPUT_CTL_DEINIT:
-         memset(menu_input, 0, sizeof(menu_input_t));
-         pointer_dragging      = false;
-         break;
-      case MENU_INPUT_CTL_MOUSE_PTR:
-         menu_input->mouse.ptr = (*(unsigned*)data);
-         break;
-      case MENU_INPUT_CTL_POINTER_PTR:
-         menu_input->pointer.ptr = (*(unsigned*)data);
-         break;
-      case MENU_INPUT_CTL_POINTER_ACCEL_READ:
-         {
-            float *ptr = (float*)data;
-            *ptr = menu_input->pointer.accel;
-         }
-         break;
-      case MENU_INPUT_CTL_POINTER_ACCEL_WRITE:
-         menu_input->pointer.accel = (*(float*)data);
-         break;
-      case MENU_INPUT_CTL_IS_POINTER_DRAGGED:
-         return pointer_dragging;
-      case MENU_INPUT_CTL_NONE:
-         break;
-   }
-
-   return true;
-}
-
-static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
-      menu_file_list_cbs_t *cbs, unsigned action, bool *mouse_activity)
-{
-   settings_t *settings       = configuration_settings;
-   static bool mouse_oldleft  = false;
-   static bool mouse_oldright = false;
-
-   if (
-         !settings->bools.menu_mouse_enable
-#ifdef HAVE_OVERLAY
-         || (settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive)
-#endif
-         )
-   {
-      /* HACK: Need to lie to avoid false hits if mouse is held
-       * when entering the RetroArch window. */
-
-      /* This happens if, for example, someone double clicks the
-       * window border to maximize it.
-       *
-       * The proper fix is, of course, triggering on WM_LBUTTONDOWN
-       * rather than this state change. */
-      mouse_oldleft   = true;
-      mouse_oldright  = true;
-      return 0;
-   }
-
-   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
-   {
-      if (!mouse_oldleft)
-      {
-         menu_input_t *menu_input = &menu_input_state;
-         size_t selection         = menu_navigation_get_selection();
-
-         BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
-
-         mouse_oldleft = true;
-
-         if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
-         {
-            BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_TOGGLE);
-         }
-         else if (menu_input->mouse.ptr <= (menu_entries_get_size() - 1))
-         {
-            BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
-         }
-
-         *mouse_activity = true;
-      }
-   }
-   else
-      mouse_oldleft = false;
-
-   if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
-   {
-      if (!mouse_oldright)
-      {
-         mouse_oldright = true;
-         BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_R);
-         *mouse_activity = true;
-      }
-   }
-   else
-      mouse_oldright = false;
-
-   if (menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN))
-   {
-      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN);
-      *mouse_activity = true;
-   }
-
-   if (menu_input_mouse_state(MENU_MOUSE_WHEEL_UP))
-   {
-      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_UP);
-      *mouse_activity = true;
-   }
-
-   if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_DOWN))
-   {
-      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN);
-      *mouse_activity = true;
-   }
-
-   if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_UP))
-   {
-      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP);
-      *mouse_activity = true;
-   }
-
-   return 0;
-}
-
-static int menu_input_mouse_frame(
-      menu_file_list_cbs_t *cbs, menu_entry_t *entry,
-      unsigned action)
-{
-   static rarch_timer_t mouse_activity_timer = {0};
-   bool mouse_activity      = false;
-   bool no_mouse_activity   = false;
-   uint64_t mouse_state     = MENU_MOUSE_ACTION_NONE;
-   int ret                  = 0;
-   settings_t *settings     = configuration_settings;
    menu_input_t *menu_input = &menu_input_state;
-   bool mouse_enable        = settings->bools.menu_mouse_enable;
 
-   if (mouse_enable)
-      ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action, &mouse_activity);
+   if (!pointer)
+      return;
 
-   if ((settings->bools.menu_pointer_enable || mouse_enable))
+   /* Copy parameters from global menu_input_state
+    * (i.e. don't pass by reference)
+    * This is a fast operation */
+   memcpy(pointer, &menu_input->pointer, sizeof(menu_input_pointer_t));
+}
+
+unsigned menu_input_get_pointer_selection(void)
+{
+   menu_input_t *menu_input = &menu_input_state;
+   return menu_input->ptr;
+}
+
+void menu_input_set_pointer_selection(unsigned selection)
+{
+   menu_input_t *menu_input = &menu_input_state;
+   menu_input->ptr          = selection;
+}
+
+void menu_input_set_pointer_y_accel(float y_accel)
+{
+   menu_input_t *menu_input    = &menu_input_state;
+   menu_input->pointer.y_accel = y_accel;
+}
+
+void menu_input_reset(void)
+{
+   menu_input_t *menu_input                        = &menu_input_state;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
+
+   memset(menu_input, 0, sizeof(menu_input_t));
+   memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
+}
+
+static void menu_input_set_pointer_visibility(retro_time_t current_time)
+{
+   bool show_cursor                                = false;
+   static bool cursor_shown                        = false;
+   bool hide_cursor                                = false;
+   static bool cursor_hidden                       = false;
+   static retro_time_t end_time                    = 0;
+   menu_input_t *menu_input                        = &menu_input_state;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
+
+   /* Ensure that mouse cursor is hidden when not in use */
+   if ((menu_input->pointer.type == MENU_POINTER_MOUSE) && pointer_hw_state->active)
    {
-      static unsigned mouse_old_x               = 0;
-      static unsigned mouse_old_y               = 0;
+      if ((current_time > end_time) && !cursor_shown)
+         show_cursor = true;
+
+      end_time = current_time + MENU_INPUT_HIDE_CURSOR_DELAY;
+   }
+   else
+   {
+      if ((current_time > end_time) && !cursor_hidden)
+         hide_cursor = true;
+   }
+
+   if (show_cursor)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      cursor_shown  = true;
+      cursor_hidden = false;
+   }
+
+   if (hide_cursor)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      cursor_shown  = false;
+      cursor_hidden = true;
+   }
+}
+
+static int menu_input_pointer_post_iterate(
+      retro_time_t current_time,
+      menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   static retro_time_t start_time                  = 0;
+   static int16_t start_x                          = 0;
+   static int16_t start_y                          = 0;
+   static int16_t last_x                           = 0;
+   static int16_t last_y                           = 0;
+   static bool last_select_pressed                 = false;
+   static bool last_cancel_pressed                 = false;
+   static bool last_left_pressed                   = false;
+   static bool last_right_pressed                  = false;
+   bool attenuate_y_accel                          = true;
+   bool osk_active                                 = menu_input_dialog_get_display_kb_internal();
+   int ret                                         = 0;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
+   menu_input_t *menu_input                        = &menu_input_state;
+   settings_t *settings                            = configuration_settings;
+
+   /* If onscreen keyboard is shown and we currently have
+    * active mouse input, highlight key under mouse cursor */
+   if (osk_active &&
+       (menu_input->pointer.type == MENU_POINTER_MOUSE) &&
+       pointer_hw_state->active)
+   {
       menu_ctx_pointer_t point;
 
-      point.x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      point.y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      point.x       = pointer_hw_state->x;
+      point.y       = pointer_hw_state->y;
       point.ptr     = 0;
       point.cbs     = NULL;
       point.entry   = NULL;
       point.action  = 0;
       point.retcode = 0;
 
-      if (menu_input_dialog_get_display_kb_internal())
-         menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-
-      if (rarch_timer_is_running(&mouse_activity_timer))
-         rarch_timer_tick(&mouse_activity_timer);
-
-      if (mouse_old_x != point.x || mouse_old_y != point.y)
-      {
-         if (!rarch_timer_is_running(&mouse_activity_timer))
-            mouse_activity = true;
+      menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+      if (point.retcode > -1)
          menu_event_set_osk_ptr(point.retcode);
-      }
-      else
-      {
-         if (rarch_timer_has_expired(&mouse_activity_timer))
-            no_mouse_activity = true;
-      }
-      mouse_old_x = point.x;
-      mouse_old_y = point.y;
    }
 
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_L))
+   /* Select + X/Y position */
+   if (!menu_input->select_inhibit)
    {
-      menu_ctx_pointer_t point;
-
-      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      point.ptr    = menu_input->mouse.ptr;
-      point.cbs    = cbs;
-      point.entry  = entry;
-      point.action = action;
-
-      if (menu_input_dialog_get_display_kb_internal())
+      if (pointer_hw_state->select_pressed)
       {
-         menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-         if (point.retcode > -1)
+         int16_t x           = pointer_hw_state->x;
+         int16_t y           = pointer_hw_state->y;
+         static float accel0 = 0.0f;
+         static float accel1 = 0.0f;
+
+         /* Transition from select unpressed to select pressed */
+         if (!last_select_pressed)
          {
-            menu_event_set_osk_ptr(point.retcode);
-            menu_event_osk_append(point.retcode);
+            menu_ctx_pointer_t point;
+
+            /* Initialise variables */
+            start_time = current_time;
+            start_x    = x;
+            start_y    = y;
+            last_x     = x;
+            last_y     = y;
+            accel0     = 0.0f;
+            accel1     = 0.0f;
+
+            /* If we are not currently showing the onscreen keyboard,
+             * trigger a 'pointer down' event */
+            if (!osk_active)
+            {
+               point.x      = x;
+               point.y      = y;
+               point.ptr    = menu_input->ptr;
+               point.cbs    = cbs;
+               point.entry  = entry;
+               point.action = action;
+
+               menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+               ret = point.retcode;
+            }
+         }
+         else if (!osk_active)
+         {
+            /* Pointer is being held down (i.e. for more than one frame)
+             * Note: We do not track movement while the onscreen
+             * keyboard is displayed */
+            gfx_ctx_metrics_t metrics;
+            float dpi;
+
+            metrics.type  = DISPLAY_METRIC_DPI;
+            metrics.value = &dpi;
+
+            /* > Update deltas + acceleration
+             *   Note: We only do this if the pointer has moved above
+             *   a certain threshold - this requires dpi info */
+            if (video_context_driver_get_metrics(&metrics))
+            {
+               if ((abs(x - start_x) > (dpi / 10)) ||
+                   (abs(y - start_y) > (dpi / 10)))
+               {
+                  menu_input->pointer.dragged = true;
+
+                  menu_input->pointer.dx      = x - last_x;
+                  menu_input->pointer.dy      = y - last_y;
+
+                  /* Magic numbers... */
+                  menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
+                  accel0                      = accel1;
+                  accel1                      = menu_input->pointer.y_accel;
+
+                  /* Acceleration decays over time - but if the value
+                   * has been set on this frame, attenuation should
+                   * be skipped */
+                  attenuate_y_accel           = false;
+               }
+               else
+               {
+                  /* Pointer is stationary */
+                  menu_input->pointer.dx = 0;
+                  menu_input->pointer.dy = 0;
+               }
+            }
+            else
+            {
+               /* No dpi info - just fallback to zero... */
+               menu_input->pointer.dx      = 0;
+               menu_input->pointer.dy      = 0;
+               menu_input->pointer.y_accel = 0.0f;
+            }
+
+            /* > Update remaining variables */
+            menu_input->pointer.press_duration = current_time - start_time;
+            last_x                             = x;
+            last_y                             = y;
          }
       }
-      else
+      else if (last_select_pressed)
       {
-         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
-         menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-         ret = point.retcode;
-      }
-   }
+         /* Transition from select pressed to select unpressed */
 
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
-   {
-      size_t selection = menu_navigation_get_selection();
-      menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
-   {
-      unsigned increment_by = 1;
-      menu_driver_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
-   }
-
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_UP))
-   {
-      unsigned decrement_by = 1;
-      menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
-   }
-
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))
-   {
-      /* stub */
-   }
-
-   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN))
-   {
-      /* stub */
-   }
-
-   if (mouse_activity)
-   {
-      menu_ctx_environment_t menu_environ;
-
-      rarch_timer_begin(&mouse_activity_timer, 4);
-      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-   }
-
-   if (no_mouse_activity)
-   {
-      menu_ctx_environment_t menu_environ;
-
-      rarch_timer_end(&mouse_activity_timer);
-      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-   }
-
-   return ret;
-}
-
-int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
-{
-   menu_input_t *menu_input = &menu_input_state;
-
-   if (!menu_input)
-      return 0;
-
-   switch (state)
-   {
-      case MENU_POINTER_X_AXIS:
-         return menu_input->pointer.x;
-      case MENU_POINTER_Y_AXIS:
-         return menu_input->pointer.y;
-      case MENU_POINTER_DELTA_X_AXIS:
-         return menu_input->pointer.dx;
-      case MENU_POINTER_DELTA_Y_AXIS:
-         return menu_input->pointer.dy;
-      case MENU_POINTER_PRESSED:
-         return menu_input->pointer.pressed[0];
-   }
-
-   return 0;
-}
-
-int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
-{
-   rarch_joypad_info_t joypad_info;
-   unsigned type                   = 0;
-   unsigned device                 = RETRO_DEVICE_MOUSE;
-
-   joypad_info.joy_idx             = 0;
-   joypad_info.auto_binds          = NULL;
-   joypad_info.axis_threshold      = 0.0f;
-
-   switch (state)
-   {
-      case MENU_MOUSE_X_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type = RETRO_DEVICE_ID_MOUSE_X;
-         break;
-      case MENU_MOUSE_Y_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type = RETRO_DEVICE_ID_MOUSE_Y;
-         break;
-      case MENU_MOUSE_LEFT_BUTTON:
-         type = RETRO_DEVICE_ID_MOUSE_LEFT;
-         break;
-      case MENU_MOUSE_RIGHT_BUTTON:
-         type = RETRO_DEVICE_ID_MOUSE_RIGHT;
-         break;
-      case MENU_MOUSE_WHEEL_UP:
-         type = RETRO_DEVICE_ID_MOUSE_WHEELUP;
-         break;
-      case MENU_MOUSE_WHEEL_DOWN:
-         type = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_UP:
-         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_DOWN:
-         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
-         break;
-   }
-
-   return current_input->input_state(current_input_data, joypad_info,
-         NULL, 0, device, 0, type);
-}
-
-static int menu_input_pointer_post_iterate(
-      menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
-{
-   static bool pointer_oldpressed[2];
-   static bool pointer_oldback  = false;
-   static int16_t start_x       = 0;
-   static int16_t start_y       = 0;
-   static int16_t pointer_old_x = 0;
-   static int16_t pointer_old_y = 0;
-   int ret                      = 0;
-   menu_input_t *menu_input     = &menu_input_state;
-   settings_t *settings         = configuration_settings;
-
-#ifdef HAVE_OVERLAY
-   /* If we have overlays enabled, overlay controls take
-    * precedence and we don't want regular menu
-    * pointer controls to be handled */
-   if ((       settings->bools.input_overlay_enable
-            && overlay_ptr && overlay_ptr->alive))
-      return 0;
-#endif
-
-   if (menu_input->pointer.pressed[0])
-   {
-      gfx_ctx_metrics_t metrics;
-      float dpi;
-      static float accel0       = 0.0f;
-      static float accel1       = 0.0f;
-      int16_t pointer_x         = menu_input_pointer_state(MENU_POINTER_X_AXIS);
-      int16_t pointer_y         = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-
-      metrics.type  = DISPLAY_METRIC_DPI;
-      metrics.value = &dpi;
-
-      menu_input->pointer.counter++;
-
-      if (menu_input->pointer.counter == 1 && !pointer_dragging)
-      {
-         menu_ctx_pointer_t point;
-
-         point.x                           = pointer_x;
-         point.y                           = pointer_y;
-         point.ptr                         = menu_input->pointer.ptr;
-         point.cbs                         = cbs;
-         point.entry                       = entry;
-         point.action                      = action;
-
-         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
-      }
-
-      if (!pointer_oldpressed[0])
-      {
-         menu_input->pointer.accel         = 0;
-         accel0                            = 0;
-         accel1                            = 0;
-         start_x                           = pointer_x;
-         start_y                           = pointer_y;
-         pointer_old_x                     = pointer_x;
-         pointer_old_y                     = pointer_y;
-         pointer_oldpressed[0]             = true;
-      }
-      else if (video_context_driver_get_metrics(&metrics))
-      {
-         if (abs(pointer_x - start_x) > (dpi / 10)
-               || abs(pointer_y - start_y) > (dpi / 10))
-         {
-            float s;
-
-            pointer_dragging                  = true;
-            menu_input->pointer.dx            = pointer_x - pointer_old_x;
-            menu_input->pointer.dy            = pointer_y - pointer_old_y;
-            pointer_old_x                     = pointer_x;
-            pointer_old_y                     = pointer_y;
-
-            s                                 = menu_input->pointer.dy;
-            menu_input->pointer.accel         = (accel0 + accel1 + s) / 3;
-            accel0                            = accel1;
-            accel1                            = menu_input->pointer.accel;
-         }
-      }
-   }
-   else
-   {
-      if (pointer_oldpressed[0])
-      {
-         if (!pointer_dragging)
+         /* If pointer has been 'dragged', then it counts as
+          * a miss. Only register 'release' event if pointer
+          * has remained stationary
+          * TODO/FIXME: Releasing select should *always* trigger a
+          * pointer up event, but event type should be specified
+          * - i.e. long press, short press, swipe left/right.
+          * The menu driver can then choose how to interpret the
+          * user action */
+         if (!menu_input->pointer.dragged)
          {
             menu_ctx_pointer_t point;
 
             point.x      = start_x;
             point.y      = start_y;
-            point.ptr    = menu_input->pointer.ptr;
+            point.ptr    = menu_input->ptr;
             point.cbs    = cbs;
             point.entry  = entry;
             point.action = action;
 
-            if (menu_input_dialog_get_display_kb_internal())
+            /* On screen keyboard overrides normal menu input */
+            if (osk_active)
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -13003,76 +13080,138 @@ static int menu_input_pointer_post_iterate(
                   menu_event_set_osk_ptr(point.retcode);
                   menu_event_osk_append(point.retcode);
                }
+               ret = point.retcode;
             }
             else
             {
-               if (menu_input->pointer.counter > 32)
+               /* A 'long press' triggers a start (reset to default) action */
+               if (menu_input->pointer.press_duration > MENU_INPUT_PRESS_TIME_LONG)
                {
                   size_t selection = menu_navigation_get_selection();
-                  if (cbs && cbs->action_start)
-                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
-
+                  ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
                }
                else
                {
                   menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
-                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
                   ret = point.retcode;
                }
             }
          }
 
-         pointer_oldpressed[0]             = false;
-         start_x                           = 0;
-         start_y                           = 0;
-         pointer_old_x                     = 0;
-         pointer_old_y                     = 0;
-         menu_input->pointer.dx            = 0;
-         menu_input->pointer.dy            = 0;
-         menu_input->pointer.counter       = 0;
-
-         pointer_dragging                  = false;
+         /* Reset variables */
+         start_x                            = 0;
+         start_y                            = 0;
+         last_x                             = 0;
+         last_y                             = 0;
+         menu_input->pointer.press_duration = 0;
+         menu_input->pointer.dx             = 0;
+         menu_input->pointer.dy             = 0;
+         menu_input->pointer.dragged        = false;
       }
    }
+   last_select_pressed = pointer_hw_state->select_pressed;
 
-   if (menu_input->pointer.back)
+   /* Adjust acceleration
+    * > If onscreen keyboard is shown, acceleration must
+    *   be reset to zero
+    * > Otherwise, if acceleration has not been set on
+    *   this frame, apply normal attenuation */
+   if (osk_active)
+      menu_input->pointer.y_accel = 0.0f;
+   else if (attenuate_y_accel)
+      menu_input->pointer.y_accel *= MENU_INPUT_Y_ACCEL_DECAY_FACTOR;
+
+   /* If select has been released, disable any existing
+    * select inhibit */
+   if (!pointer_hw_state->select_pressed)
+      menu_input->select_inhibit = false;
+
+   /* Cancel */
+   if (pointer_hw_state->cancel_pressed && !last_cancel_pressed)
    {
-      if (!pointer_oldback)
-      {
-         pointer_oldback = true;
-         menu_entry_action(entry, (unsigned)menu_navigation_get_selection(), MENU_ACTION_CANCEL);
-      }
+      size_t selection = menu_navigation_get_selection();
+      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+   }
+   last_cancel_pressed = pointer_hw_state->cancel_pressed;
+
+   /* Up
+    * Note: This always corresponds to a mouse wheel, which
+    * handles differently from other inputs - i.e. we don't
+    * want a 'last pressed' check */
+   if (pointer_hw_state->up_pressed)
+   {
+      size_t selection = menu_navigation_get_selection();
+      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_UP);
    }
 
-   pointer_oldback = menu_input->pointer.back;
+   /* Down
+    * Note: This always corresponds to a mouse wheel, which
+    * handles differently from other inputs - i.e. we don't
+    * want a 'last pressed' check */
+   if (pointer_hw_state->down_pressed)
+   {
+      size_t selection = menu_navigation_get_selection();
+      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_DOWN);
+   }
+
+   /* Left */
+   if (pointer_hw_state->left_pressed && !last_left_pressed)
+   {
+      size_t selection = menu_navigation_get_selection();
+      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+   }
+   last_left_pressed = pointer_hw_state->left_pressed;
+
+   /* Right */
+   if (pointer_hw_state->right_pressed && !last_right_pressed)
+   {
+      size_t selection = menu_navigation_get_selection();
+      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+   }
+
+   menu_input_set_pointer_visibility(current_time);
 
    return ret;
 }
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
-   menu_entry_t entry;
-   settings_t *settings       = configuration_settings;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata 
-      : NULL;
+   menu_input_t *menu_input  = &menu_input_state;
+   retro_time_t current_time = cpu_features_get_time_usec();
 
-   menu_entry_init(&entry);
-   /* Note: If menu_input_mouse_frame() or
-    * menu_input_pointer_post_iterate() are
-    * modified, will have to verify that these
-    * parameters remain unused... */
-   entry.rich_label_enabled   = false;
-   entry.value_enabled        = false;
-   entry.sublabel_enabled     = false;
-   menu_entry_get(&entry, 0, selection, NULL, false);
+   /* If pointer devices are disabled, just ensure mouse
+    * cursor is hidden */
+   if (menu_input->pointer.type == MENU_POINTER_DISABLED)
+   {
+      /* Note: We have to call menu_input_set_pointer_visibility()
+       * here, otherwise the cursor state gets muddled up when
+       * toggling mouse/touchscreen support...
+       * It's a very light function, however, so there should
+       * be no performance impact */
+      menu_input_set_pointer_visibility(current_time);
+      *ret = 0;
+   }
+   else
+   {
+      menu_entry_t entry;
+      settings_t *settings       = configuration_settings;
+      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      size_t selection           = menu_navigation_get_selection();
+      menu_file_list_cbs_t *cbs  = selection_buf ?
+         (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata 
+         : NULL;
 
-   *ret = menu_input_mouse_frame(cbs, &entry, action);
+      menu_entry_init(&entry);
+      /* Note: If menu_input_pointer_post_iterate() is
+       * modified, will have to verify that these
+       * parameters remain unused... */
+      entry.rich_label_enabled   = false;
+      entry.value_enabled        = false;
+      entry.sublabel_enabled     = false;
+      menu_entry_get(&entry, 0, selection, NULL, false);
 
-   if (settings->bools.menu_pointer_enable)
-      *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
+      *ret = menu_input_pointer_post_iterate(current_time, cbs, &entry, action);
+   }
 }
 
 /**
@@ -22836,6 +22975,11 @@ static void menu_driver_toggle(bool on)
       menu_data->driver_ctx->toggle(menu_data->userdata, on);
 
    menu_driver_alive = on;
+
+   /* Apply any required menu pointer input inhibits
+    * (i.e. prevent phantom input when using an overlay
+    * to toggle the menu on) */
+   menu_input_driver_toggle(on);
 
    if (menu_driver_alive)
    {

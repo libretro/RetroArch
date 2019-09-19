@@ -3328,8 +3328,8 @@ static void xmb_render(void *data,
    unsigned      end        = (unsigned)menu_entries_get_size();
    bool mouse_enable        = settings->bools.menu_mouse_enable;
    bool pointer_enable      = settings->bools.menu_pointer_enable;
-
    float scale_factor;
+   menu_input_pointer_t pointer;
 
    if (!xmb)
       return;
@@ -3342,13 +3342,16 @@ static void xmb_render(void *data,
 
    xmb->previous_scale_factor = scale_factor;
 
-   if (pointer_enable || mouse_enable)
+   menu_input_get_pointer_state(&pointer);
+
+   if (pointer.type != MENU_POINTER_DISABLED)
    {
       size_t selection  = menu_navigation_get_selection();
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
-         + (xmb->cursor_size/2);
+      int16_t pointer_y = pointer.y;
       unsigned first = 0, last = end;
+
+      pointer_y = (pointer.type == MENU_POINTER_MOUSE) ?
+            pointer_y + (xmb->cursor_size/2) : pointer_y;
 
       if (height)
          xmb_calculate_visible_range(xmb, height,
@@ -3360,17 +3363,8 @@ static void xmb_render(void *data,
             + xmb_item_y(xmb, (int)i, selection);
          float item_y2     = item_y1 + xmb->icon_size;
 
-         if (pointer_enable)
-         {
-            if (pointer_y > item_y1 && pointer_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &i);
-         }
-
-         if (mouse_enable)
-         {
-            if (mouse_y > item_y1 && mouse_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
-         }
+         if (pointer_y > item_y1 && pointer_y < item_y2)
+            menu_input_set_pointer_selection(i);
       }
    }
 
@@ -4324,14 +4318,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Cursor image */
    if (xmb->mouse_show)
    {
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
       menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       menu_display_draw_cursor(
             video_info,
             &coord_white[0],
             xmb->cursor_size,
             xmb->textures.list[XMB_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            pointer.x,
+            pointer.y,
             width,
             height);
    }
@@ -5979,7 +5976,7 @@ error:
    return false;
 }
 
-static int xmb_pointer_tap(void *userdata,
+static int xmb_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -5994,7 +5991,7 @@ static int xmb_pointer_tap(void *userdata,
    else if (ptr <= (menu_entries_get_size() - 1))
    {
       size_t selection         = menu_navigation_get_selection();
-      if (ptr == selection && cbs && cbs->action_select)
+      if (ptr == selection)
          return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       menu_navigation_set_selection(ptr);
@@ -6060,7 +6057,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_load_image,
    "xmb",
    xmb_environ,
-   xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
    xmb_refresh_thumbnail_image,
@@ -6071,7 +6067,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
    NULL, /* pointer_down */
-   NULL, /* pointer_up   */
+   xmb_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
    xmb_get_load_content_animation_data
 #else

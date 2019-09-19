@@ -531,7 +531,7 @@ typedef struct
    bool shadow_enable;
    unsigned particle_effect;
    bool extended_ascii_enable;
-   float scroll_y;
+   int16_t scroll_y;
    char msgbox[1024];
    unsigned color_theme;
    rgui_colors_t colors;
@@ -2824,21 +2824,78 @@ end:
    string_list_free(list);
 }
 
-static void rgui_blit_cursor(void)
+static void rgui_blit_cursor(rgui_t *rgui)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   int16_t        x   = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t        y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   menu_input_pointer_t pointer;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
+   menu_input_get_pointer_state(&pointer);
+
    if (rgui_frame_buf.data)
    {
-      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
-      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, pointer.x, pointer.y - 5, 1, 11, rgui->colors.normal_color);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, pointer.x - 5, pointer.y, 11, 1, rgui->colors.normal_color);
    }
+}
+
+int rgui_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height)
+{
+   /* This is a lazy copy/paste from rgui_render_osk(),
+    * but it will do for now... */
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   size_t key_index;
+   
+   unsigned key_width, key_height;
+   unsigned key_text_offset_x, key_text_offset_y;
+   unsigned ptr_width, ptr_height;
+   unsigned ptr_offset_x, ptr_offset_y;
+   
+   unsigned keyboard_width, keyboard_height;
+   unsigned keyboard_offset_x, keyboard_offset_y;
+   
+   unsigned osk_width, osk_height;
+   unsigned osk_x, osk_y;
+
+   /* Get dimensions/layout */
+   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+
+   key_text_offset_x      = 8;
+   key_text_offset_y      = 6;
+   key_width              = FONT_WIDTH  + (key_text_offset_x * 2);
+   key_height             = FONT_HEIGHT + (key_text_offset_y * 2);
+   ptr_offset_x           = 2;
+   ptr_offset_y           = 2;
+   ptr_width              = key_width  - (ptr_offset_x * 2);
+   ptr_height             = key_height - (ptr_offset_y * 2);
+   keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
+   keyboard_height        = key_height * 4;
+   keyboard_offset_x      = 10;
+   keyboard_offset_y      = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
+   osk_width              = keyboard_width + 20;
+   osk_height             = keyboard_offset_y + keyboard_height + 10;
+   osk_x                  = (fb_width - osk_width) / 2;
+   osk_y                  = (fb_height - osk_height) / 2;
+
+   for (key_index = 0; key_index < 44; key_index++)
+   {
+      unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);
+      unsigned key_column  = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
+
+      unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
+      unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+
+      if (x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
+          y > osk_ptr_y && y < osk_ptr_y + ptr_height)
+         return (int)key_index;
+   }
+
+   return -1;
 }
 
 static void rgui_render_osk(
@@ -3134,8 +3191,9 @@ static void rgui_render(void *data,
    size_t i, end, fb_pitch, old_start, new_start;
    unsigned fb_width, fb_height;
    int bottom;
+   menu_input_pointer_t pointer;
    unsigned ticker_x_offset       = 0;
-   size_t entries_end             = 0;
+   size_t entries_end             = menu_entries_get_size();
    bool msg_force                 = false;
    bool fb_size_changed           = false;
    settings_t *settings           = config_get_ptr();
@@ -3143,6 +3201,11 @@ static void rgui_render(void *data,
 
    static bool display_kb         = false;
    bool current_display_cb        = false;
+
+   bool show_fs_thumbnail         =
+         rgui->show_fs_thumbnail &&
+         rgui->entry_has_thumbnail &&
+         (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
 
    /* Sanity check */
    if (!rgui || !rgui_frame_buf.data || !settings)
@@ -3207,63 +3270,72 @@ static void rgui_render(void *data,
 
    rgui->force_redraw        = false;
 
-   if (settings->bools.menu_pointer_enable)
+   /* Get offset of bottommost entry */
+   bottom = (int)(entries_end - rgui_term_layout.height);
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+   if (old_start > (unsigned)bottom)
    {
-      unsigned new_val;
+      /* MENU_ENTRIES_CTL_SET_START requires a pointer of
+       * type size_t, so have to create a copy of 'bottom'
+       * here to avoid memory errors... */
+      size_t bottom_cpy = (size_t)bottom;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &bottom_cpy);
+   }
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+   /* Handle pointer input
+    * Note: We'd normally just check pointer.type here but
+    * RGUI focuses on performance - so skip all of this
+    * if both mouse and touchscreen input are disabled by
+    * the user (only saves a dozen or so clock cycles, but
+    * might as well...) */
+   if (settings->bools.menu_mouse_enable || settings->bools.menu_pointer_enable)
+   {
+      menu_input_get_pointer_state(&pointer);
 
-      new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
-         / (11 - 2 + old_start));
-
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_val);
-
-      if (menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
+      /* Ignore input when showing a fullscreen thumbnail */
+      if ((pointer.type != MENU_POINTER_DISABLED) && !show_fs_thumbnail)
       {
-         size_t start;
-         int16_t delta_y = menu_input_pointer_state(MENU_POINTER_DELTA_Y_AXIS);
-         rgui->scroll_y += delta_y;
+         /* Update currently 'highlighted' item */
+         if (pointer.y > rgui_term_layout.start_y)
+         {
+            unsigned new_ptr;
+            menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-         start = -rgui->scroll_y / 11 + 2;
+            /* Note: It's okay for this to go out of range
+             * (limits are checked in rgui_pointer_up()) */
+            new_ptr = (unsigned)((pointer.y - rgui_term_layout.start_y) / FONT_HEIGHT_STRIDE) + old_start;
 
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+            menu_input_set_pointer_selection(new_ptr);
+         }
 
-         if (rgui->scroll_y > 0)
-            rgui->scroll_y = 0;
+         /* Allow drag-scrolling if items are currently off-screen */
+         if (pointer.dragged && (bottom > 0))
+         {
+            size_t start;
+            int16_t scroll_y_max = bottom * FONT_HEIGHT_STRIDE;
+      
+            rgui->scroll_y += -1 * pointer.dy;
+            rgui->scroll_y = (rgui->scroll_y < 0)            ? 0            : rgui->scroll_y;
+            rgui->scroll_y = (rgui->scroll_y > scroll_y_max) ? scroll_y_max : rgui->scroll_y;
+            
+            start = rgui->scroll_y / FONT_HEIGHT_STRIDE;
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+         }
       }
    }
 
-   if (settings->bools.menu_mouse_enable)
-   {
-      unsigned new_mouse_ptr;
-      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-
-      new_mouse_ptr = (unsigned)(mouse_y / 11 - 2 + old_start);
-
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
-   }
+   /* Start position may have changed - get current
+    * value and determine index of last displayed entry */
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+   end = ((old_start + rgui_term_layout.height) <= entries_end) ?
+         old_start + rgui_term_layout.height : entries_end;
 
    /* Do not scroll if all items are visible. */
-   if (menu_entries_get_size() <= rgui_term_layout.height)
+   if (entries_end <= rgui_term_layout.height)
    {
       size_t start = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
-
-   bottom    = (int)(menu_entries_get_size() - rgui_term_layout.height);
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-
-   if (old_start > (unsigned)bottom)
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &bottom);
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-
-   entries_end = menu_entries_get_size();
-
-   end         = ((old_start + rgui_term_layout.height) <= (entries_end)) ?
-      old_start + rgui_term_layout.height : entries_end;
 
    /* Render background */
    rgui_render_background();
@@ -3295,7 +3367,7 @@ static void rgui_render(void *data,
     * normal menu thumbnail/text list display modes */
    if (current_display_cb)
       rgui_render_osk(rgui, &ticker, &ticker_smooth, use_smooth_ticker);
-   else if (rgui->show_fs_thumbnail && rgui->entry_has_thumbnail && (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0)))
+   else if (show_fs_thumbnail)
    {
       /* If fullscreen thumbnails are enabled and we are viewing a playlist,
        * switch to fullscreen thumbnail view mode if either current thumbnail
@@ -3787,7 +3859,7 @@ static void rgui_render(void *data,
          !video_driver_has_windowed();
 
       if (settings->bools.menu_mouse_enable && cursor_visible)
-         rgui_blit_cursor();
+         rgui_blit_cursor(rgui);
    }
 }
 
@@ -4226,6 +4298,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    start = 0;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+   rgui->scroll_y = 0;
 
    rgui_init_font_lut();
 
@@ -4692,7 +4765,10 @@ static void rgui_navigation_set(void *data, bool scroll)
    }
 
    if (do_set_start)
+   {
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+      rgui->scroll_y = start * FONT_HEIGHT_STRIDE;
+   }
 }
 
 static void rgui_navigation_set_last(void *data)
@@ -4782,27 +4858,51 @@ static int rgui_environ(enum menu_environ_cb type,
    return -1;
 }
 
-static int rgui_pointer_tap(void *data,
+static int rgui_pointer_up(void *data,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   rgui_t *rgui           = (rgui_t*)data;
    unsigned header_height = menu_display_get_header_height();
+   size_t selection       = menu_navigation_get_selection();
+   bool show_fs_thumbnail = false;
 
-   if (y < header_height)
-   {
-      size_t selection = menu_navigation_get_selection();
-      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-   else if (ptr <= (menu_entries_get_size() - 1))
-   {
-      size_t selection         = menu_navigation_get_selection();
+   if (!rgui)
+      return -1;
 
-      if (ptr == selection && cbs && cbs->action_select)
+   show_fs_thumbnail =
+         rgui->show_fs_thumbnail &&
+         rgui->entry_has_thumbnail &&
+         (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+
+   if (show_fs_thumbnail)
+   {
+      /* If we are currently showing a fullscreen thumbnail:
+       * - Must provide a mechanism for toggling it off
+       * - A normal mouse press should just select the current
+       *   entry (for which the thumbnail is being shown) */
+      if (y < header_height)
+         rgui_update_thumbnail_image(rgui);
+      else
          return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+   }
+   else
+   {
+      if (y < header_height)
+         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+      else if (ptr <= (menu_entries_get_size() - 1))
+      {
+         /* If currently selected item matches 'pointer' value,
+          * perform a MENU_ACTION_SELECT on it */
+         if (ptr == selection)
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-      menu_navigation_set_selection(ptr);
-      menu_driver_navigation_set(false);
+         /* Otherwise, just move the current selection to the
+          * 'pointer' value */
+         menu_navigation_set_selection(ptr);
+         menu_driver_navigation_set(false);
+      }
    }
 
    return 0;
@@ -5065,17 +5165,16 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_load_image,
    "rgui",
    rgui_environ,
-   rgui_pointer_tap,
    NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
    rgui_refresh_thumbnail_image,
    rgui_set_thumbnail_system,
    rgui_get_thumbnail_system,
    NULL,                               /* set_thumbnail_content */
-   NULL,                               /* osk_ptr_at_pos */
+   rgui_osk_ptr_at_pos,
    NULL,                               /* update_savestate_thumbnail_path */
    NULL,                               /* update_savestate_thumbnail_image */
    NULL,                               /* pointer_down */
-   NULL,                               /* pointer_up */
+   rgui_pointer_up,                    /* pointer_up */
    NULL,                               /* get_load_content_animation_data */
 };

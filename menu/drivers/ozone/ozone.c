@@ -1529,8 +1529,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    if (ozone->first_frame)
    {
-      ozone->cursor_x_old = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      ozone->cursor_y_old = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
+      ozone->cursor_x_old = pointer.x;
+      ozone->cursor_y_old = pointer.y;
       ozone->first_frame  = false;
    }
 
@@ -1699,14 +1702,17 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Cursor */
    if (ozone->show_cursor)
    {
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
       menu_display_set_alpha(ozone_pure_white, 1.0f);
       menu_display_draw_cursor(
          video_info,
          ozone_pure_white,
          ozone->dimensions.cursor_size,
          ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
-         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         pointer.x,
+         pointer.y,
          video_info->width,
          video_info->height
       );
@@ -2269,13 +2275,13 @@ static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_i
 }
 #endif
 
-static int ozone_pointer_tap(void *userdata,
+static int ozone_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    size_t selection         = menu_navigation_get_selection();
-   if (ptr == selection && cbs && cbs->action_select)
+   if (ptr == selection)
       return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
    menu_navigation_set_selection(ptr);
@@ -2435,7 +2441,6 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_load_image,
    "ozone",
    ozone_environ_cb,
-   ozone_pointer_tap,
    ozone_update_thumbnail_path,
    ozone_update_thumbnail_image,
    ozone_refresh_thumbnail_image,
@@ -2446,7 +2451,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* update_savestate_thumbnail_path */
    NULL,                         /* update_savestate_thumbnail_image */
    NULL,                         /* pointer_down */
-   NULL,                         /* pointer_up   */
+   ozone_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
    ozone_get_load_content_animation_data
 #else

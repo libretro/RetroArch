@@ -29,25 +29,66 @@
 
 RETRO_BEGIN_DECLS
 
+#define MENU_INPUT_HIDE_CURSOR_DELAY 4000000 /* 4 seconds */
+
+#define MENU_INPUT_PRESS_TIME_SHORT 250000   /* 250 ms */
+#define MENU_INPUT_PRESS_TIME_LONG 1500000   /* 1.5 second */
+/* (Anthing less than 'short' is considered a tap) */
+
+#define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
+
+enum menu_pointer_type
+{
+   MENU_POINTER_DISABLED = 0,
+   MENU_POINTER_MOUSE,
+   MENU_POINTER_TOUCHSCREEN
+};
+
+enum menu_input_mouse_hw_id
+{
+   MENU_MOUSE_X_AXIS = 0,
+   MENU_MOUSE_Y_AXIS,
+   MENU_MOUSE_LEFT_BUTTON,
+   MENU_MOUSE_RIGHT_BUTTON,
+   MENU_MOUSE_WHEEL_UP,
+   MENU_MOUSE_WHEEL_DOWN,
+   MENU_MOUSE_HORIZ_WHEEL_UP,
+   MENU_MOUSE_HORIZ_WHEEL_DOWN
+};
+
+/* Defines set of (abstracted) inputs/states
+ * common to mouse + touchscreen hardware */
+typedef struct menu_input_pointer_hw_state
+{
+   bool active;
+   int16_t x;
+   int16_t y;
+   bool select_pressed;
+   bool cancel_pressed;
+   bool up_pressed;
+   bool down_pressed;
+   bool left_pressed;
+   bool right_pressed;
+} menu_input_pointer_hw_state_t;
+
+typedef struct menu_input_pointer
+{
+   enum menu_pointer_type type;
+   bool pressed;
+   bool dragged;
+   retro_time_t press_duration;
+   int16_t x;
+   int16_t y;
+   int16_t dx;
+   int16_t dy;
+   float y_accel;
+} menu_input_pointer_t;
+
 typedef struct menu_input
 {
-   struct
-   {
-      unsigned ptr;
-   } mouse;
-
-   struct
-   {
-      bool back;
-      bool pressed[2];
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      unsigned ptr;
-      unsigned counter;
-      float accel;
-   } pointer;
+   menu_input_pointer_t pointer;
+   unsigned ptr;
+   bool select_inhibit;
 } menu_input_t;
 
 typedef struct menu_input_ctx_hitbox
@@ -58,15 +99,31 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
+/* Must be called inside menu_driver_toggle()
+ * Prevents phantom input when using an overlay to
+ * toggle menu ON if overlays are disabled in-menu */
+void menu_input_driver_toggle(bool on);
+
+/* Provides access to all pointer device parameters */
+void menu_input_get_pointer_state(menu_input_pointer_t *pointer);
+
+/* Getters/setters for menu item (index) currently
+ * selected/highlighted (hovered over) by the pointer
+ * device
+ * Note: Each menu driver is responsible for setting this */
+unsigned menu_input_get_pointer_selection(void);
+void menu_input_set_pointer_selection(unsigned selection);
+
+/* Allows pointer y acceleration to be overridden
+ * (typically want to set acceleration to zero when
+ * calling populate entries) */
+void menu_input_set_pointer_y_accel(float y_accel);
+
+void menu_input_reset(void);
+
+bool menu_input_pointer_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
+
 void menu_input_post_iterate(int *ret, unsigned action);
-
-int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
-
-int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
-
-bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
-
-bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 
 RETRO_END_DECLS
 

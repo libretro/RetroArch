@@ -351,6 +351,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    size_t i, y, entries_end;
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, video_info_width, entry_width, button_height;
+   menu_input_pointer_t pointer;
    settings_t *settings = config_get_ptr();
 
    bool old_list           = selection_buf == ozone->selection_buf_old;
@@ -359,13 +360,24 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    size_t old_selection_y  = 0;
    int entry_padding       = ozone_get_entries_padding(ozone, old_list);
 
-   int16_t cursor_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t cursor_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   int16_t cursor_x        = 0;
+   int16_t cursor_y        = 0;
 
-   if (settings->bools.menu_mouse_enable && !ozone->cursor_mode && (cursor_x != ozone->cursor_x_old || cursor_y != ozone->cursor_y_old))
-      ozone->cursor_mode = true;
-   else if (!settings->bools.menu_mouse_enable)
-      ozone->cursor_mode = false; /* we need to disable it on the fly */
+   menu_input_get_pointer_state(&pointer);
+
+   if (pointer.type != MENU_POINTER_DISABLED)
+   {
+      cursor_x = pointer.x;
+      cursor_y = pointer.y;
+
+      /* Not sure why it's done like this - best to leave well alone for now... */
+      if (settings->bools.menu_mouse_enable && !ozone->cursor_mode && (cursor_x != ozone->cursor_x_old || cursor_y != ozone->cursor_y_old))
+         ozone->cursor_mode = true;
+      else if (!settings->bools.menu_mouse_enable)
+         ozone->cursor_mode = false; /* we need to disable it on the fly */
+   }
+   else
+      ozone->cursor_mode = false;
 
    ozone->cursor_x_old = cursor_x;
    ozone->cursor_y_old = cursor_y;
@@ -438,15 +450,9 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
 
       /* Cursor */
       if (!old_list && ozone->cursor_mode)
-      {
          if (  cursor_x >= border_start_x && (cursor_x <= border_start_x + (int)entry_width) &&
                cursor_y >= border_start_y && (cursor_y <= border_start_y + (int)button_height))
-         {
-            selection_y = y;
-            menu_navigation_set_selection(i);
-            menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
-         }
-      }
+            menu_input_set_pointer_selection(i);
 
 border_iterate:
       if (node)
