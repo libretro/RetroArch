@@ -32,6 +32,7 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
+#ifdef HW_RVL
 /* gx joypad functions */
 bool gxpad_mousevalid(unsigned port);
 void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button);
@@ -42,14 +43,18 @@ typedef struct
    int x_last, y_last;
    uint32_t button;
 } gx_input_mouse_t;
+#endif
 
 typedef struct gx_input
 {
    const input_device_driver_t *joypad;
+#ifdef HW_RVL
    int mouse_max;
    gx_input_mouse_t *mouse;
+#endif
 } gx_input_t;
 
+#ifdef HW_RVL
 static int16_t gx_lightgun_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 {
    struct video_viewport vp = {0};
@@ -128,6 +133,7 @@ static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
          return 0;
    }
 }
+#endif
 
 static int16_t gx_input_state(void *data,
       rarch_joypad_info_t joypad_info,
@@ -188,12 +194,13 @@ static int16_t gx_input_state(void *data,
             return input_joypad_analog(gx->joypad,
                   joypad_info, port, idx, id, binds[port]);
          break;
-
+#ifdef HW_RVL
       case RETRO_DEVICE_MOUSE:
          return gx_mouse_state(gx, id, joypad_info.joy_idx);
 
       case RETRO_DEVICE_LIGHTGUN:
          return gx_lightgun_state(gx, id, joypad_info.joy_idx);
+#endif
    }
 
    return 0;
@@ -208,13 +215,14 @@ static void gx_input_free_input(void *data)
 
    if (gx->joypad)
       gx->joypad->destroy();
-
+#ifdef HW_RVL
    if(gx->mouse)
       free(gx->mouse);
-
+#endif
    free(gx);
 }
 
+#ifdef HW_RVL
 static inline int gx_count_mouse(gx_input_t *gx)
 {
    int count = 0;
@@ -235,6 +243,7 @@ static inline int gx_count_mouse(gx_input_t *gx)
 
    return count;
 }
+#endif
 
 static void *gx_input_init(const char *joypad_driver)
 {
@@ -243,14 +252,15 @@ static void *gx_input_init(const char *joypad_driver)
       return NULL;
 
    gx->joypad = input_joypad_init_driver(joypad_driver, gx);
-
+#ifdef HW_RVL
    /* Allocate at least 1 mouse at startup */
    gx->mouse_max = 1;
    gx->mouse = (gx_input_mouse_t*) calloc(gx->mouse_max, sizeof(gx_input_mouse_t));
-
+#endif
    return gx;
 }
 
+#ifdef HW_RVL
 static void gx_input_poll_mouse(gx_input_t *gx)
 {
    int count = 0;
@@ -288,6 +298,7 @@ static void gx_input_poll_mouse(gx_input_t *gx)
       } 
    }
 }
+#endif
 
 static void gx_input_poll(void *data)
 {
@@ -296,20 +307,25 @@ static void gx_input_poll(void *data)
    if (gx && gx->joypad)
    {
       gx->joypad->poll();
-
+#ifdef HW_RVL
       if(gx->mouse)
          gx_input_poll_mouse(gx);
+#endif
    }
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
 {
    (void)data;
-
+#ifdef HW_RVL
    return (1 << RETRO_DEVICE_JOYPAD) |
           (1 << RETRO_DEVICE_ANALOG) |
           (1 << RETRO_DEVICE_MOUSE) |
           (1 << RETRO_DEVICE_LIGHTGUN);
+#else
+   return (1 << RETRO_DEVICE_JOYPAD) |
+          (1 << RETRO_DEVICE_ANALOG);
+#endif
 }
 
 static const input_device_driver_t  *gx_input_get_joypad_driver(void *data)
