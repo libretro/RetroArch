@@ -851,13 +851,9 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
          t++;
       }
       else if (next - p == 1 && p[0] == '.')
-      {
          p += 2;
-      }
       else if (next - p == 0)
-      {
          p += 1;
-      }
       else
       {
          /* fail when truncating */
