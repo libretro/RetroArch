@@ -143,6 +143,7 @@ enum
 typedef struct materialui_handle
 {
    bool need_compute;
+   bool need_scroll;
    bool mouse_show;
 
    int cursor_size;
@@ -645,6 +646,40 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
    mui->content_height = sum;
 }
 
+/* Compute the scroll value depending on the highlighted entry */
+static float materialui_get_scroll(materialui_handle_t *mui)
+{
+   unsigned i, width, height = 0;
+   float half, sum = 0;
+   size_t selection   = menu_navigation_get_selection();
+   file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
+
+   if (!mui)
+      return 0;
+
+   /* Whenever we perform a 'manual' scroll, scroll
+    * acceleration must be reset */
+   menu_input_set_pointer_y_accel(0.0f);
+
+   video_driver_get_size(&width, &height);
+
+   half = height / 2;
+
+   for (i = 0; i < selection; i++)
+   {
+      materialui_node_t *node   = (materialui_node_t*)
+         file_list_get_userdata_at_offset(list, i);
+
+      if (node)
+         sum += node->line_height;
+   }
+
+   if (sum < half)
+      return 0;
+
+   return sum - half;
+}
+
 /* Called on each frame. We use this callback to implement the touch scroll
    with acceleration */
 static void materialui_render(void *data,
@@ -652,6 +687,7 @@ static void materialui_render(void *data,
       bool is_idle)
 {
    unsigned bottom, header_height;
+   menu_input_pointer_t pointer;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
    settings_t        *settings = config_get_ptr();
@@ -660,61 +696,63 @@ static void materialui_render(void *data,
    if (!mui)
       return;
 
+   /* Here's a nasty issue:
+    * After calling populate_entries(), we need to call
+    * materialui_get_scroll() so the last selected item
+    * is correctly displayed on screen.
+    * But we can't do this until materialui_compute_entries_box()
+    * has been called, so we should delegate it until mui->need_compute
+    * is acted upon.
+    * *But* we can't do this in the same frame that mui->need_compute
+    * is acted upon, because of the order in which materialui_frame()
+    * and materialui_render() are called. Since mui->tabs_height is
+    * set by materialui_frame(), the first time materialui_render() is
+    * called after populate_entries() it has the wrong mui->tabs_height
+    * value...
+    * We therefore have to delegate the scroll until the frame after
+    * mui->need_compute is handled... */
+   if (mui->need_scroll)
+   {
+      mui->scroll_y    = materialui_get_scroll(mui);
+      mui->need_scroll = false;
+   }
+
    if (mui->need_compute)
    {
       if (mui->font)
          materialui_compute_entries_box(mui, width, height);
       mui->need_compute = false;
+      mui->need_scroll  = true;
    }
 
    menu_display_set_width(width);
    menu_display_set_height(height);
    header_height = menu_display_get_header_height();
 
-   if (settings->bools.menu_pointer_enable)
+   menu_input_get_pointer_state(&pointer);
+
+   if (pointer.type != MENU_POINTER_DISABLED)
    {
       size_t ii;
-      int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      float    old_accel_val   = 0.0f;
-      float new_accel_val      = 0.0f;
-      size_t entries_end       = menu_entries_get_size();
+      int16_t pointer_y   = pointer.y;
+      float old_accel_val = 0.0f;
+      float new_accel_val = 0.0f;
+      size_t entries_end  = menu_entries_get_size();
 
       for (ii = 0; ii < entries_end; ii++)
       {
          materialui_node_t *node = (materialui_node_t*)
             file_list_get_userdata_at_offset(list, ii);
 
-         if (pointer_y > (-mui->scroll_y + header_height + node->y)
-               && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
-            )
-            menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &ii);
+         if ((pointer_y > (-mui->scroll_y + header_height + node->y)) &&
+             (pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)))
+         {
+            menu_input_set_pointer_selection(ii);
+            break;
+         }
       }
 
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
-
-      mui->scroll_y            -= old_accel_val;
-
-      new_accel_val = old_accel_val * 0.96;
-
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_WRITE, &new_accel_val);
-   }
-
-   if (settings->bools.menu_mouse_enable)
-   {
-      size_t ii;
-      int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      size_t entries_end       = menu_entries_get_size();
-
-      for (ii = 0; ii < entries_end; ii++)
-      {
-         materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, ii);
-
-         if (mouse_y > (-mui->scroll_y + header_height + node->y)
-               && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
-            )
-            menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &ii);
-      }
+      mui->scroll_y -= pointer.y_accel;
    }
 
    if (mui->scroll_y < 0)
@@ -1664,15 +1702,20 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    }
 
    if (mui->mouse_show)
+   {
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
       menu_display_draw_cursor(
             video_info,
             &white_bg[0],
             mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            pointer.x,
+            pointer.y,
             width,
             height);
+   }
 
    menu_display_restore_clear_color();
    menu_display_unset_viewport(video_info->width, video_info->height);
@@ -1766,6 +1809,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    *userdata         = mui;
    mui->cursor_size  = scale_factor / 3;
    mui->need_compute = false;
+   mui->need_scroll  = false;
 
    mui->menu_title[0] = '\0';
 
@@ -1840,36 +1884,6 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
    return true;
 }
 
-/* Compute the scroll value depending on the highlighted entry */
-static float materialui_get_scroll(materialui_handle_t *mui)
-{
-   unsigned i, width, height = 0;
-   float half, sum = 0;
-   size_t selection   = menu_navigation_get_selection();
-   file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-
-   if (!mui)
-      return 0;
-
-   video_driver_get_size(&width, &height);
-
-   half = height / 2;
-
-   for (i = 0; i < selection; i++)
-   {
-      materialui_node_t *node   = (materialui_node_t*)
-         file_list_get_userdata_at_offset(list, i);
-
-      if (node)
-         sum += node->line_height;
-   }
-
-   if (sum < half)
-      return 0;
-
-   return sum - half;
-}
-
 /* The navigation pointer has been updated (for example by pressing up or down
    on the keyboard). We use this function to animate the scroll. */
 static void materialui_navigation_set(void *data, bool scroll)
@@ -1880,6 +1894,11 @@ static void materialui_navigation_set(void *data, bool scroll)
 
    if (!mui || !scroll)
       return;
+
+   /* mui->scroll_y will be modified by the animation
+    * - Set scroll acceleration to zero to minimise
+    *   potential conflicts */
+   menu_input_set_pointer_y_accel(0.0f);
 
    entry.duration     = 166;
    entry.target_value = scroll_pos;
@@ -1895,7 +1914,11 @@ static void materialui_navigation_set(void *data, bool scroll)
 
 static void materialui_list_set_selection(void *data, file_list_t *list)
 {
-   materialui_navigation_set(data, true);
+   /* This is called upon MENU_ACTION_CANCEL
+    * Have to set 'scroll' to false, otherwise
+    * navigating backwards in the menu is absolutely
+    * horrendous... */
+   materialui_navigation_set(data, false);
 }
 
 /* The navigation pointer is set back to zero */
@@ -1908,6 +1931,7 @@ static void materialui_navigation_clear(void *data, bool pending_push)
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    mui->scroll_y = 0;
+   menu_input_set_pointer_y_accel(0.0f);
 }
 
 static void materialui_navigation_set_last(void *data)
@@ -1925,13 +1949,18 @@ static void materialui_populate_entries(
       void *data, const char *path,
       const char *label, unsigned i)
 {
-   materialui_handle_t *mui    = (materialui_handle_t*)data;
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+
    if (!mui)
       return;
 
    menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
    mui->need_compute = true;
-   mui->scroll_y = materialui_get_scroll(mui);
+
+   /* Note: mui->scroll_y position needs to be set here,
+    * but we can't do this until materialui_compute_entries_box()
+    * has been called. We therefore delegate it until mui->need_compute
+    * is acted upon */
 }
 
 /* Context reset is called on launch or when a core is launched */
@@ -2896,7 +2925,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    materialui_load_image,
    "glui",
    materialui_environ,
-   NULL,
    NULL,
    NULL,
    NULL,

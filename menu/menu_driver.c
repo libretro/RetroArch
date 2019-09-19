@@ -2810,12 +2810,12 @@ void menu_display_snow(int width, int height)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(
-               MENU_MOUSE_X_AXIS);
+         menu_input_pointer_t pointer;
+         menu_input_get_pointer_state(&pointer);
 
          p->y            += p->yspeed;
          p->x            += menu_display_scalef(
-               mouse_x, 0, width, -0.3, 0.3);
+               pointer.x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < height
@@ -3096,6 +3096,10 @@ static void bundle_decompressed(retro_task_t *task,
 static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
+
+   /* Ensure that menu pointer input is correctly
+    * initialised */
+   menu_input_reset();
 
    if (!menu_entries_init())
       return false;
@@ -3463,7 +3467,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                scroll_index_list[i] = 0;
 
-            menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
+            menu_input_reset();
 
             if (menu_driver_ctx && menu_driver_ctx->free)
                menu_driver_ctx->free(menu_userdata);
@@ -3538,19 +3542,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          return false;
-      case RARCH_MENU_CTL_POINTER_TAP:
-         {
-            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
-            {
-               point->retcode = 0;
-               return false;
-            }
-            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
-                  point->x, point->y, point->ptr,
-                  point->cbs, point->entry, point->action);
-         }
-         break;
       case RARCH_MENU_CTL_POINTER_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
