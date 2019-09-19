@@ -21510,77 +21510,88 @@ static retro_time_t rarch_core_runtime_tick(void)
    return frame_time;
 }
 
+#define _PSUPP_BUF(buf, var, name, desc) \
+   buf[written  ] = ' '; \
+   buf[written+1] = ' '; \
+   buf[written+2] = '\0'; \
+   written        = strlcat(buf, name, sizeof(buf)); \
+   buf[written  ] = ':'; \
+   buf[written+1] = '\n'; \
+   buf[written+2] = '\t'; \
+   buf[written+3] = '\t'; \
+   buf[written+4] = '\0'; \
+   written        = strlcat(buf, desc, sizeof(buf)); \
+   buf[written  ] = ':'; \
+   buf[written+1] = ' '; \
+   buf[written+2] = '\0'; \
+   written        = strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf)); \
+   buf[written  ] = '\0'
+
 static void retroarch_print_features(void)
 {
+   char buf[2048];
+   size_t written;
+   buf[0] = '\0';
    frontend_driver_attach_console();
-   puts("");
-   puts("Features:");
 
-   _PSUPP(SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
-   _PSUPP(SUPPORTS_COMMAND,         "Command",         "Command interface support");
-   _PSUPP(SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface "
+   buf[0] = '\n';
+   written = strlcat(buf, "Features:\n", sizeof(buf));
+
+   _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
+   _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
+   _PSUPP_BUF(buf, SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface "
          "support");
-
-   _PSUPP(SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
-   _PSUPP(SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
-   _PSUPP(SUPPORTS_X11,             "X11",             "X11 input/video drivers");
-   _PSUPP(SUPPORTS_WAYLAND,         "wayland",         "Wayland input/video drivers");
-   _PSUPP(SUPPORTS_THREAD,          "Threads",         "Threading support");
-
-   _PSUPP(SUPPORTS_VULKAN,          "Vulkan",          "Vulkan video driver");
-   _PSUPP(SUPPORTS_METAL,           "Metal",           "Metal video driver");
-   _PSUPP(SUPPORTS_OPENGL,          "OpenGL",          "OpenGL   video driver support");
-   _PSUPP(SUPPORTS_OPENGLES,        "OpenGL ES",       "OpenGLES video driver support");
-   _PSUPP(SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
-   _PSUPP(SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver support");
-   _PSUPP(SUPPORTS_EGL,             "EGL",             "Video context driver");
-   _PSUPP(SUPPORTS_KMS,             "KMS",             "Video context driver");
-   _PSUPP(SUPPORTS_VG,              "OpenVG",          "Video context driver");
-
-   _PSUPP(SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
-   _PSUPP(SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
-   _PSUPP(SUPPORTS_ALSA,            "ALSA",            "Audio driver");
-   _PSUPP(SUPPORTS_OSS,             "OSS",             "Audio driver");
-   _PSUPP(SUPPORTS_JACK,            "Jack",            "Audio driver");
-   _PSUPP(SUPPORTS_RSOUND,          "RSound",          "Audio driver");
-   _PSUPP(SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
-   _PSUPP(SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
-   _PSUPP(SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
-   _PSUPP(SUPPORTS_WASAPI,          "WASAPI",     "Audio driver");
-   _PSUPP(SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
-   _PSUPP(SUPPORTS_AL,              "OpenAL",          "Audio driver");
-   _PSUPP(SUPPORTS_SL,              "OpenSL",          "Audio driver");
-
-   _PSUPP(SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
-   _PSUPP(SUPPORTS_ZLIB,            "zlib",            ".zip extraction support");
-
-   _PSUPP(SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
-
-   _PSUPP(SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
-   _PSUPP(SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
-   _PSUPP(SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
-
-   _PSUPP(SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
-   _PSUPP(SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
-   _PSUPP(SUPPORTS_RJPEG,            "rjpeg",           "JPEG image loading");
-   _PSUPP(SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of "
+   _PSUPP_BUF(buf, SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
+   _PSUPP_BUF(buf, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+   _PSUPP_BUF(buf, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
+   _PSUPP_BUF(buf, SUPPORTS_WAYLAND,         "wayland",         "Wayland input/video drivers");
+   _PSUPP_BUF(buf, SUPPORTS_THREAD,          "Threads",         "Threading support");
+   _PSUPP_BUF(buf, SUPPORTS_VULKAN,          "Vulkan",          "Vulkan video driver");
+   _PSUPP_BUF(buf, SUPPORTS_METAL,           "Metal",           "Metal video driver");
+   _PSUPP_BUF(buf, SUPPORTS_OPENGL,          "OpenGL",          "OpenGL   video driver support");
+   _PSUPP_BUF(buf, SUPPORTS_OPENGLES,        "OpenGL ES",       "OpenGLES video driver support");
+   _PSUPP_BUF(buf, SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
+   _PSUPP_BUF(buf, SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver support");
+   _PSUPP_BUF(buf, SUPPORTS_EGL,             "EGL",             "Video context driver");
+   _PSUPP_BUF(buf, SUPPORTS_KMS,             "KMS",             "Video context driver");
+   _PSUPP_BUF(buf, SUPPORTS_VG,              "OpenVG",          "Video context driver");
+   _PSUPP_BUF(buf, SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_ALSA,            "ALSA",            "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_OSS,             "OSS",             "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_JACK,            "Jack",            "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_RSOUND,          "RSound",          "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_WASAPI,          "WASAPI",     "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_AL,              "OpenAL",          "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_SL,              "OpenSL",          "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
+   _PSUPP_BUF(buf, SUPPORTS_ZLIB,            "zlib",            ".zip extraction support");
+   _PSUPP_BUF(buf, SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
+   _PSUPP_BUF(buf, SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
+   _PSUPP_BUF(buf, SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
+   _PSUPP_BUF(buf, SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
+   _PSUPP_BUF(buf, SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
+   _PSUPP_BUF(buf, SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
+   _PSUPP_BUF(buf, SUPPORTS_RJPEG,            "rjpeg",           "JPEG image loading");
+   _PSUPP_BUF(buf, SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of "
                                               "libretro library");
-   _PSUPP(SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay "
+   _PSUPP_BUF(buf, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay "
                                               "with libavcodec");
-
-   _PSUPP(SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
-   _PSUPP(SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver "
+   _PSUPP_BUF(buf, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
+   _PSUPP_BUF(buf, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver ");
+   _PSUPP_BUF(buf, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
+   _PSUPP_BUF(buf, SUPPORTS_PYTHON,          "Python",          "Script support in shaders");
+   _PSUPP_BUF(buf, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
+   _PSUPP_BUF(buf, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
-   _PSUPP(SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
-   _PSUPP(SUPPORTS_PYTHON,          "Python",          "Script support in shaders");
+   _PSUPP_BUF(buf, SUPPORTS_QT,              "Qt",              "Qt UI companion support");
+   _PSUPP_BUF(buf, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
 
-   _PSUPP(SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
-
-   _PSUPP(SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
-                                              "(for OSX and/or iOS)");
-
-   _PSUPP(SUPPORTS_QT,              "Qt",              "Qt UI companion support");
-   _PSUPP(SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
+   puts(buf);
 }
 
 static void retroarch_print_version(void)
@@ -21597,7 +21608,7 @@ static void retroarch_print_version(void)
    printf(" -- %s --\n", retroarch_git_version);
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
-   fprintf(stdout, "%s", str);
+   fprintf(stdout, "%s ", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
 }
 
@@ -21615,62 +21626,70 @@ static void retroarch_print_help(const char *arg0)
 
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
-   puts("  -h, --help            Show this help message.");
-   puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file FILE   Log messages to FILE.");
-   puts("      --version         Show version.");
-   puts("      --features        Prints available features compiled into "
-         "program.");
+   {
+      char buf[2048];
+      buf[0] = '\0';
+
+      strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
+      strlcat(buf, "  -v, --verbose         Verbose logging.\n",        sizeof(buf));
+      strlcat(buf, "      --log-file FILE   Log messages to FILE.\n",   sizeof(buf));
+      strlcat(buf, "      --version         Show version.\n",           sizeof(buf));
+      strlcat(buf, "      --features        Prints available features compiled into "
+            "program.\n", sizeof(buf));
+
 #ifdef HAVE_MENU
-   puts("      --menu            Do not require content or libretro core to "
-         "be loaded,\n"
-        "                        starts directly in menu. If no arguments "
-        "are passed to\n"
-        "                        the program, it is equivalent to using "
-        "--menu as only argument.");
+      strlcat(buf, "      --menu            Do not require content or libretro core to "
+            "be loaded,\n"
+            "                        starts directly in menu. If no arguments "
+            "are passed to\n"
+            "                        the program, it is equivalent to using "
+            "--menu as only argument.\n", sizeof(buf));
 #endif
-   puts("  -s, --save=PATH       Path for save files (*.srm).");
-   puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
-   puts("      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
-        "                        Effectively overrides automatic shader presets.\n"
-        "                        An empty argument \"\" will disable automatic shader presets.");
-   puts("  -f, --fullscreen      Start the program in fullscreen regardless "
-         "of config settings.");
-   puts("  -c, --config=FILE     Path for config file."
+
+      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm).\n", sizeof(buf));
+      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state).\n", sizeof(buf));
+      strlcat(buf, "      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
+            "                        Effectively overrides automatic shader presets.\n"
+            "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
+      strlcat(buf, "  -f, --fullscreen      Start the program in fullscreen regardless "
+            "of config settings.\n", sizeof(buf));
+      strlcat(buf, "  -c, --config=FILE     Path for config file."
 #ifdef _WIN32
-         "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
-         "\n\t\tIf a default config is not found, the program will attempt to"
-         "create one."
+            "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
+            "\n\t\tIf a default config is not found, the program will attempt to "
+            "create one.\n"
 #else
-         "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
-         "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
-         "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
-         "the program will attempt to create one based on the \n\t\t"
-         "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
+            "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
+            "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
+            "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
+            "the program will attempt to create one based on the \n\t\t"
+            "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
 #endif
-         );
-   puts("      --appendconfig=FILE\n"
-        "                        Extra config files are loaded in, "
-        "and take priority over\n"
-        "                        config selected in -c (or default). "
-        "Multiple configs are\n"
-        "                        delimited by '|'.");
+            , sizeof(buf));
+      strlcat(buf, "      --appendconfig=FILE\n"
+            "                        Extra config files are loaded in, "
+            "and take priority over\n"
+            "                        config selected in -c (or default). "
+            "Multiple configs are\n"
+            "                        delimited by '|'.\n", sizeof(buf));
 #ifdef HAVE_DYNAMIC
-   puts("  -L, --libretro=FILE   Path to libretro implementation. "
-         "Overrides any config setting.");
+      strlcat(buf, "  -L, --libretro=FILE   Path to libretro implementation. "
+            "Overrides any config setting.\n", sizeof(buf));
 #endif
-   puts("      --subsystem=NAME  Use a subsystem of the libretro core. "
-         "Multiple content\n"
-        "                        files are loaded as multiple arguments. "
-        "If a content\n"
-        "                        file is skipped, use a blank (\"\") "
-        "command line argument.\n"
-        "                        Content must be loaded in an order "
-        "which depends on the\n"
-        "                        particular subsystem used. See verbose "
-        "log output to learn\n"
-        "                        how a particular subsystem wants content "
-        "to be loaded.\n");
+      strlcat(buf, "      --subsystem=NAME  Use a subsystem of the libretro core. "
+            "Multiple content\n"
+            "                        files are loaded as multiple arguments. "
+            "If a content\n"
+            "                        file is skipped, use a blank (\"\") "
+            "command line argument.\n"
+            "                        Content must be loaded in an order "
+            "which depends on the\n"
+            "                        particular subsystem used. See verbose "
+            "log output to learn\n"
+            "                        how a particular subsystem wants content "
+            "to be loaded.\n", sizeof(buf));
+      puts(buf);
+   }
 
    printf("  -N, --nodevice=PORT\n"
           "                        Disconnects controller device connected "
@@ -21681,60 +21700,64 @@ static void retroarch_print_help(const char *arg0)
    printf("  -d, --device=PORT:ID\n"
           "                        Connect a generic device into PORT of "
           "the device (1 to %d).\n", MAX_USERS);
-   puts("                        Format is PORT:ID, where ID is a number "
-         "corresponding to the particular device.");
 
-   puts("  -P, --bsvplay=FILE    Playback a BSV movie file.");
-   puts("  -R, --bsvrecord=FILE  Start recording a BSV movie file from "
-         "the beginning.");
-   puts("      --eof-exit        Exit upon reaching the end of the "
-         "BSV movie file.");
-   puts("  -M, --sram-mode=MODE  SRAM handling mode. MODE can be "
-         "'noload-nosave',\n"
-        "                        'noload-save', 'load-nosave' or "
-        "'load-save'.\n"
-        "                        Note: 'noload-save' implies that "
-        "save files *WILL BE OVERWRITTEN*.");
-
+   {
+      char buf[2048];
+      buf[0] = '\0';
+      strlcpy(buf, "                        Format is PORT:ID, where ID is a number "
+            "corresponding to the particular device.\n", sizeof(buf));
+      strlcat(buf, "  -P, --bsvplay=FILE    Playback a BSV movie file.\n", sizeof(buf));
+      strlcat(buf, "  -R, --bsvrecord=FILE  Start recording a BSV movie file from "
+            "the beginning.\n", sizeof(buf));
+      strlcat(buf, "      --eof-exit        Exit upon reaching the end of the "
+            "BSV movie file.\n", sizeof(buf));
+      strlcat(buf, "  -M, --sram-mode=MODE  SRAM handling mode. MODE can be "
+            "'noload-nosave',\n"
+            "                        'noload-save', 'load-nosave' or "
+            "'load-save'.\n"
+            "                        Note: 'noload-save' implies that "
+            "save files *WILL BE OVERWRITTEN*.\n", sizeof(buf));
 #ifdef HAVE_NETWORKING
-   puts("  -H, --host            Host netplay as user 1.");
-   puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
-   puts("      --port=PORT       Port used to netplay. Default is 55435.");
-   puts("      --stateless       Use \"stateless\" mode for netplay");
-   puts("                        (requires a very fast network).");
-   puts("      --check-frames=NUMBER\n"
-        "                        Check frames when using netplay.");
+      strlcat(buf, "  -H, --host            Host netplay as user 1.\n", sizeof(buf));
+      strlcat(buf, "  -C, --connect=HOST    Connect to netplay server as user 2.\n", sizeof(buf));
+      strlcat(buf, "      --port=PORT       Port used to netplay. Default is 55435.\n", sizeof(buf));
+      strlcat(buf, "      --stateless       Use \"stateless\" mode for netplay\n", sizeof(buf));
+      strlcat(buf, "                        (requires a very fast network).\n", sizeof(buf));
+      strlcat(buf, "      --check-frames=NUMBER\n"
+            "                        Check frames when using netplay.\n", sizeof(buf));
 #if defined(HAVE_NETWORK_CMD)
-   puts("      --command         Sends a command over UDP to an already "
-         "running program process.");
-   puts("      Available commands are listed if command is invalid.");
+      strlcat(buf, "      --command         Sends a command over UDP to an already "
+            "running program process.\n", sizeof(buf));
+      strlcat(buf, "      Available commands are listed if command is invalid.\n", sizeof(buf));
 #endif
 
 #endif
-   puts("      --nick=NICK       Picks a username (for use with netplay). "
-         "Not mandatory.");
 
-   puts("  -r, --record=FILE     Path to record video file.\n        "
-         "Using .mkv extension is recommended.");
-   puts("      --recordconfig    Path to settings used during recording.");
-   puts("      --size=WIDTHxHEIGHT\n"
-        "                        Overrides output video size when recording.");
-   puts("  -U, --ups=FILE        Specifies path for UPS patch that will be "
-         "applied to content.");
-   puts("      --bps=FILE        Specifies path for BPS patch that will be "
-         "applied to content.");
-   puts("      --ips=FILE        Specifies path for IPS patch that will be "
-         "applied to content.");
-   puts("      --no-patch        Disables all forms of content patching.");
-   puts("  -D, --detach          Detach program from the running console. "
-         "Not relevant for all platforms.");
-   puts("      --max-frames=NUMBER\n"
-        "                        Runs for the specified number of frames, "
-        "then exits.");
-   puts("      --max-frames-ss\n"
-        "                        Takes a screenshot at the end of max-frames.");
-   puts("      --max-frames-ss-path=FILE\n"
-        "                        Path to save the screenshot to at the end of max-frames.\n");
+      strlcat(buf, "      --nick=NICK       Picks a username (for use with netplay). "
+            "Not mandatory.\n", sizeof(buf));
+      strlcat(buf, "  -r, --record=FILE     Path to record video file.\n        "
+            "Using .mkv extension is recommended.\n", sizeof(buf));
+      strlcat(buf, "      --recordconfig    Path to settings used during recording.\n", sizeof(buf));
+      strlcat(buf, "      --size=WIDTHxHEIGHT\n"
+            "                        Overrides output video size when recording.\n", sizeof(buf));
+      strlcat(buf, "  -U, --ups=FILE        Specifies path for UPS patch that will be "
+            "applied to content.\n", sizeof(buf));
+      strlcat(buf, "      --bps=FILE        Specifies path for BPS patch that will be "
+            "applied to content.\n", sizeof(buf));
+      strlcat(buf, "      --ips=FILE        Specifies path for IPS patch that will be "
+            "applied to content.\n", sizeof(buf));
+      strlcat(buf, "      --no-patch        Disables all forms of content patching.\n", sizeof(buf));
+      strlcat(buf, "  -D, --detach          Detach program from the running console. "
+            "Not relevant for all platforms.\n", sizeof(buf));
+      strlcat(buf, "      --max-frames=NUMBER\n"
+            "                        Runs for the specified number of frames, "
+            "then exits.\n", sizeof(buf));
+      strlcat(buf, "      --max-frames-ss\n"
+            "                        Takes a screenshot at the end of max-frames.\n", sizeof(buf));
+      strlcat(buf, "      --max-frames-ss-path=FILE\n"
+            "                        Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
+      puts(buf);
+   }
 }
 
 #define FFMPEG_RECORD_ARG "r:"
@@ -22530,25 +22553,72 @@ bool retroarch_main_init(int argc, char *argv[])
 
    if (verbosity_is_enabled())
    {
-      char str[128];
-      const char *cpu_model = NULL;
-      str[0] = '\0';
+      {
+         char str_output[256];
+         const char *cpu_model  = NULL;
+         str_output[0] = '\0';
 
-      cpu_model = frontend_driver_get_cpu_model_name();
+         cpu_model     = frontend_driver_get_cpu_model_name();
 
-      RARCH_LOG_OUTPUT("=== Build =======================================\n");
+         strlcat(str_output,
+               "=== Build =======================================\n",
+               sizeof(str_output));
 
-      if (!string_is_empty(cpu_model))
-         RARCH_LOG_OUTPUT("CPU Model Name: %s\n", cpu_model);
+         if (!string_is_empty(cpu_model))
+         {
+            strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
+            strlcat(str_output, " CPU Model Name: ", sizeof(str_output));
+            strlcat(str_output, cpu_model, sizeof(str_output));
+            strlcat(str_output, "\n", sizeof(str_output));
+         }
 
-      retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      RARCH_LOG_OUTPUT("%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
-      RARCH_LOG_OUTPUT("Built: %s\n", __DATE__);
-      RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
+         RARCH_LOG_OUTPUT(str_output);
+      }
+      {
+         size_t written;
+         char str_output[256];
+         char str[128];
+         str[0]        = str_output[0] = '\0';
+
+         retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
+
+         written       = strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
+               sizeof(str_output));
+         str_output[written]   = ':';
+         str_output[written+1] = ' ';
+         str_output[written+2] = '\0';
+         written       = strlcat(str_output, str,  sizeof(str_output));
+         written       = strlcat(str_output, "\n", sizeof(str_output));
+
+         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
+         str_output[written]   = ' ';
+         str_output[written+1] = '\0';
+         written       = strlcat(str_output, "Built: ", sizeof(str_output));
+         written       = strlcat(str_output, __DATE__, sizeof(str_output));
+         written       = strlcat(str_output, "\n", sizeof(str_output));
+
+         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
+         str_output[written]   = ' ';
+         str_output[written+1] = '\0';
+         written       = strlcat(str_output, "Version: ", sizeof(str_output));
+         written       = strlcat(str_output, PACKAGE_VERSION, sizeof(str_output));
+         written       = strlcat(str_output, "\n", sizeof(str_output));
+
 #ifdef HAVE_GIT_VERSION
-      RARCH_LOG_OUTPUT("Git: %s\n", retroarch_git_version);
+         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
+         str_output[written]   = ' ';
+         str_output[written+1] = '\0';
+         written       = strlcat(str_output, "Git: ", sizeof(str_output));
+         written       = strlcat(str_output, retroarch_git_version, sizeof(str_output));
+         written       = strlcat(str_output, "\n", sizeof(str_output));
 #endif
-      RARCH_LOG_OUTPUT("=================================================\n");
+
+         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
+         str_output[written]   = ' ';
+         str_output[written+1] = '\0';
+         written       = strlcat(str_output, "=================================================\n", sizeof(str_output));
+         RARCH_LOG_OUTPUT(str_output);
+      }
    }
 
 #if defined(DEBUG) && defined(HAVE_DRMINGW)

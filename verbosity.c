@@ -67,9 +67,6 @@
 #define DEFAULT_FRONTEND_LOG_LEVEL 1
 #endif
 
-#define FILE_PATH_LOG_INFO  "[INFO]"
-#define FILE_PATH_LOG_ERROR "[ERROR]"
-#define FILE_PATH_LOG_WARN  "[WARN]"
 #if defined(IS_SALAMANDER)
 #define FILE_PATH_PROGRAM_NAME "RetroArch Salamander"
 #else
