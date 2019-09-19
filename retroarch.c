@@ -21653,19 +21653,21 @@ static void retroarch_print_help(const char *arg0)
             "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
       strlcat(buf, "  -f, --fullscreen      Start the program in fullscreen regardless "
             "of config settings.\n", sizeof(buf));
-      strlcat(buf, "  -c, --config=FILE     Path for config file."
 #ifdef _WIN32
+      strlcat(buf, "  -c, --config=FILE     Path for config file."
             "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
             "\n\t\tIf a default config is not found, the program will attempt to "
             "create one.\n"
+            , sizeof(buf));
 #else
+      strlcat(buf, "  -c, --config=FILE     Path for config file."
             "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
             "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
             "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
             "the program will attempt to create one based on the \n\t\t"
             "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
-#endif
             , sizeof(buf));
+#endif
       strlcat(buf, "      --appendconfig=FILE\n"
             "                        Extra config files are loaded in, "
             "and take priority over\n"
