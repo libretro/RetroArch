@@ -644,14 +644,14 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                PATH_MAX_LENGTH * sizeof(char));
 
          fill_pathname_join_concat(texturepath, icons_path, sysname,
-               ".lpl",
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, icons_path, "default",
-               ".lpl",
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          ti.width         = 0;
