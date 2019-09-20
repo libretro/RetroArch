@@ -207,6 +207,21 @@ static void app_terminate(void)
 #endif
          /* TODO/FIXME - properly implement. */
          break;
+       case NSEventTypeLeftMouseDown:
+       case NSEventTypeRightMouseDown:
+       case NSEventTypeOtherMouseDown:
+       {
+#ifdef HAVE_COCOA_METAL
+           NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+#else
+           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+#endif
+           apple = (cocoa_input_data_t*)input_driver_get_data();
+           if (!apple || pos.y < 0)
+               return;
+           apple->mouse_buttons |= (1 << event.buttonNumber);
+       }
+           break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
       case NSEventTypeOtherMouseUp:
