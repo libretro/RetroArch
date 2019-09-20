@@ -1,8 +1,14 @@
 # Future
+- BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed.
 - BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue
+- MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
+- MENU/RGUI: Functional mouse/touchscreen support
+- MENU/ONSCREEN KEYBOARD: On-screen keyboard entry via mouse/touchscreen has been tidied up - no more double inputs (or unwanted menu interaction in the background)
+- MENU/MOUSE: Mouse wheel up/down is now a proper 'up/down', same as using cursor keys or a dpad
+- MENU/MOUSE: Mouse wheel tilt left/right has been wired up to normal 'left/right' commands
 - GONG: Stability fixes
 - WIN32: Log window now has title 'Logging Console'
 - WII: Add Wiimote lightgun support
