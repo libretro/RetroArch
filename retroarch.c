@@ -21651,23 +21651,22 @@ static retro_time_t rarch_core_runtime_tick(void)
 }
 
 #define _PSUPP_BUF(buf, var, name, desc) \
-   string_add_alpha_2_fast(buf, "  ", written); \
-   written        = strlcat(buf, name, sizeof(buf)); \
-   string_add_alpha_5_fast(buf, ":\n\t\t", written); \
-   written        = strlcat(buf, desc, sizeof(buf)); \
-   string_add_alpha_2_fast(buf, ": ", written); \
-   written        = strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf)); \
-   buf[written  ] = '\0'
+   STRLCAT_CONST_INCR(buf, buf_pos, "  ", sizeof(buf)); \
+   STRLCAT_CONST_INCR(buf, buf_pos, name, sizeof(buf)); \
+   STRLCAT_CONST_INCR(buf, buf_pos, ":\n\t\t", sizeof(buf)); \
+   STRLCAT_CONST_INCR(buf, buf_pos, desc, sizeof(buf)); \
+   STRLCAT_CONST_INCR(buf, buf_pos, ": ", sizeof(buf)); \
+   buf_pos        = strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf)); \
+   buf[buf_pos  ] = '\0'
 
 static void retroarch_print_features(void)
 {
    char buf[2048];
-   size_t written;
+   size_t buf_pos = 0;
    buf[0] = '\0';
    frontend_driver_attach_console();
 
-   buf[0] = '\n';
-   written = strlcat(buf, "Features:\n", sizeof(buf));
+   STRLCAT_CONST_INCR(buf, buf_pos, "\nFeatures:\n", sizeof(buf));
 
    _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
    _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
@@ -21740,8 +21739,9 @@ static void retroarch_print_version(void)
    printf(" -- %s --\n", retroarch_git_version);
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
-   fprintf(stdout, "%s ", str);
-   fprintf(stdout, "Built: %s\n", __DATE__);
+   strlcat(str, " Built: ", sizeof(str));
+   strlcat(str, __DATE__, sizeof(str));
+   fprintf(stdout, "%s\n", str);
 }
 
 /**
@@ -21981,9 +21981,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
       {
-         size_t copied = strlcat(launch_arguments,
+         size_t buf_pos = strlcat(launch_arguments,
                argv[i], sizeof(launch_arguments));
-         string_add_alpha_fast(launch_arguments, ' ', copied);
+         STRLCAT_CONST(launch_arguments, buf_pos, " ",
+               sizeof(launch_arguments));
       }
       string_trim_whitespace_left(launch_arguments);
       string_trim_whitespace_right(launch_arguments);
@@ -22709,41 +22710,38 @@ bool retroarch_main_init(int argc, char *argv[])
          RARCH_LOG_OUTPUT(str_output);
       }
       {
-         size_t written;
+         size_t buf_pos;
          char str_output[256];
          char str[128];
          str[0]        = str_output[0] = '\0';
 
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
-         written       = strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
+         buf_pos       = strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
                sizeof(str_output));
-         string_add_alpha_2_fast(str_output, ": ", written);
-         written       = strlcat(str_output, str,  sizeof(str_output));
-         written       = strlcat(str_output, "\n", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, ": ", sizeof(str_output));
+         buf_pos       = strlcat(str_output, str,  sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
 
-         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         string_add_alpha_8_fast(str_output, " Built: ", written);
-         written      += 8;
-         written       = strlcat(str_output, __DATE__, sizeof(str_output));
-         written       = strlcat(str_output, "\n", sizeof(str_output));
-
-         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         string_add_alpha_10_fast(str_output, " Version: ", written);
-         written      += 10;
-         written       = strlcat(str_output, PACKAGE_VERSION, sizeof(str_output));
-         written       = strlcat(str_output, "\n", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, " Built: ", sizeof(str_output));
+         buf_pos       = strlcat(str_output, __DATE__, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, " Version: ", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, PACKAGE_VERSION, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
 
 #ifdef HAVE_GIT_VERSION
-         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         string_add_alpha_6_fast(str_output, " Git: ", written);
-         written       = strlcat(str_output, retroarch_git_version, sizeof(str_output));
-         written       = strlcat(str_output, "\n", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, " Git: ", sizeof(str_output));
+         buf_pos = strlcat(str_output, retroarch_git_version,sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
 #endif
 
-         written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         string_add_alpha_fast(str_output, ' ', written);
-         written       = strlcat(str_output, "=================================================\n", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, " ", sizeof(str_output));
+         STRLCAT_CONST_INCR(str_output, buf_pos, "=================================================\n", sizeof(str_output));
          RARCH_LOG_OUTPUT(str_output);
       }
    }
@@ -23873,105 +23871,86 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    {
       case RARCH_CAPABILITIES_CPU:
          {
-            unsigned written = strlen(s);
+            unsigned buf_pos = strlen(s);
             uint64_t cpu     = cpu_features_get();
 
             if (cpu & RETRO_SIMD_MMX)
             {
-               string_add_alpha_4_fast(s, " MMX", written);
-               written += 4;
+               STRLCAT_CONST_INCR(s, buf_pos, " MMX", len);
             }
             if (cpu & RETRO_SIMD_MMXEXT)
             {
-               string_add_alpha_7_fast(s, " MMXEXT", written);
-               written += 7;
+               STRLCAT_CONST_INCR(s, buf_pos, " MMXEXT", len);
             }
             if (cpu & RETRO_SIMD_SSE)
             {
-               string_add_alpha_4_fast(s, " SSE", written);
-               written += 4;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSE", len);
             }
             if (cpu & RETRO_SIMD_SSE2)
             {
-               string_add_alpha_5_fast(s, " SSE2", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSE2", len);
             }
             if (cpu & RETRO_SIMD_SSE3)
             {
-               string_add_alpha_5_fast(s, " SSE3", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSE3", len);
             }
             if (cpu & RETRO_SIMD_SSSE3)
             {
-               string_add_alpha_6_fast(s, " SSSE3", written);
-               written += 6;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSSE3", len);
             }
             if (cpu & RETRO_SIMD_SSE4)
             {
-               string_add_alpha_5_fast(s, " SSE4", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSE4", len);
             }
             if (cpu & RETRO_SIMD_SSE42)
             {
-               string_add_alpha_7_fast(s, " SSE4.2", written);
-               written += 7;
+               STRLCAT_CONST_INCR(s, buf_pos, " SSE4.2", len);
             }
             if (cpu & RETRO_SIMD_AES)
             {
-               string_add_alpha_4_fast(s, " AES", written);
-               written += 4;
+               STRLCAT_CONST_INCR(s, buf_pos, " AES", len);
             }
             if (cpu & RETRO_SIMD_AVX)
             {
-               string_add_alpha_4_fast(s, " AVX", written);
-               written += 4;
+               STRLCAT_CONST_INCR(s, buf_pos, " AVX", len);
             }
             if (cpu & RETRO_SIMD_AVX2)
             {
-               string_add_alpha_5_fast(s, " AVX2", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " AVX2", len);
             }
             if (cpu & RETRO_SIMD_NEON)
             {
-               string_add_alpha_5_fast(s, " NEON", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " NEON", len);
             }
             if (cpu & RETRO_SIMD_VFPV3)
             {
-               string_add_alpha_6_fast(s, " VFPv3", written);
-               written += 6;
+               STRLCAT_CONST_INCR(s, buf_pos, " VFPv3", len);
             }
             if (cpu & RETRO_SIMD_VFPV4)
             {
-               string_add_alpha_6_fast(s, " VFPv4", written);
-               written += 6;
+               STRLCAT_CONST_INCR(s, buf_pos, " VFPv4", len);
             }
             if (cpu & RETRO_SIMD_VMX)
             {
-               string_add_alpha_4_fast(s, " VMX", written);
-               written += 4;
+               STRLCAT_CONST_INCR(s, buf_pos, " VMX", len);
             }
             if (cpu & RETRO_SIMD_VMX128)
             {
-               string_add_alpha_7_fast(s, " VMX128", written);
-               written += 7;
+               STRLCAT_CONST_INCR(s, buf_pos, " VMX128", len);
             }
             if (cpu & RETRO_SIMD_VFPU)
             {
-               string_add_alpha_5_fast(s, " VFPU", written);
-               written += 5;
+               STRLCAT_CONST_INCR(s, buf_pos, " VFPU", len);
             }
             if (cpu & RETRO_SIMD_PS)
             {
-               string_add_alpha_3_fast(s, " PS", written);
-               written += 3;
+               STRLCAT_CONST_INCR(s, buf_pos, " PS", len);
             }
             if (cpu & RETRO_SIMD_ASIMD)
             {
-               string_add_alpha_6_fast(s, " ASIMD", written);
-               written += 6;
+               STRLCAT_CONST_INCR(s, buf_pos, " ASIMD", len);
             }
-            s[written++] = '\0';
+            s[buf_pos++] = '\0';
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:

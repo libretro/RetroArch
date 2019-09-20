@@ -59,6 +59,16 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 #define string_add_glob_open(s, size)     strlcat((s), "glob('*",  (size))
 #define string_add_glob_close(s, size)    strlcat((s), "*')",  (size))
 
+#define STRLCPY_CONST(buf, str) \
+   do { size_t i; for (i = 0; i < sizeof(str); i++) (buf)[i] = (str)[i]; } while (0)
+
+#define STRLCAT_CONST(buf, strlcpy_ret, str, buf_size) \
+   STRLCPY_CONST((buf) + MIN((strlcpy_ret), (buf_size)-1 - STRLEN_CONST((str))), (str))
+
+#define STRLCAT_CONST_INCR(buf, strlcpy_ret, str, buf_size) \
+   STRLCAT_CONST(buf, strlcpy_ret, str, buf_size); \
+   (strlcpy_ret) += STRLEN_CONST((str))
+
 #define string_add_alpha_fast(s, alpha, size) \
    (s)[(size)]   = (alpha); \
    (s)[(size)+1] = '\0'
