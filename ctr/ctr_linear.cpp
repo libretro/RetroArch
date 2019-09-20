@@ -201,8 +201,7 @@ void* linearMemAlign(size_t size, size_t alignment)
 void* linearAlloc(size_t size)
 {
 #if 0
-   extern PrintConsole* currentConsole;
-   if(currentConsole->consoleInitialised)
+   if(ctrConsole && ctrConsole->consoleInitialised)
    {
       printf("linearAlloc : 0x%08X\n", size);
       DEBUG_HOLD();

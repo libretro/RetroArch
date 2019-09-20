@@ -21,6 +21,8 @@ u32 __heapBase;
 u32 __stack_bottom;
 u32 __stack_size_extra;
 
+u32 __saved_stack;
+
 extern u32 __linear_heap_size_hbl;
 extern u32 __heap_size_hbl;
 extern void* __service_ptr;
@@ -73,6 +75,11 @@ void __system_allocateHeaps(void)
 
    /* Allocate the linear heap */
    svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+
+#ifdef USE_CTRULIB_2
+   /* Mappable allocator init */
+   mappableInit(OS_MAP_AREA_BEGIN, OS_MAP_AREA_END);
+#endif
 
    /* Set up newlib heap */
    fake_heap_end = (char*)0x13F00000;
@@ -240,6 +247,9 @@ void __system_initArgv(void)
 
 void initSystem(void (*retAddr)(void))
 {
+   register u32 sp_val __asm__("sp");
+   __saved_stack = sp_val;
+
    __libctru_init(retAddr);
    __appInit();
    __system_initArgv();
@@ -250,6 +260,7 @@ void __attribute__((noreturn)) __ctru_exit(int rc)
 {
    __libc_fini_array();
    __appExit();
+   asm ("mov sp, %[saved_stack] \n\t" : : [saved_stack] "r"  (__saved_stack) : "sp");
    __libctru_exit(rc);
 }
 
