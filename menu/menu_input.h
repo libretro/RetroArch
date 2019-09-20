@@ -29,6 +29,11 @@
 
 RETRO_BEGIN_DECLS
 
+/* Mouse wheel tilt actions repeat at a very high
+ * frequency - we ignore any input that occurs
+ * with a period less than MENU_INPUT_HORIZ_WHEEL_DELAY */
+#define MENU_INPUT_HORIZ_WHEEL_DELAY 250000  /* 250 ms */
+
 #define MENU_INPUT_HIDE_CURSOR_DELAY 4000000 /* 4 seconds */
 
 #define MENU_INPUT_PRESS_TIME_SHORT 250000   /* 250 ms */
