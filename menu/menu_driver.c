@@ -3497,6 +3497,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_settings_deinit();
             menu_entries_list_deinit();
 
+            if (menu_driver_data->core_buf)
+               free(menu_driver_data->core_buf);
+            menu_driver_data->core_buf       = NULL;
+
             menu_entries_need_refresh        = false;
             menu_entries_nonblocking_refresh = false;
             menu_entries_begin               = 0;
