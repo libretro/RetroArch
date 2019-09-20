@@ -26671,9 +26671,10 @@ bool core_run(void)
 static bool core_verify_api_version(void)
 {
    unsigned api_version = current_core.retro_api_version();
-   RARCH_LOG("%s: %u\n%s: %u\n",
+   RARCH_LOG("%s: %u\n%s %s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version,
+         FILE_PATH_LOG_INFO,
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION
          );
