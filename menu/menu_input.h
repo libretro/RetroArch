@@ -74,6 +74,7 @@ typedef struct menu_input_pointer_hw_state
 typedef struct menu_input_pointer
 {
    enum menu_pointer_type type;
+   bool active;
    bool pressed;
    bool dragged;
    retro_time_t press_duration;
