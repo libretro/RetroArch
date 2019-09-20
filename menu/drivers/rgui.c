@@ -557,6 +557,7 @@ typedef struct
    bool widgets_supported;
 #endif
    struct scaler_ctx image_scaler;
+   menu_input_pointer_t pointer;
 } rgui_t;
 
 static unsigned mini_thumbnail_max_width = 0;
@@ -2828,17 +2829,14 @@ static void rgui_blit_cursor(rgui_t *rgui)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   menu_input_pointer_t pointer;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   menu_input_get_pointer_state(&pointer);
-
    if (rgui_frame_buf.data)
    {
-      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, pointer.x, pointer.y - 5, 1, 11, rgui->colors.normal_color);
-      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, pointer.x - 5, pointer.y, 11, 1, rgui->colors.normal_color);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, rgui->pointer.x, rgui->pointer.y - 5, 1, 11, rgui->colors.normal_color);
+      rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height, rgui->pointer.x - 5, rgui->pointer.y, 11, 1, rgui->colors.normal_color);
    }
 }
 
@@ -3191,7 +3189,6 @@ static void rgui_render(void *data,
    size_t i, end, fb_pitch, old_start, new_start;
    unsigned fb_width, fb_height;
    int bottom;
-   menu_input_pointer_t pointer;
    unsigned ticker_x_offset       = 0;
    size_t entries_end             = menu_entries_get_size();
    bool msg_force                 = false;
@@ -3283,44 +3280,35 @@ static void rgui_render(void *data,
    }
 
    /* Handle pointer input
-    * Note: We'd normally just check pointer.type here but
-    * RGUI focuses on performance - so skip all of this
-    * if both mouse and touchscreen input are disabled by
-    * the user (only saves a dozen or so clock cycles, but
-    * might as well...) */
-   if (settings->bools.menu_mouse_enable || settings->bools.menu_pointer_enable)
+    * Note: This is ignored when showing a fullscreen thumbnail */
+   if ((rgui->pointer.type != MENU_POINTER_DISABLED) &&
+       rgui->pointer.active && !show_fs_thumbnail)
    {
-      menu_input_get_pointer_state(&pointer);
-
-      /* Ignore input when showing a fullscreen thumbnail */
-      if ((pointer.type != MENU_POINTER_DISABLED) && !show_fs_thumbnail)
+      /* Update currently 'highlighted' item */
+      if (rgui->pointer.y > rgui_term_layout.start_y)
       {
-         /* Update currently 'highlighted' item */
-         if (pointer.y > rgui_term_layout.start_y)
-         {
-            unsigned new_ptr;
-            menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+         unsigned new_ptr;
+         menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-            /* Note: It's okay for this to go out of range
-             * (limits are checked in rgui_pointer_up()) */
-            new_ptr = (unsigned)((pointer.y - rgui_term_layout.start_y) / FONT_HEIGHT_STRIDE) + old_start;
+         /* Note: It's okay for this to go out of range
+          * (limits are checked in rgui_pointer_up()) */
+         new_ptr = (unsigned)((rgui->pointer.y - rgui_term_layout.start_y) / FONT_HEIGHT_STRIDE) + old_start;
 
-            menu_input_set_pointer_selection(new_ptr);
-         }
+         menu_input_set_pointer_selection(new_ptr);
+      }
 
-         /* Allow drag-scrolling if items are currently off-screen */
-         if (pointer.dragged && (bottom > 0))
-         {
-            size_t start;
-            int16_t scroll_y_max = bottom * FONT_HEIGHT_STRIDE;
-      
-            rgui->scroll_y += -1 * pointer.dy;
-            rgui->scroll_y = (rgui->scroll_y < 0)            ? 0            : rgui->scroll_y;
-            rgui->scroll_y = (rgui->scroll_y > scroll_y_max) ? scroll_y_max : rgui->scroll_y;
-            
-            start = rgui->scroll_y / FONT_HEIGHT_STRIDE;
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
-         }
+      /* Allow drag-scrolling if items are currently off-screen */
+      if (rgui->pointer.dragged && (bottom > 0))
+      {
+         size_t start;
+         int16_t scroll_y_max = bottom * FONT_HEIGHT_STRIDE;
+
+         rgui->scroll_y += -1 * rgui->pointer.dy;
+         rgui->scroll_y = (rgui->scroll_y < 0)            ? 0            : rgui->scroll_y;
+         rgui->scroll_y = (rgui->scroll_y > scroll_y_max) ? scroll_y_max : rgui->scroll_y;
+
+         start = rgui->scroll_y / FONT_HEIGHT_STRIDE;
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
       }
    }
 
@@ -4337,6 +4325,11 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    /* Ensure that we start with fullscreen thumbnails disabled */
    rgui->show_fs_thumbnail = false;
 
+   /* Ensure that pointer device starts with well defined
+    * values (shoult not be necessary, but some platforms may
+    * not handle struct initialisation correctly...) */
+   memset(&rgui->pointer, 0, sizeof(menu_input_pointer_t));
+
    return menu;
 
 error:
@@ -5047,6 +5040,18 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
           (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
          rgui_load_current_thumbnails(rgui, settings->bools.network_on_demand_thumbnails);
    }
+
+   /* Read pointer input */
+   if (settings->bools.menu_mouse_enable || settings->bools.menu_pointer_enable)
+   {
+      menu_input_get_pointer_state(&rgui->pointer);
+
+      /* Screen must be redrawn whenever pointer is active */
+      if ((rgui->pointer.type != MENU_POINTER_DISABLED) && rgui->pointer.active)
+         rgui->force_redraw = true;
+   }
+   else
+      rgui->pointer.type = MENU_POINTER_DISABLED;
 }
 
 static void rgui_toggle(void *userdata, bool menu_on)
@@ -5175,6 +5180,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* update_savestate_thumbnail_path */
    NULL,                               /* update_savestate_thumbnail_image */
    NULL,                               /* pointer_down */
-   rgui_pointer_up,                    /* pointer_up */
+   rgui_pointer_up,
    NULL,                               /* get_load_content_animation_data */
 };

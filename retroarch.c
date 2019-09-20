@@ -12781,12 +12781,14 @@ static unsigned menu_event(
     * Note: dx, dy, ptr, accel entries are set elsewhere */
    if (menu_input->select_inhibit)
    {
+      menu_input->pointer.active  = false;
       menu_input->pointer.pressed = false;
       menu_input->pointer.x       = 0;
       menu_input->pointer.y       = 0;
    }
    else
    {
+      menu_input->pointer.active  = pointer_hw_state->active;
       menu_input->pointer.pressed = pointer_hw_state->select_pressed;
       menu_input->pointer.x       = pointer_hw_state->x;
       menu_input->pointer.y       = pointer_hw_state->y;
