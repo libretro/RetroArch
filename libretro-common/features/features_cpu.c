@@ -234,6 +234,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
+#elif defined(_3DS)
+   return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
@@ -247,8 +249,6 @@ retro_time_t cpu_features_get_time_usec(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    return (1000000 * tv.tv_sec + tv.tv_usec);
-#elif defined(_3DS)
-   return osGetTime() * 1000;
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
 #else

@@ -391,8 +391,6 @@ static void ctr_check_dspfirm(void)
 __attribute__((weak)) Result svchax_init(bool patch_srv);
 __attribute__((weak)) u32 __ctr_patch_services;
 
-void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
-
 static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER
@@ -420,8 +418,9 @@ static void frontend_ctr_init(void* data)
    gfxBottomFramebuffers  [0] = linearAlloc(bottomSize);
    gfxBottomFramebuffers  [1] = linearAlloc(bottomSize);
 
-   gfxSetFramebufferInfo(GFX_TOP, 0);
-   gfxSetFramebufferInfo(GFX_BOTTOM, 0);
+   // Ensure the FramebufferInfo is set
+   gfxSwapBuffersGpu();
+   gfxSwapBuffersGpu();
 
    gfxSet3D(true);
    consoleInit(GFX_BOTTOM, NULL);
@@ -515,7 +514,7 @@ static enum frontend_powerstate frontend_ctr_get_powerstate(
    u8                 battery_percent = 0;
    u8                        charging = 0;
 
-   mcuHwcGetBatteryLevel(&battery_percent);
+   MCUHWC_GetBatteryLevel(&battery_percent);
 
    *percent                           = battery_percent;
    /* 3DS does not support seconds of charge remaining */
