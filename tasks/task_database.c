@@ -1026,9 +1026,9 @@ static int task_database_iterate_playlist_archive(
 #ifdef HAVE_COMPRESSION
    return task_database_iterate_crc_lookup(
          _db, db_state, db, name, db_state->archive_name);
-#endif
-
+#else
    return 1;
+#endif
 }
 
 static int task_database_iterate_playlist_lutro(

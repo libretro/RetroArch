@@ -3323,13 +3323,11 @@ static void xmb_render(void *data,
       unsigned width, unsigned height, bool is_idle)
 {
    size_t i;
+   float scale_factor;
+   menu_input_pointer_t pointer;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
-   bool mouse_enable        = settings->bools.menu_mouse_enable;
-   bool pointer_enable      = settings->bools.menu_pointer_enable;
-   float scale_factor;
-   menu_input_pointer_t pointer;
 
    if (!xmb)
       return;

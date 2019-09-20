@@ -206,15 +206,11 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             strlcat(task_title, pl_manager->playlist_name, sizeof(task_title));
             
             task_set_title(task, strdup(task_title));
-            task_set_progress(task, 100);
-            
-            goto task_finished;
          }
-         break;
+         /* fall-through */
       default:
          task_set_progress(task, 100);
          goto task_finished;
-         break;
    }
    
    return;

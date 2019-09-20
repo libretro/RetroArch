@@ -8719,10 +8719,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
 
-            (void)attr;
-
             attr.i = 0;
             new_exts[0] = '\0';
+
+            (void)attr;
 
 #ifdef HAVE_RBMP
             string_list_append(str_list, "bmp", attr);

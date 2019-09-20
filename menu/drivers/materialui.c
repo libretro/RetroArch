@@ -735,8 +735,6 @@ static void materialui_render(void *data,
    {
       size_t ii;
       int16_t pointer_y   = pointer.y;
-      float old_accel_val = 0.0f;
-      float new_accel_val = 0.0f;
       size_t entries_end  = menu_entries_get_size();
 
       for (ii = 0; ii < entries_end; ii++)
