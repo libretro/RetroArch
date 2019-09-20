@@ -273,6 +273,7 @@ runtime_log_t *runtime_log_init(const char *content_path,
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
+   size_t buf_pos                 = 0;
    settings_t *settings           = config_get_ptr();
    core_info_list_t *core_info    = NULL;
    runtime_log_t *runtime_log     = NULL;
@@ -410,8 +411,8 @@ runtime_log_t *runtime_log_init(const char *content_path,
       return NULL;
    
    /* Build final log file path */
-   fill_pathname_join(log_file_path, log_file_dir, content_name, sizeof(log_file_path));
-   strlcat(log_file_path, ".lrtl", sizeof(log_file_path));
+   buf_pos = fill_pathname_join(log_file_path, log_file_dir, content_name, sizeof(log_file_path));
+   STRLCAT_CONST_INCR(log_file_path, buf_pos, ".lrtl", sizeof(log_file_path));
    
    if (string_is_empty(log_file_path))
       return NULL;

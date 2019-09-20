@@ -706,8 +706,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
        * correctly. The path can be abbreviated if saving to
        * a playlist from another playlist (ex: content history to favorites)
        */
-       char tmp2[PATH_MAX_LENGTH];
-       fill_pathname_expand_special(tmp, path, sizeof(tmp));
+      char tmp2[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(tmp, path, sizeof(tmp));
       realpath(tmp, tmp2);
       fill_pathname_abbreviate_special(path, tmp2, size);
    }
