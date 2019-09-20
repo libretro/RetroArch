@@ -389,11 +389,11 @@ void fill_pathname(char *out_path, const char *in_path,
  * present in 'in_path', it will be ignored.
  *
  */
-void fill_pathname_noext(char *out_path, const char *in_path,
+size_t fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
    strlcpy(out_path, in_path, size);
-   strlcat(out_path, replace, size);
+   return strlcat(out_path, replace, size);
 }
 
 char *find_last_slash(const char *str)

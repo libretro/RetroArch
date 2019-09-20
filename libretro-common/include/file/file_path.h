@@ -259,7 +259,7 @@ void fill_str_dated_filename(char *out_filename,
  * present in 'in_path', it will be ignored.
  *
  */
-void fill_pathname_noext(char *out_path, const char *in_path,
+size_t fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size);
 
 /**
