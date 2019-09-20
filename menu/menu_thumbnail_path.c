@@ -252,7 +252,9 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
    /* Hack: There is only one MAME thumbnail repo,
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
-      strlcpy(path_data->system, "MAME", sizeof(path_data->system));
+   {
+      string_add_alpha_4_fast(path_data->system, "MAME", 0);
+   }
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
    
@@ -280,9 +282,11 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
       /* Check for history/favourites playlists */
       playlist_valid =
             (string_is_equal(system, "history") &&
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
+             string_is_equal(playlist_file,
+                file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
             (string_is_equal(system, "favorites") &&
-             string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)));
+             string_is_equal(playlist_file,
+                file_path_str(FILE_PATH_CONTENT_FAVORITES)));
       
       if (!playlist_valid)
       {
@@ -322,19 +326,19 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
    
    /* When content is updated, must regenerate right/left
     * thumbnail paths */
-   path_data->right_path[0] = '\0';
-   path_data->left_path[0] = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
    
    /* 'Reset' path_data content strings */
-   path_data->content_path[0] = '\0';
-   path_data->content_label[0] = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0] = '\0';
-   path_data->content_img[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
    
    /* Must also reset playlist thumbnail display modes */
-   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (string_is_empty(label))
       return false;
@@ -358,7 +362,9 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
 
 /* Sets current thumbnail content to the specified image.
  * Returns true if content is valid */
-bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name)
+bool menu_thumbnail_set_content_image(
+      menu_thumbnail_path_data_t *path_data,
+      const char *img_dir, const char *img_name)
 {
    char *content_img_no_ext = NULL;
    
@@ -367,19 +373,19 @@ bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, con
    
    /* When content is updated, must regenerate right/left
     * thumbnail paths */
-   path_data->right_path[0] = '\0';
-   path_data->left_path[0] = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
    
    /* 'Reset' path_data content strings */
-   path_data->content_path[0] = '\0';
-   path_data->content_label[0] = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0] = '\0';
-   path_data->content_img[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
    
    /* Must also reset playlist thumbnail display modes */
-   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (string_is_empty(img_dir))
       return false;
@@ -408,14 +414,15 @@ bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, con
       img_dir, img_name, sizeof(path_data->content_path));
    
    /* Set core name to "imageviewer" */
-   strlcpy(path_data->content_core_name,
-            "imageviewer", sizeof(path_data->content_core_name));
+   string_add_alpha_11_fast(
+         path_data->content_core_name,
+         "imageviewer", 0);
    
    /* Set database name (arbitrarily) to "_images_"
     * (required for compatibility with menu_thumbnail_update_path(),
     * but not actually used...) */
-   strlcpy(path_data->content_db_name,
-            "_images_", sizeof(path_data->content_db_name));
+   string_add_alpha_8_fast(path_data->content_db_name,
+         "_images_", 0);
    
    /* Redundant error check */
    if (string_is_empty(path_data->content_path))
@@ -444,19 +451,19 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    
    /* When content is updated, must regenerate right/left
     * thumbnail paths */
-   path_data->right_path[0] = '\0';
-   path_data->left_path[0] = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
    
    /* 'Reset' path_data content strings */
-   path_data->content_path[0] = '\0';
-   path_data->content_label[0] = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0] = '\0';
-   path_data->content_img[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
    
    /* Must also reset playlist thumbnail display modes */
-   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    
    if (!playlist)
       return false;
@@ -467,10 +474,10 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    /* Read playlist values */
    playlist_get_index(playlist, idx, &entry);
 
-   content_path = entry->path;
+   content_path  = entry->path;
    content_label = entry->label;
-   core_name = entry->core_name;
-   db_name = entry->db_name;
+   core_name     = entry->core_name;
+   db_name       = entry->db_name;
 
    /* Content without a path is invalid by definition */
    if (string_is_empty(content_path))
@@ -509,8 +516,10 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
       if (strncmp(db_name, "MAME", 4) == 0)
-         strlcpy(path_data->content_db_name,
-               "MAME", sizeof(path_data->content_db_name));
+      {
+         string_add_alpha_4_fast(
+               path_data->content_db_name, "MAME", 0);
+      }
       else
       {
          char *db_name_no_ext = NULL;
@@ -608,7 +617,8 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
       if (string_is_equal(path_data->system, "history") ||
           string_is_equal(path_data->system, "favorites"))
       {
-         if (!menu_thumbnail_get_content_dir(path_data, content_dir, sizeof(content_dir)))
+         if (!menu_thumbnail_get_content_dir(
+                  path_data, content_dir, sizeof(content_dir)))
             return false;
          
          system_name = content_dir;
@@ -661,7 +671,9 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
 /* Fetches the current thumbnail file path of the
  * specified thumbnail 'type'.
  * Returns true if path is valid. */
-bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id, const char **path)
+bool menu_thumbnail_get_path(
+      menu_thumbnail_path_data_t *path_data,
+      enum menu_thumbnail_id thumbnail_id, const char **path)
 {
    char *thumbnail_path = NULL;
    
@@ -693,7 +705,8 @@ bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_th
 
 /* Fetches current 'system' (default database name).
  * Returns true if 'system' is valid. */
-bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system)
+bool menu_thumbnail_get_system(
+      menu_thumbnail_path_data_t *path_data, const char **system)
 {
    if (!path_data)
       return false;
@@ -711,7 +724,8 @@ bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char
 
 /* Fetches current content path.
  * Returns true if content path is valid. */
-bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, const char **content_path)
+bool menu_thumbnail_get_content_path(
+      menu_thumbnail_path_data_t *path_data, const char **content_path)
 {
    if (!path_data)
       return false;
@@ -729,7 +743,8 @@ bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, cons
 
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
-bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char **label)
+bool menu_thumbnail_get_label(
+      menu_thumbnail_path_data_t *path_data, const char **label)
 {
    if (!path_data)
       return false;
@@ -747,7 +762,8 @@ bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char 
 
 /* Fetches current thumbnail core name.
  * Returns true if core name is valid. */
-bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const char **core_name)
+bool menu_thumbnail_get_core_name(
+      menu_thumbnail_path_data_t *path_data, const char **core_name)
 {
    if (!path_data)
       return false;
@@ -765,7 +781,8 @@ bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const c
 
 /* Fetches current database name.
  * Returns true if database name is valid. */
-bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const char **db_name)
+bool menu_thumbnail_get_db_name(
+      menu_thumbnail_path_data_t *path_data, const char **db_name)
 {
    if (!path_data)
       return false;
@@ -784,7 +801,8 @@ bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const cha
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name)
+bool menu_thumbnail_get_img_name(
+      menu_thumbnail_path_data_t *path_data, const char **img_name)
 {
    if (!path_data)
       return false;
@@ -802,7 +820,8 @@ bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const ch
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
+bool menu_thumbnail_get_content_dir(
+      menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
 {
    const char *last_slash        = NULL;
    char tmp_buf[PATH_MAX_LENGTH] = {0};
