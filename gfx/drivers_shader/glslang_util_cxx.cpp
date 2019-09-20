@@ -68,22 +68,9 @@ static std::string build_stage_source(
          {
             char expected[128];
 
-            expected[0]  = '#';
-            expected[1]  = 'p';
-            expected[2]  = 'r';
-            expected[3]  = 'a';
-            expected[4]  = 'g';
-            expected[5]  = 'm';
-            expected[6]  = 'a';
-            expected[7]  = ' ';
-            expected[8]  = 's';
-            expected[9]  = 't';
-            expected[10] = 'a';
-            expected[11] = 'g';
-            expected[12] = 'e';
-            expected[13] = ' ';
-            expected[14] = '\0';
+            expected[0] = '\0';
 
+            string_add_alpha_14_fast(expected, "#pragma stage ", 0);
             strlcat(expected, stage,            sizeof(expected));
 
             active = strcmp(expected, line) == 0;

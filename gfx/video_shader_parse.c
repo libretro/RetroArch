@@ -355,19 +355,11 @@ static bool video_shader_parse_textures(config_file_t *conf,
       fill_pathname_resolve_relative(shader->lut[shader->luts].path,
             conf->path, tmp_path, sizeof(shader->lut[shader->luts].path));
 
-
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
 
       written = strlcpy(id_filter, id, sizeof(id_filter));
-      id_filter[written  ] = '_';
-      id_filter[written+1] = 'l';
-      id_filter[written+2] = 'i';
-      id_filter[written+3] = 'n';
-      id_filter[written+4] = 'e';
-      id_filter[written+5] = 'a';
-      id_filter[written+6] = 'r';
-      id_filter[written+7] = '\0';
+      string_add_alpha_7_fast(id_filter, "_linear", written);
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ?
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -375,29 +367,12 @@ static bool video_shader_parse_textures(config_file_t *conf,
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
       written = strlcpy(id_wrap, id, sizeof(id_wrap));
-      id_wrap  [written  ]  = '_';
-      id_wrap  [written+1]  = 'w';
-      id_wrap  [written+2]  = 'r';
-      id_wrap  [written+3]  = 'a';
-      id_wrap  [written+4]  = 'p';
-      id_wrap  [written+5]  = '_';
-      id_wrap  [written+6]  = 'm';
-      id_wrap  [written+7]  = 'o';
-      id_wrap  [written+8]  = 'd';
-      id_wrap  [written+9]  = 'e';
-      id_wrap  [written+10] = '\0';
+      string_add_alpha_10_fast(id_wrap, "_wrap_mode", written);
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
       written = strlcpy(id_mipmap, id, sizeof(id_mipmap));
-      id_mipmap[written  ]  = '_';
-      id_mipmap[written+1]  = 'm';
-      id_mipmap[written+2]  = 'i';
-      id_mipmap[written+3]  = 'p';
-      id_mipmap[written+4]  = 'm';
-      id_mipmap[written+5]  = 'a';
-      id_mipmap[written+6]  = 'p';
-      id_mipmap[written+7]  = '\0';
+      string_add_alpha_7_fast(id_mipmap, "_mipmap", written);
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
@@ -1135,15 +1110,7 @@ void video_shader_write_conf_preset(config_file_t *conf,
                char key[128];
                key[0]  = '\0';
                written = strlcpy(key, shader->lut[i].id, sizeof(key));
-
-               key[written  ]  = '_';
-               key[written+1]  = 'l';
-               key[written+2]  = 'i';
-               key[written+3]  = 'n';
-               key[written+4]  = 'e';
-               key[written+5]  = 'a';
-               key[written+6]  = 'r';
-               key[written+7]  = '\0';
+               string_add_alpha_7_fast(key, "_linear", written);
                config_set_bool(conf, key,
                      shader->lut[i].filter == RARCH_FILTER_LINEAR);
             }
@@ -1153,18 +1120,7 @@ void video_shader_write_conf_preset(config_file_t *conf,
                char key[128];
                key[0]  = '\0';
                written = strlcpy(key, shader->lut[i].id, sizeof(key));
-
-               key      [written  ]  = '_';
-               key      [written+1]  = 'w';
-               key      [written+2]  = 'r';
-               key      [written+3]  = 'a';
-               key      [written+4]  = 'p';
-               key      [written+5]  = '_';
-               key      [written+6]  = 'm';
-               key      [written+7]  = 'o';
-               key      [written+8]  = 'd';
-               key      [written+9]  = 'e';
-               key      [written+10] = '\0';
+               string_add_alpha_10_fast(key, "_wrap_mode", written);
                config_set_string(conf, key,
                      wrap_mode_to_str(shader->lut[i].wrap));
             }
@@ -1174,15 +1130,7 @@ void video_shader_write_conf_preset(config_file_t *conf,
                char key[128];
                key[0]  = '\0';
                written = strlcpy(key, shader->lut[i].id, sizeof(key));
-
-               key      [written  ]  = '_';
-               key      [written+1]  = 'm';
-               key      [written+2]  = 'i';
-               key      [written+3]  = 'p';
-               key      [written+4]  = 'm';
-               key      [written+5]  = 'a';
-               key      [written+6]  = 'p';
-               key      [written+7]  = '\0';
+               string_add_alpha_7_fast(key, "_mipmap", written);
                config_set_bool(conf, key,
                      shader->lut[i].mipmap);
             }

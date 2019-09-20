@@ -1179,11 +1179,9 @@ int menu_entries_get_core_title(char *s, size_t len)
 #endif
    size_t copied  = strlcpy(s, PACKAGE_VERSION, len);
    copied         = strlcat(s, extra_version, len);
-   string_add_space_fast(s, copied);
-   s[copied+1] = '-';
-   string_add_space_fast(s, copied+2);
+   string_add_alpha_3_fast(s, " - ", copied);
    copied         = strlcat(s, core_name, len);
-   string_add_space_fast(s, copied);
+   string_add_alpha_fast(s, ' ', copied);
    copied         = strlcat(s, core_version, len);
 
    return 0;
@@ -3911,7 +3909,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                            path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                      {
-                        string_add_vertical_bar_fast(rom_buff, copied);
+                        string_add_alpha_fast(rom_buff, '|', copied);
                      }
                   }
 

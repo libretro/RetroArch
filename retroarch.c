@@ -4148,30 +4148,24 @@ static bool command_event_save_config(
 
    if (path_exists && config_save_file(config_path))
    {
-      size_t written;
-
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      written        = strlcpy(log, "[config] ", sizeof(log));
-      log[written]   = '\0';
-      written        = strlcat(log, s, sizeof(log));
+      string_add_alpha_9_fast(log, "[config] ", 0);
+      strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
    }
 
    if (!string_is_empty(str))
    {
-      size_t written;
-
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      written        = strlcpy(log, "[config] ", sizeof(log));
-      log[written]   = '\0';
-      written        = strlcat(log, s, sizeof(log));
+      string_add_alpha_9_fast(log, "[config] ", 0);
+      strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
 
@@ -4233,7 +4227,8 @@ static bool command_event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64] = {0};
+         size_t copied = 0;
+         char tmp[64]  = {0};
 
          fill_pathname_base_noext(
                config_name,
@@ -4244,16 +4239,9 @@ static bool command_event_save_core_config(void)
                config_size);
 
          if (i)
-            snprintf(tmp, sizeof(tmp), "-%u%s",
-                  i, ".cfg");
-         else
-         {
-            tmp[0] = '.';
-            tmp[1] = 'c';
-            tmp[2] = 'f';
-            tmp[3] = 'g';
-            tmp[4] = '\0';
-         }
+            copied = snprintf(tmp, sizeof(tmp), "-%u", i);
+
+         string_add_alpha_4_fast(tmp, ".cfg", copied);
 
          strlcat(config_path, tmp, config_size);
          if (!path_is_valid(config_path))
@@ -6962,7 +6950,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 
          subsystem_current_count = 0;
 
-         RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+         RARCH_LOG("[Environ]: SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
@@ -7361,13 +7349,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
          *(bool*)data = !settings->bools.video_crop_overscan;
-         RARCH_LOG("Environ GET_OVERSCAN: %u\n",
+         RARCH_LOG("[Environ]: GET_OVERSCAN: %u\n",
                (unsigned)!settings->bools.video_crop_overscan);
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
          *(bool*)data = true;
-         RARCH_LOG("Environ GET_CAN_DUPE: true\n");
+         RARCH_LOG("[Environ]: GET_CAN_DUPE: true\n");
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
@@ -7382,7 +7370,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             if (!runloop_core_options)
             {
-               RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n",
+               RARCH_LOG("[Environ]: GET_VARIABLE %s: not implemented.\n",
                      var->key);
                return true;
             }
@@ -7414,7 +7402,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                char s[128];
                s[0] = '\0';
 
-               snprintf(s, sizeof(s), "Environ GET_VARIABLE %s:\n\t%s\n", var->key, var->value ? var->value :
+               snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE %s:\n\t%s\n", var->key, var->value ? var->value :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
                RARCH_LOG(s);
             }
@@ -7431,7 +7419,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       /* SET_VARIABLES: Legacy path */
       case RETRO_ENVIRONMENT_SET_VARIABLES:
-         RARCH_LOG("Environ SET_VARIABLES.\n");
+         RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
          rarch_ctl(RARCH_CTL_CORE_VARIABLES_INIT, data);
@@ -7439,7 +7427,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
-         RARCH_LOG("Environ SET_CORE_OPTIONS.\n");
+         RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
@@ -7447,7 +7435,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
-         RARCH_LOG("Environ RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT,    NULL);
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_INTL_INIT, data);
@@ -7455,7 +7443,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
-         RARCH_LOG("Environ RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
 
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_DISPLAY, data);
 
@@ -7464,7 +7452,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
          const struct retro_message *msg = (const struct retro_message*)data;
-         RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
+         RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #ifdef HAVE_MENU_WIDGETS
          if (menu_widgets_inited)
             menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f));
@@ -7477,7 +7465,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_ROTATION:
       {
          unsigned rotation = *(const unsigned*)data;
-         RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
+         RARCH_LOG("[Environ]: SET_ROTATION: %u\n", rotation);
          if (!settings->bools.video_allow_rotate)
             break;
 
@@ -7490,7 +7478,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
-         RARCH_LOG("Environ SHUTDOWN.\n");
+         RARCH_LOG("[Environ]: SHUTDOWN.\n");
 
          /* This case occurs when a core (internally) requests
           * a shutdown event. Must save runtime log file here,
@@ -7507,7 +7495,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          if (system)
          {
             system->performance_level = *(const unsigned*)data;
-            RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n",
+            RARCH_LOG("[Environ]: PERFORMANCE_LEVEL: %u.\n",
                   system->performance_level);
          }
          break;
@@ -7532,13 +7520,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
             *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
-            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+            RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
                   dir_get(RARCH_DIR_SYSTEM));
          }
          else
          {
             *(const char**)data = settings->paths.directory_system;
-            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+            RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
                settings->paths.directory_system);
          }
 
@@ -7551,7 +7539,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_USERNAME:
          *(const char**)data = *settings->paths.username ?
             settings->paths.username : NULL;
-         RARCH_LOG("Environ GET_USERNAME: \"%s\".\n",
+         RARCH_LOG("[Environ]: GET_USERNAME: \"%s\".\n",
                settings->paths.username);
          break;
 
@@ -7560,7 +7548,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
             *(unsigned *)data  = user_lang;
-            RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n", user_lang);
+            RARCH_LOG("[Environ]: GET_LANGUAGE: \"%u\".\n", user_lang);
          }
 #endif
          break;
@@ -7573,14 +7561,14 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          switch (pix_fmt)
          {
             case RETRO_PIXEL_FORMAT_0RGB1555:
-               RARCH_LOG("Environ SET_PIXEL_FORMAT: 0RGB1555.\n");
+               RARCH_LOG("[Environ]: SET_PIXEL_FORMAT: 0RGB1555.\n");
                break;
 
             case RETRO_PIXEL_FORMAT_RGB565:
-               RARCH_LOG("Environ SET_PIXEL_FORMAT: RGB565.\n");
+               RARCH_LOG("[Environ]: SET_PIXEL_FORMAT: RGB565.\n");
                break;
             case RETRO_PIXEL_FORMAT_XRGB8888:
-               RARCH_LOG("Environ SET_PIXEL_FORMAT: XRGB8888.\n");
+               RARCH_LOG("[Environ]: SET_PIXEL_FORMAT: XRGB8888.\n");
                break;
             default:
                return false;
@@ -7671,7 +7659,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      [retro_id] = desc->description;
             }
 
-            RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
+            RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS:\n");
 
             {
                unsigned log_level      = settings->uints.frontend_log_level;
@@ -7707,7 +7695,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          retro_keyboard_event_t *frontend_key_event = &runloop_frontend_key_event;
          retro_keyboard_event_t *key_event          = &runloop_key_event;
 
-         RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
+         RARCH_LOG("[Environ]: SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
             *key_event                  = info->callback;
 
@@ -7717,7 +7705,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
-         RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
+         RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
          if (system)
             system->disk_control_cb =
                *(const struct retro_disk_control_callback*)data;
@@ -7731,7 +7719,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *hwr =
             video_driver_get_hw_context_internal();
 
-         RARCH_LOG("Environ SET_HW_RENDER.\n");
+         RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
 
          if (!dynamic_request_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
@@ -7764,7 +7752,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
       {
          bool state = *(const bool*)data;
-         RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
+         RARCH_LOG("[Environ]: SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
 
          if (state)
             content_set_does_not_need_content();
@@ -7789,7 +7777,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_THREADS
       {
          const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
-         RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+         RARCH_LOG("[Environ]: SET_AUDIO_CALLBACK.\n");
 #ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
             return false;
@@ -7807,7 +7795,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_frame_time_callback *info =
             (const struct retro_frame_time_callback*)data;
 
-         RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
+         RARCH_LOG("[Environ]: SET_FRAME_TIME_CALLBACK.\n");
 #ifdef HAVE_NETWORKING
          /* retro_run() will be called in very strange and
           * mysterious ways, have to disable it. */
@@ -7823,7 +7811,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_rumble_interface *iface =
             (struct retro_rumble_interface*)data;
 
-         RARCH_LOG("Environ GET_RUMBLE_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_RUMBLE_INTERFACE.\n");
          iface->set_rumble_state = input_driver_set_rumble_state;
          break;
       }
@@ -7832,7 +7820,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          uint64_t *mask = (uint64_t*)data;
 
-         RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
+         RARCH_LOG("[Environ]: GET_INPUT_DEVICE_CAPABILITIES.\n");
          if (!current_input->get_capabilities || !current_input_data)
             return false;
          *mask = input_driver_get_capabilities();
@@ -7844,7 +7832,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_sensor_interface *iface =
             (struct retro_sensor_interface*)data;
 
-         RARCH_LOG("Environ GET_SENSOR_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_SENSOR_INTERFACE.\n");
          iface->set_sensor_state = input_sensor_set_state;
          iface->get_sensor_input = input_sensor_get_input;
          break;
@@ -7854,7 +7842,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_camera_callback *cb =
             (struct retro_camera_callback*)data;
 
-         RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_CAMERA_INTERFACE.\n");
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
@@ -7872,7 +7860,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_location_callback *cb =
             (struct retro_location_callback*)data;
 
-         RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_LOCATION_INTERFACE.\n");
          cb->start                 = driver_location_start;
          cb->stop                  = driver_location_stop;
          cb->get_position          = driver_location_get_position;
@@ -7889,7 +7877,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          struct retro_log_callback *cb = (struct retro_log_callback*)data;
 
-         RARCH_LOG("Environ GET_LOG_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_LOG_INTERFACE.\n");
          cb->log = rarch_log_libretro;
          break;
       }
@@ -7898,7 +7886,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
 
-         RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
+         RARCH_LOG("[Environ]: GET_PERF_INTERFACE.\n");
          cb->get_time_usec    = cpu_features_get_time_usec;
          cb->get_cpu_features = cpu_features_get;
          cb->get_perf_counter = cpu_features_get_perf_counter;
@@ -7916,7 +7904,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          *dir = *settings->paths.directory_core_assets ?
             settings->paths.directory_core_assets : NULL;
-         RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
+         RARCH_LOG("[Environ]: CORE_ASSETS_DIRECTORY: \"%s\".\n",
                settings->paths.directory_core_assets);
          break;
       }
@@ -7934,7 +7922,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             settings_t *settings                  = configuration_settings;
 
-            RARCH_LOG("Environ SET_SYSTEM_AV_INFO.\n");
+            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO.\n");
 
             memcpy(av_info, *info, sizeof(*av_info));
             command_event(CMD_EVENT_REINIT, NULL);
@@ -7969,7 +7957,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned log_level   = settings->uints.frontend_log_level;
 
          if (log_level == RETRO_LOG_DEBUG)
-            RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
+            RARCH_LOG("[Environ]: SET_SUBSYSTEM_INFO.\n");
 
          for (i = 0; info[i].ident; i++)
          {
@@ -8018,7 +8006,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_controller_info*)data;
          unsigned log_level      = settings->uints.frontend_log_level;
 
-         RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
+         RARCH_LOG("[Environ]: SET_CONTROLLER_INFO.\n");
 
          for (i = 0; info[i].types; i++)
          {
@@ -8060,7 +8048,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                (const struct retro_memory_map*)data;
             rarch_memory_descriptor_t *descriptors = NULL;
 
-            RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+            RARCH_LOG("[Environ]: SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
             system->mmaps.descriptors     = 0;
             system->mmaps.num_descriptors = 0;
@@ -8122,7 +8110,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
          {
-            RARCH_WARN("Environ SET_MEMORY_MAPS, but system pointer not initialized..\n");
+            RARCH_WARN("[Environ]: SET_MEMORY_MAPS, but system pointer not initialized..\n");
          }
 
          break;
@@ -8158,7 +8146,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
          {
-            RARCH_LOG("Environ SET_GEOMETRY.\n");
+            RARCH_LOG("[Environ]: SET_GEOMETRY.\n");
 
          }
          break;
@@ -8194,7 +8182,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_CHEEVOS
          {
             bool state = *(const bool*)data;
-            RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
+            RARCH_LOG("[Environ]: SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
             rcheevos_set_support_cheevos(state);
          }
 #endif
@@ -8204,7 +8192,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_hw_render_context_negotiation_interface *iface =
             (const struct retro_hw_render_context_negotiation_interface*)data;
-         RARCH_LOG("Environ SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE.\n");
+         RARCH_LOG("[Environ]: SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE.\n");
          hw_render_context_negotiation = iface;
          break;
       }
@@ -8366,7 +8354,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
          {
             bool state = *(const bool*)data;
-            RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+            RARCH_LOG("[Environ]: SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
 
             set_save_state_in_background(state);
 
@@ -8375,7 +8363,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
 
       default:
-         RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
+         RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
    }
 
@@ -10442,11 +10430,7 @@ static bool runloop_check_movie_init(void)
    else
       copied = strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
-   path[copied  ] = '.';
-   path[copied+1] = 'b';
-   path[copied+2] = 's';
-   path[copied+3] = 'v';
-   path[copied+4] = '\0';
+   string_add_alpha_4_fast(path, ".bsv", copied);
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -19165,10 +19149,8 @@ static void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(video_info.fps_text))
          {
-            string_add_space_fast(video_driver_window_title,        copied);
-            string_add_vertical_bar_fast(video_driver_window_title, copied+1);
-            string_add_vertical_bar_fast(video_driver_window_title, copied+2);
-            string_add_space_fast(video_driver_window_title,        copied+3);
+            string_add_alpha_4_fast(video_driver_window_title,
+                  " || ", copied);
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }
@@ -21650,19 +21632,11 @@ static retro_time_t rarch_core_runtime_tick(void)
 }
 
 #define _PSUPP_BUF(buf, var, name, desc) \
-   buf[written  ] = ' '; \
-   buf[written+1] = ' '; \
-   buf[written+2] = '\0'; \
+   string_add_alpha_2_fast(buf, "  ", written); \
    written        = strlcat(buf, name, sizeof(buf)); \
-   buf[written  ] = ':'; \
-   buf[written+1] = '\n'; \
-   buf[written+2] = '\t'; \
-   buf[written+3] = '\t'; \
-   buf[written+4] = '\0'; \
+   string_add_alpha_5_fast(buf, ":\n\t\t", written); \
    written        = strlcat(buf, desc, sizeof(buf)); \
-   buf[written  ] = ':'; \
-   buf[written+1] = ' '; \
-   buf[written+2] = '\0'; \
+   string_add_alpha_2_fast(buf, ": ", written); \
    written        = strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf)); \
    buf[written  ] = '\0'
 
@@ -21990,7 +21964,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       {
          size_t copied = strlcat(launch_arguments,
                argv[i], sizeof(launch_arguments));
-         string_add_space_fast(launch_arguments, copied);
+         string_add_alpha_fast(launch_arguments, ' ', copied);
       }
       string_trim_whitespace_left(launch_arguments);
       string_trim_whitespace_right(launch_arguments);
@@ -22725,38 +22699,31 @@ bool retroarch_main_init(int argc, char *argv[])
 
          written       = strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
                sizeof(str_output));
-         str_output[written]   = ':';
-         str_output[written+1] = ' ';
-         str_output[written+2] = '\0';
+         string_add_alpha_2_fast(str_output, ": ", written);
          written       = strlcat(str_output, str,  sizeof(str_output));
          written       = strlcat(str_output, "\n", sizeof(str_output));
 
          written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         str_output[written]   = ' ';
-         str_output[written+1] = '\0';
-         written       = strlcat(str_output, "Built: ", sizeof(str_output));
+         string_add_alpha_8_fast(str_output, " Built: ", written);
+         written      += 8;
          written       = strlcat(str_output, __DATE__, sizeof(str_output));
          written       = strlcat(str_output, "\n", sizeof(str_output));
 
          written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         str_output[written]   = ' ';
-         str_output[written+1] = '\0';
-         written       = strlcat(str_output, "Version: ", sizeof(str_output));
+         string_add_alpha_10_fast(str_output, " Version: ", written);
+         written      += 10;
          written       = strlcat(str_output, PACKAGE_VERSION, sizeof(str_output));
          written       = strlcat(str_output, "\n", sizeof(str_output));
 
 #ifdef HAVE_GIT_VERSION
          written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         str_output[written]   = ' ';
-         str_output[written+1] = '\0';
-         written       = strlcat(str_output, "Git: ", sizeof(str_output));
+         string_add_alpha_6_fast(str_output, " Git: ", written);
          written       = strlcat(str_output, retroarch_git_version, sizeof(str_output));
          written       = strlcat(str_output, "\n", sizeof(str_output));
 #endif
 
          written       = strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-         str_output[written]   = ' ';
-         str_output[written+1] = '\0';
+         string_add_alpha_fast(str_output, ' ', written);
          written       = strlcat(str_output, "=================================================\n", sizeof(str_output));
          RARCH_LOG_OUTPUT(str_output);
       }
@@ -23892,158 +23859,98 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 
             if (cpu & RETRO_SIMD_MMX)
             {
-               s[written++] = ' ';
-               s[written++] = 'M';
-               s[written++] = 'M';
-               s[written++] = 'X';
+               string_add_alpha_4_fast(s, " MMX", written);
+               written += 4;
             }
             if (cpu & RETRO_SIMD_MMXEXT)
             {
-               s[written++] = ' ';
-               s[written++] = 'M';
-               s[written++] = 'M';
-               s[written++] = 'X';
-               s[written++] = 'E';
-               s[written++] = 'X';
-               s[written++] = 'T';
+               string_add_alpha_7_fast(s, " MMXEXT", written);
+               written += 7;
             }
             if (cpu & RETRO_SIMD_SSE)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
+               string_add_alpha_4_fast(s, " SSE", written);
+               written += 4;
             }
             if (cpu & RETRO_SIMD_SSE2)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
-               s[written++] = '2';
+               string_add_alpha_5_fast(s, " SSE2", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_SSE3)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
-               s[written++] = '3';
+               string_add_alpha_5_fast(s, " SSE3", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_SSSE3)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
-               s[written++] = '3';
+               string_add_alpha_6_fast(s, " SSSE3", written);
+               written += 6;
             }
             if (cpu & RETRO_SIMD_SSE4)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
-               s[written++] = '4';
+               string_add_alpha_5_fast(s, " SSE4", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_SSE42)
             {
-               s[written++] = ' ';
-               s[written++] = 'S';
-               s[written++] = 'S';
-               s[written++] = 'E';
-               s[written++] = '4';
-               s[written++] = '.';
-               s[written++] = '2';
+               string_add_alpha_7_fast(s, " SSE4.2", written);
+               written += 7;
             }
             if (cpu & RETRO_SIMD_AES)
             {
-               s[written++] = ' ';
-               s[written++] = 'A';
-               s[written++] = 'E';
-               s[written++] = 'S';
+               string_add_alpha_4_fast(s, " AES", written);
+               written += 4;
             }
             if (cpu & RETRO_SIMD_AVX)
             {
-               s[written++] = ' ';
-               s[written++] = 'A';
-               s[written++] = 'V';
-               s[written++] = 'X';
+               string_add_alpha_4_fast(s, " AVX", written);
+               written += 4;
             }
             if (cpu & RETRO_SIMD_AVX2)
             {
-               s[written++] = ' ';
-               s[written++] = 'A';
-               s[written++] = 'V';
-               s[written++] = 'X';
-               s[written++] = '2';
+               string_add_alpha_5_fast(s, " AVX2", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_NEON)
             {
-               s[written++] = ' ';
-               s[written++] = 'N';
-               s[written++] = 'E';
-               s[written++] = 'O';
-               s[written++] = 'N';
+               string_add_alpha_5_fast(s, " NEON", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_VFPV3)
             {
-               s[written++] = ' ';
-               s[written++] = 'V';
-               s[written++] = 'F';
-               s[written++] = 'P';
-               s[written++] = 'v';
-               s[written++] = '3';
+               string_add_alpha_6_fast(s, " VFPv3", written);
+               written += 6;
             }
             if (cpu & RETRO_SIMD_VFPV4)
             {
-               s[written++] = ' ';
-               s[written++] = 'V';
-               s[written++] = 'F';
-               s[written++] = 'P';
-               s[written++] = 'v';
-               s[written++] = '4';
+               string_add_alpha_6_fast(s, " VFPv4", written);
+               written += 6;
             }
             if (cpu & RETRO_SIMD_VMX)
             {
-               s[written++] = ' ';
-               s[written++] = 'V';
-               s[written++] = 'M';
-               s[written++] = 'X';
+               string_add_alpha_4_fast(s, " VMX", written);
+               written += 4;
             }
             if (cpu & RETRO_SIMD_VMX128)
             {
-               s[written++] = ' ';
-               s[written++] = 'V';
-               s[written++] = 'M';
-               s[written++] = 'X';
-               s[written++] = '1';
-               s[written++] = '2';
-               s[written++] = '8';
+               string_add_alpha_7_fast(s, " VMX128", written);
+               written += 7;
             }
             if (cpu & RETRO_SIMD_VFPU)
             {
-               s[written++] = ' ';
-               s[written++] = 'V';
-               s[written++] = 'F';
-               s[written++] = 'P';
-               s[written++] = 'U';
+               string_add_alpha_5_fast(s, " VFPU", written);
+               written += 5;
             }
             if (cpu & RETRO_SIMD_PS)
             {
-               s[written++] = ' ';
-               s[written++] = 'P';
-               s[written++] = 'S';
+               string_add_alpha_3_fast(s, " PS", written);
+               written += 3;
             }
             if (cpu & RETRO_SIMD_ASIMD)
             {
-               s[written++] = ' ';
-               s[written++] = 'A';
-               s[written++] = 'S';
-               s[written++] = 'I';
-               s[written++] = 'M';
-               s[written++] = 'D';
+               string_add_alpha_6_fast(s, " ASIMD", written);
+               written += 6;
             }
             s[written++] = '\0';
          }

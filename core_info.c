@@ -85,8 +85,7 @@ static void core_info_list_resolve_all_extensions(
 
       copied = strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      core_info_list->all_ext[copied]   = '|';
-      core_info_list->all_ext[copied+1] = '\0';
+      string_add_alpha_fast(core_info_list->all_ext, '|', copied);
    }
 #ifdef HAVE_7ZIP
    strlcat(core_info_list->all_ext, "7z|", all_ext_len);

@@ -1642,10 +1642,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (materialui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
-      string_add_space_fast(menu_title,     copied);
-      string_add_pair_open_fast(menu_title, copied+1);
+      string_add_alpha_2_fast(menu_title, " (", copied);
       copied = strlcat(menu_title, title_msg, sizeof(menu_title));
-      string_add_pair_close_fast(menu_title, copied);
+      string_add_alpha_fast(menu_title, ')', copied);
    }
 
    if (use_smooth_ticker)

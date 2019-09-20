@@ -576,51 +576,16 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
    texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
    copied = strlcpy(texture,      base,            sizeof(texture));
-   texture[copied  ]     = 'T';
-   texture[copied+1]     = 'e';
-   texture[copied+2]     = 'x';
-   texture[copied+3]     = 't';
-   texture[copied+4]     = 'u';
-   texture[copied+5]     = 'r';
-   texture[copied+6]     = 'e';
-   texture[copied+7]     = '\0';
+   string_add_alpha_7_fast(texture, "Texture", copied);
 
    copied = strlcpy(texture_size, base,            sizeof(texture_size));
-   texture_size[copied  ]     = 'T';
-   texture_size[copied+1]     = 'e';
-   texture_size[copied+2]     = 'x';
-   texture_size[copied+3]     = 't';
-   texture_size[copied+4]     = 'u';
-   texture_size[copied+5]     = 'r';
-   texture_size[copied+6]     = 'e';
-   texture_size[copied+7]     = 'S';
-   texture_size[copied+8]     = 'i';
-   texture_size[copied+9]     = 'z';
-   texture_size[copied+10]    = 'e';
-   texture_size[copied+11]    = '\0';
+   string_add_alpha_11_fast(texture_size, "TextureSize", copied);
 
    copied = strlcpy(input_size,   base,            sizeof(input_size));
-   input_size  [copied  ]     = 'I';
-   input_size  [copied+1]     = 'n';
-   input_size  [copied+2]     = 'p';
-   input_size  [copied+3]     = 'u';
-   input_size  [copied+4]     = 't';
-   input_size  [copied+5]     = 'S';
-   input_size  [copied+6]     = 'i';
-   input_size  [copied+7]     = 'z';
-   input_size  [copied+8 ]    = 'e';
-   input_size  [copied+9 ]    = '\0';
+   string_add_alpha_9_fast(input_size, "InputSize", copied);
 
    copied = strlcpy(tex_coord,    base,            sizeof(tex_coord));
-   tex_coord   [copied  ]     = 'T';
-   tex_coord   [copied+1]     = 'e';
-   tex_coord   [copied+2]     = 'x';
-   tex_coord   [copied+3]     = 'C';
-   tex_coord   [copied+4]     = 'o';
-   tex_coord   [copied+5]     = 'o';
-   tex_coord   [copied+6]     = 'r';
-   tex_coord   [copied+7]     = 'd';
-   tex_coord   [copied+8 ]    = '\0';
+   string_add_alpha_8_fast(tex_coord, "TexCoord", copied);
 
    if (frame->texture < 0)
       frame->texture = gl_glsl_get_uniform(glsl, prog, texture);

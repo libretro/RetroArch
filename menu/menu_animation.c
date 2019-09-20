@@ -1404,9 +1404,7 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
    {
       size_t copied = utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      string_add_dot_fast(ticker->s, copied);
-      string_add_dot_fast(ticker->s, copied+1);
-      string_add_dot_fast(ticker->s, copied+2);
+      string_add_alpha_3_fast(ticker->s, "...", copied);
       return false;
    }
 
@@ -1516,9 +1514,7 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
 
       /* Copy string segment + add suffix */
       copied = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      string_add_dot_fast(ticker->dst_str, copied);
-      string_add_dot_fast(ticker->dst_str, copied+1);
-      string_add_dot_fast(ticker->dst_str, copied+2);
+      string_add_alpha_3_fast(ticker->dst_str, "...", copied);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1719,9 +1715,7 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
 
       /* Copy string segment + add suffix */
       copied = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      string_add_dot_fast(ticker->dst_str, copied);
-      string_add_dot_fast(ticker->dst_str, copied+1);
-      string_add_dot_fast(ticker->dst_str, copied+2);
+      string_add_alpha_3_fast(ticker->dst_str, "...", copied);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);

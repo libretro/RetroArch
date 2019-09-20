@@ -4903,8 +4903,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
          char country[PATH_MAX_LENGTH] = {0};
 
          if (*netplay_room_list[i].country)
-            string_add_between_pairs(country, netplay_room_list[i].country,
+         {
+            size_t copied = 0;
+            string_add_alpha_fast(country, '(', copied);
+            copied = strlcat(country, netplay_room_list[i].country,
                   sizeof(country));
+            string_add_alpha_fast(country, ')', copied);
+         }
 
          /* Uncomment this to debug mismatched room parameters*/
 #if 0

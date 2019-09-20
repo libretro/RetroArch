@@ -2247,13 +2247,7 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
    }
 
    written = strlcpy(badge_file, badge, sizeof(badge_file));
-
-   badge_file[written]    = '.';
-   badge_file[written+1]  = 'p';
-   badge_file[written+2]  = 'n';
-   badge_file[written+3]  = 'g';
-   badge_file[written+4]  = '\0';
-
+   string_add_alpha_4_fast(badge_file, ".png", written);
    fill_pathname_application_special(fullpath,
          PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);

@@ -263,11 +263,7 @@ static bool screenshot_dump(
       {
          size_t copied = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         string_add_dot_fast(state->filename, copied);
-         state->filename[copied+1] = 'p';
-         state->filename[copied+2] = 'n';
-         state->filename[copied+3] = 'g';
-         state->filename[copied+4] = '\0';
+         string_add_alpha_4_fast(state->filename, ".png", copied);
       }
       else
       {
@@ -295,11 +291,7 @@ static bool screenshot_dump(
          {
             size_t copied = strlcpy(state->shotname, path_basename(name_base),
                   sizeof(state->shotname));
-            string_add_dot_fast(state->shotname, copied);
-            state->shotname[copied+1] = 'p';
-            state->shotname[copied+2] = 'n';
-            state->shotname[copied+3] = 'g';
-            state->shotname[copied+4] = '\0';
+            string_add_alpha_4_fast(state->shotname, ".png", copied);
          }
 
          if (  string_is_empty(screenshot_dir) || 

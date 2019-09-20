@@ -19,6 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
+#include <compat/strl.h>
 #include "../../verbosity.h"
 
 using namespace std;
@@ -723,8 +724,13 @@ bool slang_reflect(
       }
    }
 
-   RARCH_LOG("[slang]:\n");
-   RARCH_LOG("[slang]:   Parameters:\n");
+   {
+      char buf[64];
+      buf[0] = '\0';
+      snprintf(buf, sizeof(buf),
+            "[slang]:\n%s [slang]:   Parameters:\n", FILE_PATH_LOG_INFO);
+      RARCH_LOG(buf);
+   }
 
    for (i = 0; i < reflection->semantic_float_parameters.size(); i++)
    {

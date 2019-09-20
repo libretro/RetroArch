@@ -65,16 +65,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 
    core_info_get_list(&core_list);
 
-   s[0]   = 'L';
-   s[1]   = 'i';
-   s[2]   = 'c';
-   s[3]   = 'e';
-   s[4]   = 'n';
-   s[5]   = 's';
-   s[6]   = 'e';
-   s[7]   = ':';
-   s[8]   = ' ';
-   s[9]   = '\0';
+   string_add_alpha_9_fast(s, "License: ", 0);
 
    if (core_list)
    {
@@ -98,10 +89,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       }
    }
 
-   s[9]   = 'N';
-   s[10]  = '/';
-   s[11]  = 'A';
-   s[12]  = '\0';
+   string_add_alpha_3_fast(s, "N/A", 9);
    return 1;
 }
 
@@ -1034,7 +1022,7 @@ static int action_bind_sublabel_playlist_entry(
    
    /* Add core name */
    written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   string_add_space_fast(s, written);
+   string_add_alpha_fast(s, ' ', written);
    written = strlcat(s, entry->core_name, len);
    
    /* Get runtime info *if* required runtime log is enabled

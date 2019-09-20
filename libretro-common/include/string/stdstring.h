@@ -59,6 +59,70 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 #define string_add_glob_open(s, size)     strlcat((s), "glob('*",  (size))
 #define string_add_glob_close(s, size)    strlcat((s), "*')",  (size))
 
+#define string_add_alpha_fast(s, alpha, size) \
+   (s)[(size)]   = (alpha); \
+   (s)[(size)+1] = '\0'
+
+#define string_add_alpha_2_fast(s, str, size) \
+   string_add_alpha_fast(s, str[0], size); \
+   string_add_alpha_fast(s, str[1], size+1)
+
+#define string_add_alpha_3_fast(s, str, size) \
+   string_add_alpha_2_fast(s, str, size); \
+   string_add_alpha_fast(s, str[2], size+2)
+
+#define string_add_alpha_4_fast(s, str, size) \
+   string_add_alpha_3_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[3], size+3)
+
+#define string_add_alpha_5_fast(s, str, size) \
+   string_add_alpha_4_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[4], size+4)
+
+#define string_add_alpha_6_fast(s, str, size) \
+   string_add_alpha_5_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[5], size+5)
+
+#define string_add_alpha_7_fast(s, str, size) \
+   string_add_alpha_6_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[6], size+6)
+
+#define string_add_alpha_8_fast(s, str, size) \
+   string_add_alpha_7_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[7], size+7)
+
+#define string_add_alpha_9_fast(s, str, size) \
+   string_add_alpha_8_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[8], size+8)
+
+#define string_add_alpha_10_fast(s, str, size) \
+   string_add_alpha_9_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[9], size+9)
+
+#define string_add_alpha_11_fast(s, str, size) \
+   string_add_alpha_10_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[10], size+10)
+
+#define string_add_alpha_12_fast(s, str, size) \
+   string_add_alpha_11_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[11], size+11)
+
+#define string_add_alpha_13_fast(s, str, size) \
+   string_add_alpha_12_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[12], size+12)
+
+#define string_add_alpha_14_fast(s, str, size) \
+   string_add_alpha_13_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[13], size+13)
+
+#define string_add_alpha_15_fast(s, str, size) \
+   string_add_alpha_14_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[14], size+14)
+
+#define string_add_alpha_16_fast(s, str, size) \
+   string_add_alpha_15_fast(s, str,  size); \
+   string_add_alpha_fast(s, str[15], size+15)
+
 #define string_add_backslash_fast(s, size) \
    (s)[(size)]   = '/'; \
    (s)[(size)+1] = '\0'
@@ -93,15 +157,6 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
-
-static INLINE void string_add_between_pairs(char *s, const char *str,
-      size_t size)
-{
-   size_t copied; 
-   string_add_pair_open(s, size);
-   copied = strlcat(s, str,  size);
-   string_add_pair_close_fast(s, copied);
-}
 
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)

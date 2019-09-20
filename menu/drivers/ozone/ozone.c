@@ -584,11 +584,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 #endif
             copied = strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
 
-         string_add_dot_fast(filename, copied);
-         filename[copied+1] = 'p';
-         filename[copied+2] = 'n';
-         filename[copied+3] = 'g';
-         filename[copied+4] = '\0';
+         string_add_alpha_4_fast(filename, ".png", copied);
 
 #if 0
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
@@ -622,11 +618,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          filename[0]        = '\0';
          copied             = strlcpy(filename,
                OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
-         string_add_dot_fast(filename, copied);
-         filename[copied+1] = 'p';
-         filename[copied+2] = 'n';
-         filename[copied+3] = 'g';
-         filename[copied+4] = '\0';
+         string_add_alpha_4_fast(filename, ".png", copied);
 
          if (!menu_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
          {

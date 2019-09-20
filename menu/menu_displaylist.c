@@ -3009,9 +3009,7 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), sizeof(tmp));
-      tmp[n  ] = ':';
-      tmp[n+1] = ' ';
-      tmp[n+2] = '\0';
+      string_add_alpha_2_fast(tmp, ": ", n);
       n        = strlcat(tmp, content_label, sizeof(tmp));
       tmp[n  ] = '\0';
 
@@ -3033,9 +3031,7 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), sizeof(tmp));
-      tmp[n  ] = ':';
-      tmp[n+1] = ' ';
-      tmp[n+2] = '\0';
+      string_add_alpha_2_fast(tmp, ": ", n);
       n        = strlcat(tmp, content_path, sizeof(tmp));
       tmp[n  ] = '\0';
 
@@ -3058,9 +3054,7 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), sizeof(tmp));
-      tmp[n  ] = ':';
-      tmp[n+1] = ' ';
-      tmp[n+2] = '\0';
+      string_add_alpha_2_fast(tmp, ": ", n);
       n        = strlcat(tmp, core_name, sizeof(tmp));
       tmp[n  ] = '\0';
 
@@ -3095,9 +3089,7 @@ static unsigned menu_displaylist_parse_content_information(
          tmp[0]   = '\0';
 
          n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
-         tmp[n  ] = ':';
-         tmp[n+1] = ' ';
-         tmp[n+2] = '\0';
+         string_add_alpha_2_fast(tmp, ": ", n);
          n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
          tmp[n  ] = '\0';
 
