@@ -12912,6 +12912,8 @@ static int menu_input_pointer_post_iterate(
    static bool last_cancel_pressed                 = false;
    static bool last_left_pressed                   = false;
    static bool last_right_pressed                  = false;
+   static retro_time_t last_left_action_time       = 0;
+   static retro_time_t last_right_action_time      = 0;
    bool attenuate_y_accel                          = true;
    bool osk_active                                 = menu_input_dialog_get_display_kb_internal();
    int ret                                         = 0;
@@ -13120,40 +13122,57 @@ static int menu_input_pointer_post_iterate(
    }
    last_cancel_pressed = pointer_hw_state->cancel_pressed;
 
-   /* Up
-    * Note: This always corresponds to a mouse wheel, which
+   /* Up/Down
+    * Note: These always correspond to a mouse wheel, which
     * handles differently from other inputs - i.e. we don't
     * want a 'last pressed' check */
+
+   /* > Up */
    if (pointer_hw_state->up_pressed)
    {
       size_t selection = menu_navigation_get_selection();
       ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_UP);
    }
 
-   /* Down
-    * Note: This always corresponds to a mouse wheel, which
-    * handles differently from other inputs - i.e. we don't
-    * want a 'last pressed' check */
+   /* > Down */
    if (pointer_hw_state->down_pressed)
    {
       size_t selection = menu_navigation_get_selection();
       ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_DOWN);
    }
 
-   /* Left */
+   /* Left/Right
+    * Note: These also always correspond to a mouse wheel...
+    * In this case, it's a mouse wheel *tilt* operation, which
+    * is incredibly annoying because holding a tilt direction
+    * rapidly toggles the input state. The repeat speed is so
+    * high that any sort of useable control is impossible - so
+    * we have to apply a 'low pass' filter by ignoring inputs
+    * that occur below a certain frequency... */
+
+   /* > Left */
    if (pointer_hw_state->left_pressed && !last_left_pressed)
    {
-      size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+      if (current_time - last_left_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
+      {
+         size_t selection      = menu_navigation_get_selection();
+         last_left_action_time = current_time;
+         ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+      }
    }
    last_left_pressed = pointer_hw_state->left_pressed;
 
-   /* Right */
+   /* > Right */
    if (pointer_hw_state->right_pressed && !last_right_pressed)
    {
-      size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+      if (current_time - last_right_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
+      {
+         size_t selection       = menu_navigation_get_selection();
+         last_right_action_time = current_time;
+         ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+      }
    }
+   last_right_pressed = pointer_hw_state->right_pressed;
 
    menu_input_set_pointer_visibility(current_time);
 
