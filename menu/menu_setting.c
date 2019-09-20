@@ -4615,8 +4615,9 @@ static int setting_string_action_left_netplay_mitm_server(
    if (!found)
       offset = list_len - 1;
 
-   strlcpy(setting->value.target.string,
-         netplay_mitm_server_list[offset].name, setting->size);
+   if (offset >= 0)
+      strlcpy(setting->value.target.string,
+            netplay_mitm_server_list[offset].name, setting->size);
 
    return 0;
 }
