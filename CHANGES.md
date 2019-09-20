@@ -1,4 +1,5 @@
 # Future
+- BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue
