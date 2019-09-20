@@ -4152,7 +4152,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      string_add_alpha_9_fast(log, "[config] ", 0);
+      STRLCPY_CONST(log, "[config]");
       strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
@@ -4164,7 +4164,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      string_add_alpha_9_fast(log, "[config] ", 0);
+      STRLCPY_CONST(log, "[config]");
       strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
@@ -4227,8 +4227,8 @@ static bool command_event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         size_t copied = 0;
-         char tmp[64]  = {0};
+         size_t buf_pos = 0;
+         char tmp[64]   = {0};
 
          fill_pathname_base_noext(
                config_name,
@@ -4239,11 +4239,11 @@ static bool command_event_save_core_config(void)
                config_size);
 
          if (i)
-            copied = snprintf(tmp, sizeof(tmp), "-%u", i);
+            buf_pos = snprintf(tmp, sizeof(tmp), "-%u", i);
 
-         string_add_alpha_4_fast(tmp, ".cfg", copied);
-
+         STRLCAT_CONST_INCR(tmp, buf_pos, ".cfg", sizeof(tmp));
          strlcat(config_path, tmp, config_size);
+
          if (!path_is_valid(config_path))
          {
             found_path = true;
@@ -10416,7 +10416,7 @@ static void bsv_movie_deinit(void)
 static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
-   size_t copied;
+   size_t buf_pos             = 0;
    settings_t *settings       = configuration_settings;
 
    msg[0] = path[0]           = '\0';
@@ -10424,13 +10424,13 @@ static bool runloop_check_movie_init(void)
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
    if (settings->ints.state_slot > 0)
-      copied = snprintf(path, sizeof(path), "%s%d",
+      buf_pos = snprintf(path, sizeof(path), "%s%d",
             bsv_movie_state.movie_path,
             settings->ints.state_slot);
    else
-      copied = strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
+      buf_pos = strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
-   string_add_alpha_4_fast(path, ".bsv", copied);
+   STRLCAT_CONST_INCR(path, buf_pos, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -19134,15 +19134,12 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
       {
-         size_t copied = snprintf(
+         size_t buf_pos = snprintf(
                video_info.fps_text, sizeof(video_info.fps_text),
                "FPS: %6.2f", last_fps);
          if (video_info.framecount_show)
          {
-            string_add_space_fast(video_info.fps_text,        copied);
-            string_add_vertical_bar_fast(video_info.fps_text, copied+1);
-            string_add_vertical_bar_fast(video_info.fps_text, copied+2);
-            string_add_space_fast(video_info.fps_text,        copied+3);
+            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
          }
       }
 
@@ -19158,18 +19155,18 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
       {
-         size_t copied;
+         size_t buf_pos;
 
          last_fps = TIME_TO_FPS(curr_time, new_time,
                video_info.fps_update_interval);
 
-         copied = strlcpy(video_driver_window_title,
+         buf_pos = strlcpy(video_driver_window_title,
                title, sizeof(video_driver_window_title));
 
          if (!string_is_empty(video_info.fps_text))
          {
-            string_add_alpha_4_fast(video_driver_window_title,
-                  " || ", copied);
+            STRLCAT_CONST_INCR(video_driver_window_title, buf_pos,
+                  " || ", sizeof(video_driver_window_title));
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
          }

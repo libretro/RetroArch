@@ -81,7 +81,7 @@ static bool get_thumbnail_paths(
    char *path, size_t path_size,
    char *url, size_t url_size)
 {
-   size_t copied;
+   size_t buf_pos;
    const char *system      = NULL;
    const char *db_name     = NULL;
    const char *img_name    = NULL;
@@ -144,12 +144,12 @@ static bool get_thumbnail_paths(
       return false;
    
    /* Generate remote path */
-   copied = strlcpy(raw_url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(raw_url));
-   string_add_alpha_fast(raw_url, '/', copied);
-   copied = strlcat(raw_url, system_name, sizeof(raw_url));
-   string_add_alpha_fast(raw_url, '/', copied);
-   copied = strlcat(raw_url, sub_dir, sizeof(raw_url));
-   string_add_alpha_fast(raw_url, '/', copied);
+   buf_pos = strlcpy(raw_url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(raw_url));
+   STRLCAT_CONST_INCR(raw_url, buf_pos, "/", sizeof(raw_url));
+   buf_pos = strlcat(raw_url, system_name, sizeof(raw_url));
+   STRLCAT_CONST_INCR(raw_url, buf_pos, "/", sizeof(raw_url));
+   buf_pos = strlcat(raw_url, sub_dir, sizeof(raw_url));
+   STRLCAT_CONST_INCR(raw_url, buf_pos, "/", sizeof(raw_url));
    strlcat(raw_url, img_name, sizeof(raw_url));
    
    if (string_is_empty(raw_url))

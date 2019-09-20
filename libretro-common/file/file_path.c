@@ -1302,8 +1302,9 @@ void fill_pathname_application_path(char *s, size_t len)
          char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
          if (realpath(s, resolved_bundle_dir_buf))
          {
-            size_t copied = strlcpy(s,resolved_bundle_dir_buf, len);
-            string_add_backslash_fast(s, copied);
+            size_t buf_pos = strlcpy(s, resolved_bundle_dir_buf, len - 1);
+            s[buf_pos]     = '/';
+            s[buf_pos+1]   = '\0';
          }
       }
 #endif

@@ -144,11 +144,12 @@ int system_property_get(const char *command,
    char buffer[PATH_MAX_LENGTH] = {0};
    char cmd[PATH_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
-   size_t copied                = strlcpy(cmd, command, sizeof(cmd));
+   size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
-   string_add_space_fast(cmd, copied);
+   cmd[buf_pos]                 = ' ';
+   cmd[buf_pos+1]               = '\0';
 
-   copied                       = strlcat(cmd, args, sizeof(cmd));
+   buf_pos                      = strlcat(cmd, args, sizeof(cmd));
 
    pipe                         = popen(cmd, "r");
 
@@ -1693,17 +1694,17 @@ static void frontend_unix_get_env(int *argc,
 
    if (xdg)
    {
-      size_t copied = strlcpy(base_path, xdg, sizeof(base_path));
-      string_add_backslash_fast(base_path, copied);
-      copied        = strlcat(base_path, "retroarch", sizeof(base_path));
+      size_t buf_pos       = strlcpy(base_path, xdg, sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, "retroarch", sizeof(base_path));
    }
    else if (home)
    {
-      size_t copied = strlcpy(base_path, home, sizeof(base_path));
-      string_add_backslash_fast(base_path, copied);
-      copied        = strlcat(base_path, ".config", sizeof(base_path));
-      string_add_backslash_fast(base_path, copied);
-      copied        = strlcat(base_path, "retroarch", sizeof(base_path));
+      size_t buf_pos       = strlcpy(base_path, home, sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, ".config", sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
+      STRLCAT_CONST_INCR(base_path, buf_pos, "retroarch", sizeof(base_path));
    }
    else
       strlcpy(base_path, "retroarch", sizeof(base_path));

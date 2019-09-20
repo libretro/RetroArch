@@ -1177,12 +1177,21 @@ int menu_entries_get_core_title(char *s, size_t len)
 #else
    const char *extra_version           = "";
 #endif
-   size_t copied  = strlcpy(s, PACKAGE_VERSION, len);
-   copied         = strlcat(s, extra_version, len);
-   string_add_alpha_3_fast(s, " - ", copied);
-   copied         = strlcat(s, core_name, len);
-   string_add_alpha_fast(s, ' ', copied);
-   copied         = strlcat(s, core_version, len);
+   size_t buf_pos = 0;
+   STRLCPY_CONST(s, PACKAGE_VERSION);
+   buf_pos       += STRLEN_CONST(PACKAGE_VERSION);
+   if (!string_is_empty(extra_version))
+   {
+      STRLCAT_CONST_INCR(s, buf_pos, extra_version, len);
+   }
+   STRLCAT_CONST_INCR(s, buf_pos, " - ", len);
+   buf_pos        = strlcat(s, core_name, len);
+   if (!string_is_empty(core_version))
+   {
+      STRLCAT_CONST_INCR(s, buf_pos, " (", len);
+      buf_pos        = strlcat(s, core_version, len);
+      STRLCAT_CONST_INCR(s, buf_pos, ")", len);
+   }
 
    return 0;
 }
@@ -3909,11 +3918,12 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
-                     size_t copied = strlcat(rom_buff,
+                     size_t buf_pos = strlcat(rom_buff,
                            path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                      {
-                        string_add_alpha_fast(rom_buff, '|', copied);
+                        STRLCAT_CONST_INCR(rom_buff, buf_pos,
+                              "|", sizeof(rom_buff));
                      }
                   }
 

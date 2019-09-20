@@ -142,7 +142,7 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
-   size_t copied                     = 0;
+   size_t buf_pos                    = 0;
    char *tmp                         = NULL;
    char url_domain[PATH_MAX_LENGTH]  = {0};
    char url_path[PATH_MAX_LENGTH]    = {0};
@@ -167,9 +167,10 @@ void net_http_urlencode_full(char *dest,
 
    tmp            = NULL;
    net_http_urlencode(&tmp, url_path);
-   copied         = strlcpy(dest, url_domain, size);
-   string_add_backslash_fast(dest, copied);
-   copied         = strlcat(dest, tmp, size);
+   buf_pos         = strlcpy(dest, url_domain, size);
+   dest[buf_pos]   = '/';
+   dest[buf_pos+1] = '\0';
+   buf_pos         = strlcat(dest, tmp, size);
    free (tmp);
 }
 
@@ -307,7 +308,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
    
    if (strchr(conn->scan, (char) ':'))
    {
-      size_t copied;
+      size_t buf_pos;
       url_dup       = strdup(conn->scan);
       domain_port   = strtok(url_dup, ":");
       domain_port2  = strtok(NULL, ":");
@@ -318,7 +319,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
       if (url_port)
          conn->port = atoi(url_port);
 
-      copied = strlcpy(new_domain, domain_port, sizeof(new_domain));
+      buf_pos = strlcpy(new_domain, domain_port, sizeof(new_domain));
       free(url_dup);
 
       if (uri)
@@ -327,7 +328,8 @@ struct http_connection_t *net_http_connection_new(const char *url,
             strlcat(new_domain, uri, sizeof(new_domain));
          else
          {
-            string_add_backslash_fast(new_domain, copied);
+            new_domain[buf_pos]   = '/';
+            new_domain[buf_pos+1] = '\0';
             strlcat(new_domain, strchr(uri, (char)'/') + sizeof(char),
                   sizeof(new_domain));
          }

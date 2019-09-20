@@ -253,7 +253,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
    {
-      string_add_alpha_4_fast(path_data->system, "MAME", 0);
+      STRLCPY_CONST(path_data->system, "MAME");
    }
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
@@ -414,15 +414,15 @@ bool menu_thumbnail_set_content_image(
       img_dir, img_name, sizeof(path_data->content_path));
    
    /* Set core name to "imageviewer" */
-   string_add_alpha_11_fast(
+   STRLCPY_CONST(
          path_data->content_core_name,
-         "imageviewer", 0);
+         "imageviewer");
    
    /* Set database name (arbitrarily) to "_images_"
     * (required for compatibility with menu_thumbnail_update_path(),
     * but not actually used...) */
-   string_add_alpha_8_fast(path_data->content_db_name,
-         "_images_", 0);
+   STRLCPY_CONST(path_data->content_db_name,
+         "_images_");
    
    /* Redundant error check */
    if (string_is_empty(path_data->content_path))
@@ -517,8 +517,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
        * so filter any input starting with 'MAME...' */
       if (strncmp(db_name, "MAME", 4) == 0)
       {
-         string_add_alpha_4_fast(
-               path_data->content_db_name, "MAME", 0);
+         STRLCPY_CONST(path_data->content_db_name, "MAME");
       }
       else
       {

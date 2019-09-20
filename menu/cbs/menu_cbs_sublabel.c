@@ -61,11 +61,13 @@
 
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
+   size_t buf_pos              = 0;
    core_info_list_t *core_list = NULL;
 
    core_info_get_list(&core_list);
 
-   string_add_alpha_9_fast(s, "License: ", 0);
+   STRLCPY_CONST(s, "License: ");
+   buf_pos                     = STRLEN_CONST("License: ");
 
    if (core_list)
    {
@@ -78,18 +80,18 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
             if (core_list->list[j].licenses_list)
             {
                char tmp[PATH_MAX_LENGTH];
-               tmp[0] = '\0';
+               tmp[0]  = '\0';
 
                string_list_join_concat(tmp, sizeof(tmp),
                      core_list->list[j].licenses_list, ", ");
-               strlcat(s, tmp, len);
+               buf_pos = strlcat(s, tmp, len);
                return 1;
             }
          }
       }
    }
 
-   string_add_alpha_3_fast(s, "N/A", 9);
+   STRLCAT_CONST(s, buf_pos, "N/A", len);
    return 1;
 }
 
@@ -996,7 +998,7 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   size_t written;
+   size_t buf_pos;
    settings_t *settings               = config_get_ptr();
    playlist_t *playlist               = NULL;
    const struct playlist_entry *entry = NULL;
@@ -1021,9 +1023,9 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
    
    /* Add core name */
-   written = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   string_add_alpha_fast(s, ' ', written);
-   written = strlcat(s, entry->core_name, len);
+   buf_pos = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+   STRLCAT_CONST_INCR(s, buf_pos, " ", len);
+   buf_pos = strlcat(s, entry->core_name, len);
    
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */

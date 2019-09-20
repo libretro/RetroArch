@@ -251,7 +251,7 @@ static void* task_push_http_transfer_generic(
 {
    task_finder_data_t find_data;
    char tmp[255];
-   size_t copied           = 0;
+   size_t buf_pos          = 0;
    const char *s           = NULL;
    retro_task_t  *t        = NULL;
    http_handle_t *http     = NULL;
@@ -300,10 +300,10 @@ static void* task_push_http_transfer_generic(
    else
       s = url;
 
-   copied        = strlcpy(tmp,
+   buf_pos       = strlcpy(tmp,
          msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
 
-   string_add_alpha_fast(tmp, ' ', copied);
+   STRLCAT_CONST_INCR(tmp, buf_pos, " ", sizeof(tmp));
 
    if (strstr(s, ".index"))
       strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));

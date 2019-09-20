@@ -4904,11 +4904,11 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
          if (*netplay_room_list[i].country)
          {
-            size_t copied = 0;
-            string_add_alpha_fast(country, '(', copied);
-            copied = strlcat(country, netplay_room_list[i].country,
+            size_t buf_pos = STRLEN_CONST("(");
+            STRLCPY_CONST(country, "(");
+            buf_pos = strlcat(country, netplay_room_list[i].country,
                   sizeof(country));
-            string_add_alpha_fast(country, ')', copied);
+            STRLCAT_CONST_INCR(country, buf_pos, ")", sizeof(country));
          }
 
          /* Uncomment this to debug mismatched room parameters*/

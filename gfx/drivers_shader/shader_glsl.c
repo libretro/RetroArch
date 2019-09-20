@@ -571,21 +571,21 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
    char texture_size[64];
    char input_size[64];
    char tex_coord[64];
-   size_t copied;
+   size_t buf_pos;
 
    texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
-   copied = strlcpy(texture,      base,            sizeof(texture));
-   string_add_alpha_7_fast(texture, "Texture", copied);
+   buf_pos    = strlcpy(texture,      base,            sizeof(texture));
+   STRLCAT_CONST_INCR(texture, buf_pos, "Texture", sizeof(texture));
 
-   copied = strlcpy(texture_size, base,            sizeof(texture_size));
-   string_add_alpha_11_fast(texture_size, "TextureSize", copied);
+   buf_pos    = strlcpy(texture_size, base,            sizeof(texture_size));
+   STRLCAT_CONST_INCR(texture_size, buf_pos, "TextureSize", sizeof(texture_size));
 
-   copied = strlcpy(input_size,   base,            sizeof(input_size));
-   string_add_alpha_9_fast(input_size, "InputSize", copied);
+   buf_pos    = strlcpy(input_size,   base,            sizeof(input_size));
+   STRLCAT_CONST_INCR(input_size, buf_pos, "InputSize", sizeof(input_size));
 
-   copied = strlcpy(tex_coord,    base,            sizeof(tex_coord));
-   string_add_alpha_8_fast(tex_coord, "TexCoord", copied);
+   buf_pos    = strlcpy(tex_coord,    base,            sizeof(tex_coord));
+   STRLCAT_CONST_INCR(tex_coord, buf_pos, "TexCoord", sizeof(tex_coord));
 
    if (frame->texture < 0)
       frame->texture = gl_glsl_get_uniform(glsl, prog, texture);
