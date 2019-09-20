@@ -453,7 +453,7 @@ void fill_pathname_slash(char *path, size_t size)
  * E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_content/foo.c",
  * replace = ".asm" => in_dir = "/tmp/some_dir/foo.c.asm"
  **/
-void fill_pathname_dir(char *in_dir, const char *in_basename,
+size_t fill_pathname_dir(char *in_dir, const char *in_basename,
       const char *replace, size_t size)
 {
    const char *base = NULL;
@@ -461,7 +461,7 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
    fill_pathname_slash(in_dir, size);
    base = path_basename(in_basename);
    strlcat(in_dir, base, size);
-   strlcat(in_dir, replace, size);
+   return strlcat(in_dir, replace, size);
 }
 
 /**
@@ -472,14 +472,14 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  *
  * Copies basename of @in_path into @out_path.
  **/
-void fill_pathname_base(char *out, const char *in_path, size_t size)
+size_t fill_pathname_base(char *out, const char *in_path, size_t size)
 {
    const char     *ptr = path_basename(in_path);
 
    if (!ptr)
       ptr = in_path;
 
-   strlcpy(out, ptr, size);
+   return strlcpy(out, ptr, size);
 }
 
 void fill_pathname_base_noext(char *out,
@@ -489,12 +489,12 @@ void fill_pathname_base_noext(char *out,
    path_remove_extension(out);
 }
 
-void fill_pathname_base_ext(char *out,
+size_t fill_pathname_base_ext(char *out,
       const char *in_path, const char *ext,
       size_t size)
 {
    fill_pathname_base_noext(out, in_path, size);
-   strlcat(out, ext, size);
+   return strlcat(out, ext, size);
 }
 
 /**
@@ -589,7 +589,7 @@ void fill_pathname_parent_dir(char *out_dir,
  * E.g.:
  * out_filename = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
  **/
-void fill_dated_filename(char *out_filename,
+size_t fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
    time_t       cur_time = time(NULL);
@@ -597,7 +597,7 @@ void fill_dated_filename(char *out_filename,
 
    strftime(out_filename, size,
          "RetroArch-%m%d-%H%M%S", tm_);
-   strlcat(out_filename, ext, size);
+   return strlcat(out_filename, ext, size);
 }
 
 /**
@@ -890,7 +890,7 @@ end:
  *
  * E.g. path /a/b/e/f.cg with base /a/b/c/d/ turns into ../../e/f.cg
  **/
-void path_relative_to(char *out,
+size_t path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
    size_t i, written = 0;
@@ -901,10 +901,7 @@ void path_relative_to(char *out,
    if (strlen(path) >= 2 && strlen(base) >= 2
          && path[1] == ':' && base[1] == ':'
          && path[0] != base[0])
-   {
-      strlcpy(out, path, size);
-      return;
-   }
+      return strlcpy(out, path, size);
 #endif
 
    /* Trim common beginning */
@@ -926,7 +923,7 @@ void path_relative_to(char *out,
       }
    }
 
-   strlcat(out, trimmed_path, size);
+   return strlcat(out, trimmed_path, size);
 }
 
 /**
@@ -966,7 +963,7 @@ void fill_pathname_resolve_relative(char *out_path,
  * Makes sure not to get  two consecutive slashes
  * between directory and path.
  **/
-void fill_pathname_join(char *out_path,
+size_t fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
    if (out_path != dir)
@@ -975,10 +972,10 @@ void fill_pathname_join(char *out_path,
    if (*out_path)
       fill_pathname_slash(out_path, size);
 
-   strlcat(out_path, path, size);
+   return strlcat(out_path, path, size);
 }
 
-void fill_pathname_join_special_ext(char *out_path,
+size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,
       size_t size)
@@ -988,25 +985,25 @@ void fill_pathname_join_special_ext(char *out_path,
       fill_pathname_slash(out_path, size);
 
    strlcat(out_path, last, size);
-   strlcat(out_path, ext, size);
+   return strlcat(out_path, ext, size);
 }
 
-void fill_pathname_join_concat_noext(char *out_path,
+size_t fill_pathname_join_concat_noext(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size)
 {
    fill_pathname_noext(out_path, dir, path, size);
-   strlcat(out_path, concat, size);
+   return strlcat(out_path, concat, size);
 }
 
-void fill_pathname_join_concat(char *out_path,
+size_t fill_pathname_join_concat(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size)
 {
    fill_pathname_join(out_path, dir, path, size);
-   strlcat(out_path, concat, size);
+   return strlcat(out_path, concat, size);
 }
 
 void fill_pathname_join_noext(char *out_path,
@@ -1027,7 +1024,7 @@ void fill_pathname_join_noext(char *out_path,
  * Joins a directory (@dir) and path (@path) together
  * using the given delimiter (@delim).
  **/
-void fill_pathname_join_delim(char *out_path, const char *dir,
+size_t fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
    size_t copied;
@@ -1041,15 +1038,16 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    out_path[copied+1] = '\0';
 
    if (path)
-      strlcat(out_path, path, size);
+      copied = strlcat(out_path, path, size);
+   return copied;
 }
 
-void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
       const char *path, const char delim, const char *concat,
       size_t size)
 {
    fill_pathname_join_delim(out_path, dir, path, delim, size);
-   strlcat(out_path, concat, size);
+   return strlcat(out_path, concat, size);
 }
 
 /**
@@ -1067,7 +1065,7 @@ void fill_pathname_join_delim_concat(char *out_path, const char *dir,
  * E.g.: "/path/to/game.img" -> game.img
  *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
  */
-void fill_short_pathname_representation(char* out_rep,
+size_t fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
    char path_short[PATH_MAX_LENGTH];
@@ -1077,7 +1075,7 @@ void fill_short_pathname_representation(char* out_rep,
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
-   strlcpy(out_rep, path_short, size);
+   return strlcpy(out_rep, path_short, size);
 }
 
 void fill_short_pathname_representation_noext(char* out_rep,
