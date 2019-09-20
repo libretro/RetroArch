@@ -12919,7 +12919,6 @@ static int menu_input_pointer_post_iterate(
    int ret                                         = 0;
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_input_state;
-   settings_t *settings                            = configuration_settings;
 
    /* If onscreen keyboard is shown and we currently have
     * active mouse input, highlight key under mouse cursor */
@@ -13199,7 +13198,6 @@ void menu_input_post_iterate(int *ret, unsigned action)
    else
    {
       menu_entry_t entry;
-      settings_t *settings       = configuration_settings;
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
       size_t selection           = menu_navigation_get_selection();
       menu_file_list_cbs_t *cbs  = selection_buf ?

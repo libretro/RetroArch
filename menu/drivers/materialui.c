@@ -690,7 +690,6 @@ static void materialui_render(void *data,
    menu_input_pointer_t pointer;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
-   settings_t        *settings = config_get_ptr();
    file_list_t        *list    = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
