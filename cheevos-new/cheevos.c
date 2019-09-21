@@ -1583,8 +1583,9 @@ found:
             char disc_path[PATH_MAX_LENGTH];
             char* tmp;
 
-            intfstream_read(m3u_stream, buffer, sizeof(buffer));
+            num_read = intfstream_read(m3u_stream, buffer, sizeof(buffer));
             intfstream_close(m3u_stream);
+            buffer[num_read] = '\0';
 
             tmp = buffer;
             while (*tmp && *tmp != '\n')
@@ -1640,7 +1641,7 @@ found:
             if (exe_name)
             {
                scan = exe_name;
-               while (*scan != '\n' && *scan != ';' && *scan != ' ')
+               while (*scan != '\n' && *scan != '\r' && *scan != ';' && *scan != ' ')
                   ++scan;
                *scan = '\0';
 
