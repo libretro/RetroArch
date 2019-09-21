@@ -344,8 +344,6 @@ static intfstream_t* cdfs_open_cue_track(const char* path, unsigned int track_in
 
       while (*cue && *cue != '\n')
          ++cue;
-      if (cue == line)
-         continue;
       if (*cue)
          *cue++ = '\0';
 
