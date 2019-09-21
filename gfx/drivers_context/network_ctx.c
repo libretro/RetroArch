@@ -50,33 +50,6 @@ static bool gfx_ctx_network_set_resize(void *data,
 
 static void gfx_ctx_network_update_window_title(void *data, void *data2)
 {
-   const settings_t *settings = config_get_ptr();
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
-#if defined(_WIN32) && !defined(_XBOX)
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-   char title[128];
-
-   title[0] = '\0';
-
-   if (settings->bools.video_memory_show)
-   {
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-   }
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (window && title[0])
-      window->set_title(&main_window, title);
-#endif
 }
 
 static void gfx_ctx_network_get_video_size(void *data,

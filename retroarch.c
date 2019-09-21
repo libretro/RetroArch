@@ -19122,6 +19122,7 @@ static void video_driver_frame(const void *data, unsigned width,
    if (video_driver_frame_count)
    {
       static char title[256];
+      settings_t *settings = configuration_settings;
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
@@ -19129,8 +19130,7 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_time_samples[write_index] = frame_time;
       fps_time                                     = new_time;
 
-      if (video_driver_frame_count == 1)
-         strlcpy(title, video_driver_window_title, sizeof(title));
+      strlcpy(title, video_driver_window_title, sizeof(title));
 
       if (video_info.fps_show)
       {
@@ -19173,6 +19173,19 @@ static void video_driver_frame(const void *data, unsigned width,
 
          curr_time                        = new_time;
          video_driver_window_title_update = true;
+      }
+
+      if (settings->bools.video_memory_show)
+      {
+         char mem[128];
+         uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
+         uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+
+         mem[0] = '\0';
+         snprintf(
+               mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+               mem_bytes_total / (1024.0f * 1024.0f));
+         strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
    }
    else
