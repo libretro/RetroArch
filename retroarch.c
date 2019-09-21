@@ -26208,7 +26208,7 @@ void rarch_log_file_init(void)
       fill_pathname_join(log_file_path, settings->paths.log_dir,
             log_to_file_timestamp 
             ? timestamped_log_file_name 
-            : ".log",
+            : "retroarch.log",
             sizeof(log_file_path));
    }
    
