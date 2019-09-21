@@ -24,47 +24,56 @@ static const uint32_t CodeAddress = 0x02000000u;
 static const uint32_t DataAddress = 0x10000000u;
 static const uint32_t WiiuLoadAddress = 0xC0000000u;
 
+int verbose = 0;
+constexpr int verbose_loaded_sections     = 1;
+constexpr int verbose_loaded_symbols      = 2;
+constexpr int verbose_loaded_imports      = 2;
+constexpr int verbose_loaded_relocations  = 3;
+constexpr int verbose_pruned_symbols      = 2;
+constexpr int verbose_convert_relocations = 3;
+
 struct ElfFile
 {
    struct Symbol
    {
       std::string name;
-      uint32_t address;
-      uint32_t size;
-      elf::SymbolType type;
-      elf::SymbolBinding binding;
-      uint32_t outNamePos;
+      uint32_t address           = 0;
+      uint32_t size              = 0;
+      elf::SymbolType type       = elf::STT_NOTYPE;
+      elf::SymbolBinding binding = elf::STB_LOCAL;
+      uint32_t outNamePos        = 0;
+      uint32_t refCount          = 0;
    };
 
    struct Relocation
    {
-      uint32_t target;
-      elf::RelocationType type;
+      uint32_t target            = 0;
+      elf::RelocationType type   = elf::R_PPC_NONE;
 
-      Symbol *symbol;
-      uint32_t addend;
+      Symbol *symbol             = nullptr;
+      uint32_t addend            = 0;
    };
 
    struct DataSection
    {
       std::string name;
-      uint32_t address;
-      elf::SectionType type;
-      elf::SectionFlags flags;
+      uint32_t address           = 0;
+      elf::SectionType type      = elf::SHT_NULL;
+      elf::SectionFlags flags    = elf::SectionFlags(0);
 
       /* Data used if type == SHT_PROGBITS */
       std::vector<char> data;
 
       /* Size used if type == SHT_NOBITS */
-      uint32_t size;
+      uint32_t size              = 0;
    };
 
    struct RplImport
    {
-      Symbol *trampSymbol;
-      Symbol *stubSymbol;
-      uint32_t stubAddr;
-      uint32_t trampAddr;
+      Symbol *trampSymbol        = nullptr;
+      Symbol *stubSymbol         = nullptr;
+      uint32_t stubAddr          = 0;
+      uint32_t trampAddr         = 0;
    };
 
    struct RplImportLibrary
@@ -73,7 +82,7 @@ struct ElfFile
       std::vector<std::unique_ptr<RplImport>> imports;
    };
 
-   uint32_t entryPoint;
+   uint32_t entryPoint = 0;
    std::vector<std::unique_ptr<DataSection>> dataSections;
    std::vector<std::unique_ptr<Symbol>> symbols;
    std::vector<std::unique_ptr<Relocation>> relocations;
@@ -268,7 +277,14 @@ read(ElfFile &file, const std::string &filename)
          data->name = shStrTab + section.header.name;
          data->address = section.header.addr;
          data->data = section.data;
+         data->size = section.header.size;
          file.dataSections.emplace_back(data);
+         if (verbose >= verbose_loaded_sections)
+         {
+            std::cout << "Data section " << data->name
+               << std::hex << ": 0x" << data->address
+               << " - 0x" << data->address + data->size << std::endl;
+         }
       } else if (section.header.type == elf::SHT_NOBITS) {
          auto bss = new ElfFile::DataSection();
          bss->type = elf::SHT_NOBITS;
@@ -277,6 +293,20 @@ read(ElfFile &file, const std::string &filename)
          bss->address = section.header.addr;
          bss->size = section.header.size;
          file.dataSections.emplace_back(bss);
+         if (verbose >= verbose_loaded_sections)
+         {
+            std::cout << "BSS section " << bss->name
+               << std::hex << ": 0x" << bss->address << " - 0x"
+               << bss->address + bss->size << std::endl;
+         }
+      } else {
+         if (verbose >= verbose_loaded_sections)
+         {
+            std::string name = shStrTab + section.header.name;
+            std::cout << "Section type 0x" << section.header.type << ' ' << name
+               << std::hex << ": 0x" << section.header.addr << " - 0x"
+               << section.header.addr + section.header.size << std::endl;
+         }
       }
    }
 
@@ -358,6 +388,12 @@ read(ElfFile &file, const std::string &filename)
          symbol->type = type;
          symbol->binding = binding;
          file.symbols.emplace_back(symbol);
+
+         if (verbose >= verbose_loaded_symbols)
+         {
+            std::cout << "Symbol " << symbol->name << " 0x" << std::hex << symbol->address
+               << " 0x" << symbol->size << '\n';
+         }
       }
    }
 
@@ -377,6 +413,11 @@ read(ElfFile &file, const std::string &filename)
          auto lib = new ElfFile::RplImportLibrary();
          lib->name = getLoaderDataPtr<char>(inSections, rpl.name);
 
+         if (verbose >= verbose_loaded_imports)
+         {
+            std::cout << "Import library " << lib->name << std::endl;
+         }
+
          for (auto stubAddr = rpl.stubStart; stubAddr < rpl.stubEnd; stubAddr += 4) {
             auto import = new ElfFile::RplImport();
             import->trampAddr = byte_swap(*getLoaderDataPtr<uint32_t>(inSections, stubAddr));
@@ -384,6 +425,7 @@ read(ElfFile &file, const std::string &filename)
 
             /* Get the tramp symbol */
             import->trampSymbol = findSymbol(file, import->trampAddr);
+            import->trampSymbol->refCount++;
 
             /* Create a new symbol to use for the import */
             auto stubSymbol = new ElfFile::Symbol();
@@ -393,10 +435,16 @@ read(ElfFile &file, const std::string &filename)
             stubSymbol->size = 0;
             stubSymbol->binding = elf::STB_GLOBAL;
             stubSymbol->type = elf::STT_FUNC;
+            stubSymbol->refCount++;
             file.symbols.emplace_back(stubSymbol);
 
             /* Rename tramp symbol */
             import->trampSymbol->name += "_tramp";
+
+            if (verbose >= verbose_loaded_symbols)
+            {
+               std::cout << "Import trampoline " << import->trampSymbol->name << std::endl;
+            }
 
             lib->imports.emplace_back(import);
          }
@@ -440,19 +488,47 @@ read(ElfFile &file, const std::string &filename)
 
          auto addend = static_cast<uint32_t>(rela.addend);
 
+         if (verbose >= verbose_loaded_relocations)
+         {
+            std::cout << "Relocation #" << std::dec << file.relocations.size()
+               << " offset 0x" << std::hex << rela.offset
+               << " addend 0x" << addend;
+         }
+
          if (auto import = findImport(file, addend)) {
             relocation->symbol = import->stubSymbol;
             relocation->addend = 0;
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << " -> import ";
+            }
          } else if (auto symbol = findSymbol(file, addend)) {
             relocation->symbol = symbol;
             relocation->addend = 0;
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << " -> symbol ";
+            }
          } else if (addend >= DataAddress && addend < WiiuLoadAddress) {
             relocation->symbol = findSymbol(file, DataAddress);
             relocation->addend = addend - DataAddress;
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << " -> data symbol ";
+            }
          } else if (addend >= CodeAddress && addend < DataAddress) {
             relocation->symbol = findSymbol(file, CodeAddress);
             relocation->addend = addend - CodeAddress;
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << "-> code symbol ";
+            }
          } else {
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << "-> not found" << std::endl;
+            }
+
             /* If we can't find a proper symbol, write the addend in and hope for the best */
             auto ptr = getLoaderDataPtr<uint32_t>(inSections, rela.offset);
             *ptr = addend;
@@ -461,6 +537,12 @@ read(ElfFile &file, const std::string &filename)
             continue;
          }
 
+         if (verbose >= verbose_loaded_relocations)
+         {
+            std::cout << relocation->symbol->name << std::endl;
+         }
+   
+         relocation->symbol->refCount++;
          relocation->target = rela.offset;
          relocation->type = static_cast<elf::RelocationType>(type);
          file.relocations.emplace_back(relocation);
@@ -497,28 +579,71 @@ read(ElfFile &file, const std::string &filename)
             continue;
          }
 
-         if(index == 0)
+         if (verbose >= verbose_loaded_relocations)
+         {
+            std::cout << "Dyn relocation #" << std::dec << file.relocations.size()
+               << " offset 0x" << std::hex << rela.offset
+               << " addend 0x" << rela.addend
+               << " addr 0x" << addr;
+         }
+
+         // Why index must be == 0?
+         if (index == 0)
          {
             auto addend = static_cast<uint32_t>(rela.addend);
 
              if (auto import = findImport(file, addend)) {
                 relocation->symbol = import->stubSymbol;
                 relocation->addend = 0;
+                if (verbose >= verbose_loaded_relocations)
+                {
+                  std::cout << "-> import ";
+                }
              } else if (auto symbol = findSymbol(file, addend)) {
                 relocation->symbol = symbol;
                 relocation->addend = 0;
+                if (verbose >= verbose_loaded_relocations)
+                {
+                   std::cout << "-> symbol ";
+                }
              } else if (addr >= CodeAddress && addr < DataAddress) {
                index = 1;
                relocation->symbol = findSymbol(file, CodeAddress);
                relocation->addend = rela.addend - CodeAddress;
+               if (verbose >= verbose_loaded_relocations)
+               {
+                  std::cout << "-> code symbol ";
+               }
             } else if (addr >= DataAddress && addr < WiiuLoadAddress) {
                index = 2;
                relocation->symbol = findSymbol(file, DataAddress);
                relocation->addend = rela.addend - DataAddress;
+               if (verbose >= verbose_loaded_relocations)
+               {
+                  std::cout << "-> data symbol";
+               }
             } else {
-               std::cout << "Unexpected symbol address in .rela.dyn section" << std::endl;
+               if (verbose >= verbose_loaded_relocations)
+               {
+                  std::cout << " -> bad" << std::endl;
+               }
+               std::cout << "Unexpected relocation symbol address 0x" << std::hex << addr
+                  << " in .rela.dyn section" << std::endl;
                return false;
             }
+         }
+         else
+         {
+            // Again, I don't know why we fall here, but relocation is now uninitialized,
+            // so I can't continue and add it to list
+            if (verbose >= verbose_loaded_relocations)
+            {
+               std::cout << " -> index" << index << std::endl;
+            }
+
+            std::cout << "Unexpected relocation symbol index " << std::dec << index
+               << " in .rela.dyn section" << std::endl;
+            return false;
          }
 
          switch (type) {
@@ -535,7 +660,11 @@ read(ElfFile &file, const std::string &filename)
 
          /* Scrap any compiler/linker garbage */
          if(relocation->target >= CodeAddress && relocation->target < WiiuLoadAddress)
+         {
+            relocation->symbol->refCount++;
             file.relocations.emplace_back(relocation);
+         }
+
       }
    }
 
@@ -740,11 +869,17 @@ write(ElfFile &file, const std::string &filename)
       sectionSymbolItr = addSection(file, outSections, sectionSymbolItr, out);
    }
 
-   /* Prune out unneeded symbols */
+   /* Prune out unneeded symbols - but keep those used for relocations! */
    for (unsigned i = 0u; i < file.symbols.size(); ++i)
    {
-      if (!file.symbols[i]->name.empty() && file.symbols[i]->type == elf::STT_NOTYPE && file.symbols[i]->size == 0)
+      if (!file.symbols[i]->name.empty() && file.symbols[i]->type == elf::STT_NOTYPE
+         && file.symbols[i]->size == 0 && file.symbols[i]->refCount == 0)
       {
+         if (verbose >= verbose_pruned_symbols)
+         {
+            std::cout << "Pruning symbol " << file.symbols[i]->name << std::endl;
+         }
+
          file.symbols.erase(file.symbols.begin() + i);
          i--;
       }
@@ -752,8 +887,10 @@ write(ElfFile &file, const std::string &filename)
 
    /* NOTICE: FROM NOW ON DO NOT MODIFY mSymbols */
 
+   int number = -1;
    /* Convert relocations */
    for (auto &relocation : file.relocations) {
+      ++number;
       OutputSection *targetSection = nullptr;
 
       for (auto &section : outSections) {
@@ -780,6 +917,17 @@ write(ElfFile &file, const std::string &filename)
       });
 
       auto idx = itr - file.symbols.begin();
+      bool symbol_found = (itr != file.symbols.end());
+
+      if ((verbose >= verbose_convert_relocations) || !symbol_found)
+      {
+         std::cout << "Converting relocation #" << std::dec << number
+            << std::hex << " @ 0x" << relocation->target;
+      }
+      if ((verbose >= verbose_convert_relocations) && symbol_found)
+      {
+         std::cout << "-> symbol index: " << idx << std::endl;
+      }
 
       /* If the symbol doesn't exist but it is within DATA or TEXT, use those symbols + an addend */
       if (itr == file.symbols.end()) {
@@ -787,11 +935,14 @@ write(ElfFile &file, const std::string &filename)
             idx = 1;
             relocation->addend = relocation->symbol->address - CodeAddress;
             relocation->symbol = findSymbol(file, CodeAddress);
+            std::cout << "-> no symbol, using TEXT" << std::endl;
          } else if (relocation->symbol->address >= DataAddress && relocation->symbol->address < WiiuLoadAddress) {
             idx = 2;
             relocation->addend = relocation->symbol->address - DataAddress;
             relocation->symbol = findSymbol(file, DataAddress);
+            std::cout << "-> no symbol, using DATA" << std::endl;
          } else {
+            std::cout << "-> invalid" << std::endl;
             std::cout << "Could not find matching symbol for relocation" << std::endl;
             return false;
          }
@@ -1216,15 +1367,31 @@ write(ElfFile &file, const std::string &filename)
 
 int main(int argc, char **argv)
 {
-   if (argc < 3)
+   int arg_start = 1;
+
+   while (argc >= arg_start + 1 && argv[arg_start][0] == '-')
+   {
+      if (argv[arg_start] == std::string("--"))
+      {
+         ++arg_start;
+         break;
+      }
+      else if (argv[arg_start] == std::string("-v"))
+      {
+         ++verbose;
+         ++arg_start;
+      }
+   }
+
+   if (argc < arg_start + 1)
    {
       std::cout << "Usage: " << argv[0] << " <src> <dst>" << std::endl;
       return -1;
    }
 
    ElfFile elf;
-   auto src = argv[1];
-   auto dst = argv[2];
+   auto src = argv[arg_start];
+   auto dst = argv[arg_start + 1];
 
    if (!read(elf, src))
       return -1;
