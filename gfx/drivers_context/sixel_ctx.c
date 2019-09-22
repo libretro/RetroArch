@@ -48,10 +48,6 @@ static bool gfx_ctx_sixel_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_sixel_update_window_title(void *data, void *data2)
-{
-}
-
 static void gfx_ctx_sixel_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -170,7 +166,7 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    NULL, /* get_video_output_next */
    gfx_ctx_sixel_get_metrics,
    NULL,
-   gfx_ctx_sixel_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_sixel_check_window,
    gfx_ctx_sixel_set_resize,
    gfx_ctx_sixel_has_focus,

@@ -409,10 +409,6 @@ static void gfx_ctx_ps3_set_flags(void *data, uint32_t flags)
    (void)data;
 }
 
-static void gfx_ctx_ps3_update_window_title(void *data, void *data2)
-{
-}
-
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_init,
    gfx_ctx_ps3_destroy,
@@ -427,7 +423,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_get_video_output_next,
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_ps3_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_ps3_check_window,
    NULL, /* set_resize */
    gfx_ctx_ps3_has_focus,

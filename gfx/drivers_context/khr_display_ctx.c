@@ -276,10 +276,6 @@ static void *gfx_ctx_khr_display_get_context_data(void *data)
    return &khr->vk.context;
 }
 
-static void gfx_ctx_khr_display_update_window_title(void *data, void *data2)
-{
-}
-
 const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_init,
    gfx_ctx_khr_display_destroy,
@@ -294,7 +290,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_khr_display_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_khr_display_check_window,
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,

@@ -305,10 +305,6 @@ static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
    return mali->refresh_rate;
 }
 
-static void gfx_ctx_mali_fbdev_update_window_title(void *data, void *data2)
-{
-}
-
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -323,7 +319,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_mali_fbdev_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_mali_fbdev_check_window,
    NULL, /* set_resize */
    gfx_ctx_mali_fbdev_has_focus,

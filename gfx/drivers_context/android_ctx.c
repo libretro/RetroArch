@@ -615,10 +615,6 @@ static void android_gfx_ctx_set_flags(void *data, uint32_t flags)
    (void)flags;
 }
 
-static void android_gfx_update_window_title(void *data, void *data2)
-{
-}
-
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -633,7 +629,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_next */
    android_gfx_ctx_get_metrics,
    NULL,
-   android_gfx_update_window_title,
+   NULL, /* update_title */
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,

@@ -50,7 +50,7 @@ static bool gfx_ctx_fpga_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_fpga_update_window_title(void *data, void *data2)
+static void gfx_ctx_fpga_update_title(void *data, void *data2)
 {
    char title[128];
 
@@ -176,7 +176,7 @@ const gfx_ctx_driver_t gfx_ctx_fpga = {
    NULL, /* get_video_output_next */
    gfx_ctx_fpga_get_metrics,
    NULL,
-   gfx_ctx_fpga_update_window_title,
+   gfx_ctx_fpga_update_title,
    gfx_ctx_fpga_check_window,
    gfx_ctx_fpga_set_resize,
    gfx_ctx_fpga_has_focus,

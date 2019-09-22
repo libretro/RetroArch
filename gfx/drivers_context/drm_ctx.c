@@ -928,10 +928,6 @@ static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
       drm->core_hw_context_enable = true;
 }
 
-void gfx_ctx_drm_update_window_title(void *data, void *data2)
-{
-}
-
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -946,7 +942,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_drm_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_drm_check_window,
    NULL, /* set_resize */
    gfx_ctx_drm_has_focus,
