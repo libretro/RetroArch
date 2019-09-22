@@ -33,12 +33,6 @@
 
 static CocoaView* g_instance;
 
-void *nsview_set_ptr(void *inst)
-{
-   g_instance = (BRIDGE void*)inst;
-   return (BRIDGE void *)g_instance;
-}
-
 void *nsview_get_ptr(void)
 {
 #if defined(HAVE_COCOA)
@@ -81,11 +75,20 @@ void *glkitview_init(void);
 
 + (CocoaView*)get
 {
-   void *inst = nsview_get_ptr();
-   if (!inst)
-      return nsview_set_ptr([CocoaView new]);
+   if (!g_instance)
+      g_instance = [CocoaView new];
 
-   return inst;
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+
+   return g_instance;
 }
 
 - (id)init
