@@ -240,7 +240,7 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       GOTO_END_ERROR();
 
    encode_buf_size = (width * bpp + 1) * height;
-   encode_buf = (uint8_t*)malloc(encode_buf_size);
+   encode_buf      = (uint8_t*)malloc(encode_buf_size);
    if (!encode_buf)
       GOTO_END_ERROR();
 
@@ -410,7 +410,7 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
    intfstream_t* intf_s        = NULL;
 
    buf_length = (int)(width*height*3*DEFLATE_PADDING)+PNG_ROUGH_HEADER;
-   buf = malloc(buf_length*sizeof(uint8_t));
+   buf        = (uint8_t*)malloc(buf_length*sizeof(uint8_t));
    if (!buf)
       GOTO_END_ERROR(); 
    
@@ -424,7 +424,7 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
 
    *bytes = intfstream_get_ptr(intf_s);
    intfstream_rewind(intf_s);
-   output = malloc((*bytes)*sizeof(uint8_t));
+   output = (uint8_t*)malloc((*bytes)*sizeof(uint8_t));
    if (!output)
       GOTO_END_ERROR();
    intfstream_read(intf_s, output, *bytes);
