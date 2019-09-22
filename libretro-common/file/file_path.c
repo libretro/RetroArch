@@ -913,15 +913,8 @@ size_t path_relative_to(char *out,
    /* Each segment of base turns into ".." */
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
-   {
       if (trimmed_base[i] == path_default_slash_c())
-      {
-         out[written++] = '.';
-         out[written++] = '.';
-         out[written++] = path_default_slash_c();
-         out[written++] = '\0';
-      }
-   }
+         STRLCAT_CONST_INCR(out, written, ".." path_default_slash(), size);
 
    return strlcat(out, trimmed_path, size);
 }
