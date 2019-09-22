@@ -687,7 +687,9 @@ void x11_update_title(void *data, void *data2)
    video_driver_get_window_title(title, sizeof(title));
 
    if (title[0])
-      XStoreName(g_x11_dpy, g_x11_win, title);
+      XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (const unsigned char*)title,
+            strlen(title));
 }
 
 bool x11_input_ctx_new(bool true_full)
