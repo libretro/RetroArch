@@ -29,27 +29,6 @@
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
-
-#endif
-
-#ifdef HAVE_METAL
-@implementation MetalView
-
-- (void)keyDown:(NSEvent*)theEvent
-{
-}
-
-/* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder
-{
-   return YES;
-}
-
-- (BOOL)isFlipped
-{
-   return YES;
-}
-@end
 #endif
 
 static CocoaView* g_instance;
@@ -354,6 +333,6 @@ void *glkitview_init(void);
     }];
 #endif
 }
-#endif  // end HAVE_COCOATOUCH
+#endif
 
 @end
