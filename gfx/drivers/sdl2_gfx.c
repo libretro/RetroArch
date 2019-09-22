@@ -36,6 +36,10 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#ifdef HAVE_SDL2
+#include "../common/sdl2_common.h"
+#endif
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -209,29 +213,6 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       delta_x += gly->advance_x;
       delta_y -= gly->advance_y;
    }
-}
-
-static void sdl2_gfx_set_handles(sdl2_video_t *vid)
-{
-   /* SysWMinfo headers are broken on OSX. */
-#if defined(_WIN32) || defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWindowWMInfo(vid->window, &info) != 1)
-      return;
-
-   video_driver_display_userdata_set((uintptr_t)vid->window);
-#if defined(_WIN32)
-   video_driver_display_type_set(RARCH_DISPLAY_WIN32);
-   video_driver_display_set(0);
-   video_driver_window_set((uintptr_t)info.info.win.window);
-#elif defined(HAVE_X11)
-   video_driver_display_type_set(RARCH_DISPLAY_X11);
-   video_driver_display_set((uintptr_t)info.info.x11.display);
-   video_driver_window_set((uintptr_t)info.info.x11.window);
-#endif
-#endif
 }
 
 static void sdl2_init_renderer(sdl2_video_t *vid)
@@ -449,7 +430,13 @@ static void *sdl2_gfx_init(const video_info_t *video,
    sdl2_init_renderer(vid);
    sdl2_init_font(vid, settings->paths.path_font, settings->floats.video_font_size);
 
-   sdl2_gfx_set_handles(vid);
+#if defined(_WIN32)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_WIN32);
+#elif defined(HAVE_X11)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_X11);
+#elif defined(HAVE_COCOA)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_OSX);
+#endif
 
    sdl_refresh_viewport(vid);
 

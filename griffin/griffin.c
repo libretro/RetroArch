@@ -406,6 +406,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
+#include "../gfx/common/sdl2_common.c"
 #endif
 
 #ifdef HAVE_VG

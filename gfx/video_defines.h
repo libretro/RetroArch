@@ -76,6 +76,7 @@ enum rarch_display_type
    RARCH_DISPLAY_X11,
    /* video_display => N/A, video_window => HWND */
    RARCH_DISPLAY_WIN32,
+   RARCH_DISPLAY_WAYLAND,
    RARCH_DISPLAY_OSX
 };
 
