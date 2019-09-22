@@ -56,6 +56,15 @@ static CocoaView* g_instance;
 
 void *nsview_get_ptr(void)
 {
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
     return (BRIDGE void *)g_instance;
 }
 
@@ -91,13 +100,13 @@ void *glkitview_init(void);
       g_instance = [CocoaView new];
 
 #if defined(HAVE_COCOA)
-   video_driver_display_type_set(RARCH_DISPLAY_OSX);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set((uintptr_t)g_instance);
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
 #elif defined(HAVE_COCOA_METAL)
-   video_driver_display_type_set(RARCH_DISPLAY_OSX);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set((uintptr_t)apple_platform.renderView);
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
 #endif
 
    return g_instance;
@@ -126,6 +135,16 @@ void *glkitview_init(void);
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #endif
+#endif
+    
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
    return self;

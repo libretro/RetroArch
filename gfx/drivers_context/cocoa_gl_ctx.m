@@ -349,13 +349,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-#if defined(HAVE_COCOA)
-   void *_data                    = (CocoaView*)nsview_get_ptr();
-#elif defined(HAVE_COCOA_METAL)
-   void *_data                    = (BRIDGE void *)apple_platform.renderView;
-#endif
-
+   
    if (window)
    {
       char title[128];
@@ -365,7 +359,7 @@ static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
       video_driver_get_window_title(title, sizeof(title));
 
       if (title[0])
-         window->set_title(_data, title);
+         window->set_title((void*)video_driver_display_userdata_get(), title);
    }
 }
 #endif
