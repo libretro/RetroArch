@@ -11285,11 +11285,16 @@ static void retroarch_overlay_deinit(void)
 static void retroarch_overlay_init(void)
 {
    settings_t *settings      = configuration_settings;
+
+#if 0
 #if defined(GEKKO)
+   /* TODO/FIXME - Wiimpathy - behavior here has changed - can you
+    * rewrite this? */
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   uint64_t memory_used       = frontend_driver_get_used_memory();
-   if (memory_used > (72 * 1024 * 1024))
+   uint64_t memory_free       = frontend_driver_get_free_memory();
+   if (memory_free > (72 * 1024 * 1024))
       return;
+#endif
 #endif
 
    retroarch_overlay_deinit();
@@ -19152,7 +19157,7 @@ static void video_driver_frame(const void *data, unsigned width,
       if (video_info.memory_show)
       {
          char mem[128];
-         uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
+         uint64_t mem_bytes_used  = frontend_driver_get_free_memory();
          uint64_t mem_bytes_total = frontend_driver_get_total_memory();
 
          mem[0] = '\0';
@@ -25598,10 +25603,10 @@ static bool rarch_write_debug_info(void)
    filestream_printf(file, "CPU Cores: %u\n", cpu_features_get_core_amount());
 
    {
-      uint64_t memory_used = frontend_driver_get_used_memory();
+      uint64_t memory_free  = frontend_driver_get_free_memory();
       uint64_t memory_total = frontend_driver_get_total_memory();
 
-      filestream_printf(file, "Memory: %" PRIu64 "/%" PRIu64 " MB\n", memory_used / 1024 / 1024, memory_total / 1024 / 1024);
+      filestream_printf(file, "Memory: %" PRIu64 "/%" PRIu64 " MB\n", memory_free / 1024 / 1024, memory_total / 1024 / 1024);
    }
 
    filestream_printf(file, "GPU Device: %s\n", !string_is_empty(video_driver_get_gpu_device_string()) ?

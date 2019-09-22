@@ -579,44 +579,22 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          char tmp[PATH_MAX_LENGTH];
          char tmp2[PATH_MAX_LENGTH];
          char tmp3[PATH_MAX_LENGTH];
-         uint64_t memory_used       = frontend_driver_get_used_memory();
+         uint64_t memory_free       = frontend_driver_get_free_memory();
          uint64_t memory_total      = frontend_driver_get_total_memory();
 
          tmp[0] = tmp2[0] = tmp3[0] = '\0';
 
-         if (memory_used != 0 && memory_total != 0)
+         if (memory_free != 0 && memory_total != 0)
          {
             snprintf(tmp, sizeof(tmp),
-                  "%s %s: %" PRIu64 "/%" PRIu64 " B",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_BYTES),
-                  memory_used,
-                  memory_total
-                  );
-            snprintf(tmp2, sizeof(tmp2),
                   "%s %s: %" PRIu64 "/%" PRIu64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
-                  BYTES_TO_MB(memory_used),
+                  BYTES_TO_MB(memory_free),
                   BYTES_TO_MB(memory_total)
-                  );
-            snprintf(tmp3, sizeof(tmp3),
-                  "%s %s: %" PRIu64 "/%" PRIu64 " GB",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_GIGABYTES),
-                  BYTES_TO_GB(memory_used),
-                  BYTES_TO_GB(memory_total)
                   );
 
             if (menu_entries_append_enum(info->list, tmp, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list, tmp2, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list, tmp3, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;

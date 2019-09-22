@@ -2048,51 +2048,16 @@ static void frontend_unix_exitspawn(char *core_path, size_t core_path_size)
 
 static uint64_t frontend_unix_get_mem_total(void)
 {
-   char line[256];
-   uint64_t total = 0;
-   FILE    * data = fopen("/proc/meminfo", "r");
-   if (!data)
-      return 0;
-
-   while (fgets(line, sizeof(line), data))
-   {
-      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total) == 1)
-      {
-         fclose(data);
-         total *= 1024;
-         return total;
-      }
-   }
-
-   fclose(data);
-   return 0;
+   long pages            = sysconf(_SC_PHYS_PAGES);
+   long page_size        = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
 }
 
-static uint64_t frontend_unix_get_mem_used(void)
+static uint64_t frontend_unix_get_mem_free(void)
 {
-   char line[256];
-   uint64_t total    = 0;
-   uint64_t freemem  = 0;
-   uint64_t buffers  = 0;
-   uint64_t cached   = 0;
-   FILE* data = fopen("/proc/meminfo", "r");
-   if (!data)
-      return 0;
-
-   while (fgets(line, sizeof(line), data))
-   {
-      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total)  == 1)
-         total   *= 1024;
-      if (sscanf(line, "MemFree: " STRING_REP_USIZE " kB", (size_t*)&freemem) == 1)
-         freemem *= 1024;
-      if (sscanf(line, "Buffers: " STRING_REP_USIZE " kB", (size_t*)&buffers) == 1)
-         buffers *= 1024;
-      if (sscanf(line, "Cached: " STRING_REP_USIZE " kB", (size_t*)&cached)   == 1)
-         cached  *= 1024;
-   }
-
-   fclose(data);
-   return total - freemem - buffers - cached;
+   unsigned long long ps = sysconf(_SC_PAGESIZE);
+   unsigned long long pn = sysconf(_SC_AVPHYS_PAGES);
+   return ps * pn;
 }
 
 /*#include <valgrind/valgrind.h>*/
@@ -2418,7 +2383,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_powerstate,
    frontend_unix_parse_drive_list,
    frontend_unix_get_mem_total,
-   frontend_unix_get_mem_used,
+   frontend_unix_get_mem_free,
    frontend_unix_install_signal_handlers,
    frontend_unix_get_signal_handler_state,
    frontend_unix_set_signal_handler_state,

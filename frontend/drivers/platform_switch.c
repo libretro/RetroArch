@@ -820,13 +820,16 @@ static uint64_t frontend_switch_get_mem_total(void)
 {
    uint64_t memoryTotal = 0;
    svcGetInfo(&memoryTotal, 6, 0xffff8001, 0);
-   memoryTotal += frontend_switch_get_mem_used();
+   /* TODO/FIXME - is now 'free memory', perhaps logic
+    * here needs to change */
+   memoryTotal += frontend_switch_get_mem_free();
 
    return memoryTotal;
 }
 
-static uint64_t frontend_switch_get_mem_used(void)
+static uint64_t frontend_switch_get_mem_free(void)
 {
+   /* TODO/FIXME - should become 'free memory' */
    uint64_t memoryUsed = 0;
    svcGetInfo(&memoryUsed, 7, 0xffff8001, 0);
 
