@@ -94,6 +94,10 @@ void *glkitview_init(void);
    video_driver_display_type_set(RARCH_DISPLAY_OSX);
    video_driver_display_set(0);
    video_driver_display_userdata_set((uintptr_t)&g_instance);
+#elif defined(HAVE_COCOA_METAL)
+   video_driver_display_type_set(RARCH_DISPLAY_OSX);
+   video_driver_display_set(0);
+   video_driver_display_userdata_set((uintptr_t)apple_platform.renderView);
 #endif
 
    return g_instance;
