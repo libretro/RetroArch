@@ -93,8 +93,26 @@ static unsigned g_major  = 0;
 @end
 #endif
 
-/* forward declaration */
-void *nsview_get_ptr(void);
+static CocoaView* g_instance;
+
+void *nsview_get_ptr(void)
+{
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+    return (BRIDGE void *)g_instance;
+}
+
+void nsview_set_ptr(CocoaView *p)
+{
+    g_instance = p;
+}
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 static NSOpenGLPixelFormat* g_format;
