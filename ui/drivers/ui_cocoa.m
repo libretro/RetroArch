@@ -757,11 +757,7 @@ static void ui_companion_cocoa_notify_list_pushed(void *data,
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
-#if defined(HAVE_COCOA_METAL)
     return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-#elif defined(HAVE_COCOA)
-    return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-#endif
 }
 
 ui_companion_driver_t ui_companion_cocoa = {
