@@ -2819,8 +2819,9 @@ static void handle_translation_cb(
       else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
                raw_image_file_data[3] == 'G')
       {
+         rpng_t *rpng = NULL;
          /* PNG coming back from the url */
-         image_width = 
+         image_width  = 
              ((uint32_t) ((uint8_t)raw_image_file_data[16])<<24)+
              ((uint32_t) ((uint8_t)raw_image_file_data[17])<<16)+
              ((uint32_t) ((uint8_t)raw_image_file_data[18])<<8)+
@@ -2830,8 +2831,7 @@ static void handle_translation_cb(
              ((uint32_t) ((uint8_t)raw_image_file_data[21])<<16)+
              ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
              ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
-        
-         rpng_t *rpng = rpng_alloc();
+         rpng = rpng_alloc();
          if (!rpng)
          {
             error = "Can't allocate memory.";
