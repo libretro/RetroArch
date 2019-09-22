@@ -1154,6 +1154,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool memory_show;
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;

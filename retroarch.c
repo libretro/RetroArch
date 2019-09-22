@@ -19121,7 +19121,7 @@ static void video_driver_frame(const void *data, unsigned width,
    /* Get the amount of frames per seconds. */
    if (video_driver_frame_count)
    {
-      static char title[256];
+      size_t buf_pos       = 1; /* set this to 1 to avoid an offset issue */
       settings_t *settings = configuration_settings;
       unsigned write_index                         =
          video_driver_frame_time_count++ &
@@ -19130,38 +19130,49 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_time_samples[write_index] = frame_time;
       fps_time                                     = new_time;
 
-      strlcpy(title, video_driver_window_title, sizeof(title));
-
       if (video_info.fps_show)
-      {
-         size_t buf_pos = snprintf(
+         buf_pos = snprintf(
                video_info.fps_text, sizeof(video_info.fps_text),
                "FPS: %6.2f", last_fps);
-         if (video_info.framecount_show)
-         {
-            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
-         }
-      }
 
       if (video_info.framecount_show)
       {
          char frames_text[64];
+         if (video_info.fps_text[buf_pos-1] != '\0')
+         {
+            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
+         }
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)video_driver_frame_count);
-         strlcat(video_info.fps_text, frames_text, sizeof(video_info.fps_text));
+         buf_pos = strlcat(video_info.fps_text, frames_text, sizeof(video_info.fps_text));
+      }
+
+      if (video_info.memory_show)
+      {
+         char mem[128];
+         uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
+         uint64_t mem_bytes_total = frontend_driver_get_total_memory();
+
+         mem[0] = '\0';
+         snprintf(
+               mem, sizeof(mem), " MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+               mem_bytes_total / (1024.0f * 1024.0f));
+         if (video_info.fps_text[buf_pos-1] != '\0')
+         {
+            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
+         }
+         strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
 
       if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
       {
-         size_t buf_pos;
-
          last_fps = TIME_TO_FPS(curr_time, new_time,
                video_info.fps_update_interval);
 
          buf_pos = strlcpy(video_driver_window_title,
-               title, sizeof(video_driver_window_title));
+               video_driver_title_buf, sizeof(video_driver_window_title));
 
          if (!string_is_empty(video_info.fps_text))
          {
@@ -19173,19 +19184,6 @@ static void video_driver_frame(const void *data, unsigned width,
 
          curr_time                        = new_time;
          video_driver_window_title_update = true;
-      }
-
-      if (settings->bools.video_memory_show)
-      {
-         char mem[128];
-         uint64_t mem_bytes_used  = frontend_driver_get_used_memory();
-         uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-
-         mem[0] = '\0';
-         snprintf(
-               mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-               mem_bytes_total / (1024.0f * 1024.0f));
-         strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
    }
    else
@@ -19328,7 +19326,10 @@ static void video_driver_frame(const void *data, unsigned width,
    video_driver_frame_count++;
 
    /* Display the FPS, with a higher priority. */
-   if (video_info.fps_show || video_info.framecount_show)
+   if (     video_info.fps_show 
+         || video_info.framecount_show
+         || video_info.memory_show
+         )
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (!menu_widgets_inited)
@@ -19459,6 +19460,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
+   video_info->memory_show           = settings->bools.video_memory_show;
    video_info->fps_update_interval   = settings->uints.fps_update_interval;
    video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;

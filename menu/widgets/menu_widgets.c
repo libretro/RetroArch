@@ -1620,7 +1620,10 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* FPS Counter */
-   if (video_info->fps_show || video_info->framecount_show)
+   if (     video_info->fps_show 
+         || video_info->framecount_show
+         || video_info->memory_show
+         )
    {
       const char *text      = *video_info->fps_text == '\0' ? "N/A" : video_info->fps_text;
 
