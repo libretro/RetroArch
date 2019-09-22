@@ -44,8 +44,24 @@
 
 #ifdef HW_RVL
 #define MAX_MOUSEBUTTONS 6
-static const uint32_t gx_mousemask[MAX_MOUSEBUTTONS] = {WPAD_BUTTON_B, WPAD_BUTTON_A, WPAD_BUTTON_1, WPAD_BUTTON_2, 
-                                   WPAD_BUTTON_PLUS, WPAD_BUTTON_MINUS};
+static const uint32_t gx_mousemask[MAX_MOUSEBUTTONS] = 
+{
+   WPAD_BUTTON_B,
+   WPAD_BUTTON_A,
+   WPAD_BUTTON_1,
+   WPAD_BUTTON_2, 
+   WPAD_BUTTON_PLUS,
+   WPAD_BUTTON_MINUS
+};
+
+struct gx_mousedata
+{
+   int32_t x, y;
+   uint32_t mouse_button;
+   bool valid;
+};
+
+static struct gx_mousedata gx_mouse[2];
 #endif
 
 enum
@@ -109,15 +125,6 @@ static uint32_t pad_type[DEFAULT_MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_N
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static bool g_menu = false;
 
-struct gx_mousedata
-{
-   int32_t x, y;
-   uint32_t mouse_button;
-   bool valid;
-};
-
-static struct gx_mousedata gx_mouse[2];
-
 static bool gx_joypad_query_pad(unsigned pad);
 
 #ifdef HW_RVL
@@ -135,7 +142,8 @@ static void reset_cb(void)
 }
 
 #ifdef HW_RVL
-static inline void gx_mouse_info(uint32_t joybutton, unsigned port) {
+static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
+{
    uint8_t i;
    ir_t ir;
 
@@ -151,12 +159,11 @@ static inline void gx_mouse_info(uint32_t joybutton, unsigned port) {
    {
       gx_mouse[port].valid = false;
    }
-   
+
    /* reset button state */
    gx_mouse[port].mouse_button = 0; 
-   for (i = 0; i < MAX_MOUSEBUTTONS; i++) {
+   for (i = 0; i < MAX_MOUSEBUTTONS; i++)
       gx_mouse[port].mouse_button |= (joybutton & gx_mousemask[i]) ? (1 << i) : 0;
-   }
 
    /* Small adjustment to match the RA buttons */
    gx_mouse[port].mouse_button = gx_mouse[port].mouse_button << 2;
@@ -169,8 +176,8 @@ bool gxpad_mousevalid(unsigned port)
 
 void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button)
 {
-   *irx = gx_mouse[port].x;
-   *iry = gx_mouse[port].y;
+   *irx    = gx_mouse[port].x;
+   *iry    = gx_mouse[port].y;
    *button = gx_mouse[port].mouse_button;
 }
 #endif
@@ -470,10 +477,8 @@ static void gx_joypad_poll(void)
 
          /* Mouse & Lightgun: Retrieve IR data */
          if (ptype == WPAD_EXP_NONE)
-         {
             if (port == WPAD_CHAN_0 || port == WPAD_CHAN_1)
                gx_mouse_info(wpaddata->btns_h, port);
-         }
 
          *state_cur |= (down & WPAD_BUTTON_A) ? (UINT64_C(1) << GX_WIIMOTE_A) : 0;
          *state_cur |= (down & WPAD_BUTTON_B) ? (UINT64_C(1) << GX_WIIMOTE_B) : 0;

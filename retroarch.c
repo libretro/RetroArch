@@ -1319,22 +1319,20 @@ static bool wifi_driver_active                   = false;
 
 /* VIDEO GLOBAL VARIABLES */
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void retroarch_set_runtime_shader_preset(const char *arg)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!string_is_empty(arg))
       strlcpy(runtime_shader_preset, arg, sizeof(runtime_shader_preset));
    else
       runtime_shader_preset[0] = '\0';
-#endif
 }
 
 static void retroarch_unset_runtime_shader_preset(void)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runtime_shader_preset[0] = '\0';
-#endif
 }
+#endif
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
