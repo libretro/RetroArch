@@ -992,6 +992,7 @@ bool win32_window_create(void *data, unsigned style,
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
+   video_driver_display_userdata_set((uintptr_t)&main_window);
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */

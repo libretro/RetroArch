@@ -1786,6 +1786,8 @@ bool video_driver_translate_coord_viewport(
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 
+uintptr_t video_driver_display_userdata_get(void);
+
 uintptr_t video_driver_display_get(void);
 
 enum rarch_display_type video_driver_display_type_get(void);
@@ -1795,6 +1797,8 @@ uintptr_t video_driver_window_get(void);
 void video_driver_display_type_set(enum rarch_display_type type);
 
 void video_driver_display_set(uintptr_t idx);
+
+void video_driver_display_userdata_set(uintptr_t idx);
 
 void video_driver_window_set(uintptr_t idx);
 

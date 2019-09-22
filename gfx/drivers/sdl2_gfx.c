@@ -221,6 +221,7 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
    if (SDL_GetWindowWMInfo(vid->window, &info) != 1)
       return;
 
+   video_driver_display_userdata_set((uintptr_t)vid->window);
 #if defined(_WIN32)
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
@@ -522,7 +523,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    video_driver_get_window_title(title, sizeof(title));
 
    if (title[0])
-      SDL_SetWindowTitle(vid->window, title);
+      SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
 
    return true;
 }

@@ -1436,6 +1436,7 @@ static gfx_api_gpu_map gpu_map[] = {
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
  * could potentially make use of this. */
+static uintptr_t video_driver_display_userdata                  = 0;
 static uintptr_t video_driver_display                           = 0;
 static uintptr_t video_driver_window                            = 0;
 
@@ -18034,6 +18035,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_driver_display_type_set(RARCH_DISPLAY_NONE);
    video_driver_display_set(0);
+   video_driver_display_userdata_set(0);
    video_driver_window_set(0);
 
    if (!video_driver_pixel_converter_init(RARCH_SCALE_BASE * scale))
@@ -19381,6 +19383,16 @@ void video_driver_display_type_set(enum rarch_display_type type)
 uintptr_t video_driver_display_get(void)
 {
    return video_driver_display;
+}
+
+uintptr_t video_driver_display_userdata_get(void)
+{
+   return video_driver_display_userdata;
+}
+
+void video_driver_display_userdata_set(uintptr_t idx)
+{
+   video_driver_display_userdata = idx;
 }
 
 void video_driver_display_set(uintptr_t idx)
