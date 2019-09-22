@@ -44,6 +44,9 @@
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
 #endif
+#ifdef HAVE_METAL
+#include "../common/metal_common.h"
+#endif
 
 typedef struct cocoa_ctx_data
 {
