@@ -506,8 +506,7 @@ static uint64_t frontend_ctr_get_mem_total(void)
 
 static uint64_t frontend_ctr_get_mem_free(void)
 {
-   /* TODO/FIXME - does this return 'free memory'? */
-   return osGetMemRegionUsed(MEMREGION_ALL);
+   return osGetMemRegionFree(MEMREGION_ALL);
 }
 
 static enum frontend_powerstate frontend_ctr_get_powerstate(
