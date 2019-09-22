@@ -235,9 +235,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       static bool remote_is_bound        = false;
       const char *autoconfig_str         = (string_is_empty(display_name) &&
             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
-      size_t buf_pos                     = strlcpy(
-            msg, autoconfig_str, sizeof(msg));
-      STRLCAT_CONST_INCR(msg, buf_pos, " configured.", sizeof(msg));
+      strlcpy(msg, autoconfig_str, sizeof(msg));
+      strlcat(msg, " configured.", sizeof(msg));
 
       if (!remote_is_bound)
       {

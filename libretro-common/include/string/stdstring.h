@@ -49,16 +49,6 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 
 #define string_is_not_equal(a, b)         !string_is_equal((a), (b))
 
-#define STRLCPY_CONST(buf, str) \
-   do { size_t i; for (i = 0; i < sizeof(str); i++) (buf)[i] = (str)[i]; } while (0)
-
-#define STRLCAT_CONST(buf, strlcpy_ret, str, buf_size) \
-   STRLCPY_CONST((buf) + MIN((strlcpy_ret), (buf_size)-1 - STRLEN_CONST((str))), (str))
-
-#define STRLCAT_CONST_INCR(buf, strlcpy_ret, str, buf_size) \
-   do { STRLCAT_CONST(buf, strlcpy_ret, str, buf_size); \
-   (strlcpy_ret) += STRLEN_CONST((str)); } while(0)
-
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 

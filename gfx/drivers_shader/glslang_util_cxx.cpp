@@ -70,7 +70,7 @@ static std::string build_stage_source(
 
             expected[0] = '\0';
 
-            STRLCPY_CONST(expected, "#pragma stage ");
+            strlcpy(expected, "#pragma stage ", sizeof(expected));
             strlcat(expected, stage,            sizeof(expected));
 
             active = strcmp(expected, line) == 0;

@@ -58,7 +58,6 @@ static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
    size_t i              = 0;
-   size_t buf_pos        = 0;
    size_t all_ext_len    = 0;
    char *all_ext         = NULL;
 
@@ -83,17 +82,15 @@ static void core_info_list_resolve_all_extensions(
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-      buf_pos = strlcat(core_info_list->all_ext,
+      strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      STRLCAT_CONST(core_info_list->all_ext, buf_pos, "|", all_ext_len);
-      buf_pos++;
+      strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
 #ifdef HAVE_7ZIP
-   STRLCAT_CONST(core_info_list->all_ext, buf_pos,"7z|", all_ext_len);
-   buf_pos += 3;
+   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
 #endif
 #ifdef HAVE_ZLIB
-   STRLCAT_CONST(core_info_list->all_ext, buf_pos, "zip|", all_ext_len);
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
 #endif
 }
 

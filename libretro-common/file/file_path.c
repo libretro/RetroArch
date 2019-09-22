@@ -914,7 +914,7 @@ size_t path_relative_to(char *out,
    out[0] = '\0';
    for (i = 0; trimmed_base[i]; i++)
       if (trimmed_base[i] == path_default_slash_c())
-         STRLCAT_CONST_INCR(out, written, ".." path_default_slash(), size);
+         strlcat(out, ".." path_default_slash(), size);
 
    return strlcat(out, trimmed_path, size);
 }
@@ -1293,9 +1293,8 @@ void fill_pathname_application_path(char *s, size_t len)
          char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
          if (realpath(s, resolved_bundle_dir_buf))
          {
-            size_t buf_pos = strlcpy(s, resolved_bundle_dir_buf, len - 1);
-            s[buf_pos]     = '/';
-            s[buf_pos+1]   = '\0';
+            strlcpy(s, resolved_bundle_dir_buf, len - 1);
+            strlcat(s, "/", len);
          }
       }
 #endif

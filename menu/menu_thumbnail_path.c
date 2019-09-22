@@ -253,7 +253,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
    {
-      STRLCPY_CONST(path_data->system, "MAME");
+      strlcpy(path_data->system, "MAME", sizeof(path_data->system));
    }
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
@@ -414,15 +414,15 @@ bool menu_thumbnail_set_content_image(
       img_dir, img_name, sizeof(path_data->content_path));
    
    /* Set core name to "imageviewer" */
-   STRLCPY_CONST(
+   strlcpy(
          path_data->content_core_name,
-         "imageviewer");
+         "imageviewer", sizeof(path_data->content_core_name));
    
    /* Set database name (arbitrarily) to "_images_"
     * (required for compatibility with menu_thumbnail_update_path(),
     * but not actually used...) */
-   STRLCPY_CONST(path_data->content_db_name,
-         "_images_");
+   strlcpy(path_data->content_db_name,
+         "_images_", sizeof(path_data->content_db_name));
    
    /* Redundant error check */
    if (string_is_empty(path_data->content_path))
@@ -516,9 +516,7 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
       if (strncmp(db_name, "MAME", 4) == 0)
-      {
-         STRLCPY_CONST(path_data->content_db_name, "MAME");
-      }
+         strlcpy(path_data->content_db_name, "MAME", sizeof(path_data->content_db_name));
       else
       {
          char *db_name_no_ext = NULL;

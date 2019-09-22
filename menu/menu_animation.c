@@ -1402,9 +1402,9 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 
    if (!ticker->selected)
    {
-      size_t buf_pos = utf8cpy(ticker->s,
+      utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      STRLCAT_CONST_INCR(ticker->s, buf_pos, "...", ticker->len);
+      strlcat(ticker->s, "...", ticker->len);
       return false;
    }
 
@@ -1500,7 +1500,6 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
-      size_t buf_pos;
       unsigned num_chars    = 0;
       unsigned suffix_len   = 3;
       unsigned suffix_width = suffix_len * glyph_width;
@@ -1513,8 +1512,8 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
 
       /* Copy string segment + add suffix */
-      buf_pos   = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      STRLCAT_CONST_INCR(ticker->dst_str, buf_pos, "...", ticker->dst_str_len);
+      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1682,7 +1681,6 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
-      size_t buf_pos;
       unsigned text_width;
       unsigned current_width = 0;
       unsigned num_chars     = 0;
@@ -1714,8 +1712,8 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-      buf_pos = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      STRLCAT_CONST_INCR(ticker->dst_str, buf_pos, "...", ticker->dst_str_len);
+      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);

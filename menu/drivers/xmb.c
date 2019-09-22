@@ -972,7 +972,6 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                || (string_is_equal(entry.label, "loadstate"))
                || (string_is_equal(entry.label, "savestate"))))
       {
-         size_t buf_pos           = 0;
          size_t path_size         = 8204 * sizeof(char);
          char             *path   = (char*)malloc(path_size);
          global_t         *global = global_get_ptr();
@@ -984,16 +983,16 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             int state_slot = settings->ints.state_slot;
 
             if (state_slot > 0)
-               buf_pos = snprintf(path, path_size, "%s%d",
+               snprintf(path, path_size, "%s%d",
                      global->name.savestate, state_slot);
             else if (state_slot < 0)
-               buf_pos = fill_pathname_join_delim(path,
+               fill_pathname_join_delim(path,
                      global->name.savestate, "auto", '.', path_size);
             else
-               buf_pos = strlcpy(path, global->name.savestate, path_size);
+               strlcpy(path, global->name.savestate, path_size);
          }
 
-         STRLCAT_CONST_INCR(path, buf_pos, ".png", path_size);
+         strlcat(path, ".png", path_size);
 
          if (path_is_valid(path))
          {

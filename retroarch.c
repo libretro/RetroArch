@@ -4228,7 +4228,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      STRLCPY_CONST(log, "[config]");
+      strlcpy(log, "[config]", sizeof(log));
       strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
@@ -4240,7 +4240,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      STRLCPY_CONST(log, "[config]");
+      strlcpy(log, "[config]", sizeof(log));
       strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
@@ -4303,7 +4303,6 @@ static bool command_event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         size_t buf_pos = 0;
          char tmp[64]   = {0};
 
          fill_pathname_base_noext(
@@ -4315,9 +4314,9 @@ static bool command_event_save_core_config(void)
                config_size);
 
          if (i)
-            buf_pos = snprintf(tmp, sizeof(tmp), "-%u", i);
+            snprintf(tmp, sizeof(tmp), "-%u", i);
 
-         STRLCAT_CONST_INCR(tmp, buf_pos, ".cfg", sizeof(tmp));
+         strlcat(tmp, ".cfg", sizeof(tmp));
          strlcat(config_path, tmp, config_size);
 
          if (!path_is_valid(config_path))
@@ -10492,7 +10491,6 @@ static void bsv_movie_deinit(void)
 static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
-   size_t buf_pos             = 0;
    settings_t *settings       = configuration_settings;
 
    msg[0] = path[0]           = '\0';
@@ -10500,13 +10498,13 @@ static bool runloop_check_movie_init(void)
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
    if (settings->ints.state_slot > 0)
-      buf_pos = snprintf(path, sizeof(path), "%s%d",
+      snprintf(path, sizeof(path), "%s%d",
             bsv_movie_state.movie_path,
             settings->ints.state_slot);
    else
-      buf_pos = strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
+      strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
-   STRLCAT_CONST_INCR(path, buf_pos, ".bsv", sizeof(path));
+   strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -19220,9 +19218,7 @@ static void video_driver_frame(const void *data, unsigned width,
       {
          char frames_text[64];
          if (video_info.fps_text[buf_pos-1] != '\0')
-         {
-            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
-         }
+            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
@@ -19241,9 +19237,7 @@ static void video_driver_frame(const void *data, unsigned width,
                mem, sizeof(mem), "MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
                mem_bytes_total / (1024.0f * 1024.0f));
          if (video_info.fps_text[buf_pos-1] != '\0')
-         {
-            STRLCAT_CONST_INCR(video_info.fps_text, buf_pos, " || ", sizeof(video_info.fps_text));
-         }
+            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
          strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
 
@@ -19257,7 +19251,7 @@ static void video_driver_frame(const void *data, unsigned width,
 
          if (!string_is_empty(video_info.fps_text))
          {
-            STRLCAT_CONST_INCR(video_driver_window_title, buf_pos,
+            strlcat(video_driver_window_title,
                   " || ", sizeof(video_driver_window_title));
             strlcat(video_driver_window_title,
                   video_info.fps_text, sizeof(video_driver_window_title));
@@ -21754,22 +21748,20 @@ static retro_time_t rarch_core_runtime_tick(void)
 }
 
 #define _PSUPP_BUF(buf, var, name, desc) \
-   STRLCAT_CONST_INCR(buf, buf_pos, "  ", sizeof(buf)); \
-   STRLCAT_CONST_INCR(buf, buf_pos, name, sizeof(buf)); \
-   STRLCAT_CONST_INCR(buf, buf_pos, ":\n\t\t", sizeof(buf)); \
-   STRLCAT_CONST_INCR(buf, buf_pos, desc, sizeof(buf)); \
-   STRLCAT_CONST_INCR(buf, buf_pos, ": ", sizeof(buf)); \
-   buf_pos        = strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf)); \
-   buf[buf_pos  ] = '\0'
+   strlcat(buf, "  ", sizeof(buf)); \
+   strlcat(buf, name, sizeof(buf)); \
+   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   strlcat(buf, desc, sizeof(buf)); \
+   strlcat(buf, ": ", sizeof(buf)); \
+   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
 
 static void retroarch_print_features(void)
 {
    char buf[2048];
-   size_t buf_pos = 0;
    buf[0] = '\0';
    frontend_driver_attach_console();
 
-   STRLCAT_CONST_INCR(buf, buf_pos, "\nFeatures:\n", sizeof(buf));
+   strlcat(buf, "\nFeatures:\n", sizeof(buf));
 
    _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
    _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
@@ -22084,9 +22076,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
       {
-         size_t buf_pos = strlcat(launch_arguments,
+         strlcat(launch_arguments,
                argv[i], sizeof(launch_arguments));
-         STRLCAT_CONST(launch_arguments, buf_pos, " ",
+         strlcat(launch_arguments, " ",
                sizeof(launch_arguments));
       }
       string_trim_whitespace_left(launch_arguments);
@@ -22813,38 +22805,24 @@ bool retroarch_main_init(int argc, char *argv[])
          RARCH_LOG_OUTPUT(str_output);
       }
       {
-         size_t buf_pos;
          char str_output[256];
          char str[128];
          str[0]        = str_output[0] = '\0';
 
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
-         buf_pos       = strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
+         strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
                sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, ": ", sizeof(str_output));
-         buf_pos       = strlcat(str_output, str,  sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
-
-         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, " Built: ", sizeof(str_output));
-         buf_pos       = strlcat(str_output, __DATE__, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, " Version: ", sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, PACKAGE_VERSION, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
-
+         strlcat(str_output, ": ", sizeof(str_output));
+         strlcat(str_output, str,  sizeof(str_output));
+         strlcat(str_output, "\n"FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
 #ifdef HAVE_GIT_VERSION
-         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, " Git: ", sizeof(str_output));
-         buf_pos = strlcat(str_output, retroarch_git_version,sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, "\n", sizeof(str_output));
+         strlcat(str_output, FILE_PATH_LOG_INFO " Git: ", sizeof(str_output));
+         strlcat(str_output, retroarch_git_version, sizeof(str_output));
+         strlcat(str_output, "\n", sizeof(str_output));
 #endif
 
-         STRLCAT_CONST_INCR(str_output, buf_pos, FILE_PATH_LOG_INFO, sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, " ", sizeof(str_output));
-         STRLCAT_CONST_INCR(str_output, buf_pos, "=================================================\n", sizeof(str_output));
+         strlcat(str_output, FILE_PATH_LOG_INFO " =================================================\n", sizeof(str_output));
          RARCH_LOG_OUTPUT(str_output);
       }
    }
@@ -23974,86 +23952,46 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    {
       case RARCH_CAPABILITIES_CPU:
          {
-            unsigned buf_pos = strlen(s);
             uint64_t cpu     = cpu_features_get();
 
             if (cpu & RETRO_SIMD_MMX)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " MMX", len);
-            }
+               strlcat(s, " MMX", len);
             if (cpu & RETRO_SIMD_MMXEXT)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " MMXEXT", len);
-            }
+               strlcat(s, " MMXEXT", len);
             if (cpu & RETRO_SIMD_SSE)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSE", len);
-            }
+               strlcat(s, " SSE", len);
             if (cpu & RETRO_SIMD_SSE2)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSE2", len);
-            }
+               strlcat(s, " SSE2", len);
             if (cpu & RETRO_SIMD_SSE3)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSE3", len);
-            }
+               strlcat(s, " SSE3", len);
             if (cpu & RETRO_SIMD_SSSE3)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSSE3", len);
-            }
+               strlcat(s, " SSSE3", len);
             if (cpu & RETRO_SIMD_SSE4)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSE4", len);
-            }
+               strlcat(s, " SSE4", len);
             if (cpu & RETRO_SIMD_SSE42)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " SSE4.2", len);
-            }
+               strlcat(s, " SSE4.2", len);
             if (cpu & RETRO_SIMD_AES)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " AES", len);
-            }
+               strlcat(s, " AES", len);
             if (cpu & RETRO_SIMD_AVX)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " AVX", len);
-            }
+               strlcat(s, " AVX", len);
             if (cpu & RETRO_SIMD_AVX2)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " AVX2", len);
-            }
+               strlcat(s, " AVX2", len);
             if (cpu & RETRO_SIMD_NEON)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " NEON", len);
-            }
+               strlcat(s, " NEON", len);
             if (cpu & RETRO_SIMD_VFPV3)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " VFPv3", len);
-            }
+               strlcat(s, " VFPv3", len);
             if (cpu & RETRO_SIMD_VFPV4)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " VFPv4", len);
-            }
+               strlcat(s, " VFPv4", len);
             if (cpu & RETRO_SIMD_VMX)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " VMX", len);
-            }
+               strlcat(s, " VMX", len);
             if (cpu & RETRO_SIMD_VMX128)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " VMX128", len);
-            }
+               strlcat(s, " VMX128", len);
             if (cpu & RETRO_SIMD_VFPU)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " VFPU", len);
-            }
+               strlcat(s, " VFPU", len);
             if (cpu & RETRO_SIMD_PS)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " PS", len);
-            }
+               strlcat(s, " PS", len);
             if (cpu & RETRO_SIMD_ASIMD)
-            {
-               STRLCAT_CONST_INCR(s, buf_pos, " ASIMD", len);
-            }
-            s[buf_pos++] = '\0';
+               strlcat(s, " ASIMD", len);
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:

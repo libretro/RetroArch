@@ -35,74 +35,73 @@ int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
-   size_t buf_pos  = 2;
    bool add_quotes = true;
    bool add_glob   = false;
 
-   STRLCPY_CONST(s, "{'");
+   strlcpy(s, "{'", len);
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-         STRLCAT_CONST_INCR(s, buf_pos, "name", len);
+         strlcat(s, "name", len);
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-         STRLCAT_CONST_INCR(s, buf_pos, "publisher", len);
+         strlcat(s, "publisher", len);
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-         STRLCAT_CONST_INCR(s, buf_pos, "developer", len);
+         strlcat(s, "developer", len);
          add_glob   = true;
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-         STRLCAT_CONST_INCR(s, buf_pos, "origin", len);
+         strlcat(s, "origin", len);
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-         STRLCAT_CONST_INCR(s, buf_pos, "franchise", len);
+         strlcat(s, "franchise", len);
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "esrb_rating", len);
+         strlcat(s, "esrb_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "bbfc_rating", len);
+         strlcat(s, "bbfc_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "elspa_rating", len);
+         strlcat(s, "elspa_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "esrb_rating", len);
+         strlcat(s, "esrb_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "pegi_rating", len);
+         strlcat(s, "pegi_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "cero_rating", len);
+         strlcat(s, "cero_rating", len);
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-         STRLCAT_CONST_INCR(s, buf_pos, "enhancement_hw", len);
+         strlcat(s, "enhancement_hw", len);
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "edge_rating", len);
+         strlcat(s, "edge_rating", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         STRLCAT_CONST_INCR(s, buf_pos, "edge_issue", len);
+         strlcat(s, "edge_issue", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         STRLCAT_CONST_INCR(s, buf_pos, "famitsu_rating", len);
+         strlcat(s, "famitsu_rating", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-         STRLCAT_CONST_INCR(s, buf_pos, "releasemonth", len);
+         strlcat(s, "releasemonth", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-         STRLCAT_CONST_INCR(s, buf_pos, "releaseyear", len);
+         strlcat(s, "releaseyear", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-         STRLCAT_CONST_INCR(s, buf_pos, "users", len);
+         strlcat(s, "users", len);
          add_quotes = false;
          break;
       case DATABASE_QUERY_NONE:
@@ -110,26 +109,18 @@ int database_info_build_query_enum(char *s, size_t len,
          break;
    }
 
-   STRLCAT_CONST_INCR(s, buf_pos, "':", len);
+   strlcat(s, "':", len);
    if (add_glob)
-   {
-      STRLCAT_CONST_INCR(s, buf_pos, "glob('*", len);
-   }
+      strlcat(s, "glob('*", len);
    if (add_quotes)
-   {
-      STRLCAT_CONST_INCR(s, buf_pos, "\"", len);
-   }
-   buf_pos = strlcat(s, path, len);
+      strlcat(s, "\"", len);
+   strlcat(s, path, len);
    if (add_glob)
-   {
-      STRLCAT_CONST_INCR(s, buf_pos, "*')", len);
-   }
+      strlcat(s, "*')", len);
    if (add_quotes)
-   {
-      STRLCAT_CONST_INCR(s, buf_pos, "\"", len);
-   }
+      strlcat(s, "\"", len);
 
-   STRLCAT_CONST_INCR(s, buf_pos, "{'", len);
+   strlcat(s, "{'", len);
 
 #if 0
    RARCH_LOG("query: %s\n", s);

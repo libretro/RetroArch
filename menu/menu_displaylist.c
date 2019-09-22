@@ -603,7 +603,6 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       if (frontend->get_powerstate)
       {
-         size_t buf_pos = 0;
          int seconds    = 0, percent = 0;
          enum frontend_powerstate state =
             frontend->get_powerstate(&seconds, &percent);
@@ -611,47 +610,47 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          tmp2[0] = '\0';
 
          if (percent != 0)
-            buf_pos = snprintf(tmp2, sizeof(tmp2), "%d%%", percent);
+            snprintf(tmp2, sizeof(tmp2), "%d%%", percent);
 
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
-               STRLCAT_CONST_INCR(tmp2, buf_pos, " ", sizeof(tmp2));
-               buf_pos        = strlcat(tmp2,
+               strlcat(tmp2, " ", sizeof(tmp2));
+               strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
-               STRLCAT_CONST_INCR(tmp2, buf_pos, " (", sizeof(tmp2));
-               buf_pos        = strlcat(tmp2,
+               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
                      sizeof(tmp2));
-               STRLCAT_CONST_INCR(tmp2, buf_pos, ")", sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGING:
-               STRLCAT_CONST_INCR(tmp2, buf_pos, " (", sizeof(tmp2));
-               buf_pos        = strlcat(tmp2,
+               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING),
                      sizeof(tmp2));
-               STRLCAT_CONST_INCR(tmp2, buf_pos, ")", sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGED:
-               STRLCAT_CONST_INCR(tmp2, buf_pos, " (", sizeof(tmp2));
-               buf_pos        = strlcat(tmp2,
+               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED),
                      sizeof(tmp2));
-               STRLCAT_CONST_INCR(tmp2, buf_pos, ")", sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               STRLCAT_CONST_INCR(tmp2, buf_pos, " (", sizeof(tmp2));
-               buf_pos        = strlcat(tmp2,
+               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING),
                      sizeof(tmp2));
-               STRLCAT_CONST_INCR(tmp2, buf_pos, ")", sizeof(tmp2));
+               strlcat(tmp2, ")", sizeof(tmp2));
                break;
          }
 
@@ -2983,9 +2982,8 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), sizeof(tmp));
-      STRLCAT_CONST_INCR(tmp, n, ": ", sizeof(tmp));
+      strlcat(tmp, ": ", sizeof(tmp));
       n        = strlcat(tmp, content_label, sizeof(tmp));
-      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3005,9 +3003,8 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), sizeof(tmp));
-      STRLCAT_CONST_INCR(tmp, n, ": ", sizeof(tmp));
+      n        = strlcat(tmp, ": ", sizeof(tmp));
       n        = strlcat(tmp, content_path, sizeof(tmp));
-      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3028,9 +3025,8 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), sizeof(tmp));
-      STRLCAT_CONST_INCR(tmp, n, ": ", sizeof(tmp));
+      n        = strlcat(tmp, ": ", sizeof(tmp));
       n        = strlcat(tmp, core_name, sizeof(tmp));
-      tmp[n  ] = '\0';
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
@@ -3063,9 +3059,8 @@ static unsigned menu_displaylist_parse_content_information(
          tmp[0]   = '\0';
 
          n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
-         STRLCAT_CONST_INCR(tmp, n, ": ", sizeof(tmp));
+         n        = strlcat(tmp, ": ", sizeof(tmp));
          n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
-         tmp[n  ] = '\0';
 
          /* Silence gcc compiler warning
           * (getting so sick of these...) */

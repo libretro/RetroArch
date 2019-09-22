@@ -261,9 +261,9 @@ static bool screenshot_dump(
    {
       if (savestate)
       {
-         size_t buf_pos = strlcpy(state->filename,
+         strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         STRLCAT_CONST_INCR(state->filename, buf_pos, ".png", sizeof(state->filename));
+         strlcat(state->filename, ".png", sizeof(state->filename));
       }
       else
       {
@@ -289,9 +289,9 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t buf_pos = strlcpy(state->shotname, path_basename(name_base),
+            strlcpy(state->shotname, path_basename(name_base),
                   sizeof(state->shotname));
-            STRLCAT_CONST_INCR(state->shotname, buf_pos, ".png", sizeof(state->shotname));
+            strlcat(state->shotname, ".png", sizeof(state->shotname));
          }
 
          if (  string_is_empty(screenshot_dir) || 

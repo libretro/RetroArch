@@ -341,7 +341,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
       char id_mipmap[64];
       bool mipmap         = false;
       bool smooth         = false;
-      size_t buf_pos      = 0;
 
       id_filter[0] = id_wrap[0] = wrap_mode[0] = id_mipmap[0] = '\0';
 
@@ -358,21 +357,21 @@ static bool video_shader_parse_textures(config_file_t *conf,
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
 
-      buf_pos = strlcpy(id_filter, id, sizeof(id_filter));
-      STRLCAT_CONST_INCR(id_filter, buf_pos, "_linear", sizeof(id_filter));
+      strlcpy(id_filter, id, sizeof(id_filter));
+      strlcat(id_filter, "_linear", sizeof(id_filter));
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ?
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      buf_pos = strlcpy(id_wrap, id, sizeof(id_wrap));
-      STRLCAT_CONST_INCR(id_wrap, buf_pos, "_wrap_mode", sizeof(id_wrap));
+      strlcpy(id_wrap, id, sizeof(id_wrap));
+      strlcat(id_wrap, "_wrap_mode", sizeof(id_wrap));
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
-      buf_pos = strlcpy(id_mipmap, id, sizeof(id_mipmap));
-      STRLCAT_CONST_INCR(id_mipmap, buf_pos, "_mipmap", sizeof(id_mipmap));
+      strlcpy(id_mipmap, id, sizeof(id_mipmap));
+      strlcat(id_mipmap, "_mipmap", sizeof(id_mipmap));
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
@@ -1106,31 +1105,28 @@ void video_shader_write_conf_preset(config_file_t *conf,
 
             if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
             {
-               size_t buf_pos;
                char key[128];
                key[0]  = '\0';
-               buf_pos = strlcpy(key, shader->lut[i].id, sizeof(key));
-               STRLCAT_CONST_INCR(key, buf_pos, "_linear", sizeof(key));
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_linear", sizeof(key));
                config_set_bool(conf, key,
                      shader->lut[i].filter == RARCH_FILTER_LINEAR);
             }
 
             {
-               size_t buf_pos;
                char key[128];
                key[0]  = '\0';
-               buf_pos = strlcpy(key, shader->lut[i].id, sizeof(key));
-               STRLCAT_CONST_INCR(key, buf_pos, "_wrap_mode", sizeof(key));
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_wrap_mode", sizeof(key));
                config_set_string(conf, key,
                      wrap_mode_to_str(shader->lut[i].wrap));
             }
 
             {
-               size_t buf_pos;
                char key[128];
                key[0]  = '\0';
-               buf_pos = strlcpy(key, shader->lut[i].id, sizeof(key));
-               STRLCAT_CONST_INCR(key, buf_pos, "_mipmap", sizeof(key));
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_mipmap", sizeof(key));
                config_set_bool(conf, key,
                      shader->lut[i].mipmap);
             }

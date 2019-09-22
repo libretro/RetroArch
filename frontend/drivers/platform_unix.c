@@ -1694,17 +1694,13 @@ static void frontend_unix_get_env(int *argc,
 
    if (xdg)
    {
-      size_t buf_pos       = strlcpy(base_path, xdg, sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, "retroarch", sizeof(base_path));
+      strlcpy(base_path, xdg, sizeof(base_path));
+      strlcat(base_path, "/retroarch", sizeof(base_path));
    }
    else if (home)
    {
-      size_t buf_pos       = strlcpy(base_path, home, sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, ".config", sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, "/", sizeof(base_path));
-      STRLCAT_CONST_INCR(base_path, buf_pos, "retroarch", sizeof(base_path));
+      strlcpy(base_path, home, sizeof(base_path));
+      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
    }
    else
       strlcpy(base_path, "retroarch", sizeof(base_path));

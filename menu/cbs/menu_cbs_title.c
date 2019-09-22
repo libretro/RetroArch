@@ -293,19 +293,17 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
    if (list_path)
    {
       char elem0_path[255];
-      size_t buf_pos;
 
       elem0_path[0] = '\0';
 
       if (list_path->size > 0)
          strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
       string_list_free(list_path);
-      buf_pos      = strlcpy(s, text, len);
-      s[buf_pos  ] = '\n';
+      strlcpy(s, text, len);
 
       if (!string_is_empty(elem0_path))
       {
-         STRLCAT_CONST_INCR(s, buf_pos, "- ", len);
+         strlcat(s, "- ", len);
          strlcat(s, path_basename(elem0_path), len);
       }
    }
@@ -342,8 +340,8 @@ default_title_generic_macro(action_get_title_list_rdb_entry_database_info,MENU_E
 static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   size_t buf_pos = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-   STRLCAT_CONST_INCR(s, buf_pos, " ", len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
+   strlcat(s, " ", len);
    strlcat(s, path, len);
    return 0;
 }
@@ -377,7 +375,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
    {
       char elem0[255];
       char elem1[255];
-      size_t buf_pos;
       struct string_list *list_label = string_split(label, "|");
 
       elem0[0] = elem1[0] = '\0';
@@ -393,11 +390,11 @@ static int action_get_title_group_settings(const char *path, const char *label,
          string_list_free(list_label);
       }
 
-      buf_pos = strlcpy(s, elem0, len);
+      strlcpy(s, elem0, len);
 
       if (!string_is_empty(elem1))
       {
-         STRLCAT_CONST_INCR(s, buf_pos, " - ", len);
+         strlcat(s, " - ", len);
          strlcat(s, elem1, len);
       }
    }
