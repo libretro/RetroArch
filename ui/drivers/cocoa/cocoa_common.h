@@ -144,4 +144,8 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 void *get_chosen_screen(void);
 
+void *nsview_set_ptr(void *inst);
+
+void *nsview_get_ptr(void);
+
 #endif
