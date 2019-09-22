@@ -148,6 +148,7 @@
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
 #include <formats/rbmp.h>
+#include <formats/rpng.h>
 #include "translation_defines.h"
 #endif
 
@@ -2707,7 +2708,7 @@ static void handle_translation_cb(
    unsigned image_width, image_height;
    char* body_copy                   = NULL;
    uint8_t* raw_output_data          = NULL;
-   char* raw_bmp_data                = NULL;
+   char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    bool is_paused                    = runloop_paused;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
@@ -2715,8 +2716,10 @@ static void handle_translation_cb(
    int new_image_size                = 0;
    int new_sound_size                = 0;
    const void* dummy_data            = NULL;
-   void* raw_image_data              = NULL;  
+   void* raw_image_data              = NULL;
+   void* raw_image_data_alpha        = NULL;
    void* raw_sound_data              = NULL;  
+   int retval                        = 0;
    settings_t *settings              = configuration_settings;
 
    int i                             = 0;
@@ -2737,7 +2740,6 @@ static void handle_translation_cb(
    data->data[data->len] = '\0'; 
 
    /* Parse JSON body for the image and sound data */
-
    body_copy = strdup(data->data);
 
    while (true)
@@ -2756,7 +2758,7 @@ static void handle_translation_cb(
             *(found_string+i-start-1) = '\0';
             if (curr_state == 1)/*image*/
             {
-              raw_bmp_data = (char*)unbase64(found_string, 
+              raw_image_file_data = (char*)unbase64(found_string, 
                     strlen(found_string),
                     &new_image_size);
               curr_state = 0;
@@ -2788,31 +2790,91 @@ static void handle_translation_cb(
    if (found_string)
        free(found_string);
 
-   if (!raw_bmp_data && !raw_sound_data)
+   if (!raw_image_file_data && !raw_sound_data)
    {
       error = "Invalid JSON body.";
       goto finish;
    }
 
-   if (raw_bmp_data)
+   if (raw_image_file_data)
    { 
       /* Get the video frame dimensions reference */
       video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
 
-      /* Get image data (24 bit), and convert to the emulated pixel format */
-      image_width    = 
-         ((uint32_t) ((uint8_t)raw_bmp_data[21]) << 24) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[20]) << 16) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[19]) << 8) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[18]) << 0);
+      if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
+      {
+         /* This is a BMP file coming back. */
+         /* Get image data (24 bit), and convert to the emulated pixel format */
+         image_width    = 
+            ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
 
-      image_height   = 
-         ((uint32_t) ((uint8_t)raw_bmp_data[25]) << 24) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[24]) << 16) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[23]) << 8) +
-         ((uint32_t) ((uint8_t)raw_bmp_data[22]) << 0);
-      raw_image_data = raw_bmp_data + 54 * sizeof(uint8_t);
+         image_height   = 
+            ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
+            ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
+         raw_image_data = raw_image_file_data + 54 * sizeof(uint8_t);
+      }
+      else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
+               raw_image_file_data[3] == 'G')
+      {
+         /* PNG coming back from the url */
+         image_width = 
+             ((uint32_t) ((uint8_t)raw_image_file_data[16])<<24)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[17])<<16)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[18])<<8)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[19])<<0);
+         image_height = 
+             ((uint32_t) ((uint8_t)raw_image_file_data[20])<<24)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[21])<<16)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
+             ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
+        
+         rpng_t *rpng = rpng_alloc();
+         if (!rpng)
+         {
+            error = "Can't allocate memory.";
+            goto finish;
+         }
+         rpng_set_buf_ptr(rpng, raw_image_file_data, new_image_size);
+         rpng_start(rpng);
+         while (rpng_iterate_image(rpng));
 
+         do
+         {
+            retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
+         }
+         while(retval == IMAGE_PROCESS_NEXT);
+      
+         /* Returned output from the png processor is an upside down RGBA
+          * image, so we have to change that to RGB first.  This should 
+          * probably be replaced with a scaler call.*/
+         {
+            int d,tw,th,tc;
+            d=0;
+            raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
+            for (i=0;i<image_width*image_height*4;i++)
+            {
+               if (i%4 != 3)
+               {
+                  tc = d%3;
+                  th = image_height-d/(3*image_width)-1;
+                  tw = (d%(image_width*3))/3;
+                  ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[i];
+                  d+=1;
+               }
+            }
+         }
+         rpng_free(rpng);
+      }
+      else
+      {
+         RARCH_LOG("Output from URL not a valid file type, or is not supported.\n");
+         goto finish;
+      }
       scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
       if (!scaler)
          goto finish;
@@ -2823,7 +2885,7 @@ static void handle_translation_cb(
             In this case, we used the viewport to grab the image
             and translate it, and we have the translated image in
             the raw_image_data buffer.
-            */
+         */
 
          /* TODO: write to the viewport in this case */
          RARCH_LOG("Hardware frame buffer... writing to viewport"
@@ -2835,7 +2897,7 @@ static void handle_translation_cb(
          the video frame can change during run-time, but the
          pitch may not, so we just assign it as the width
          times the byte depth. 
-         */
+      */
 
       if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
       {
@@ -2920,10 +2982,12 @@ finish:
 
    if (body_copy)
       free(body_copy);
-   
-   if (raw_bmp_data)
-      free(raw_bmp_data);
-
+   if (raw_image_file_data)
+      free(raw_image_file_data);
+   if (raw_image_data_alpha)
+       free(raw_image_data_alpha);
+   if (raw_image_data)
+      free(raw_image_data);
    if (scaler)
       free(scaler);
  
@@ -3093,7 +3157,8 @@ static const char *ai_service_get_str(enum translation_lang id)
    will consist of a JSON body, with the "image" field as a base64
    encoded string of a 24bit-BMP that the will be translated.  The server
    must output the translated image in the form of a JSON body, with
-   the "image" field also as a base64 encoded, 24bit-BMP.
+   the "image" field also as a base64 encoded 24bit-BMP, or
+   as an alpha channel png.
    */
 static bool run_translation_service(void)
 {
@@ -3111,13 +3176,14 @@ static bool run_translation_service(void)
    bool error                            = false;
 
    uint8_t *bmp_buffer                   = NULL;
+   uint64_t buffer_bytes                 = 0;
    char *bmp64_buffer                    = NULL;
    char *json_buffer                     = NULL;
 
    int out_length                        = 0;
    const char *rf1                       = "{\"image\": \"";
    const char *rf2                       = "\"}\0";
-   
+   bool TRANSLATE_USE_BMP                = false;
    if (!scaler)
       goto finish;
 
@@ -3156,8 +3222,9 @@ static bool run_translation_service(void)
       if (!video_driver_read_viewport(bit24_image_prev, false))
          goto finish;
 
-      /* Rescale down to regular resolution */
-
+      /* TODO: Rescale down to regular resolution */
+      width = vp.width;
+      height = vp.height;
       bit24_image      = bit24_image_prev;
       bit24_image_prev = NULL;
    }
@@ -3198,16 +3265,26 @@ static bool run_translation_service(void)
      an array to contain the BMP image along with the BMP header as bytes,
      and then covert that to a b64 encoded array for transport in JSON.
    */
-   form_bmp_header(header, width, height, false);
-   bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
-   if (!bmp_buffer)
-       goto finish;
+   if (TRANSLATE_USE_BMP)
+   {
+      form_bmp_header(header, width, height, false);
+      bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
+      if (!bmp_buffer)
+         goto finish;
 
-   memcpy(bmp_buffer, header, 54*sizeof(uint8_t));
-   memcpy(bmp_buffer+54, bit24_image, width * height * 3 * sizeof(uint8_t));
+      memcpy(bmp_buffer, header, 54*sizeof(uint8_t));
+      memcpy(bmp_buffer+54, bit24_image, width * height * 3 * sizeof(uint8_t));
+      buffer_bytes = sizeof(uint8_t)*(width*height*3+54);
+   }
+   else
+   {
+      pitch = width*3;
+      bmp_buffer = rpng_save_image_bgr24_string(bit24_image+width*(height-1)*3, width, height, -pitch, &buffer_bytes);
+   }
 
-   bmp64_buffer = base64((void *)bmp_buffer, (int)(width * height * 3 + 54),
+   bmp64_buffer = base64((void *)bmp_buffer, sizeof(uint8_t)*buffer_bytes,
          &out_length);
+
    if (!bmp64_buffer)
       goto finish;
 
@@ -3270,10 +3347,12 @@ static bool run_translation_service(void)
       /* mode */
       {
          char temp_string[PATH_MAX_LENGTH];         
-         char* mode_chr = "image";
 
+         /*"image" is included for backwards compatability with
+          * vgtranslate < 1.04 */
+         char* mode_chr = "image,png";
          if (settings->uints.ai_service_mode == 1)
-            mode_chr = "sound";
+            mode_chr = "sound,wav";
          
          snprintf(temp_string,
                sizeof(temp_string),
@@ -3283,8 +3362,6 @@ static bool run_translation_service(void)
          strlcat(new_ai_service_url, temp_string,
                  sizeof(new_ai_service_url));
       }
-
-
 
       RARCH_LOG("Server URL:  %s\n", new_ai_service_url);
       task_push_http_post_transfer(new_ai_service_url, 
