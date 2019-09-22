@@ -1,6 +1,6 @@
 # Future
-- AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service.
-- BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed.
+- AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service
+- BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed
 - BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
