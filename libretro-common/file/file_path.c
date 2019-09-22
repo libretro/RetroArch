@@ -893,7 +893,7 @@ end:
 size_t path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   size_t i, written = 0;
+   size_t i;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
