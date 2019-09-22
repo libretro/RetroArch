@@ -1,10 +1,11 @@
 # Future
+- AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service.
 - BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed.
 - BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
-- FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue
+- FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
 - GONG: Stability fixes
 - MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
 - MENU/RGUI: Functional mouse/touchscreen support
