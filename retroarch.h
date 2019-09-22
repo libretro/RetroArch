@@ -1798,6 +1798,8 @@ void video_driver_display_set(uintptr_t idx);
 
 void video_driver_window_set(uintptr_t idx);
 
+uintptr_t video_driver_window_get(void);
+
 bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id);
