@@ -19157,7 +19157,7 @@ static void video_driver_frame(const void *data, unsigned width,
 
          mem[0] = '\0';
          snprintf(
-               mem, sizeof(mem), " MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
+               mem, sizeof(mem), "MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
                mem_bytes_total / (1024.0f * 1024.0f));
          if (video_info.fps_text[buf_pos-1] != '\0')
          {
