@@ -90,6 +90,12 @@ void *glkitview_init(void);
    if (!g_instance)
       g_instance = [CocoaView new];
 
+#if defined(HAVE_COCOA)
+   video_driver_display_type_set(RARCH_DISPLAY_OSX);
+   video_driver_display_set(0);
+   video_driver_display_userdata_set((uintptr_t)&g_instance);
+#endif
+
    return g_instance;
 }
 
