@@ -19127,7 +19127,6 @@ static void video_driver_frame(const void *data, unsigned width,
    if (video_driver_frame_count)
    {
       size_t buf_pos       = 1; /* set this to 1 to avoid an offset issue */
-      settings_t *settings = configuration_settings;
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
