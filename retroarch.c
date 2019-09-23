@@ -22815,7 +22815,7 @@ bool retroarch_main_init(int argc, char *argv[])
                sizeof(str_output));
          strlcat(str_output, ": ", sizeof(str_output));
          strlcat(str_output, str,  sizeof(str_output));
-         strlcat(str_output, "\n"FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
+         strlcat(str_output, "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
 #ifdef HAVE_GIT_VERSION
          strlcat(str_output, FILE_PATH_LOG_INFO " Git: ", sizeof(str_output));
          strlcat(str_output, retroarch_git_version, sizeof(str_output));
