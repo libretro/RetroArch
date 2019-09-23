@@ -1332,6 +1332,9 @@ static void retroarch_unset_runtime_shader_preset(void)
 {
    runtime_shader_preset[0] = '\0';
 }
+#else
+static void retroarch_set_runtime_shader_preset(const char *arg) {}
+static void retroarch_unset_runtime_shader_preset(void) {}
 #endif
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
