@@ -262,16 +262,7 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      fullname[0] = 'r';
-      fullname[1] = 'e';
-      fullname[2] = 't';
-      fullname[3] = 'r';
-      fullname[4] = 'o';
-      fullname[5] = 'a';
-      fullname[6] = 'r';
-      fullname[7] = 'c';
-      fullname[8] = 'h';
-      fullname[9] = '\0';
+      strlcpy(fullname, "retroarch", sizeof(fullname));
       strlcat(fullname, 
             video_shader_get_preset_extension(type), sizeof(fullname));
    }
@@ -358,9 +349,7 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
             sizeof(directory));
    }
    else if (string_is_empty(core_name))
-   {
       return false;
-   }
    else
    {
       fill_pathname_join(
@@ -384,14 +373,14 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
          fill_pathname_join(file, directory, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
-         {
-            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-            fill_pathname_join(file, directory, tmp, sizeof(file));
-            break;
-         }
+         fill_pathname_parent_dir_name(tmp,
+               path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+         fill_pathname_join(file, directory, tmp, sizeof(file));
+         break;
       case SHADER_PRESET_GAME:
          {
-            const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+            const char *game_name = 
+               path_basename(path_get(RARCH_PATH_BASENAME));
             if (string_is_empty(game_name))
                return false;
             fill_pathname_join(file, directory, game_name, sizeof(file));
@@ -404,9 +393,10 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
    if (op == AUTO_SHADER_OP_SAVE)
    {
       if (!path_is_directory(directory))
-          path_mkdir(directory);
+         path_mkdir(directory);
 
-      return menu_shader_manager_save_preset_internal(shader, file, apply, true);
+      return menu_shader_manager_save_preset_internal(
+            shader, file, apply, true);
    }
    else if (op == AUTO_SHADER_OP_REMOVE)
    {
@@ -428,7 +418,6 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
          if (!filestream_delete(file))
             success = true;
       }
-
       return success;
    }
    else if (op == AUTO_SHADER_OP_EXISTS)
@@ -450,8 +439,6 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
          if (path_is_valid(file))
             return true;
       }
-
-      return false;
    }
 
    return false;
@@ -474,7 +461,8 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
 bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
       enum auto_shader_type type, bool apply)
 {
-   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_SAVE, shader, type, apply);
+   return menu_shader_manager_operate_auto_preset(
+         AUTO_SHADER_OP_SAVE, shader, type, apply);
 }
 
 /**
@@ -489,7 +477,8 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
 bool menu_shader_manager_save_preset(const struct video_shader *shader,
       const char *basename, bool apply)
 {
-   return menu_shader_manager_save_preset_internal(shader, basename, apply, false);
+   return menu_shader_manager_save_preset_internal(
+         shader, basename, apply, false);
 }
 
 /**
@@ -500,7 +489,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
  **/
 bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
 {
-   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_REMOVE, NULL, type, false);
+   return menu_shader_manager_operate_auto_preset(
+         AUTO_SHADER_OP_REMOVE, NULL, type, false);
 }
 
 /**
@@ -511,7 +501,8 @@ bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
  **/
 bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type)
 {
-   return menu_shader_manager_operate_auto_preset(AUTO_SHADER_OP_EXISTS, NULL, type, false);
+   return menu_shader_manager_operate_auto_preset(
+         AUTO_SHADER_OP_EXISTS, NULL, type, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
