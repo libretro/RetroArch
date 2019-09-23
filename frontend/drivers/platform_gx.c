@@ -527,10 +527,9 @@ static uint64_t frontend_gx_get_mem_total(void)
 
 static uint64_t frontend_gx_get_mem_free(void)
 {
-   uint64_t total = SYSMEM1_SIZE - SYS_GetArena1Size();
+   uint64_t total = SYSMEM1_SIZE - (SYSMEM1_SIZE - SYS_GetArena1Size());
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   /* TODO/FIXME - this needs to change */
-   total += gx_mem2_used();
+   total += (gx_mem2_total() - gx_mem2_used());
 #endif
    return total;
 }
