@@ -81,10 +81,10 @@ int action_scan_directory(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-   strlcpy(fullpath, menu_path, sizeof(fullpath));
-
    if (path)
-      fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
+      fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+   else
+      strlcpy(fullpath, menu_path, sizeof(fullpath));
 
    task_push_dbscan(
          settings->paths.directory_playlist,
