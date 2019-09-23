@@ -185,13 +185,11 @@ bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_
       case MENU_THUMBNAIL_RIGHT:
          if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
-         else
-            return settings->uints.menu_thumbnails != 0;
+         return settings->uints.menu_thumbnails != 0;
       case MENU_THUMBNAIL_LEFT:
          if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
-         else
-            return settings->uints.menu_left_thumbnails != 0;
+         return settings->uints.menu_left_thumbnails != 0;
       default:
          break;
    }
@@ -229,7 +227,8 @@ static void fill_content_img(menu_thumbnail_path_data_t *path_data)
  * usage of menu_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist)
+bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data,
+      const char *system, playlist_t *playlist)
 {
    if (!path_data)
       return false;
@@ -252,9 +251,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
    /* Hack: There is only one MAME thumbnail repo,
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
-   {
       strlcpy(path_data->system, "MAME", sizeof(path_data->system));
-   }
    else
       strlcpy(path_data->system, system, sizeof(path_data->system));
    
@@ -299,8 +296,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char
          tmp[0] = '\0';
          
          strlcpy(tmp, playlist_file, sizeof(tmp));
-         playlist_name = path_remove_extension(tmp);
-         
+         playlist_name  = path_remove_extension(tmp);
          playlist_valid = string_is_equal(playlist_name, system);
       }
       
@@ -516,7 +512,8 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
       if (strncmp(db_name, "MAME", 4) == 0)
-         strlcpy(path_data->content_db_name, "MAME", sizeof(path_data->content_db_name));
+         strlcpy(path_data->content_db_name, "MAME",
+               sizeof(path_data->content_db_name));
       else
       {
          char *db_name_no_ext = NULL;

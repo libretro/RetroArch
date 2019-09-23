@@ -319,44 +319,6 @@ static const char *get_default_shader_dir(void)
    settings_t *settings       = config_get_ptr();
    const char *def_shader_dir = settings->paths.directory_video_shader;
    return def_shader_dir;
-#if 0
-   bool slang_supported       = video_shader_is_supported(RARCH_SHADER_SLANG);
-   bool glsl_supported        = video_shader_is_supported(RARCH_SHADER_GLSL);
-   bool cg_supported          = video_shader_is_supported(RARCH_SHADER_CG);
-
-   if (slang_supported)
-   {
-      static char new_path[1024];
-      new_path[0] = '\0';
-      fill_pathname_join(new_path,
-            def_shader_dir, "shaders_slang",
-            sizeof(new_path));
-      if (path_is_directory(new_path))
-         return new_path;
-   }
-   else if (glsl_supported && !cg_supported)
-   {
-      static char new_path[1024];
-      new_path[0] = '\0';
-      fill_pathname_join(new_path,
-            def_shader_dir, "shaders_glsl",
-            sizeof(new_path));
-      if (path_is_directory(new_path))
-         return new_path;
-   }
-   else if (cg_supported   && !glsl_supported)
-   {
-      static char new_path[1024];
-      new_path[0] = '\0';
-      fill_pathname_join(new_path,
-            def_shader_dir, "shaders_cg",
-            sizeof(new_path));
-      if (path_is_directory(new_path))
-         return new_path;
-   }
-
-   return def_shader_dir;
-#endif
 }
 #endif
 
