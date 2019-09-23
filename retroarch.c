@@ -19409,7 +19409,9 @@ static void video_driver_frame(const void *data, unsigned width,
          )
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      if (!menu_widgets_inited)
+      if (menu_widgets_inited)
+         menu_widgets_set_fps_text(video_info.fps_text);
+      else
 #endif
       {
          runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

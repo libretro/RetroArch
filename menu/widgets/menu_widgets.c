@@ -80,6 +80,9 @@ static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
 };
 
+/* FPS */
+static char menu_widgets_fps_text[255] = {0};
+
 /* Achievement notification */
 static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
@@ -1625,7 +1628,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          || video_info->memory_show
          )
    {
-      const char *text      = *video_info->fps_text == '\0' ? "N/A" : video_info->fps_text;
+      const char *text      = *menu_widgets_fps_text == '\0' ? "N/A" : menu_widgets_fps_text;
 
       int text_width        = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
       int total_width       = text_width + simple_widget_padding * 2;
@@ -2001,6 +2004,14 @@ void menu_widgets_volume_update_and_show(void)
    entry.userdata    = NULL;
 
    menu_timer_start(&volume_timer, &entry);
+}
+
+bool menu_widgets_set_fps_text(const char *new_fps_text)
+{
+   strlcpy(menu_widgets_fps_text,
+         new_fps_text, sizeof(menu_widgets_fps_text));
+
+   return true;
 }
 
 static void menu_widgets_screenshot_fadeout(void *userdata)
