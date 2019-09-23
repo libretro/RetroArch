@@ -238,6 +238,8 @@ struct ozone_handle
    char selection_core_name[255];
    char selection_playtime[255];
    char selection_lastplayed[255];
+   unsigned selection_core_name_lines;
+   unsigned selection_lastplayed_lines;
    bool selection_core_is_viewer;
 
    bool is_db_manager_list;

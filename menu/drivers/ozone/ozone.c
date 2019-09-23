@@ -1238,8 +1238,9 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    if (ozone->is_playlist && playlist)
    {
-      const char *core_name   = NULL;
-      const char *core_label  = NULL;
+      const char *core_name        = NULL;
+      const char *core_label       = NULL;
+      bool scroll_content_metadata = settings->bools.ozone_scroll_content_metadata;
 
       menu_thumbnail_get_core_name(ozone->thumbnail_path_data, &core_name);
 
@@ -1251,6 +1252,18 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
 
       snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
          "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
+
+      /* Word wrap core name string, if required */
+      if (!scroll_content_metadata)
+      {
+         unsigned metadata_len =
+               (ozone->dimensions.thumbnail_bar_width - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2)) /
+                     ozone->footer_font_glyph_width;
+         word_wrap(ozone->selection_core_name, ozone->selection_core_name, metadata_len, true, 0);
+         ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
+      }
+      else
+         ozone->selection_core_name_lines = 1;
 
       ozone->selection_core_is_viewer = string_is_equal(core_label, "imageviewer")
             || string_is_equal(core_label, "musicplayer")
@@ -1281,6 +1294,20 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
       }
+
+      /* Word wrap last played string, if required */
+      if (!scroll_content_metadata)
+      {
+         /* Note: Have to use a fixed length of '30' here, to
+          * avoid awkward wrapping for certain last played time
+          * formats. Last played strings are well defined, however
+          * (unlike core names), so this should never overflow the
+          * side bar */
+         word_wrap(ozone->selection_lastplayed, ozone->selection_lastplayed, 30, true, 0);
+         ozone->selection_lastplayed_lines = ozone_count_lines(ozone->selection_lastplayed);
+      }
+      else
+         ozone->selection_lastplayed_lines = 1;
    }
 }
 
