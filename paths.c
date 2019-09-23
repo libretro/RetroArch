@@ -219,7 +219,7 @@ void path_set_redirect(void)
    free(new_savestate_dir);
 }
 
-void path_set_basename(const char *path)
+static void path_set_basename(const char *path)
 {
    char *dst          = NULL;
 
