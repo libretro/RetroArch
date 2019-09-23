@@ -11365,15 +11365,11 @@ static void retroarch_overlay_init(void)
 {
    settings_t *settings      = configuration_settings;
 
-#if 0
 #if defined(GEKKO)
-   /* TODO/FIXME - Wiimpathy - behavior here has changed - can you
-    * rewrite this? */
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    uint64_t memory_free       = frontend_driver_get_free_memory();
-   if (memory_free > (72 * 1024 * 1024))
+   if (memory_free < (3 * 1024 * 1024))
       return;
-#endif
 #endif
 
    retroarch_overlay_deinit();
