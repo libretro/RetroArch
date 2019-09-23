@@ -16,6 +16,7 @@ operation had run
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
 - OSX/METAL: CoreAudio V3 driver should now be the default audio driver on first startup
+- THREADED VIDEO: Fix FPS text in threaded video mode.
 - WIN32: Log window now has title 'Logging Console'
 - WII: Add Wiimote lightgun support
 
