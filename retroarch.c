@@ -4228,7 +4228,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      strlcpy(log, "[config]", sizeof(log));
+      strlcpy(log, "[config] ", sizeof(log));
       strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
@@ -4240,7 +4240,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      strlcpy(log, "[config]", sizeof(log));
+      strlcpy(log, "[config] ", sizeof(log));
       strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
@@ -10498,13 +10498,15 @@ static bool runloop_check_movie_init(void)
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
    if (settings->ints.state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
+      snprintf(path, sizeof(path), "%s%d.bsv",
             bsv_movie_state.movie_path,
             settings->ints.state_slot);
    else
+   {
       strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
+      strlcat(path, ".bsv", sizeof(path));
+   }
 
-   strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -21834,8 +21836,7 @@ static void retroarch_print_version(void)
    printf(" -- %s --\n", retroarch_git_version);
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
-   strlcat(str, " Built: ", sizeof(str));
-   strlcat(str, __DATE__, sizeof(str));
+   strlcat(str, " Built: " __DATE__, sizeof(str));
    fprintf(stdout, "%s\n", str);
 }
 
@@ -22796,8 +22797,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
          if (!string_is_empty(cpu_model))
          {
-            strlcat(str_output, FILE_PATH_LOG_INFO, sizeof(str_output));
-            strlcat(str_output, " CPU Model Name: ", sizeof(str_output));
+            strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ", sizeof(str_output));
             strlcat(str_output, cpu_model, sizeof(str_output));
             strlcat(str_output, "\n", sizeof(str_output));
          }
