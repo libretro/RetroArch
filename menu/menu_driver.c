@@ -1129,8 +1129,6 @@ int menu_entries_get_title(char *s, size_t len)
    if (!cbs)
       return -1;
 
-   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
-
    if (cbs && cbs->action_get_title)
    {
       int ret;
@@ -1139,6 +1137,7 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
+      menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
       ret = cbs->action_get_title(path, label, menu_type, s, len);
       if (ret == 1)
          strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
@@ -1346,7 +1345,8 @@ bool menu_entries_append_enum(file_list_t *list, const char *path,
    return true;
 }
 
-void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
