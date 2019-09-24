@@ -4060,88 +4060,46 @@ bool config_save_overrides(int override_type)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
          if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  bool_settings[i].ident, (*bool_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  bool_overrides[i].ident, (*bool_overrides[i].ptr));
             config_set_bool(conf, bool_overrides[i].ident,
                   (*bool_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
          if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  int_settings[i].ident, (*int_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  int_overrides[i].ident, (*int_overrides[i].ptr));
             config_set_int(conf, int_overrides[i].ident,
                   (*int_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)uint_settings_size; i++)
       {
          if ((*uint_settings[i].ptr) != (*uint_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  uint_settings[i].ident, (*uint_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  uint_overrides[i].ident, (*uint_overrides[i].ptr));
             config_set_int(conf, uint_overrides[i].ident,
                   (*uint_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)size_settings_size; i++)
       {
          if ((*size_settings[i].ptr) != (*size_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  size_settings[i].ident, (*size_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  size_overrides[i].ident, (*size_overrides[i].ptr));
             config_set_int(conf, size_overrides[i].ident,
                   (int)(*size_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)float_settings_size; i++)
       {
          if ((*float_settings[i].ptr) != (*float_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%f\n",
-                  float_settings[i].ident, *float_settings[i].ptr);
-            RARCH_LOG("   override: %s=%f\n",
-                  float_overrides[i].ident, *float_overrides[i].ptr);
             config_set_float(conf, float_overrides[i].ident,
                   *float_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%s\n",
-                  array_settings[i].ident, array_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n",
-                  array_overrides[i].ident, array_overrides[i].ptr);
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%s\n",
-                  path_settings[i].ident, path_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n",
-                  path_overrides[i].ident, path_overrides[i].ptr);
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < MAX_USERS; i++)
