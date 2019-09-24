@@ -2963,10 +2963,7 @@ static void handle_translation_cb(
       if (params.basename)
          free(params.basename);
       free(img);
-
-      RARCH_LOG("Loaded Sound Size: %i\n", new_sound_size);
    }
-   RARCH_LOG("Translation done.\n"); 
 
 finish:
    if (error)
@@ -3236,15 +3233,9 @@ static bool run_translation_service(void)
           goto finish;
 
       if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
-      {
          scaler->in_fmt = SCALER_FMT_ARGB8888;
-         RARCH_LOG("IN FORMAT ARGB8888\n");
-      }
       else
-      {
          scaler->in_fmt = SCALER_FMT_RGB565;
-         RARCH_LOG("IN FORMAT RGB565\n");
-      }
       video_frame_convert_to_bgr24(
          scaler,
          (uint8_t *)bit24_image,
@@ -3364,7 +3355,6 @@ static bool run_translation_service(void)
                  sizeof(new_ai_service_url));
       }
 
-      RARCH_LOG("Server URL:  %s\n", new_ai_service_url);
       task_push_http_post_transfer(new_ai_service_url, 
             json_buffer, true, NULL, handle_translation_cb, NULL);
    }
@@ -3836,8 +3826,7 @@ static void command_event_init_cheats(void)
 
 static void command_event_load_auto_state(void)
 {
-   bool ret;
-   char msg[128]                   = {0};
+   bool ret                        = false;
    char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = configuration_settings;
@@ -3868,13 +3857,12 @@ static void command_event_load_auto_state(void)
 
    ret = content_load_state(savestate_name_auto, false, true);
 
-   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
-         savestate_name_auto);
-
-   snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+   RARCH_LOG("%s: %s\n%s \"%s\" %s.\n",
+         msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
+         savestate_name_auto,
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-         savestate_name_auto, ret ? "succeeded" : "failed");
-   RARCH_LOG("%s\n", msg);
+         savestate_name_auto, ret ? "succeeded" : "failed"
+         );
 
    free(savestate_name_auto);
 }
@@ -5461,8 +5449,6 @@ TODO: Add a setting for these tweaks */
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
 
-            RARCH_LOG("[Netplay] buf %s\n", buf);
-
             hostname                            = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -5497,8 +5483,6 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
-
-            RARCH_LOG("[Netplay] buf %s\n", buf);
 
             hostname = string_split(buf, "|");
 
@@ -7035,11 +7019,12 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
             if (log_level != RETRO_LOG_DEBUG)
                continue;
 
-            RARCH_LOG("Subsystem ID: %d\n", i);
-            RARCH_LOG("Special game type: %s\n", info[i].desc);
-            RARCH_LOG("  Ident: %s\n", info[i].ident);
-            RARCH_LOG("  ID: %u\n", info[i].id);
-            RARCH_LOG("  Content:\n");
+            RARCH_LOG("Subsystem ID: %d\nSpecial game type: %s\n  Ident: %s\n  ID: %u\n  Content:\n",
+                  i,
+                  info[i].desc,
+                  info[i].ident,
+                  info[i].id
+                  );
             for (j = 0; j < info[i].num_roms; j++)
             {
                RARCH_LOG("    %s (%s)\n",
@@ -8043,10 +8028,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             if (log_level != RETRO_LOG_DEBUG)
                continue;
 
-            RARCH_LOG("Special game type: %s\n", info[i].desc);
-            RARCH_LOG("  Ident: %s\n", info[i].ident);
-            RARCH_LOG("  ID: %u\n", info[i].id);
-            RARCH_LOG("  Content:\n");
+            RARCH_LOG("Special game type: %s\n  Ident: %s\n  ID: %u\n  Content:\n",
+                  info[i].desc,
+                  info[i].ident,
+                  info[i].id
+                  );
             for (j = 0; j < info[i].num_roms; j++)
             {
                RARCH_LOG("    %s (%s)\n",
@@ -8677,8 +8663,7 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
                         path_get_realsize(RARCH_PATH_CORE)
                         ))
                {
-                  RARCH_ERR("Failed to open libretro core: \"%s\"\n", path);
-                  RARCH_ERR("Error(s): %s\n", dylib_error());
+                  RARCH_ERR("Failed to open libretro core: \"%s\"\nError(s): %s\n", path, dylib_error());
                   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
@@ -15593,6 +15578,7 @@ bool midi_driver_init(void)
                   RARCH_LOG("[MIDI]: Input device \"%s\".\n", input);
                else
                   RARCH_LOG("[MIDI]: Input disabled.\n");
+
                if (output)
                {
                   RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
