@@ -15,6 +15,7 @@
 #include "../../switch_performance_profiles.h"
 #include "../../configuration.h"
 #include <unistd.h>
+#include <malloc.h>
 #else
 #include <libtransistor/nx.h>
 #include <libtransistor/ipc_helpers.h>
@@ -54,8 +55,6 @@
 
 static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
 static const char *elf_path_cst = "/switch/retroarch_switch.nro";
-
-static uint64_t frontend_switch_get_mem_used(void);
 
 bool platform_switch_has_focus = true;
 
@@ -818,20 +817,15 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
 
 static uint64_t frontend_switch_get_mem_free(void)
 {
-   /* TODO/FIXME - should become 'free memory' */
-   uint64_t memoryUsed = 0;
-   svcGetInfo(&memoryUsed, 7, 0xffff8001, 0);
-
-   return memoryUsed;
+   struct mallinfo mem_info = mallinfo();
+   return mem_info.fordblks;
 }
 
 static uint64_t frontend_switch_get_mem_total(void)
 {
-   uint64_t memoryTotal = 0;
-   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0);
-   return memoryTotal;
+   struct mallinfo mem_info = mallinfo();
+   return mem_info.usmblks;
 }
-
 
 static enum frontend_powerstate 
 frontend_switch_get_powerstate(int *seconds, int *percent)
@@ -962,7 +956,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         frontend_switch_get_powerstate,
         frontend_switch_parse_drive_list,
         frontend_switch_get_mem_total,
-        frontend_switch_get_mem_used,
+        frontend_switch_get_mem_free,
         NULL, /* install_signal_handler */
         NULL, /* get_signal_handler_state */
         NULL, /* set_signal_handler_state */
