@@ -12,6 +12,7 @@ operation had run
 - MENU/ONSCREEN KEYBOARD: On-screen keyboard entry via mouse/touchscreen has been tidied up - no more double inputs (or unwanted menu interaction in the background)
 - MENU/MOUSE: Mouse wheel up/down is now a proper 'up/down', same as using cursor keys or a dpad
 - MENU/MOUSE: Mouse wheel tilt left/right has been wired up to normal 'left/right' commands. Also further improved mouse wheel tilt
+- MENU/OZONE: Add option to toggle between static and scrolling content metadata 
 - MENU/OSX: Fixed mouse buttons - mouse down events were not hooked up
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
