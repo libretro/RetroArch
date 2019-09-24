@@ -135,7 +135,7 @@ void string_remove_all_chars(char *str, char c);
 
 /* Converts string to unsigned integer.
  * Returns 0 if string is invalid  */
-unsigned string_to_unsigned(char *str);
+unsigned string_to_unsigned(const char *str);
 
 RETRO_END_DECLS
 
