@@ -816,17 +816,6 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static uint64_t frontend_switch_get_mem_total(void)
-{
-   uint64_t memoryTotal = 0;
-   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0);
-   /* TODO/FIXME - is now 'free memory', perhaps logic
-    * here needs to change */
-   memoryTotal += frontend_switch_get_mem_free();
-
-   return memoryTotal;
-}
-
 static uint64_t frontend_switch_get_mem_free(void)
 {
    /* TODO/FIXME - should become 'free memory' */
@@ -835,6 +824,14 @@ static uint64_t frontend_switch_get_mem_free(void)
 
    return memoryUsed;
 }
+
+static uint64_t frontend_switch_get_mem_total(void)
+{
+   uint64_t memoryTotal = 0;
+   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0);
+   return memoryTotal;
+}
+
 
 static enum frontend_powerstate 
 frontend_switch_get_powerstate(int *seconds, int *percent)
