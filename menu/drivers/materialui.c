@@ -686,7 +686,7 @@ static void materialui_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
 {
-   unsigned bottom, header_height;
+   int bottom, header_height;
    menu_input_pointer_t pointer;
    size_t        i             = 0;
    materialui_handle_t *mui    = (materialui_handle_t*)data;
