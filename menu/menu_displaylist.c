@@ -6922,11 +6922,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
              * toggles the Quick Menu off and on again (returning
              * to the Core Options menu) the menu must be refreshed
              * (or undefined behaviour occurs).
-             * The only way to check whether the number of visible
-             * options has changed is to cache the last set menu size,
+             * We therefore have to cache the last set menu size,
              * and compare this with the new size after processing
-             * the current core_option_manager_t struct */
-            size_t prev_count = info->list->size;
+             * the current core_option_manager_t struct.
+             * Note: It would be 'nicer' to only refresh the menu
+             * if the selection marker is at an index higher than
+             * the new size, but we don't really have access that
+             * information at this stage (i.e. the selection can
+             * change after this function is called) */
+            static size_t prev_count = 0;
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -6992,6 +6996,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                info->need_refresh          = true;
                info->need_navigation_clear = true;
+               prev_count                  = count;
             }
             info->need_push                = true;
          }

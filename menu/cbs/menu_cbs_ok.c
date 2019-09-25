@@ -3223,7 +3223,7 @@ int action_ok_core_option_dropdown_list(const char *path,
 
    generic_action_ok_displaylist_push(
          core_option_lbl, NULL,
-         core_option_idx, 0, 0, 0,
+         core_option_idx, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
    return 0;
 }
@@ -4198,7 +4198,7 @@ static int action_ok_set_core_association(const char *path,
       return menu_cbs_exit();
 
    return generic_action_ok_displaylist_push(path, NULL,
-         NULL, 0, menu->rpl_entry_selection_ptr, entry_idx,
+         NULL, 0, idx, entry_idx,
          ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
 }
 
@@ -5701,7 +5701,7 @@ static int action_ok_video_resolution(const char *path,
 #else
    generic_action_ok_displaylist_push(
          NULL,
-         NULL, NULL, 0, 0, 0,
+         NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
 #endif
 
@@ -5713,7 +5713,7 @@ static int action_ok_playlist_default_core(const char *path,
 {
    generic_action_ok_displaylist_push(
          NULL,
-         NULL, NULL, 0, 0, 0,
+         NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
    return 0;
 }
@@ -5723,7 +5723,7 @@ static int action_ok_playlist_label_display_mode(const char *path,
 {
    generic_action_ok_displaylist_push(
          NULL,
-         NULL, NULL, 0, 0, 0,
+         NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE);
    return 0;
 }
@@ -5733,7 +5733,7 @@ static int action_ok_playlist_right_thumbnail_mode(const char *path,
 {
    generic_action_ok_displaylist_push(
          NULL,
-         NULL, NULL, 0, 0, 0,
+         NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
    return 0;
 }
@@ -5743,7 +5743,7 @@ static int action_ok_playlist_left_thumbnail_mode(const char *path,
 {
    generic_action_ok_displaylist_push(
          NULL,
-         NULL, NULL, 0, 0, 0,
+         NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
    return 0;
 }
