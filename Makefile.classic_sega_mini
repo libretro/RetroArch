@@ -21,7 +21,7 @@ all: $(TARGET)
 retroarch:
 	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
 	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
-	CFLAGS="-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard" ./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
+	CFLAGS="-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard" ./configure --host=arm-linux-gnueabihf --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
 	make HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_SEGAM=1 -j #Cook it
 	arm-linux-gnueabihf-strip -v retroarch
 	@echo "*********************************************************************"
