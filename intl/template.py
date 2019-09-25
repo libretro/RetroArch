@@ -9,7 +9,7 @@ import sys
 
 try:
     lc = sys.argv[1]
-except:
+except IndexError:
     print("Usage: ./template.py <language_postfix>")
     sys.exit(1)
 
@@ -54,9 +54,12 @@ def update(translation, template):
 
 with open('msg_hash_us.h', 'r') as template_file:
     template = template_file.read()
-    with open('msg_hash_' + lc + '.h', 'r+') as translation_file:
-        translation = translation_file.read()
-        new_translation = update(translation, template)
-        translation_file.seek(0)
-        translation_file.write(new_translation)
-        translation_file.truncate()
+    try:
+        with open('msg_hash_' + lc + '.h', 'r+') as translation_file:
+            translation = translation_file.read()
+            new_translation = update(translation, template)
+            translation_file.seek(0)
+            translation_file.write(new_translation)
+            translation_file.truncate()
+    except EnvironmentError:
+        print('Cannot read/write "msg_hash_' + lc + '.h"')
