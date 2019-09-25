@@ -595,7 +595,9 @@ ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o
 
    ifneq ($(HAVE_HAKCHI), 1)
-      OBJ += midi/drivers/alsa_midi.o
+      ifneq ($(HAVE_SEGAM), 1)
+         OBJ += midi/drivers/alsa_midi.o
+      endif
    endif
 
    ifeq ($(HAVE_THREADS), 1)
@@ -2036,7 +2038,7 @@ endif
 ##################################
 ### Classic Platform specifics ###
 ###############WIP################
-# Help at https://modmyclassic.com/comp
+# Help at https://modmyclassic.com
 
 ifeq ($(HAVE_CLASSIC), 1)
   DEFINES += -DHAVE_CLASSIC
@@ -2065,5 +2067,9 @@ endif
 
 ifeq ($(HAVE_HAKCHI), 1)
    DEFINES += -DHAVE_HAKCHI
+endif
+
+ifeq ($(HAVE_SEGAM), 1)
+   DEFINES += -DHAVE_SEGAM
 endif
 ##################################
