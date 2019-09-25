@@ -35,11 +35,17 @@ def parse_message(message):
 
 def messages(text):
     result = p.findall(text)
+    seen = set()
     msg_list = []
     for msg in result:
         key, val = parse_message(msg)
         item = {'key': key, 'val': val, 'msg': msg}
         msg_list.append(item)
+        if key not in seen:
+            seen.add(key)
+        else:
+            print("Duplicate key: " + key)
+
     return msg_list
 
 def update(translation, template):
