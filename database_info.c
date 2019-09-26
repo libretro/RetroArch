@@ -120,7 +120,7 @@ int database_info_build_query_enum(char *s, size_t len,
    if (add_quotes)
       strlcat(s, "\"", len);
 
-   strlcat(s, "{'", len);
+   strlcat(s, "}", len);
 
 #if 0
    RARCH_LOG("query: %s\n", s);
