@@ -52,7 +52,6 @@
 {
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
    ce.label = @"filter kernel";
-   [ce pushDebugGroup:@"filter kernel"];
 
    [ce setComputePipelineState:_kernel];
 
@@ -67,7 +66,6 @@
 
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
 
-   [ce popDebugGroup];
    [ce endEncoding];
 }
 
@@ -75,8 +73,7 @@
 {
    id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
    ce.label = @"filter kernel";
-   [ce pushDebugGroup:@"filter kernel"];
-
+ 
    [ce setComputePipelineState:_kernel];
 
    [ce setBuffer:tin offset:0 atIndex:0];
@@ -89,7 +86,6 @@
 
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
 
-   [ce popDebugGroup];
    [ce endEncoding];
 }
 
