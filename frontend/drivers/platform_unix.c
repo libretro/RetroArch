@@ -2051,9 +2051,35 @@ static uint64_t frontend_unix_get_mem_total(void)
 
 static uint64_t frontend_unix_get_mem_free(void)
 {
+#ifdef ANDROID
+   char line[256];
+   uint64_t total    = 0;
+   uint64_t freemem  = 0;
+   uint64_t buffers  = 0;
+   uint64_t cached   = 0;
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
+
+   while (fgets(line, sizeof(line), data))
+   {
+      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total)  == 1)
+         total   *= 1024;
+      if (sscanf(line, "MemFree: " STRING_REP_USIZE " kB", (size_t*)&freemem) == 1)
+         freemem *= 1024;
+      if (sscanf(line, "Buffers: " STRING_REP_USIZE " kB", (size_t*)&buffers) == 1)
+         buffers *= 1024;
+      if (sscanf(line, "Cached: " STRING_REP_USIZE " kB", (size_t*)&cached)   == 1)
+         cached  *= 1024;
+   }
+
+   fclose(data);
+   return freemem - buffers - cached;
+#else
    unsigned long long ps = sysconf(_SC_PAGESIZE);
    unsigned long long pn = sysconf(_SC_AVPHYS_PAGES);
    return ps * pn;
+#endif
 }
 
 /*#include <valgrind/valgrind.h>*/
