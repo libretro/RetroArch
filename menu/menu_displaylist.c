@@ -4904,6 +4904,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, PARSE_ACTION, true},
                {MENU_ENUM_LABEL_SAVING_SETTINGS, PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LOGGING_SETTINGS,PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS, PARSE_ACTION, true},
                {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS, PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,PARSE_ACTION, true},
@@ -7772,13 +7773,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                MENU_SETTING_ACTION, 0, 0))
             count++;
 #endif
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-
          info->need_push    = true;
          info->need_refresh = true;
          break;
