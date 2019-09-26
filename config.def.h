@@ -297,12 +297,7 @@
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_16_9
-#elif defined(PSP)
-#define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
-#elif defined(_3DS)
-/* Previously defaulted to ASPECT_RATIO_4_3.
- * Non-4:3 content looks dreadful when stretched
- * to 4:3 on the 3DS screen... */
+#elif defined(PSP) || defined(_3DS) || defined(HAVE_LIBNX) || defined(VITA)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
 #elif defined(RARCH_CONSOLE)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_4_3
