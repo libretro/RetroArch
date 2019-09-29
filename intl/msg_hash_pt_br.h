@@ -9607,3 +9607,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
       "A animação que é acionada ao mover para cima ou para baixo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "A animação que é acionada ao abrir um submenu.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+      "Excluir lista de reprodução")

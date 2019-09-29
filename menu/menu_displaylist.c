@@ -2840,6 +2840,12 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    /* TODO - Add:
     * - Remove invalid entries */
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST),
+         MENU_ENUM_LABEL_DELETE_PLAYLIST,
+         MENU_SETTING_ACTION_DELETE_PLAYLIST, 0, 0);
+
    return true;
 }
 
