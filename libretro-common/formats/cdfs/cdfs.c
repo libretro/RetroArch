@@ -151,7 +151,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 
 int cdfs_open_file(cdfs_file_t* file, intfstream_t* stream, const char* path)
 {
-   if (!file || !stream || !path)
+   if (!file || !stream)
       return 0;
 
    memset(file, 0, sizeof(*file));
@@ -160,16 +160,28 @@ int cdfs_open_file(cdfs_file_t* file, intfstream_t* stream, const char* path)
    cdfs_determine_sector_size(file);
 
    file->current_sector = -1;
-   file->first_sector = cdfs_find_file(file, path);
+   if (path != NULL)
+   {
+      file->first_sector = cdfs_find_file(file, path);
+   }
+   else if (file->stream_sector_size)
+   {
+      file->first_sector = 0;
+      file->size = (intfstream_get_size(file->stream) / file->stream_sector_size) * 2048;
+   }
+   else
+   {
+      file->first_sector = -1;
+   }
 
-   return (file->first_sector > 0);
+   return (file->first_sector >= 0);
 }
 
 int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
 {
    int bytes_read = 0;
 
-   if (!file || !file->first_sector || !buffer)
+   if (!file || file->first_sector < 0 || !buffer)
       return 0;
 
    if (len > file->size - file->pos)
@@ -240,13 +252,13 @@ void cdfs_close_file(cdfs_file_t* file)
    if (file)
    {
       /* not really anything to do here, just clear out the first_sector so read() won't do anything */
-      file->first_sector = 0;
+      file->first_sector = -1;
    }
 }
 
 int64_t cdfs_get_size(cdfs_file_t* file)
 {
-   if (!file || !file->first_sector)
+   if (!file || file->first_sector < 0)
       return 0;
 
    return file->size;
@@ -254,7 +266,7 @@ int64_t cdfs_get_size(cdfs_file_t* file)
 
 int64_t cdfs_tell(cdfs_file_t* file)
 {
-   if (!file || !file->first_sector)
+   if (!file || file->first_sector < 0)
       return -1;
 
    return file->pos;
@@ -265,7 +277,7 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
    int64_t new_pos;
    int new_sector;
 
-   if (!file || !file->first_sector)
+   if (!file || file->first_sector < 0)
       return -1;
 
    switch (whence)
@@ -459,8 +471,8 @@ intfstream_t* cdfs_open_data_track(const char* path)
       return intfstream_open_chd_track(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, 1);
    }
 
-   /* unsupported file type */
-   return NULL;
+   /* unsupported file type - try opening as a raw track */
+   return cdfs_open_raw_track(path);
 }
 
 intfstream_t* cdfs_open_raw_track(const char* path)
