@@ -1,10 +1,11 @@
-# Future
+# Future (1.7.9)
 - AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service
 - BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed
 - BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
+- CHEEVOS: Add support for Sega CD/Saturn; reduce hash calls to server
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
 - GONG: Stability fixes
 - MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
@@ -15,10 +16,13 @@ operation had run
 - MENU/OZONE: Add option to toggle between static and scrolling content metadata 
 - MENU/OSX: Fixed mouse buttons - mouse down events were not hooked up
 - MENU: When navigating backwards from a core options drop-down list (i.e. pressing select or cancel), the last menu position is remembered (instead of resetting back to the first core option item each time)
+- MENU: Add option to delete playlists (Settings > Playlists > Playlist Management)
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
 - OSX/METAL: CoreAudio V3 driver should now be the default audio driver on first startup
+- SWITCH: Set default aspect ratio to core provided instead of 4:3
 - THREADED VIDEO: Fix FPS text in threaded video mode
+- VITA: Set default aspect ratio to core provided instead of 4:3
 - WIN32: Log window now has title 'Logging Console'
 - WII: Add Wiimote lightgun support
 

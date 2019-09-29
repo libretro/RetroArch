@@ -914,7 +914,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "Throttle Menu Framerate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-      "Menu File Browser")
+      "File Browser")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Menu Linear Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -3782,3 +3782,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
       "Adjust settings influencing the frame time counter (only active when threaded video is disabled).")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
       "Use modern decorated animations, notifications, indicators and controls instead of the old text only system.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+      "Forigi ludliston")

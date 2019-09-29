@@ -152,4 +152,4 @@ addons:
     build_command:   "make"
     branch_pattern: coverity_scan
 notifications:
-  email: false
+  email: true

@@ -2518,6 +2518,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_CORE_DELETE:
+      case MENU_ENUM_LABEL_DELETE_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_OSD];

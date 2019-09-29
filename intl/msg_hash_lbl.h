@@ -2083,3 +2083,5 @@ MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
       "frame_time_counter_reset_after_load_state")
 MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
       "frame_time_counter_reset_after_save_state")
+MSG_HASH(MENU_ENUM_LABEL_DELETE_PLAYLIST,
+      "delete_playlist")

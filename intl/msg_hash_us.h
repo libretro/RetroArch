@@ -1740,7 +1740,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-    "Settings"
+    "File Browser"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -9690,3 +9690,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
       "The animation that triggers when moving up or down.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "The animation that triggers when opening a submenu.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+      "Delete Playlist")

@@ -45,6 +45,10 @@ typedef struct cdfs_file_t
    uint8_t sector_buffer[2048];
 } cdfs_file_t;
 
+/* opens the specified file within the CD or virtual CD.
+ * if path is NULL, will open the raw CD (useful for reading CD without having to worry about sector sizes,
+ * headers, or checksum data)
+ */
 int cdfs_open_file(cdfs_file_t* file, intfstream_t* stream, const char* path);
 
 void cdfs_close_file(cdfs_file_t* file);
