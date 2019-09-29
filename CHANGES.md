@@ -5,6 +5,7 @@
 - BUGFIX: Networking - fix memory leak that could happen at exit after a network
 operation had run
 - CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
+- CHEEVOS: Add support for Sega CD/Saturn; reduce hash calls to server
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
 - GONG: Stability fixes
 - MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
