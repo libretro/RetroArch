@@ -733,7 +733,7 @@ extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
 
 static midi_driver_t *midi_drivers[] = {
-#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI)
+#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
    &midi_alsa,
 #endif
 #ifdef HAVE_WINMM

@@ -447,7 +447,7 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 
 #ifdef HAVE_WINMM
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
-#elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI)
+#elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
