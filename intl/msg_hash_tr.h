@@ -9052,3 +9052,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
       "Kare zaman sayacını etkileyen ayarları yapın (yalnızca threaded video devre dışı olduğunda etkindir).")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
       "Yalnızca eski metin sistemi yerine modern dekore edilmiş animasyonları, bildirimleri, göstergeleri ve kontrolleri kullanın.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+      "Parça listesini sil")

@@ -9745,3 +9745,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
     "シェーダの自動ロード遅延 (ms)"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+    "プレイリストを削除"
+    )

@@ -5864,6 +5864,26 @@ static int action_ok_core_delete(const char *path,
    return 0;
 }
 
+static int action_ok_delete_playlist(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist = playlist_get_cached();
+   menu_ctx_environment_t menu_environ = {0};
+
+   if (!playlist)
+      return -1;
+
+   path = playlist_get_conf_path(playlist);
+
+   filestream_delete(path);
+
+   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
+
+   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_pl_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6665,6 +6685,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_OK(cbs, action_ok_core_delete);
+            break;
+         case MENU_ENUM_LABEL_DELETE_PLAYLIST:
+            BIND_ACTION_OK(cbs, action_ok_delete_playlist);
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
