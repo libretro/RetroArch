@@ -99,8 +99,6 @@ static void init_ps2_video(ps2_video_t *ps2)
 
 static void deinitTexture(GSTEXTURE *texture)
 {
-   free(texture->Mem);
-   free(texture->Clut);
    texture->Mem = NULL;
    texture->Clut = NULL;
 }
@@ -368,6 +366,9 @@ static void ps2_gfx_free(void *data)
 
    deinitTexture(ps2->menuTexture);
    deinitTexture(ps2->coreTexture);
+
+   free(ps2->menuTexture);
+   free(ps2->coreTexture);
 
    gsKit_deinit_global(ps2->gsGlobal);
 

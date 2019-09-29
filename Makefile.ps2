@@ -1,4 +1,4 @@
-BUILD_PRX          = 0
+BUILD_FOR_PCSX2    = 1
 DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
@@ -45,6 +45,9 @@ LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L$(CD
 LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lz
 LIBS += -lcdvdfs -lpatches -lpoweroff
 
+ifeq ($(BUILD_FOR_PCSX2), 1)
+RARCH_DEFINES += -DBUILD_FOR_PCSX2
+endif
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
