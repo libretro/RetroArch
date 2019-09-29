@@ -436,9 +436,9 @@ check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
 check_val '' X11 -lX11 '' x11 '' '' false
-check_val '' XCB -lxcb '' xcb '' '' false
 
 if [ "$HAVE_X11" != 'no' ]; then
+   check_val '' XCB -lxcb '' xcb '' '' false
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
 else
