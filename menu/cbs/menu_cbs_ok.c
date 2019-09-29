@@ -5868,10 +5868,13 @@ static int action_ok_delete_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_t *playlist = playlist_get_cached();
-   menu_ctx_environment_t menu_environ = {0};
+   menu_ctx_environment_t menu_environ;
 
    if (!playlist)
       return -1;
+
+   menu_environ.type = MENU_ENVIRON_NONE;
+   menu_environ.data = NULL;
 
    path = playlist_get_conf_path(playlist);
 
