@@ -54,6 +54,10 @@ static bool nullwifi_connect_ssid(unsigned i, const char* passphrase)
    return false;
 }
 
+static void nullwifi_tether_start_stop(bool start, char* configfile)
+{
+}
+
 wifi_driver_t wifi_null = {
    nullwifi_init,
    nullwifi_free,
@@ -63,5 +67,6 @@ wifi_driver_t wifi_null = {
    nullwifi_get_ssids,
    nullwifi_ssid_is_online,
    nullwifi_connect_ssid,
+   nullwifi_tether_start_stop,
    "null",
 };

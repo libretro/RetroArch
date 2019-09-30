@@ -2125,6 +2125,7 @@ void config_set_defaults(void)
    settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
    settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
    settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.localap_enable              = false;
 #endif
 
 #ifdef HAVE_MENU

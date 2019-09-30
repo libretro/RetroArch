@@ -9340,6 +9340,11 @@ bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
    return wifi_driver->connect_ssid(i, passphrase);
 }
 
+void driver_wifi_tether_start_stop(bool start, char* configfile)
+{
+   wifi_driver->tether_start_stop(start, configfile);
+}
+
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
 

@@ -82,8 +82,10 @@ MSG_HASH(MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE,
       "auto_shaders_enable")
 MSG_HASH(MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,
       "block_sram_overwrite")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
       "bluetooth_enable")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
       "buildbot_assets_url")
 MSG_HASH(MENU_ENUM_LABEL_CACHE_DIRECTORY,
@@ -1129,8 +1131,10 @@ MSG_HASH(MENU_ENUM_LABEL_RUN,
       "collection")
 MSG_HASH(MENU_ENUM_LABEL_RUN_MUSIC,
       "collection_music")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_SAMBA_ENABLE,
       "samba_enable")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
       "savefile_directory")
 MSG_HASH(MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,
@@ -1209,8 +1213,10 @@ MSG_HASH(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
       "systemfiles_in_content_dir_enable")
 MSG_HASH(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
       "screenshots_in_content_dir_enable")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_SSH_ENABLE,
       "ssh_enable")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_START_CORE,
       "start_core")
 MSG_HASH(MENU_ENUM_LABEL_START_NET_RETROPAD,
@@ -2087,3 +2093,7 @@ MSG_HASH(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
       "frame_time_counter_reset_after_save_state")
 MSG_HASH(MENU_ENUM_LABEL_DELETE_PLAYLIST,
       "delete_playlist")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_LOCALAP_ENABLE,
+      "localap_enable")
+#endif
