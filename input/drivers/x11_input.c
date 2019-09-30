@@ -106,18 +106,9 @@ static bool x_mouse_button_pressed(
 
    case RETRO_DEVICE_ID_MOUSE_WHEELUP:
    case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-      return x_mouse_state_wheel( key );
-
-/*   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-      result = x11->mouse_hwu;
-      x11->mouse_hwu = false;
-      return result;
-
+   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
    case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-      result = x11->mouse_hwd;
-      x11->mouse_hwd = false;
-      return result;
-*/
+      return x_mouse_state_wheel( key );
    }
 
    return false;
@@ -237,6 +228,8 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
          return x11->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
          return x_mouse_state_wheel(id);
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;

@@ -3345,25 +3345,108 @@ static void xmb_render(void *data,
 
    if (pointer.type != MENU_POINTER_DISABLED)
    {
-      size_t selection  = menu_navigation_get_selection();
-      int16_t pointer_y = pointer.y;
-      unsigned first = 0, last = end;
+      size_t selection     = menu_navigation_get_selection();
+      int16_t margin_top   = (int16_t)xmb->margins_screen_top;
+      int16_t margin_left  = (int16_t)xmb->margins_screen_left;
+      int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
+      int16_t pointer_x    = pointer.x;
+      int16_t pointer_y    = pointer.y;
 
-      pointer_y = (pointer.type == MENU_POINTER_MOUSE) ?
-            pointer_y + (xmb->cursor_size/2) : pointer_y;
+      /* This must be set every frame when using a pointer,
+       * otherwise touchscreen input breaks when changing
+       * orientation */
+      menu_display_set_width(width);
+      menu_display_set_height(height);
 
-      if (height)
-         xmb_calculate_visible_range(xmb, height,
-               end, (unsigned)selection, &first, &last);
-
-      for (i = first; i <= last; i++)
+      /* When determining current pointer selection, we
+       * only track pointer movements between the left
+       * and right screen margins */
+      if ((pointer_x > margin_left) && (pointer_x < margin_right))
       {
-         float item_y1     = xmb->margins_screen_top
-            + xmb_item_y(xmb, (int)i, selection);
-         float item_y2     = item_y1 + xmb->icon_size;
+         unsigned first = 0;
+         unsigned last = end;
 
-         if (pointer_y > item_y1 && pointer_y < item_y2)
-            menu_input_set_pointer_selection(i);
+         if (height)
+            xmb_calculate_visible_range(xmb, height,
+                  end, (unsigned)selection, &first, &last);
+
+         for (i = first; i <= last; i++)
+         {
+            float entry_size      = (i == selection) ?
+                  xmb->icon_spacing_vertical * xmb->active_item_factor : xmb->icon_spacing_vertical;
+            float half_entry_size = entry_size * 0.5f;
+            float y_curr;
+            int y1;
+            int y2;
+
+            y_curr = xmb_item_y(xmb, (int)i, selection) + xmb->margins_screen_top;
+
+            y1 = (int)((y_curr - half_entry_size) + 0.5f);
+            y2 = (int)((y_curr + half_entry_size) + 0.5f);
+
+            if ((pointer_y > y1) && (pointer_y < y2))
+            {
+               menu_input_set_pointer_selection(i);
+               break;
+            }
+         }
+      }
+
+      /* Areas beyond the top/right margins are used
+       * as a sort of virtual dpad:
+       * - Above top margin: navigate left/right
+       * - Beyond right margin: navigate up/down */
+      if ((pointer_y < margin_top) || (pointer_x > margin_right))
+      {
+         menu_entry_t entry;
+
+         if (pointer.press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
+         {
+            menu_entry_init(&entry);
+            entry.path_enabled       = false;
+            entry.label_enabled      = false;
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
+            menu_entry_get(&entry, 0, selection, NULL, true);
+         }
+
+         switch (pointer.press_direction)
+         {
+            case MENU_INPUT_PRESS_DIRECTION_UP:
+               /* Note: Direction is inverted, since 'up' should
+                * move list upwards */
+               if (pointer_x > margin_right)
+                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_DOWN);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_DOWN:
+               /* Note: Direction is inverted, since 'down' should
+                * move list downwards */
+               if (pointer_x > margin_right)
+                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_UP);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_LEFT:
+               /* Navigate left
+                * Note: At the top level, navigating left
+                * means switching to the 'next' horizontal list,
+                * which is actually a movement to the *right* */
+               if (pointer_y < margin_top)
+                  menu_entry_action(
+                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_RIGHT:
+               /* Navigate right
+                * Note: At the top level, navigating right
+                * means switching to the 'previous' horizontal list,
+                * which is actually a movement to the *left* */
+               if (pointer_y < margin_top)
+                  menu_entry_action(
+                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+               break;
+            default:
+               /* Do nothing */
+               break;
+         }
       }
    }
 
@@ -5977,24 +6060,157 @@ error:
 
 static int xmb_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
    unsigned header_height = menu_display_get_header_height();
+   size_t selection       = menu_navigation_get_selection();
+   unsigned end           = (unsigned)menu_entries_get_size();
+   unsigned width;
+   unsigned height;
+   int16_t margin_top;
+   int16_t margin_left;
+   int16_t margin_right;
 
-   if (y < header_height)
-   {
-      size_t selection = menu_navigation_get_selection();
-      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-   else if (ptr <= (menu_entries_get_size() - 1))
-   {
-      size_t selection         = menu_navigation_get_selection();
-      if (ptr == selection)
-         return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+   if (!xmb)
+      return -1;
 
-      menu_navigation_set_selection(ptr);
-      menu_driver_navigation_set(false);
+   video_driver_get_size(&width, &height);
+   margin_top   = (int16_t)xmb->margins_screen_top;
+   margin_left  = (int16_t)xmb->margins_screen_left;
+   margin_right = (int16_t)((float)width - xmb->margins_screen_left);
+
+   switch (gesture)
+   {
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
+         /* - A touch in the left margin:
+          *   > ...triggers a 'cancel' action beneath the top margin
+          *   > ...triggers a 'search' action above the top margin
+          * - A touch in the right margin triggers a 'select' action
+          *   for the current item
+          * - Between the left/right margins input is handled normally */
+         if (x < margin_left)
+         {
+            if (y >= margin_top)
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            else
+               return menu_input_dialog_start_search() ? 0 : -1;
+         }
+         else if (x > margin_right)
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+         else if (ptr <= (end - 1))
+         {
+            /* If pointer item is already 'active', perform 'select' action */
+            if (ptr == selection)
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+
+            /* ...otherwise navigate to the current pointer item */
+            menu_navigation_set_selection(ptr);
+            menu_driver_navigation_set(false);
+         }
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= end - 1) && (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_LEFT:
+         /* Navigate left
+          * Note: At the top level, navigating left
+          * means switching to the 'next' horizontal list,
+          * which is actually a movement to the *right* */
+         if (y > margin_top)
+            menu_entry_action(
+                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_RIGHT:
+         /* Navigate right
+          * Note: At the top level, navigating right
+          * means switching to the 'previous' horizontal list,
+          * which is actually a movement to the *left* */
+         if (y > margin_top)
+            menu_entry_action(
+                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_UP:
+         /* Swipe up in left margin: ascend alphabet */
+         if (x < margin_left)
+            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_DOWN);
+         else if (x < margin_right)
+         {
+            /* Swipe up between left and right margins:
+             * move selection pointer down by 1 'page' */
+            unsigned first = 0;
+            unsigned last  = end;
+
+            if (height)
+               xmb_calculate_visible_range(xmb, height,
+                     end, (unsigned)selection, &first, &last);
+
+            if (last < end)
+            {
+               menu_navigation_set_selection((size_t)last);
+               menu_driver_navigation_set(true);
+            }
+            else
+               menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
+         }
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_DOWN:
+         /* Swipe down in left margin: descend alphabet */
+         if (x < margin_left)
+            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_UP);
+         else if (x < margin_right)
+         {
+            /* Swipe down between left and right margins:
+             * move selection pointer up by 1 'page' */
+            unsigned bottom_idx = (unsigned)selection + 1;
+            size_t new_idx;
+            unsigned step;
+
+            /* Determine index of entry at bottom of screen
+             * Note: cannot use xmb_calculate_visible_range()
+             * here because there may not be sufficient entries
+             * to reach the bottom of the screen - i.e. we just
+             * want an index offset to subtract from the current
+             * selection... */
+            while (true)
+            {
+               float top = xmb_item_y(xmb, bottom_idx, selection) + xmb->margins_screen_top;
+
+               if (top > height)
+               {
+                  /* Since this checks the top position, the
+                   * final index is always 1 greater than it
+                   * should be... */
+                  bottom_idx--;
+                  break;
+               }
+
+               bottom_idx++;
+            }
+
+            step     = (bottom_idx >= selection) ? bottom_idx - selection : 0;
+            new_idx  = (selection  > step)       ? selection - step       : 0;
+
+            if (new_idx > 0)
+            {
+               menu_navigation_set_selection(new_idx);
+               menu_driver_navigation_set(true);
+            }
+            else
+            {
+               bool pending_push = false;
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            }
+         }
+         break;
+      default:
+         /* Ignore input */
+         break;
    }
 
    return 0;

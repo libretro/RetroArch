@@ -2294,15 +2294,33 @@ static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_i
 
 static int ozone_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    size_t selection         = menu_navigation_get_selection();
-   if (ptr == selection)
-      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-   menu_navigation_set_selection(ptr);
-   menu_driver_navigation_set(false);
+   switch (gesture)
+   {
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
+         /* Normal pointer input */
+         if (ptr == selection)
+            return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+
+         menu_navigation_set_selection(ptr);
+         menu_driver_navigation_set(false);
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= (menu_entries_get_size() - 1)) &&
+             (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      default:
+         /* Ignore input */
+         break;
+   }
 
    return 0;
 }
