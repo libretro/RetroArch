@@ -13,9 +13,11 @@ operation had run
 - MENU/ONSCREEN KEYBOARD: On-screen keyboard entry via mouse/touchscreen has been tidied up - no more double inputs (or unwanted menu interaction in the background)
 - MENU/MOUSE: Mouse wheel up/down is now a proper 'up/down', same as using cursor keys or a dpad
 - MENU/MOUSE: Mouse wheel tilt left/right has been wired up to normal 'left/right' commands. Also further improved mouse wheel tilt
-- MENU/OZONE: Add option to toggle between static and scrolling content metadata 
+- MENU/OZONE: Add option to toggle between static and scrolling content metadata
+- MENU/XMB: Add full gesture support
 - MENU/OSX: Fixed mouse buttons - mouse down events were not hooked up
 - MENU: When navigating backwards from a core options drop-down list (i.e. pressing select or cancel), the last menu position is remembered (instead of resetting back to the first core option item each time)
+- MENU: Add mouse/touchscreen gesture support
 - MENU: Add option to delete playlists (Settings > Playlists > Playlist Management)
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
