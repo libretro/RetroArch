@@ -32,15 +32,58 @@ RETRO_BEGIN_DECLS
 /* Mouse wheel tilt actions repeat at a very high
  * frequency - we ignore any input that occurs
  * with a period less than MENU_INPUT_HORIZ_WHEEL_DELAY */
-#define MENU_INPUT_HORIZ_WHEEL_DELAY 250000  /* 250 ms */
+#define MENU_INPUT_HORIZ_WHEEL_DELAY 250000          /* 250 ms */
 
-#define MENU_INPUT_HIDE_CURSOR_DELAY 4000000 /* 4 seconds */
+/* Press directions are triggered as a pulse train.
+ * Pulse period starts at MENU_INPUT_PRESS_DIRECTION_DELAY_MAX,
+ * and decreases to MENU_INPUT_PRESS_DIRECTION_DELAY_MIN as
+ * the start/current delta offset increases from
+ * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN to
+ * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MAX */
+#define MENU_INPUT_PRESS_DIRECTION_DELAY_MIN 100000  /* 100 ms */
+#define MENU_INPUT_PRESS_DIRECTION_DELAY_MAX 500000  /* 500 ms */
 
-#define MENU_INPUT_PRESS_TIME_SHORT 250000   /* 250 ms */
-#define MENU_INPUT_PRESS_TIME_LONG 1500000   /* 1.5 second */
-/* (Anthing less than 'short' is considered a tap) */
+#define MENU_INPUT_HIDE_CURSOR_DELAY 4000000         /* 4 seconds */
+
+#define MENU_INPUT_PRESS_TIME_SHORT 200000           /* 200 ms */
+#define MENU_INPUT_PRESS_TIME_LONG 1500000           /* 1.5 second */
+/* (Anything less than 'short' is considered a tap) */
 
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
+
+/* Pointer is considered stationary if dx/dy remain
+ * below (display DPI) * MENU_INPUT_DPI_THRESHOLD_DRAG */
+#define MENU_INPUT_DPI_THRESHOLD_DRAG 0.1f
+
+/* Press direction detection:
+ * While holding the pointer down, a press in a
+ * specific direction (up, down, left, right) will
+ * be detected if:
+ * - Current delta (i.e. from start to current) in
+ *   press direction is greater than
+ *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN
+ * - Current delta in perpendicular axis is less than
+ *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT
+ * Press direction repeat rate is proportional to the current
+ * delta in press direction.
+ * Note: 'Tangent' is technically not the correct word here,
+ * but the alternatives look silly, and the actual meaning
+ * is transparent... */
+#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN 0.55f
+#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MAX 1.5f
+#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT 0.35f
+
+/* Swipe detection:
+ * A gesture will register as a swipe if:
+ * - Total delta in swipe direction is greater than
+ *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE
+ * - Maximum frame delta in swipe direction is greater than
+ *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA
+ * - Maximum frame delta in all other directions is less than
+ *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT */
+#define MENU_INPUT_DPI_THRESHOLD_SWIPE 0.7f
+#define MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA 0.4f
+#define MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT 0.3f
 
 enum menu_pointer_type
 {
@@ -59,6 +102,27 @@ enum menu_input_mouse_hw_id
    MENU_MOUSE_WHEEL_DOWN,
    MENU_MOUSE_HORIZ_WHEEL_UP,
    MENU_MOUSE_HORIZ_WHEEL_DOWN
+};
+
+enum menu_input_pointer_press_direction
+{
+   MENU_INPUT_PRESS_DIRECTION_NONE = 0,
+   MENU_INPUT_PRESS_DIRECTION_UP,
+   MENU_INPUT_PRESS_DIRECTION_DOWN,
+   MENU_INPUT_PRESS_DIRECTION_LEFT,
+   MENU_INPUT_PRESS_DIRECTION_RIGHT
+};
+
+enum menu_input_pointer_gesture
+{
+   MENU_INPUT_GESTURE_NONE = 0,
+   MENU_INPUT_GESTURE_TAP,
+   MENU_INPUT_GESTURE_SHORT_PRESS,
+   MENU_INPUT_GESTURE_LONG_PRESS,
+   MENU_INPUT_GESTURE_SWIPE_UP,
+   MENU_INPUT_GESTURE_SWIPE_DOWN,
+   MENU_INPUT_GESTURE_SWIPE_LEFT,
+   MENU_INPUT_GESTURE_SWIPE_RIGHT
 };
 
 /* Defines set of (abstracted) inputs/states
@@ -83,6 +147,7 @@ typedef struct menu_input_pointer
    bool pressed;
    bool dragged;
    retro_time_t press_duration;
+   enum menu_input_pointer_press_direction press_direction;
    int16_t x;
    int16_t y;
    int16_t dx;

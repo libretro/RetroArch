@@ -554,6 +554,8 @@ bool x11_alive(void *data)
                case 4: /* Grabbed  */
                        /* Scroll up */
                case 5: /* Scroll down */
+               case 6: /* Scroll wheel left */
+               case 7: /* Scroll wheel right */
                   x_input_poll_wheel(&event.xbutton, true);
                   break;
             }

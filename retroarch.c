@@ -12393,7 +12393,15 @@ static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_stat
    static bool last_cancel_pressed = false;
    bool overlay_active             = false;
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
-   bool is_rgui                    = string_is_equal(settings->arrays.menu_driver, "rgui");
+   /* Note: RGUI requires special treatment, but we can't just
+    * check settings->arrays.menu_driver because this may change
+    * while another menu driver is active (and applying RGUI corrections
+    * while another menu driver is active will render the mouse unusable).
+    * We therefore have to check for the existence of a framebuffer
+    * texture instead (which is only ever set by RGUI) */
+   menu_handle_t *menu_data        = menu_driver_get_ptr();
+   bool is_rgui                    =
+         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
@@ -12843,7 +12851,7 @@ static unsigned menu_event(
    }
 
    /* Populate menu_input_state
-    * Note: dx, dy, ptr, accel entries are set elsewhere */
+    * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
    if (menu_input->select_inhibit)
    {
       menu_input->pointer.active  = false;
@@ -12963,6 +12971,50 @@ static void menu_input_set_pointer_visibility(retro_time_t current_time)
    }
 }
 
+static float menu_input_get_dpi(void)
+{
+   gfx_ctx_metrics_t metrics;
+   float dpi                = 0.0f;
+   menu_handle_t *menu_data = menu_driver_get_ptr();
+   bool is_rgui             =
+         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
+
+   /* Regardless of menu driver, need 'actual'
+    * screen DPI */
+   metrics.type  = DISPLAY_METRIC_DPI;
+   metrics.value = &dpi;
+
+   if (!video_context_driver_get_metrics(&metrics))
+      dpi = 0.0f; /* Ensure a sane value (unnecessary check, but no harm being safe) */
+
+   /* RGUI uses a framebuffer texture, which means we
+    * operate in menu space, not screen space.
+    * DPI in a traditional sense is therefore meaningless,
+    * so generate a substitute value based upon framebuffer
+    * dimensions */
+   if ((dpi > 0.0f) && is_rgui)
+   {
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+      struct video_viewport vp;
+
+      /* Read display/framebuffer info */
+      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      video_driver_get_viewport_info(&vp);
+
+      /* Rationale for current 'DPI' determination method:
+       * - Divide screen height by DPI, to get number of vertical
+       *   '1 inch' squares
+       * - Divide RGUI framebuffer height by number of vertical
+       *   '1 inch' squares to get number of menu space pixels
+       *   per inch
+       * This is crude, but should be sufficient... */
+      dpi = ((float)fb_height / (float)vp.full_height) * dpi;
+   }
+
+   return dpi;
+}
+
 static int menu_input_pointer_post_iterate(
       retro_time_t current_time,
       menu_file_list_cbs_t *cbs,
@@ -12973,12 +13025,17 @@ static int menu_input_pointer_post_iterate(
    static int16_t start_y                          = 0;
    static int16_t last_x                           = 0;
    static int16_t last_y                           = 0;
+   static uint16_t dx_right_max                    = 0;
+   static uint16_t dx_left_max                     = 0;
+   static uint16_t dy_up_max                       = 0;
+   static uint16_t dy_down_max                     = 0;
    static bool last_select_pressed                 = false;
    static bool last_cancel_pressed                 = false;
    static bool last_left_pressed                   = false;
    static bool last_right_pressed                  = false;
    static retro_time_t last_left_action_time       = 0;
    static retro_time_t last_right_action_time      = 0;
+   static retro_time_t last_press_direction_time   = 0;
    bool attenuate_y_accel                          = true;
    bool osk_active                                 = menu_input_dialog_get_display_kb_internal();
    int ret                                         = 0;
@@ -12999,6 +13056,7 @@ static int menu_input_pointer_post_iterate(
       point.cbs     = NULL;
       point.entry   = NULL;
       point.action  = 0;
+      point.gesture = MENU_INPUT_GESTURE_NONE;
       point.retcode = 0;
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
@@ -13022,52 +13080,106 @@ static int menu_input_pointer_post_iterate(
             menu_ctx_pointer_t point;
 
             /* Initialise variables */
-            start_time = current_time;
-            start_x    = x;
-            start_y    = y;
-            last_x     = x;
-            last_y     = y;
-            accel0     = 0.0f;
-            accel1     = 0.0f;
+            start_time                = current_time;
+            start_x                   = x;
+            start_y                   = y;
+            last_x                    = x;
+            last_y                    = y;
+            dx_right_max              = 0;
+            dx_left_max               = 0;
+            dy_up_max                 = 0;
+            dy_down_max               = 0;
+            accel0                    = 0.0f;
+            accel1                    = 0.0f;
+            last_press_direction_time = 0;
 
             /* If we are not currently showing the onscreen keyboard,
              * trigger a 'pointer down' event */
             if (!osk_active)
             {
-               point.x      = x;
-               point.y      = y;
-               point.ptr    = menu_input->ptr;
-               point.cbs    = cbs;
-               point.entry  = entry;
-               point.action = action;
+               point.x       = x;
+               point.y       = y;
+               point.ptr     = menu_input->ptr;
+               point.cbs     = cbs;
+               point.entry   = entry;
+               point.action  = action;
+               point.gesture = MENU_INPUT_GESTURE_NONE;
 
                menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
                ret = point.retcode;
             }
          }
-         else if (!osk_active)
+         else
          {
             /* Pointer is being held down (i.e. for more than one frame)
              * Note: We do not track movement while the onscreen
              * keyboard is displayed */
-            gfx_ctx_metrics_t metrics;
-            float dpi;
+            float dpi = menu_input_get_dpi();
 
-            metrics.type  = DISPLAY_METRIC_DPI;
-            metrics.value = &dpi;
-
-            /* > Update deltas + acceleration
+            /* > Update deltas + acceleration & detect press direction
              *   Note: We only do this if the pointer has moved above
              *   a certain threshold - this requires dpi info */
-            if (video_context_driver_get_metrics(&metrics))
+            if (dpi > 0.0f)
             {
-               if ((abs(x - start_x) > (dpi / 10)) ||
-                   (abs(y - start_y) > (dpi / 10)))
+               uint16_t dpi_threshold_drag =
+                     (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_DRAG) + 0.5f);
+
+               int16_t dx_start            = x - start_x;
+               int16_t dy_start            = y - start_y;
+               uint16_t dx_start_abs       = dx_start < 0 ? dx_start * -1 : dx_start;
+               uint16_t dy_start_abs       = dy_start < 0 ? dy_start * -1 : dy_start;
+
+               if ((dx_start_abs > dpi_threshold_drag) ||
+                   (dy_start_abs > dpi_threshold_drag))
                {
+
+                  uint16_t dpi_threshold_press_direction_min     =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN) + 0.5f);
+                  uint16_t dpi_threshold_press_direction_max     =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MAX) + 0.5f);
+                  uint16_t dpi_threshold_press_direction_tangent =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT) + 0.5f);
+
+                  enum menu_input_pointer_press_direction
+                        press_direction                          = MENU_INPUT_PRESS_DIRECTION_NONE;
+                  float press_direction_amplitude                = 0.0f;
+                  retro_time_t press_direction_delay             = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
+
+                  int16_t dx = x - last_x;
+                  int16_t dy = y - last_y;
+
+                  /* Pointer has moved a sufficient distance to
+                   * trigger a 'dragged' state */
                   menu_input->pointer.dragged = true;
 
-                  menu_input->pointer.dx      = x - last_x;
-                  menu_input->pointer.dy      = y - last_y;
+                  /* Assign current deltas */
+                  menu_input->pointer.dx = dx;
+                  menu_input->pointer.dy = dy;
+
+                  /* Update maximum deltas */
+                  if (dx > 0)
+                  {
+                     if (dx > dx_right_max)
+                        dx_right_max = (uint16_t)dx;
+                  }
+                  else
+                  {
+                     dx *= -1;
+                     if (dx > dx_left_max)
+                        dx_left_max = (uint16_t)dx;
+                  }
+
+                  if (dy > 0)
+                  {
+                     if (dy > dy_down_max)
+                        dy_down_max = (uint16_t)dy;
+                  }
+                  else
+                  {
+                     dy *= -1;
+                     if (dy > dy_up_max)
+                        dy_up_max = dy;
+                  }
 
                   /* Magic numbers... */
                   menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
@@ -13077,21 +13189,78 @@ static int menu_input_pointer_post_iterate(
                   /* Acceleration decays over time - but if the value
                    * has been set on this frame, attenuation should
                    * be skipped */
-                  attenuate_y_accel           = false;
+                  attenuate_y_accel = false;
+
+                  /* Check if ponter is being held in a particular
+                   * direction */
+                  menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+
+                  /* > Press directions are actually triggered as a pulse train,
+                   *   since a continuous direction prevents fine control in the
+                   *   context of menu actions (i.e. it would be the same
+                   *   as always holding down a cursor key all the time - too fast
+                   *   to control). We therefore apply a low pass filter, with
+                   *   a variable frequency based upon the distance the user has
+                   *   dragged the pointer */
+
+                  /* > Horizontal */
+                  if ((dx_start_abs >= dpi_threshold_press_direction_min) &&
+                      (dy_start_abs <  dpi_threshold_press_direction_tangent))
+                  {
+                     press_direction = (dx_start > 0) ?
+                           MENU_INPUT_PRESS_DIRECTION_RIGHT : MENU_INPUT_PRESS_DIRECTION_LEFT;
+
+                     /* Get effective amplitude of press direction offset */
+                     press_direction_amplitude =
+                           (float)(dx_start_abs - dpi_threshold_press_direction_min) /
+                           (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
+                  }
+                  /* > Vertical */
+                  else if ((dy_start_abs >= dpi_threshold_press_direction_min) &&
+                           (dx_start_abs <  dpi_threshold_press_direction_tangent))
+                  {
+                     press_direction = (dy_start > 0) ?
+                           MENU_INPUT_PRESS_DIRECTION_DOWN : MENU_INPUT_PRESS_DIRECTION_UP;
+
+                     /* Get effective amplitude of press direction offset */
+                     press_direction_amplitude =
+                           (float)(dy_start_abs - dpi_threshold_press_direction_min) /
+                           (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
+                  }
+
+                  if (press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
+                  {
+                     /* > Update low pass filter frequency */
+                     if (press_direction_amplitude > 1.0f)
+                        press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN;
+                     else
+                        press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN +
+                              ((MENU_INPUT_PRESS_DIRECTION_DELAY_MAX - MENU_INPUT_PRESS_DIRECTION_DELAY_MIN)*
+                               (1.0f - press_direction_amplitude));
+
+                     /* > Apply low pass filter */
+                     if (current_time - last_press_direction_time > press_direction_delay)
+                     {
+                        menu_input->pointer.press_direction = press_direction;
+                        last_press_direction_time = current_time;
+                     }
+                  }
                }
                else
                {
                   /* Pointer is stationary */
-                  menu_input->pointer.dx = 0;
-                  menu_input->pointer.dy = 0;
+                  menu_input->pointer.dx              = 0;
+                  menu_input->pointer.dy              = 0;
+                  menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
                }
             }
             else
             {
                /* No dpi info - just fallback to zero... */
-               menu_input->pointer.dx      = 0;
-               menu_input->pointer.dy      = 0;
-               menu_input->pointer.y_accel = 0.0f;
+               menu_input->pointer.dx              = 0;
+               menu_input->pointer.dy              = 0;
+               menu_input->pointer.y_accel         = 0.0f;
+               menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
             }
 
             /* > Update remaining variables */
@@ -13103,28 +13272,44 @@ static int menu_input_pointer_post_iterate(
       else if (last_select_pressed)
       {
          /* Transition from select pressed to select unpressed */
+         int16_t x;
+         int16_t y;
+         menu_ctx_pointer_t point;
 
-         /* If pointer has been 'dragged', then it counts as
-          * a miss. Only register 'release' event if pointer
-          * has remained stationary
-          * TODO/FIXME: Releasing select should *always* trigger a
-          * pointer up event, but event type should be specified
-          * - i.e. long press, short press, swipe left/right.
-          * The menu driver can then choose how to interpret the
-          * user action */
-         if (!menu_input->pointer.dragged)
+         if (menu_input->pointer.dragged)
          {
-            menu_ctx_pointer_t point;
+            /* Ponter has moved.
+             * When using a touchscreen, relasing a press
+             * resets the x/y postition - so cannot use
+             * current hardware x/y values. Instead, use
+             * previous position from last time that a
+             * press was active */
+            x = last_x;
+            y = last_y;
+         }
+         else
+         {
+            /* Pointer is considered stationary,
+             * so use start position */
+            x = start_x;
+            y = start_y;
+         }
 
-            point.x      = start_x;
-            point.y      = start_y;
-            point.ptr    = menu_input->ptr;
-            point.cbs    = cbs;
-            point.entry  = entry;
-            point.action = action;
+         point.x       = x;
+         point.y       = y;
+         point.ptr     = menu_input->ptr;
+         point.cbs     = cbs;
+         point.entry   = entry;
+         point.action  = action;
+         point.gesture = MENU_INPUT_GESTURE_NONE;
 
-            /* On screen keyboard overrides normal menu input */
-            if (osk_active)
+         /* On screen keyboard overrides normal menu input */
+         if (osk_active)
+         {
+            /* If pointer has been 'dragged', then it counts as
+             * a miss. Only register 'release' event if pointer
+             * has remained stationary */
+            if (!menu_input->pointer.dragged)
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -13132,33 +13317,94 @@ static int menu_input_pointer_post_iterate(
                   menu_event_set_osk_ptr(point.retcode);
                   menu_event_osk_append(point.retcode);
                }
-               ret = point.retcode;
+            }
+         }
+         else
+         {
+            /* Detect gesture type */
+            if (!menu_input->pointer.dragged)
+            {
+               /* Pointer hasn't moved - check press duration */
+               if (menu_input->pointer.press_duration < MENU_INPUT_PRESS_TIME_SHORT)
+                  point.gesture = MENU_INPUT_GESTURE_TAP;
+               else if (menu_input->pointer.press_duration < MENU_INPUT_PRESS_TIME_LONG)
+                  point.gesture = MENU_INPUT_GESTURE_SHORT_PRESS;
+               else
+                  point.gesture = MENU_INPUT_GESTURE_LONG_PRESS;
             }
             else
             {
-               /* A 'long press' triggers a start (reset to default) action */
-               if (menu_input->pointer.press_duration > MENU_INPUT_PRESS_TIME_LONG)
+               /* Pointer has moved - check if this is a swipe */
+               float dpi = menu_input_get_dpi();
+
+               if (dpi > 0.0f)
                {
-                  size_t selection = menu_navigation_get_selection();
-                  ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
-               }
-               else
-               {
-                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
-                  ret = point.retcode;
+                  uint16_t dpi_threshold_swipe               =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE) + 0.5f);
+                  uint16_t dpi_threshold_swipe_delta         =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA) + 0.5f);
+                  uint16_t dpi_threshold_swipe_delta_tangent =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT) + 0.5f);
+
+                  /* Swipe right */
+                  if (dx_right_max >= dpi_threshold_swipe_delta)
+                  {
+                     if ((dx_left_max < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_up_max   < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_down_max < dpi_threshold_swipe_delta_tangent) &&
+                         (x - start_x > dpi_threshold_swipe))
+                        point.gesture = MENU_INPUT_GESTURE_SWIPE_RIGHT;
+                  }
+                  /* Swipe left */
+                  else if (dx_left_max >= dpi_threshold_swipe_delta)
+                  {
+                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_up_max    < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_down_max  < dpi_threshold_swipe_delta_tangent) &&
+                         (start_x - x  > dpi_threshold_swipe))
+                        point.gesture = MENU_INPUT_GESTURE_SWIPE_LEFT;
+                  }
+                  /* Swipe up */
+                  else if (dy_up_max >= dpi_threshold_swipe_delta)
+                  {
+                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
+                         (dx_left_max  < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_down_max  < dpi_threshold_swipe_delta_tangent) &&
+                         (start_y - y  > dpi_threshold_swipe))
+                        point.gesture = MENU_INPUT_GESTURE_SWIPE_UP;
+                  }
+                  /* Swipe down */
+                  else if (dy_down_max >= dpi_threshold_swipe_delta)
+                  {
+                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
+                         (dx_left_max  < dpi_threshold_swipe_delta_tangent) &&
+                         (dy_up_max    < dpi_threshold_swipe_delta_tangent) &&
+                         (y - start_y  > dpi_threshold_swipe))
+                        point.gesture = MENU_INPUT_GESTURE_SWIPE_DOWN;
+                  }
                }
             }
+
+            /* Trigger a 'pointer up' event */
+            menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+            ret = point.retcode;
          }
 
          /* Reset variables */
-         start_x                            = 0;
-         start_y                            = 0;
-         last_x                             = 0;
-         last_y                             = 0;
-         menu_input->pointer.press_duration = 0;
-         menu_input->pointer.dx             = 0;
-         menu_input->pointer.dy             = 0;
-         menu_input->pointer.dragged        = false;
+         start_x                             = 0;
+         start_y                             = 0;
+         last_x                              = 0;
+         last_y                              = 0;
+         dx_right_max                        = 0;
+         dx_left_max                         = 0;
+         dy_up_max                           = 0;
+         dy_down_max                         = 0;
+         last_press_direction_time           = 0;
+         menu_input->pointer.press_duration  = 0;
+         menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+         menu_input->pointer.dx              = 0;
+         menu_input->pointer.dy              = 0;
+         menu_input->pointer.dragged         = false;
       }
    }
    last_select_pressed = pointer_hw_state->select_pressed;

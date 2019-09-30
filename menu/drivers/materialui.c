@@ -2348,14 +2348,16 @@ static int materialui_pointer_down(void *userdata,
    If we clicked on the tabs, we switch to a new list.
    If we clicked on a menu entry, we call the entry action callback. */
 static int materialui_pointer_up(void *userdata,
-      unsigned x, unsigned y,
-      unsigned ptr, menu_file_list_cbs_t *cbs,
+      unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
+      menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    unsigned width, height;
    unsigned header_height, i;
-   size_t entries_end         = menu_entries_get_size();
-   materialui_handle_t *mui          = (materialui_handle_t*)userdata;
+   size_t selection         = menu_navigation_get_selection();
+   size_t entries_end       = menu_entries_get_size();
+   materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
    if (!mui)
       return 0;
@@ -2363,51 +2365,69 @@ static int materialui_pointer_up(void *userdata,
    header_height = menu_display_get_header_height();
    video_driver_get_size(&width, &height);
 
-   if (y < header_height)
+   switch (gesture)
    {
-      size_t selection = menu_navigation_get_selection();
-      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-   else if (y > height - mui->tabs_height)
-   {
-      file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-      {
-         unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
-         unsigned start = tab_width * i;
-
-         if ((x >= start) && (x < (start + tab_width)))
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
-            mui->categories_selection_ptr = i;
+            /* Normal pointer input */
+            if (y < header_height)
+            {
+               size_t selection = menu_navigation_get_selection();
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            }
+            else if (y > height - mui->tabs_height)
+            {
+               file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+               file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-            materialui_preswitch_tabs(mui, action);
+               for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
+               {
+                  unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
+                  unsigned start = tab_width * i;
 
-            if (cbs && cbs->action_content_list_switch)
-               return cbs->action_content_list_switch(selection_buf, menu_stack,
-                     "", "", 0);
+                  if ((x >= start) && (x < (start + tab_width)))
+                  {
+                     mui->categories_selection_ptr = i;
+
+                     materialui_preswitch_tabs(mui, action);
+
+                     if (cbs && cbs->action_content_list_switch)
+                        return cbs->action_content_list_switch(selection_buf, menu_stack,
+                              "", "", 0);
+                  }
+               }
+            }
+            else if (ptr <= (entries_end - 1))
+            {
+               size_t ii;
+               file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
+
+               for (ii = 0; ii < entries_end; ii++)
+               {
+                  materialui_node_t *node = (materialui_node_t*)
+                     file_list_get_userdata_at_offset(list, ii);
+
+                  if (y > (-mui->scroll_y + header_height + node->y)
+                        && y < (-mui->scroll_y + header_height + node->y + node->line_height)
+                     )
+                  {
+                     if (ptr == ii && cbs && cbs->action_select)
+                        return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
+                  }
+               }
+            }
          }
-      }
-   }
-   else if (ptr <= (entries_end - 1))
-   {
-      size_t ii;
-      file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-
-      for (ii = 0; ii < entries_end; ii++)
-      {
-         materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, ii);
-
-         if (y > (-mui->scroll_y + header_height + node->y)
-               && y < (-mui->scroll_y + header_height + node->y + node->line_height)
-            )
-         {
-            if (ptr == ii && cbs && cbs->action_select)
-               return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
-         }
-      }
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= (menu_entries_get_size() - 1)) &&
+             (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      default:
+         /* Ignore input */
+         break;
    }
 
    return 0;

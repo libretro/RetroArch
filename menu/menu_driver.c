@@ -2712,7 +2712,6 @@ void menu_display_draw_cursor(
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->bools.video_fullscreen ||
        !menu_display_has_windowed;
-
    if (!settings->bools.menu_mouse_enable || !cursor_visible)
       return;
 
@@ -3568,6 +3567,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             point->retcode = menu_driver_ctx->pointer_up(menu_userdata,
                   point->x, point->y, point->ptr,
+                  point->gesture,
                   point->cbs, point->entry, point->action);
          }
          break;

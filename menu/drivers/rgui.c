@@ -4852,8 +4852,9 @@ static int rgui_environ(enum menu_environ_cb type,
 }
 
 static int rgui_pointer_up(void *data,
-      unsigned x, unsigned y,
-      unsigned ptr, menu_file_list_cbs_t *cbs,
+      unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
+      menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    rgui_t *rgui           = (rgui_t*)data;
@@ -4869,33 +4870,51 @@ static int rgui_pointer_up(void *data,
          rgui->entry_has_thumbnail &&
          (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
 
-   if (show_fs_thumbnail)
+   switch (gesture)
    {
-      /* If we are currently showing a fullscreen thumbnail:
-       * - Must provide a mechanism for toggling it off
-       * - A normal mouse press should just select the current
-       *   entry (for which the thumbnail is being shown) */
-      if (y < header_height)
-         rgui_update_thumbnail_image(rgui);
-      else
-         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
-   }
-   else
-   {
-      if (y < header_height)
-         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-      else if (ptr <= (menu_entries_get_size() - 1))
-      {
-         /* If currently selected item matches 'pointer' value,
-          * perform a MENU_ACTION_SELECT on it */
-         if (ptr == selection)
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
+         {
+            /* Normal pointer input */
+            if (show_fs_thumbnail)
+            {
+               /* If we are currently showing a fullscreen thumbnail:
+                * - Must provide a mechanism for toggling it off
+                * - A normal mouse press should just select the current
+                *   entry (for which the thumbnail is being shown) */
+               if (y < header_height)
+                  rgui_update_thumbnail_image(rgui);
+               else
+                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+            }
+            else
+            {
+               if (y < header_height)
+                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               else if (ptr <= (menu_entries_get_size() - 1))
+               {
+                  /* If currently selected item matches 'pointer' value,
+                   * perform a MENU_ACTION_SELECT on it */
+                  if (ptr == selection)
+                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-         /* Otherwise, just move the current selection to the
-          * 'pointer' value */
-         menu_navigation_set_selection(ptr);
-         menu_driver_navigation_set(false);
-      }
+                  /* Otherwise, just move the current selection to the
+                   * 'pointer' value */
+                  menu_navigation_set_selection(ptr);
+                  menu_driver_navigation_set(false);
+               }
+            }
+         }
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= (menu_entries_get_size() - 1)) &&
+             (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      default:
+         /* Ignore input */
+         break;
    }
 
    return 0;

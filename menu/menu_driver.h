@@ -319,6 +319,7 @@ typedef struct menu_ctx_driver
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
    int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
+         enum menu_input_pointer_gesture gesture,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
    bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
@@ -458,6 +459,7 @@ typedef struct menu_ctx_pointer
    unsigned y;
    unsigned ptr;
    unsigned action;
+   enum menu_input_pointer_gesture gesture;
    int retcode;
    menu_file_list_cbs_t *cbs;
    menu_entry_t *entry;
