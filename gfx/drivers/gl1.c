@@ -571,8 +571,9 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    if (!gl1->supports_bgra) {
       uint8_t* frame_rgba = malloc(pot_width * pot_height * 4);
       uint8_t* frame_bgra = frame_to_copy;
-      for (int y = 0; y < pot_height; y++) {
-         for (int x = 0; x < pot_width; x++) {
+      int x, y;
+      for (y = 0; y < pot_height; y++) {
+         for (x = 0; x < pot_width; x++) {
             int index = (y * pot_width + x) * 4;
             frame_rgba[index + 2] = frame_bgra[index + 0];
             frame_rgba[index + 1] = frame_bgra[index + 1];
