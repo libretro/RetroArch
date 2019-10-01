@@ -26,6 +26,7 @@ operation had run
 - SWITCH: Set default aspect ratio to core provided instead of 4:3
 - THREADED VIDEO: Fix FPS text in threaded video mode
 - VITA: Set default aspect ratio to core provided instead of 4:3
+- VITA: Add system language detection
 - WIN32: Log window now has title 'Logging Console'
 - WII: Add Wiimote lightgun support
 
