@@ -520,7 +520,7 @@ static bool udev_input_add_device(udev_input_t *udev,
          else
          {
             device->mouse.x_min = absinfo.minimum;
-            device->mouse.x_min = absinfo.maximum;
+            device->mouse.x_max = absinfo.maximum;
          }
       }
 
@@ -534,7 +534,7 @@ static bool udev_input_add_device(udev_input_t *udev,
 	     else
          {
            device->mouse.y_min = absinfo.minimum;
-           device->mouse.y_min = absinfo.maximum;
+           device->mouse.y_max = absinfo.maximum;
          }
       }
    }
