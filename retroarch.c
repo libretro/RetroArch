@@ -13025,10 +13025,10 @@ static int menu_input_pointer_post_iterate(
    static int16_t start_y                          = 0;
    static int16_t last_x                           = 0;
    static int16_t last_y                           = 0;
-   static uint16_t dx_right_max                    = 0;
-   static uint16_t dx_left_max                     = 0;
-   static uint16_t dy_up_max                       = 0;
-   static uint16_t dy_down_max                     = 0;
+   static uint16_t dx_start_right_max              = 0;
+   static uint16_t dx_start_left_max               = 0;
+   static uint16_t dy_start_up_max                 = 0;
+   static uint16_t dy_start_down_max               = 0;
    static bool last_select_pressed                 = false;
    static bool last_cancel_pressed                 = false;
    static bool last_left_pressed                   = false;
@@ -13085,10 +13085,10 @@ static int menu_input_pointer_post_iterate(
             start_y                   = y;
             last_x                    = x;
             last_y                    = y;
-            dx_right_max              = 0;
-            dx_left_max               = 0;
-            dy_up_max                 = 0;
-            dy_down_max               = 0;
+            dx_start_right_max        = 0;
+            dx_start_left_max         = 0;
+            dy_start_up_max           = 0;
+            dy_start_down_max         = 0;
             accel0                    = 0.0f;
             accel1                    = 0.0f;
             last_press_direction_time = 0;
@@ -13132,7 +13132,6 @@ static int menu_input_pointer_post_iterate(
                if ((dx_start_abs > dpi_threshold_drag) ||
                    (dy_start_abs > dpi_threshold_drag))
                {
-
                   uint16_t dpi_threshold_press_direction_min     =
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN) + 0.5f);
                   uint16_t dpi_threshold_press_direction_max     =
@@ -13145,41 +13144,28 @@ static int menu_input_pointer_post_iterate(
                   float press_direction_amplitude                = 0.0f;
                   retro_time_t press_direction_delay             = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
 
-                  int16_t dx = x - last_x;
-                  int16_t dy = y - last_y;
-
                   /* Pointer has moved a sufficient distance to
                    * trigger a 'dragged' state */
                   menu_input->pointer.dragged = true;
 
                   /* Assign current deltas */
-                  menu_input->pointer.dx = dx;
-                  menu_input->pointer.dy = dy;
+                  menu_input->pointer.dx = x - last_x;
+                  menu_input->pointer.dy = y - last_y;
 
-                  /* Update maximum deltas */
-                  if (dx > 0)
-                  {
-                     if (dx > dx_right_max)
-                        dx_right_max = (uint16_t)dx;
-                  }
+                  /* Update maximum start->current deltas */
+                  if (dx_start > 0)
+                     dx_start_right_max = (dx_start_abs > dx_start_right_max) ?
+                           dx_start_abs : dx_start_right_max;
                   else
-                  {
-                     dx *= -1;
-                     if (dx > dx_left_max)
-                        dx_left_max = (uint16_t)dx;
-                  }
+                     dx_start_left_max = (dx_start_abs > dx_start_left_max) ?
+                           dx_start_abs : dx_start_left_max;
 
-                  if (dy > 0)
-                  {
-                     if (dy > dy_down_max)
-                        dy_down_max = (uint16_t)dy;
-                  }
+                  if (dy_start > 0)
+                     dy_start_down_max = (dy_start_abs > dy_start_down_max) ?
+                           dy_start_abs : dy_start_down_max;
                   else
-                  {
-                     dy *= -1;
-                     if (dy > dy_up_max)
-                        dy_up_max = dy;
-                  }
+                     dy_start_up_max = (dy_start_abs > dy_start_up_max) ?
+                           dy_start_abs : dy_start_up_max;
 
                   /* Magic numbers... */
                   menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
@@ -13337,51 +13323,55 @@ static int menu_input_pointer_post_iterate(
                /* Pointer has moved - check if this is a swipe */
                float dpi = menu_input_get_dpi();
 
-               if (dpi > 0.0f)
+               if ((dpi > 0.0f) && (menu_input->pointer.press_duration < MENU_INPUT_SWIPE_TIMEOUT))
                {
-                  uint16_t dpi_threshold_swipe               =
+                  uint16_t dpi_threshold_swipe         =
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE) + 0.5f);
-                  uint16_t dpi_threshold_swipe_delta         =
-                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA) + 0.5f);
-                  uint16_t dpi_threshold_swipe_delta_tangent =
-                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT) + 0.5f);
+                  uint16_t dpi_threshold_swipe_tangent =
+                        (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_TANGENT) + 0.5f);
+
+                  int16_t dx_start                     = x - start_x;
+                  int16_t dy_start                     = y - start_y;
+                  uint16_t dx_start_right_final        = 0;
+                  uint16_t dx_start_left_final         = 0;
+                  uint16_t dy_start_up_final           = 0;
+                  uint16_t dy_start_down_final         = 0;
+
+                  /* Get final deltas */
+                  if (dx_start > 0)
+                     dx_start_right_final = (uint16_t)dx_start;
+                  else
+                     dx_start_left_final  = (uint16_t)(dx_start * -1);
+
+                  if (dy_start > 0)
+                     dy_start_down_final  = (uint16_t)dy_start;
+                  else
+                     dy_start_up_final    = (uint16_t)(dy_start * -1);
 
                   /* Swipe right */
-                  if (dx_right_max >= dpi_threshold_swipe_delta)
-                  {
-                     if ((dx_left_max < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_up_max   < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_down_max < dpi_threshold_swipe_delta_tangent) &&
-                         (x - start_x > dpi_threshold_swipe))
-                        point.gesture = MENU_INPUT_GESTURE_SWIPE_RIGHT;
-                  }
+                  if ((dx_start_right_final > dpi_threshold_swipe) &&
+                      (dx_start_left_max    < dpi_threshold_swipe_tangent) &&
+                      (dy_start_up_max      < dpi_threshold_swipe_tangent) &&
+                      (dy_start_down_max    < dpi_threshold_swipe_tangent))
+                     point.gesture = MENU_INPUT_GESTURE_SWIPE_RIGHT;
                   /* Swipe left */
-                  else if (dx_left_max >= dpi_threshold_swipe_delta)
-                  {
-                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_up_max    < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_down_max  < dpi_threshold_swipe_delta_tangent) &&
-                         (start_x - x  > dpi_threshold_swipe))
-                        point.gesture = MENU_INPUT_GESTURE_SWIPE_LEFT;
-                  }
+                  else if ((dx_start_right_max  < dpi_threshold_swipe_tangent) &&
+                           (dx_start_left_final > dpi_threshold_swipe) &&
+                           (dy_start_up_max     < dpi_threshold_swipe_tangent) &&
+                           (dy_start_down_max   < dpi_threshold_swipe_tangent))
+                     point.gesture = MENU_INPUT_GESTURE_SWIPE_LEFT;
                   /* Swipe up */
-                  else if (dy_up_max >= dpi_threshold_swipe_delta)
-                  {
-                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
-                         (dx_left_max  < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_down_max  < dpi_threshold_swipe_delta_tangent) &&
-                         (start_y - y  > dpi_threshold_swipe))
-                        point.gesture = MENU_INPUT_GESTURE_SWIPE_UP;
-                  }
+                  else if ((dx_start_right_max < dpi_threshold_swipe_tangent) &&
+                           (dx_start_left_max  < dpi_threshold_swipe_tangent) &&
+                           (dy_start_up_final  > dpi_threshold_swipe) &&
+                           (dy_start_down_max  < dpi_threshold_swipe_tangent))
+                     point.gesture = MENU_INPUT_GESTURE_SWIPE_UP;
                   /* Swipe down */
-                  else if (dy_down_max >= dpi_threshold_swipe_delta)
-                  {
-                     if ((dx_right_max < dpi_threshold_swipe_delta_tangent) &&
-                         (dx_left_max  < dpi_threshold_swipe_delta_tangent) &&
-                         (dy_up_max    < dpi_threshold_swipe_delta_tangent) &&
-                         (y - start_y  > dpi_threshold_swipe))
-                        point.gesture = MENU_INPUT_GESTURE_SWIPE_DOWN;
-                  }
+                  else if ((dx_start_right_max  < dpi_threshold_swipe_tangent) &&
+                           (dx_start_left_max   < dpi_threshold_swipe_tangent) &&
+                           (dy_start_up_max     < dpi_threshold_swipe_tangent) &&
+                           (dy_start_down_final > dpi_threshold_swipe))
+                     point.gesture = MENU_INPUT_GESTURE_SWIPE_DOWN;
                }
             }
 
@@ -13395,10 +13385,10 @@ static int menu_input_pointer_post_iterate(
          start_y                             = 0;
          last_x                              = 0;
          last_y                              = 0;
-         dx_right_max                        = 0;
-         dx_left_max                         = 0;
-         dy_up_max                           = 0;
-         dy_down_max                         = 0;
+         dx_start_right_max                  = 0;
+         dx_start_left_max                   = 0;
+         dy_start_up_max                     = 0;
+         dy_start_down_max                   = 0;
          last_press_direction_time           = 0;
          menu_input->pointer.press_duration  = 0;
          menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;

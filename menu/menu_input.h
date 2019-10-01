@@ -49,6 +49,12 @@ RETRO_BEGIN_DECLS
 #define MENU_INPUT_PRESS_TIME_LONG 1500000           /* 1.5 second */
 /* (Anything less than 'short' is considered a tap) */
 
+/* Swipe gestures must be completed within a duration
+ * of MENU_INPUT_SWIPE_TIMEOUT ms (helps to minimise
+ * unwanted input if user 'zones out' and meanders on
+ * a touchscreen) */
+#define MENU_INPUT_SWIPE_TIMEOUT 500000              /* 500 ms */
+
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
 
 /* Pointer is considered stationary if dx/dy remain
@@ -69,21 +75,19 @@ RETRO_BEGIN_DECLS
  * Note: 'Tangent' is technically not the correct word here,
  * but the alternatives look silly, and the actual meaning
  * is transparent... */
-#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN 0.55f
-#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MAX 1.5f
+#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN 0.5f
+#define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MAX 1.4f
 #define MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT 0.35f
 
 /* Swipe detection:
  * A gesture will register as a swipe if:
- * - Total delta in swipe direction is greater than
- *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE
- * - Maximum frame delta in swipe direction is greater than
- *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA
- * - Maximum frame delta in all other directions is less than
- *   (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT */
-#define MENU_INPUT_DPI_THRESHOLD_SWIPE 0.7f
-#define MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA 0.4f
-#define MENU_INPUT_DPI_THRESHOLD_SWIPE_DELTA_TANGENT 0.3f
+ * - Final start/current delta in swipe direction is
+ *   greater than (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE
+ * - Maximum start/current delta in all other directions is
+ *   less than (display DPI) * MENU_INPUT_DPI_THRESHOLD_SWIPE_TANGENT
+ * - Pointer was held for less than MENU_INPUT_SWIPE_TIMEOUT ms */
+#define MENU_INPUT_DPI_THRESHOLD_SWIPE 0.55f
+#define MENU_INPUT_DPI_THRESHOLD_SWIPE_TANGENT 0.45f
 
 enum menu_pointer_type
 {
