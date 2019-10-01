@@ -1836,7 +1836,11 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("netplay_share_analog",         &settings->uints.netplay_share_analog,  true, netplay_share_analog, false);
 #endif
 #ifdef HAVE_LANGEXTRA
+#ifdef VITA
+   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);
+#else
    SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, DEFAULT_USER_LANGUAGE, false);
+#endif
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);

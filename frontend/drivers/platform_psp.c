@@ -23,9 +23,11 @@
 #endif
 
 #ifdef VITA
+#include <psp2/system_param.h>
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
+#include <psp2/apputil.h>
 
 #include "../../bootstrap/vita/sbrk.c"
 #include "../../bootstrap/vita/threading.c"
@@ -300,6 +302,12 @@ static void frontend_psp_init(void *data)
    scePowerSetGpuClockFrequency(222);
    scePowerSetGpuXbarClockFrequency(166);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+   
+   SceAppUtilInitParam appUtilParam;
+   SceAppUtilBootParam appUtilBootParam;
+   memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
+   memset(&appUtilBootParam, 0, sizeof(SceAppUtilBootParam));
+   sceAppUtilInit(&appUtilParam, &appUtilBootParam);
 #else
    (void)data;
    /* initialize debug screen */
@@ -506,6 +514,54 @@ static int frontend_psp_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
+#ifdef VITA
+enum retro_language psp_get_retro_lang_from_langid(int langid)
+{
+   switch (langid)
+   {
+   case SCE_SYSTEM_PARAM_LANG_JAPANESE:
+      return RETRO_LANGUAGE_JAPANESE;
+   case SCE_SYSTEM_PARAM_LANG_FRENCH:
+      return RETRO_LANGUAGE_FRENCH;
+   case SCE_SYSTEM_PARAM_LANG_SPANISH:
+      return RETRO_LANGUAGE_SPANISH;
+   case SCE_SYSTEM_PARAM_LANG_GERMAN:
+      return RETRO_LANGUAGE_GERMAN;
+   case SCE_SYSTEM_PARAM_LANG_ITALIAN:
+      return RETRO_LANGUAGE_ITALIAN;
+   case SCE_SYSTEM_PARAM_LANG_DUTCH:
+      return RETRO_LANGUAGE_DUTCH;
+   case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT:
+      return RETRO_LANGUAGE_PORTUGUESE_PORTUGAL;
+   case SCE_SYSTEM_PARAM_LANG_RUSSIAN:
+      return RETRO_LANGUAGE_RUSSIAN;
+   case SCE_SYSTEM_PARAM_LANG_KOREAN:
+      return RETRO_LANGUAGE_KOREAN;
+   case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
+      return RETRO_LANGUAGE_CHINESE_TRADITIONAL;
+   case SCE_SYSTEM_PARAM_LANG_CHINESE_S:
+      return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
+   case SCE_SYSTEM_PARAM_LANG_POLISH:
+      return RETRO_LANGUAGE_POLISH;
+   case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR:
+      return RETRO_LANGUAGE_PORTUGUESE_BRAZIL;
+   case SCE_SYSTEM_PARAM_LANG_TURKISH:
+      return RETRO_LANGUAGE_TURKISH;
+   case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:
+   case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:
+   default:
+      return RETRO_LANGUAGE_ENGLISH;
+   }
+}
+
+enum retro_language frontend_psp_get_user_language(void)
+{ 
+   int langid;
+   sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &langid);
+   return psp_get_retro_lang_from_langid(langid);
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,
@@ -538,10 +594,11 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
-   NULL,                         /* get_user_language */
 #ifdef VITA
+   frontend_psp_get_user_language,
    "vita",
 #else
+   NULL,                         /* get_user_language */
    "psp",
 #endif
 };
