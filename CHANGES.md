@@ -7,6 +7,7 @@ operation had run
 - CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
 - CHEEVOS: Add support for Sega CD/Saturn; reduce hash calls to server
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
+- GL1: GLDirect (D3D9 to OGL1.1 wrapper) support
 - GONG: Stability fixes
 - MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
 - MENU/RGUI: Functional mouse/touchscreen support
