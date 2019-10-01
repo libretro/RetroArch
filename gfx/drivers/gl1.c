@@ -564,9 +564,31 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
    glBindTexture(GL_TEXTURE_2D, tex);
 
-   /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame_to_copy);
+   /* For whatever reason you can't send NULL in GLDirect,
+      so we send the frame as dummy data */
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame_to_copy);
+
+   uint8_t *frame = (uint8_t*)frame_to_copy;
+   uint8_t *frame_rgba = NULL;
+   if (!gl1->supports_bgra) {
+      frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
+      if (frame_rgba) {
+         int x, y;
+         for (y = 0; y < pot_height; y++) {
+            for (x = 0; x < pot_width; x++) {
+               int index = (y * pot_width + x) * 4;
+               frame_rgba[index + 2] = frame[index + 0];
+               frame_rgba[index + 1] = frame[index + 1];
+               frame_rgba[index + 0] = frame[index + 2];
+               frame_rgba[index + 3] = frame[index + 3];
+            }
+         }
+         frame = frame_rgba;
+      }
+   }
+
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame);
+   free(frame_rgba);
 
    if (tex == gl1->tex)
    {
