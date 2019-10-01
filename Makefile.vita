@@ -85,12 +85,10 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O2 -g
-else
-   CFLAGS += -O3
+   CFLAGS += -g
 endif
 
 ASFLAGS := $(CFLAGS)
@@ -114,7 +112,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
-VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub \
+VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz
