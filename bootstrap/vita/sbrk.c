@@ -54,7 +54,7 @@ void _init_vita_heap(void) {
 	if (&_newlib_heap_size_user != NULL) {
 		_newlib_heap_size = _newlib_heap_size_user;
 	}else{
-		_newlib_heap_size = 192 * 1024 * 1024;
+		_newlib_heap_size = 256 * 1024 * 1024;
 	}
 
 	_newlib_heap_size -= _newlib_vm_size;
