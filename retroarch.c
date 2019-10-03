@@ -7189,39 +7189,6 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
-static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
-      unsigned minor, unsigned major)
-{
-   const char *video_ident = (current_video) ? current_video->ident : NULL;
-
-   switch (type)
-   {
-      case RETRO_HW_CONTEXT_VULKAN:
-         if (!string_is_equal(video_ident, "vulkan"))
-            return false;
-         break;
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-      case RETRO_HW_CONTEXT_OPENGL:
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "gl") &&
-             !string_is_equal(video_ident, "glcore"))
-         {
-            return false;
-         }
-         break;
-		case RETRO_HW_CONTEXT_DIRECT3D:
-			if (!(string_is_equal(video_ident, "d3d11") && major == 11))
-				return false;
-		break;
-      default:
-         break;
-   }
-
-   return true;
-}
-
 static void rarch_log_libretro(enum retro_log_level level,
       const char *fmt, ...)
 {
@@ -7785,10 +7752,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
 
          if (!dynamic_request_hw_context(
-                  cb->context_type, cb->version_minor, cb->version_major))
-            return false;
-
-         if (!dynamic_verify_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
