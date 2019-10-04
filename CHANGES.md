@@ -9,7 +9,13 @@ operation had run
 - FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
 - GL1: GLDirect (D3D9 to OGL1.1 wrapper) support
 - GONG: Stability fixes
+- LINUX/UDEV: Fix touchscreen/lightgun issues
 - MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
+- MENU/MATERIALUI: Add initial gesture support
+- MENU/MATERIALUI: Improved touch support
+- MENU/MATERIALUI: Bugfix - Random' items are no longer automatically highlighted when performing standard up/down 'flick' scrolling through lists (items are only highlighted when you keep the pointer still for > 200 ms)
+- MENU/MATERIALUI: Bugfix - The display no longer 'jerks' for one frame when navigating backwards through lists
+- MENU/MATERIALUI: Bugfix - The Material UI scaling factor is now based upon the device-reported screen DPI value (previously it relied upon a hard-coded magic number, which was never correct)
 - MENU/RGUI: Functional mouse/touchscreen support
 - MENU/ONSCREEN KEYBOARD: On-screen keyboard entry via mouse/touchscreen has been tidied up - no more double inputs (or unwanted menu interaction in the background)
 - MENU/MOUSE: Mouse wheel up/down is now a proper 'up/down', same as using cursor keys or a dpad
@@ -20,6 +26,7 @@ operation had run
 - MENU: When navigating backwards from a core options drop-down list (i.e. pressing select or cancel), the last menu position is remembered (instead of resetting back to the first core option item each time)
 - MENU: Add mouse/touchscreen gesture support
 - MENU: Add option to delete playlists (Settings > Playlists > Playlist Management)
+- MOBILE (ANDROID/IOS): Add option to automatically rotate overlays when changing orientation
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
 - OSX/METAL: CoreAudio V3 driver should now be the default audio driver on first startup
@@ -27,6 +34,7 @@ operation had run
 - THREADED VIDEO: Fix FPS text in threaded video mode
 - VITA: Set default aspect ratio to core provided instead of 4:3
 - VITA: Add system language detection
+- VITA: More memory support
 - WIN32: Log window now has title 'Logging Console'
 - WII: Add Wiimote lightgun support
 
