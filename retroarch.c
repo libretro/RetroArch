@@ -19035,9 +19035,11 @@ static bool video_driver_find_driver(void)
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
 #if defined(HAVE_OPENGL_CORE)
+            strcpy(settings->arrays.video_driver, "glcore");
             current_video = &video_gl_core;
             RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
 #else
+            strcpy(settings->arrays.video_driver, "gl");
             current_video = &video_gl2;
             RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
 #endif
