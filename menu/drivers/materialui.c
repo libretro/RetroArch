@@ -57,6 +57,10 @@
 
 #include "../../dynamic.h"
 
+/* Global DPI-aware scale factor ==
+ * (screen DPI) * MUI_DPI_SCALE_COEFF */
+#define MUI_DPI_SCALE_COEFF 2.2f
+
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
@@ -143,8 +147,12 @@ enum
 typedef struct materialui_handle
 {
    bool need_compute;
-   bool need_scroll;
    bool mouse_show;
+   bool is_playlist;
+   bool is_file_list;
+   bool is_dropdown_list;
+
+   float dpi_scale_factor;
 
    int cursor_size;
 
@@ -161,6 +169,9 @@ typedef struct materialui_handle
 
    size_t categories_selection_ptr;
    size_t categories_selection_ptr_old;
+
+   size_t first_onscreen_entry;
+   size_t last_onscreen_entry;
 
    /* Y position of the vertical scroll */
    float scroll_y;
@@ -183,6 +194,12 @@ typedef struct materialui_handle
    font_data_t *font2;
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
+
+   /* Pointer info */
+   menu_input_pointer_t pointer;
+   int16_t pointer_start_x;
+   int16_t pointer_start_y;
+   float pointer_start_scroll_y;
 
 } materialui_handle_t;
 
@@ -413,11 +430,6 @@ static void materialui_draw_tab_begin(
       unsigned width, unsigned height,
       float *tabs_bg_color, float *tabs_separator_color)
 {
-   float scale_factor = menu_display_get_dpi(video_info->width,
-         video_info->height);
-
-   mui->tabs_height   = scale_factor / 3;
-
    /* tabs background */
    menu_display_draw_quad(
          video_info,
@@ -602,7 +614,6 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
    file_list_t *list         = menu_entries_get_selection_buf_ptr(0);
    float sum                 = 0;
    size_t entries_end        = menu_entries_get_size();
-   float scale_factor        = menu_display_get_dpi(width, height);
 
    for (i = 0; i < entries_end; i++)
    {
@@ -638,7 +649,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
          lines = materialui_count_lines(wrapped_sublabel_str);
       }
 
-      node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
+      node->line_height  = (mui->dpi_scale_factor / 3) + (lines * mui->font->size);
       node->y            = sum;
       sum               += node->line_height;
    }
@@ -680,90 +691,124 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    return sum - half;
 }
 
-/* Called on each frame. We use this callback to implement the touch scroll
-   with acceleration */
+/* Called on each frame. We use this callback to:
+ * - Determine current scroll postion
+ * - Determine index of first/last onscreen entries
+ * - Handle dynamic pointer input */
 static void materialui_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
 {
-   int bottom, header_height;
-   menu_input_pointer_t pointer;
-   size_t        i             = 0;
-   materialui_handle_t *mui    = (materialui_handle_t*)data;
-   file_list_t        *list    = menu_entries_get_selection_buf_ptr(0);
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+   int header_height        = menu_display_get_header_height();
+   size_t entries_end       = menu_entries_get_size();
+   file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
+   bool first_entry_found   = false;
+   size_t i;
+   int bottom;
 
-   if (!mui)
+   if (!mui || !list)
       return;
-
-   /* Here's a nasty issue:
-    * After calling populate_entries(), we need to call
-    * materialui_get_scroll() so the last selected item
-    * is correctly displayed on screen.
-    * But we can't do this until materialui_compute_entries_box()
-    * has been called, so we should delegate it until mui->need_compute
-    * is acted upon.
-    * *But* we can't do this in the same frame that mui->need_compute
-    * is acted upon, because of the order in which materialui_frame()
-    * and materialui_render() are called. Since mui->tabs_height is
-    * set by materialui_frame(), the first time materialui_render() is
-    * called after populate_entries() it has the wrong mui->tabs_height
-    * value...
-    * We therefore have to delegate the scroll until the frame after
-    * mui->need_compute is handled... */
-   if (mui->need_scroll)
-   {
-      mui->scroll_y    = materialui_get_scroll(mui);
-      mui->need_scroll = false;
-   }
 
    if (mui->need_compute)
    {
       if (mui->font)
          materialui_compute_entries_box(mui, width, height);
+
+      /* After calling populate_entries(), we need to call
+       * materialui_get_scroll() so the last selected item
+       * is correctly displayed on screen.
+       * But we can't do this until materialui_compute_entries_box()
+       * has been called, so we delay it until here, when
+       * mui->need_compute is acted upon. */
+      mui->scroll_y    = materialui_get_scroll(mui);
+
       mui->need_compute = false;
-      mui->need_scroll  = true;
    }
 
+   /* Need to update this each frame, otherwise touchscreen
+    * input breaks when changing orientation */
    menu_display_set_width(width);
    menu_display_set_height(height);
-   header_height = menu_display_get_header_height();
 
-   menu_input_get_pointer_state(&pointer);
+   /* Read pointer state */
+   menu_input_get_pointer_state(&mui->pointer);
 
-   if (pointer.type != MENU_POINTER_DISABLED)
+   /* Need to adjust/range-check scroll postion first,
+    * otherwise cannot determine correct entry index for
+    * MENU_ENTRIES_CTL_SET_START */
+   if (mui->pointer.type != MENU_POINTER_DISABLED)
+      mui->scroll_y -= mui->pointer.y_accel;
+
+   if (mui->scroll_y < 0.0f)
+      mui->scroll_y = 0.0f;
+
+   bottom = mui->content_height - height + header_height + mui->tabs_height;
+   if (mui->scroll_y > (float)bottom)
+      mui->scroll_y = (float)bottom;
+
+   if (mui->content_height < (height - header_height - mui->tabs_height))
+      mui->scroll_y = 0.0f;
+
+   /* Loop over all entries */
+   mui->first_onscreen_entry = 0;
+   mui->last_onscreen_entry  = (entries_end > 0) ? entries_end - 1 : 0;
+
+   for (i = 0; i < entries_end; i++)
    {
-      size_t ii;
-      int16_t pointer_y   = pointer.y;
-      size_t entries_end  = menu_entries_get_size();
+      materialui_node_t *node = (materialui_node_t*)
+            file_list_get_userdata_at_offset(list, i);
+      int entry_y;
 
-      for (ii = 0; ii < entries_end; ii++)
+      /* Sanity check */
+      if (!node)
+         break;
+
+      /* Get current entry y postion */
+      entry_y = header_height - mui->scroll_y + node->y;
+
+      /* Check whether this is the first onscreen entry */
+      if (!first_entry_found)
       {
-         materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, ii);
-
-         if ((pointer_y > (-mui->scroll_y + header_height + node->y)) &&
-             (pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)))
+         if ((entry_y + (int)node->line_height) > header_height)
          {
-            menu_input_set_pointer_selection(ii);
-            break;
+            mui->first_onscreen_entry = i;
+            first_entry_found = true;
          }
       }
 
-      mui->scroll_y -= pointer.y_accel;
+      /* Track pointer input, if required */
+      if (first_entry_found && (mui->pointer.type != MENU_POINTER_DISABLED))
+      {
+         int16_t pointer_y = mui->pointer.y;
+
+         if ((pointer_y > entry_y) &&
+             (pointer_y < (entry_y + node->line_height)))
+         {
+            menu_input_set_pointer_selection(i);
+
+            /* If pointer is pressed, stationary, and has been pressed
+             * for at least MENU_INPUT_PRESS_TIME_SHORT ms, select current
+             * entry */
+            if (mui->pointer.pressed &&
+                !mui->pointer.dragged &&
+                (mui->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT))
+               menu_navigation_set_selection(i);
+         }
+      }
+
+      /* Check whether this is the last onscreen entry */
+      if (entry_y > ((int)height - (int)mui->tabs_height))
+      {
+         /* Current entry is off screen - get index
+          * of previous entry */
+         if (i > 0)
+            mui->last_onscreen_entry = i - 1;
+         break;
+      }
    }
 
-   if (mui->scroll_y < 0)
-      mui->scroll_y = 0;
-
-   bottom = mui->content_height - height + header_height + mui->tabs_height;
-   if (mui->scroll_y > bottom)
-      mui->scroll_y = bottom;
-
-   if (mui->content_height
-         < height - header_height - mui->tabs_height)
-      mui->scroll_y = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &mui->first_onscreen_entry);
 }
 
 /* Display an entry value on the right of the screen. */
@@ -797,8 +842,6 @@ static void materialui_render_label_value(
    size_t usable_width             = width - (mui->margin * 2);
    int icon_margin                 = 0;
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
-   float scale_factor              = menu_display_get_dpi(video_info->width,
-         video_info->height);
    settings_t *settings            = config_get_ptr();
    bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
 
@@ -963,20 +1006,20 @@ static void materialui_render_label_value(
 
       menu_display_draw_text(mui->font2, wrapped_sublabel_str,
             mui->margin + icon_margin,
-            y + (scale_factor / 4) + mui->font->size,
+            y + (mui->dpi_scale_factor / 4) + mui->font->size,
             width, height, sublabel_color, TEXT_ALIGN_LEFT,
             1.0f, false, 0, false);
    }
 
    menu_display_draw_text(mui->font, label_str,
          ticker_label_x_offset + mui->margin + icon_margin,
-         y + (scale_factor / 5),
+         y + (mui->dpi_scale_factor / 5),
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             value_x_offset + width - mui->margin,
-            y + (scale_factor / 5),
+            y + (mui->dpi_scale_factor / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
@@ -984,7 +1027,7 @@ static void materialui_render_label_value(
             mui->icon_size,
             (uintptr_t)texture_switch2,
             0,
-            y + (scale_factor / 6) - mui->icon_size/2,
+            y + (mui->dpi_scale_factor / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1007,7 +1050,7 @@ static void materialui_render_label_value(
             mui->icon_size,
             (uintptr_t)texture_switch,
             width - mui->margin    - mui->icon_size,
-            y + (scale_factor / 6) - mui->icon_size/2,
+            y + (mui->dpi_scale_factor / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1027,40 +1070,38 @@ static void materialui_render_menu_list(
       uint32_t sublabel_color)
 {
    size_t i;
-   float sum                               = 0;
-   size_t entries_end                      = 0;
-   file_list_t *list                       = NULL;
-   unsigned header_height                  =
-      menu_display_get_header_height();
+   size_t first_entry;
+   size_t last_entry;
+   file_list_t *list      = NULL;
+   size_t entries_end     = menu_entries_get_size();
+   unsigned header_height = menu_display_get_header_height();
+   size_t selection       = menu_navigation_get_selection();
 
    mui->raster_block.carr.coords.vertices  = 0;
    mui->raster_block2.carr.coords.vertices = 0;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+   list = menu_entries_get_selection_buf_ptr(0);
+   if (!list)
+      return;
 
-   list                                    =
-      menu_entries_get_selection_buf_ptr(0);
+   /* Unnecessary sanity check... */
+   first_entry = (mui->first_onscreen_entry < entries_end) ? mui->first_onscreen_entry : entries_end;
+   last_entry  = (mui->last_onscreen_entry  < entries_end) ? mui->last_onscreen_entry  : entries_end;
 
-   entries_end = menu_entries_get_size();
-
-   for (i = 0; i < entries_end; i++)
+   for (i = first_entry; i <= last_entry; i++)
    {
       menu_entry_t entry;
-      const char *entry_value    = NULL;
-      const char *rich_label     = NULL;
-      bool entry_selected        = false;
-      materialui_node_t *node    = (materialui_node_t*)
-         file_list_get_userdata_at_offset(list, i);
-      size_t selection           = menu_navigation_get_selection();
-      int               y        = header_height - mui->scroll_y + sum;
+      const char *entry_value = NULL;
+      const char *rich_label  = NULL;
+      bool entry_selected     = (selection == i);
+      materialui_node_t *node = (materialui_node_t*)file_list_get_userdata_at_offset(list, i);
+      int entry_y;
 
-      sum += node->line_height;
-
-      if (y + (int)node->line_height < 0)
-         continue;
-
-      if (y > (int)height)
+      /* Sanity check */
+      if (!node)
          break;
+
+      entry_y = header_height - mui->scroll_y + node->y;
 
       menu_entry_init(&entry);
       entry.path_enabled     = false;
@@ -1069,16 +1110,14 @@ static void materialui_render_menu_list(
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
       menu_entry_get_value(&entry, &entry_value);
       menu_entry_get_rich_label(&entry, &rich_label);
-      entry_selected = selection == i;
 
       /* Render label, value, and associated icons */
-
       materialui_render_label_value(
             mui,
             video_info,
             node,
             (int)i,
-            y,
+            entry_y,
             width,
             height,
             menu_animation_get_ticker_idx(),
@@ -1562,10 +1601,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          height,
          header_bg_color ? &header_bg_color[0] : NULL);
 
-   mui->tabs_height = 0;
-
-   /* display tabs if depth equal one, if not hide them */
-   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+   /* Tab bar */
+   if (mui->tabs_height > 0)
    {
       materialui_draw_tab_begin(mui,
             video_info,
@@ -1696,18 +1733,15 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       mui->box_message    = NULL;
    }
 
-   if (mui->mouse_show)
+   if (mui->mouse_show && (mui->pointer.type != MENU_POINTER_DISABLED))
    {
-      menu_input_pointer_t pointer;
-      menu_input_get_pointer_state(&pointer);
-
       menu_display_draw_cursor(
             video_info,
             &white_bg[0],
             mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
-            pointer.x,
-            pointer.y,
+            mui->pointer.x,
+            mui->pointer.y,
             width,
             height);
    }
@@ -1719,30 +1753,23 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 /* Compute the positions of the widgets */
 static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 {
-   float scale_factor;
    int new_font_size, new_font_size2;
-   unsigned width, height, new_header_height;
+   unsigned new_header_height;
 
-   video_driver_get_size(&width, &height);
+   new_header_height    = mui->dpi_scale_factor / 3;
+   new_font_size        = mui->dpi_scale_factor / 9;
+   new_font_size2       = mui->dpi_scale_factor / 12;
 
-   /* Mobiles platforms may have very small display metrics
-    * coupled to a high resolution, so we should be DPI aware
-    * to ensure the entries hitboxes are big enough.
-    *
-    * On desktops, we just care about readability, with every widget
-    * size proportional to the display width. */
-   scale_factor         = menu_display_get_dpi(width, height);
+   mui->shadow_height   = mui->dpi_scale_factor / 36;
+   mui->scrollbar_width = mui->dpi_scale_factor / 36;
 
-   new_header_height    = scale_factor / 3;
-   new_font_size        = scale_factor / 9;
-   new_font_size2       = scale_factor / 12;
+   mui->tabs_height     = 0;
+   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+      mui->tabs_height  = mui->dpi_scale_factor / 3;
 
-   mui->shadow_height   = scale_factor / 36;
-   mui->scrollbar_width = scale_factor / 36;
-   mui->tabs_height     = scale_factor / 3;
-   mui->line_height     = scale_factor / 3;
-   mui->margin          = scale_factor / 9;
-   mui->icon_size       = scale_factor / 3;
+   mui->line_height     = mui->dpi_scale_factor / 3;
+   mui->margin          = mui->dpi_scale_factor / 9;
+   mui->icon_size       = mui->dpi_scale_factor / 3;
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width     = new_font_size  * 3/4;
@@ -1782,16 +1809,12 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
-   float scale_factor         = 0.0f;
    materialui_handle_t   *mui = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
-
-   video_driver_get_size(&width, &height);
-   scale_factor = menu_display_get_dpi(width, height);
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
@@ -1801,10 +1824,23 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    if (!mui)
       goto error;
 
-   *userdata         = mui;
-   mui->cursor_size  = scale_factor / 3;
-   mui->need_compute = false;
-   mui->need_scroll  = false;
+   *userdata = mui;
+
+   /* Get global DPI-aware scale factor
+    * Note: screen DPI is a physical characteristic.
+    * It doesn't change, so we only have to do this once. */
+   video_driver_get_size(&width, &height);
+   mui->dpi_scale_factor = menu_display_get_dpi(width, height) * MUI_DPI_SCALE_COEFF;
+
+   mui->cursor_size  = mui->dpi_scale_factor / 3;
+
+   mui->need_compute     = false;
+   mui->is_playlist      = false;
+   mui->is_file_list     = false;
+   mui->is_dropdown_list = false;
+
+   mui->first_onscreen_entry = 0;
+   mui->last_onscreen_entry  = 0;
 
    mui->menu_title[0] = '\0';
 
@@ -1879,23 +1915,17 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
    return true;
 }
 
-/* The navigation pointer has been updated (for example by pressing up or down
-   on the keyboard). We use this function to animate the scroll. */
-static void materialui_navigation_set(void *data, bool scroll)
+static void materialui_animate_scroll(
+      materialui_handle_t *mui, float scroll_pos, float duration)
 {
    menu_animation_ctx_entry_t entry;
-   materialui_handle_t *mui    = (materialui_handle_t*)data;
-   float     scroll_pos = mui ? materialui_get_scroll(mui) : 0.0f;
-
-   if (!mui || !scroll)
-      return;
 
    /* mui->scroll_y will be modified by the animation
-    * - Set scroll acceleration to zero to minimise
+    * > Set scroll acceleration to zero to minimise
     *   potential conflicts */
    menu_input_set_pointer_y_accel(0.0f);
 
-   entry.duration     = 166;
+   entry.duration     = duration;
    entry.target_value = scroll_pos;
    entry.subject      = &mui->scroll_y;
    entry.easing_enum  = EASING_IN_OUT_QUAD;
@@ -1905,6 +1935,22 @@ static void materialui_navigation_set(void *data, bool scroll)
 
    if (entry.subject)
       menu_animation_push(&entry);
+}
+
+/* The navigation pointer has been updated (for example by pressing up or down
+   on the keyboard) */
+static void materialui_navigation_set(void *data, bool scroll)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+   menu_animation_ctx_entry_t entry;
+
+   if (!mui || !scroll)
+      return;
+
+   materialui_animate_scroll(
+         mui,
+         materialui_get_scroll(mui),
+         166.0f);
 }
 
 static void materialui_list_set_selection(void *data, file_list_t *list)
@@ -1925,7 +1971,7 @@ static void materialui_navigation_clear(void *data, bool pending_push)
       return;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
-   mui->scroll_y = 0;
+   mui->scroll_y = 0.0f;
    menu_input_set_pointer_y_accel(0.0f);
 }
 
@@ -1939,7 +1985,7 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
    materialui_navigation_set(data, true);
 }
 
-/* A new list had been pushed. We update the scroll value */
+/* A new list had been pushed */
 static void materialui_populate_entries(
       void *data, const char *path,
       const char *label, unsigned i)
@@ -1949,7 +1995,53 @@ static void materialui_populate_entries(
    if (!mui)
       return;
 
+   /* Set menu title */
    menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
+
+   /* Check whether we are currently viewing a playlist,
+    * file-browser-type list or dropdown list
+    * (each of these is regarded as a 'plain' list,
+    * and potentially a 'long' list, with special
+    * gesture-based navigation shortcuts)  */
+   mui->is_playlist      = false;
+   mui->is_file_list     = false;
+   mui->is_dropdown_list = false;
+
+   mui->is_playlist = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
+                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST));
+
+   if (!mui->is_playlist)
+   {
+      /* > All of the following count as a 'file list'
+       *   Note: MENU_ENUM_LABEL_FAVORITES is always set
+       *   as the 'label' when navigating directories after
+       *   selecting load content */
+      mui->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
+
+      if (!mui->is_file_list)
+         mui->is_dropdown_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)) ||
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE));
+   }
+
+   /* Set tab bar height
+    * (Tab bar is displayed if menu depth equals one,
+    * otherwise it is hidden) */
+   mui->tabs_height = 0;
+   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+      mui->tabs_height = mui->dpi_scale_factor / 3;
+
    mui->need_compute = true;
 
    /* Note: mui->scroll_y position needs to be set here,
@@ -2296,57 +2388,132 @@ static size_t materialui_list_get_selection(void *data)
    return mui->categories_selection_ptr;
 }
 
-/* The pointer or the mouse is pressed down. We use this callback to
-   highlight the entry that has been pressed */
+/* Pointer down event
+ * Used purely to cache the initial pointer x/y position */
 static int materialui_pointer_down(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned width, height;
-   unsigned header_height;
-   size_t entries_end         = menu_entries_get_size();
-   materialui_handle_t *mui          = (materialui_handle_t*)userdata;
+   materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
    if (!mui)
-      return 0;
+      return -1;
 
-   header_height = menu_display_get_header_height();
-   video_driver_get_size(&width, &height);
+   mui->pointer_start_x        = x;
+   mui->pointer_start_y        = y;
+   mui->pointer_start_scroll_y = mui->scroll_y;
 
-   if (y < header_height)
+   return 0;
+}
+
+static int materialui_pointer_up_swipe_horz_plain_list(
+      materialui_handle_t *mui, menu_entry_t *entry,
+      unsigned height, unsigned header_height, unsigned y,
+      size_t selection, size_t entries_end,
+      bool scroll_up)
+{
+   /* A swipe in the top half of the screen ascends/
+    * decends the alphabet */
+   if (y < (height >> 1))
    {
+      menu_entry_t *entry_ptr = entry;
+      size_t new_selection    = selection;
+      menu_entry_t new_entry;
 
-   }
-   else if (y > height - mui->tabs_height)
-   {
-
-   }
-   else if (ptr <= (entries_end - 1))
-   {
-      size_t ii;
-      file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-
-      for (ii = 0; ii < entries_end; ii++)
+      /* Check if currently active item is off screen */
+      if ((selection < mui->first_onscreen_entry) ||
+          (selection > mui->last_onscreen_entry))
       {
-         materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, ii);
+         /* ...if it is, must immediately select entry
+          * at 'edge' of screen in opposite direction to
+          * scroll action */
+         new_selection = scroll_up ?
+               mui->last_onscreen_entry : mui->first_onscreen_entry;
 
-         if (y > (-mui->scroll_y + header_height + node->y)
-               && y < (-mui->scroll_y + header_height + node->y + node->line_height)
-            )
-            menu_navigation_set_selection(ii);
+         if (new_selection < entries_end)
+         {
+            menu_navigation_set_selection(new_selection);
+
+            /* Update entry pointer */
+            menu_entry_init(&new_entry);
+            new_entry.path_enabled       = false;
+            new_entry.label_enabled      = false;
+            new_entry.rich_label_enabled = false;
+            new_entry.value_enabled      = false;
+            new_entry.sublabel_enabled   = false;
+            menu_entry_get(&new_entry, 0, new_selection, NULL, true);
+            entry_ptr                    = &new_entry;
+         }
+         else
+            new_selection = selection; /* Should never happen... */
       }
 
+      return menu_entry_action(
+            entry_ptr, (unsigned)new_selection,
+            scroll_up ? MENU_ACTION_SCROLL_UP : MENU_ACTION_SCROLL_DOWN);
+   }
+   /* A swipe in the bottom half of the screen scrolls
+    * by 10% of the list size or one 'page', whichever
+    * is largest */
+   else
+   {
+      float content_height_fraction = mui->content_height * 0.1f;
+      float display_height          = (int)height - (int)header_height - mui->tabs_height;
+      float scroll_offset           = (display_height > content_height_fraction) ?
+            display_height : content_height_fraction;
+
+      materialui_animate_scroll(
+            mui,
+            mui->scroll_y + (scroll_up ? (scroll_offset * -1.0f) : scroll_offset),
+            166.0f);
    }
 
    return 0;
 }
 
-/* The pointer or the left mouse button has been released.
-   If we clicked on the header, we perform a cancel action.
-   If we clicked on the tabs, we switch to a new list.
-   If we clicked on a menu entry, we call the entry action callback. */
+static int materialui_pointer_up_swipe_horz_default(
+      materialui_handle_t *mui, menu_entry_t *entry,
+      unsigned ptr, size_t selection, size_t entries_end, enum menu_action action)
+{
+   int ret = 0;
+
+   if ((ptr < entries_end) && (ptr == selection))
+   {
+      size_t new_selection = menu_navigation_get_selection();
+      ret                  = menu_entry_action(entry, (unsigned)selection, action);
+
+      /* If we are changing a settings value, want to scroll
+       * back to the 'pointer down' position. In all other cases
+       * we do not. An entry is of the 'settings' type if:
+       * - Selection pointer remains the same after MENU_ACTION event
+       * - Entry has a value
+       * Note: cannot use input (argument) entry, since this
+       * will always have a blank value component */
+      if (selection == new_selection)
+      {
+         menu_entry_t last_entry;
+
+         menu_entry_init(&last_entry);
+         last_entry.path_enabled       = false;
+         last_entry.label_enabled      = false;
+         last_entry.rich_label_enabled = false;
+         last_entry.sublabel_enabled   = false;
+
+         menu_entry_get(&last_entry, 0, selection, NULL, true);
+
+         if (!string_is_empty(last_entry.value))
+            materialui_animate_scroll(
+                  mui,
+                  mui->pointer_start_scroll_y,
+                  83.0f);
+      }
+   }
+
+   return ret;
+}
+
+/* Pointer up event */
 static int materialui_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       enum menu_input_pointer_gesture gesture,
@@ -2370,12 +2537,11 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
-            /* Normal pointer input */
+            /* Tap/press header: Menu back/cancel */
             if (y < header_height)
-            {
-               size_t selection = menu_navigation_get_selection();
                return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-            }
+            /* Tap/press tab bar: Switch to corresponding top-level
+             * menu screen */
             else if (y > height - mui->tabs_height)
             {
                file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
@@ -2398,32 +2564,87 @@ static int materialui_pointer_up(void *userdata,
                   }
                }
             }
-            else if (ptr <= (entries_end - 1))
+            /* Tap/press menu item: Activate and/or select item */
+            else if (ptr < entries_end)
             {
-               size_t ii;
-               file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-
-               for (ii = 0; ii < entries_end; ii++)
+               if (gesture == MENU_INPUT_GESTURE_TAP)
                {
-                  materialui_node_t *node = (materialui_node_t*)
-                     file_list_get_userdata_at_offset(list, ii);
+                  /* A 'tap' always produces a menu action */
 
-                  if (y > (-mui->scroll_y + header_height + node->y)
-                        && y < (-mui->scroll_y + header_height + node->y + node->line_height)
-                     )
-                  {
-                     if (ptr == ii && cbs && cbs->action_select)
-                        return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
-                  }
+                  /* If current 'pointer' item is not active,
+                   * activate it immediately */
+                  if (ptr != selection)
+                     menu_navigation_set_selection(ptr);
+
+                  /* Perform a MENU_ACTION_SELECT on currently
+                   * active item */
+                  return menu_entry_action(entry, ptr, MENU_ACTION_SELECT);
+               }
+               else
+               {
+                  /* A 'short' press is used only to activate (highlight)
+                   * an item - it does not invoke a MENU_ACTION_SELECT
+                   * action (this is intended for use in activating a
+                   * settings-type entry, prior to swiping)
+                   * Note: If everything is working correctly, the
+                   * ptr item should already by selected at this stage
+                   * - but menu_navigation_set_selection() just sets a
+                   * variable, so there's no real point in performing
+                   * a (selection != ptr) check here */
+                  menu_navigation_set_selection(ptr);
+                  menu_input_set_pointer_y_accel(0.0f);
                }
             }
          }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
-         if ((ptr <= (menu_entries_get_size() - 1)) &&
-             (ptr == selection))
+         if ((ptr < entries_end) && (ptr == selection))
             return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_LEFT:
+         {
+            /* If we are at the top level, a swipe should
+             * just switch between the three main menu screens
+             * (i.e. we don't care which item is currently selected)
+             * Note: For intuitive behaviour, a *left* swipe should
+             * trigger a *right* navigation event */
+            if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+            /* If we are displaying a playlist/file list/dropdown list,
+             * swipes are used for fast navigation */
+            else if (mui->is_playlist || mui->is_file_list || mui->is_dropdown_list)
+               return materialui_pointer_up_swipe_horz_plain_list(
+                     mui, entry, height, header_height, y,
+                     selection, entries_end, true);
+            /* In all other cases, just perform a normal 'left'
+             * navigation event */
+            else
+               return materialui_pointer_up_swipe_horz_default(
+                     mui, entry, ptr, selection, entries_end, MENU_ACTION_LEFT);
+         }
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_RIGHT:
+         {
+            /* If we are at the top level, a swipe should
+             * just switch between the three main menu screens
+             * (i.e. we don't care which item is currently selected)
+             * Note: For intuitive behaviour, a *right* swipe should
+             * trigger a *left* navigation event */
+            if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+               menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+            /* If we are displaying a playlist/file list/dropdown list,
+             * swipes are used for fast navigation */
+            else if (mui->is_playlist || mui->is_file_list || mui->is_dropdown_list)
+               return materialui_pointer_up_swipe_horz_plain_list(
+                     mui, entry, height, header_height, y,
+                     selection, entries_end, false);
+            /* In all other cases, just perform a normal 'right'
+             * navigation event */
+            else
+               return materialui_pointer_up_swipe_horz_default(
+                     mui, entry, ptr, selection, entries_end, MENU_ACTION_RIGHT);
+         }
          break;
       default:
          /* Ignore input */
@@ -2447,8 +2668,6 @@ static void materialui_list_insert(void *userdata,
       size_t list_size,
       unsigned type)
 {
-   float scale_factor;
-   unsigned width, height;
    int i                         = (int)list_size;
    materialui_node_t *node       = NULL;
    settings_t *settings          = config_get_ptr();
@@ -2469,10 +2688,7 @@ static void materialui_list_insert(void *userdata,
       return;
    }
 
-   video_driver_get_size(&width, &height);
-   scale_factor                = menu_display_get_dpi(width, height);
-
-   node->line_height           = scale_factor / 3;
+   node->line_height           = mui->dpi_scale_factor / 3;
    node->y                     = 0;
    node->texture_switch_set    = false;
    node->texture_switch2_set   = false;

@@ -2029,21 +2029,55 @@ void menu_display_unset_framebuffer_dirty_flag(void)
  * RGUI or XMB use this. */
 float menu_display_get_dpi(unsigned width, unsigned height)
 {
-#ifdef RARCH_MOBILE
-   float diagonal         = 5.0f;
-#else
-   float diagonal         = 6.5f;
-#endif
-   /* Generic dpi calculation formula,
-    * the divider is the screen diagonal in inches */
-   float dpi              = sqrt(
-         (width * width) + (height * height)) / diagonal;
+   gfx_ctx_metrics_t metrics;
+   float dpi            = 0.0f;
+   settings_t *settings = config_get_ptr();
 
+   /* Use manual override, if set */
+   if (settings && settings->bools.menu_dpi_override_enable)
+      return settings->uints.menu_dpi_override_value;
+
+   /* Attempt to fetch actual screen DPI */
+   metrics.type  = DISPLAY_METRIC_DPI;
+   metrics.value = &dpi;
+
+   if (!video_context_driver_get_metrics(&metrics))
    {
-      settings_t *settings = config_get_ptr();
-      if (settings && settings->bools.menu_dpi_override_enable)
-         return settings->uints.menu_dpi_override_value;
+      /* Operation failed - use fallback... */
+#ifdef RARCH_MOBILE
+      /* For mobile platforms, use janky generic dpi
+       * formula, assuming a screen (diagonal) size
+       * of 5 inches (legacy value - will almost always
+       * be wrong...) */
+      float diagonal = 5.0f;
+      dpi = sqrt((width * width) + (height * height)) / diagonal;
+#else
+      /* Well, who knows what platform this is...
+       * All we can do is assume a 'standard' DPI of 96 */
+      dpi = 96.0f;
+#endif
    }
+#if defined(ANDROID) || defined(HAVE_COCOATOUCH)
+   else
+   {
+      /* Okay, Andriod is a real nuisance here...
+       * The reported DPI is just a binned value
+       * corresponding to a standard pixel density
+       * size (low, medium, high, extra high, etc.).
+       * This has nothing to do with *physical* screen
+       * DPI. It seems the accepted way to handle this
+       * is to convert the DPI into a scaling factor
+       * based upon the Android default of 160 - so
+       * we divide reported DPI by 160, and multiply
+       * this by our target standard DPI of 96
+       * EDIT: It turns out that iOS devices (iPhone,
+       * iPad) have almost the same idiosyncrasies as
+       * Android when it comes to dealing with DPI,
+       * so we should be able to apply the same
+       * conversion factor */
+      dpi = (dpi / 160.0f) * 96.0f;
+   }
+#endif
 
    return dpi;
 }
