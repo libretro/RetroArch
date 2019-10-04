@@ -94,7 +94,7 @@ endif
 ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
 
-CFLAGS += -Wall -ffast-math
+CFLAGS += -Wall -ffast-math -g
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
@@ -152,6 +152,8 @@ $(TARGET).elf: $(OBJ) libretro_vita.a
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
+	cp $< $<.unstripped.elf
+	$(PREFIX)strip -g $<
 	vita-elf-create $< $@
 
 %.self: %.velf
@@ -162,7 +164,7 @@ $(TARGET).elf: $(OBJ) libretro_vita.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
 	rm -f $(OBJ:.o=.depend)
 
 # Useful for developers
