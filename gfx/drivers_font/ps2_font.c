@@ -45,10 +45,15 @@ static u32 gsKit_fontm_clut[16] = {	0x00000000, 0x11111111, 0x22222222, 0x333333
 
 static void deinit_texture(GSTEXTURE *texture)
 {
-   free(texture->Mem);
-   free(texture->Clut);
-   texture->Mem = NULL;
-   texture->Clut = NULL;
+   if (texture->Mem!= NULL) {
+      free(texture->Mem);
+      texture->Mem = NULL;
+   }
+
+   if (texture->Mem!= NULL) {
+      free(texture->Clut);
+      texture->Clut = NULL;
+   }
 }
 
 static void deinit_gsfont(GSFONTM *gsFontM)
