@@ -437,8 +437,10 @@ static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
 
 static void dpi_get_density(char *s, size_t len)
 {
-   static bool inited_once            = false;
-   static char string[PROP_VALUE_MAX] = {0};
+   static bool inited_once             = false;
+   static bool inited2_once            = false;
+   static char string[PROP_VALUE_MAX]  = {0};
+   static char string2[PROP_VALUE_MAX] = {0};
    if (!inited_once)
    {
       system_property_get("getprop", "ro.sf.lcd_density", string);
@@ -451,7 +453,13 @@ static void dpi_get_density(char *s, size_t len)
       return;
    }
 
-   system_property_get("wm", "density", s);
+   if (!inited2_once)
+   {
+      system_property_get("wm", "density", string2);
+      inited2_once = true;
+   }
+
+   strlcpy(s, string2, len);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,
