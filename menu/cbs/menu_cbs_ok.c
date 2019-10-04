@@ -4197,8 +4197,10 @@ static int action_ok_set_core_association(const char *path,
    if (!menu)
       return menu_cbs_exit();
 
+   /* TODO/FIXME - menu->rpl_entry_selection_ptr - find
+    * a way so that we can remove this temporary state */
    return generic_action_ok_displaylist_push(path, NULL,
-         NULL, 0, idx, entry_idx,
+         NULL, 0, menu->rpl_entry_selection_ptr, entry_idx,
          ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
 }
 
