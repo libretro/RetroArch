@@ -96,6 +96,13 @@ enum overlay_visibility
    OVERLAY_VISIBILITY_HIDDEN
 };
 
+enum overlay_orientation
+{
+   OVERLAY_ORIENTATION_NONE = 0,
+   OVERLAY_ORIENTATION_LANDSCAPE,
+   OVERLAY_ORIENTATION_PORTRAIT
+};
+
 struct overlay
 {
    bool full_screen;

@@ -321,6 +321,12 @@
 #define DEFAULT_INPUT_OVERLAY_OPACITY 0.7f
 #endif
 
+#if defined(RARCH_MOBILE)
+#define DEFAULT_OVERLAY_AUTO_ROTATE true
+#else
+#define DEFAULT_OVERLAY_AUTO_ROTATE false
+#endif
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_animation.h"

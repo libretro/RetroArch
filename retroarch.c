@@ -1965,6 +1965,7 @@ static int16_t input_state(unsigned port, unsigned device,
 static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(input_overlay_t *ol, float opacity);
+static void input_overlay_auto_rotate(input_overlay_t *ol);
 #endif
 
 static void bsv_movie_deinit(void);
@@ -5055,19 +5056,27 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_OVERLAY_NEXT:
          /* Switch to the next available overlay screen. */
 #ifdef HAVE_OVERLAY
-         if (!overlay_ptr)
-            return false;
-
-         overlay_ptr->index      = overlay_ptr->next_index;
-         overlay_ptr->active     = &overlay_ptr->overlays[overlay_ptr->index];
-
          {
-            settings_t *settings           = configuration_settings;
-            input_overlay_load_active(overlay_ptr, settings->floats.input_overlay_opacity);
-         }
+            settings_t *settings = configuration_settings;
+            bool *check_rotation = (bool*)data;
 
-         overlay_ptr->blocked    = true;
-         overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
+            if (!overlay_ptr)
+               return false;
+
+            overlay_ptr->index  = overlay_ptr->next_index;
+            overlay_ptr->active = &overlay_ptr->overlays[overlay_ptr->index];
+
+            input_overlay_load_active(overlay_ptr, settings->floats.input_overlay_opacity);
+
+            overlay_ptr->blocked    = true;
+            overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
+
+            /* Check orientation, if required */
+            if (settings->bools.input_overlay_auto_rotate)
+               if (check_rotation)
+                  if (*check_rotation)
+                     input_overlay_auto_rotate(overlay_ptr);
+         }
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
@@ -10844,6 +10853,86 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
+/* Attempts to automatically rotate the specified overlay.
+ * Depends upon proper naming conventions in overlay
+ * config file. */
+static void input_overlay_auto_rotate(input_overlay_t *ol)
+{
+   settings_t *settings                                = configuration_settings;
+   enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
+   enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
+   bool next_overlay_found                             = false;
+   bool tmp                                            = false;
+   unsigned next_overlay_index;
+   size_t i;
+
+   /* Sanity check */
+   if (!ol || !settings)
+      return;
+
+   if (!ol->alive || !settings->bools.input_overlay_enable)
+      return;
+
+   /* Get current screen orientation */
+   if (video_driver_width > video_driver_height)
+      screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
+   else
+      screen_orientation = OVERLAY_ORIENTATION_PORTRAIT;
+
+   /* Get orientation of active overlay */
+   if (!string_is_empty(ol->active->name))
+   {
+      if (strstr(ol->active->name, "landscape"))
+         active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
+      else if (strstr(ol->active->name, "portrait"))
+         active_overlay_orientation = OVERLAY_ORIENTATION_PORTRAIT;
+   }
+
+   /* Sanity check */
+   if (active_overlay_orientation == OVERLAY_ORIENTATION_NONE)
+      return;
+
+   /* If screen and overlay have the same orientation,
+    * no action is required */
+   if (screen_orientation == active_overlay_orientation)
+      return;
+
+   /* Attempt to find index of overlay corresponding
+    * to opposite orientation */
+   for (i = 0; i < overlay_ptr->active->size; i++)
+   {
+      overlay_desc_t *desc = &overlay_ptr->active->descs[i];
+
+      if (!desc)
+         continue;
+
+      if (!string_is_empty(desc->next_index_name))
+      {
+         if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
+            next_overlay_found = (strstr(desc->next_index_name, "portrait") != 0);
+         else
+            next_overlay_found = (strstr(desc->next_index_name, "landscape") != 0);
+
+         if (next_overlay_found)
+         {
+            next_overlay_index = desc->next_index;
+            break;
+         }
+      }
+   }
+
+   /* Sanity check */
+   if (!next_overlay_found)
+      return;
+
+   /* We have a valid target overlay
+    * > Trigger 'overly next' command event
+    * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
+    * from calling input_overlay_auto_rotate() again */
+   ol->next_index = next_overlay_index;
+   command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
+}
+
 /**
  * inside_hitbox:
  * @desc                  : Overlay descriptor handle.
@@ -11139,6 +11228,10 @@ static void input_overlay_loaded(retro_task_t *task,
 
    if (!settings->bools.input_overlay_show_mouse_cursor)
       video_driver_hide_mouse();
+
+   /* Attempt to automatically rotate overlay, if required */
+   if (settings->bools.input_overlay_auto_rotate)
+      input_overlay_auto_rotate(overlay_ptr);
 
    return;
 
@@ -24670,11 +24763,6 @@ static enum runloop_state runloop_check_state(void)
       BIT256_CLEAR_ALL(current_bits);
 #endif
 
-#ifdef HAVE_OVERLAY
-   /* Check next overlay */
-   HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, NULL);
-#endif
-
    /* Check fullscreen toggle */
    {
       bool fullscreen_toggled = !runloop_paused
@@ -24691,18 +24779,37 @@ static enum runloop_state runloop_check_state(void)
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL); 
 
 #ifdef HAVE_OVERLAY
+   if (settings->bools.input_overlay_enable)
    {
       static char prev_overlay_restore = false;
+      bool check_next_rotation         = true;
+      static unsigned last_width       = 0;
+      static unsigned last_height      = 0;
+
+      /* Check next overlay */
+      HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
+
+      /* Ensure overlay is restored after displaying osk */
       if (input_driver_keyboard_linefeed_enable)
-      {
-         prev_overlay_restore  = false;
-         retroarch_overlay_init();
-      }
+         prev_overlay_restore = true;
       else if (prev_overlay_restore)
       {
          if (!settings->bools.input_overlay_hide_in_menu)
             retroarch_overlay_init();
          prev_overlay_restore = false;
+      }
+
+      /* If video aspect ratio has changed, check overlay
+       * rotation (if required) */
+      if (settings->bools.input_overlay_auto_rotate)
+      {
+         if ((video_driver_width  != last_width) ||
+             (video_driver_height != last_height))
+         {
+            input_overlay_auto_rotate(overlay_ptr);
+            last_width  = video_driver_width;
+            last_height = video_driver_height;
+         }
       }
    }
 #endif
