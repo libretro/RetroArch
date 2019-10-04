@@ -4,9 +4,11 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
 
+#define RAM_THRESHOLD 0xA00000 // Memory left to the system for threads and other internal stuffs
+
 static int _newlib_heap_memblock;
 static unsigned _newlib_heap_size;
-static char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
+char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 static char _newlib_sbrk_mutex[32] __attribute__ ((aligned (8)));
 
 static int _newlib_vm_memblock;
@@ -50,11 +52,16 @@ void _init_vita_heap(void) {
 	if (sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;
 	}
+	
+	// Always allocating the max avaliable USER_RW mem on the system
+	SceKernelFreeMemorySizeInfo info;
+	info.size = sizeof(SceKernelFreeMemorySizeInfo);
+	sceKernelGetFreeMemorySize(&info);
 
 	if (&_newlib_heap_size_user != NULL) {
 		_newlib_heap_size = _newlib_heap_size_user;
 	}else{
-		_newlib_heap_size = 256 * 1024 * 1024;
+		_newlib_heap_size = info.size_user - RAM_THRESHOLD;
 	}
 
 	_newlib_heap_size -= _newlib_vm_size;
