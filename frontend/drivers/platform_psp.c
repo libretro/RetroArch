@@ -560,6 +560,16 @@ enum retro_language frontend_psp_get_user_language(void)
    sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &langid);
    return psp_get_retro_lang_from_langid(langid);
 }
+
+static uint64_t frontend_psp_get_mem_total(void)
+{
+   return _newlib_heap_end - _newlib_heap_base;
+}
+
+static uint64_t frontend_psp_get_mem_used(void)
+{
+   return _newlib_heap_end - _newlib_heap_cur;
+}
 #endif
 
 frontend_ctx_driver_t frontend_ctx_psp = {
@@ -582,8 +592,13 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_architecture,
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
+#ifdef VITA
+   frontend_psp_get_mem_total,
+   frontend_psp_get_mem_used,
+#else
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
+#endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
