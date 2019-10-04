@@ -2029,7 +2029,9 @@ void menu_display_unset_framebuffer_dirty_flag(void)
  * RGUI or XMB use this. */
 float menu_display_get_dpi(unsigned width, unsigned height)
 {
+#ifdef RARCH_MOBILE
    gfx_ctx_metrics_t metrics;
+#endif
    float dpi            = 0.0f;
    settings_t *settings = config_get_ptr();
 
