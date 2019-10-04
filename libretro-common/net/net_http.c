@@ -170,7 +170,7 @@ void net_http_urlencode_full(char *dest,
    buf_pos         = strlcpy(dest, url_domain, size);
    dest[buf_pos]   = '/';
    dest[buf_pos+1] = '\0';
-   buf_pos         = strlcat(dest, tmp, size);
+   strlcat(dest, tmp, size);
    free (tmp);
 }
 

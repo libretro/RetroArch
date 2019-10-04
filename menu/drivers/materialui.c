@@ -1942,8 +1942,7 @@ static void materialui_animate_scroll(
 static void materialui_navigation_set(void *data, bool scroll)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   menu_animation_ctx_entry_t entry;
-
+    
    if (!mui || !scroll)
       return;
 

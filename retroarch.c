@@ -19562,7 +19562,7 @@ static void video_driver_frame(const void *data, unsigned width,
          last_fps = TIME_TO_FPS(curr_time, new_time,
                video_info.fps_update_interval);
 
-         buf_pos = strlcpy(video_driver_window_title,
+         strlcpy(video_driver_window_title,
                video_driver_title_buf, sizeof(video_driver_window_title));
 
          if (!string_is_empty(video_info.fps_text))

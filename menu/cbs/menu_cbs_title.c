@@ -150,7 +150,6 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
             unsigned visible_index          = 0;
             unsigned option_index           = 0;
             bool option_found               = false;
-            struct core_option *option      = NULL;
             unsigned i;
 
             /* Convert menu index to option index */

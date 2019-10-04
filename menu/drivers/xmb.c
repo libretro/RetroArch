@@ -6065,7 +6065,6 @@ static int xmb_pointer_up(void *userdata,
       menu_entry_t *entry, unsigned action)
 {
    xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
-   unsigned header_height = menu_display_get_header_height();
    size_t selection       = menu_navigation_get_selection();
    unsigned end           = (unsigned)menu_entries_get_size();
    unsigned width;
