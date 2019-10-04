@@ -158,7 +158,7 @@ $(TARGET).elf: $(OBJ) libretro_vita.a
 	vita-make-fself -c -s $< $@
 
 %.vpk: %.self
-	vita-mksfoex -s TITLE_ID=$(VITA_TITLE_ID) "$(VITA_TITLE_NAME)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(VITA_TITLE_ID) "$(VITA_TITLE_NAME)" -d ATTRIBUTE2=12 param.sfo
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
