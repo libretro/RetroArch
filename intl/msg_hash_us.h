@@ -1455,6 +1455,14 @@ MSG_HASH(
     "Show Mouse Cursor With Overlay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+    "Auto-Rotate Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+    "If supported by current overlay, automatically rotate layout to match screen orientation/aspect ratio."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Show Inputs Listen Port"
     )

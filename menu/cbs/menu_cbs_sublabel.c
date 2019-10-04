@@ -286,6 +286,7 @@ default_sublabel_macro(action_bind_sublabel_video_message_pos_y,           MENU_
 default_sublabel_macro(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
 default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_mouse_cursor,       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR)
+default_sublabel_macro(action_bind_sublabel_input_overlay_auto_rotate,     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE)
 default_sublabel_macro(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 default_sublabel_macro(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
@@ -2289,6 +2290,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_show_mouse_cursor);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_auto_rotate);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);

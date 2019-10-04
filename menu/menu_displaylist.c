@@ -4736,6 +4736,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,     PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,              PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH  },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT },
                {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT },

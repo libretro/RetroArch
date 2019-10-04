@@ -760,8 +760,6 @@ bool task_push_overlay_load_default(
       return false;
    }
 
-   conf->path = strdup(overlay_path);
-
    if (!config_get_uint(conf, "overlays", &loader->size))
    {
       /* Error - overlays varaible not defined in config. */

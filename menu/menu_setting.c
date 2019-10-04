@@ -6421,6 +6421,32 @@ static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
    else
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 }
+
+static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
+{
+   settings_t *settings  = config_get_ptr();
+
+   if (!setting || !settings)
+      return;
+
+   /* This is very simple...
+    * The menu is currently active, so if:
+    * - Overlays are enabled
+    * - Overlays are not hidden in menus
+    * ...we just need to de-initialise then
+    * initialise the current overlay and the
+    * auto-rotate setting will be applied
+    * (i.e. There's no need to explicitly
+    * call the internal 'rotate overlay'
+    * function - saves having to expose it
+    * via the API) */
+   if (settings->bools.input_overlay_enable &&
+       !settings->bools.input_overlay_hide_in_menu)
+   {
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   }
+}
 #endif
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -11433,6 +11459,23 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_auto_rotate,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+               DEFAULT_OVERLAY_AUTO_ROTATE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
 
          CONFIG_PATH(
                list, list_info,
