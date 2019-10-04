@@ -2037,30 +2037,22 @@ float menu_display_get_dpi(unsigned width, unsigned height)
    if (settings && settings->bools.menu_dpi_override_enable)
       return settings->uints.menu_dpi_override_value;
 
+#ifdef RARCH_MOBILE
    /* Attempt to fetch actual screen DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
    metrics.value = &dpi;
 
    if (!video_context_driver_get_metrics(&metrics))
    {
-      /* Operation failed - use fallback... */
-#ifdef RARCH_MOBILE
-      /* For mobile platforms, use janky generic dpi
-       * formula, assuming a screen (diagonal) size
-       * of 5 inches (legacy value - will almost always
-       * be wrong...) */
+      /* Operation failed - use fallback...
+       * (Assume screen size of 5 inches) */
       float diagonal = 5.0f;
       dpi = sqrt((width * width) + (height * height)) / diagonal;
-#else
-      /* Well, who knows what platform this is...
-       * All we can do is assume a 'standard' DPI of 96 */
-      dpi = 96.0f;
-#endif
    }
 #if defined(ANDROID) || defined(HAVE_COCOATOUCH)
    else
    {
-      /* Okay, Andriod is a real nuisance here...
+      /* Okay, Android is a real nuisance here...
        * The reported DPI is just a binned value
        * corresponding to a standard pixel density
        * size (low, medium, high, extra high, etc.).
@@ -2077,6 +2069,11 @@ float menu_display_get_dpi(unsigned width, unsigned height)
        * conversion factor */
       dpi = (dpi / 160.0f) * 96.0f;
    }
+#endif /* defined(ANDROID) || defined(HAVE_COCOATOUCH) */
+#else
+   /* TODO: Implement proper DPI scaling for desktop
+    * platforms */
+   dpi = sqrt((width * width) + (height * height)) / 14.3f;
 #endif
 
    return dpi;
