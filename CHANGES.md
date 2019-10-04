@@ -30,6 +30,7 @@ operation had run
 - OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
 - OSD: Memory details can now be shown individually without FPS and frame count
 - OSX/METAL: CoreAudio V3 driver should now be the default audio driver on first startup
+- PS2: Fix memory leaks in font/video driver
 - SWITCH: Set default aspect ratio to core provided instead of 4:3
 - THREADED VIDEO: Fix FPS text in threaded video mode
 - VITA: Set default aspect ratio to core provided instead of 4:3
