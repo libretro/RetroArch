@@ -1,4 +1,4 @@
-BUILD_FOR_PCSX2    = 1
+BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
