@@ -2933,6 +2933,7 @@ static void handle_translation_cb(
       video_driver_frame(raw_output_data, image_width, image_height, pitch);
    }
 
+#ifdef HAVE_AUDIOMIXER
    if (raw_sound_data)
    {
       audio_mixer_stream_params_t params;
@@ -2965,6 +2966,7 @@ static void handle_translation_cb(
          free(params.basename);
       free(img);
    }
+#endif
 
 finish:
    if (error)
@@ -10863,7 +10865,7 @@ static void input_overlay_auto_rotate(input_overlay_t *ol)
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
    bool next_overlay_found                             = false;
    bool tmp                                            = false;
-   unsigned next_overlay_index;
+   unsigned next_overlay_index                         = 0;
    size_t i;
 
    /* Sanity check */

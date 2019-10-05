@@ -1168,7 +1168,7 @@ const char *video_shader_to_str(enum rarch_shader_type type)
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    gfx_ctx_flags_t flags;
-   enum display_flags testflag;
+   enum display_flags testflag = GFX_CTX_FLAGS_NONE;
 
    flags.flags     = 0;
 

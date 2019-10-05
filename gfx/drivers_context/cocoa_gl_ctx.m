@@ -480,19 +480,20 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-   CGRect size;
+   CGRect size, cgrect;
    GLsizei backingPixelWidth, backingPixelHeight;
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view               = g_instance;
 #endif
-   CGRect cgrect                   = NSRectToCGRect([g_view frame]);
 #if MAC_OS_X_VERSION_10_7
    SEL selector                    = NSSelectorFromString(BOXSTRING("convertRectToBacking:"));
    if ([g_view respondsToSelector:selector])
       cgrect                       = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   else
 #endif
+      cgrect                       = NSRectToCGRect([g_view frame]);
    backingPixelWidth               = CGRectGetWidth(cgrect);
    backingPixelHeight              = CGRectGetHeight(cgrect);
    size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
