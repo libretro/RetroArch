@@ -17,6 +17,10 @@
 #ifndef __COCOA_COMMON_DEFINES_H
 #define __COCOA_COMMON_DEFINES_H
 
+#ifndef MAC_OS_X_VERSION_10_12
+#define MAC_OS_X_VERSION_10_12 101200
+#endif
+
 #if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagControl NSControlKeyMask
@@ -52,6 +56,9 @@
 #define NSWindowStyleMaskResizable NSResizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
 #define NSAlertStyleCritical NSCriticalAlertStyle
+#define NSAlertStyleInformational NSInformationalAlertStyle
+#define NSAlertStyleWarning  NSWarningAlertStyle
+#define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
 #define NSControlSizeRegular NSRegularControlSize
 #endif
 
