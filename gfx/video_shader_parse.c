@@ -1216,6 +1216,7 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 bool video_shader_any_supported(void)
 {
    gfx_ctx_flags_t flags;
+   flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
    return
