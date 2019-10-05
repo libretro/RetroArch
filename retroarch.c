@@ -2758,6 +2758,7 @@ static void handle_translation_cb(
             found_string = (char*)malloc(i-start);
             strncpy(found_string, body_copy+start+1, i-start-1);
             *(found_string+i-start-1) = '\0';
+
             if (curr_state == 1)/*image*/
             {
               raw_image_file_data = (char*)unbase64(found_string, 
@@ -2765,18 +2766,20 @@ static void handle_translation_cb(
                     &new_image_size);
               curr_state = 0;
             }
+#ifdef HAVE_AUDIOMIXER
             else if (curr_state == 2)
             {
               raw_sound_data = (void*)unbase64(found_string, 
                     strlen(found_string), &new_sound_size);           
               curr_state     = 0;
             }
-            else if (strcmp(found_string, "image")==0)
+#endif
+            else if (string_is_equal(found_string, "image"))
             {
               curr_state = 1;
               free(found_string);
             }
-            else if (strcmp(found_string, "sound")==0)
+            else if (string_is_equal(found_string, "sound"))
             {
               curr_state = 2;
               free(found_string);
