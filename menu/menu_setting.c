@@ -11974,7 +11974,7 @@ static bool setting_append_list(
                   &settings->bools.menu_horizontal_animation,
                   MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
                   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
-                  true,
+                  DEFAULT_MENU_HORIZONTAL_ANIMATION,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
