@@ -37,6 +37,8 @@ matrix:
     - compiler: gcc
       env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
@@ -109,6 +111,10 @@ script:
   - |
      if [ -n "$DISABLE_CDROM" ]; then
        ARGS="$ARGS --disable-cdrom"
+     fi
+  - |
+     if [ -n "$DISABLE_AUDIOMIXER" ]; then
+       ARGS="$ARGS --disable-audiomixer"
      fi
   - |
      if [ -n "$ENABLE_GLES" ]; then
