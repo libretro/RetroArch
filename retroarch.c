@@ -2716,7 +2716,9 @@ static void handle_translation_cb(
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
    int new_image_size                = 0;
+#ifdef HAVE_AUDIOMIXER
    int new_sound_size                = 0;
+#endif
    const void* dummy_data            = NULL;
    void* raw_image_data              = NULL;
    void* raw_image_data_alpha        = NULL;
