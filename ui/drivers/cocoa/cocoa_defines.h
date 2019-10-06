@@ -17,6 +17,8 @@
 #ifndef __COCOA_COMMON_DEFINES_H
 #define __COCOA_COMMON_DEFINES_H
 
+#include <AvailabilityMacros.h>
+
 #ifndef MAC_OS_X_VERSION_10_12
 #define MAC_OS_X_VERSION_10_12 101200
 #endif
