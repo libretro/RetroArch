@@ -2130,8 +2130,8 @@ json_cleanup:
       char metadata_line[1024];
       char default_core_path[1024];
       char default_core_name[1024];
-      char metadata_char;
-      size_t metadata_counter;
+      char metadata_char               = 0;
+      size_t metadata_counter          = 0;
 
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
          buf[i][0] = '\0';
@@ -2139,8 +2139,6 @@ json_cleanup:
       metadata_line[0]     = '\0';
       default_core_path[0] = '\0';
       default_core_name[0] = '\0';
-      metadata_char        = 0;
-      metadata_counter     = 0;
 
       /* Attempt to read metadata lines at end of file */
       filestream_seek(file, -1, SEEK_END);
