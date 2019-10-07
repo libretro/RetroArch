@@ -168,7 +168,9 @@ void *glkitview_init(void);
 
 #elif TARGET_OS_IOS
 -(void) showNativeMenu {
-    [[RetroArch_iOS get] toggleUI];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[RetroArch_iOS get] toggleUI];
+    });
 }
 
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
