@@ -2,6 +2,7 @@
 
 # (1.7.9) (v2)
 - 3DS: Fix 3DS screen flickering when OSD is enabled
+- IOS: Fix crash that could happen at startup
 - MENU/MATERIALUI: Change DPI scaling back to original - too many issues with current implementation, requires a redesign
 
 # (1.7.9)
