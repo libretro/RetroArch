@@ -41,7 +41,7 @@ RETRO_BEGIN_DECLS
 /* Count Leading Zero, unsigned 16bit input value */
 static INLINE unsigned compat_clz_u16(uint16_t val)
 {
-#if defined(__GNUC__) && !defined(PS2)
+#if defined(__GNUC__)
    return __builtin_clz(val << 16 | 0x8000);
 #else
    unsigned ret = 0;

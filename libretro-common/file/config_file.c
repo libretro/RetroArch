@@ -1079,7 +1079,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          return false;
 
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
-#if !defined(PS2) && !defined(PSP)
+#if !defined(PSP)
       buf = calloc(1, 0x4000);
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
 #endif

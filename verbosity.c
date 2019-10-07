@@ -177,11 +177,9 @@ void retro_main_log_file_init(const char *path, bool append)
    g_verbosity->fp          = tmp;
    g_verbosity->initialized = true;
 
-#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
    g_verbosity->buf = calloc(1, 0x4000);
    setvbuf(g_verbosity->fp, (char*)g_verbosity->buf, _IOFBF, 0x4000);
-#endif
 }
 
 void retro_main_log_file_deinit(void)
