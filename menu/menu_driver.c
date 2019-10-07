@@ -2029,9 +2029,6 @@ void menu_display_unset_framebuffer_dirty_flag(void)
  * RGUI or XMB use this. */
 float menu_display_get_dpi(unsigned width, unsigned height)
 {
-#ifdef RARCH_MOBILE
-   gfx_ctx_metrics_t metrics;
-#endif
    float dpi            = 0.0f;
    settings_t *settings = config_get_ptr();
 
@@ -2039,42 +2036,10 @@ float menu_display_get_dpi(unsigned width, unsigned height)
    if (settings && settings->bools.menu_dpi_override_enable)
       return settings->uints.menu_dpi_override_value;
 
+   /* TODO/FIXME: Implement proper scaling for all platforms */
 #ifdef RARCH_MOBILE
-   /* Attempt to fetch actual screen DPI */
-   metrics.type  = DISPLAY_METRIC_DPI;
-   metrics.value = &dpi;
-
-   if (!video_context_driver_get_metrics(&metrics))
-   {
-      /* Operation failed - use fallback...
-       * (Assume screen size of 5 inches) */
-      float diagonal = 5.0f;
-      dpi = sqrt((width * width) + (height * height)) / diagonal;
-   }
-#if defined(ANDROID) || defined(HAVE_COCOATOUCH)
-   else
-   {
-      /* Okay, Android is a real nuisance here...
-       * The reported DPI is just a binned value
-       * corresponding to a standard pixel density
-       * size (low, medium, high, extra high, etc.).
-       * This has nothing to do with *physical* screen
-       * DPI. It seems the accepted way to handle this
-       * is to convert the DPI into a scaling factor
-       * based upon the Android default of 160 - so
-       * we divide reported DPI by 160, and multiply
-       * this by our target standard DPI of 96
-       * EDIT: It turns out that iOS devices (iPhone,
-       * iPad) have almost the same idiosyncrasies as
-       * Android when it comes to dealing with DPI,
-       * so we should be able to apply the same
-       * conversion factor */
-      dpi = (dpi / 160.0f) * 96.0f;
-   }
-#endif /* defined(ANDROID) || defined(HAVE_COCOATOUCH) */
+   dpi = sqrt((width * width) + (height * height)) / 11.0f;
 #else
-   /* TODO: Implement proper DPI scaling for desktop
-    * platforms */
    dpi = sqrt((width * width) + (height * height)) / 14.3f;
 #endif
 
