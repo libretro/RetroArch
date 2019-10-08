@@ -4127,7 +4127,7 @@ static bool command_event_init_core(enum rarch_core_type type)
          runloop_system.info.library_name,
          sizeof(video_driver_title_buf));
    strlcat(video_driver_title_buf, " ",
--         sizeof(video_driver_title_buf));
+         sizeof(video_driver_title_buf));
    strlcat(video_driver_title_buf,
          runloop_system.info.library_version,
          sizeof(video_driver_title_buf));
