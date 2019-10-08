@@ -24664,12 +24664,7 @@ static void update_fastforwarding_state(void)
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_inited)
          menu_widgets_fast_forward = true;
-      else
 #endif
-      {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
    }
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    else
@@ -25333,6 +25328,17 @@ static enum runloop_state runloop_check_state(void)
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
+
+      /* Show the fast-forward OSD for 1 frame every frame if menu widgets are disabled */
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+      if (!menu_widgets_inited && runloop_fastmotion)
+#else
+      if (runloop_fastmotion)
+#endif
+      {
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* Check if we have pressed any of the state slot buttons */
