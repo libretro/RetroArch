@@ -2745,7 +2745,6 @@ static void handle_translation_cb(
 
    /* Parse JSON body for the image and sound data */
    body_copy = strdup(data->data);
-
    while (true)
    {
       curr = (char)*(body_copy+i);
@@ -2757,10 +2756,9 @@ static void handle_translation_cb(
             start = i;
          else
          {
-            found_string = (char*)malloc(i-start);
-            strncpy(found_string, body_copy+start+1, i-start-1);
-            *(found_string+i-start-1) = '\0';
-
+            found_string = (char*)malloc(i-start+1);
+            strlcpy(found_string, body_copy+start+1, i-start);
+           
             if (curr_state == 1)/*image*/
             {
               raw_image_file_data = (char*)unbase64(found_string,
@@ -2793,9 +2791,8 @@ static void handle_translation_cb(
       }
       i++;
    }
-
    if (found_string)
-       free(found_string);
+      free(found_string);
 
    if (!raw_image_file_data && !raw_sound_data)
    {
@@ -2823,7 +2820,10 @@ static void handle_translation_cb(
             ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
             ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
             ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-         raw_image_data = raw_image_file_data + 54 * sizeof(uint8_t);
+         raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
+         memcpy(raw_image_data, 
+                raw_image_file_data+54*sizeof(uint8_t), 
+                image_width*image_height*3*sizeof(uint8_t));
       }
       else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
                raw_image_file_data[3] == 'G')
@@ -2841,6 +2841,7 @@ static void handle_translation_cb(
              ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
              ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
          rpng = rpng_alloc();
+         
          if (!rpng)
          {
             error = "Can't allocate memory.";
@@ -3187,9 +3188,45 @@ static bool run_translation_service(void)
    char *json_buffer                     = NULL;
 
    int out_length                        = 0;
+   int json_length                       = 0;
    const char *rf1                       = "{\"image\": \"";
    const char *rf2                       = "\"}\0";
+   char *rf3                             = NULL;
    bool TRANSLATE_USE_BMP                = false;
+
+   const char *label                     = NULL;
+   char* system_label                    = NULL;
+   core_info_t *core_info                = NULL;
+
+   /* get the core info here so we can pass long the game name */
+   core_info_get_current_core(&core_info);
+
+   if (core_info)
+   {
+      const char *system_id        = core_info->system_id
+         ? core_info->system_id : "core";
+      
+      const struct playlist_entry *entry  = NULL;
+      playlist_t *current_playlist = playlist_get_cached();
+
+      if (current_playlist)
+      {
+         playlist_get_index_by_path(
+            current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
+
+         if (entry && !string_is_empty(entry->label))
+            label = entry->label;
+      }
+
+      if (!label)
+         label = path_basename(path_get(RARCH_PATH_BASENAME));
+      system_label = (char *) malloc(strlen(label)+strlen(system_id)+3);
+      memcpy(system_label, system_id, strlen(system_id));
+      memcpy(system_label+strlen(system_id), "__", 2);
+      memcpy(system_label+2+strlen(system_id), label, strlen(label));
+      system_label[strlen(system_id)+2+strlen(label)] = '\0';
+   }
+
    if (!scaler)
       goto finish;
 
@@ -3289,13 +3326,34 @@ static bool run_translation_service(void)
       goto finish;
 
    /* Form request... */
-   json_buffer = (char*)malloc(11+3+out_length);
+   if (system_label)
+   {
+      int i;
+      /* include game label if provided */
+      rf3 = (char *) malloc(16+strlen(system_label));
+      memcpy(rf3, "\", \"label\": \"", 13*sizeof(uint8_t));
+      memcpy(rf3+13, system_label, strlen(system_label));
+      memcpy(rf3+13+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
+      for (i=13;i<strlen(system_label)+13;i++)
+      {
+         if (rf3[i] == '\"')
+            rf3[i] = ' ';
+      }
+      json_length = 11+out_length+16+strlen(system_label);
+   }
+   else
+      json_length = 11+out_length+3;
+
+   json_buffer = (char*)malloc(json_length);
    if (!json_buffer)
       goto finish;
 
    memcpy(json_buffer, (const void*)rf1, 11*sizeof(uint8_t));
    memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
-   memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
+   if (rf3)
+      memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));   
+   else
+      memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
 
    {
       char separator  = '?';
@@ -3382,7 +3440,10 @@ finish:
 
    if (bmp64_buffer)
       free(bmp64_buffer);
-
+   if (rf3)
+      free(rf3);
+   if (system_label)
+      free(system_label);
    if (json_buffer)
       free(json_buffer);
    return !error;
