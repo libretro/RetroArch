@@ -12200,40 +12200,23 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_equal(settings->arrays.menu_driver, "glui"))
-         {
-            /* only GLUI uses these values, don't show
-             * them on other drivers */
-            CONFIG_BOOL(
+         /* Only implemented for GLUI and XMB at present */
+         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
+             string_is_equal(settings->arrays.menu_driver, "xmb"))
+            CONFIG_FLOAT(
                   list, list_info,
-                  &settings->bools.menu_dpi_override_enable,
-                  MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-                  DEFAULT_MENU_DPI_OVERRIDE_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_dpi_override_value,
-                  MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
-                  MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-                  DEFAULT_MENU_DPI_OVERRIDE_VALUE,
+                  &settings->floats.menu_scale_factor,
+                  MENU_ENUM_LABEL_MENU_SCALE_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+                  DEFAULT_MENU_SCALE_FACTOR,
+                  "%.2fx",
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 72;
-            menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
-         }
+            menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -12253,22 +12236,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_xmb_scale_factor,
-                  MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
-                  MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
-                  xmb_scale_factor,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 20;
-            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index -1].offset_by, 200, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_PATH(

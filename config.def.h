@@ -467,7 +467,6 @@ static bool content_show_add     	  = true;
 static bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
-static unsigned xmb_scale_factor      = 100;
 static unsigned xmb_alpha_factor      = 75;
 static unsigned menu_font_color_red   = 255;
 static unsigned menu_font_color_green = 255;
@@ -889,15 +888,9 @@ static const bool playlist_fuzzy_archive_match = false;
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
-#define DEFAULT_MENU_DPI_OVERRIDE_ENABLE false
-
-#ifdef RARCH_MOBILE
-#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 72
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 360
-#else
-#define DEFAULT_MENU_DPI_OVERRIDE_VALUE 200
-#endif
+/* Default scale factor for non-frambuffer-based menu
+ * drivers and menu widgets */
+#define DEFAULT_MENU_SCALE_FACTOR 1.0f
 
 /* Log level for the frontend */
 #define DEFAULT_FRONTEND_LOG_LEVEL 1

@@ -823,14 +823,6 @@ MSG_HASH(
          "Téléchargement de contenu"
          )
 MSG_HASH(
-         MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-         "Remplacer la valeur des pixels/pouce"
-         )
-MSG_HASH(
-         MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-         "Valeur de remplacement des pixels/pouce"
-         )
-MSG_HASH(
          MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
          "Pilotes"
          )
@@ -3930,7 +3922,7 @@ MSG_HASH(
          "Pipeline de shader du menu (fond animé) "
          )
 MSG_HASH(
-         MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+         MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
          "Facteur d'échelle du menu "
          )
 MSG_HASH(
@@ -6243,15 +6235,6 @@ MSG_HASH(
 MSG_HASH(
          MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
          "Modifier l'opacité du graphique de pied de page."
-         )
-MSG_HASH(
-         MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-         "Le menu est normalement redimensionné de manière dynamique. Si vous souhaitez définir une taille de mise à l'échelle spécifique, activez cette option."
-         )
-MSG_HASH(
-         MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-         "Définir la taille de mise à l'échelle personnalisée ici.\n"
-         "REMARQUE : Vous devez activer 'Remplacer la valeur des pixels/pouce' pour que cette taille d'échelle prenne effet."
          )
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

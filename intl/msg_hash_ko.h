@@ -842,14 +842,6 @@ MSG_HASH(
     "컨텐츠 다운로더"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "DPI 오버라이드 허용"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "DPI 오버라이드"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "드라이버"
     )
@@ -4159,7 +4151,7 @@ MSG_HASH(
     "메뉴 쉐이더 파이프라인"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "메뉴 크기 요소"
     )
 MSG_HASH(
@@ -6496,15 +6488,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
     "푸터 그래픽의 투명도를 변경합니다."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "메뉴는 일반적으로 동적으로 조정됩니다. 특정 크기를 설정하려면 이 옵션을 활성화하십시오."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "사용자 정의 크기 조정을 설정합니다.\n"
-    "참고:크기조정을 적용하려면 'DPI 오버라이드'를 활성화해야합니다."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

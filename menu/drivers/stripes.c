@@ -2811,7 +2811,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    if (!stripes)
       return;
 
-   scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   scale_factor                            = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
    pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4;
 
    msg[0]             = '\0';
@@ -3022,7 +3022,7 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
-      (settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100);
+      (settings->floats.menu_scale_factor * width) / 1920.0f;
 
    stripes->above_subitem_offset     =   1.5;
    stripes->above_item_offset        =  -1.0;
@@ -3107,10 +3107,10 @@ static void stripes_layout_psp(stripes_handle_t *stripes, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
-      ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
+      ((settings->floats.menu_scale_factor * width) / 1920.0) * 1.5;
 #ifdef _3DS
    scale_factor                  =
-      settings->uints.menu_xmb_scale_factor / 400.0;
+      settings->floats.menu_scale_factor / 4.0;
 #endif
 
    stripes->above_subitem_offset     =  1.5;
@@ -3248,7 +3248,7 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    stripes_handle_t *stripes          = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
-   float scale_value          = settings->uints.menu_xmb_scale_factor;
+   float scale_value          = settings->floats.menu_scale_factor * 100.0f;
 
    /* scaling multiplier formulas made from these values:     */
    /* stripes_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */

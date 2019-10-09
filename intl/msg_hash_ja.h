@@ -851,14 +851,6 @@ MSG_HASH(
    "コンテンツをダウンロード"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-   "DPI優先を有効"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-   "DPI優先"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    "ドライバ"
 )
@@ -4177,7 +4169,7 @@ MSG_HASH(
    "メニューのシェーダパイプライン"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
    "メニューの倍率"
 )
 MSG_HASH(
@@ -6571,16 +6563,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
    "フッタの不透明度を調整します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-   "通常, メニューは動的にスケールされます。 "
-   "特定のスケールサイズを指定したい場合に有効にしてください。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-   "カスタムスケールサイズを指定します。 "
-   "備考: このスケールサイズを反映するには, [優先DPI]を有効にする必要があります。"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

@@ -842,14 +842,6 @@ MSG_HASH(
     "Download de Conteúdo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "Habilitar Redefinição de DPI"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "Redefinição de DPI"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "Driver"
     )
@@ -4159,7 +4151,7 @@ MSG_HASH(
     "Pipeline do Shader de Menu"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Fator de Escala do Menu"
     )
 MSG_HASH(
@@ -6500,15 +6492,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
     "Modifica a opacidade do gráfico do rodapé."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "O menu normalmente se dimensiona dinamicamente. Se você desejar definir uma escala de tamanho específica em vez disto, habilite esta função."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Define o tamanho do dimensionamento personalizado aqui.\n"
-    "OBS: Você deve habilitar a função 'Redefinição de DPI' para que este dimensionamento tenha efeito."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
