@@ -19021,6 +19021,7 @@ static bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
+         strcpy(settings->arrays.video_driver, "vulkan");
          current_video = &video_vulkan;
       }
 #endif
@@ -21093,7 +21094,8 @@ static void drivers_init(int flags)
    {
       /* Initialize menu driver */
       if (flags & DRIVER_MENU_MASK)
-         menu_driver_init(video_is_threaded);
+         if (!menu_driver_init(video_is_threaded))
+             RARCH_ERR("Unable to init menu driver.\n");
    }
 #else
    /* Qt uses core info, even if the menu is disabled */
