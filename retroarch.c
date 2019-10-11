@@ -12290,7 +12290,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
       int16_t bsv_result;
-      if (intfstream_read(bsv_movie_state_handle->file, &bsv_result, 1) == 1)
+      if (intfstream_read(bsv_movie_state_handle->file, &bsv_result, 2) == 2)
          return swap_if_big16(bsv_result);
       bsv_movie_state.movie_end = true;
    }
@@ -12321,7 +12321,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (BSV_MOVIE_IS_PLAYBACK_OFF())
    {
       result = swap_if_big16(result);
-      intfstream_write(bsv_movie_state_handle->file, &result, 1);
+      intfstream_write(bsv_movie_state_handle->file, &result, 2);
    }
 
    return result;
