@@ -2096,6 +2096,30 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
       diagonal_pixels = (float)sqrt(
             (double)((width * width) + (height * height)));
 
+      /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
+       * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
+       * unfortunate, and needs to be fixed at the gfx context driver
+       * level. Until this is done, all we can do is fallback to using
+       * the old legacy 'magic number' scaling on Mac platforms.
+       * Note: We use a rather ugly construct here so the 'Mac hack'
+       * can be added in one place, without polluting the rest of
+       * the code. */
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+      if (true)
+      {
+         scale        = (diagonal_pixels / 6.5f) / 212.0f;
+         scale_cached = true;
+         last_width   = width;
+         last_height  = height;
+
+         if (settings)
+            return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+                  settings->floats.menu_scale_factor : 1.0f);
+
+         return scale;
+      }
+#endif
+
       /* Get pixel scale relative to baseline 1080p display */
       pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
 
