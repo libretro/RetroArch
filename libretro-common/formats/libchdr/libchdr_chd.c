@@ -1682,6 +1682,8 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
             bytes = read_compressed(chd, blockoffs, blocklen);
             if (bytes == NULL)
                return CHDERR_READ_ERROR;
+            if (!chd->codecintf[rawmap[0]])
+               return CHDERR_UNSUPPORTED_FORMAT;
 				switch (chd->codecintf[rawmap[0]]->compression)
 				{
 					case CHD_CODEC_CD_LZMA:

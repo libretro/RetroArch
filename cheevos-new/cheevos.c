@@ -1127,6 +1127,7 @@ typedef struct
    struct http_connection_t *conn;
    struct http_t *http;
    const rcheevos_cheevo_t *cheevo_end;
+   cdfs_track_t *track;
    cdfs_file_t cdfp;
 
    /* co-routine required fields */
@@ -1151,7 +1152,8 @@ enum
    RCHEEVOS_HTTP_GET     = -13,
    RCHEEVOS_DEACTIVATE   = -14,
    RCHEEVOS_PLAYING      = -15,
-   RCHEEVOS_DELAY        = -16
+   RCHEEVOS_DELAY        = -16,
+   RCHEEVOS_PCE_CD_MD5   = -17
 };
 
 static int rcheevos_iterate(rcheevos_coro_t* coro)
@@ -1212,6 +1214,13 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       0
    };
 
+   static const uint32_t pce_cd_exts[] =
+   {
+      0x0b886782U, /* cue */
+      0x0b8865d4U, /* chd */
+      0
+   };
+
    static const uint32_t arcade_exts[] =
    {
       0x0b88c7d8U, /* zip */
@@ -1224,6 +1233,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       {RCHEEVOS_LYNX_MD5,    "Atari Lynx (discards header)",      lynx_exts},
       {RCHEEVOS_NES_MD5,     "NES (discards header)",             nes_exts},
       {RCHEEVOS_PSX_MD5,     "Playstation (main executable)",     psx_exts},
+      {RCHEEVOS_PCE_CD_MD5,  "PC Engine CD (boot sector)",        pce_cd_exts},
       {RCHEEVOS_SEGACD_MD5,  "Sega CD/Saturn (first sector)",     segacd_exts},
       {RCHEEVOS_ARCADE_MD5,  "Arcade (filename)",                 arcade_exts},
       {RCHEEVOS_GENERIC_MD5, "Generic (plain content)",           NULL}
@@ -1584,11 +1594,11 @@ found:
       MD5_Init(&coro->md5);
 
       /* find the data track - it should be the first one */
-      coro->stream = cdfs_open_data_track(coro->path);
-      if (coro->stream)
+      coro->track = cdfs_open_data_track(coro->path);
+      if (coro->track)
       {
          /* open the raw CD */
-         if (cdfs_open_file(&coro->cdfp, coro->stream, NULL))
+         if (cdfs_open_file(&coro->cdfp, coro->track, NULL))
          {
             coro->count = 512;
             free(coro->data);
@@ -1601,14 +1611,87 @@ found:
 
             cdfs_close_file(&coro->cdfp);
 
-            intfstream_close(coro->stream);
-            CHEEVOS_FREE(coro->stream);
+            cdfs_close_track(coro->track);
+            coro->track = NULL;
 
             CORO_GOTO(RCHEEVOS_GET_GAMEID);
          }
 
-         intfstream_close(coro->stream);
-         CHEEVOS_FREE(coro->stream);
+         cdfs_close_track(coro->track);
+         coro->track = NULL;
+      }
+
+      CHEEVOS_LOG(RCHEEVOS_TAG "could not open CD\n", coro->gameid);
+      coro->gameid = 0;
+      CORO_RET();
+   }
+
+
+   /**************************************************************************
+   * Info   Tries to identify a PC Engine CD game
+   * Input  CHEEVOS_VAR_INFO the content info
+   * Output CHEEVOS_VAR_GAMEID the Retro Achievements game ID, or 0 if not found
+   *************************************************************************/
+   CORO_SUB(RCHEEVOS_PCE_CD_MD5)
+   {
+      MD5_Init(&coro->md5);
+
+      /* find the data track - it should be the second one */
+      coro->track = cdfs_open_data_track(coro->path);
+      if (coro->track)
+      {
+         /* open the raw CD */
+         if (cdfs_open_file(&coro->cdfp, coro->track, NULL))
+         {
+            /* the PC-Engine uses the second sector to specify boot information and program name.
+             * the string "PC Engine CD-ROM SYSTEM" should exist at 32 bytes into the sector
+             * http://shu.sheldows.com/shu/download/pcedocs/pce_cdrom.html
+             */
+            cdfs_seek_sector(&coro->cdfp, 1);
+            cdfs_read_file(&coro->cdfp, buffer, 128);
+
+            if (strncmp("PC Engine CD-ROM SYSTEM", (const char*)& buffer[32], 23) != 0)
+            {
+               CHEEVOS_LOG(RCHEEVOS_TAG "not a PC Engine CD\n", coro->gameid);
+
+               cdfs_close_track(coro->track);
+               coro->track = NULL;
+
+               coro->gameid = 0;
+               CORO_RET();
+            }
+
+            {
+               /* the first three bytes specify the sector of the program data, and the fourth byte
+               * is the number of sectors.
+               */
+               const unsigned int first_sector = buffer[0] * 65536 + buffer[1] * 256 + buffer[2];
+               cdfs_seek_sector(&coro->cdfp, first_sector);
+
+               to_read = buffer[3] * 2048;
+            }
+
+            coro->count = to_read + 22;
+            free(coro->data);
+            coro->data = (uint8_t*)malloc(coro->count);
+            memcpy(coro->data, &buffer[106], 22);
+
+            cdfs_read_file(&coro->cdfp, ((uint8_t*)coro->data) + 22, to_read);
+            coro->len = coro->count;
+
+            CORO_GOSUB(RCHEEVOS_EVAL_MD5);
+            MD5_Final(coro->hash, &coro->md5);
+
+            cdfs_close_file(&coro->cdfp);
+
+            cdfs_close_track(coro->track);
+            coro->track = NULL;
+
+            CORO_GOTO(RCHEEVOS_GET_GAMEID);
+         }
+
+         cdfs_close_track(coro->track);
+         coro->track = NULL;
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "could not open CD\n", coro->gameid);
@@ -1626,41 +1709,12 @@ found:
    {
       MD5_Init(&coro->md5);
 
-      /* if we're looking at an m3u file, get the first disc from the playlist */
-      end = path_get_extension(coro->path);
-      if (string_is_equal_noncase(end, "m3u"))
-      {
-         intfstream_t* m3u_stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-         if (m3u_stream)
-         {
-            char disc_path[PATH_MAX_LENGTH];
-            char* tmp;
-
-            num_read = intfstream_read(m3u_stream, buffer, sizeof(buffer));
-            intfstream_close(m3u_stream);
-            buffer[num_read] = '\0';
-
-            tmp = buffer;
-            while (*tmp && *tmp != '\n')
-               ++tmp;
-            if (tmp > buffer && tmp[-1] == '\r')
-               --tmp;
-            *tmp = '\0';
-
-            fill_pathname_basedir(disc_path, coro->path, sizeof(disc_path));
-            strlcat(disc_path, buffer, sizeof(disc_path));
-
-            free((void*)coro->path);
-            coro->path = strdup(disc_path);
-         }
-      }
-
       /* find the data track - it should be the first one */
-      coro->stream = cdfs_open_data_track(coro->path);
-      if (coro->stream)
+      coro->track = cdfs_open_data_track(coro->path);
+      if (coro->track)
       {
          /* open the SYSTEM.CNF file and find the BOOT= record */
-         if (cdfs_open_file(&coro->cdfp, coro->stream, "SYSTEM.CNF"))
+         if (cdfs_open_file(&coro->cdfp, coro->track, "SYSTEM.CNF"))
          {
             cdfs_read_file(&coro->cdfp, buffer, sizeof(buffer));
 
@@ -1703,7 +1757,7 @@ found:
                   strcpy(exe_name_buffer, exe_name);
 
                /* open the file pointed to by the BOOT= record */
-               if (exe_name_buffer[0] && cdfs_open_file(&coro->cdfp, coro->stream, exe_name_buffer))
+               if (exe_name_buffer[0] && cdfs_open_file(&coro->cdfp, coro->track, exe_name_buffer))
                {
                   cdfs_read_file(&coro->cdfp, buffer, sizeof(buffer));
 
@@ -1750,8 +1804,8 @@ found:
 
                      cdfs_close_file(&coro->cdfp);
 
-                     intfstream_close(coro->stream);
-                     CHEEVOS_FREE(coro->stream);
+                     cdfs_close_track(coro->track);
+                     coro->track = NULL;
 
                      CORO_GOTO(RCHEEVOS_GET_GAMEID);
                   }
@@ -1761,8 +1815,8 @@ found:
 
          CHEEVOS_LOG(RCHEEVOS_TAG "could not locate primary executable\n", coro->gameid);
 
-         intfstream_close(coro->stream);
-         CHEEVOS_FREE(coro->stream);
+         cdfs_close_track(coro->track);
+         coro->track = NULL;
       }
       else
       {
@@ -2331,6 +2385,7 @@ bool rcheevos_load(const void *data)
    CORO_SETUP();
 
    info = (const struct retro_game_info*)data;
+   strncpy(buffer, path_get_extension(info->path), sizeof(buffer));
 
    if (info->data)
    {
@@ -2356,9 +2411,41 @@ bool rcheevos_load(const void *data)
    {
       coro->data       = NULL;
       coro->path       = strdup(info->path);
+
+      /* if we're looking at an m3u file, get the first disc from the playlist */
+      const char* end = path_get_extension(coro->path);
+      if (string_is_equal_noncase(end, "m3u"))
+      {
+         intfstream_t* m3u_stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (m3u_stream)
+         {
+            char m3u_contents[1024];
+            char disc_path[PATH_MAX_LENGTH];
+            char* tmp;
+            int64_t num_read;
+
+            num_read = intfstream_read(m3u_stream, m3u_contents, sizeof(m3u_contents) - 1);
+            intfstream_close(m3u_stream);
+            m3u_contents[num_read] = '\0';
+
+            tmp = m3u_contents;
+            while (*tmp && *tmp != '\n')
+               ++tmp;
+            if (tmp > buffer && tmp[-1] == '\r')
+               --tmp;
+            *tmp = '\0';
+
+            fill_pathname_basedir(disc_path, coro->path, sizeof(disc_path));
+            strlcat(disc_path, m3u_contents, sizeof(disc_path));
+
+            free((void*)coro->path);
+            coro->path = strdup(disc_path);
+
+            strncpy(buffer, path_get_extension(disc_path), sizeof(buffer));
+         }
+      }
    }
 
-   strncpy(buffer, path_get_extension(info->path), sizeof(buffer));
    buffer[sizeof(buffer) - 1] = '\0';
    string_to_lower(buffer);
    coro->ext_hash = rcheevos_djb2(buffer, strlen(buffer));
