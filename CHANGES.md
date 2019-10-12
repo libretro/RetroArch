@@ -1,5 +1,6 @@
 # Future (1.7.9) [v3]
 
+- BSV: Fix BSV recording/playback
 - COMMON: Graceful driver switching for Windows and Linux
 - MENU: Menu scaling improvements
 - MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
