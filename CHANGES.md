@@ -2,6 +2,7 @@
 - AI SERVICE: Added in fix for bmp returns to ai service. Added in label passing to AI service call
 - BSV: Fix BSV recording/playback
 - COMMON: Graceful driver switching for Windows and Linux
+- LAKKA: Wi-Fi Access Point settings
 - MENU: Menu scaling improvements
 - MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
 - MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
