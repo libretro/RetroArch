@@ -1,4 +1,10 @@
-# Future (1.8.0)
+# Future (1.7.9) [v3]
+
+- COMMON: Graceful driver switching for Windows and Linux
+- MENU: Menu scaling improvements
+- MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
+- MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
+- MENU/MATERIALUI: Material UI no longer leaks memory on 'context reset' (fonts were previously never free()'d)
 
 # (1.7.9) (v2)
 - 3DS: Fix 3DS screen flickering when OSD is enabled
