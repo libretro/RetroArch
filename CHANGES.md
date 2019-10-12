@@ -1,5 +1,5 @@
 # Future (1.7.9) [v3]
-- AI SERVICE: Added in fix for bmp returns to ai service. Added in label passing to AI service call
+- AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
 - BSV: Fix BSV recording/playback
 - COMMON: Graceful driver switching for Windows and Linux
 - LAKKA: Wi-Fi Access Point settings
