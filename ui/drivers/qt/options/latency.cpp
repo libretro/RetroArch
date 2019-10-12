@@ -26,6 +26,7 @@ QWidget *LatencyPage::widget()
    QWidget                         *widget = new QWidget;
    FormLayout                      *layout = new FormLayout;
    CheckableSettingsGroup *runAheadGpuSync = new CheckableSettingsGroup(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED);
+
    rarch_setting_t *hardSyncSetting        = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
    if (hardSyncSetting)
@@ -36,6 +37,8 @@ QWidget *LatencyPage::widget()
 
       layout->addRow(hardSyncGroup);
    }
+
+   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
 
    layout->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    layout->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
