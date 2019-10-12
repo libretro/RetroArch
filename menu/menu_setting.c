@@ -6564,6 +6564,17 @@ static void bluetooth_enable_toggle_change_handler(void *data)
    systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
          enable);
 }
+
+static void localap_enable_toggle_change_handler(void *data)
+{
+   bool enable           = false;
+   settings_t *settings  = config_get_ptr();
+
+   if (settings && settings->bools.localap_enable)
+      enable = true;
+
+   driver_wifi_tether_start_stop(enable, LAKKA_LOCALAP_PATH);
+}
 #endif
 
 static bool setting_append_list_input_player_options(
@@ -15170,6 +15181,22 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = bluetooth_enable_toggle_change_handler;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.localap_enable,
+                  MENU_ENUM_LABEL_LOCALAP_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = localap_enable_toggle_change_handler;
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);

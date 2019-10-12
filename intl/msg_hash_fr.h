@@ -466,10 +466,12 @@ MSG_HASH(
          MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
          "Ne pas écraser la SRAM en chargeant la sauvegarde instantanée"
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
          "Bluetooth"
          )
+#endif
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
          "Adresse URL des assets sur le Buildbot "
@@ -1497,10 +1499,12 @@ MSG_HASH(
          MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
          "Manettes "
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
          "Services"
          )
+#endif
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
          "Chinois (Simplifié)"
@@ -2499,10 +2503,12 @@ MSG_HASH(
          MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
          "Lancer"
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
          "SAMBA"
          )
+#endif
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
          "Fichiers de sauvegarde "
@@ -2675,10 +2681,12 @@ MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
          "Enregistrer les captures d'écran avec le contenu"
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
          "SSH"
          )
+#endif
 MSG_HASH(
          MENU_ENUM_LABEL_VALUE_START_CORE,
          "Démarrer le cœur"
@@ -4086,10 +4094,12 @@ MSG_HASH(
          MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
          "Modifier les réglages de sortie audio."
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
          "Détermine l'état de Bluetooth."
          )
+#endif
 MSG_HASH(
          MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
          "Enregistrer les modifications dans le fichier de configuration à la sortie."
@@ -4158,6 +4168,7 @@ MSG_HASH(
          MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
          "Télécharger des add-ons, des composants et du contenu pour RetroArch."
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
          "Partager des dossiers réseau via le protocole SMB."
@@ -4166,14 +4177,17 @@ MSG_HASH(
          MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
          "Gérer les services au niveau du système d'exploitation."
          )
+#endif
 MSG_HASH(
          MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
          "Affiche les fichiers/dossiers cachés dans le navigateur de fichiers."
          )
+#ifdef HAVE_LAKKA
 MSG_HASH(
          MENU_ENUM_SUBLABEL_SSH_ENABLE,
          "Utiliser SSH pour accéder à la ligne de commande à distance."
          )
+#endif
 MSG_HASH(
          MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
          "Empêche l'économiseur d'écran de votre système de s'activer."
@@ -9025,3 +9039,23 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
       "Use modern decorated animations, notifications, indicators and controls instead of the old text only system.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
       "Supprimer la liste de lecture")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+      "Wi-Fi Access Point")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+      "Enable or disable Wi-Fi Access Point.")
+MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
+      "Switching off Wi-Fi Access Point.")
+MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
+      "Disconnecting from Wi-Fi '%s'")
+MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
+      "Wi-Fi Access Point is already started")
+MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
+      "Wi-Fi Access Point is not running")
+MSG_HASH(MSG_LOCALAP_STARTING,
+      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
+      "Could not create Wi-Fi Access Point configuration file.")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
+     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+#endif

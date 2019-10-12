@@ -178,10 +178,13 @@ default_sublabel_macro(action_bind_sublabel_latency_settings_list,         MENU_
 default_sublabel_macro(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_netplay_lan_scan_settings_list,MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_help_list,                     MENU_ENUM_SUBLABEL_HELP_LIST)
+#ifdef HAVE_LAKKA
 default_sublabel_macro(action_bind_sublabel_services_settings_list,        MENU_ENUM_SUBLABEL_SERVICES_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ssh_enable,                    MENU_ENUM_SUBLABEL_SSH_ENABLE)
 default_sublabel_macro(action_bind_sublabel_samba_enable,                  MENU_ENUM_SUBLABEL_SAMBA_ENABLE )
 default_sublabel_macro(action_bind_sublabel_bluetooth_enable,              MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE )
+default_sublabel_macro(action_bind_sublabel_localap_enable,                MENU_ENUM_SUBLABEL_LOCALAP_ENABLE )
+#endif
 default_sublabel_macro(action_bind_sublabel_user_language,                 MENU_ENUM_SUBLABEL_USER_LANGUAGE)
 default_sublabel_macro(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES )
 default_sublabel_macro(action_bind_sublabel_online_updater,                MENU_ENUM_SUBLABEL_ONLINE_UPDATER)
@@ -2765,6 +2768,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_HELP_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_help_list);
             break;
+#ifdef HAVE_LAKKA
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_services_settings_list);
             break;
@@ -2777,6 +2781,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_BLUETOOTH_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_enable);
             break;
+         case MENU_ENUM_LABEL_LOCALAP_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_localap_enable);
+            break;
+#endif
          case MENU_ENUM_LABEL_USER_LANGUAGE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_language);
             break;
