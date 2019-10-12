@@ -834,14 +834,6 @@ MSG_HASH(
     "İçerik İndir"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "DPI Üzerine yazma"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "DPI Üzerine yazma"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "Sürücüler"
     )
@@ -3991,7 +3983,7 @@ MSG_HASH(
     "Menü Gölgelendirici Hattı"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Menü Ölçeklendirme Faktörü"
     )
 MSG_HASH(
@@ -6291,15 +6283,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
     "Altbilgi grafiğinin opaklığını değiştirin."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "Menü normalde kendini dinamik olarak ölçeklendirir. Bunun yerine belirli bir ölçekleme boyutu ayarlamak istiyorsanız, bunu etkinleştirin."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Özel ölçeklendirme boyutunu buradan ayarlayın.\n"
-    "NOT: Ölçeklendirme boyutunun etkili olması için 'DPI Geçersiz Kılma'yı etkinleştirmeniz gerekir."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

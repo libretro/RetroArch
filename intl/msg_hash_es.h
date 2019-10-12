@@ -810,14 +810,6 @@ MSG_HASH(
     "Descargador de contenido"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "Forzar DPI"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "Anular DPI"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "Controladores"
     )
@@ -3521,7 +3513,7 @@ MSG_HASH(
     "Menú Shader Pipeline"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Escala del menú"
     )
 MSG_HASH(
@@ -5755,15 +5747,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
     "Modificar opacidad del pie de página"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "El menú es escalado dinamicamente. Activar si desea un valor predefinido"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Establecer DPI\n"
-    "NOTA: Debe activar 'Forzar DPI' para que tenga efecto"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

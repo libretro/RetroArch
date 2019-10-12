@@ -651,10 +651,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Pobierz rdzeń...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "Program do pobierania treści")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "Zastąp włączone DPI")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "Nadpisz DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Sterowniki")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -1958,7 +1954,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "Czerwień wulkaniczna")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "Animowany efekt tłą")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
       "Współczynnik skali menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Włącz cienie ikony")
@@ -3211,10 +3207,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
       "Zmodyfikuj krycie grafiki nagłówka.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
       "Zmodyfikuj krycie grafiki stopki.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-      "Menu zazwyczaj dynamicznie się skaluje. Jeśli chcesz zamiast tego ustawić określony rozmiar skalowania, włącz to.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Ustaw tutaj niestandardowy rozmiar skalowania. UWAGA: Musisz włączyć 'DPI Override', aby ten rozmiar skali zaczął obowiązywać.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Zapisz wszystkie pobrane pliki w tym katalogu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,

@@ -486,6 +486,7 @@ default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,             
 default_sublabel_macro(action_bind_sublabel_ozone_truncate_playlist_name,          MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
 default_sublabel_macro(action_bind_sublabel_ozone_scroll_content_metadata,         MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 default_sublabel_macro(action_bind_sublabel_menu_use_preferred_system_color_theme, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME)
+default_sublabel_macro(action_bind_sublabel_menu_scale_factor,                     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
@@ -572,8 +573,6 @@ default_sublabel_macro(action_bind_sublabel_main_menu_enable_settings,          
 default_sublabel_macro(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
 default_sublabel_macro(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_footer_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY)
-default_sublabel_macro(action_bind_sublabel_dpi_override_enable,                   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE)
-default_sublabel_macro(action_bind_sublabel_dpi_override_value,                    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE)
 default_sublabel_macro(action_bind_sublabel_core_assets_directory,                 MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_input_remapping_directory,             MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_core_directory,                        MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH)
@@ -1406,12 +1405,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remapping_directory);
             break;
-         case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dpi_override_enable);
-            break;
-         case MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dpi_override_value);
-            break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_footer_opacity);
             break;
@@ -1685,6 +1678,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_animation_opening_main_menu);
+            break;
+         case MENU_ENUM_LABEL_MENU_SCALE_FACTOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_scale_factor);
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);

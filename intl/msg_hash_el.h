@@ -771,14 +771,6 @@ MSG_HASH(
     "Λήψη Περιεχομένου"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "DPI Override Enable"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "DPI Override"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "Οδηγοί"
     )
@@ -3449,7 +3441,7 @@ MSG_HASH(
     "Menu Shader Pipeline"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Menu Scale Factor"
     )
 MSG_HASH(
@@ -5642,15 +5634,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
     "Modify the opacity of the footer graphic."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Set the custom scaling size here.\n"
-    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,

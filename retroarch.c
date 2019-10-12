@@ -13112,19 +13112,41 @@ static void menu_input_set_pointer_visibility(retro_time_t current_time)
 
 static float menu_input_get_dpi(void)
 {
-   gfx_ctx_metrics_t metrics;
-   float dpi                = 0.0f;
-   menu_handle_t *menu_data = menu_driver_get_ptr();
-   bool is_rgui             =
-         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
+   static unsigned last_video_width  = 0;
+   static unsigned last_video_height = 0;
+   static float dpi                  = 0.0f;
+   static bool dpi_cached            = false;
+   menu_handle_t *menu_data          = menu_driver_get_ptr();
+   bool is_rgui;
 
-   /* Regardless of menu driver, need 'actual'
-    * screen DPI */
-   metrics.type  = DISPLAY_METRIC_DPI;
-   metrics.value = &dpi;
+   if (!menu_data)
+      return 0.0f;
 
-   if (!video_context_driver_get_metrics(&metrics))
-      dpi = 0.0f; /* Ensure a sane value (unnecessary check, but no harm being safe) */
+   is_rgui = menu_data->driver_ctx && menu_data->driver_ctx->set_texture;
+
+   /* Regardless of menu driver, need 'actual' screen DPI
+    * Note: DPI is a fixed hardware property. To minimise performance
+    * overheads we therefore only call video_context_driver_get_metrics()
+    * on first run, or when the current video resolution changes */
+   if (!dpi_cached ||
+       (video_driver_width  != last_video_width) ||
+       (video_driver_height != last_video_height))
+   {
+      gfx_ctx_metrics_t metrics;
+
+      metrics.type  = DISPLAY_METRIC_DPI;
+      metrics.value = &dpi;
+
+      /* Note: If video_context_driver_get_metrics() fails,
+       * we don't know what happened to dpi - so ensure it
+       * is reset to a sane value */
+      if (!video_context_driver_get_metrics(&metrics))
+         dpi = 0.0f;
+
+      dpi_cached        = true;
+      last_video_width  = video_driver_width;
+      last_video_height = video_driver_height;
+   }
 
    /* RGUI uses a framebuffer texture, which means we
     * operate in menu space, not screen space.
@@ -13135,11 +13157,9 @@ static float menu_input_get_dpi(void)
    {
       size_t fb_pitch;
       unsigned fb_width, fb_height;
-      struct video_viewport vp;
 
-      /* Read display/framebuffer info */
+      /* Read framebuffer info */
       menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-      video_driver_get_viewport_info(&vp);
 
       /* Rationale for current 'DPI' determination method:
        * - Divide screen height by DPI, to get number of vertical
@@ -13148,7 +13168,7 @@ static float menu_input_get_dpi(void)
        *   '1 inch' squares to get number of menu space pixels
        *   per inch
        * This is crude, but should be sufficient... */
-      dpi = ((float)fb_height / (float)vp.full_height) * dpi;
+      return ((float)fb_height / (float)video_driver_height) * dpi;
    }
 
    return dpi;

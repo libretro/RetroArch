@@ -595,10 +595,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Загрузка ядра...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "Загрузка содержимого")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "Разрешить переопределение DPI")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "Переопределение DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Драйвер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -1824,7 +1820,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "Вулканический красный")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "Шейдерный фон меню")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
       "Масштаб в меню")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Отображение теней у иконок")
@@ -3014,10 +3010,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
       "Изменение прозрачность графического заголовка.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
       "Изменение прозрачности графика нижнего колонтитула.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-      "Меню интерфейса обычно сам подстраивается. Если вы хотите изменить DPI под свой вкус, то включите эту функцию.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Установить свой размер масштабирования. ПРИМЕЧАНИЕ: Вы должны включить 'DPI Override', чтобы эти изменения заработали.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Сохранять все закаченные файлы в этой папке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,

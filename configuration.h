@@ -161,7 +161,6 @@ typedef struct settings
       bool menu_pointer_enable;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
-      bool menu_dpi_override_enable;
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
@@ -394,6 +393,7 @@ typedef struct settings
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
 
+      float menu_scale_factor;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
@@ -516,14 +516,12 @@ typedef struct settings
       unsigned menu_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
-      unsigned menu_dpi_override_value;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_animation_opening_main_menu;
       unsigned menu_xmb_animation_horizontal_highlight;
       unsigned menu_xmb_animation_move_up_down;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
-      unsigned menu_xmb_scale_factor;
       unsigned menu_xmb_alpha_factor;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;

@@ -57,9 +57,11 @@
 
 #include "../../dynamic.h"
 
-/* Global DPI-aware scale factor ==
- * (screen DPI) * MUI_DPI_SCALE_COEFF */
-#define MUI_DPI_SCALE_COEFF 2.2f
+/* Defines the 'device independent pixel' base
+ * unit reference size for all UI elements.
+ * 212 px corresponds to the the baseline standard
+ * 22 inch, 96 DPI display */
+#define MUI_DIP_BASE_UNIT_SIZE 212.0f
 
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
@@ -152,7 +154,10 @@ typedef struct materialui_handle
    bool is_file_list;
    bool is_dropdown_list;
 
-   float dpi_scale_factor;
+   unsigned last_width;
+   unsigned last_height;
+   float last_scale_factor;
+   float dip_base_unit_size;
 
    int cursor_size;
 
@@ -649,7 +654,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
          lines = materialui_count_lines(wrapped_sublabel_str);
       }
 
-      node->line_height  = (mui->dpi_scale_factor / 3) + (lines * mui->font->size);
+      node->line_height  = (mui->dip_base_unit_size / 3) + (lines * mui->font->size);
       node->y            = sum;
       sum               += node->line_height;
    }
@@ -691,6 +696,9 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    return sum - half;
 }
 
+static void materialui_context_reset_internal(
+      materialui_handle_t *mui, bool is_threaded);
+
 /* Called on each frame. We use this callback to:
  * - Determine current scroll postion
  * - Determine index of first/last onscreen entries
@@ -706,9 +714,29 @@ static void materialui_render(void *data,
    bool first_entry_found   = false;
    size_t i;
    int bottom;
+   float scale_factor;
 
    if (!mui || !list)
       return;
+
+   /* Check whether menu scale factor has changed */
+   scale_factor = menu_display_get_dpi_scale(width, height);
+   if (scale_factor != mui->last_scale_factor)
+   {
+      mui->dip_base_unit_size = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
+      materialui_context_reset_internal(mui, video_driver_is_threaded());
+      mui->last_scale_factor  = scale_factor;
+   }
+
+   /* Check whether screen dimensions have changed
+    * (this can happen without changing the scaling factor,
+    * and it affects list spacing) */
+   if ((width != mui->last_width) || (height != mui->last_height))
+   {
+      mui->need_compute = true;
+      mui->last_width   = width;
+      mui->last_height  = height;
+   }
 
    if (mui->need_compute)
    {
@@ -1006,20 +1034,20 @@ static void materialui_render_label_value(
 
       menu_display_draw_text(mui->font2, wrapped_sublabel_str,
             mui->margin + icon_margin,
-            y + (mui->dpi_scale_factor / 4) + mui->font->size,
+            y + (mui->dip_base_unit_size / 4) + mui->font->size,
             width, height, sublabel_color, TEXT_ALIGN_LEFT,
             1.0f, false, 0, false);
    }
 
    menu_display_draw_text(mui->font, label_str,
          ticker_label_x_offset + mui->margin + icon_margin,
-         y + (mui->dpi_scale_factor / 5),
+         y + (mui->dip_base_unit_size / 5),
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             value_x_offset + width - mui->margin,
-            y + (mui->dpi_scale_factor / 5),
+            y + (mui->dip_base_unit_size / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
@@ -1027,7 +1055,7 @@ static void materialui_render_label_value(
             mui->icon_size,
             (uintptr_t)texture_switch2,
             0,
-            y + (mui->dpi_scale_factor / 6) - mui->icon_size/2,
+            y + (mui->dip_base_unit_size / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1050,7 +1078,7 @@ static void materialui_render_label_value(
             mui->icon_size,
             (uintptr_t)texture_switch,
             width - mui->margin    - mui->icon_size,
-            y + (mui->dpi_scale_factor / 6) - mui->icon_size/2,
+            y + (mui->dip_base_unit_size / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1756,26 +1784,39 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    int new_font_size, new_font_size2;
    unsigned new_header_height;
 
-   new_header_height    = mui->dpi_scale_factor / 3;
-   new_font_size        = mui->dpi_scale_factor / 9;
-   new_font_size2       = mui->dpi_scale_factor / 12;
+   mui->cursor_size     = mui->dip_base_unit_size / 3;
 
-   mui->shadow_height   = mui->dpi_scale_factor / 36;
-   mui->scrollbar_width = mui->dpi_scale_factor / 36;
+   new_header_height    = mui->dip_base_unit_size / 3;
+   new_font_size        = mui->dip_base_unit_size / 9;
+   new_font_size2       = mui->dip_base_unit_size / 12;
+
+   mui->shadow_height   = mui->dip_base_unit_size / 36;
+   mui->scrollbar_width = mui->dip_base_unit_size / 36;
 
    mui->tabs_height     = 0;
    if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-      mui->tabs_height  = mui->dpi_scale_factor / 3;
+      mui->tabs_height  = mui->dip_base_unit_size / 3;
 
-   mui->line_height     = mui->dpi_scale_factor / 3;
-   mui->margin          = mui->dpi_scale_factor / 9;
-   mui->icon_size       = mui->dpi_scale_factor / 3;
+   mui->line_height     = mui->dip_base_unit_size / 3;
+   mui->margin          = mui->dip_base_unit_size / 9;
+   mui->icon_size       = mui->dip_base_unit_size / 3;
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width     = new_font_size  * 3/4;
    mui->glyph_width2    = new_font_size2 * 3/4;
 
    menu_display_set_header_height(new_header_height);
+
+   if (mui->font)
+   {
+      menu_display_font_free(mui->font);
+      mui->font = NULL;
+   }
+   if (mui->font2)
+   {
+      menu_display_font_free(mui->font2);
+      mui->font2 = NULL;
+   }
 
    mui->font            = menu_display_font(
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
@@ -1804,6 +1845,8 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
       if (m_width2)
          mui->glyph_width2 = m_width2;
    }
+
+   mui->need_compute = true;
 }
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
@@ -1826,23 +1869,24 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    *userdata = mui;
 
-   /* Get global DPI-aware scale factor
-    * Note: screen DPI is a physical characteristic.
-    * It doesn't change, so we only have to do this once. */
+   /* Get DPI/screen-size-aware base unit size for
+    * UI elements */
    video_driver_get_size(&width, &height);
-   mui->dpi_scale_factor = menu_display_get_dpi(width, height) * MUI_DPI_SCALE_COEFF;
 
-   mui->cursor_size  = mui->dpi_scale_factor / 3;
+   mui->last_width           = width;
+   mui->last_height          = height;
+   mui->last_scale_factor    = menu_display_get_dpi_scale(width, height);
+   mui->dip_base_unit_size   = mui->last_scale_factor * MUI_DIP_BASE_UNIT_SIZE;
 
-   mui->need_compute     = false;
-   mui->is_playlist      = false;
-   mui->is_file_list     = false;
-   mui->is_dropdown_list = false;
+   mui->need_compute         = false;
+   mui->is_playlist          = false;
+   mui->is_file_list         = false;
+   mui->is_dropdown_list     = false;
 
    mui->first_onscreen_entry = 0;
    mui->last_onscreen_entry  = 0;
 
-   mui->menu_title[0] = '\0';
+   mui->menu_title[0]        = '\0';
 
    return menu;
 error:
@@ -1884,8 +1928,12 @@ static void materialui_context_destroy(void *data)
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       video_driver_texture_unload(&mui->textures.list[i]);
 
-   menu_display_font_free(mui->font);
-   menu_display_font_free(mui->font2);
+   if (mui->font)
+      menu_display_font_free(mui->font);
+   mui->font = NULL;
+   if (mui->font2)
+      menu_display_font_free(mui->font2);
+   mui->font2 = NULL;
 
    materialui_context_bg_destroy(mui);
 }
@@ -2039,7 +2087,7 @@ static void materialui_populate_entries(
     * otherwise it is hidden) */
    mui->tabs_height = 0;
    if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-      mui->tabs_height = mui->dpi_scale_factor / 3;
+      mui->tabs_height = mui->dip_base_unit_size / 3;
 
    mui->need_compute = true;
 
@@ -2049,13 +2097,12 @@ static void materialui_populate_entries(
     * is acted upon */
 }
 
-/* Context reset is called on launch or when a core is launched */
-static void materialui_context_reset(void *data, bool is_threaded)
+static void materialui_context_reset_internal(
+      materialui_handle_t *mui, bool is_threaded)
 {
-   materialui_handle_t *mui              = (materialui_handle_t*)data;
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings = config_get_ptr();
 
-   if (!mui || !settings)
+   if (!settings)
       return;
 
    materialui_layout(mui, is_threaded);
@@ -2067,6 +2114,17 @@ static void materialui_context_reset(void *data, bool is_threaded)
       task_push_image_load(settings->paths.path_menu_wallpaper,
             video_driver_supports_rgba(), 0,
             menu_display_handle_wallpaper_upload, NULL);
+}
+
+/* Context reset is called on launch or when a core is launched */
+static void materialui_context_reset(void *data, bool is_threaded)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+
+   if (!mui)
+      return;
+
+   materialui_context_reset_internal(mui, is_threaded);
    video_driver_monitor_reset();
 }
 
@@ -2687,7 +2745,7 @@ static void materialui_list_insert(void *userdata,
       return;
    }
 
-   node->line_height           = mui->dpi_scale_factor / 3;
+   node->line_height           = mui->dip_base_unit_size / 3;
    node->y                     = 0;
    node->texture_switch_set    = false;
    node->texture_switch2_set   = false;

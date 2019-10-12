@@ -623,10 +623,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Core herunterladen...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "Inhalt herunterladen")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "Aktiviert DPI-Überschreibung")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "DPI-Überschreibung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Treiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -1876,7 +1872,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "Volcanic Red")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "Menü-Shader")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
       "Menü-Skalierungsfaktor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Icon-Schatten aktivieren")
@@ -3084,10 +3080,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
       "Ändere die Transparenz der Header-Grafik.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
       "Ändere die Transparenz der Footer-Grafik.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-      "Das Menü wird normalerweise automatisch skaliert. Wenn Du stattdessen eine bestimmte Skalierung wünschst, aktiviere diese Option.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Lege hier die gewünschte Skalierung fest. HINWEIS: Du musst 'DPI-Überschreibung' aktivieren, damit diese Skalierung verwendet wird.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Speichere alle heruntergeladenen Dateien in diesem Verzeichnis.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,

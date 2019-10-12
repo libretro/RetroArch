@@ -579,10 +579,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Transferir núcleo...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "Descarregador de conteúdo")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "Ativar sobreposição de DPI")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "Sobreposição de DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Controlador")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -1788,7 +1784,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "Vermelho vulcânico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "Shader do canal do menu")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
       "Fator de escala do menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Ativar sombras nos ícones")
@@ -2943,10 +2939,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
       "Modificar a opacidade do gráfico do cabeçalho.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
       "Modificar a opacidade do gráfico do rodapé.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-      "O menu normalmente irá redimensionar-se, de forma dinâmica. Se você desejar definir uma dimensão em vez disso, ative esta opção.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Definir o tamanho do dimensionamento personalizado aqui. OBS: Você deve ativar a opção 'Sobreposição de DPI' para que este dimensionamento surta efeito.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Guardar todos os ficheiros transferidos nesta pasta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
