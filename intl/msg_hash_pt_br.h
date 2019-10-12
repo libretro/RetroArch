@@ -9112,10 +9112,6 @@ MSG_HASH(
     "Ver informações sobre discos de mídia inseridos."
     )
 MSG_HASH(
-    MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
-    "Este núcleo não é compatível com o driver de vídeo atual."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET,
     "Reiniciar"
     )

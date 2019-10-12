@@ -9108,10 +9108,6 @@ MSG_HASH(
     "삽입된 미디어 디스크의 정보를 봅니다."
     )
 MSG_HASH(
-    MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
-    "현재 코어가 비디오 드라이버와 호환되지 않습니다."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET,
     "초기화"
     )

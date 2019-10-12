@@ -85,6 +85,8 @@
 #endif
 #endif
 
+static void gfx_ctx_wgl_destroy(void *data);
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
 static wglCreateContextAttribsProc pcreate_context;
@@ -563,7 +565,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
       return NULL;
 
    if (g_win32_inited)
-      goto error;
+      gfx_ctx_wgl_destroy(NULL);
 
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");

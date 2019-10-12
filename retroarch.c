@@ -942,7 +942,7 @@ static char current_library_name[1024]                          = {0};
 static char current_library_version[1024]                       = {0};
 static char current_valid_extensions[1024]                      = {0};
 static char error_string[255]                                   = {0};
-
+static char cached_video_driver[32]                             = {0};
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
@@ -4964,6 +4964,13 @@ bool command_event(enum event_command cmd, void *data)
             command_event_save_auto_state();
             command_event_disable_overrides();
             retroarch_unset_runtime_shader_preset();
+			
+            if (cached_video_driver[0])
+            {
+               settings_t *settings = configuration_settings;
+               strcpy(settings->arrays.video_driver, cached_video_driver);
+               cached_video_driver[0] = 0;
+            }
 
             if (     runloop_remaps_core_active
                   || runloop_remaps_content_dir_active
@@ -6121,6 +6128,12 @@ static void global_free(void)
 void main_exit(void *args)
 {
    settings_t *settings = configuration_settings;
+   
+   if (cached_video_driver[0])
+   {
+      strcpy(settings->arrays.video_driver, cached_video_driver);
+      cached_video_driver[0] = 0;
+   }
 
    if (settings->bools.config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
@@ -7268,39 +7281,6 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
-static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
-      unsigned minor, unsigned major)
-{
-   const char *video_ident = (current_video) ? current_video->ident : NULL;
-
-   switch (type)
-   {
-      case RETRO_HW_CONTEXT_VULKAN:
-         if (!string_is_equal(video_ident, "vulkan"))
-            return false;
-         break;
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-      case RETRO_HW_CONTEXT_OPENGL:
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "gl") &&
-             !string_is_equal(video_ident, "glcore"))
-         {
-            return false;
-         }
-         break;
-		case RETRO_HW_CONTEXT_DIRECT3D:
-			if (!(string_is_equal(video_ident, "d3d11") && major == 11))
-				return false;
-		break;
-      default:
-         break;
-   }
-
-   return true;
-}
-
 static void rarch_log_libretro(enum retro_log_level level,
       const char *fmt, ...)
 {
@@ -7864,10 +7844,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
 
          if (!dynamic_request_hw_context(
-                  cb->context_type, cb->version_minor, cb->version_major))
-            return false;
-
-         if (!dynamic_verify_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
@@ -19211,6 +19187,8 @@ static bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
+         strcpy(cached_video_driver, settings->arrays.video_driver);
+         strcpy(settings->arrays.video_driver, "vulkan");
          current_video = &video_vulkan;
       }
 #endif
@@ -19225,9 +19203,13 @@ static bool video_driver_find_driver(void)
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
 #if defined(HAVE_OPENGL_CORE)
+            strcpy(cached_video_driver, settings->arrays.video_driver);
+            strcpy(settings->arrays.video_driver, "glcore");
             current_video = &video_gl_core;
             RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
 #else
+            strcpy(cached_video_driver, settings->arrays.video_driver);
+            strcpy(settings->arrays.video_driver, "gl");
             current_video = &video_gl2;
             RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
 #endif
@@ -21281,7 +21263,8 @@ static void drivers_init(int flags)
    {
       /* Initialize menu driver */
       if (flags & DRIVER_MENU_MASK)
-         menu_driver_init(video_is_threaded);
+         if (!menu_driver_init(video_is_threaded))
+             RARCH_ERR("Unable to init menu driver.\n");
    }
 #else
    /* Qt uses core info, even if the menu is disabled */
