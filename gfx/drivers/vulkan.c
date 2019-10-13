@@ -1179,6 +1179,8 @@ static void *vulkan_init(const video_info_t *video,
    vk->ctx_driver                     = ctx_driver;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
+   
+   RARCH_LOG("[Vulkan]: Found vulkan context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
    full_x                             = mode.width;
