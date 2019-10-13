@@ -8,6 +8,7 @@
 - MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
 - MENU/MATERIALUI: Material UI no longer leaks memory on 'context reset' (fonts were previously never free()'d)
 - OSD: Fix fast forward indicator when not using menu widgets
+- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx
 
 # (1.7.9) (v2)
 - 3DS: Fix 3DS screen flickering when OSD is enabled
