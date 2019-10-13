@@ -1,5 +1,6 @@
 #ifndef VIDEO_LAYOUT_ELEMENT_H
 #define VIDEO_LAYOUT_ELEMENT_H
+
 #include "internal.h"
 #include "component.h"
 
@@ -17,8 +18,7 @@ typedef struct element
 
    component_t     *components;
    int              components_count;
-}
-element_t;
+} element_t;
 
 void element_init              (element_t *elem, const char *name, int components_count);
 void element_copy              (element_t *elem, const element_t *src);

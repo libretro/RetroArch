@@ -38,15 +38,12 @@ static void param_deinit(param_t *param)
 
 static param_t *param_find(scope_t *scope, const char *name, int level)
 {
-   param_t *param;
-   param = scope->param;
+   param_t *param = scope->param;
 
    while (param && param->level >= level)
    {
       if (strcmp(param->name, name) == 0)
-      {
          return param;
-      }
       param = param->prev;
    }
 
@@ -55,15 +52,13 @@ static param_t *param_find(scope_t *scope, const char *name, int level)
 
 void scope_init(scope_t *scope)
 {
-   scope->level = 0;
+   scope->level          = 0;
 
-   scope->param = NULL;
-
-   scope->elements = NULL;
+   scope->param          = NULL;
+   scope->elements       = NULL;
    scope->elements_count = 0;
-
-   scope->groups = NULL;
-   scope->groups_count = 0;
+   scope->groups         = NULL;
+   scope->groups_count   = 0;
 }
 
 void scope_deinit(scope_t *scope)
@@ -114,7 +109,10 @@ void scope_repeat(scope_t *scope)
 {
    param_t *param;
 
-   for (param = scope->param; param && param->level >= scope->level; param = param->prev)
+   for (
+         param = scope->param;
+         param && param->level >= scope->level;
+         param = param->prev)
    {
       generator_t *gen;
       if ((gen = param->generator))
@@ -149,12 +147,9 @@ void scope_repeat(scope_t *scope)
 
 void scope_param(scope_t *scope, const char *name, const char *value)
 {
-   char *eval_name;
-   char *eval_value;
    param_t *param;
-
-   eval_name = init_string(scope_eval(scope, name));
-   eval_value = init_string(scope_eval(scope, value));
+   char *eval_name = init_string(scope_eval(scope, name));
+   char *eval_value = init_string(scope_eval(scope, value));
 
    if ((param = param_find(scope, eval_name, scope->level)))
    {
@@ -177,13 +172,11 @@ void scope_param(scope_t *scope, const char *name, const char *value)
 
 void scope_generator(scope_t *scope, const char *name, const char *start, const char *increment, const char *lshift, const char *rshift)
 {
-   char *e_name;
    char *e_val;
    char *e_inc;
    generator_t *gen;
    param_t *param;
-
-   e_name = init_string(scope_eval(scope, name));
+   char *e_name = init_string(scope_eval(scope, name));
 
    if (param_find(scope, e_name, scope->level))
    {
@@ -234,7 +227,6 @@ const char *scope_eval(scope_t *scope, const char *src)
 {
    const char* next;
    bool in_var;
-
    char tmp[SCOPE_BUFFER_SIZE];
 
    if (!src)
