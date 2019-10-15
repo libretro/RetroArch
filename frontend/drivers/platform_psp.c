@@ -94,9 +94,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
 #ifndef VITA
-   retro_main_log_file_init("ms0:/temp/retroarch-log.txt");
+   retro_main_log_file_init("ms0:/temp/retroarch-log.txt", false);
 #else
-   retro_main_log_file_init("ux0:/temp/retroarch-log.txt");
+   retro_main_log_file_init("ux0:/temp/retroarch-log.txt", false);
 #endif
 #endif
 #endif
