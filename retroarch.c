@@ -7832,6 +7832,24 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             system->disk_control_cb =
                *(const struct retro_disk_control_callback*)data;
          break;
+      
+	  case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+      {
+         RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
+         unsigned *cb = (unsigned*)data;
+         settings_t *settings  = configuration_settings;
+         if (!strcmp(settings->arrays.video_driver, "glcore"))
+             *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
+         else if (!strcmp(settings->arrays.video_driver, "gl"))
+             *cb = RETRO_HW_CONTEXT_OPENGL;
+         else if (!strcmp(settings->arrays.video_driver, "vulkan"))
+             *cb = RETRO_HW_CONTEXT_VULKAN;
+         else if (!strncmp(settings->arrays.video_driver, "d3d", 3))
+             *cb = RETRO_HW_CONTEXT_DIRECT3D;
+         else
+             *cb = RETRO_HW_CONTEXT_NONE;
+         break;		 
+	  }
 
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
       case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
@@ -7878,7 +7896,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             content_unset_does_not_need_content();
          break;
       }
-
 
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
