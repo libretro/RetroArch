@@ -7835,9 +7835,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       
 	  case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
-         RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
          unsigned *cb = (unsigned*)data;
          settings_t *settings  = configuration_settings;
+         RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
          if (!strcmp(settings->arrays.video_driver, "glcore"))
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
          else if (!strcmp(settings->arrays.video_driver, "gl"))
