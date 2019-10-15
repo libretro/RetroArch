@@ -1651,12 +1651,6 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
 
-   if (vk->context.gpu != VK_NULL_HANDLE)
-   {
-      free(gpus);
-      return true;
-   }
-
    if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < (int)gpu_count)
    {
       RARCH_LOG("[Vulkan]: Using GPU index %d.\n", settings->ints.vulkan_gpu_index);
@@ -1908,11 +1902,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   if (vk->context.queue == VK_NULL_HANDLE)
-   {
-      vkGetDeviceQueue(vk->context.device,
-            vk->context.graphics_queue_index, 0, &vk->context.queue);
-   }
+   vkGetDeviceQueue(vk->context.device,
+      vk->context.graphics_queue_index, 0, &vk->context.queue);
 
 #ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
@@ -2677,13 +2668,17 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    else
    {
       if (vk->context.device)
+      {
          vkDestroyDevice(vk->context.device, NULL);
+         vk->context.device = NULL;
+      }
       if (vk->context.instance)
       {
          if (vk->context.destroy_device)
             vk->context.destroy_device();
 
          vkDestroyInstance(vk->context.instance, NULL);
+         vk->context.instance = NULL;
 
          if (vulkan_library)
          {
