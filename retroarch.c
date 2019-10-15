@@ -2107,20 +2107,20 @@ struct command
    char stdin_buf[STDIN_BUF_SIZE];
    size_t stdin_buf_ptr;
 #endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
    int net_fd;
 #endif
 };
 
 #if defined(HAVE_COMMAND)
 static enum cmd_source_t lastcmd_source;
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+#ifdef HAVE_NETWORK_CMD
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
-#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
 static void command_reply(const char * data, size_t len)
 {
    switch (lastcmd_source)
@@ -2131,7 +2131,7 @@ static void command_reply(const char * data, size_t len)
 #endif
          break;
       case CMD_NETWORK:
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
          sendto(lastcmd_net_fd, data, len, 0,
                (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
 #endif
@@ -2148,7 +2148,7 @@ static bool command_version(const char* arg)
    char reply[256] = {0};
 
    snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
-#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
    command_reply(reply, strlen(reply));
 #endif
 
@@ -2380,7 +2380,7 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -2605,7 +2605,7 @@ static void command_network_poll(command_t *handle)
 
 static bool command_free(command_t *handle)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
 #endif
@@ -2678,7 +2678,7 @@ static bool command_network_new(
       bool network_enable,
       uint16_t port)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
    handle->net_fd = -1;
    if (network_enable && !command_network_init(handle, port))
       goto error;
@@ -2692,7 +2692,7 @@ static bool command_network_new(
 
    return true;
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
+#if defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
 error:
    command_free(handle);
    return false;
@@ -11894,7 +11894,7 @@ static void input_driver_poll(void)
    if (input_driver_command)
    {
       memset(input_driver_command->state, 0, sizeof(input_driver_command->state));
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
       command_network_poll(input_driver_command);
 #endif
 
@@ -22350,7 +22350,7 @@ static void retroarch_print_help(const char *arg0)
       strlcat(buf, "                        (requires a very fast network).\n", sizeof(buf));
       strlcat(buf, "      --check-frames=NUMBER\n"
             "                        Check frames when using netplay.\n", sizeof(buf));
-#if defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
       strlcat(buf, "      --command         Sends a command over UDP to an already "
             "running program process.\n", sizeof(buf));
       strlcat(buf, "      Available commands are listed if command is invalid.\n", sizeof(buf));
@@ -22446,7 +22446,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "stateless",          0, NULL, RA_OPT_STATELESS },
       { "check-frames",       1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",               1, NULL, RA_OPT_PORT },
-#if defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
       { "command",            1, NULL, RA_OPT_COMMAND },
 #endif
 #endif
@@ -22850,7 +22850,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                }
                break;
 
-#if defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_NETWORK_CMD
             case RA_OPT_COMMAND:
 #ifdef HAVE_COMMAND
                if (command_network_send((const char*)optarg))
