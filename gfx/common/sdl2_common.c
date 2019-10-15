@@ -65,7 +65,8 @@ void sdl2_set_handles(void *data, enum rarch_display_type display_type)
 #endif
          break;
       case RARCH_DISPLAY_WAYLAND:
-#ifdef HAVE_WAYLAND
+/* SDL_VIDEO_DRIVER_WAYLAND is defined by SDL2 */
+#if defined(HAVE_WAYLAND) && defined(SDL_VIDEO_DRIVER_WAYLAND)
          video_driver_display_type_set(RARCH_DISPLAY_WAYLAND);
          video_driver_display_set((uintptr_t)info.info.wl.display);
          video_driver_window_set((uintptr_t)info.info.wl.surface);
