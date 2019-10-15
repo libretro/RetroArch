@@ -59,6 +59,7 @@ matrix:
     - os: osx
       osx_image: xcode10.1
       script:
+        - brew update-reset
         - brew install --force-bottle qt5
         - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
