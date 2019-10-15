@@ -2474,7 +2474,6 @@ static bool command_verify(const char *cmd)
    return false;
 }
 
-
 static bool command_network_send(const char *cmd_)
 {
    bool ret            = false;
@@ -2525,6 +2524,7 @@ static bool command_network_send(const char *cmd_)
 }
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static void command_parse_sub_msg(command_t *handle, const char *tok)
 {
    const char *arg = NULL;
@@ -2601,6 +2601,7 @@ static void command_network_poll(command_t *handle)
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
+#endif
 
 static bool command_free(command_t *handle)
 {

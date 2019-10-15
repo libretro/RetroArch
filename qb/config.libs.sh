@@ -182,6 +182,7 @@ check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
 check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
+check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 
 check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
 check_enabled MINIUPNPC BUILTINMINIUPNPC 'builtin miniupnpc' 'miniupnpc is' true
