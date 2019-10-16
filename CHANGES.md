@@ -16,7 +16,7 @@
 - OSD: Fix fast forward indicator when not using menu widgets
 - PSP1: Remove duplicated FPS indicator on the screen
 - SWITCH: Make audren threaded audio driver the new default
-- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx
+- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx. Only works with GL driver for now
 
 # (1.7.9) (v2)
 - 3DS: Fix 3DS screen flickering when OSD is enabled
