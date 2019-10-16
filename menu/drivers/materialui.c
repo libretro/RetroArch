@@ -63,6 +63,392 @@
  * 22 inch, 96 DPI display */
 #define MUI_DIP_BASE_UNIT_SIZE 212.0f
 
+/* ==============================
+ * Colour Themes START
+ * ============================== */
+
+/* Theme colours */
+typedef struct
+{
+   /* Text (& small inline icon) colours */
+   uint32_t on_sys_bar;
+   uint32_t on_header;
+   uint32_t list_text;
+   uint32_t list_text_highlighted;
+   uint32_t list_hint_text;
+   uint32_t list_hint_text_highlighted;
+   /* Background colours */
+   uint32_t sys_bar_background;
+   uint32_t title_bar_background;
+   uint32_t list_background;
+   uint32_t list_highlighted_background;
+   uint32_t nav_bar_background;
+   uint32_t surface_background;
+   /* List icon colours */
+   uint32_t list_icon;
+   uint32_t list_switch_on;
+   uint32_t list_switch_on_background;
+   uint32_t list_switch_off;
+   uint32_t list_switch_off_background;
+   /* Navigation bar icon colours */
+   uint32_t nav_bar_icon_active;
+   uint32_t nav_bar_icon_passive;
+   uint32_t nav_bar_icon_disabled;
+   /* Misc. colours */
+   uint32_t shadow;
+   uint32_t scrollbar;
+   uint32_t divider;
+   uint32_t screen_fade;
+   float shadow_opacity;
+   float screen_fade_opacity;
+} materialui_theme_t;
+
+static const materialui_theme_t materialui_theme_blue = {
+   /* Text (& small inline icon) colours */
+   0xDEDEDE, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x0069c0, /* sys_bar_background */
+   0x2196f3, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xc1d5e0, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0x0069c0, /* list_icon */
+   0x2196f3, /* list_switch_on */
+   0x6ec6ff, /* list_switch_on_background */
+   0x808e95, /* list_switch_off */
+   0xbabdbe, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x0069c0, /* nav_bar_icon_active */
+   0x9ea7aa, /* nav_bar_icon_passive */
+   0xffffff, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x0069c0, /* scrollbar */
+   0x9ea7aa, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_blue_grey = {
+   /* Text (& small inline icon) colours */
+   0xDEDEDE, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x34515e, /* sys_bar_background */
+   0x607d8b, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xe0e0e0, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0x34515e, /* list_icon */
+   0x607d8b, /* list_switch_on */
+   0x8eacbb, /* list_switch_on_background */
+   0xbcbcbc, /* list_switch_off */
+   0xc7c7c7, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x34515e, /* nav_bar_icon_active */
+   0xaeaeae, /* nav_bar_icon_passive */
+   0xffffff, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x34515e, /* scrollbar */
+   0xc2c2c2, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_dark_blue = {
+   /* Text (& small inline icon) colours */
+   0xC4C4C4, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0xDEDEDE, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0x999999, /* list_hint_text */
+   0xDEDEDE, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0x1F1F1F, /* title_bar_background */
+   0x121212, /* list_background */
+   0x34515e, /* list_highlighted_background */
+   0x242424, /* nav_bar_background */
+   0x1D1D1D, /* surface_background */
+   /* List icon colours */
+   0x90caf9, /* list_icon */
+   0x64b5f6, /* list_switch_on */
+   0x5d99c6, /* list_switch_on_background */
+   0x4b636e, /* list_switch_off */
+   0x607d8b, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x90caf9, /* nav_bar_icon_active */
+   0x8eacbb, /* nav_bar_icon_passive */
+   0x000000, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x90caf9, /* scrollbar */
+   0x607d8b, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_green = {
+   /* Text (& small inline icon) colours */
+   0xDEDEDE, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x087f23, /* sys_bar_background */
+   0x4caf50, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xdcedc8, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0x087f23, /* list_icon */
+   0x4caf50, /* list_switch_on */
+   0x80e27e, /* list_switch_on_background */
+   0xaabb97, /* list_switch_off */
+   0xbec5b7, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x087f23, /* nav_bar_icon_active */
+   0xaeaeae, /* nav_bar_icon_passive */
+   0xffffff, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x087f23, /* scrollbar */
+   0xaabb97, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_red = {
+   /* Text (& small inline icon) colours */
+   0xDEDEDE, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0xba000d, /* sys_bar_background */
+   0xf44336, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xf8bbd0, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0xba000d, /* list_icon */
+   0xf44336, /* list_switch_on */
+   0xff7961, /* list_switch_on_background */
+   0xbf5f82, /* list_switch_off */
+   0xc48b9f, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0xba000d, /* nav_bar_icon_active */
+   0xaeaeae, /* nav_bar_icon_passive */
+   0xffffff, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0xba000d, /* scrollbar */
+   0xbf5f82, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_yellow = {
+   /* Text (& small inline icon) colours */
+   0x212121, /* on_sys_bar */
+   0x000000, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0xc8b900, /* sys_bar_background */
+   0xffeb3b, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xffecb3, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0xc6a700, /* list_icon */
+   0xffeb3b, /* list_switch_on */
+   0xccc5af, /* list_switch_on_background */
+   0xcaae53, /* list_switch_off */
+   0xccc5af, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0xc6a700, /* nav_bar_icon_active */
+   0xaeaeae, /* nav_bar_icon_passive */
+   0xFFFFFF, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0xc6a700, /* scrollbar */
+   0xcbba83, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_nvidia_shield = {
+   /* Text (& small inline icon) colours */
+   0xC4C4C4, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0xDEDEDE, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0x999999, /* list_hint_text */
+   0xDEDEDE, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0x1F1F1F, /* title_bar_background */
+   0x121212, /* list_background */
+   0x255d00, /* list_highlighted_background */
+   0x242424, /* nav_bar_background */
+   0x1D1D1D, /* surface_background */
+   /* List icon colours */
+   0x7ab547, /* list_icon */
+   0x85bb5c, /* list_switch_on */
+   0x498515, /* list_switch_on_background */
+   0x33691e, /* list_switch_off */
+   0x003d00, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x7ab547, /* nav_bar_icon_active */
+   0x558b2f, /* nav_bar_icon_passive */
+   0x000000, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x7ab547, /* scrollbar */
+   0x498515, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_materialui = {
+   /* Text (& small inline icon) colours */
+   0xDEDEDE, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0x212121, /* list_text */
+   0x000000, /* list_text_highlighted */
+   0x666666, /* list_hint_text */
+   0x212121, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x3700B3, /* sys_bar_background */
+   0x6200ee, /* title_bar_background */
+   0xF5F5F6, /* list_background */
+   0xF2E7FE, /* list_highlighted_background */
+   0xE1E2E1, /* nav_bar_background */
+   0xFFFFFF, /* surface_background */
+   /* List icon colours */
+   0x3700B3, /* list_icon */
+   0x03DAC6, /* list_switch_on */
+   0x018786, /* list_switch_on_background */
+   0x9e47ff, /* list_switch_off */
+   0x0400ba, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x018786, /* nav_bar_icon_active */
+   0xaeaeae, /* nav_bar_icon_passive */
+   0xffffff, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0x018786, /* scrollbar */
+   0x018786, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+static const materialui_theme_t materialui_theme_materialui_dark = {
+   /* Text (& small inline icon) colours */
+   0xC4C4C4, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0xDEDEDE, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0x999999, /* list_hint_text */
+   0xDEDEDE, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0x1F1F1F, /* title_bar_background */
+   0x121212, /* list_background */
+   0x51455E, /* list_highlighted_background */
+   0x242424, /* nav_bar_background */
+   0x1D1D1D, /* surface_background */
+   /* List icon colours */
+   0xbb86fc, /* list_icon */
+   0x03DAC5, /* list_switch_on */
+   0x00a895, /* list_switch_on_background */
+   0xbb86fc, /* list_switch_off */
+   0x8858c8, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x03DAC6, /* nav_bar_icon_active */
+   0x00a895, /* nav_bar_icon_passive */
+   0x000000, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0xC89EFC, /* scrollbar */
+   0x03DAC6, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
+typedef struct
+{
+   /* Text */
+   uint32_t sys_bar_text;
+   uint32_t header_text;
+   uint32_t list_text;
+   uint32_t list_text_highlighted;
+   uint32_t list_hint_text;
+   uint32_t list_hint_text_highlighted;
+   /* Background colours */
+   float sys_bar_background[16];
+   float title_bar_background[16];
+   float list_background[16];
+   float list_highlighted_background[16];
+   float nav_bar_background[16];
+   float surface_background[16];
+   /* System bar + header icon colours */
+   float sys_bar_icon[16];
+   float header_icon[16];
+   /* List icon colours */
+   float list_icon[16];
+   float list_switch_on[16];
+   float list_switch_on_background[16];
+   float list_switch_off[16];
+   float list_switch_off_background[16];
+   /* Navigation bar icon colours */
+   float nav_bar_icon_active[16];
+   float nav_bar_icon_passive[16];
+   float nav_bar_icon_disabled[16];
+   /* Misc. colours */
+   float shadow[16];
+   float scrollbar[16];
+   float divider[16];
+   float screen_fade[16];
+} materialui_colors_t;
+
+/* ==============================
+ * Colour Themes END
+ * ============================== */
+
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
@@ -83,6 +469,7 @@ enum
    MUI_TEXTURE_BACK,
    MUI_TEXTURE_SWITCH_ON,
    MUI_TEXTURE_SWITCH_OFF,
+   MUI_TEXTURE_SWITCH_BG,
    MUI_TEXTURE_TAB_MAIN,
    MUI_TEXTURE_TAB_PLAYLISTS,
    MUI_TEXTURE_TAB_SETTINGS,
@@ -133,6 +520,16 @@ enum
    MUI_TEXTURE_DISK,
    MUI_TEXTURE_EJECT,
    MUI_TEXTURE_CHECKMARK,
+   MUI_TEXTURE_SEARCH,
+   MUI_TEXTURE_BATTERY_CRITICAL,
+   MUI_TEXTURE_BATTERY_20,
+   MUI_TEXTURE_BATTERY_30,
+   MUI_TEXTURE_BATTERY_50,
+   MUI_TEXTURE_BATTERY_60,
+   MUI_TEXTURE_BATTERY_80,
+   MUI_TEXTURE_BATTERY_90,
+   MUI_TEXTURE_BATTERY_100,
+   MUI_TEXTURE_BATTERY_CHARGING,
    MUI_TEXTURE_LAST
 };
 
@@ -145,6 +542,16 @@ enum
 };
 
 #define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
+
+/* This structure holds all objects + metadata
+ * corresponding to a particular font */
+typedef struct
+{
+   font_data_t *font;
+   video_font_raster_block_t raster_block;
+   int font_height;
+   unsigned glyph_width;
+} materialui_font_data_t;
 
 typedef struct materialui_handle
 {
@@ -161,14 +568,16 @@ typedef struct materialui_handle
 
    int cursor_size;
 
+   unsigned sys_bar_height;
+   unsigned title_bar_height;
    unsigned tabs_height;
-   unsigned line_height;
    unsigned shadow_height;
    unsigned scrollbar_width;
+   unsigned divider_width;
    unsigned icon_size;
+   unsigned sys_bar_icon_size;
    unsigned margin;
-   unsigned glyph_width;
-   unsigned glyph_width2;
+   unsigned sys_bar_margin;
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
 
@@ -194,11 +603,13 @@ typedef struct materialui_handle
       menu_texture_item list[MUI_TEXTURE_LAST];
    } textures;
 
-   /* One font for the menu entries, one font for the labels */
-   font_data_t *font;
-   font_data_t *font2;
-   video_font_raster_block_t raster_block;
-   video_font_raster_block_t raster_block2;
+   /* Font data */
+   struct
+   {
+      materialui_font_data_t title;
+      materialui_font_data_t list;
+      materialui_font_data_t hint;
+   } font_data;
 
    /* Pointer info */
    menu_input_pointer_t pointer;
@@ -206,7 +617,131 @@ typedef struct materialui_handle
    int16_t pointer_start_y;
    float pointer_start_scroll_y;
 
+   /* Colour theme parameters */
+   enum materialui_color_theme color_theme;
+   materialui_colors_t colors;
+
 } materialui_handle_t;
+
+static const materialui_theme_t *materialui_get_theme(enum materialui_color_theme color_theme)
+{
+   switch (color_theme)
+   {
+      case MATERIALUI_THEME_BLUE:
+         return &materialui_theme_blue;
+      case MATERIALUI_THEME_BLUE_GREY:
+         return &materialui_theme_blue_grey;
+      case MATERIALUI_THEME_DARK_BLUE:
+         return &materialui_theme_dark_blue;
+      case MATERIALUI_THEME_GREEN:
+         return &materialui_theme_green;
+      case MATERIALUI_THEME_RED:
+         return &materialui_theme_red;
+      case MATERIALUI_THEME_YELLOW:
+         return &materialui_theme_yellow;
+      case MATERIALUI_THEME_NVIDIA_SHIELD:
+         return &materialui_theme_nvidia_shield;
+      case MATERIALUI_THEME_MATERIALUI:
+         return &materialui_theme_materialui;
+      case MATERIALUI_THEME_MATERIALUI_DARK:
+         return &materialui_theme_materialui_dark;
+      default:
+         break;
+   }
+
+   return &materialui_theme_blue;
+}
+
+static void materialui_prepare_colors(
+      materialui_handle_t *mui, enum materialui_color_theme color_theme)
+{
+   const materialui_theme_t *current_theme = materialui_get_theme(color_theme);
+
+   /* Parse theme colours */
+
+   /* > Text (& small inline icon) colours */
+   mui->colors.sys_bar_text               = (current_theme->on_sys_bar                 << 8) | 0xFF;
+   mui->colors.header_text                = (current_theme->on_header                  << 8) | 0xFF;
+   mui->colors.list_text                  = (current_theme->list_text                  << 8) | 0xFF;
+   mui->colors.list_text_highlighted      = (current_theme->list_text_highlighted      << 8) | 0xFF;
+   mui->colors.list_hint_text             = (current_theme->list_hint_text             << 8) | 0xFF;
+   mui->colors.list_hint_text_highlighted = (current_theme->list_hint_text_highlighted << 8) | 0xFF;
+
+   /* > Background colours */
+   hex32_to_rgba_normalized(
+            current_theme->sys_bar_background,
+            mui->colors.sys_bar_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->title_bar_background,
+            mui->colors.title_bar_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_background,
+            mui->colors.list_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_highlighted_background,
+            mui->colors.list_highlighted_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->nav_bar_background,
+            mui->colors.nav_bar_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->surface_background,
+            mui->colors.surface_background, 1.0f);
+
+   /* > System bar + header icon colours */
+   hex32_to_rgba_normalized(
+            current_theme->on_sys_bar,
+            mui->colors.sys_bar_icon, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->on_header,
+            mui->colors.header_icon, 1.0f);
+
+   /* > List icon colours */
+   hex32_to_rgba_normalized(
+            current_theme->list_icon,
+            mui->colors.list_icon, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_switch_on,
+            mui->colors.list_switch_on, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_switch_on_background,
+            mui->colors.list_switch_on_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_switch_off,
+            mui->colors.list_switch_off, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->list_switch_off_background,
+            mui->colors.list_switch_off_background, 1.0f);
+
+   /* > Navigation bar icon colours */
+   hex32_to_rgba_normalized(
+            current_theme->nav_bar_icon_active,
+            mui->colors.nav_bar_icon_active, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->nav_bar_icon_passive,
+            mui->colors.nav_bar_icon_passive, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->nav_bar_icon_disabled,
+            mui->colors.nav_bar_icon_disabled, 1.0f);
+
+   /* > Misc. colours */
+   hex32_to_rgba_normalized(
+            current_theme->shadow,
+            mui->colors.shadow, 0.0f);
+   hex32_to_rgba_normalized(
+            current_theme->scrollbar,
+            mui->colors.scrollbar, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->divider,
+            mui->colors.divider, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->screen_fade,
+            mui->colors.screen_fade, current_theme->screen_fade_opacity);
+
+   /* Shadow colour requires special handling
+    * (since it is a gradient) */
+   mui->colors.shadow[11] = current_theme->shadow_opacity;
+   mui->colors.shadow[15] = current_theme->shadow_opacity;
+}
 
 static const char *materialui_texture_path(unsigned id)
 {
@@ -217,9 +752,11 @@ static const char *materialui_texture_path(unsigned id)
       case MUI_TEXTURE_BACK:
          return "back.png";
       case MUI_TEXTURE_SWITCH_ON:
-         return "on.png";
+         return "switch_on.png";
       case MUI_TEXTURE_SWITCH_OFF:
-         return "off.png";
+         return "switch_off.png";
+      case MUI_TEXTURE_SWITCH_BG:
+         return "switch_bg.png";
       case MUI_TEXTURE_TAB_MAIN:
          return "main_tab_passive.png";
       case MUI_TEXTURE_TAB_PLAYLISTS:
@@ -318,6 +855,26 @@ static const char *materialui_texture_path(unsigned id)
          return "file.png";
       case MUI_TEXTURE_PLAYLIST:
          return "playlist.png";
+      case MUI_TEXTURE_SEARCH:
+         return "search.png";
+      case MUI_TEXTURE_BATTERY_CRITICAL:
+         return "battery_critical.png";
+      case MUI_TEXTURE_BATTERY_20:
+         return "battery_20.png";
+      case MUI_TEXTURE_BATTERY_30:
+         return "battery_30.png";
+      case MUI_TEXTURE_BATTERY_50:
+         return "battery_50.png";
+      case MUI_TEXTURE_BATTERY_60:
+         return "battery_60.png";
+      case MUI_TEXTURE_BATTERY_80:
+         return "battery_80.png";
+      case MUI_TEXTURE_BATTERY_90:
+         return "battery_90.png";
+      case MUI_TEXTURE_BATTERY_100:
+         return "battery_100.png";
+      case MUI_TEXTURE_BATTERY_CHARGING:
+         return "battery_charging.png";
    }
 
    return NULL;
@@ -391,28 +948,27 @@ static void materialui_draw_tab(
       materialui_handle_t *mui,
       video_frame_info_t *video_info,
       unsigned i,
-      unsigned width, unsigned height,
-      float *tab_color,
-      float *active_tab_color)
+      unsigned width, unsigned height)
 {
    unsigned tab_icon = 0;
+   bool is_active    = false;
 
    switch (i)
    {
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN;
          if (i == mui->categories_selection_ptr)
-            tab_color = active_tab_color;
+            is_active = true;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
          if (i == mui->categories_selection_ptr)
-            tab_color = active_tab_color;
+            is_active = true;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS;
          if (i == mui->categories_selection_ptr)
-            tab_color = active_tab_color;
+            is_active = true;
          break;
    }
 
@@ -425,15 +981,14 @@ static void materialui_draw_tab(
          height,
          0,
          1,
-         &tab_color[0]);
+         is_active ? mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive);
 }
 
 /* Draw the tabs background */
 static void materialui_draw_tab_begin(
       materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      unsigned width, unsigned height,
-      float *tabs_bg_color, float *tabs_separator_color)
+      unsigned width, unsigned height)
 {
    /* tabs background */
    menu_display_draw_quad(
@@ -441,23 +996,21 @@ static void materialui_draw_tab_begin(
          0, height - mui->tabs_height, width,
          mui->tabs_height,
          width, height,
-         tabs_bg_color);
+         mui->colors.nav_bar_background);
 
-   /* tabs separator */
+   /* tabs divider */
    menu_display_draw_quad(
          video_info,
          0, height - mui->tabs_height, width,
-         1,
+         mui->divider_width,
          width, height,
-         tabs_separator_color);
+         mui->colors.divider);
 }
 
 /* Draw the active tab */
 static void materialui_draw_tab_end(materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      unsigned width, unsigned height,
-      unsigned header_height,
-      float *active_tab_marker_color)
+      unsigned width, unsigned height)
 {
    /* active tab marker */
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
@@ -465,17 +1018,17 @@ static void materialui_draw_tab_end(materialui_handle_t *mui,
    menu_display_draw_quad(
          video_info,
          (int)(mui->categories_selection_ptr * tab_width),
-         height - (header_height/16),
+         height - (mui->tabs_height / 16),
          tab_width,
-         header_height/16,
+         mui->tabs_height / 16,
          width, height,
-         &active_tab_marker_color[0]);
+         mui->colors.nav_bar_icon_active);
 }
 
 /* Draw the scrollbar */
 static void materialui_draw_scrollbar(materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      unsigned width, unsigned height, float *coord_color)
+      unsigned width, unsigned height)
 {
    unsigned header_height = menu_display_get_header_height();
    float total_height     = height - header_height - mui->tabs_height;
@@ -501,7 +1054,7 @@ static void materialui_draw_scrollbar(materialui_handle_t *mui,
          mui->scrollbar_width,
          scrollbar_height,
          width, height,
-         coord_color);
+         mui->colors.scrollbar);
 }
 
 static void materialui_get_message(void *data, const char *message)
@@ -518,16 +1071,15 @@ static void materialui_get_message(void *data, const char *message)
 
 /* Draw the modal */
 static void materialui_render_messagebox(materialui_handle_t *mui,
-      video_frame_info_t *video_info,
-      const char *message, float *body_bg_color, uint32_t font_color)
+      video_frame_info_t *video_info, const char *message)
 {
    unsigned i, y_position;
-   int x, y, line_height, longest = 0, longest_width = 0;
+   int x, y, longest = 0, longest_width = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
    struct string_list *list = NULL;
 
-   if (!mui || !mui->font)
+   if (!mui || !mui->font_data.list.font)
       goto end;
 
    list                     = (struct string_list*)
@@ -536,14 +1088,12 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    if (!list || list->elems == 0)
       goto end;
 
-   line_height = mui->font->size * 1.2;
-
    y_position = height / 2;
    if (menu_input_dialog_get_display_kb())
       y_position = height / 4;
 
    x = width  / 2;
-   y = (int)(y_position - (list->size-1) * line_height / 2);
+   y = (int)(y_position - (list->size-1) * mui->font_data.list.font_height / 2);
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -554,24 +1104,19 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       {
          longest = len;
          longest_width = font_driver_get_message_width(
-               mui->font, msg, (unsigned)strlen(msg), 1);
+               mui->font_data.list.font, msg, (unsigned)strlen(msg), 1);
       }
    }
 
-   if (body_bg_color)
-   {
-      menu_display_set_alpha(body_bg_color, 1.0);
-
-      menu_display_draw_quad(
-            video_info,
-            x - longest_width / 2.0 -  mui->margin * 2.0,
-            y - line_height   / 2.0 -  mui->margin * 2.0,
-            longest_width +            mui->margin * 4.0,
-            line_height * list->size + mui->margin * 4.0,
-            width,
-            height,
-            &body_bg_color[0]);
-   }
+   menu_display_draw_quad(
+         video_info,
+         x - longest_width / 2.0 - mui->margin * 2.0,
+         y -  mui->font_data.list.font_height / 2.0 -  mui->margin * 2.0,
+         longest_width + mui->margin * 4.0,
+         mui->font_data.list.font_height * list->size + mui->margin * 4.0,
+         width,
+         height,
+         mui->colors.surface_background);
 
    /* print each line */
    for (i = 0; i < list->size; i++)
@@ -579,17 +1124,17 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       const char *msg = list->elems[i].data;
       if (msg)
          menu_display_draw_text(
-               mui->font, msg,
+               mui->font_data.list.font, msg,
                x - longest_width/2.0,
-               y + i * line_height + mui->font->size / 3,
-               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
-
+               y + i *  mui->font_data.list.font_height + mui->font_data.list.font_height / 3,
+               width, height, mui->colors.list_text,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
       menu_display_draw_keyboard(
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
-            mui->font,
+            mui->font_data.list.font,
             video_info,
             menu_event_get_osk_grid(), menu_event_get_osk_ptr(),
             0xffffffff);
@@ -625,7 +1170,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
       menu_entry_t entry;
       char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
       const char *sublabel_str  = NULL;
-      unsigned lines            = 0;
+      unsigned sublabel_lines   = 0;
       materialui_node_t *node   = (materialui_node_t*)
          file_list_get_userdata_at_offset(list, i);
 
@@ -649,14 +1194,17 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
                icon_margin = mui->icon_size;
 
          word_wrap(wrapped_sublabel_str, sublabel_str,
-               (int)((usable_width - icon_margin) / mui->glyph_width2),
+               (int)((usable_width - icon_margin) / mui->font_data.hint.glyph_width),
                false, 0);
-         lines = materialui_count_lines(wrapped_sublabel_str);
+         sublabel_lines = materialui_count_lines(wrapped_sublabel_str);
       }
 
-      node->line_height  = (mui->dip_base_unit_size / 3) + (lines * mui->font->size);
-      node->y            = sum;
-      sum               += node->line_height;
+      node->line_height =
+            (mui->dip_base_unit_size / 5) +
+             mui->font_data.list.font_height +
+            (sublabel_lines * mui->font_data.hint.font_height);
+      node->y           = sum;
+      sum              += node->line_height;
    }
 
    mui->content_height = sum;
@@ -724,8 +1272,8 @@ static void materialui_render(void *data,
    if (scale_factor != mui->last_scale_factor)
    {
       mui->dip_base_unit_size = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
-      materialui_context_reset_internal(mui, video_driver_is_threaded());
       mui->last_scale_factor  = scale_factor;
+      materialui_context_reset_internal(mui, video_driver_is_threaded());
    }
 
    /* Check whether screen dimensions have changed
@@ -740,7 +1288,7 @@ static void materialui_render(void *data,
 
    if (mui->need_compute)
    {
-      if (mui->font)
+      if (mui->font_data.list.font && mui->font_data.hint.font)
          materialui_compute_entries_box(mui, width, height);
 
       /* After calling populate_entries(), we need to call
@@ -762,7 +1310,7 @@ static void materialui_render(void *data,
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
 
-   /* Need to adjust/range-check scroll postion first,
+   /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
    if (mui->pointer.type != MENU_POINTER_DISABLED)
@@ -845,9 +1393,8 @@ static void materialui_render_label_value(
       video_frame_info_t *video_info,
       materialui_node_t *node,
       int i, int y, unsigned width, unsigned height,
-      uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, float *label_color,
-      uint32_t sublabel_color)
+      uint64_t index, bool selected, const char *label,
+      const char *value)
 {
    menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
@@ -865,6 +1412,7 @@ static void materialui_render_label_value(
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
+   uintptr_t texture_switch_bg     = 0;
    uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
@@ -872,12 +1420,18 @@ static void materialui_render_label_value(
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    settings_t *settings            = config_get_ptr();
    bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
+   int label_y                     = 0;
+   int switch_y                    = 0;
+
+   label_str[0]                    = '\0';
+   value_str[0]                    = '\0';
+   wrapped_sublabel_str[0]         = '\0';
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
       ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
-      ticker_smooth.font          = mui->font;
+      ticker_smooth.font          = mui->font_data.list.font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker_smooth.spacer        = NULL;
@@ -889,8 +1443,7 @@ static void materialui_render_label_value(
       ticker.spacer    = NULL;
    }
 
-   label_str[0] = value_str[0] = wrapped_sublabel_str[0] = '\0';
-
+   /* Get current entry */
    menu_entry_init(&entry);
    entry.path_enabled       = false;
    entry.label_enabled      = false;
@@ -899,16 +1452,17 @@ static void materialui_render_label_value(
    menu_entry_get(&entry, 0, i, NULL, true);
    entry_type = menu_entry_get_type_new(&entry);
 
-   if (value_len * mui->glyph_width > usable_width / 2)
-      value_len    = (int)((usable_width/2) / mui->glyph_width);
+   /* Get maximum ticker text length */
+   if (value_len * mui->font_data.list.glyph_width > usable_width / 2)
+      value_len = (int)((usable_width / 2) / mui->font_data.list.glyph_width);
 
-   ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 3));
+   ticker_limit = (int)((usable_width / mui->font_data.list.glyph_width) - (value_len + 3));
 
    if (use_smooth_ticker)
    {
       /* Label */
       ticker_smooth.selected    = selected;
-      ticker_smooth.field_width = ticker_limit * mui->glyph_width;
+      ticker_smooth.field_width = ticker_limit * mui->font_data.list.glyph_width;
       ticker_smooth.src_str     = label;
       ticker_smooth.dst_str     = label_str;
       ticker_smooth.dst_str_len = sizeof(label_str);
@@ -917,7 +1471,7 @@ static void materialui_render_label_value(
       menu_animation_ticker_smooth(&ticker_smooth);
 
       /* Value */
-      ticker_smooth.field_width = (value_len + 1) * mui->glyph_width;
+      ticker_smooth.field_width = (value_len + 1) * mui->font_data.list.glyph_width;
       ticker_smooth.src_str     = value;
       ticker_smooth.dst_str     = value_str;
       ticker_smooth.dst_str_len = sizeof(value_str);
@@ -930,6 +1484,7 @@ static void materialui_render_label_value(
    }
    else
    {
+      /* Label */
       ticker.s        = label_str;
       ticker.len      = ticker_limit;
       ticker.idx      = index;
@@ -938,6 +1493,7 @@ static void materialui_render_label_value(
 
       menu_animation_ticker(&ticker);
 
+      /* Value */
       ticker.s        = value_str;
       ticker.len      = value_len;
       ticker.str      = value;
@@ -952,8 +1508,9 @@ static void materialui_render_label_value(
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
       {
-         switch_is_on = false;
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+         switch_is_on      = false;
+         texture_switch    = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+         texture_switch_bg = mui->textures.list[MUI_TEXTURE_SWITCH_BG];
       }
       else
          do_draw_text = true;
@@ -963,8 +1520,9 @@ static void materialui_render_label_value(
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
       {
-         switch_is_on = true;
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+         switch_is_on      = true;
+         texture_switch    = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+         texture_switch_bg = mui->textures.list[MUI_TEXTURE_SWITCH_BG];
       }
       else
          do_draw_text = true;
@@ -1020,70 +1578,100 @@ static void materialui_render_label_value(
       }
    }
 
-   menu_entry_get_sublabel(&entry, &sublabel_str);
-
    if (texture_switch2)
       icon_margin      = mui->icon_size;
 
-   /* Sublabel */
-   if (!string_is_empty(sublabel_str) && mui->font)
+   /* Get sublabel */
+   menu_entry_get_sublabel(&entry, &sublabel_str);
+
+   if (!string_is_empty(sublabel_str))
    {
+      /* Wrap and draw sublabel */
       word_wrap(wrapped_sublabel_str, sublabel_str,
-            (int)((usable_width - icon_margin) / mui->glyph_width2),
+            (int)((usable_width - icon_margin) / mui->font_data.hint.glyph_width),
             false, 0);
 
-      menu_display_draw_text(mui->font2, wrapped_sublabel_str,
+      menu_display_draw_text(mui->font_data.hint.font, wrapped_sublabel_str,
             mui->margin + icon_margin,
-            y + (mui->dip_base_unit_size / 4) + mui->font->size,
-            width, height, sublabel_color, TEXT_ALIGN_LEFT,
-            1.0f, false, 0, false);
+            y + (mui->dip_base_unit_size / 5) + mui->font_data.list.font_height,
+            width, height,
+            selected ? mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
+            TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+
+      /* If we have a sublabel, entry label y position has a
+       * fixed vertical offset */
+      label_y  = y + (mui->dip_base_unit_size / 5.0f);
+      switch_y = y + (mui->dip_base_unit_size / 6.0f) - (mui->icon_size / 2.0f);
+   }
+   else
+   {
+      /* If we don't have a sublabel, entry label is drawn
+       * at the vertical centre of the current node
+       * Note: Text is drawn relative to the baseline,
+       * so we can't do this accurately - but as a general
+       * rule of thumb, the descender of a font is at least
+       * 20% of it's height - so we just add (font_height / 5) */
+      label_y  = y + (node->line_height / 2.0f) + (mui->font_data.list.font_height / 5.0f);
+      switch_y = y + (node->line_height / 2.0f) - (mui->icon_size / 2.0f);
    }
 
-   menu_display_draw_text(mui->font, label_str,
+   /* Draw entry label */
+   menu_display_draw_text(mui->font_data.list.font, label_str,
          ticker_label_x_offset + mui->margin + icon_margin,
-         y + (mui->dip_base_unit_size / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+         label_y,
+         width, height,
+         selected ? mui->colors.list_text_highlighted : mui->colors.list_text,
+         TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
+   /* Draw entry value (if not represented by a switch icon) */
    if (do_draw_text)
-      menu_display_draw_text(mui->font, value_str,
+      menu_display_draw_text(mui->font_data.list.font, value_str,
             value_x_offset + width - mui->margin,
-            y + (mui->dip_base_unit_size / 5),
-            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
+            label_y,
+            width, height,
+            selected ? mui->colors.list_text_highlighted : mui->colors.list_text,
+            TEXT_ALIGN_RIGHT, 1.0f, false, 0, false);
 
    if (texture_switch2)
       materialui_draw_icon(video_info,
             mui->icon_size,
             (uintptr_t)texture_switch2,
             0,
-            y + (mui->dip_base_unit_size / 6) - mui->icon_size/2,
+            y + (node->line_height / 2.0f) - (mui->icon_size / 2.0f),
             width,
             height,
             0,
             1,
-            &label_color[0]
+            mui->colors.list_icon
             );
+
+   if (texture_switch_bg)
+   {
+      materialui_draw_icon(video_info,
+            mui->icon_size,
+            (uintptr_t)texture_switch_bg,
+            width - mui->margin - mui->icon_size,
+            switch_y,
+            width,
+            height,
+            0,
+            1,
+            switch_is_on ? mui->colors.list_switch_on_background : mui->colors.list_switch_off_background
+            );
+   }
 
    if (texture_switch)
    {
-      /* This will be used instead of label_color if
-       * texture_switch is 'off' icon */
-      float pure_white[16]=  {
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-      };
-
       materialui_draw_icon(video_info,
             mui->icon_size,
             (uintptr_t)texture_switch,
-            width - mui->margin    - mui->icon_size,
-            y + (mui->dip_base_unit_size / 6) - mui->icon_size/2,
+            width - mui->margin - mui->icon_size,
+            switch_y,
             width,
             height,
             0,
             1,
-            switch_is_on ? &label_color[0] :  &pure_white[0]
+            switch_is_on ? mui->colors.list_switch_on : mui->colors.list_switch_off
             );
    }
 }
@@ -1091,11 +1679,7 @@ static void materialui_render_label_value(
 static void materialui_render_menu_list(
       video_frame_info_t *video_info,
       materialui_handle_t *mui,
-      unsigned width, unsigned height,
-      uint32_t font_normal_color,
-      uint32_t font_hover_color,
-      float *menu_list_color,
-      uint32_t sublabel_color)
+      unsigned width, unsigned height)
 {
    size_t i;
    size_t first_entry;
@@ -1104,9 +1688,6 @@ static void materialui_render_menu_list(
    size_t entries_end     = menu_entries_get_size();
    unsigned header_height = menu_display_get_header_height();
    size_t selection       = menu_navigation_get_selection();
-
-   mui->raster_block.carr.coords.vertices  = 0;
-   mui->raster_block2.carr.coords.vertices = 0;
 
    list = menu_entries_get_selection_buf_ptr(0);
    if (!list)
@@ -1149,12 +1730,9 @@ static void materialui_render_menu_list(
             width,
             height,
             menu_animation_get_ticker_idx(),
-            font_hover_color,
             entry_selected,
             rich_label,
-            entry_value,
-            menu_list_color,
-            sublabel_color
+            entry_value
             );
    }
 }
@@ -1174,170 +1752,103 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
    return 0;
 }
 
-static int materialui_get_core_title(char *s, size_t len)
+static void materialui_render_background(materialui_handle_t *mui, video_frame_info_t *video_info)
 {
-   settings_t *settings              = config_get_ptr();
-   struct retro_system_info *system  = runloop_get_libretro_system_info();
-   const char *core_name             = system ? system->library_name : NULL;
-   const char *core_version          = system ? system->library_version : NULL;
-
-   if (!settings->bools.menu_core_enable)
-      return -1;
-
-   if (string_is_empty(core_name))
-      core_name    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   if (!core_version)
-      core_version = "";
-
-   snprintf(s, len, "%s %s", core_name, core_version);
-
-   return 0;
-}
-
-static void materialui_draw_bg(menu_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
+   menu_display_ctx_draw_t draw;
    bool add_opacity       = false;
-   float opacity_override = video_info->menu_wallpaper_opacity;
+   float opacity_override = 1.0f;
+   float color_white[16]  = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
 
-   menu_display_blend_begin(video_info);
+   /* Configure draw object */
+   draw.x                     = 0;
+   draw.y                     = 0;
+   draw.width                 = video_info->width;
+   draw.height                = video_info->height;
+   draw.coords                = NULL;
+   draw.matrix_data           = NULL;
+   draw.prim_type             = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.vertex                = NULL;
+   draw.tex_coord             = NULL;
+   draw.vertex_count          = 4;
+   draw.pipeline.id           = 0;
+   draw.pipeline.active       = false;
+   draw.pipeline.backend_data = NULL;
 
-   draw->x               = 0;
-   draw->y               = 0;
-   draw->pipeline.id     = 0;
-   draw->pipeline.active = false;
-
-   if (video_info->libretro_running)
+   if (mui->textures.bg && !video_info->libretro_running)
    {
+      draw.texture = mui->textures.bg;
+      draw.color   = color_white;
+
+      /* We are showing a wallpaper - set opacity
+       * override to menu_wallpaper_opacity */
       add_opacity      = true;
-      opacity_override = video_info->menu_framebuffer_opacity;
+      opacity_override = video_info->menu_wallpaper_opacity;
+   }
+   else
+   {
+      draw.texture = menu_display_white_texture;
+      draw.color   = mui->colors.list_background;
+
+      /* We are not showing a wallpaper - if content
+       * is running, set opacity override to
+       * menu_framebuffer_opacity */
+      if (video_info->libretro_running)
+      {
+         add_opacity      = true;
+         opacity_override = video_info->menu_framebuffer_opacity;
+      }
    }
 
-   menu_display_draw_bg(draw, video_info, add_opacity,
-         opacity_override);
-   menu_display_draw(draw, video_info);
+   /* If content is not running, have to call menu_display_clear_color()
+    * (have no idea if or why this is necessary, but it was
+    * included in the original code...) */
+   if (!video_info->libretro_running)
+   {
+      menu_display_ctx_clearcolor_t clearcolor;
+
+      clearcolor.r = mui->colors.list_background[0];
+      clearcolor.g = mui->colors.list_background[1];
+      clearcolor.b = mui->colors.list_background[2];
+      clearcolor.a = mui->colors.list_background[3];
+
+      menu_display_clear_color(&clearcolor, video_info);
+   }
+
+   /* Draw background */
+   menu_display_blend_begin(video_info);
+   menu_display_draw_bg(&draw, video_info, add_opacity, opacity_override);
+   menu_display_draw(&draw, video_info);
    menu_display_blend_end(video_info);
 }
 
-/* Main function of the menu driver. Takes care of drawing the header, the tabs,
-   and the menu list */
-static void materialui_frame(void *data, video_frame_info_t *video_info)
+static void materialui_render_header(materialui_handle_t *mui, video_frame_info_t *video_info)
 {
-   /* This controls the main background color */
-   menu_display_ctx_clearcolor_t clearcolor;
-
+   settings_t *settings          = config_get_ptr();
+   unsigned width                = video_info->width;
+   unsigned height               = video_info->height;
+   size_t menu_title_margin      = 0;
+   int usable_sys_bar_width      = (int)width;
+   int usable_title_bar_width    = (int)width;
+   size_t sys_bar_battery_width  = 0;
+   size_t sys_bar_clock_width    = 0;
+   int sys_bar_text_y            = (mui->sys_bar_height / 2.0f) + (mui->font_data.hint.font_height / 4.0f);
+   bool use_smooth_ticker        = settings->bools.menu_ticker_smooth;
+   unsigned ticker_x_offset      = 0;
    menu_animation_ctx_ticker_t ticker;
    menu_animation_ctx_ticker_smooth_t ticker_smooth;
-   unsigned ticker_x_offset = 0;
-   menu_display_ctx_draw_t draw;
-   char msg[255];
-   char menu_title[640];
-   char title_buf[640];
-   char title_msg[255];
+   char menu_title_buf[255];
 
-   float black_bg[16]   = {
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-   };
-
-   float white_bg[16] = {
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-   };
-
-   float white_transp_bg[16] = {
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-   };
-
-   float grey_bg[16] = {
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-   };
-
-   /* TODO/FIXME  convert this over to new hex format */
-   float greyish_blue[16] = {
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-   };
-   float almost_black[16] = {
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-   };
-
-   /* https://material.google.com/style/color.html#color-color-palette */
-   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
-   float blue_500[16]              = {0};
-   float blue_50[16]               = {0};
-   float green_500[16]             = {0};
-   float green_50[16]              = {0};
-   float red_500[16]               = {0};
-   float red_50[16]                = {0};
-   float yellow_500[16]            = {0};
-   float blue_grey_500[16]         = {0};
-   float blue_grey_50[16]          = {0};
-   float yellow_200[16]            = {0};
-   float color_nv_header[16]       = {0};
-   float color_nv_body[16]         = {0};
-   float color_nv_accent[16]       = {0};
-   float footer_bg_color_real[16]  = {0};
-   float header_bg_color_real[16]  = {0};
-
-   /* Default is blue theme */
-   float *header_bg_color          = NULL;
-   float *highlighted_entry_color  = NULL;
-   float *footer_bg_color          = NULL;
-   float *body_bg_color            = NULL;
-   float *active_tab_marker_color  = NULL;
-   float *passive_tab_icon_color   = grey_bg;
-
-   file_list_t *list               = NULL;
-   materialui_node_t *node         = NULL;
-
-   unsigned width                  = video_info->width;
-   unsigned height                 = video_info->height;
-   unsigned i                      = 0;
-   unsigned header_height          = 0;
-   uint32_t sublabel_color         = 0x888888ff;
-   uint32_t font_normal_color      = 0;
-   uint32_t font_hover_color       = 0;
-   uint32_t font_header_color      = 0;
-
-   uint32_t black_opaque_54        = 0x0000008a;
-   uint32_t black_opaque_87        = 0x000000de;
-   uint32_t white_opaque_70        = 0xffffffb3;
-
-   size_t usable_width             = 0;
-   size_t selection                = 0;
-   size_t title_margin             = 0;
-
-   bool background_rendered        = false;
-   bool libretro_running           = video_info->libretro_running;
-
-   settings_t *settings            = config_get_ptr();
-   materialui_handle_t *mui        = (materialui_handle_t*)data;
-   bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
-
-   if (!mui)
-      return;
+   menu_title_buf[0]  = '\0';
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
       ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
-      ticker_smooth.font          = mui->font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker_smooth.spacer        = NULL;
@@ -1351,421 +1862,410 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       ticker.spacer    = NULL;
    }
 
-   msg[0] = menu_title[0] = title_buf[0] = title_msg[0] = '\0';
+   /* Draw background quads
+    * > Title bar is underneath system bar
+    * > Shadow is underneath title bar */
 
-   switch (video_info->materialui_color_theme)
-   {
-      case MATERIALUI_THEME_BLUE:
-         hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
-         hex32_to_rgba_normalized(0x2196F3, header_bg_color_real, 1.00);
-         hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+   /* > Shadow */
+   menu_display_draw_quad(
+         video_info,
+         0,
+         mui->sys_bar_height + mui->title_bar_height,
+         width,
+         mui->shadow_height,
+         width,
+         height,
+         mui->colors.shadow);
 
-         header_bg_color         = header_bg_color_real;
-         highlighted_entry_color = blue_50;
-         footer_bg_color         = footer_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         active_tab_marker_color = blue_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_BLUE_GREY:
-         hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
-         hex32_to_rgba_normalized(0x607D8B, header_bg_color_real,  1.00);
-         hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
-
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = blue_grey_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = blue_grey_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_GREEN:
-         hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
-         hex32_to_rgba_normalized(0x4CAF50, header_bg_color_real,      1.00);
-         hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
-
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = green_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = green_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_RED:
-         hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
-         hex32_to_rgba_normalized(0xF44336, header_bg_color_real,        1.00);
-         hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
-
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = red_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = red_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_YELLOW:
-         hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
-         hex32_to_rgba_normalized(0xFFEB3B, header_bg_color_real,     1.00);
-         hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
-
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = yellow_200;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = yellow_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = black_opaque_54;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_DARK_BLUE:
-         hex32_to_rgba_normalized(0x212121, footer_bg_color_real, 1.00);
-         memcpy(header_bg_color_real, greyish_blue, sizeof(header_bg_color_real));
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = almost_black;
-         highlighted_entry_color = grey_bg;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = greyish_blue;
-
-         font_normal_color       = white_opaque_70;
-         font_hover_color        = 0xffffffff;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = body_bg_color[0];
-         clearcolor.g            = body_bg_color[1];
-         clearcolor.b            = body_bg_color[2];
-         clearcolor.a            = 0.75f;
-         break;
-      case MATERIALUI_THEME_NVIDIA_SHIELD:
-         hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
-         hex32_to_rgba_normalized(0x282F37, header_bg_color_real,1.00);
-         hex32_to_rgba_normalized(0x202427, color_nv_body,  0.90);
-         hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
-         hex32_to_rgba_normalized(0x202427, footer_bg_color_real,  1.00);
-
-         sublabel_color          = 0xffffffff;
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = color_nv_body;
-         highlighted_entry_color = color_nv_accent;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = white_bg;
-
-         font_normal_color       = 0xbbc0c4ff;
-         font_hover_color        = 0xffffffff;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = color_nv_body[0];
-         clearcolor.g            = color_nv_body[1];
-         clearcolor.b            = color_nv_body[2];
-         clearcolor.a            = 0.75f;
-         break;
-   }
-
-   menu_display_set_alpha(header_bg_color_real, video_info->menu_header_opacity);
-   menu_display_set_alpha(footer_bg_color_real, video_info->menu_footer_opacity);
-
-   menu_display_set_viewport(video_info->width, video_info->height);
-   header_height = menu_display_get_header_height();
-
-   if (libretro_running)
-   {
-      draw.x                  = 0;
-      draw.y                  = 0;
-      draw.width              = width;
-      draw.height             = height;
-      draw.coords             = NULL;
-      draw.matrix_data        = NULL;
-      draw.texture            = menu_display_white_texture;
-      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.color              = body_bg_color ? &body_bg_color[0] : NULL;
-      draw.vertex             = NULL;
-      draw.tex_coord          = NULL;
-      draw.vertex_count       = 4;
-
-      draw.pipeline.id        = 0;
-      draw.pipeline.active    = false;
-      draw.pipeline.backend_data = NULL;
-
-      materialui_draw_bg(&draw, video_info);
-   }
-   else
-   {
-      menu_display_clear_color(&clearcolor, video_info);
-
-      if (mui->textures.bg)
-      {
-         background_rendered     = true;
-
-         menu_display_set_alpha(white_transp_bg, 0.30);
-
-         draw.x                  = 0;
-         draw.y                  = 0;
-         draw.width              = width;
-         draw.height             = height;
-         draw.coords             = NULL;
-         draw.matrix_data        = NULL;
-         draw.texture            = mui->textures.bg;
-         draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-         draw.color              = &white_transp_bg[0];
-         draw.vertex             = NULL;
-         draw.tex_coord          = NULL;
-         draw.vertex_count       = 4;
-
-         draw.pipeline.id        = 0;
-         draw.pipeline.active    = false;
-         draw.pipeline.backend_data = NULL;
-
-         if (draw.texture)
-            draw.color           = &white_bg[0];
-
-         materialui_draw_bg(&draw, video_info);
-
-         /* Restore opacity of transposed white background */
-         menu_display_set_alpha(white_transp_bg, 0.90);
-      }
-   }
-
-   selection = menu_navigation_get_selection();
-
-   if (background_rendered || libretro_running)
-      menu_display_set_alpha(blue_50, 0.75);
-   else
-      menu_display_set_alpha(blue_50, 1.0);
-
-   /* highlighted entry */
-   list             = menu_entries_get_selection_buf_ptr(0);
-   node             = (materialui_node_t*)file_list_get_userdata_at_offset(
-         list, selection);
-
-   if (node)
-      menu_display_draw_quad(
-            video_info,
-            0,
-            header_height - mui->scroll_y + node->y,
-            width,
-            node->line_height,
-            width,
-            height,
-            highlighted_entry_color ? &highlighted_entry_color[0] : NULL
-            );
-
-   font_driver_bind_block(mui->font, &mui->raster_block);
-   font_driver_bind_block(mui->font2, &mui->raster_block2);
-
-   if (menu_display_get_update_pending())
-      materialui_render_menu_list(
-            video_info,
-            mui,
-            width,
-            height,
-            font_normal_color,
-            font_hover_color,
-            active_tab_marker_color ? &active_tab_marker_color[0] : NULL,
-            sublabel_color
-            );
-
-   font_driver_flush(video_info->width, video_info->height, mui->font,
-         video_info);
-   font_driver_bind_block(mui->font, NULL);
-
-   font_driver_flush(video_info->width,
-         video_info->height,
-         mui->font2,
-         video_info);
-   font_driver_bind_block(mui->font2, NULL);
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
-
-   /* header */
+   /* > Title bar background */
    menu_display_draw_quad(
          video_info,
          0,
          0,
          width,
-         header_height,
+         mui->sys_bar_height + mui->title_bar_height,
          width,
          height,
-         header_bg_color ? &header_bg_color[0] : NULL);
+         mui->colors.title_bar_background);
 
-   /* Tab bar */
-   if (mui->tabs_height > 0)
+   /* > System bar background */
+   menu_display_draw_quad(
+         video_info,
+         0,
+         0,
+         width,
+         mui->sys_bar_height,
+         width,
+         height,
+         mui->colors.sys_bar_background);
+
+   /* System bar items */
+
+   /* > Draw battery indicator (if required) */
+   if (settings->bools.menu_battery_level_enable)
    {
-      materialui_draw_tab_begin(mui,
-            video_info,
-            width, height,
-            footer_bg_color ? &footer_bg_color[0] : NULL,
-            &grey_bg[0]);
+      menu_display_ctx_powerstate_t powerstate;
+      char percent_str[12];
 
-      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-         materialui_draw_tab(mui, video_info,
-               i, width, height,
-               &passive_tab_icon_color[0],
-               active_tab_marker_color ? &active_tab_marker_color[0] : NULL
-               );
+      percent_str[0] = '\0';
 
-      materialui_draw_tab_end(mui,
-            video_info,
-            width, height, header_height,
-            active_tab_marker_color ? &active_tab_marker_color[0] : NULL
-            );
+      powerstate.s   = percent_str;
+      powerstate.len = sizeof(percent_str);
+
+      menu_display_powerstate(&powerstate);
+
+      if (powerstate.battery_enabled)
+      {
+         /* Determine width of percent string */
+         size_t percent_str_len = strlen(percent_str);
+         int percent_str_width  = font_driver_get_message_width(
+               mui->font_data.hint.font, percent_str, percent_str_len, 1.0f);
+
+         if (percent_str_width > 0)
+         {
+            /* Set critical by default, to ensure texture_battery
+             * is always valid */
+            uintptr_t texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_CRITICAL];
+
+            /* Draw battery icon */
+            if (powerstate.charging)
+               texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_CHARGING];
+            else
+            {
+               if (powerstate.percent >= 100)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_100];
+               else if (powerstate.percent >= 90)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_90];
+               else if (powerstate.percent >= 80)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_80];
+               else if (powerstate.percent >= 60)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_60];
+               else if (powerstate.percent >= 50)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_50];
+               else if (powerstate.percent >= 30)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_30];
+               else if (powerstate.percent >= 20)
+                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_20];
+            }
+
+            materialui_draw_icon(video_info,
+                  mui->sys_bar_icon_size,
+                  (uintptr_t)texture_battery,
+                  width - (percent_str_width + mui->sys_bar_margin + mui->sys_bar_icon_size),
+                  0,
+                  width,
+                  height,
+                  0,
+                  1,
+                  mui->colors.sys_bar_icon
+                  );
+
+            /* Draw percent text */
+            menu_display_draw_text(mui->font_data.hint.font, percent_str,
+                  width - (percent_str_width + mui->sys_bar_margin),
+                  sys_bar_text_y,
+                  width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+
+            sys_bar_battery_width = percent_str_width + mui->sys_bar_margin + mui->sys_bar_icon_size;
+            usable_sys_bar_width -= sys_bar_battery_width;
+         }
+      }
    }
 
+   /* > Draw clock (if required) */
+   if (settings->bools.menu_timedate_enable)
    {
-      float shadow_bg[16]=  {
-         0.00, 0.00, 0.00, 0.00,
-         0.00, 0.00, 0.00, 0.00,
-         0.00, 0.00, 0.00, 0.20,
-         0.00, 0.00, 0.00, 0.20,
-      };
+      menu_display_ctx_datetime_t datetime;
+      size_t timedate_len;
+      int timedate_width;
+      char timedate[255];
 
-      menu_display_draw_quad(
-            video_info,
-            0,
-            header_height,
-            width,
-            mui->shadow_height,
-            width,
-            height,
-            &shadow_bg[0]);
+      timedate[0] = '\0';
+
+      datetime.s         = timedate;
+      datetime.len       = sizeof(timedate);
+      datetime.time_mode = settings->uints.menu_timedate_style;
+
+      menu_display_timedate(&datetime);
+
+      /* Determine width of time string */
+      timedate_len   = utf8len(timedate);
+      timedate_width = font_driver_get_message_width(
+            mui->font_data.hint.font, timedate, timedate_len, 1.0f);
+
+      /* Draw time string */
+      if (timedate_width > 0)
+      {
+         sys_bar_clock_width = timedate_width;
+
+         /* If there is no battery indicator, must add padding */
+         if (sys_bar_battery_width == 0)
+            sys_bar_clock_width += mui->sys_bar_margin;
+
+         menu_display_draw_text(mui->font_data.hint.font, timedate,
+               width - (sys_bar_clock_width + sys_bar_battery_width),
+               sys_bar_text_y,
+               width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+
+         usable_sys_bar_width -= sys_bar_clock_width;
+      }
    }
 
-   title_margin = mui->margin;
+   usable_sys_bar_width -= (2 * mui->sys_bar_margin);
+   usable_sys_bar_width = (usable_sys_bar_width > 0) ? usable_sys_bar_width : 0;
+
+   /* > Draw core name, if required */
+   if (settings->bools.menu_core_enable)
+   {
+      char core_title[255];
+      char core_title_buf[255];
+
+      core_title[0]     = '\0';
+      core_title_buf[0] = '\0';
+
+      menu_entries_get_core_title(core_title, sizeof(core_title));
+
+      if (use_smooth_ticker)
+      {
+         ticker_smooth.font        = mui->font_data.hint.font;
+         ticker_smooth.selected    = true;
+         ticker_smooth.field_width = (unsigned)usable_sys_bar_width;
+         ticker_smooth.src_str     = core_title;
+         ticker_smooth.dst_str     = core_title_buf;
+         ticker_smooth.dst_str_len = sizeof(core_title_buf);
+
+         menu_animation_ticker_smooth(&ticker_smooth);
+      }
+      else
+      {
+         ticker.s        = core_title_buf;
+         ticker.len      = (unsigned)(usable_sys_bar_width / mui->font_data.hint.glyph_width);
+         ticker.str      = core_title;
+         ticker.selected = true;
+
+         menu_animation_ticker(&ticker);
+      }
+
+      menu_display_draw_text(mui->font_data.hint.font, core_title_buf,
+            ticker_x_offset + mui->sys_bar_margin,
+            sys_bar_text_y,
+            width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+   }
+
+   /* Title bar items */
+
+   /* > Draw 'back' icon, if required */
+   menu_title_margin = mui->margin;
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
-      float pure_white[16] = {
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-         1.00, 1.00, 1.00, 1.00,
-      };
+      menu_title_margin = mui->icon_size;
 
-      title_margin = mui->icon_size;
       materialui_draw_icon(video_info,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_BACK],
             0,
-            0,
+            mui->sys_bar_height,
             width,
             height,
             0,
             1,
-            &pure_white[0]
+            mui->colors.header_icon
             );
    }
 
-   /* Title */
-   usable_width = width - (mui->margin * 2) - title_margin;
+   usable_title_bar_width -= menu_title_margin;
 
-   strlcpy(menu_title, mui->menu_title, sizeof(menu_title));
-
-   if (materialui_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   /* > Draw 'search' icon, if required */
+   if (mui->is_playlist || mui->is_file_list)
    {
-      strlcat(menu_title, " (", sizeof(menu_title));
-      strlcat(menu_title, title_msg, sizeof(menu_title));
-      strlcat(menu_title, ")", sizeof(menu_title));
-   }
+      materialui_draw_icon(video_info,
+            mui->icon_size,
+            mui->textures.list[MUI_TEXTURE_SEARCH],
+            width - mui->icon_size,
+            mui->sys_bar_height,
+            width,
+            height,
+            0,
+            1,
+            mui->colors.header_icon
+            );
 
+      usable_title_bar_width -= mui->icon_size;
+   }
+   else
+      usable_title_bar_width -= mui->margin;
+
+   usable_title_bar_width = (usable_title_bar_width > 0) ? usable_title_bar_width : 0;
+
+   /* > Draw title string */
    if (use_smooth_ticker)
    {
+      ticker_smooth.font        = mui->font_data.title.font;
       ticker_smooth.selected    = true;
-      ticker_smooth.field_width = (unsigned)usable_width;
-      ticker_smooth.src_str     = menu_title;
-      ticker_smooth.dst_str     = title_buf;
-      ticker_smooth.dst_str_len = sizeof(title_buf);
+      ticker_smooth.field_width = (unsigned)usable_title_bar_width;
+      ticker_smooth.src_str     = mui->menu_title;
+      ticker_smooth.dst_str     = menu_title_buf;
+      ticker_smooth.dst_str_len = sizeof(menu_title_buf);
 
       menu_animation_ticker_smooth(&ticker_smooth);
    }
    else
    {
-      ticker.s        = title_buf;
-      ticker.len      = (unsigned)(usable_width / mui->glyph_width);
-      ticker.str      = menu_title;
+      ticker.s        = menu_title_buf;
+      ticker.len      = (unsigned)(usable_title_bar_width / mui->font_data.title.glyph_width);
+      ticker.str      = mui->menu_title;
       ticker.selected = true;
 
       menu_animation_ticker(&ticker);
    }
 
-   if (mui->font)
-      menu_display_draw_text(mui->font, title_buf,
-            ticker_x_offset + title_margin,
-            header_height / 2 + mui->font->size / 3,
-            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+   menu_display_draw_text(mui->font_data.title.font, menu_title_buf,
+         ticker_x_offset + menu_title_margin,
+         mui->sys_bar_height + (mui->title_bar_height / 2.0f) + (mui->font_data.title.font_height / 4.0f),
+         width, height, mui->colors.header_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+}
 
-   materialui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
+/* Main function of the menu driver
+ * Draws all menu elements */
+static void materialui_frame(void *data, video_frame_info_t *video_info)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
+   unsigned header_height   = menu_display_get_header_height();
+   size_t selection         = menu_navigation_get_selection();
 
-   if (menu_input_dialog_get_display_kb())
+   if (!mui)
+      return;
+
+   menu_display_set_viewport(width, height);
+
+   /* It seems that we have to call this every frame
+    * (don't know why...) */
+   menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+
+   /* Clear text */
+   font_driver_bind_block(mui->font_data.title.font, &mui->font_data.title.raster_block);
+   font_driver_bind_block(mui->font_data.list.font,  &mui->font_data.list.raster_block);
+   font_driver_bind_block(mui->font_data.hint.font,  &mui->font_data.hint.raster_block);
+
+   mui->font_data.title.raster_block.carr.coords.vertices = 0;
+   mui->font_data.list.raster_block.carr.coords.vertices  = 0;
+   mui->font_data.hint.raster_block.carr.coords.vertices  = 0;
+
+   /* Update theme colours, if required */
+   if (mui->color_theme != video_info->materialui_color_theme)
    {
-      const char *str          = menu_input_dialog_get_buffer();
-      const char *label        = menu_input_dialog_get_label_buffer();
-
-      menu_display_draw_quad(video_info,
-            0, 0, width, height, width, height, &black_bg[0]);
-      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-
-      materialui_render_messagebox(mui, video_info,
-            msg, &body_bg_color[0], font_hover_color);
+      materialui_prepare_colors(mui, (enum materialui_color_theme)video_info->materialui_color_theme);
+      mui->color_theme = (enum materialui_color_theme)video_info->materialui_color_theme;
    }
 
+   /* Draw background */
+   materialui_render_background(mui, video_info);
+
+   /* Draw 'highlighted entry' selection box */
+   if ((selection >= mui->first_onscreen_entry) &&
+       (selection <= mui->last_onscreen_entry))
+   {
+      file_list_t *list       = NULL;
+      materialui_node_t *node = NULL;
+
+      list = menu_entries_get_selection_buf_ptr(0);
+      node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+
+      if (node)
+         menu_display_draw_quad(
+               video_info,
+               0,
+               header_height - mui->scroll_y + node->y,
+               width,
+               node->line_height,
+               width,
+               height,
+               mui->colors.list_highlighted_background);
+   }
+
+   /* Draw menu list */
+   if (menu_display_get_update_pending())
+      materialui_render_menu_list(video_info, mui, width, height);
+
+   materialui_draw_scrollbar(mui, video_info, width, height);
+
+   /* Flush first layer of text
+    * > Menu list only uses list and hint fonts */
+   font_driver_flush(width, height, mui->font_data.list.font, video_info);
+   font_driver_flush(width, height, mui->font_data.hint.font, video_info);
+
+   mui->font_data.list.raster_block.carr.coords.vertices = 0;
+   mui->font_data.hint.raster_block.carr.coords.vertices = 0;
+
+   /* Draw title + system bar */
+   materialui_render_header(mui, video_info);
+
+   /* Draw navigation bar */
+   if (mui->tabs_height > 0)
+   {
+      unsigned i = 0;
+
+      materialui_draw_tab_begin(mui, video_info, width, height);
+
+      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
+         materialui_draw_tab(mui, video_info, i, width, height);
+
+      materialui_draw_tab_end(mui, video_info, width, height);
+   }
+
+   /* Flush second layer of text
+    * > Title + system bar only use title and hint fonts */
+   font_driver_flush(width, height, mui->font_data.title.font, video_info);
+   font_driver_flush(width, height, mui->font_data.hint.font,  video_info);
+
+   font_driver_bind_block(mui->font_data.title.font, NULL);
+   font_driver_bind_block(mui->font_data.list.font,  NULL);
+   font_driver_bind_block(mui->font_data.hint.font,  NULL);
+
+   /* Handle onscreen keyboard */
+   if (menu_input_dialog_get_display_kb())
+   {
+      char msg[255];
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
+
+      msg[0] = '\0';
+
+      menu_display_draw_quad(video_info,
+            0, 0, width, height, width, height, mui->colors.screen_fade);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
+
+      materialui_render_messagebox(mui, video_info, msg);
+   }
+
+   /* Draw message box */
    if (!string_is_empty(mui->box_message))
    {
       menu_display_draw_quad(video_info,
-            0, 0, width, height, width, height, &black_bg[0]);
+            0, 0, width, height, width, height, mui->colors.screen_fade);
 
-      materialui_render_messagebox(mui, video_info,
-            mui->box_message, &body_bg_color[0], font_hover_color);
+      materialui_render_messagebox(mui, video_info, mui->box_message);
 
       free(mui->box_message);
-      mui->box_message    = NULL;
+      mui->box_message = NULL;
    }
 
+   /* Draw mouse cursor */
    if (mui->mouse_show && (mui->pointer.type != MENU_POINTER_DISABLED))
    {
+      float color_white[16]  = {
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f
+      };
+
       menu_display_draw_cursor(
             video_info,
-            &white_bg[0],
+            color_white,
             mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
             mui->pointer.x,
@@ -1775,75 +2275,115 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    }
 
    menu_display_restore_clear_color();
-   menu_display_unset_viewport(video_info->width, video_info->height);
+   menu_display_unset_viewport(width, height);
 }
 
 /* Compute the positions of the widgets */
 static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 {
-   int new_font_size, new_font_size2;
+   int title_font_size;
+   int list_font_size;
+   int hint_font_size;
    unsigned new_header_height;
 
-   mui->cursor_size     = mui->dip_base_unit_size / 3;
+   mui->cursor_size       = mui->dip_base_unit_size / 3;
 
-   new_header_height    = mui->dip_base_unit_size / 3;
-   new_font_size        = mui->dip_base_unit_size / 9;
-   new_font_size2       = mui->dip_base_unit_size / 12;
+   mui->sys_bar_height    = mui->dip_base_unit_size / 7;
+   mui->title_bar_height  = mui->dip_base_unit_size / 3;
+   new_header_height      = mui->sys_bar_height + mui->title_bar_height;
 
-   mui->shadow_height   = mui->dip_base_unit_size / 36;
-   mui->scrollbar_width = mui->dip_base_unit_size / 36;
+   title_font_size        = mui->dip_base_unit_size / 7;
+   list_font_size         = mui->dip_base_unit_size / 9;
+   hint_font_size         = mui->dip_base_unit_size / 11;
 
-   mui->tabs_height     = 0;
+   mui->shadow_height     = mui->dip_base_unit_size / 36;
+   mui->scrollbar_width   = mui->dip_base_unit_size / 36;
+
+   mui->divider_width     = (mui->last_scale_factor > 1.0f) ?
+         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
+
+   mui->tabs_height       = 0;
    if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-      mui->tabs_height  = mui->dip_base_unit_size / 3;
+      mui->tabs_height    = mui->dip_base_unit_size / 3;
 
-   mui->line_height     = mui->dip_base_unit_size / 3;
-   mui->margin          = mui->dip_base_unit_size / 9;
-   mui->icon_size       = mui->dip_base_unit_size / 3;
+   mui->margin            = mui->dip_base_unit_size / 9;
+   mui->icon_size         = mui->dip_base_unit_size / 3;
 
-   /* we assume the average glyph aspect ratio is close to 3:4 */
-   mui->glyph_width     = new_font_size  * 3/4;
-   mui->glyph_width2    = new_font_size2 * 3/4;
+   mui->sys_bar_margin    = mui->dip_base_unit_size / 12;
+   mui->sys_bar_icon_size = mui->dip_base_unit_size / 7;
+
+   /* We assume the average glyph aspect ratio is close to 3:4 */
+   mui->font_data.title.glyph_width = title_font_size * 3/4;
+   mui->font_data.list.glyph_width  = list_font_size  * 3/4;
+   mui->font_data.hint.glyph_width  = hint_font_size  * 3/4;
 
    menu_display_set_header_height(new_header_height);
 
-   if (mui->font)
+   if (mui->font_data.title.font)
    {
-      menu_display_font_free(mui->font);
-      mui->font = NULL;
+      menu_display_font_free(mui->font_data.title.font);
+      mui->font_data.title.font = NULL;
    }
-   if (mui->font2)
+   if (mui->font_data.list.font)
    {
-      menu_display_font_free(mui->font2);
-      mui->font2 = NULL;
+      menu_display_font_free(mui->font_data.list.font);
+      mui->font_data.list.font = NULL;
+   }
+   if (mui->font_data.hint.font)
+   {
+      menu_display_font_free(mui->font_data.hint.font);
+      mui->font_data.hint.font = NULL;
    }
 
-   mui->font            = menu_display_font(
+   mui->font_data.title.font = menu_display_font(
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         new_font_size,
-         video_is_threaded);
+         title_font_size, video_is_threaded);
 
-   mui->font2           = menu_display_font(
+   mui->font_data.list.font  = menu_display_font(
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         new_font_size2,
-         video_is_threaded);
+         list_font_size, video_is_threaded);
 
-   if (mui->font) /* calculate a more realistic ticker_limit */
+   mui->font_data.hint.font  = menu_display_font(
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         hint_font_size, video_is_threaded);
+
+   if (mui->font_data.title.font)
    {
-      unsigned m_width =
-         font_driver_get_message_width(mui->font, "a", 1, 1);
+      /* Calculate a more realistic ticker_limit */
+      unsigned title_char_width =
+         font_driver_get_message_width(mui->font_data.title.font, "a", 1, 1);
 
-      if (m_width)
-         mui->glyph_width = m_width;
+      if (title_char_width)
+         mui->font_data.title.glyph_width = title_char_width;
+
+      /* Get font height */
+      mui->font_data.title.font_height = font_driver_get_line_height(mui->font_data.title.font, 1.0f);
    }
 
-   if (mui->font2) /* calculate a more realistic ticker_limit */
+   if (mui->font_data.list.font)
    {
-      unsigned m_width2 =
-         font_driver_get_message_width(mui->font2, "t", 1, 1);
+      /* Calculate a more realistic ticker_limit */
+      unsigned list_char_width =
+         font_driver_get_message_width(mui->font_data.list.font, "a", 1, 1);
 
-      if (m_width2)
-         mui->glyph_width2 = m_width2;
+      if (list_char_width)
+         mui->font_data.list.glyph_width = list_char_width;
+
+      /* Get font height */
+      mui->font_data.list.font_height = font_driver_get_line_height(mui->font_data.list.font, 1.0f);
+   }
+
+   if (mui->font_data.hint.font)
+   {
+      /* Calculate a more realistic ticker_limit */
+      unsigned hint_char_width =
+         font_driver_get_message_width(mui->font_data.hint.font, "t", 1, 1);
+
+      if (hint_char_width)
+         mui->font_data.hint.glyph_width = hint_char_width;
+
+      /* Get font height */
+      mui->font_data.hint.font_height = font_driver_get_line_height(mui->font_data.hint.font, 1.0f);
    }
 
    mui->need_compute = true;
@@ -1852,11 +2392,11 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
-   materialui_handle_t   *mui = NULL;
-   menu_handle_t *menu = (menu_handle_t*)
-      calloc(1, sizeof(*menu));
+   settings_t *settings     = config_get_ptr();
+   materialui_handle_t *mui = NULL;
+   menu_handle_t *menu      = (menu_handle_t*)calloc(1, sizeof(*menu));
 
-   if (!menu)
+   if (!menu || !settings)
       return NULL;
 
    if (!menu_display_init_first_driver(video_is_threaded))
@@ -1888,6 +2428,10 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    mui->menu_title[0]        = '\0';
 
+   /* Set initial theme colours */
+   mui->color_theme = (enum materialui_color_theme)settings->uints.menu_materialui_color_theme;
+   materialui_prepare_colors(mui, (enum materialui_color_theme)mui->color_theme);
+
    return menu;
 error:
    if (menu)
@@ -1902,8 +2446,9 @@ static void materialui_free(void *data)
    if (!mui)
       return;
 
-   video_coord_array_free(&mui->raster_block.carr);
-   video_coord_array_free(&mui->raster_block2.carr);
+   video_coord_array_free(&mui->font_data.title.raster_block.carr);
+   video_coord_array_free(&mui->font_data.list.raster_block.carr);
+   video_coord_array_free(&mui->font_data.hint.raster_block.carr);
 
    font_driver_bind_block(NULL, NULL);
 }
@@ -1928,12 +2473,17 @@ static void materialui_context_destroy(void *data)
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       video_driver_texture_unload(&mui->textures.list[i]);
 
-   if (mui->font)
-      menu_display_font_free(mui->font);
-   mui->font = NULL;
-   if (mui->font2)
-      menu_display_font_free(mui->font2);
-   mui->font2 = NULL;
+   if (mui->font_data.title.font)
+      menu_display_font_free(mui->font_data.title.font);
+   mui->font_data.title.font = NULL;
+
+   if (mui->font_data.list.font)
+      menu_display_font_free(mui->font_data.list.font);
+   mui->font_data.list.font = NULL;
+
+   if (mui->font_data.hint.font)
+      menu_display_font_free(mui->font_data.hint.font);
+   mui->font_data.hint.font = NULL;
 
    materialui_context_bg_destroy(mui);
 }
@@ -2594,9 +3144,27 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
-            /* Tap/press header: Menu back/cancel */
+            /* Tap/press header: Menu back/cancel, or search */
             if (y < header_height)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            {
+               /* If this is a playlist or file list, enable
+                * search functionality */
+               if (mui->is_playlist || mui->is_file_list)
+               {
+                  /* Check if user has touched search icon */
+                  if (x > (width - mui->icon_size))
+                     return menu_input_dialog_start_search() ? 0 : -1;
+                  /* If not, add a little extra padding to minimise
+                   * the risk of accidentally triggering a cancel */
+                  else if (x <= (width - (2 * mui->icon_size)))
+                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               }
+               /* If this is not a playlist or file list, a tap/press
+                * anywhere on the header triggers a MENU_ACTION_CANCEL
+                * action */
+               else
+                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            }
             /* Tap/press tab bar: Switch to corresponding top-level
              * menu screen */
             else if (y > height - mui->tabs_height)

@@ -3853,6 +3853,16 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
          break;
+      case MATERIALUI_THEME_MATERIALUI:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI), len);
+         break;
+      case MATERIALUI_THEME_MATERIALUI_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK), len);
+         break;
       default:
          break;
    }
@@ -12849,6 +12859,8 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
+            /* TODO: These should be removed entirely, but just
+             * comment out for now in case users complain...
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_header_opacity,
@@ -12880,6 +12892,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             (*list)[list_info->index - 1].ui_type   
                                   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
+            */
          }
 #endif
 
