@@ -4971,6 +4971,7 @@ bool command_event(enum event_command cmd, void *data)
                settings_t *settings = configuration_settings;
                strcpy(settings->arrays.video_driver, cached_video_driver);
                cached_video_driver[0] = 0;
+               RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
             }
 
             if (     runloop_remaps_core_active
@@ -6134,6 +6135,7 @@ void main_exit(void *args)
    {
       strcpy(settings->arrays.video_driver, cached_video_driver);
       cached_video_driver[0] = 0;
+      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
    }
 
    if (settings->bools.config_save_on_exit)
@@ -7834,7 +7836,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                *(const struct retro_disk_control_callback*)data;
          break;
       
-	  case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+      case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
          unsigned *cb = (unsigned*)data;
          settings_t *settings  = configuration_settings;
@@ -7849,8 +7851,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
              *cb = RETRO_HW_CONTEXT_DIRECT3D;
          else
              *cb = RETRO_HW_CONTEXT_NONE;
-         break;		 
-	  }
+         break;
+      }
 
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
       case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
@@ -19230,8 +19232,12 @@ static bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
          RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
-         strcpy(cached_video_driver, settings->arrays.video_driver);
-         strcpy(settings->arrays.video_driver, "vulkan");
+         if (!string_is_equal(settings->arrays.video_driver, "vulkan"))
+         {
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
+            strcpy(cached_video_driver, settings->arrays.video_driver);
+            strcpy(settings->arrays.video_driver, "vulkan");
+         }
          current_video = &video_vulkan;
       }
 #endif
@@ -19245,16 +19251,16 @@ static bool video_driver_find_driver(void)
          if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
-#if defined(HAVE_OPENGL_CORE)
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
             strcpy(cached_video_driver, settings->arrays.video_driver);
+#if defined(HAVE_OPENGL_CORE)
+            RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
             strcpy(settings->arrays.video_driver, "glcore");
             current_video = &video_gl_core;
-            RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
 #else
-            strcpy(cached_video_driver, settings->arrays.video_driver);
+            RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
             strcpy(settings->arrays.video_driver, "gl");
             current_video = &video_gl2;
-            RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
 #endif
          }
          else
