@@ -699,7 +699,7 @@ const char *config_get_default_audio(void)
          return "dsp";
       case AUDIO_SWITCH:
 #if defined(HAVE_LIBNX)
-         return "switch_thread";
+         return "switch_audren_thread";
 #else
          return "switch";
 #endif
