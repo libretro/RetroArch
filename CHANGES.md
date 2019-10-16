@@ -1,13 +1,21 @@
 # Future (1.7.9) [v3]
 - AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
 - BSV: Fix BSV recording/playback
+- BUGFIX: Fix crash when setting Thumbnail Directory
 - COMMON: Graceful driver switching for Windows and Linux
 - LAKKA: Wi-Fi Access Point settings
 - MENU: Menu scaling improvements
 - MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
 - MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
 - MENU/MATERIALUI: Material UI no longer leaks memory on 'context reset' (fonts were previously never free()'d)
+- MENU/MATERIALUI: A new Android-style 'system bar' has been added. This shows current core name, clock and battery level
+- MENU/MATERIALUI: A new search icon is shown on the title bar when viewing playlists and file browser lists. Pressing this launches the search interface
+- MENU/MATERIALUI: The title bar now uses a larger font, and the sublabel font has also been enlarged a little, to more closely align with Material UI standards
+- MENU/MATERIALUI: A number (quite a large number) of layout/spacing issues have been fixed
+- MENU/MATERIALUI: The existing colour theme handling code is not fit for purpose, so the whole lot got ripped out and reimplemented. In doing so, also adjusted all the theme colours to better match Material UI standards - with a few liberties taken for aesthetic purposes.
 - OSD: Fix fast forward indicator when not using menu widgets
+- PSP1: Remove duplicated FPS indicator on the screen
+- SWITCH: Make audren threaded audio driver the new default
 - VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx
 
 # (1.7.9) (v2)
