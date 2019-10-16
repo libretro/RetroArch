@@ -7,11 +7,12 @@
 die()
 {	ret="$1"
 	shift 1
-	printf %s\\n "$@" >&2
 	case "$ret" in
-		: ) return 0 ;;
-		* ) exit "$ret" ;;
+		: ) printf %s\\n "$@" >&2; return 0 ;;
+		0 ) printf %s\\n "$@" ;;
+		* ) printf %s\\n "$@" >&2 ;;
 	esac
+	exit "$ret"
 }
 
 # exists:
