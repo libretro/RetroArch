@@ -414,6 +414,7 @@ default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENU
 default_fill_title_macro(action_get_title_dynamic_wallpapers_directory, MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY)
 default_fill_title_macro(action_get_title_core_assets_directory, MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR)
 default_fill_title_macro(action_get_title_config_directory,      MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY)
+default_fill_title_macro(action_get_title_thumbnail_directory,    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY)
 default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY)
 default_fill_title_macro(action_get_title_autoconfig_directory,  MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR )
 default_fill_title_macro(action_get_title_playlist_directory,    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY)
@@ -518,7 +519,8 @@ static int action_get_title_default(const char *path, const char *label,
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
    strlcat(s, " ", len);
-   strlcat(s, path, len);
+   if (!string_is_empty(path))
+      strlcat(s, path, len);
    return 0;
 }
 
@@ -994,6 +996,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_assets_directory);
+            break;
+         case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_thumbnail_directory);
             break;
          case MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
