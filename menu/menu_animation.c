@@ -33,6 +33,7 @@
 #undef DG_DYNARR_IMPLEMENTATION
 
 #include "menu_animation.h"
+#include "menu_driver.h"
 #include "../configuration.h"
 #include "../performance_counters.h"
 
@@ -1255,13 +1256,20 @@ static void menu_animation_update_time(bool timedate_enable, unsigned video_widt
        *   any kind of DPI scaling - i.e. text gets smaller
        *   as resolution increases. This is annoying. It
        *   means we have to use a fixed multiplier for
-       *   Ozone as well... */
+       *   Ozone as well...
+       *   Note 3: GLUI uses the new DPI scaling system,
+       *   so scaling multiplier is menu_display_get_dpi_scale()
+       *   multiplied by a small correction factor (since the
+       *   default 1.0x speed is just a little faster than the
+       *   non-smooth ticker) */
       if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          ticker_pixel_increment *= 0.25f;
       /* TODO/FIXME: Remove this Ozone special case if/when
        * Ozone gets proper DPI scaling */
       else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          ticker_pixel_increment *= 0.5f;
+      else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+         ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.8f);
       else if (video_width > 0)
          ticker_pixel_increment *= ((float)video_width / 1920.0f);
 

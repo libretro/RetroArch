@@ -13283,6 +13283,8 @@ static int menu_input_pointer_post_iterate(
             {
                point.x       = x;
                point.y       = y;
+               /* Note: menu_input->ptr is meaningless here when
+                * using a touchscreen... */
                point.ptr     = menu_input->ptr;
                point.cbs     = cbs;
                point.entry   = entry;
