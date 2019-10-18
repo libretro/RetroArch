@@ -166,6 +166,7 @@ enum video_driver_enum
    VIDEO_CACA,
    VIDEO_GDI,
    VIDEO_VGA,
+   VIDEO_FPGA,
    VIDEO_NULL
 };
 
@@ -364,6 +365,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
+#elif defined(HAVE_FPGA)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
 #else
@@ -400,7 +403,7 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
-#elif defined(HAVE_COREAUDIO)
+#elif defined(HAVE_COREAUDIO) && !defined(HAVE_COCOA_METAL)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_COREAUDIO3)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
@@ -444,7 +447,7 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 
 #ifdef HAVE_WINMM
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
-#elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI)
+#elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
@@ -696,7 +699,7 @@ const char *config_get_default_audio(void)
          return "dsp";
       case AUDIO_SWITCH:
 #if defined(HAVE_LIBNX)
-         return "switch_thread";
+         return "switch_audren_thread";
 #else
          return "switch";
 #endif
@@ -827,6 +830,8 @@ const char *config_get_default_video(void)
          return "gdi";
       case VIDEO_VGA:
          return "vga";
+      case VIDEO_FPGA:
+         return "fpga";
       case VIDEO_NULL:
          break;
    }
@@ -1445,8 +1450,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
-   SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, true, false);
-   SETTING_BOOL("dpi_override_enable",           &settings->bools.menu_dpi_override_enable, true, DEFAULT_MENU_DPI_OVERRIDE_ENABLE, false);
+   SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, menu_savestate_resume, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
@@ -1584,6 +1588,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("input_overlay_show_physical_inputs", &settings->bools.input_overlay_show_physical_inputs, true, false, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->bools.input_overlay_hide_in_menu, true, DEFAULT_OVERLAY_HIDE_IN_MENU, false);
    SETTING_BOOL("input_overlay_show_mouse_cursor",   &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
+   SETTING_BOOL("input_overlay_auto_rotate",         &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
@@ -1651,6 +1656,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
    SETTING_BOOL("ozone_truncate_playlist_name", &settings->bools.ozone_truncate_playlist_name, true, DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME, false);
+   SETTING_BOOL("ozone_scroll_content_metadata",&settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
 #endif
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
@@ -1685,6 +1691,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
 #endif
 #ifdef HAVE_MENU
+   SETTING_FLOAT("menu_scale_factor",        &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_wallpaper_opacity",   &settings->floats.menu_wallpaper_opacity, true, menu_wallpaper_opacity, false);
    SETTING_FLOAT("menu_framebuffer_opacity", &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
    SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
@@ -1726,6 +1733,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
    SETTING_UINT("fps_update_interval",          &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo, false);
+#ifdef GEKKO
+   SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
+#endif
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
@@ -1759,7 +1769,6 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_overscan_correction_bottom", &settings->uints.video_overscan_correction_bottom, true, DEFAULT_VIDEO_OVERSCAN_CORRECTION_BOTTOM, false);
 #endif
 #ifdef HAVE_MENU
-   SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, DEFAULT_MENU_DPI_OVERRIDE_VALUE, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("menu_thumbnail_upscale_threshold", &settings->uints.menu_thumbnail_upscale_threshold, true, menu_thumbnail_upscale_threshold, false);
@@ -1789,7 +1798,6 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("menu_xmb_animation_horizontal_highlight",   &settings->uints.menu_xmb_animation_horizontal_highlight, true, 0 /* TODO/FIXME - implement */, false);
    SETTING_UINT("menu_xmb_animation_move_up_down",   &settings->uints.menu_xmb_animation_move_up_down, true, 0 /* TODO/FIXME - implement */, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
-   SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
    SETTING_UINT("xmb_layout",                   &settings->uints.menu_xmb_layout, true, xmb_menu_layout, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
    SETTING_UINT("xmb_menu_color_theme",         &settings->uints.menu_xmb_color_theme, true, xmb_theme, false);
@@ -1827,7 +1835,11 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("netplay_share_analog",         &settings->uints.netplay_share_analog,  true, netplay_share_analog, false);
 #endif
 #ifdef HAVE_LANGEXTRA
+#ifdef VITA
+   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);
+#else
    SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, DEFAULT_USER_LANGUAGE, false);
+#endif
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
@@ -1867,6 +1879,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("playlist_entry_remove_enable",    &settings->uints.playlist_entry_remove_enable, true, playlist_entry_remove_enable, false);
    SETTING_UINT("playlist_show_inline_core_name",  &settings->uints.playlist_show_inline_core_name, true, playlist_show_inline_core_name, false);
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, playlist_sublabel_runtime_type, false);
+   SETTING_UINT("playlist_sublabel_last_played_style", &settings->uints.playlist_sublabel_last_played_style, true, DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, false);
 #endif
 
    *size = count;
@@ -2110,6 +2123,7 @@ void config_set_defaults(void)
    settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
    settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
    settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.localap_enable              = false;
 #endif
 
 #ifdef HAVE_MENU
@@ -3102,7 +3116,7 @@ static bool config_load_file(const char *path, settings_t *settings)
                   sizeof(global->name.savefile));
             fill_pathname_dir(global->name.savefile,
                   path_get(RARCH_PATH_BASENAME),
-                  file_path_str(FILE_PATH_SRM_EXTENSION),
+                  ".srm",
                   sizeof(global->name.savefile));
          }
       }
@@ -3127,7 +3141,7 @@ static bool config_load_file(const char *path, settings_t *settings)
                   sizeof(global->name.savestate));
             fill_pathname_dir(global->name.savestate,
                   path_get(RARCH_PATH_BASENAME),
-                  file_path_str(FILE_PATH_STATE_EXTENSION),
+                  ".state",
                   sizeof(global->name.savestate));
          }
       }
@@ -3252,19 +3266,19 @@ bool config_load_override(void)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
       config_directory, core_name,
       content_dir_name,
-      file_path_str(FILE_PATH_CONFIG_EXTENSION),
+      ".cfg",
       path_size);
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    free(config_directory);
@@ -3479,19 +3493,19 @@ bool config_load_remap(const char *directory_input_remapping)
    fill_pathname_join_special_ext(core_path,
          remap_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
          remap_directory, core_name,
          content_dir_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    fill_pathname_join_special_ext(game_path,
          remap_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         ".rmp",
          path_size);
 
    input_remapping_set_defaults(false);
@@ -3635,7 +3649,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       fill_pathname_join(buf_new, buf,
             path, path_size);
       fill_pathname_noext(autoconf_file, buf_new,
-            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            ".cfg",
             path_size);
 
       free(buf_new);
@@ -3645,7 +3659,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       fill_pathname_join(buf, autoconf_dir,
             path, path_size);
       fill_pathname_noext(autoconf_file, buf,
-            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            ".cfg",
             path_size);
    }
 
@@ -3994,19 +4008,19 @@ bool config_save_overrides(int override_type)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(content_path,
          config_directory, core_name,
          content_dir_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
          core_name,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         ".cfg",
          path_size);
 
    if (!conf)
@@ -4050,88 +4064,46 @@ bool config_save_overrides(int override_type)
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
          if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  bool_settings[i].ident, (*bool_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  bool_overrides[i].ident, (*bool_overrides[i].ptr));
             config_set_bool(conf, bool_overrides[i].ident,
                   (*bool_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
          if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  int_settings[i].ident, (*int_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  int_overrides[i].ident, (*int_overrides[i].ptr));
             config_set_int(conf, int_overrides[i].ident,
                   (*int_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)uint_settings_size; i++)
       {
          if ((*uint_settings[i].ptr) != (*uint_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  uint_settings[i].ident, (*uint_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  uint_overrides[i].ident, (*uint_overrides[i].ptr));
             config_set_int(conf, uint_overrides[i].ident,
                   (*uint_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)size_settings_size; i++)
       {
          if ((*size_settings[i].ptr) != (*size_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%d\n",
-                  size_settings[i].ident, (*size_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n",
-                  size_overrides[i].ident, (*size_overrides[i].ptr));
             config_set_int(conf, size_overrides[i].ident,
                   (int)(*size_overrides[i].ptr));
-         }
       }
       for (i = 0; i < (unsigned)float_settings_size; i++)
       {
          if ((*float_settings[i].ptr) != (*float_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%f\n",
-                  float_settings[i].ident, *float_settings[i].ptr);
-            RARCH_LOG("   override: %s=%f\n",
-                  float_overrides[i].ident, *float_overrides[i].ptr);
             config_set_float(conf, float_overrides[i].ident,
                   *float_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%s\n",
-                  array_settings[i].ident, array_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n",
-                  array_overrides[i].ident, array_overrides[i].ptr);
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
-         {
-            RARCH_LOG("   original: %s=%s\n",
-                  path_settings[i].ident, path_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n",
-                  path_overrides[i].ident, path_overrides[i].ptr);
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
-         }
       }
 
       for (i = 0; i < MAX_USERS; i++)

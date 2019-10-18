@@ -15,7 +15,7 @@ void element_init(element_t *elem, const char *name, int components_count)
    elem->render_bounds = make_bounds_unit();
 
    elem->components = (component_t*)(components_count > 0 ?
-      calloc(components_count, sizeof(component_t)) : NULL);
+         calloc(components_count, sizeof(component_t)) : NULL);
    elem->components_count = components_count;
 }
 
@@ -30,7 +30,7 @@ void element_copy(element_t *elem, const element_t *src)
    elem->render_bounds = src->render_bounds;
 
    elem->components = (component_t*)(src->components_count > 0 ?
-      calloc(src->components_count, sizeof(component_t)) : NULL);
+         calloc(src->components_count, sizeof(component_t)) : NULL);
 
    for (i = 0; i < src->components_count; ++i)
       component_copy(&elem->components[i], &src->components[i]);
@@ -40,7 +40,7 @@ void element_copy(element_t *elem, const element_t *src)
 
 void element_deinit(element_t *elem)
 {
-   int i;
+   unsigned i;
 
    for (i = 0; i < elem->components_count; ++i)
       component_deinit(&elem->components[i]);
@@ -51,12 +51,11 @@ void element_deinit(element_t *elem)
 
 void element_apply_orientation(element_t *elem, video_layout_orientation_t orientation)
 {
-   int i;
+   unsigned i;
 
    for (i = 0; i < elem->components_count; ++i)
    {
-      component_t *comp;
-      comp = &elem->components[i];
+      component_t *comp = &elem->components[i];
       comp->orientation ^= orientation;
 
       if (orientation & VIDEO_LAYOUT_SWAP_XY)

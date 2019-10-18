@@ -92,37 +92,37 @@ void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
    strlcpy(label, new_label, PATH_MAX_LENGTH);
 }
 
-bool left_parens(char *left)
+static bool left_parens(char *left)
 {
    return left[0] == '(';
 }
 
-bool right_parens(char *right)
+static bool right_parens(char *right)
 {
    return right[0] == ')';
 }
 
-bool left_brackets(char *left)
+static bool left_brackets(char *left)
 {
    return left[0] == '[';
 }
 
-bool right_brackets(char *right)
+static bool right_brackets(char *right)
 {
    return right[0] == ']';
 }
 
-bool left_parens_or_brackets(char *left)
+static bool left_parens_or_brackets(char *left)
 {
    return left[0] == '(' || left[0] == '[';
 }
 
-bool right_parens_or_brackets(char *right)
+static bool right_parens_or_brackets(char *right)
 {
    return right[0] == ')' || right[0] == ']';
 }
 
-bool left_exclusion(char *left,
+static bool left_exclusion(char *left,
       const char **strings, const size_t strings_count)
 {
    unsigned i;
@@ -145,19 +145,19 @@ bool left_exclusion(char *left,
    return false;
 }
 
-bool left_parens_or_brackets_excluding_region(char *left)
+static bool left_parens_or_brackets_excluding_region(char *left)
 {
    return left_parens_or_brackets(left)
       && !left_exclusion(left, region_strings, region_strings_length);
 }
 
-bool left_parens_or_brackets_excluding_disc(char *left)
+static bool left_parens_or_brackets_excluding_disc(char *left)
 {
    return left_parens_or_brackets(left)
       && !left_exclusion(left, disc_strings, disc_strings_length);
 }
 
-bool left_parens_or_brackets_excluding_region_or_disc(char *left)
+static bool left_parens_or_brackets_excluding_region_or_disc(char *left)
 {
    return left_parens_or_brackets(left)
       && !left_exclusion(left, region_strings, region_strings_length)

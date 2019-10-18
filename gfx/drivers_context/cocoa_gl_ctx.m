@@ -44,6 +44,9 @@
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
 #endif
+#ifdef HAVE_METAL
+#include "../common/metal_common.h"
+#endif
 
 typedef struct cocoa_ctx_data
 {
@@ -90,8 +93,26 @@ static unsigned g_major  = 0;
 @end
 #endif
 
-/* forward declaration */
-void *nsview_get_ptr(void);
+static CocoaView* g_instance;
+
+void *nsview_get_ptr(void)
+{
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+    return (BRIDGE void *)g_instance;
+}
+
+void nsview_set_ptr(CocoaView *p)
+{
+    g_instance = p;
+}
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 static NSOpenGLPixelFormat* g_format;
@@ -228,7 +249,7 @@ float get_backing_scale_factor(void)
 #if defined(HAVE_COCOA_METAL)
          NSView *g_view        = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-         CocoaView *g_view     = (CocoaView*)nsview_get_ptr();
+         CocoaView *g_view     = g_instance;
 #endif
          backing_scale_def     = (float)get_from_selector
          ([[g_view window] class], [g_view window], selector, &ret);
@@ -348,15 +369,8 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
-   ui_window_cocoa_t view;
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-#if defined(HAVE_COCOA)
-   view.data                      = (CocoaView*)nsview_get_ptr();
-#elif defined(HAVE_COCOA_METAL)
-   view.data                      = (BRIDGE void *)apple_platform.renderView;
-#endif
-
+   
    if (window)
    {
       char title[128];
@@ -366,7 +380,7 @@ static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
       video_driver_get_window_title(title, sizeof(title));
 
       if (title[0])
-         window->set_title(&view, title);
+         window->set_title((void*)video_driver_display_userdata_get(), title);
    }
 }
 #endif
@@ -466,19 +480,20 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-   CGRect size;
+   CGRect size, cgrect;
    GLsizei backingPixelWidth, backingPixelHeight;
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
+   CocoaView *g_view               = g_instance;
 #endif
-   CGRect cgrect                   = NSRectToCGRect([g_view frame]);
 #if MAC_OS_X_VERSION_10_7
    SEL selector                    = NSSelectorFromString(BOXSTRING("convertRectToBacking:"));
    if ([g_view respondsToSelector:selector])
       cgrect                       = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   else
 #endif
+      cgrect                       = NSRectToCGRect([g_view frame]);
    backingPixelWidth               = CGRectGetWidth(cgrect);
    backingPixelHeight              = CGRectGetHeight(cgrect);
    size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);

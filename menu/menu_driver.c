@@ -75,6 +75,16 @@
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
 #define DATETIME_CHECK_INTERVAL    1000000
 
+/* Number of pixels corner-to-corner on a 1080p
+ * display:
+ * > sqrt((1920 * 1920) + (1080 * 1080))
+ * Note: This is a double, so no suffix */
+#define DIAGONAL_PIXELS_1080P 2202.90717008229831581901
+
+/* Standard reference DPI value, used when determining
+ * DPI-aware menu scaling factors */
+#define REFERENCE_DPI 96.0f
+
 typedef struct menu_ctx_load_image
 {
    void *data;
@@ -166,6 +176,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
+#endif
+#ifdef HAVE_FPGA
+   &menu_display_ctx_fpga,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -1126,8 +1139,6 @@ int menu_entries_get_title(char *s, size_t len)
    if (!cbs)
       return -1;
 
-   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
-
    if (cbs && cbs->action_get_title)
    {
       int ret;
@@ -1136,6 +1147,7 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
+      menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
       ret = cbs->action_get_title(path, label, menu_type, s, len);
       if (ret == 1)
          strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
@@ -1152,31 +1164,35 @@ int menu_entries_get_core_title(char *s, size_t len)
    const char *core_name               = (system && !string_is_empty(system->library_name)) ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version            = (system && system->library_version) ? system->library_version : "";
 #if _MSC_VER == 1200
-   const char *extra_version           = " msvc6";
+   strlcpy(s, PACKAGE_VERSION " msvc6" " - ", len);
 #elif _MSC_VER == 1300
-   const char *extra_version           = " msvc2002";
+   strlcpy(s, PACKAGE_VERSION " msvc2002" " - ", len);
 #elif _MSC_VER == 1310
-   const char *extra_version           = " msvc2003";
+   strlcpy(s, PACKAGE_VERSION " msvc2003" " - ", len);
 #elif _MSC_VER == 1400
-   const char *extra_version           = " msvc2005";
+   strlcpy(s, PACKAGE_VERSION " msvc2005" " - ", len);
 #elif _MSC_VER == 1500
-   const char *extra_version           = " msvc2008";
+   strlcpy(s, PACKAGE_VERSION " msvc2008" " - ", len);
 #elif _MSC_VER == 1600
-   const char *extra_version           = " msvc2010";
+   strlcpy(s, PACKAGE_VERSION " msvc2010" " - ", len);
 #elif _MSC_VER == 1700
-   const char *extra_version           = " msvc2012";
+   strlcpy(s, PACKAGE_VERSION " msvc2012" " - ", len);
 #elif _MSC_VER == 1800
-   const char *extra_version           = " msvc2013";
+   strlcpy(s, PACKAGE_VERSION " msvc2013" " - ", len);
 #elif _MSC_VER == 1900
-   const char *extra_version           = " msvc2015";
+   strlcpy(s, PACKAGE_VERSION " msvc2015" " - ", len);
 #elif _MSC_VER >= 1910 && _MSC_VER < 2000
-   const char *extra_version           = " msvc2017";
+   strlcpy(s, PACKAGE_VERSION " msvc2017" " - ", len);
 #else
-   const char *extra_version           = "";
+   strlcpy(s, PACKAGE_VERSION " - ", len);
 #endif
-
-   snprintf(s, len, "%s%s - %s %s", PACKAGE_VERSION, extra_version,
-         core_name, core_version);
+   strlcat(s, core_name, len);
+   if (!string_is_empty(core_version))
+   {
+      strlcat(s, " (", len);
+      strlcat(s, core_version, len);
+      strlcat(s, ")", len);
+   }
 
    return 0;
 }
@@ -1339,7 +1355,8 @@ bool menu_entries_append_enum(file_list_t *list, const char *path,
    return true;
 }
 
-void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
@@ -1641,6 +1658,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vga"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_FPGA:
+         if (string_is_equal(video_driver, "fpga"))
+            return true;
+         break;
       case MENU_VIDEO_DRIVER_SWITCH:
          if (string_is_equal(video_driver, "switch"))
             return true;
@@ -1648,6 +1669,30 @@ static bool menu_display_check_compatibility(
    }
 
    return false;
+}
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+#if defined(__linux__) && !defined(ANDROID)
+   strftime(ptr, maxsize, format, timeptr);
+#else
+   strftime(ptr, maxsize, format, timeptr);
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
 }
 
 /* Display the date and time - time_mode will influence how
@@ -1677,55 +1722,62 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       /* Format string representation */
       switch (datetime->time_mode)
       {
-         case 0: /* Date and time */
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M:%S", tm_);
             break;
-         case 1: /* YY-MM-DD HH:MM */
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M", tm_);
             break;
-         case 2: /* MM-DD-YYYY HH:MM  */
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m-%d-%Y %H:%M", tm_);
             break;
-         case 3: /* Time */
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M:%S", tm_);
             break;
-         case 4: /* Time (hours-minutes) */
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M", tm_);
             break;
-         case 5: /* Date and time, without year and seconds */
+         case MENU_TIMEDATE_STYLE_DM_HM: /* DD/MM HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m %H:%M", tm_);
             break;
-         case 6:
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m/%d %H:%M", tm_);
             break;
-         case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
-#if defined(__linux__) && !defined(ANDROID)
-            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-               "%I : %M : %S %p", tm_);
-#else
-            {
-               char *local;
-
-               strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM: /* YYYY-MM-DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M:%S %p", tm_);
-               local = local_to_utf8_string_alloc(menu_datetime_cache);
-
-               if (local)
-               {
-                  strlcpy(menu_datetime_cache,
-                        local, sizeof(menu_datetime_cache));
-                  free(local);
-               }
-            }
-#endif
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %I:%M %p", tm_);
+            break;
       }
    }
 
@@ -1982,28 +2034,198 @@ void menu_display_unset_framebuffer_dirty_flag(void)
    menu_display_framebuf_dirty = false;
 }
 
-/* Get the preferred DPI at which to render the menu.
- * NOTE: Only MaterialUI menu driver so far uses this, neither
- * RGUI or XMB use this. */
-float menu_display_get_dpi(unsigned width, unsigned height)
+float menu_display_get_pixel_scale(unsigned width, unsigned height)
 {
-#ifdef RARCH_MOBILE
-   float diagonal         = 5.0f;
-#else
-   float diagonal         = 6.5f;
-#endif
-   /* Generic dpi calculation formula,
-    * the divider is the screen diagonal in inches */
-   float dpi              = sqrt(
-         (width * width) + (height * height)) / diagonal;
+   static unsigned last_width  = 0;
+   static unsigned last_height = 0;
+   static float scale          = 0.0f;
+   static bool scale_cached    = false;
+   settings_t *settings        = config_get_ptr();
 
+   /* We need to perform a square root here, which
+    * can be slow on some platforms (not *slow*, but
+    * it involves enough work that it's worth trying
+    * to optimise). We therefore cache the pixel scale,
+    * and only update on first run or when the video
+    * size changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
    {
-      settings_t *settings = config_get_ptr();
-      if (settings && settings->bools.menu_dpi_override_enable)
-         return settings->uints.menu_dpi_override_value;
+      /* Baseline reference is a 1080p display */
+      scale = (float)(
+            sqrt((double)((width * width) + (height * height))) /
+            DIAGONAL_PIXELS_1080P);
+
+      scale_cached = true;
+      last_width   = width;
+      last_height  = height;
    }
 
-   return dpi;
+   /* Apply user scaling factor */
+   if (settings)
+      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+            settings->floats.menu_scale_factor : 1.0f);
+
+   return scale;
+}
+
+float menu_display_get_dpi_scale(unsigned width, unsigned height)
+{
+   static unsigned last_width  = 0;
+   static unsigned last_height = 0;
+   static float scale          = 0.0f;
+   static bool scale_cached    = false;
+   settings_t *settings        = config_get_ptr();
+
+   /* Scale is based on display metrics - these are a fixed
+    * hardware property. To minimise performance overheads
+    * we therefore only call video_context_driver_get_metrics()
+    * on first run, or when the current video resolution changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      float diagonal_pixels;
+      float pixel_scale;
+      float dpi;
+      gfx_ctx_metrics_t metrics;
+
+      /* Determine the diagonal 'size' of the display
+       * (or window) in terms of pixels */
+      diagonal_pixels = (float)sqrt(
+            (double)((width * width) + (height * height)));
+
+      /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
+       * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
+       * unfortunate, and needs to be fixed at the gfx context driver
+       * level. Until this is done, all we can do is fallback to using
+       * the old legacy 'magic number' scaling on Mac platforms.
+       * Note: We use a rather ugly construct here so the 'Mac hack'
+       * can be added in one place, without polluting the rest of
+       * the code. */
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+      if (true)
+      {
+         scale        = (diagonal_pixels / 6.5f) / 212.0f;
+         scale_cached = true;
+         last_width   = width;
+         last_height  = height;
+
+         if (settings)
+            return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+                  settings->floats.menu_scale_factor : 1.0f);
+
+         return scale;
+      }
+#endif
+
+      /* Get pixel scale relative to baseline 1080p display */
+      pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+
+      /* Attempt to get display DPI */
+      metrics.type  = DISPLAY_METRIC_DPI;
+      metrics.value = &dpi;
+
+      if (video_context_driver_get_metrics(&metrics) && (dpi > 0.0f))
+      {
+         float display_size;
+         float dpi_scale;
+
+#if defined(ANDROID) || defined(HAVE_COCOATOUCH)
+         /* Android/iOS devices tell complete lies when
+          * reporting DPI values. From the Android devices
+          * I've had access to, the DPI is generally
+          * overestimated by 17%. All we can do is apply
+          * a blind correction factor... */
+         dpi = dpi * 0.83f;
+#endif
+
+         /* Note: If we are running in windowed mode, this
+          * 'display size' is actually the window size - which
+          * kinda makes a mess of everything. Since we cannot
+          * get fullscreen resolution when running in windowed
+          * mode, there is nothing we can do about this. So just
+          * treat the window as a display, and hope for the best... */
+         display_size = diagonal_pixels / dpi;
+         dpi_scale    = dpi / REFERENCE_DPI;
+
+         /* Note: We have tried leveraging every possible metric
+          * (and numerous studies on TV/monitor/mobile device
+          * usage habits) to determine an appropriate auto scaling
+          * factor. *None of these 'smart'/technical methods work
+          * consistently in the real world* - there is simply too
+          * much variance.
+          * So instead we have implemented a very fuzzy/loose
+          * method which is crude as can be, but actually has
+          * some semblance of usability... */
+
+         if (display_size > 24.0f)
+         {
+            /* DPI scaling fails miserably when using large
+             * displays. Having a UI element that's 1 inch high
+             * on all screens might seem like a good idea - until
+             * you realise that a HTPC user is probably sitting
+             * several metres from their TV, which makes something
+             * 1 inch high virtually invisible.
+             * So we make some assumptions:
+             * - Normal size displays <= 24 inches are probably
+             *   PC monitors, with an eye-to-screen distance of
+             *   1 arm length. Under these conditions, fixed size
+             *   (DPI scaled) UI elements should be visible for most
+             *   users
+             * - Large displays > 24 inches start to encroach on
+             *   TV territory. Once we start working with TVs, we
+             *   have to consider users sitting on a couch - and
+             *   in this situation, we fall back to the age-old
+             *   standard of UI elements occupying a fixed fraction
+             *   of the display size (i.e. just look at the menu of
+             *   any console system for the past decade)
+             * - 24 -> 32 inches is a grey area, where the display
+             *   might be a monitor or a TV. Above 32 inches, a TV
+             *   is almost a certainty. So we simply lerp between
+             *   dpi scaling and pixel scaling as the display size
+             *   increases from 24 to 32 */
+            float fraction = (display_size > 32.0f) ? 32.0f : display_size;
+            fraction       = fraction - 24.0f;
+            fraction       = fraction / (32.0f - 24.0f);
+
+            scale = ((1.0f - fraction) * dpi_scale) + (fraction * pixel_scale);
+         }
+         else if (display_size < 12.0f)
+         {
+            /* DPI scaling also fails when using very small
+             * displays - i.e. mobile devices (tablets/phones).
+             * That 1 inch UI element is going to look pretty
+             * dumb on a 5 inch screen in landscape orientation...
+             * We're essentially in the opposite situation to the
+             * TV case above, and it turns out that a similar
+             * solution provides relief: as screen size reduces
+             * from 12 inches to zero, we lerp from dpi scaling
+             * to pixel scaling */
+            float fraction = display_size / 12.0f;
+
+            scale = ((1.0f - fraction) * pixel_scale) + (fraction * dpi_scale);
+         }
+         else
+            scale = dpi_scale;
+      }
+      /* If DPI retrieval is unsupported, all we can do
+       * is use the raw pixel scale */
+      else
+         scale = pixel_scale;
+
+      scale_cached = true;
+      last_width   = width;
+      last_height  = height;
+   }
+
+   /* Apply user scaling factor */
+   if (settings)
+      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+            settings->floats.menu_scale_factor : 1.0f);
+
+   return scale;
 }
 
 bool menu_display_driver_exists(const char *s)
@@ -2670,7 +2892,6 @@ void menu_display_draw_cursor(
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->bools.video_fullscreen ||
        !menu_display_has_windowed;
-
    if (!settings->bools.menu_mouse_enable || !cursor_visible)
       return;
 
@@ -2767,12 +2988,12 @@ void menu_display_snow(int width, int height)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(
-               MENU_MOUSE_X_AXIS);
+         menu_input_pointer_t pointer;
+         menu_input_get_pointer_state(&pointer);
 
          p->y            += p->yspeed;
          p->x            += menu_display_scalef(
-               mouse_x, 0, width, -0.3, 0.3);
+               pointer.x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < height
@@ -3053,6 +3274,10 @@ static void bundle_decompressed(retro_task_t *task,
 static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
+
+   /* Ensure that menu pointer input is correctly
+    * initialised */
+   menu_input_reset();
 
    if (!menu_entries_init())
       return false;
@@ -3420,7 +3645,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                scroll_index_list[i] = 0;
 
-            menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
+            menu_input_reset();
 
             if (menu_driver_ctx && menu_driver_ctx->free)
                menu_driver_ctx->free(menu_userdata);
@@ -3451,6 +3676,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_display_framebuf_pitch  = 0;
             menu_entries_settings_deinit();
             menu_entries_list_deinit();
+
+            if (menu_driver_data->core_buf)
+               free(menu_driver_data->core_buf);
+            menu_driver_data->core_buf       = NULL;
 
             menu_entries_need_refresh        = false;
             menu_entries_nonblocking_refresh = false;
@@ -3495,19 +3724,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          return false;
-      case RARCH_MENU_CTL_POINTER_TAP:
-         {
-            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
-            {
-               point->retcode = 0;
-               return false;
-            }
-            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
-                  point->x, point->y, point->ptr,
-                  point->cbs, point->entry, point->action);
-         }
-         break;
       case RARCH_MENU_CTL_POINTER_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
@@ -3531,6 +3747,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             point->retcode = menu_driver_ctx->pointer_up(menu_userdata,
                   point->x, point->y, point->ptr,
+                  point->gesture,
                   point->cbs, point->entry, point->action);
          }
          break;
@@ -3842,7 +4059,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
 
@@ -3873,7 +4090,8 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
-                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     strlcat(rom_buff,
+                           path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                         strlcat(rom_buff, "|", sizeof(rom_buff));
                   }
@@ -3887,7 +4105,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      {
                         if (verbosity_is_enabled())
                         {
-                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                           RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                         }
                      }
                      
@@ -3928,7 +4146,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
                   

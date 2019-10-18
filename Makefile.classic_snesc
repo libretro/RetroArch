@@ -1,0 +1,53 @@
+# This build was put together and is maintained by ModMyClassic.com for Libretro.
+# The purpose is to give Libretro a proper "official" build platform for classic consoles.
+# If you need any help in building for the classics or have any questions then please visit
+# https://modmyclassic.com and we will help in any way possible!
+
+# INFO: THIS BUILD TARGET ALSO COVERS THE NESC!!!
+
+# Building Prerequisites ##############
+# arm-linux-gnueabihf-strip
+# patchelf
+
+include version.all
+
+# General Shared Variables ############
+TARGET := retroarch
+
+# Libretro Defines ####################
+#HAVE_CLASSIC = Classic Hook, disable some features
+#HAVE_C_A7A7 = Classic Armv7 Cortex A7 optimisation override
+#HAVE_HAKCHI = Hakchi Hook, change default configurations etc (TODO)
+
+all: $(TARGET)
+
+retroarch:
+	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
+	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
+	CFLAGS="-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard" ./configure --host=arm-linux-gnueabihf --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
+	make HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
+	arm-linux-gnueabihf-strip -v retroarch
+	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
+	@echo "*********************************************************************"
+	@echo "***     NES/SNES Classic RetroArch binary built successfully!     ***"
+	@echo "*********************************************************************"
+clean:
+	rm -rf obj-unix
+	rm -f *.d
+	rm -f *.o
+	rm -f audio/*.o
+	rm -f conf/*.o
+	rm -f gfx/*.o
+	rm -f gfx/drivers_font/*.o
+	rm -f gfx/drivers_font_renderer/*.o
+	rm -f gfx/drivers_context/*.o
+	rm -f gfx/py_state/*.o
+	rm -f compat/*.o
+	rm -f record/*.o
+	rm -f input/*.o
+	rm -f tools/*.o
+	rm -f $(BINDIR)/retroarch
+	rm -f $(BINDIR)/retroarch-joyconfig
+	rm -f $(PNDDIR)/readme.html
+	rm -f retroarch
+

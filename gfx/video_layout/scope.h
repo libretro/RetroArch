@@ -21,8 +21,7 @@ typedef struct scope
    int        groups_count;
 
    char       eval[SCOPE_BUFFER_SIZE];
-}
-scope_t;
+} scope_t;
 
 void        scope_init         (scope_t *scope);
 void        scope_deinit       (scope_t *scope);

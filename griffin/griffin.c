@@ -157,6 +157,7 @@ ACHIEVEMENTS
 #endif
 
 #include "../libretro-common/formats/json/jsonsax.c"
+#include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
 #include "../cheevos-new/cheevos.c"
@@ -405,6 +406,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
+#include "../gfx/common/sdl2_common.c"
 #endif
 
 #ifdef HAVE_VG
@@ -1237,7 +1239,6 @@ MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
-#include "../menu/menu_content.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"

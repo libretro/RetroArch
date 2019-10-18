@@ -260,8 +260,11 @@ static bool screenshot_dump(
    if (!fullpath)
    {
       if (savestate)
-         snprintf(state->filename,
-               sizeof(state->filename), "%s.png", name_base);
+      {
+         strlcpy(state->filename,
+               name_base, sizeof(state->filename));
+         strlcat(state->filename, ".png", sizeof(state->filename));
+      }
       else
       {
          if (settings->bools.auto_screenshot_filename)
@@ -285,8 +288,11 @@ static bool screenshot_dump(
                   IMG_EXT, sizeof(state->shotname));
          }
          else
-            snprintf(state->shotname, sizeof(state->shotname),
-                  "%s.png", path_basename(name_base));
+         {
+            strlcpy(state->shotname, path_basename(name_base),
+                  sizeof(state->shotname));
+            strlcat(state->shotname, ".png", sizeof(state->shotname));
+         }
 
          if (  string_is_empty(screenshot_dir) || 
                settings->bools.screenshots_in_content_dir)

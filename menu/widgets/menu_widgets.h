@@ -77,4 +77,6 @@ void menu_widgets_set_libretro_message(const char *message, unsigned duration);
  * enable_menu_widgets to true for that driver */
 void menu_widgets_frame(video_frame_info_t *video_info);
 
+bool menu_widgets_set_fps_text(const char *new_fps_text);
+
 #endif

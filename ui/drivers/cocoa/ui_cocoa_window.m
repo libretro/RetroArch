@@ -59,8 +59,7 @@ static void ui_window_cocoa_set_visible(void *data,
 
 static void ui_window_cocoa_set_title(void *data, char *buf)
 {
-   ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
-   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)data;
    const char* const text   = buf; /* < Can't access buffer directly in the block */
    [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 }

@@ -178,7 +178,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
  *
  * E.g. path /a/b/e/f.cgp with base /a/b/c/d/ turns into ../../e/f.cgp
  **/
-void path_relative_to(char *out, const char *path, const char *base, size_t size);
+size_t path_relative_to(char *out, const char *path, const char *base, size_t size);
 
 /**
  * path_is_absolute:
@@ -226,7 +226,7 @@ void fill_pathname(char *out_path, const char *in_path,
  * E.g.:
  * out_filename = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
  **/
-void fill_dated_filename(char *out_filename,
+size_t fill_dated_filename(char *out_filename,
       const char *ext, size_t size);
 
 /**
@@ -259,7 +259,7 @@ void fill_str_dated_filename(char *out_filename,
  * present in 'in_path', it will be ignored.
  *
  */
-void fill_pathname_noext(char *out_path, const char *in_path,
+size_t fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size);
 
 /**
@@ -289,7 +289,7 @@ char *find_last_slash(const char *str);
  * E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_content/foo.c",
  * replace = ".asm" => in_dir = "/tmp/some_dir/foo.c.asm"
  **/
-void fill_pathname_dir(char *in_dir, const char *in_basename,
+size_t fill_pathname_dir(char *in_dir, const char *in_basename,
       const char *replace, size_t size);
 
 /**
@@ -300,12 +300,12 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  *
  * Copies basename of @in_path into @out_path.
  **/
-void fill_pathname_base(char *out_path, const char *in_path, size_t size);
+size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
 void fill_pathname_base_noext(char *out_dir,
       const char *in_path, size_t size);
 
-void fill_pathname_base_ext(char *out,
+size_t fill_pathname_base_ext(char *out,
       const char *in_path, const char *ext,
       size_t size);
 
@@ -376,20 +376,20 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * Makes sure not to get  two consecutive slashes
  * between directory and path.
  **/
-void fill_pathname_join(char *out_path, const char *dir,
+size_t fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
-void fill_pathname_join_special_ext(char *out_path,
+size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,
       size_t size);
 
-void fill_pathname_join_concat_noext(char *out_path,
+size_t fill_pathname_join_concat_noext(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size);
 
-void fill_pathname_join_concat(char *out_path,
+size_t fill_pathname_join_concat(char *out_path,
       const char *dir, const char *path,
       const char *concat,
       size_t size);
@@ -408,10 +408,10 @@ void fill_pathname_join_noext(char *out_path,
  * Joins a directory (@dir) and path (@path) together
  * using the given delimiter (@delim).
  **/
-void fill_pathname_join_delim(char *out_path, const char *dir,
+size_t fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size);
 
-void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+size_t fill_pathname_join_delim_concat(char *out_path, const char *dir,
       const char *path, const char delim, const char *concat,
       size_t size);
 
@@ -430,7 +430,7 @@ void fill_pathname_join_delim_concat(char *out_path, const char *dir,
  * E.g.: "/path/to/game.img" -> game.img
  *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
  */
-void fill_short_pathname_representation(char* out_rep,
+size_t fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size);
 
 void fill_short_pathname_representation_noext(char* out_rep,

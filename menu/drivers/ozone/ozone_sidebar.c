@@ -559,8 +559,7 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
          settings->paths.directory_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
-   info.exts                    = strdup(
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
@@ -623,7 +622,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (!path)
          continue;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!strstr(path, ".lpl"))
          continue;
 
       {
@@ -645,14 +644,14 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                PATH_MAX_LENGTH * sizeof(char));
 
          fill_pathname_join_concat(texturepath, icons_path, sysname,
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, icons_path, "default",
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          ti.width         = 0;
@@ -673,7 +672,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          }
 
          fill_pathname_join_delim(sysname, sysname,
-               file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+               "content.png", '-',
                PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, icons_path, PATH_MAX_LENGTH * sizeof(char));
 
@@ -686,7 +685,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             strlcat(icons_path, path_default_slash(), PATH_MAX_LENGTH * sizeof(char));
             strlcat(icons_path, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, icons_path,
-                  file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+                  "content.png", '-',
                   PATH_MAX_LENGTH * sizeof(char));
          }
 
@@ -764,7 +763,7 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
       file_list_get_at_offset(ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!path || !strstr(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);

@@ -173,7 +173,7 @@ static char *strip_comment(char *str)
       else if (!cut_comment && literal)
       {
          cut_comment = true;
-         str         = literal + 1;
+         str         = (literal < string_end) ? literal + 1 : string_end;
       }
       else
       {

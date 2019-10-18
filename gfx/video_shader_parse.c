@@ -354,22 +354,24 @@ static bool video_shader_parse_textures(config_file_t *conf,
       fill_pathname_resolve_relative(shader->lut[shader->luts].path,
             conf->path, tmp_path, sizeof(shader->lut[shader->luts].path));
 
-
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
 
-      snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
+      strlcpy(id_filter, id, sizeof(id_filter));
+      strlcat(id_filter, "_linear", sizeof(id_filter));
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ?
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      snprintf(id_wrap, sizeof(id_wrap), "%s_wrap_mode", id);
+      strlcpy(id_wrap, id, sizeof(id_wrap));
+      strlcat(id_wrap, "_wrap_mode", sizeof(id_wrap));
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
-      snprintf(id_mipmap, sizeof(id_mipmap), "%s_mipmap", id);
+      strlcpy(id_mipmap, id, sizeof(id_mipmap));
+      strlcat(id_mipmap, "_mipmap", sizeof(id_mipmap));
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
@@ -1090,10 +1092,6 @@ void video_shader_write_conf_preset(config_file_t *conf,
 
          for (i = 0; i < shader->luts; i++)
          {
-            char key[128];
-
-            key[0] = '\0';
-
             if (preset_path)
             {
                strlcpy(tmp, shader->lut[i].path, tmp_size);
@@ -1107,20 +1105,31 @@ void video_shader_write_conf_preset(config_file_t *conf,
 
             if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
             {
-               snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_linear", sizeof(key));
                config_set_bool(conf, key,
                      shader->lut[i].filter == RARCH_FILTER_LINEAR);
             }
 
-            snprintf(key, sizeof(key),
-                  "%s_wrap_mode", shader->lut[i].id);
-            config_set_string(conf, key,
-                  wrap_mode_to_str(shader->lut[i].wrap));
+            {
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_wrap_mode", sizeof(key));
+               config_set_string(conf, key,
+                     wrap_mode_to_str(shader->lut[i].wrap));
+            }
 
-            snprintf(key, sizeof(key),
-                  "%s_mipmap", shader->lut[i].id);
-            config_set_bool(conf, key,
-                  shader->lut[i].mipmap);
+            {
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_mipmap", sizeof(key));
+               config_set_bool(conf, key,
+                     shader->lut[i].mipmap);
+            }
          }
       }
    }
@@ -1159,7 +1168,7 @@ const char *video_shader_to_str(enum rarch_shader_type type)
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    gfx_ctx_flags_t flags;
-   enum display_flags testflag;
+   enum display_flags testflag = GFX_CTX_FLAGS_NONE;
 
    flags.flags     = 0;
 
@@ -1191,12 +1200,12 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
    switch (type)
    {
       case RARCH_SHADER_GLSL:
-         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+         return ".glslp";
       case RARCH_SHADER_SLANG:
-         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+         return ".slangp";
       case RARCH_SHADER_HLSL:
       case RARCH_SHADER_CG:
-         return file_path_str(FILE_PATH_CGP_EXTENSION);
+         return ".cgp";
       default:
          break;
    }
@@ -1207,6 +1216,7 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 bool video_shader_any_supported(void)
 {
    gfx_ctx_flags_t flags;
+   flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
    return

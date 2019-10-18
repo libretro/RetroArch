@@ -66,9 +66,7 @@ int get_int(const char *str)
 
 float get_dec(const char *str)
 {
-   float res;
-
-   res = 0.0f;
+   float res = 0.0f;
    sscanf(str, "%f", &res);
 
    return res;
@@ -152,12 +150,16 @@ video_layout_bounds_t make_bounds_unit(void)
    return bounds;
 }
 
-video_layout_bounds_t bounds_union(const video_layout_bounds_t *a, const video_layout_bounds_t *b)
+video_layout_bounds_t bounds_union(
+      const video_layout_bounds_t *a,
+      const video_layout_bounds_t *b)
 {
    video_layout_bounds_t bounds;
 
-   if (!bounds_valid(a)) return *b;
-   if (!bounds_valid(b)) return *a;
+   if (!bounds_valid(a))
+      return *b;
+   if (!bounds_valid(b))
+      return *a;
 
    bounds.x = MIN(a->x, b->x);
    bounds.y = MIN(a->y, b->y);
@@ -167,7 +169,9 @@ video_layout_bounds_t bounds_union(const video_layout_bounds_t *a, const video_l
    return bounds;
 }
 
-void bounds_scale(video_layout_bounds_t *dst, const video_layout_bounds_t *dim)
+void bounds_scale(
+      video_layout_bounds_t *dst,
+      const video_layout_bounds_t *dim)
 {
    dst->x *= dim->w;
    dst->y *= dim->h;

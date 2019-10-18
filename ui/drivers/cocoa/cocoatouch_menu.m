@@ -717,9 +717,11 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
                    target:weakSelf
                    action:@selector(menuBack)];
 
-   [self set_rightbutton:BOXSTRING("Switch")
-                   target:[RetroArch_iOS get]
-                   action:@selector(showGameView)];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self set_rightbutton:BOXSTRING("Switch")
+                       target:[RetroArch_iOS get]
+                       action:@selector(showGameView)];
+    });
 }
 
 - (void) set_leftbutton:(NSString *)title target:(id)target action:(SEL)action

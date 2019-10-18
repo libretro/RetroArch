@@ -28,6 +28,10 @@
 
 #include "SDL.h"
 
+#ifdef HAVE_SDL2
+#include "../common/sdl2_common.h"
+#endif
+
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major   = 2;
 static unsigned       g_minor = 1;
@@ -214,6 +218,14 @@ static bool sdl_ctx_set_video_mode(void *data,
       goto error;
 
 #ifdef HAVE_SDL2
+#if defined(_WIN32)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_WIN32);
+#elif defined(HAVE_X11)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_X11);
+#elif defined(HAVE_COCOA)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_OSX);
+#endif
+
    if (sdl->g_ctx)
       video_driver_set_video_cache_context_ack();
    else
@@ -276,20 +288,18 @@ static void sdl_ctx_get_video_size(void *data,
 static void sdl_ctx_update_title(void *data, void *data2)
 {
    char title[128];
-
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
 
-#ifdef HAVE_SDL2
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
-
-   if (sdl && title[0])
-      SDL_SetWindowTitle(sdl->g_win, title);
-#else
    if (title[0])
+   {
+#ifdef HAVE_SDL2
+      SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
+#else
       SDL_WM_SetCaption(title, NULL);
 #endif
+   }
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit,

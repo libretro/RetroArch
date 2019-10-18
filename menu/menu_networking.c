@@ -80,7 +80,7 @@ unsigned print_buf_lines(file_list_t *list, char *buf,
       if (line_start[ln] == '\n')
          line_start[ln] = '\0';
 
-      str_list      = string_split(line_start, " ");
+      str_list         = string_split(line_start, " ");
 
       if (str_list->elems[0].data)
          core_date     = str_list->elems[0].data;

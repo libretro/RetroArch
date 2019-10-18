@@ -992,7 +992,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                strlcpy(path, global->name.savestate, path_size);
          }
 
-         strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
+         strlcat(path, ".png", path_size);
 
          if (path_is_valid(path))
          {
@@ -1680,9 +1680,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          free(tmp);
       }
 
-      strlcat(path,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            path_size);
+      strlcat(path, ".png", path_size);
 
       if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
@@ -1957,7 +1955,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!path || !strstr(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1977,8 +1975,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
          settings->paths.directory_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
-   info.exts                    = strdup(
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
@@ -2056,7 +2053,7 @@ static void xmb_context_reset_horizontal_list(
       if (!path)
          continue;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!strstr(path, ".lpl"))
          continue;
 
       {
@@ -2081,14 +2078,14 @@ static void xmb_context_reset_horizontal_list(
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
                fill_pathname_join_concat(texturepath, iconpath, "default",
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          ti.width         = 0;
@@ -2108,9 +2105,8 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         fill_pathname_join_delim(sysname, sysname,
-               file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
-               PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join_delim(sysname, sysname, "content.png",
+               '-', PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, iconpath, PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
 
@@ -2120,7 +2116,7 @@ static void xmb_context_reset_horizontal_list(
          {
             strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
             fill_pathname_join_delim(content_texturepath, iconpath,
-                  file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+                  "content.png", '-',
                   PATH_MAX_LENGTH * sizeof(char));
          }
 
@@ -2522,6 +2518,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_CORE_DELETE:
+      case MENU_ENUM_LABEL_DELETE_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_OSD];
@@ -3327,18 +3324,16 @@ static void xmb_render(void *data,
       unsigned width, unsigned height, bool is_idle)
 {
    size_t i;
+   float scale_factor;
+   menu_input_pointer_t pointer;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
-   bool mouse_enable        = settings->bools.menu_mouse_enable;
-   bool pointer_enable      = settings->bools.menu_pointer_enable;
-
-   float scale_factor;
 
    if (!xmb)
       return;
 
-   scale_factor = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   scale_factor = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
 
    if (scale_factor >= 0.1f && scale_factor != xmb->previous_scale_factor)
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
@@ -3346,34 +3341,111 @@ static void xmb_render(void *data,
 
    xmb->previous_scale_factor = scale_factor;
 
-   if (pointer_enable || mouse_enable)
+   menu_input_get_pointer_state(&pointer);
+
+   if (pointer.type != MENU_POINTER_DISABLED)
    {
-      size_t selection  = menu_navigation_get_selection();
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
-         + (xmb->cursor_size/2);
-      unsigned first = 0, last = end;
+      size_t selection     = menu_navigation_get_selection();
+      int16_t margin_top   = (int16_t)xmb->margins_screen_top;
+      int16_t margin_left  = (int16_t)xmb->margins_screen_left;
+      int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
+      int16_t pointer_x    = pointer.x;
+      int16_t pointer_y    = pointer.y;
 
-      if (height)
-         xmb_calculate_visible_range(xmb, height,
-               end, (unsigned)selection, &first, &last);
+      /* This must be set every frame when using a pointer,
+       * otherwise touchscreen input breaks when changing
+       * orientation */
+      menu_display_set_width(width);
+      menu_display_set_height(height);
 
-      for (i = first; i <= last; i++)
+      /* When determining current pointer selection, we
+       * only track pointer movements between the left
+       * and right screen margins */
+      if ((pointer_x > margin_left) && (pointer_x < margin_right))
       {
-         float item_y1     = xmb->margins_screen_top
-            + xmb_item_y(xmb, (int)i, selection);
-         float item_y2     = item_y1 + xmb->icon_size;
+         unsigned first = 0;
+         unsigned last = end;
 
-         if (pointer_enable)
+         if (height)
+            xmb_calculate_visible_range(xmb, height,
+                  end, (unsigned)selection, &first, &last);
+
+         for (i = first; i <= last; i++)
          {
-            if (pointer_y > item_y1 && pointer_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &i);
+            float entry_size      = (i == selection) ?
+                  xmb->icon_spacing_vertical * xmb->active_item_factor : xmb->icon_spacing_vertical;
+            float half_entry_size = entry_size * 0.5f;
+            float y_curr;
+            int y1;
+            int y2;
+
+            y_curr = xmb_item_y(xmb, (int)i, selection) + xmb->margins_screen_top;
+
+            y1 = (int)((y_curr - half_entry_size) + 0.5f);
+            y2 = (int)((y_curr + half_entry_size) + 0.5f);
+
+            if ((pointer_y > y1) && (pointer_y < y2))
+            {
+               menu_input_set_pointer_selection(i);
+               break;
+            }
+         }
+      }
+
+      /* Areas beyond the top/right margins are used
+       * as a sort of virtual dpad:
+       * - Above top margin: navigate left/right
+       * - Beyond right margin: navigate up/down */
+      if ((pointer_y < margin_top) || (pointer_x > margin_right))
+      {
+         menu_entry_t entry;
+
+         if (pointer.press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
+         {
+            menu_entry_init(&entry);
+            entry.path_enabled       = false;
+            entry.label_enabled      = false;
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
+            menu_entry_get(&entry, 0, selection, NULL, true);
          }
 
-         if (mouse_enable)
+         switch (pointer.press_direction)
          {
-            if (mouse_y > item_y1 && mouse_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
+            case MENU_INPUT_PRESS_DIRECTION_UP:
+               /* Note: Direction is inverted, since 'up' should
+                * move list upwards */
+               if (pointer_x > margin_right)
+                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_DOWN);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_DOWN:
+               /* Note: Direction is inverted, since 'down' should
+                * move list downwards */
+               if (pointer_x > margin_right)
+                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_UP);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_LEFT:
+               /* Navigate left
+                * Note: At the top level, navigating left
+                * means switching to the 'next' horizontal list,
+                * which is actually a movement to the *right* */
+               if (pointer_y < margin_top)
+                  menu_entry_action(
+                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_RIGHT:
+               /* Navigate right
+                * Note: At the top level, navigating right
+                * means switching to the 'previous' horizontal list,
+                * which is actually a movement to the *left* */
+               if (pointer_y < margin_top)
+                  menu_entry_action(
+                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+               break;
+            default:
+               /* Do nothing */
+               break;
          }
       }
    }
@@ -3569,7 +3641,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (!xmb)
       return;
 
-   scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   scale_factor                            = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
    thumbnail_scale_factor                  = ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
 
@@ -4328,14 +4400,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Cursor image */
    if (xmb->mouse_show)
    {
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
       menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       menu_display_draw_cursor(
             video_info,
             &coord_white[0],
             xmb->cursor_size,
             xmb->textures.list[XMB_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            pointer.x,
+            pointer.y,
             width,
             height);
    }
@@ -4349,7 +4424,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
-      (settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100);
+      (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
 
    xmb->above_subitem_offset     =   1.5;
    xmb->above_item_offset        =  -1.0;
@@ -4406,10 +4481,10 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
-      ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
+      ((settings->floats.menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
 #ifdef _3DS
    scale_factor                  =
-      settings->uints.menu_xmb_scale_factor / 400.0;
+      settings->floats.menu_scale_factor / 4.0f;
 #endif
 
    xmb->above_subitem_offset     =  1.5;
@@ -4610,7 +4685,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb_handle_t *xmb          = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
-   float scale_value          = settings->uints.menu_xmb_scale_factor;
+   float scale_value          = settings->floats.menu_scale_factor * 100.0f;
 
    /* scaling multiplier formulas made from these values:     */
    /* xmb_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
@@ -5956,8 +6031,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-   info.exts                    =
-      strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
@@ -5984,26 +6058,158 @@ error:
    return false;
 }
 
-static int xmb_pointer_tap(void *userdata,
+static int xmb_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned header_height = menu_display_get_header_height();
+   xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
+   size_t selection       = menu_navigation_get_selection();
+   unsigned end           = (unsigned)menu_entries_get_size();
+   unsigned width;
+   unsigned height;
+   int16_t margin_top;
+   int16_t margin_left;
+   int16_t margin_right;
 
-   if (y < header_height)
-   {
-      size_t selection = menu_navigation_get_selection();
-      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-   else if (ptr <= (menu_entries_get_size() - 1))
-   {
-      size_t selection         = menu_navigation_get_selection();
-      if (ptr == selection && cbs && cbs->action_select)
-         return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+   if (!xmb)
+      return -1;
 
-      menu_navigation_set_selection(ptr);
-      menu_driver_navigation_set(false);
+   video_driver_get_size(&width, &height);
+   margin_top   = (int16_t)xmb->margins_screen_top;
+   margin_left  = (int16_t)xmb->margins_screen_left;
+   margin_right = (int16_t)((float)width - xmb->margins_screen_left);
+
+   switch (gesture)
+   {
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
+         /* - A touch in the left margin:
+          *   > ...triggers a 'cancel' action beneath the top margin
+          *   > ...triggers a 'search' action above the top margin
+          * - A touch in the right margin triggers a 'select' action
+          *   for the current item
+          * - Between the left/right margins input is handled normally */
+         if (x < margin_left)
+         {
+            if (y >= margin_top)
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            else
+               return menu_input_dialog_start_search() ? 0 : -1;
+         }
+         else if (x > margin_right)
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+         else if (ptr <= (end - 1))
+         {
+            /* If pointer item is already 'active', perform 'select' action */
+            if (ptr == selection)
+               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+
+            /* ...otherwise navigate to the current pointer item */
+            menu_navigation_set_selection(ptr);
+            menu_driver_navigation_set(false);
+         }
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= end - 1) && (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_LEFT:
+         /* Navigate left
+          * Note: At the top level, navigating left
+          * means switching to the 'next' horizontal list,
+          * which is actually a movement to the *right* */
+         if (y > margin_top)
+            menu_entry_action(
+                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_RIGHT:
+         /* Navigate right
+          * Note: At the top level, navigating right
+          * means switching to the 'previous' horizontal list,
+          * which is actually a movement to the *left* */
+         if (y > margin_top)
+            menu_entry_action(
+                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_UP:
+         /* Swipe up in left margin: ascend alphabet */
+         if (x < margin_left)
+            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_DOWN);
+         else if (x < margin_right)
+         {
+            /* Swipe up between left and right margins:
+             * move selection pointer down by 1 'page' */
+            unsigned first = 0;
+            unsigned last  = end;
+
+            if (height)
+               xmb_calculate_visible_range(xmb, height,
+                     end, (unsigned)selection, &first, &last);
+
+            if (last < end)
+            {
+               menu_navigation_set_selection((size_t)last);
+               menu_driver_navigation_set(true);
+            }
+            else
+               menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
+         }
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_DOWN:
+         /* Swipe down in left margin: descend alphabet */
+         if (x < margin_left)
+            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_UP);
+         else if (x < margin_right)
+         {
+            /* Swipe down between left and right margins:
+             * move selection pointer up by 1 'page' */
+            unsigned bottom_idx = (unsigned)selection + 1;
+            size_t new_idx;
+            unsigned step;
+
+            /* Determine index of entry at bottom of screen
+             * Note: cannot use xmb_calculate_visible_range()
+             * here because there may not be sufficient entries
+             * to reach the bottom of the screen - i.e. we just
+             * want an index offset to subtract from the current
+             * selection... */
+            while (true)
+            {
+               float top = xmb_item_y(xmb, bottom_idx, selection) + xmb->margins_screen_top;
+
+               if (top > height)
+               {
+                  /* Since this checks the top position, the
+                   * final index is always 1 greater than it
+                   * should be... */
+                  bottom_idx--;
+                  break;
+               }
+
+               bottom_idx++;
+            }
+
+            step     = (bottom_idx >= selection) ? bottom_idx - selection : 0;
+            new_idx  = (selection  > step)       ? selection - step       : 0;
+
+            if (new_idx > 0)
+            {
+               menu_navigation_set_selection(new_idx);
+               menu_driver_navigation_set(true);
+            }
+            else
+            {
+               bool pending_push = false;
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            }
+         }
+         break;
+      default:
+         /* Ignore input */
+         break;
    }
 
    return 0;
@@ -6065,7 +6271,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_load_image,
    "xmb",
    xmb_environ,
-   xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
    xmb_refresh_thumbnail_image,
@@ -6076,7 +6281,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
    NULL, /* pointer_down */
-   NULL, /* pointer_up   */
+   xmb_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
    xmb_get_load_content_animation_data
 #else

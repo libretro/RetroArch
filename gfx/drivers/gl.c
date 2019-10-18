@@ -3064,8 +3064,9 @@ static bool gl2_frame(void *data, const void *frame,
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
-   video_info->cb_update_window_title(
-         video_info->context_data, video_info);
+   if (video_info->cb_update_window_title)
+      video_info->cb_update_window_title(
+            video_info->context_data, video_info);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)

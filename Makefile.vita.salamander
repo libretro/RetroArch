@@ -21,7 +21,7 @@ RARCH_DEFINES = -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
+LIBS = -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub\
      -lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceAudio_stub -lSceFiber_stub\
      -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
      -lSceMotion_stub -lSceAppMgr_stub -lfreetype -lpng -lm -lc
@@ -55,7 +55,7 @@ OBJS = frontend/frontend_salamander.o \
 all: $(TARGET).vpk
 
 %.vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=$(TITLE_ID) "$(TARGET)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLE_ID) "$(TARGET)" -d ATTRIBUTE2=12 param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf

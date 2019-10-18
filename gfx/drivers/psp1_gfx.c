@@ -471,20 +471,10 @@ static void *psp_init(const video_info_t *video,
    return psp;
 }
 
-#if 0
-#define DISPLAY_FPS
-#endif
-
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-#ifdef DISPLAY_FPS
-   uint32_t diff;
-   static uint64_t currentTick,lastTick;
-   static int frames;
-   static float fps                        = 0.0;
-#endif
    psp1_video_t *psp                       = (psp1_video_t*)data;
 
    if (!width || !height)
@@ -498,39 +488,18 @@ static bool psp_frame(void *data, const void *frame,
    if (!psp->hw_render)
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
 
-   pspDebugScreenSetBase(psp->draw_buffer);
-
-   pspDebugScreenSetXY(0,0);
-
-   if (video_info->fps_show)
+   if (msg) 
    {
-      pspDebugScreenSetXY(68 - strlen(video_info->fps_text) - 1,0);
-      pspDebugScreenPuts(video_info->fps_text);
-      pspDebugScreenSetXY(0,1);
-   }
-
-   if (msg)
+      pspDebugScreenSetBase(psp->draw_buffer);
+      pspDebugScreenSetXY(0,0);
       pspDebugScreenPuts(msg);
+   }
+      
 
    if ((psp->vsync)&&(psp->vblank_not_reached))
       sceDisplayWaitVblankStart();
 
    psp->vblank_not_reached = true;
-
-#ifdef DISPLAY_FPS
-   frames++;
-   sceRtcGetCurrentTick(&currentTick);
-   diff = currentTick - lastTick;
-   if(diff > 1000000)
-   {
-      fps = (float)frames * 1000000.0 / diff;
-      lastTick = currentTick;
-      frames = 0;
-   }
-
-   pspDebugScreenSetXY(0,0);
-   pspDebugScreenPrintf("%f", fps);
-#endif
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 

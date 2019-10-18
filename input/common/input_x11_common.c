@@ -20,6 +20,8 @@
 
 static bool x11_mouse_wu;
 static bool x11_mouse_wd;
+static bool x11_mouse_hwu;
+static bool x11_mouse_hwd;
 
 int16_t x_mouse_state_wheel(unsigned id)
 {
@@ -35,6 +37,14 @@ int16_t x_mouse_state_wheel(unsigned id)
          ret = x11_mouse_wd;
          x11_mouse_wd = 0;
          return ret;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         ret = x11_mouse_hwu;
+         x11_mouse_hwu = 0;
+         return ret;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         ret = x11_mouse_hwd;
+         x11_mouse_hwd = 0;
+         return ret;
    }
 
    return 0;
@@ -49,6 +59,14 @@ void x_input_poll_wheel(XButtonEvent *event, bool latch)
          break;
       case 5:
          x11_mouse_wd = 1;
+         break;
+      case 6:
+         /* Scroll wheel left == HORIZ_WHEELDOWN */
+         x11_mouse_hwd = 1;
+         break;
+      case 7:
+         /* Scroll wheel right == HORIZ_WHEELUP */
+         x11_mouse_hwu = 1;
          break;
    }
 }

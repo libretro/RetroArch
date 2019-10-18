@@ -387,7 +387,7 @@ static void *gl1_gfx_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL1_API);
 
-   gl1->smooth = settings->bools.video_smooth;
+   gl1->smooth        = settings->bools.video_smooth;
    gl1->supports_bgra = string_list_find_elem(gl1->extensions, "GL_EXT_bgra");
 
    glDisable(GL_BLEND);
@@ -546,10 +546,12 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 
 static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
+   uint8_t *frame       = NULL;
+   uint8_t *frame_rgba  = NULL;
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
    GLint internalFormat = GL_RGB8;
-   GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
-   GLenum type = GL_UNSIGNED_BYTE;
+   GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
+   GLenum type          = GL_UNSIGNED_BYTE;
 
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
@@ -557,16 +559,41 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glDisable(GL_SCISSOR_TEST);
    glEnable(GL_TEXTURE_2D);
 
-   /* multi-texture not part of GL 1.1 */
+   /* Multi-texture not part of GL 1.1 */
    /*glActiveTexture(GL_TEXTURE0);*/
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
    glBindTexture(GL_TEXTURE_2D, tex);
 
-   /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame_to_copy);
+   /* For whatever reason you can't send NULL in GLDirect,
+      so we send the frame as dummy data */
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame_to_copy);
+
+   frame = (uint8_t*)frame_to_copy;
+   if (!gl1->supports_bgra)
+   {
+      frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
+      if (frame_rgba)
+      {
+         int x, y;
+         for (y = 0; y < pot_height; y++)
+         {
+            for (x = 0; x < pot_width; x++)
+            {
+               int index             = (y * pot_width + x) * 4;
+               frame_rgba[index + 2] = frame[index + 0];
+               frame_rgba[index + 1] = frame[index + 1];
+               frame_rgba[index + 0] = frame[index + 2];
+               frame_rgba[index + 3] = frame[index + 3];
+            }
+         }
+         frame = frame_rgba;
+      }
+   }
+
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame);
+   free(frame_rgba);
 
    if (tex == gl1->tex)
    {
@@ -613,16 +640,16 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glBegin(GL_QUADS);
 
    {
-      float tex_BL[2] = {0.0f, 0.0f};
-      float tex_BR[2] = {1.0f, 0.0f};
-      float tex_TL[2] = {0.0f, 1.0f};
-      float tex_TR[2] = {1.0f, 1.0f};
+      float tex_BL[2]      = {0.0f, 0.0f};
+      float tex_BR[2]      = {1.0f, 0.0f};
+      float tex_TL[2]      = {0.0f, 1.0f};
+      float tex_TR[2]      = {1.0f, 1.0f};
       float *tex_mirror_BL = tex_TL;
       float *tex_mirror_BR = tex_TR;
       float *tex_mirror_TL = tex_BL;
       float *tex_mirror_TR = tex_BR;
-      float norm_width = (1.0f / (float)pot_width) * (float)width;
-      float norm_height = (1.0f / (float)pot_height) * (float)height;
+      float norm_width     = (1.0f / (float)pot_width) * (float)width;
+      float norm_height    = (1.0f / (float)pot_height) * (float)height;
 
       /* remove extra POT padding */
       tex_mirror_BR[0] = norm_width;

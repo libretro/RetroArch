@@ -298,6 +298,24 @@ int64_t intfstream_write(intfstream_internal_t *intf,
    return 0;
 }
 
+int64_t intfstream_get_ptr(intfstream_internal_t* intf)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return -1;
+      case INTFSTREAM_MEMORY:
+         return memstream_get_ptr(intf->memory.fp);
+      case INTFSTREAM_CHD:
+         return -1;
+   }
+
+   return 0;
+}
+
 char *intfstream_gets(intfstream_internal_t *intf,
       char *buffer, uint64_t len)
 {
@@ -441,7 +459,6 @@ intfstream_t *intfstream_open_memory(void *data,
    info.memory.writable = false;
 
    fd                   = (intfstream_t*)intfstream_init(&info);
-
    if (!fd)
       return NULL;
 
@@ -458,6 +475,37 @@ error:
    }
    return NULL;
 }
+
+intfstream_t *intfstream_open_writable_memory(void *data,
+      unsigned mode, unsigned hints, uint64_t size)
+{
+   intfstream_info_t info;
+   intfstream_t *fd     = NULL;
+
+   info.type            = INTFSTREAM_MEMORY;
+   info.memory.buf.data = (uint8_t*)data;
+   info.memory.buf.size = size;
+   info.memory.writable = true;
+
+   fd                   = (intfstream_t*)intfstream_init(&info);
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, NULL, mode, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+
 
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track)

@@ -116,16 +116,12 @@ static void nbio_mmap_unix_resize(void *data, size_t len)
       /* this works perfectly fine if this check is removed, but it
        * won't work on other nbio implementations */
       /* therefore, it's blocked so nobody accidentally relies on it */
-      puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
 
    if (ftruncate(handle->fd, len) != 0)
-   {
-      puts("ERROR - couldn't resize file (ftruncate)");
       abort(); /* this one returns void and I can't find any other
                   way for it to report failure */
-   }
 
    munmap(handle->ptr, handle->len);
 
@@ -133,10 +129,7 @@ static void nbio_mmap_unix_resize(void *data, size_t len)
    handle->len = len;
 
    if (handle->ptr == MAP_FAILED)
-   {
-      puts("ERROR - couldn't resize file (mmap)");
       abort();
-   }
 }
 
 static void *nbio_mmap_unix_get_ptr(void *data, size_t* len)

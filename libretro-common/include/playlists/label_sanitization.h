@@ -24,23 +24,6 @@
 
 void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*));
 
-bool left_parens(char *left);
-bool right_parens(char *right);
-
-bool left_brackets(char *left);
-bool right_brackets(char *right);
-
-bool left_parens_or_brackets(char *left);
-bool right_parens_or_brackets(char *right);
-
-bool left_exclusion(char *left, const char **strings, const size_t strings_count);
-
-bool left_parens_or_brackets_excluding_region(char *left);
-
-bool left_parens_or_brackets_excluding_disc(char *left);
-
-bool left_parens_or_brackets_excluding_region_or_disc(char *left);
-
 void label_remove_parens(char *label);
 
 void label_remove_brackets(char *label);

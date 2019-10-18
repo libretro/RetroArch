@@ -11,8 +11,7 @@ typedef struct layer
 
    element_t            *elements;
    int                   elements_count;
-}
-layer_t;
+} layer_t;
 
 typedef struct view
 {
@@ -25,15 +24,13 @@ typedef struct view
 
    video_layout_bounds_t *screens;
    int                    screens_count;
-}
-view_t;
+} view_t;
 
 typedef struct view_array
 {
    view_t *views;
    int     views_count;
-}
-view_array_t;
+} view_array_t;
 
 void       layer_init         (layer_t *layer, const char *name);
 void       layer_deinit       (layer_t *layer);

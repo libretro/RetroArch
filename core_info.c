@@ -228,9 +228,7 @@ static config_file_t *core_info_list_iterate(
    }
 #endif
 
-   strlcat(info_path_base,
-         file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
-         info_path_base_size);
+   strlcat(info_path_base, ".info", info_path_base_size);
 
    info_path = (char*)malloc(info_path_base_size);
    fill_pathname_join(info_path,
@@ -1136,7 +1134,7 @@ bool core_info_hw_api_supported(core_info_t *info)
       if (string_is_empty(cur_api))
          continue;
 
-      cur_api_len = strlen(cur_api);
+      cur_api_len                = (int)strlen(cur_api);
 
       for (j = 0; j < cur_api_len; j++)
       {

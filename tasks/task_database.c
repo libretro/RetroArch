@@ -801,7 +801,7 @@ static int database_info_list_iterate_found_match(
          db_path, PATH_MAX_LENGTH * sizeof(char));
 
    strlcat(db_playlist_base_str,
-         file_path_str(FILE_PATH_LPL_EXTENSION),
+         ".lpl",
          PATH_MAX_LENGTH * sizeof(char));
 
    if (!string_is_empty(_db->playlist_directory))
@@ -857,8 +857,8 @@ static int database_info_list_iterate_found_match(
       /* the push function reads our entry as const, so these casts are safe */
       entry.path              = entry_path_str;
       entry.label             = db_info_entry->name;
-      entry.core_path         = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.core_name         = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_path         = (char*)"DETECT";
+      entry.core_name         = (char*)"DETECT";
       entry.db_name           = db_playlist_base_str;
       entry.crc32             = db_crc;
       entry.subsystem_ident   = NULL;
@@ -1026,9 +1026,9 @@ static int task_database_iterate_playlist_archive(
 #ifdef HAVE_COMPRESSION
    return task_database_iterate_crc_lookup(
          _db, db_state, db, name, db_state->archive_name);
-#endif
-
+#else
    return 1;
+#endif
 }
 
 static int task_database_iterate_playlist_lutro(
@@ -1045,7 +1045,7 @@ static int task_database_iterate_playlist_lutro(
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path,
             _db->playlist_directory,
-            file_path_str(FILE_PATH_LUTRO_PLAYLIST),
+            "Lutro.lpl",
             PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
@@ -1053,7 +1053,7 @@ static int task_database_iterate_playlist_lutro(
    free(db_playlist_path);
 
    if (!playlist_entry_exists(playlist,
-            path, file_path_str(FILE_PATH_DETECT)))
+            path, "DETECT"))
    {
       struct playlist_entry entry;
       char *game_title            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1066,10 +1066,10 @@ static int task_database_iterate_playlist_lutro(
       /* the push function reads our entry as const, so these casts are safe */
       entry.path              = (char*)path;
       entry.label             = game_title;
-      entry.core_path         = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.core_name         = (char*)file_path_str(FILE_PATH_DETECT);
-      entry.db_name           = (char*)file_path_str(FILE_PATH_LUTRO_PLAYLIST);
-      entry.crc32             = (char*)file_path_str(FILE_PATH_DETECT);
+      entry.core_path         = (char*)"DETECT";
+      entry.core_name         = (char*)"DETECT";
+      entry.db_name           = (char*)"Lutro.lpl";
+      entry.crc32             = (char*)"DETECT";
       entry.subsystem_ident   = NULL;
       entry.subsystem_name    = NULL;
       entry.subsystem_roms    = NULL;

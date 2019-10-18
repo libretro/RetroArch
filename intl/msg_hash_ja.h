@@ -482,10 +482,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
    "ステートロード時にセーブRAMを置き換えない"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
    "Bluetoothを有効"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    "BuildbotのアセットURL"
@@ -849,14 +851,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "コンテンツをダウンロード"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-   "DPI優先を有効"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-   "DPI優先"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -1537,10 +1531,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "ジョイパッドのドライバ"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
    "Lakkaのサービス"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
    "中国語 (簡体)"
@@ -1753,7 +1749,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "設定"
+   "File Browser"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -2661,10 +2657,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
    "実行"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
    "SAMBAを有効"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    "セーブファイル"
@@ -2837,10 +2835,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "コンテンツフォルダにスクリーンショットを書き込む"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
    "SSHを有効"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_CORE,
    "コアをスタート"
@@ -3408,7 +3408,7 @@ MSG_HASH(
    "月/日 時:分"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM,
    "時:分:秒 (午前/午後)"
 )
 MSG_HASH(
@@ -4177,7 +4177,7 @@ MSG_HASH(
    "メニューのシェーダパイプライン"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
    "メニューの倍率"
 )
 MSG_HASH(
@@ -4339,10 +4339,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    "オーディオ出力の設定を変更します。"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
    "Bluetoothを有効します。"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "終了時に設定を自動的に保存します。"
@@ -4411,6 +4413,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
    "RetroArch用のアドオン, コンポーネント, コンテンツをダウンロードします。"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
    "フォルダのネットワーク共有を有効します。"
@@ -4419,14 +4422,17 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
    "OSに関係するサービスを管理します。"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
    "ファイルブラウザの中に隠しファイルとフォルダを表示します。"
 )
+#ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
    "SSHでのアクセスを有効します。"
 )
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    "システムのスクリーンセーバが起動するのを抑制します。"
@@ -6571,16 +6577,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
    "フッタの不透明度を調整します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-   "通常, メニューは動的にスケールされます。 "
-   "特定のスケールサイズを指定したい場合に有効にしてください。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-   "カスタムスケールサイズを指定します。 "
-   "備考: このスケールサイズを反映するには, [優先DPI]を有効にする必要があります。"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -9232,10 +9228,6 @@ MSG_HASH(
    "挿入されたディスクの情報を表示します。"
 )
 MSG_HASH(
-   MSG_INCOMPATIBLE_CORE_FOR_VIDEO_DRIVER,
-   "このコアは設定されたビデオドライバに対応しません。"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET,
    "リセット"
 )
@@ -9745,3 +9737,27 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
     "シェーダの自動ロード遅延 (ms)"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+    "プレイリストを削除"
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+      "Wi-Fi Access Point")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+      "Enable or disable Wi-Fi Access Point.")
+MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
+      "Switching off Wi-Fi Access Point.")
+MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
+      "Disconnecting from Wi-Fi '%s'")
+MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
+      "Wi-Fi Access Point is already started")
+MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
+      "Wi-Fi Access Point is not running")
+MSG_HASH(MSG_LOCALAP_STARTING,
+      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
+      "Could not create Wi-Fi Access Point configuration file.")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
+     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+#endif

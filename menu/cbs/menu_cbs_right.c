@@ -510,7 +510,15 @@ static int playlist_association_right(unsigned type, const char *label,
 
    /* Get current core path association */
    if (string_is_empty(playlist_get_default_core_path(playlist)))
-      strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+   {
+      core_path[0] = 'D';
+      core_path[1] = 'E';
+      core_path[2] = 'T';
+      core_path[3] = 'E';
+      core_path[4] = 'C';
+      core_path[5] = 'T';
+      core_path[6] = '\0';
+   }
    else
       strlcpy(core_path, playlist_get_default_core_path(playlist), sizeof(core_path));
 

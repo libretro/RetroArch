@@ -200,13 +200,12 @@ bool cheat_manager_load(const char *path, bool append);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(const char *path, const char *cheat_database, bool overwrite);
+bool cheat_manager_save(const char *path,
+      const char *cheat_database, bool overwrite);
 
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler);
 
 void cheat_manager_set_code(unsigned index, const char *str);
-
-void cheat_manager_free(void);
 
 void cheat_manager_index_next(void);
 
@@ -265,14 +264,16 @@ int cheat_manager_add_matches(const char *path,
 
 void cheat_manager_apply_retro_cheats(void);
 
-int cheat_manager_search(enum cheat_search_type search_type);
-
-void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
+void cheat_manager_match_action(
+      enum cheat_match_action_type match_action,
+      unsigned int target_match_idx,
+      unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value);
 
 int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound);
 
 int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound);
+
 RETRO_END_DECLS
 
 #endif

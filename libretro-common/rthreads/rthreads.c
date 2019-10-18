@@ -464,7 +464,8 @@ scond_t *scond_new(void)
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
    cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if (!cond->event) goto error;
+   if (!cond->event)
+      goto error;
    cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->hot_potato)
    {

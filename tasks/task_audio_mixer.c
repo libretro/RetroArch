@@ -479,33 +479,34 @@ bool task_push_audio_mixer_load_and_play(
    nbio->type         = NBIO_TYPE_NONE;
    mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
-   if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
+   if (strstr(fullpath, ".wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav_and_play;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
+   else if (strstr(fullpath, ".ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg_and_play;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
+   else if (strstr(fullpath, ".mp3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3_and_play;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
+   else if (strstr(fullpath, ".flac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac_and_play;
    }
-   else if (	strstr(fullpath, file_path_str(FILE_PATH_MOD_EXTENSION)) ||
-		strstr(fullpath, file_path_str(FILE_PATH_S3M_EXTENSION)) ||
-		strstr(fullpath, file_path_str(FILE_PATH_XM_EXTENSION)))
+   else if (	
+         strstr(fullpath, ".mod") ||
+         strstr(fullpath, ".s3m") ||
+         strstr(fullpath, ".xm"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;
@@ -588,33 +589,34 @@ bool task_push_audio_mixer_load(
    nbio->type         = NBIO_TYPE_NONE;
    mixer->type        = AUDIO_MIXER_TYPE_NONE;
 
-   if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
+   if (strstr(fullpath, ".wav"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WAV;
       nbio->type      = NBIO_TYPE_WAV;
       t->callback     = task_audio_mixer_handle_upload_wav;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
+   else if (strstr(fullpath, ".ogg"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
+   else if (strstr(fullpath, ".mp3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MP3;
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
+   else if (strstr(fullpath, ".flac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_FLAC;
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac;
    }
-   else if (	strstr(fullpath, file_path_str(FILE_PATH_MOD_EXTENSION)) ||
-		strstr(fullpath, file_path_str(FILE_PATH_S3M_EXTENSION)) ||
-		strstr(fullpath, file_path_str(FILE_PATH_XM_EXTENSION)))
+   else if (	
+         strstr(fullpath, ".mod") ||
+         strstr(fullpath, ".s3m") ||
+         strstr(fullpath, ".xm"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;

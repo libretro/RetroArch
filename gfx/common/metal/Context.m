@@ -493,8 +493,10 @@
 
 - (id<MTLCommandBuffer>)blitCommandBuffer
 {
-   if (!_blitCommandBuffer)
+   if (!_blitCommandBuffer) {
       _blitCommandBuffer = [_commandQueue commandBuffer];
+      _blitCommandBuffer.label = @"Blit command buffer";
+   }
    return _blitCommandBuffer;
 }
 
@@ -562,6 +564,7 @@
    assert(_commandBuffer == nil);
    dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
    _commandBuffer = [_commandQueue commandBuffer];
+   _commandBuffer.label = @"Frame command buffer";
    _backBuffer = nil;
 }
 
@@ -579,17 +582,19 @@
          _backBuffer = self.nextDrawable.texture;
       }
       _rce = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+      _rce.label = @"Frame command encoder";
    }
    return _rce;
 }
 
-- (void)resetRenderViewport
+- (void)resetRenderViewport:(ViewportResetMode)mode
 {
+   bool fullscreen = mode == kFullscreenViewport;
    MTLViewport vp = {
-      .originX = 0,
-      .originY = 0,
-      .width   = _viewport.full_width,
-      .height  = _viewport.full_height,
+      .originX = fullscreen ? 0 : _viewport.x,
+      .originY = fullscreen ? 0 : _viewport.y,
+      .width   = fullscreen ? _viewport.full_width : _viewport.width,
+      .height  = fullscreen ? _viewport.full_height : _viewport.height,
       .znear   = 0,
       .zfar    = 1,
    };

@@ -23,8 +23,7 @@ typedef enum comp_type
    VIDEO_LAYOUT_C_LED_16,
    VIDEO_LAYOUT_C_LED_16_SC,
    VIDEO_LAYOUT_C_REEL
-}
-comp_type_t;
+} comp_type_t;
 
 union comp_attr
 {
@@ -43,8 +42,7 @@ typedef struct component
    video_layout_color_t       color;
    int                        enabled_state;
    union comp_attr            attr;
-}
-component_t;
+} component_t;
 
 void component_init   (component_t *comp, comp_type_t type);
 void component_copy   (component_t *comp, const component_t *src);

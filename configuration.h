@@ -130,6 +130,7 @@ typedef struct settings
       bool input_overlay_hide_in_menu;
       bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
+      bool input_overlay_auto_rotate;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -160,7 +161,6 @@ typedef struct settings
       bool menu_pointer_enable;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
-      bool menu_dpi_override_enable;
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
@@ -349,6 +349,7 @@ typedef struct settings
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+      bool localap_enable;
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
@@ -368,6 +369,7 @@ typedef struct settings
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
       bool ozone_truncate_playlist_name;
+      bool ozone_scroll_content_metadata;
 
       bool log_to_file;
       bool log_to_file_timestamp;
@@ -392,6 +394,7 @@ typedef struct settings
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
 
+      float menu_scale_factor;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
@@ -454,7 +457,9 @@ typedef struct settings
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;
-
+#ifdef GEKKO
+      unsigned input_mouse_scale;
+#endif
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -512,14 +517,12 @@ typedef struct settings
       unsigned menu_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
-      unsigned menu_dpi_override_value;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_animation_opening_main_menu;
       unsigned menu_xmb_animation_horizontal_highlight;
       unsigned menu_xmb_animation_move_up_down;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
-      unsigned menu_xmb_scale_factor;
       unsigned menu_xmb_alpha_factor;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
@@ -538,6 +541,7 @@ typedef struct settings
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
       unsigned playlist_sublabel_runtime_type;
+      unsigned playlist_sublabel_last_played_style;
 
       unsigned camera_width;
       unsigned camera_height;

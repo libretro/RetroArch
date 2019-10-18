@@ -983,9 +983,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
 
    /* Append png extension */
    if (!string_is_empty(new_path))
-      strlcat(new_path,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            sizeof(new_path));
+      strlcat(new_path, ".png", sizeof(new_path));
 
 end:
    if (stripes && !string_is_empty(new_path))
@@ -1040,7 +1038,7 @@ static void stripes_update_savestate_thumbnail_path(void *data, unsigned i)
                strlcpy(path, global->name.savestate, path_size);
          }
 
-         strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
+         strlcat(path, ".png", path_size);
 
          if (path_is_valid(path))
          {
@@ -1506,9 +1504,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
          free(tmp);
       }
 
-      strlcat(path,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            path_size);
+      strlcat(path, ".png", path_size);
 
       if (!path_is_valid(path))
          fill_pathname_application_special(path, path_size,
@@ -1809,7 +1805,7 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!path || !strstr(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1833,8 +1829,7 @@ static void stripes_init_horizontal_list(stripes_handle_t *stripes)
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 #endif
-   info.exts                    = strdup(
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
 
    if (!string_is_empty(info.path))
@@ -1911,7 +1906,7 @@ static void stripes_context_reset_horizontal_list(
       if (!path)
          continue;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!strstr(path, ".lpl"))
          continue;
 
       {
@@ -1934,7 +1929,7 @@ static void stripes_context_reset_horizontal_list(
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
          fill_pathname_join_concat(texturepath, iconpath, sysname,
-               file_path_str(FILE_PATH_PNG_EXTENSION),
+               ".png",
                PATH_MAX_LENGTH * sizeof(char));
 
          ti.width         = 0;
@@ -1956,7 +1951,7 @@ static void stripes_context_reset_horizontal_list(
 
          strlcat(iconpath, sysname, PATH_MAX_LENGTH * sizeof(char));
          fill_pathname_join_delim(content_texturepath, iconpath,
-               file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+               "content.png", '-',
                PATH_MAX_LENGTH * sizeof(char));
 
          if (image_texture_load(&ti, content_texturepath))
@@ -2660,22 +2655,24 @@ static void stripes_render(void *data,
       bool is_idle)
 {
    size_t i;
+   menu_input_pointer_t pointer;
    settings_t   *settings   = config_get_ptr();
    stripes_handle_t *stripes        = (stripes_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
-   bool mouse_enable        = settings->bools.menu_mouse_enable;
-   bool pointer_enable      = settings->bools.menu_pointer_enable;
 
    if (!stripes)
       return;
 
-   if (pointer_enable || mouse_enable)
+   menu_input_get_pointer_state(&pointer);
+
+   if (pointer.type != MENU_POINTER_DISABLED)
    {
       size_t selection  = menu_navigation_get_selection();
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
-         + (stripes->cursor_size/2);
+      int16_t pointer_y = pointer.y;
       unsigned first = 0, last = end;
+
+      pointer_y = (pointer.type == MENU_POINTER_MOUSE) ?
+            pointer_y + (stripes->cursor_size/2) : pointer_y;
 
       if (height)
          stripes_calculate_visible_range(stripes, height,
@@ -2687,17 +2684,8 @@ static void stripes_render(void *data,
             + stripes_item_y(stripes, (int)i, selection);
          float item_y2     = item_y1 + stripes->icon_size;
 
-         if (pointer_enable)
-         {
-            if (pointer_y > item_y1 && pointer_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &i);
-         }
-
-         if (mouse_enable)
-         {
-            if (mouse_y > item_y1 && mouse_y < item_y2)
-               menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
-         }
+         if (pointer_y > item_y1 && pointer_y < item_y2)
+            menu_input_set_pointer_selection(i);
       }
    }
 
@@ -2823,7 +2811,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    if (!stripes)
       return;
 
-   scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   scale_factor                            = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
    pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4;
 
    msg[0]             = '\0';
@@ -3010,14 +2998,17 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    /* Cursor image */
    if (stripes->mouse_show)
    {
+      menu_input_pointer_t pointer;
+      menu_input_get_pointer_state(&pointer);
+
       menu_display_set_alpha(stripes_coord_white, MIN(stripes->alpha, 1.00f));
       menu_display_draw_cursor(
             video_info,
             &stripes_coord_white[0],
             stripes->cursor_size,
             stripes->textures.list[STRIPES_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            pointer.x,
+            pointer.y,
             width,
             height);
    }
@@ -3031,7 +3022,7 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
-      (settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100);
+      (settings->floats.menu_scale_factor * width) / 1920.0f;
 
    stripes->above_subitem_offset     =   1.5;
    stripes->above_item_offset        =  -1.0;
@@ -3116,10 +3107,10 @@ static void stripes_layout_psp(stripes_handle_t *stripes, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
-      ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
+      ((settings->floats.menu_scale_factor * width) / 1920.0) * 1.5;
 #ifdef _3DS
    scale_factor                  =
-      settings->uints.menu_xmb_scale_factor / 400.0;
+      settings->floats.menu_scale_factor / 4.0;
 #endif
 
    stripes->above_subitem_offset     =  1.5;
@@ -3257,7 +3248,7 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    stripes_handle_t *stripes          = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
-   float scale_value          = settings->uints.menu_xmb_scale_factor;
+   float scale_value          = settings->floats.menu_scale_factor * 100.0f;
 
    /* scaling multiplier formulas made from these values:     */
    /* stripes_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
@@ -4368,8 +4359,7 @@ static bool stripes_menu_init_list(void *data)
 
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-   info.exts                    =
-      strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
+   info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
@@ -4396,26 +4386,43 @@ error:
    return false;
 }
 
-static int stripes_pointer_tap(void *userdata,
+static int stripes_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
+      enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned header_height = menu_display_get_header_height();
+   size_t selection = menu_navigation_get_selection();
 
-   if (y < header_height)
+   switch (gesture)
    {
-      size_t selection = menu_navigation_get_selection();
-      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
-   }
-   else if (ptr <= (menu_entries_get_size() - 1))
-   {
-      size_t selection         = menu_navigation_get_selection();
-      if (ptr == selection && cbs && cbs->action_select)
-         return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+      case MENU_INPUT_GESTURE_TAP:
+      case MENU_INPUT_GESTURE_SHORT_PRESS:
+         {
+            /* Normal pointer input */
+            unsigned header_height = menu_display_get_header_height();
 
-      menu_navigation_set_selection(ptr);
-      menu_driver_navigation_set(false);
+            if (y < header_height)
+               return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+            else if (ptr <= (menu_entries_get_size() - 1))
+            {
+               if (ptr == selection && cbs && cbs->action_select)
+                  return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+
+               menu_navigation_set_selection(ptr);
+               menu_driver_navigation_set(false);
+            }
+         }
+         break;
+      case MENU_INPUT_GESTURE_LONG_PRESS:
+         /* 'Reset to default' action */
+         if ((ptr <= (menu_entries_get_size() - 1)) &&
+             (ptr == selection))
+            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+         break;
+      default:
+         /* Ignore input */
+         break;
    }
 
    return 0;
@@ -4455,7 +4462,6 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_load_image,
    "stripes",
    stripes_environ,
-   stripes_pointer_tap,
    stripes_update_thumbnail_path,
    stripes_update_thumbnail_image,
    stripes_refresh_thumbnail_image,
@@ -4466,6 +4472,6 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_savestate_thumbnail_path,
    stripes_update_savestate_thumbnail_image,
    NULL,                                     /* pointer_down */
-   NULL,                                     /* pointer_up   */
+   stripes_pointer_up,                       /* pointer_up   */
    NULL                                      /* get_load_content_animation_data   */
 };

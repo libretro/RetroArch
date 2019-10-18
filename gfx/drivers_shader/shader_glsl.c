@@ -167,14 +167,17 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
 
    buf[0] = '\0';
 
-   snprintf(buf, sizeof(buf), "%s%s", glsl->shader->prefix, base);
+   strlcpy(buf, glsl->shader->prefix, sizeof(buf));
+   strlcat(buf, base, sizeof(buf));
    loc = glGetUniformLocation(prog, buf);
    if (loc >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
-      snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
+      buf[0] = '\0';
+      strlcpy(buf, glsl_prefixes[i], sizeof(buf));
+      strlcat(buf, base, sizeof(buf));
       loc = glGetUniformLocation(prog, buf);
       if (loc >= 0)
          return loc;
@@ -192,14 +195,16 @@ static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
 
    buf[0] = '\0';
 
-   snprintf(buf, sizeof(buf), "%s%s", glsl->shader->prefix, base);
+   strlcpy(buf, glsl->shader->prefix, sizeof(buf));
+   strlcat(buf, base, sizeof(buf));
    loc = glGetUniformLocation(prog, buf);
    if (loc >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
-      snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
+      strlcpy(buf, glsl_prefixes[i], sizeof(buf));
+      strlcat(buf, base, sizeof(buf));
       loc = glGetAttribLocation(prog, buf);
       if (loc >= 0)
          return loc;
@@ -569,10 +574,14 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
-   snprintf(texture,      sizeof(texture),      "%s%s", base, "Texture");
-   snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
-   snprintf(input_size,   sizeof(input_size),   "%s%s", base, "InputSize");
-   snprintf(tex_coord,    sizeof(tex_coord),    "%s%s", base, "TexCoord");
+   strlcpy(texture,      base,          sizeof(texture));
+   strlcat(texture,      "Texture",     sizeof(texture));
+   strlcpy(texture_size, base,          sizeof(texture_size));
+   strlcat(texture_size, "TextureSize", sizeof(texture_size));
+   strlcpy(input_size,   base,          sizeof(input_size));
+   strlcat(input_size,   "InputSize",   sizeof(input_size));
+   strlcpy(tex_coord,    base,          sizeof(tex_coord));
+   strlcat(tex_coord,    "TexCoord",    sizeof(tex_coord));
 
    if (frame->texture < 0)
       frame->texture = gl_glsl_get_uniform(glsl, prog, texture);

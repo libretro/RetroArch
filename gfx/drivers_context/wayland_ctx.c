@@ -1158,23 +1158,19 @@ static void gfx_ctx_wl_update_title(void *data, void *data2)
 
    if (wl && title[0])
    {
-	   if (wl->xdg_toplevel)
+      if (wl->xdg_toplevel || wl->zxdg_toplevel)
       {
-		   if (wl->deco)
+         if (wl->deco)
          {
-			   zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		   }
-		   xdg_toplevel_set_title(wl->xdg_toplevel, title);
-	   }
-	   else if (wl->zxdg_toplevel)
-      {
-		   if (wl->deco)
-         {
-			  zxdg_toplevel_decoration_v1_set_mode(wl->deco, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-		  }
-		  zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
-	  }
-	}
+            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+                  ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+         }
+      }
+      if (wl->xdg_toplevel)
+         xdg_toplevel_set_title(wl->xdg_toplevel, title);
+      else if (wl->zxdg_toplevel)
+         zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+   }
 }
 
 static bool gfx_ctx_wl_get_metrics(void *data,

@@ -71,7 +71,7 @@ static void memstream_init(memstream_t *stream,
 
 memstream_t *memstream_open(unsigned writing)
 {
-	memstream_t *stream;
+   memstream_t *stream;
    if (!g_buffer || !g_size)
       return NULL;
 
@@ -90,6 +90,11 @@ void memstream_close(memstream_t *stream)
 
    last_file_size = stream->writing ? stream->max_ptr : stream->size;
    free(stream);
+}
+
+uint64_t memstream_get_ptr(memstream_t *stream)
+{
+   return stream->ptr;
 }
 
 uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)

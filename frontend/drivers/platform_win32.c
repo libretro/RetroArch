@@ -554,8 +554,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   snprintf(g_defaults.settings.menu,
-         sizeof(g_defaults.settings.menu), "xmb");
+   strlcpy(g_defaults.settings.menu, "xmb", sizeof(g_defaults.settings.menu));
 #endif
 #endif
 }
@@ -623,6 +622,8 @@ static void frontend_win32_attach_console(void)
    {
       if(!AttachConsole( ATTACH_PARENT_PROCESS))
          AllocConsole();
+
+      SetConsoleTitle("Log Console");
 
       if(need_stdout) freopen( "CONOUT$", "w", stdout );
       if(need_stderr) freopen( "CONOUT$", "w", stderr );

@@ -1,4 +1,86 @@
-# 1.7.9 (future)
+# Future (1.7.9) [v3]
+- AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
+- BSV: Fix BSV recording/playback
+- BUGFIX: Fix crash when setting Thumbnail Directory
+- COMMON: Graceful driver switching for Windows and Linux
+- LAKKA: Wi-Fi Access Point settings
+- MENU: Menu scaling improvements
+- MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
+- MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
+- MENU/MATERIALUI: Material UI no longer leaks memory on 'context reset' (fonts were previously never free()'d)
+- MENU/MATERIALUI: A new Android-style 'system bar' has been added. This shows current core name, clock and battery level
+- MENU/MATERIALUI: A new search icon is shown on the title bar when viewing playlists and file browser lists. Pressing this launches the search interface
+- MENU/MATERIALUI: The title bar now uses a larger font, and the sublabel font has also been enlarged a little, to more closely align with Material UI standards
+- MENU/MATERIALUI: A number (quite a large number) of layout/spacing issues have been fixed
+- MENU/MATERIALUI: The existing colour theme handling code is not fit for purpose, so the whole lot got ripped out and reimplemented. In doing so, also adjusted all the theme colours to better match Material UI standards - with a few liberties taken for aesthetic purposes.
+- OSD: Fix fast forward indicator when not using menu widgets
+- PSP1: Remove duplicated FPS indicator on the screen
+- SWITCH: Make audren threaded audio driver the new default
+- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx. Only works with GL driver for now
+
+# (1.7.9) (v2)
+- 3DS: Fix 3DS screen flickering when OSD is enabled
+- IOS: Fix crash that could happen at startup
+- MENU/MATERIALUI: Change DPI scaling back to original - too many issues with current implementation, requires a redesign
+
+# (1.7.9)
+- AI SERVICE: Image mode is now much faster, it now saves the image in-memory in PNG format then passes it along to the translation service
+- BUGFIX: Touch input - When using an overlay to toggle the quick menu on touchscreen devices, we no longer get 'phantom' menu input - i.e. the old bug of hitting the toggle and instantly resuming content (or performing a save state) is fixed
+- BUGFIX: Networking - RetroArch crashed when pressing left while Relay Server Location entry was selected 
+- BUGFIX: Networking - fix memory leak that could happen at exit after a network
+operation had run
+- CHEEVOS: Improve handling of line endings when calculating CD hashes for retroachievements
+- CHEEVOS: Add support for Sega CD/Saturn; reduce hash calls to server
+- FPGA: Add initial FPGA port for Z-Turn boards - not really release-ready yet, will need community support to continue. Currently employs naive framebuffer approach, not fullspeed
+- GL1: GLDirect (D3D9 to OGL1.1 wrapper) support
+- GONG: Stability fixes
+- LINUX/UDEV: Fix touchscreen/lightgun issues
+- MENU/MATERIALUI: MaterialUI no longer 'forgets' its place when navigating backwards in menus, and navigation in general is 'cleaner'.
+- MENU/MATERIALUI: Add initial gesture support
+- MENU/MATERIALUI: Improved touch support
+- MENU/MATERIALUI: Bugfix - Random' items are no longer automatically highlighted when performing standard up/down 'flick' scrolling through lists (items are only highlighted when you keep the pointer still for > 200 ms)
+- MENU/MATERIALUI: Bugfix - The display no longer 'jerks' for one frame when navigating backwards through lists
+- MENU/MATERIALUI: Bugfix - The Material UI scaling factor is now based upon the device-reported screen DPI value (previously it relied upon a hard-coded magic number, which was never correct)
+- MENU/RGUI: Functional mouse/touchscreen support
+- MENU/ONSCREEN KEYBOARD: On-screen keyboard entry via mouse/touchscreen has been tidied up - no more double inputs (or unwanted menu interaction in the background)
+- MENU/MOUSE: Mouse wheel up/down is now a proper 'up/down', same as using cursor keys or a dpad
+- MENU/MOUSE: Mouse wheel tilt left/right has been wired up to normal 'left/right' commands. Also further improved mouse wheel tilt
+- MENU/OZONE: Add option to toggle between static and scrolling content metadata
+- MENU/XMB: Add full gesture support
+- MENU/OSX: Fixed mouse buttons - mouse down events were not hooked up
+- MENU: When navigating backwards from a core options drop-down list (i.e. pressing select or cancel), the last menu position is remembered (instead of resetting back to the first core option item each time)
+- MENU: Add mouse/touchscreen gesture support
+- MENU: Add option to delete playlists (Settings > Playlists > Playlist Management)
+- MOBILE (ANDROID/IOS): Add option to automatically rotate overlays when changing orientation
+- OSD: Memory details should now be available on every platform (get_mem_total and get_mem_free need to be implemented in the frontend driver for it to work)
+- OSD: Memory details can now be shown individually without FPS and frame count
+- PS2: Fix memory leaks in font/video driver
+- SWITCH: Set default aspect ratio to core provided instead of 4:3
+- THREADED VIDEO: Fix FPS text in threaded video mode
+- VITA: Set default aspect ratio to core provided instead of 4:3
+- VITA: Add system language detection
+- VITA: More memory support
+- WIN32: Log window now has title 'Logging Console'
+- WII: Add Wiimote lightgun support
+
+# 1.7.8 (v4)
+- COMMON: Enable customisation of runtime 'last played' display format.
+- CHEEVOS:  Add hashing support for PSX (bin/cue, chd, or real CD) (for real this time, got added in the CHANGELOG for v2 then reverted before it hit release)
+- IOS: Update for iOS 13, fix the asset packaging issues
+- LOCALIZATION: Update Portuguese Brazilian Translation
+- MENU: Add 12-hour time/date versions of all formats
+- SWITCH: Add 'AI Service' option to Switch (untested)
+- SWITCH: Update to newest libnx
+
+# 1.7.8 (v3)
+- GLCORE: Ensure correct scaling of menu texture (with RGUI)
+- IPS: Soft-Patch any IPS size
+- METAL: Fix overlay issue - setup correct viewport before rendering overlay
+- METAL/STB: Fix font driver issue with AMD GPUs on MacOS.
+- MENU/RGUI: Correctly rescale menu when resizing window if aspect ratio lock is enabled.
+- OSX: Remove OSX suffix in window title
+- PSP: Fix audio conversion code
+- REMAPS: Fix analog remapping regression -analog remapping would break controls
 
 # 1.7.8 (v2)
 - 3DS: Fix 3DS startup crash
@@ -11,6 +93,7 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
+- MENU/XMB: Smooth vertical ticker scrolling
 - OSX: Fix potential OSX startup crash
 - PATCH: Fix IPS patches
 - PLAYLISTS: Fix playlist heap corruption bug. Would also cause potential crashes on OSX and 3DS at startup

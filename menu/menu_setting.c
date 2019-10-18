@@ -57,7 +57,7 @@
 #endif
 
 #ifdef HAVE_TRANSLATE
-#include "../translation/translation_driver.h"
+#include "../translation_defines.h"
 #endif
 
 #include "../frontend/frontend_driver.h"
@@ -3133,44 +3133,74 @@ static void setting_get_string_representation_uint_menu_timedate_style(
 
    switch (*setting->value.target.unsigned_integer)
    {
-   case 0:
-      strlcpy(s, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
-      break;
-   case 1:
-      strlcpy(s, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
-      break;
-   case 2:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
-      break;
-   case 3:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
-      break;
-   case 4:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
-      break;
-   case 5:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
-      break;
-   case 6:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
-      break;
-   case 7:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM), len);
-      break;
+      case MENU_TIMEDATE_STYLE_YMD_HMS:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HM:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HMS:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DM_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HMS_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DM_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM), len);
+         break;
    }
 }
 
@@ -3823,6 +3853,21 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
          break;
+      case MATERIALUI_THEME_MATERIALUI:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI), len);
+         break;
+      case MATERIALUI_THEME_MATERIALUI_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK), len);
+         break;
+      case MATERIALUI_THEME_OZONE_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
+         break;
       default:
          break;
    }
@@ -4097,6 +4142,78 @@ static void setting_get_string_representation_uint_playlist_sublabel_runtime_typ
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE),
+               len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_playlist_sublabel_last_played_style(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM),
                len);
          break;
    }
@@ -4513,8 +4630,9 @@ static int setting_string_action_left_netplay_mitm_server(
    if (!found)
       offset = list_len - 1;
 
-   strlcpy(setting->value.target.string,
-         netplay_mitm_server_list[offset].name, setting->size);
+   if (offset >= 0)
+      strlcpy(setting->value.target.string,
+            netplay_mitm_server_list[offset].name, setting->size);
 
    return 0;
 }
@@ -5802,9 +5920,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
                   device_name,
                   idx);
          else
-            snprintf(s, len,
-                  "%s",
-                  device_name);
+            strlcpy(s, device_name, len);
       }
       else
          snprintf(s, len,
@@ -6320,6 +6436,32 @@ static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
    else
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 }
+
+static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
+{
+   settings_t *settings  = config_get_ptr();
+
+   if (!setting || !settings)
+      return;
+
+   /* This is very simple...
+    * The menu is currently active, so if:
+    * - Overlays are enabled
+    * - Overlays are not hidden in menus
+    * ...we just need to de-initialise then
+    * initialise the current overlay and the
+    * auto-rotate setting will be applied
+    * (i.e. There's no need to explicitly
+    * call the internal 'rotate overlay'
+    * function - saves having to expose it
+    * via the API) */
+   if (settings->bools.input_overlay_enable &&
+       !settings->bools.input_overlay_hide_in_menu)
+   {
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   }
+}
 #endif
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -6436,6 +6578,17 @@ static void bluetooth_enable_toggle_change_handler(void *data)
 
    systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
          enable);
+}
+
+static void localap_enable_toggle_change_handler(void *data)
+{
+   bool enable           = false;
+   settings_t *settings  = config_get_ptr();
+
+   if (settings && settings->bools.localap_enable)
+      enable = true;
+
+   driver_wifi_tether_start_stop(enable, LAKKA_LOCALAP_PATH);
 }
 #endif
 
@@ -9447,55 +9600,48 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-            {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_max_swapchain_images,
-                     MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                     DEFAULT_MAX_SWAPCHAIN_IMAGES,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            }
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_max_swapchain_images,
+                  MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                  DEFAULT_MAX_SWAPCHAIN_IMAGES,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-            {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_hard_sync,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-                     DEFAULT_HARD_SYNC,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE
-                     );
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_hard_sync,
+                  MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+                  DEFAULT_HARD_SYNC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
         
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_hard_sync_frames,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-                     DEFAULT_HARD_SYNC_FRAMES,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            }
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_hard_sync_frames,
+                  MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+                  DEFAULT_HARD_SYNC_FRAMES,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
@@ -10246,6 +10392,21 @@ static bool setting_append_list(
                &setting_get_string_representation_poll_type_behavior;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+#ifdef GEKKO
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_mouse_scale,
+                  MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+                  DEFAULT_MOUSE_SCALE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+#endif
 
 #ifdef VITA
             CONFIG_BOOL(
@@ -11318,6 +11479,23 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_auto_rotate,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+               DEFAULT_OVERLAY_AUTO_ROTATE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
+
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_overlay,
@@ -11815,7 +11993,7 @@ static bool setting_append_list(
                   &settings->bools.menu_horizontal_animation,
                   MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
                   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
-                  true,
+                  DEFAULT_MENU_HORIZONTAL_ANIMATION,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -12041,40 +12219,23 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_equal(settings->arrays.menu_driver, "glui"))
-         {
-            /* only GLUI uses these values, don't show
-             * them on other drivers */
-            CONFIG_BOOL(
+         /* Only implemented for GLUI and XMB at present */
+         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
+             string_is_equal(settings->arrays.menu_driver, "xmb"))
+            CONFIG_FLOAT(
                   list, list_info,
-                  &settings->bools.menu_dpi_override_enable,
-                  MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-                  DEFAULT_MENU_DPI_OVERRIDE_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_dpi_override_value,
-                  MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
-                  MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-                  DEFAULT_MENU_DPI_OVERRIDE_VALUE,
+                  &settings->floats.menu_scale_factor,
+                  MENU_ENUM_LABEL_MENU_SCALE_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+                  DEFAULT_MENU_SCALE_FACTOR,
+                  "%.2fx",
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 72;
-            menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
-         }
+            menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -12094,22 +12255,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_xmb_scale_factor,
-                  MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
-                  MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
-                  xmb_scale_factor,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 20;
-            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index -1].offset_by, 200, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_PATH(
@@ -12719,6 +12864,8 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
+            /* TODO: These should be removed entirely, but just
+             * comment out for now in case users complain...
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_header_opacity,
@@ -12750,6 +12897,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             (*list)[list_info->index - 1].ui_type   
                                   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
+            */
          }
 #endif
 
@@ -12779,6 +12927,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,
                   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
                   DEFAULT_OZONE_COLLAPSE_SIDEBAR,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ozone_scroll_content_metadata,
+                  MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,
+                  MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+                  DEFAULT_OZONE_SCROLL_CONTENT_METADATA,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -13005,7 +13168,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
-         menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(
@@ -14281,6 +14444,22 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
+               &settings->uints.playlist_sublabel_last_played_style,
+               MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_playlist_sublabel_last_played_style;
+         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_LAST_PLAYED_STYLE_LAST-1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
                &settings->uints.playlist_show_inline_core_name,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -15020,6 +15199,22 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = bluetooth_enable_toggle_change_handler;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.localap_enable,
+                  MENU_ENUM_LABEL_LOCALAP_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = localap_enable_toggle_change_handler;
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);

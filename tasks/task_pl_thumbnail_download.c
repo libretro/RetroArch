@@ -350,7 +350,6 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
       default:
          task_set_progress(task, 100);
          goto task_finished;
-         break;
    }
    
    return;
@@ -632,7 +631,6 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
       default:
          task_set_progress(task, 100);
          goto task_finished;
-         break;
    }
    
    return;

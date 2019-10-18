@@ -52,10 +52,8 @@ static const char *const video_layout_internal_screen_params[] =
 
 static int child_count(rxml_node_t *node)
 {
-   int res;
    rxml_node_t *child;
-
-   res = 0;
+   int res = 0;
 
    for (child = node->children; child; child = child->next)
       ++res;
@@ -102,10 +100,8 @@ static void init_screen_params(scope_t *scope, int screen_index)
 
 static video_layout_bounds_t parse_bounds(scope_t *scope, rxml_node_t *node)
 {
-   video_layout_bounds_t bounds;
    const char *prop;
-
-   bounds = make_bounds_unit();
+   video_layout_bounds_t bounds = make_bounds_unit();
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "x"))))       bounds.x = get_dec(prop);
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "y"))))       bounds.y = get_dec(prop);
@@ -122,10 +118,8 @@ static video_layout_bounds_t parse_bounds(scope_t *scope, rxml_node_t *node)
 
 static video_layout_color_t parse_color(scope_t *scope, rxml_node_t *node)
 {
-   video_layout_color_t color;
    const char *prop;
-
-   color = make_color_white();
+   video_layout_color_t color = make_color_white();
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "red"))))    color.r = get_dec(prop);
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "green"))))  color.g = get_dec(prop);
@@ -137,10 +131,8 @@ static video_layout_color_t parse_color(scope_t *scope, rxml_node_t *node)
 
 static video_layout_orientation_t parse_orientation(scope_t *scope, rxml_node_t *node)
 {
-   video_layout_orientation_t result;
    const char *prop;
-
-   result = VIDEO_LAYOUT_ROT0;
+   video_layout_orientation_t result = VIDEO_LAYOUT_ROT0;
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "rotate"))))
    {
@@ -223,14 +215,11 @@ static bool load_param(scope_t *scope, rxml_node_t *node, bool can_repeat)
 
 static bool load_component(scope_t *scope, component_t *comp, rxml_node_t *node)
 {
-   comp_type_t type;
-   bool result;
    const char *state;
    const char *attr;
    rxml_node_t *n;
-
-   type = comp_type_from_str(node->name);
-   result = true;
+   comp_type_t type = comp_type_from_str(node->name);
+   bool      result = true;
 
    if (type == VIDEO_LAYOUT_C_UNKNOWN)
    {
@@ -254,72 +243,72 @@ static bool load_component(scope_t *scope, component_t *comp, rxml_node_t *node)
 
    switch (comp->type)
    {
-   case VIDEO_LAYOUT_C_UNKNOWN:
-      break;
-   case VIDEO_LAYOUT_C_SCREEN:
-      break;
-   case VIDEO_LAYOUT_C_RECT:
-      break;
-   case VIDEO_LAYOUT_C_DISK:
-      break;
-   case VIDEO_LAYOUT_C_IMAGE:
-      {
-         if (!(attr = rxml_node_attrib(node, "file")))
+      case VIDEO_LAYOUT_C_UNKNOWN:
+         break;
+      case VIDEO_LAYOUT_C_SCREEN:
+         break;
+      case VIDEO_LAYOUT_C_RECT:
+         break;
+      case VIDEO_LAYOUT_C_DISK:
+         break;
+      case VIDEO_LAYOUT_C_IMAGE:
          {
-            RARCH_LOG("video_layout: invalid component <%s />, missing 'file' attribute\n", node->name);
-            result = false;
-         }
-         set_string(&comp->attr.image.file, scope_eval(scope, attr));
+            if (!(attr = rxml_node_attrib(node, "file")))
+            {
+               RARCH_LOG("video_layout: invalid component <%s />, missing 'file' attribute\n", node->name);
+               result = false;
+            }
+            set_string(&comp->attr.image.file, scope_eval(scope, attr));
 
-         if ((attr = rxml_node_attrib(node, "alphafile")))
-            set_string(&comp->attr.image.alpha_file, scope_eval(scope, attr));
-      }
-      break;
-   case VIDEO_LAYOUT_C_TEXT:
-      {
-         if (!(attr = rxml_node_attrib(node, "string")))
+            if ((attr = rxml_node_attrib(node, "alphafile")))
+               set_string(&comp->attr.image.alpha_file, scope_eval(scope, attr));
+         }
+         break;
+      case VIDEO_LAYOUT_C_TEXT:
          {
-            RARCH_LOG("video_layout: invalid component <%s />, missing 'string' attribute\n", node->name);
-            result = false;
+            if (!(attr = rxml_node_attrib(node, "string")))
+            {
+               RARCH_LOG("video_layout: invalid component <%s />, missing 'string' attribute\n", node->name);
+               result = false;
+            }
+            set_string(&comp->attr.text.string, scope_eval(scope, attr));
+
+            if ((attr = rxml_node_attrib(node, "align")))
+               comp->attr.text.align = (video_layout_text_align_t)get_int(scope_eval(scope, attr));
          }
-         set_string(&comp->attr.text.string, scope_eval(scope, attr));
+         break;
+      case VIDEO_LAYOUT_C_COUNTER:
+         {
+            if ((attr = rxml_node_attrib(node, "digits")))
+               comp->attr.counter.digits = get_int(scope_eval(scope, attr));
 
-         if ((attr = rxml_node_attrib(node, "align")))
-            comp->attr.text.align = (video_layout_text_align_t)get_int(scope_eval(scope, attr));
-      }
-      break;
-   case VIDEO_LAYOUT_C_COUNTER:
-      {
-         if ((attr = rxml_node_attrib(node, "digits")))
-            comp->attr.counter.digits = get_int(scope_eval(scope, attr));
+            if ((attr = rxml_node_attrib(node, "maxstate")))
+               comp->attr.counter.max_state = get_int(scope_eval(scope, attr));
 
-         if ((attr = rxml_node_attrib(node, "maxstate")))
-            comp->attr.counter.max_state = get_int(scope_eval(scope, attr));
-
-         if ((attr = rxml_node_attrib(node, "align")))
-            comp->attr.counter.align = (video_layout_text_align_t)get_int(scope_eval(scope, attr));
-      }
-      break;
-   case VIDEO_LAYOUT_C_DOTMATRIX_X1:
-      break;
-   case VIDEO_LAYOUT_C_DOTMATRIX_H5:
-      break;
-   case VIDEO_LAYOUT_C_DOTMATRIX_H8:
-      break;
-   case VIDEO_LAYOUT_C_LED_7:
-      break;
-   case VIDEO_LAYOUT_C_LED_8_GTS1:
-      break;
-   case VIDEO_LAYOUT_C_LED_14:
-      break;
-   case VIDEO_LAYOUT_C_LED_14_SC:
-      break;
-   case VIDEO_LAYOUT_C_LED_16:
-      break;
-   case VIDEO_LAYOUT_C_LED_16_SC:
-      break;
-   case VIDEO_LAYOUT_C_REEL:
-      break;
+            if ((attr = rxml_node_attrib(node, "align")))
+               comp->attr.counter.align = (video_layout_text_align_t)get_int(scope_eval(scope, attr));
+         }
+         break;
+      case VIDEO_LAYOUT_C_DOTMATRIX_X1:
+         break;
+      case VIDEO_LAYOUT_C_DOTMATRIX_H5:
+         break;
+      case VIDEO_LAYOUT_C_DOTMATRIX_H8:
+         break;
+      case VIDEO_LAYOUT_C_LED_7:
+         break;
+      case VIDEO_LAYOUT_C_LED_8_GTS1:
+         break;
+      case VIDEO_LAYOUT_C_LED_14:
+         break;
+      case VIDEO_LAYOUT_C_LED_14_SC:
+         break;
+      case VIDEO_LAYOUT_C_LED_16:
+         break;
+      case VIDEO_LAYOUT_C_LED_16_SC:
+         break;
+      case VIDEO_LAYOUT_C_REEL:
+         break;
    }
 
    return result;
@@ -329,13 +318,11 @@ static bool load_element(scope_t *scope, rxml_node_t *node)
 {
    const char *name;
    const char *state;
-   bool result;
    int i;
    element_t *elem;
    rxml_node_t *n;
    video_layout_bounds_t dim;
-
-   result = true;
+   bool result = true;
 
    if (!(name = rxml_node_attrib(node, "name")))
    {
@@ -394,10 +381,8 @@ static bool load_element(scope_t *scope, rxml_node_t *node)
 
 static bool load_screen(scope_t *scope, element_t *elem, rxml_node_t *node)
 {
-   const char *index;
    component_t *comp;
-
-   index = rxml_node_attrib(node, "index");
+   const char *index = rxml_node_attrib(node, "index");
 
    element_init(elem, NULL, 1);
    comp = &elem->components[0];
@@ -412,10 +397,8 @@ static bool load_screen(scope_t *scope, element_t *elem, rxml_node_t *node)
 static void merge_group(scope_t *scope, view_t *view, view_t *group,
    bool has_bounds, video_layout_bounds_t n_bounds, video_layout_orientation_t n_orient, video_layout_color_t n_color)
 {
-   bool constrain;
    int i, j, k;
-
-   constrain = bounds_valid(&n_bounds);
+   bool constrain = bounds_valid(&n_bounds);
 
    for (i = 0; i < group->layers_count; ++i)
    {
@@ -471,7 +454,7 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
       view_init(view, scope_eval(scope, name));
    }
 
-   result = true;
+   result     = true;
    has_bounds = false;
 
    for (n = node->children; n; n = n->next)
@@ -660,10 +643,8 @@ static bool load_group(scope_t *scope, rxml_node_t *node)
 
 static bool load_top_level(scope_t *scope, int *view_count, rxml_node_t *root)
 {
-   bool result;
    rxml_node_t *node;
-
-   result = true;
+   bool result = true;
    *view_count = 0;
 
    for (node = root->children; node; node = node->next)
@@ -695,12 +676,9 @@ static bool load_top_level(scope_t *scope, int *view_count, rxml_node_t *root)
 
 static bool load_views(scope_t *scope, view_array_t *view_array, rxml_node_t *root)
 {
-   bool result;
-   int i;
    rxml_node_t *node;
-
-   result = true;
-   i = 0;
+   bool result = true;
+   int i = 0;
 
    for (node = root->children; node; node = node->next)
    {
@@ -730,14 +708,12 @@ static bool load_views(scope_t *scope, view_array_t *view_array, rxml_node_t *ro
 bool load(view_array_t *view_array, rxml_document_t *doc)
 {
    bool result;
-   rxml_node_t *root;
    scope_t scope;
    int view_count;
-
-   root = rxml_root_node(doc);
+   rxml_node_t *root = rxml_root_node(doc);
 
    if (strcmp(root->name, "mamelayout") ||
-      strcmp(rxml_node_attrib(root, "version"), "2"))
+         strcmp(rxml_node_attrib(root, "version"), "2"))
    {
       RARCH_LOG("video_layout: invalid MAME Layout file\n");
       return false;

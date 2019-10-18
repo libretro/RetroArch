@@ -747,9 +747,9 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->frame_coords->u1 = width;
       ctr->frame_coords->v1 = height;
       GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
-      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    }
 
+   ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
                   (ctr->smooth? GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
                               : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |

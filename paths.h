@@ -94,8 +94,6 @@ void path_set_redirect(void);
 
 void path_set_special(char **argv, unsigned num_content);
 
-void path_set_basename(const char *path);
-
 size_t path_get_realsize(enum rarch_path_type type);
 
 struct string_list *path_get_subsystem_list(void);

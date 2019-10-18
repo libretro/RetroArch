@@ -50,40 +50,6 @@ typedef enum apple_view_type {
    APPLE_VIEW_TYPE_METAL,
 } apple_view_type_t;
 
-#ifdef HAVE_METAL
-#import <MetalKit/MetalKit.h>
-
-@interface MetalView : MTKView
-@end
-
-#ifdef HAVE_COCOA_METAL
-
-@protocol ApplePlatform
-
-/*! @brief renderView returns the current render view based on the viewType */
-@property (readonly) id renderView;
-
-/*! @brief isActive returns true if the application has focus */
-@property (readonly) bool hasFocus;
-
-@property (readwrite) apple_view_type_t viewType;
-
-/*! @brief setVideoMode adjusts the video display to the specified mode */
-- (void)setVideoMode:(gfx_ctx_mode_t)mode;
-
-/*! @brief setCursorVisible specifies whether the cursor is visible */
-- (void)setCursorVisible:(bool)v;
-
-/*! @brief controls whether the screen saver should be disabled and
- * the displays should not sleep.
- */
-- (bool)setDisableDisplaySleep:(bool)disable;
-@end
-
-extern id<ApplePlatform> apple_platform;
-#endif
-#endif
-
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
@@ -177,5 +143,9 @@ extern apple_frontend_settings_t apple_frontend_settings;
 #endif
 
 void *get_chosen_screen(void);
+
+void *nsview_get_ptr(void);
+
+void nsview_set_ptr(CocoaView *ptr);
 
 #endif

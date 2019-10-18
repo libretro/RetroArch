@@ -836,8 +836,10 @@ enum gfx_ctx_api
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
    GFX_CTX_SIXEL_API,
+   GFX_CTX_NETWORK_VIDEO_API,
    GFX_CTX_METAL_API,
    GFX_CTX_GDI_API,
+   GFX_CTX_FPGA_API,
    GFX_CTX_GX_API,
    GFX_CTX_GX2_API
 };
@@ -854,7 +856,8 @@ enum display_metric_types
 
 enum display_flags
 {
-   GFX_CTX_FLAGS_GL_CORE_CONTEXT = 0,
+   GFX_CTX_FLAGS_NONE            = 0,
+   GFX_CTX_FLAGS_GL_CORE_CONTEXT,
    GFX_CTX_FLAGS_MULTISAMPLING,
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
    GFX_CTX_FLAGS_HARD_SYNC,
@@ -1152,6 +1155,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool memory_show;
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -1783,6 +1787,8 @@ bool video_driver_translate_coord_viewport(
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 
+uintptr_t video_driver_display_userdata_get(void);
+
 uintptr_t video_driver_display_get(void);
 
 enum rarch_display_type video_driver_display_type_get(void);
@@ -1793,7 +1799,11 @@ void video_driver_display_type_set(enum rarch_display_type type);
 
 void video_driver_display_set(uintptr_t idx);
 
+void video_driver_display_userdata_set(uintptr_t idx);
+
 void video_driver_window_set(uintptr_t idx);
+
+uintptr_t video_driver_window_get(void);
 
 bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
@@ -1941,7 +1951,9 @@ extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
 extern video_driver_t video_vga;
+extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
+extern video_driver_t video_network;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
@@ -1963,7 +1975,9 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
+extern const gfx_ctx_driver_t gfx_ctx_fpga;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
+extern const gfx_ctx_driver_t gfx_ctx_network;
 extern const gfx_ctx_driver_t switch_ctx;
 extern const gfx_ctx_driver_t orbis_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;

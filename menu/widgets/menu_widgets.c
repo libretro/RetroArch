@@ -80,6 +80,9 @@ static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
 };
 
+/* FPS */
+static char menu_widgets_fps_text[255] = {0};
+
 /* Achievement notification */
 static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
@@ -978,14 +981,13 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
    if (msg->task_finished)
    {
       if (msg->task_error)
-         snprintf(task_percentage, sizeof(task_percentage), "Task failed");
+         strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
       else
-         snprintf(task_percentage, sizeof(task_percentage), " ");
+         strlcpy(task_percentage, " ", sizeof(task_percentage));
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
-   {
-      snprintf(task_percentage, sizeof(task_percentage), "%i%%", msg->task_progress);
-   }
+      snprintf(task_percentage, sizeof(task_percentage),
+            "%i%%", msg->task_progress);
 
    rect_width = simple_widget_padding + msg->width + task_percentage_offset;
    bar_width  = rect_width * msg->task_progress/100.0f;
@@ -1621,9 +1623,12 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* FPS Counter */
-   if (video_info->fps_show || video_info->framecount_show)
+   if (     video_info->fps_show 
+         || video_info->framecount_show
+         || video_info->memory_show
+         )
    {
-      const char *text      = *video_info->fps_text == '\0' ? "N/A" : video_info->fps_text;
+      const char *text      = *menu_widgets_fps_text == '\0' ? "N/A" : menu_widgets_fps_text;
 
       int text_width        = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
       int total_width       = text_width + simple_widget_padding * 2;
@@ -2001,6 +2006,14 @@ void menu_widgets_volume_update_and_show(void)
    menu_timer_start(&volume_timer, &entry);
 }
 
+bool menu_widgets_set_fps_text(const char *new_fps_text)
+{
+   strlcpy(menu_widgets_fps_text,
+         new_fps_text, sizeof(menu_widgets_fps_text));
+
+   return true;
+}
+
 static void menu_widgets_screenshot_fadeout(void *userdata)
 {
    menu_animation_ctx_entry_t entry;
@@ -2246,8 +2259,8 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
       return;
    }
 
-   snprintf(badge_file, sizeof(badge_file), "%s.png", badge);
-
+   strlcpy(badge_file, badge, sizeof(badge_file));
+   strlcat(badge_file, ".png", sizeof(badge_file));
    fill_pathname_application_special(fullpath,
          PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
@@ -2290,7 +2303,7 @@ void menu_widgets_set_message(char *msg)
    menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
    menu_timer_ctx_entry_t timer;
 
-   snprintf(generic_message, GENERIC_MESSAGE_SIZE, "%s", msg);
+   strlcpy(generic_message, msg, GENERIC_MESSAGE_SIZE);
 
    generic_message_alpha = DEFAULT_BACKDROP;
 
@@ -2327,7 +2340,7 @@ void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
    menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
    menu_timer_ctx_entry_t timer;
 
-   snprintf(libretro_message, LIBRETRO_MESSAGE_SIZE, "%s", msg);
+   strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
 
    libretro_message_alpha = DEFAULT_BACKDROP;
 
