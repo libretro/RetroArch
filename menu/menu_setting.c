@@ -7816,8 +7816,8 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CORE:
          {
-            unsigned i;
-            struct bool_entry bool_entries[5];
+            unsigned i, listing = 0;
+            struct bool_entry bool_entries[6];
 
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -7830,35 +7830,47 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
 
-            bool_entries[0].target         = &settings->bools.video_shared_context;
-            bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.video_shared_context;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
-            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.driver_switch_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[2].target         = &settings->bools.set_supports_no_game_enable;
-            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
-            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
-            bool_entries[2].default_value  = true;
-            bool_entries[2].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.load_dummy_on_core_shutdown;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[3].target         = &settings->bools.check_firmware_before_loading;
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[3].default_value  = true;
-            bool_entries[3].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.set_supports_no_game_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[listing].default_value  = true;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[4].target         = &settings->bools.video_allow_rotate;
-            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
-            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
-            bool_entries[4].default_value  = DEFAULT_ALLOW_ROTATE;
-            bool_entries[4].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.check_firmware_before_loading;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[listing].default_value  = true;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.video_allow_rotate;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
+            bool_entries[listing].default_value  = DEFAULT_ALLOW_ROTATE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {

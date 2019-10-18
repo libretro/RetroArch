@@ -303,6 +303,9 @@ typedef struct settings
       bool bundle_finished;
       bool bundle_assets_extract_enable;
 
+      /* Driver */
+      bool driver_switch_enable;
+
       /* Misc. */
       bool discord_enable;
       bool threaded_data_runloop_enable;

@@ -9729,3 +9729,7 @@ MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
      "Wrong configuration file - could not find APNAME or PASSWORD in %s")
 #endif
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+      "Allow cores to switch the video driver")
+MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+      "N/A")

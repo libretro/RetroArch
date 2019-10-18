@@ -127,6 +127,8 @@
 
 #define DEFAULT_PLAYLIST_ENTRY_RENAME true
 
+#define DEFAULT_DRIVER_SWITCH_ENABLE true
+
 #define DEFAULT_USER_LANGUAGE 0
 
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
