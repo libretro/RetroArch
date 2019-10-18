@@ -21308,6 +21308,10 @@ static void drivers_init(int flags)
          menu_widgets_context_reset(video_is_threaded,
                video_driver_width, video_driver_height);
    }
+   else
+   {
+      menu_display_init_first_driver(video_is_threaded);
+   }
 #endif
 
    if (flags & DRIVER_VIDEO_MASK)
