@@ -409,6 +409,40 @@ static const materialui_theme_t materialui_theme_materialui_dark = {
    0.75f     /* screen_fade_opacity */
 };
 
+static const materialui_theme_t materialui_theme_ozone_dark = {
+   /* Text (& small inline icon) colours */
+   0xC4C4C4, /* on_sys_bar */
+   0xFFFFFF, /* on_header */
+   0xFFFFFF, /* list_text */
+   0xFFFFFF, /* list_text_highlighted */
+   0xDADADA, /* list_hint_text */
+   0xEEEEEE, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0x373737, /* title_bar_background */
+   0x2D2D2D, /* list_background */
+   0x268C75, /* list_highlighted_background */
+   0x373737, /* nav_bar_background */
+   0x333333, /* surface_background */
+   /* List icon colours */
+   0xFFFFFF, /* list_icon */
+   0x00FFC5, /* list_switch_on */
+   0x00D8AE, /* list_switch_on_background */
+   0x9F9FA1, /* list_switch_off */
+   0x7D7D7D, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0x00FFC5, /* nav_bar_icon_active */
+   0xDADADA, /* nav_bar_icon_passive */
+   0x242424, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* shadow */
+   0xFFFFFF, /* scrollbar */
+   0xFFFFFF, /* divider */
+   0x000000, /* screen_fade */
+   0.3f,     /* shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
 typedef struct
 {
    /* Text */
@@ -645,6 +679,8 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
          return &materialui_theme_materialui;
       case MATERIALUI_THEME_MATERIALUI_DARK:
          return &materialui_theme_materialui_dark;
+      case MATERIALUI_THEME_OZONE_DARK:
+         return &materialui_theme_ozone_dark;
       default:
          break;
    }
