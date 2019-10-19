@@ -380,6 +380,7 @@ typedef struct settings
       bool scan_without_core_match;
 
       bool ai_service_enable;
+      bool ai_service_pause;
    } bools;
 
    struct

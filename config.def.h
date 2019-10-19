@@ -1120,6 +1120,8 @@ static char default_discord_app_id[] = "475456035851599874";
 
 #define DEFAULT_AI_SERVICE_ENABLE true
 
+#define DEFAULT_AI_SERVICE_PAUSE false
+
 #define DEFAULT_AI_SERVICE_MODE 1
 
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"

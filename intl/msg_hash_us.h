@@ -9733,3 +9733,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
       "Allow cores to switch the video driver")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
       "Allow cores to force switch to a different video driver than is currently loaded.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+      "AI Service Pause Toggle")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+      "Pauses core while screen is translated.")
