@@ -123,10 +123,6 @@ VIDEO DRIVER
 /*============================================================
 FONTS
 ============================================================ */
-#if defined(_XBOX360)
-#include "../gfx/drivers_font/xdk360_fonts.cpp"
-#endif
-
 #ifdef WANT_GLSLANG
 #ifdef _WIN32
 #include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
