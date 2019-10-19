@@ -3926,6 +3926,10 @@ MSG_HASH(
          "Rouge volcanique"
          )
 MSG_HASH(
+         MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+         "Sunbeam"
+         )
+MSG_HASH(
          MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
          "Pipeline de shader du menu (fond animé) "
          )

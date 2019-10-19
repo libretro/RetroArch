@@ -454,6 +454,13 @@ float gradient_morning_blue[16] = {
    170/255.0, 200/255.0, 252/255.0, 1.00,
 };
 
+float gradient_sunbeam[16] = {
+   20/255.0,  13/255.0,  20/255.0, 1.0,
+   30/255.0,  72/255.0, 114/255.0, 1.0,
+   1.0, 1.0, 1.0, 1.00,
+   0.1, 0.0, 0.1, 1.00,
+};
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -585,6 +592,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_light[0];
       case XMB_THEME_MORNING_BLUE:
          return &gradient_morning_blue[0];
+      case XMB_THEME_SUNBEAM:
+         return &gradient_sunbeam[0];         
       case XMB_THEME_LEGACY_RED:
       default:
          break;
