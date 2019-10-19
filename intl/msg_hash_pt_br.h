@@ -9182,7 +9182,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
       "URL do Serviço de IA")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "Serviço de IA Habilitado")
-MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
       "Interrompe o jogo durante a tradução (modo Imagem) ou continua em execução (modo Fala)")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "Um endereço http:// url apontando para o serviço de tradução a ser usado.")

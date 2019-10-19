@@ -3547,7 +3547,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "AI Service Enabled")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-      "Pauses gameplay during translation (Image mode), or continues to run (Speech mode)")
+      "Show translation as a text overlay (Image mode), or play as Text-To-Speech (Speech mode)")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "A http:// url pointing to the translation service to use.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,

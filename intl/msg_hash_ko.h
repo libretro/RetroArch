@@ -9178,7 +9178,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
       "AI 서비스 URL")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "AI 서비스 사용")
-MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
       "번역하는 동안 게임을 일시정지(이미지모드) 하거나 계속해서 실행(음성모드)합니다")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "번역 서비스에서 사용할 http:// 주소입니다.")

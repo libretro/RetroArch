@@ -4323,7 +4323,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
       "Adres URL usługi AI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "Usługa AI włączona")
-MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
       "Wstrzymuje grę podczas tłumaczenia (tryb obrazu) lub kontynuuje działanie (tryb mowy)")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "Adres URL http: // wskazujący na usługę tłumaczeniową do użycia.")

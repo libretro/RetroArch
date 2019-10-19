@@ -9313,7 +9313,7 @@ MSG_HASH(
    "AIサービス有効"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
    "'Image mode'は翻訳中にゲームを一時停止, 'Speech mode'は実行継続します。"
 )
 MSG_HASH(

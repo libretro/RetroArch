@@ -8807,7 +8807,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
       "AI Servis URL'si")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "AI Servisi Etkinleştirildi")
-MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
       "Çeviri sırasında oyunu duraklatır (Görüntü modu) veya çalışmaya devam eder (Konuşma modu)")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "Kullanılacak çeviri hizmetini gösteren bir http:// url'si.")
