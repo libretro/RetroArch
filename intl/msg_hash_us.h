@@ -9732,4 +9732,4 @@ MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
       "Allow cores to switch the video driver")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
-      "N/A")
+      "Allow cores to force switch to a different video driver than is currently loaded.")
