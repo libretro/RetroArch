@@ -940,3 +940,19 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 #endif
 }
 #endif
+
+uintptr_t sthread_get_thread_id(sthread_t *thread)
+{
+   if (!thread)
+      return 0;
+   return (uintptr_t)thread->id;
+}
+
+uintptr_t sthread_get_current_thread_id(sthread_t *thread)
+{
+#ifdef USE_WIN32_THREADS
+   return (uintptr_t)GetCurrentThreadId();
+#else
+   return (uintptr_t)pthread_self();
+#endif
+}
