@@ -948,7 +948,7 @@ uintptr_t sthread_get_thread_id(sthread_t *thread)
    return (uintptr_t)thread->id;
 }
 
-uintptr_t sthread_get_current_thread_id(sthread_t *thread)
+uintptr_t sthread_get_current_thread_id(void)
 {
 #ifdef USE_WIN32_THREADS
    return (uintptr_t)GetCurrentThreadId();
