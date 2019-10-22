@@ -72,7 +72,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       unsigned j;
       for (j = 0; j < core_list->count; j++)
       {
-         if (string_is_equal(path_basename(core_list->list[j].path), 
+         if (string_is_equal(path_basename(core_list->list[j].path),
                   path))
          {
             if (core_list->list[j].licenses_list)
@@ -301,7 +301,11 @@ default_sublabel_macro(action_bind_sublabel_content_special,               MENU_
 default_sublabel_macro(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
 default_sublabel_macro(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_system_information,            MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION)
+#ifdef HAVE_LAKKA
+default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_RESTART_RETROARCH)
+#else
 default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
+#endif
 default_sublabel_macro(action_bind_sublabel_restart_retroarch,             MENU_ENUM_SUBLABEL_RESTART_RETROARCH)
 default_sublabel_macro(action_bind_sublabel_menu_widgets,             MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
@@ -1043,7 +1047,7 @@ static int action_bind_sublabel_playlist_entry(
    settings_t *settings               = config_get_ptr();
    playlist_t *playlist               = NULL;
    const struct playlist_entry *entry = NULL;
-   
+
    if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
       return 0;
 
@@ -1055,19 +1059,19 @@ static int action_bind_sublabel_playlist_entry(
 
    if (i >= playlist_get_size(playlist))
       return 0;
-   
+
    /* Read playlist entry */
    playlist_get_index(playlist, i, &entry);
-   
+
    /* Only add sublabel if a core is currently assigned */
    if (string_is_empty(entry->core_name) || string_is_equal(entry->core_name, "DETECT"))
       return 0;
-   
+
    /* Add core name */
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
    strlcat(s, " ", len);
    strlcat(s, entry->core_name, len);
-   
+
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
    if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
@@ -1075,7 +1079,7 @@ static int action_bind_sublabel_playlist_entry(
        ((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
          !settings->bools.content_runtime_log_aggregate))
       return 0;
-   
+
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
    if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) &&
@@ -1085,17 +1089,17 @@ static int action_bind_sublabel_playlist_entry(
        !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) &&
        !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
-   
+
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
       runtime_update_playlist(playlist, i);
-   
+
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
       int n = 0;
       char tmp[64];
-      
+
       tmp[0  ] = '\n';
       tmp[1  ] = '\0';
 
@@ -1103,18 +1107,18 @@ static int action_bind_sublabel_playlist_entry(
 
       tmp[n  ] = '\n';
       tmp[n+1] = '\0';
-      
+
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
       n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
-      
+
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
-      
+
       if (!string_is_empty(tmp))
          strlcat(s, tmp, len);
    }
-   
+
    return 0;
 }
 

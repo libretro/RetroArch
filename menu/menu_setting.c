@@ -277,7 +277,7 @@ struct string_options_entry
    (*a)[b->index - 1].enum_idx = c
 
 #define MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(a, b, c) \
-   (*a)[b->index - 1].enum_value_idx = c 
+   (*a)[b->index - 1].enum_value_idx = c
 
 static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
@@ -631,7 +631,7 @@ int setting_uint_action_left_default(
    overflowed = step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
-      *setting->value.target.unsigned_integer = 
+      *setting->value.target.unsigned_integer =
          *setting->value.target.unsigned_integer - step;
 
    if (setting->enforce_minrange)
@@ -662,7 +662,7 @@ int setting_uint_action_right_default(
       return -1;
 
    max                       = setting->max;
-   step                      = 
+   step                      =
       recalc_step_based_on_length_of_action(setting);
 
    *setting->value.target.unsigned_integer =
@@ -4182,7 +4182,7 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
                len);
-         break;         
+         break;
    }
 }
 #endif
@@ -4355,7 +4355,7 @@ static void setting_get_string_representation_crt_switch_resolution_super(
    else if (*setting->value.target.unsigned_integer == 1)
       strlcpy(s, "DYNAMIC", len);
    else
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
 static void setting_get_string_representation_uint_playlist_sublabel_runtime_type(
@@ -5885,7 +5885,7 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
       return NULL;
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (  setting->enum_idx == enum_idx && 
+      if (  setting->enum_idx == enum_idx &&
             setting_get_type(setting) <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
@@ -6558,7 +6558,7 @@ void general_write_handler(rarch_setting_t *setting)
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
-            
+
                /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
                custom->x      = 0;
@@ -7095,7 +7095,7 @@ static bool setting_append_list_input_player_options(
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
       snprintf(label_type[user], sizeof(label_type[user]),
                "%s",
@@ -7107,13 +7107,13 @@ static bool setting_append_list_input_player_options(
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL));
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
 
       CONFIG_UINT_ALT(
@@ -7690,7 +7690,11 @@ static bool setting_append_list(
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_QUIT_RETROARCH,
+#ifdef HAVE_LAKKA
+               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+#else
                MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+#endif
                &group_info,
                &subgroup_info,
                parent_group);
@@ -7728,7 +7732,11 @@ static bool setting_append_list(
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
+#ifdef HAVE_LAKKA_SWITCH
+               MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
+#else
                MENU_ENUM_LABEL_VALUE_REBOOT,
+#endif
                &group_info,
                &subgroup_info,
                parent_group);
@@ -10153,7 +10161,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-        
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.video_hard_sync_frames,
@@ -13220,7 +13228,11 @@ static bool setting_append_list(
                   list, list_info,
                   &settings->bools.menu_show_quit_retroarch,
                   MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
+#ifdef HAVE_LAKKA
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+#else
                   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+#endif
                   menu_show_quit_retroarch,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
@@ -13625,7 +13637,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            (*list)[list_info->index - 1].ui_type   
+            (*list)[list_info->index - 1].ui_type
                                   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
             */
          }
