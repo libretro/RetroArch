@@ -7687,17 +7687,23 @@ static bool setting_append_list(
 #endif
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
+#ifdef HAVE_LAKKA
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_QUIT_RETROARCH,
-#ifdef HAVE_LAKKA
                MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-#else
-               MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-#endif
                &group_info,
                &subgroup_info,
                parent_group);
+#else
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_QUIT_RETROARCH,
+               MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
@@ -7729,17 +7735,23 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
+#ifdef HAVE_LAKKA_SWITCH
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
-#ifdef HAVE_LAKKA_SWITCH
                MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
-#else
-               MENU_ENUM_LABEL_VALUE_REBOOT,
-#endif
                &group_info,
                &subgroup_info,
                parent_group);
+#else
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_REBOOT,
+               MENU_ENUM_LABEL_VALUE_REBOOT,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REBOOT);
 
          CONFIG_ACTION(
@@ -13224,15 +13236,12 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_LAKKA
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_quit_retroarch,
                   MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
-#ifdef HAVE_LAKKA
                   MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
-#else
-                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-#endif
                   menu_show_quit_retroarch,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
@@ -13242,6 +13251,22 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+#else
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_quit_retroarch,
+                  MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+                  menu_show_quit_retroarch,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
 
 #ifdef HAVE_LAKKA
             CONFIG_BOOL(
