@@ -2284,8 +2284,22 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-
    menu_disp->draw(draw, video_info);
+}
+
+void menu_display_draw_blend(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
+{
+   if (!menu_disp || !draw || !menu_disp->draw)
+      return;
+
+   if (draw->height <= 0)
+      return;
+   if (draw->width <= 0)
+      return;
+   menu_display_blend_begin(video_info);
+   menu_disp->draw(draw, video_info);
+   menu_display_blend_end(video_info);
 }
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
@@ -3181,6 +3195,35 @@ bool menu_display_reset_textures_list(
          filter_type, item);
    image_texture_free(&ti);
 
+   return true;
+}
+
+
+bool menu_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   /* if the poke interface doesn't support texture load then return false */  
+   if (!video_driver_texture_load(&ti, filter_type, item))
+       return false;
+   image_texture_free(&ti);
    return true;
 }
 

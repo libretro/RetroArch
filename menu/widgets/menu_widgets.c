@@ -261,6 +261,12 @@ static menu_timer_t screenshot_timer;
 
 static unsigned screenshot_shotname_length;
 
+/* AI Service Overlay */
+static int ai_service_overlay_state                  = 0;
+static unsigned ai_service_overlay_width             = 0;
+static unsigned ai_service_overlay_height            = 0;
+static menu_texture_item ai_service_overlay_texture  = 0;
+
 /* Generic message */
 static menu_timer_t generic_message_timer;
 static float generic_message_alpha = 0.0f;
@@ -709,6 +715,55 @@ static void menu_widgets_draw_icon(
    menu_display_draw(&draw, video_info);
 }
 
+
+static void menu_widgets_draw_icon_blend(
+      video_frame_info_t *video_info,
+      unsigned icon_width,
+      unsigned icon_height,
+      uintptr_t texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float rotation, float scale_factor,
+      float *color)
+{
+   menu_display_ctx_rotate_draw_t rotate_draw;
+   menu_display_ctx_draw_t draw;
+   struct video_coords coords;
+   math_matrix_4x4 mymat;
+
+   if (!texture)
+      return;
+
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = rotation;
+   rotate_draw.scale_x      = scale_factor;
+   rotate_draw.scale_y      = scale_factor;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_rotate_z(&rotate_draw, video_info);
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
+
+   draw.x               = x;
+   draw.y               = height - y - icon_height;
+   draw.width           = icon_width;
+   draw.height          = icon_height;
+   draw.scale_factor    = scale_factor;
+   draw.rotation        = rotation;
+   draw.coords          = &coords;
+   draw.matrix_data     = &mymat;
+   draw.texture         = texture;
+   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
+
+   menu_display_draw_blend(&draw, video_info);
+}
+
 static float menu_widgets_get_thumbnail_scale_factor(const float dst_width, const float dst_height,
       const float image_width, const float image_height)
 {
@@ -1134,7 +1189,6 @@ static void menu_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_in
          (msg_queue_scissor_start_x + msg->width - simple_widget_padding*2) * msg->unfold, video_info->height);
    }
 
-
    if (msg_queue_has_icons)
    {
       menu_display_blend_begin(video_info);
@@ -1285,6 +1339,57 @@ void menu_widgets_frame(video_frame_info_t *video_info)
 
    font_raster_regular.carr.coords.vertices = 0;
    font_raster_bold.carr.coords.vertices    = 0;
+
+   /* AI Service overlay */
+   if (ai_service_overlay_state > 0)
+   {
+      float outline_color[16] = {
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      };
+
+      menu_widgets_draw_icon_blend(video_info,
+         video_info->width, video_info->height,
+         ai_service_overlay_texture,
+         0, 0,
+         video_info->width, video_info->height,
+         0, 1, menu_widgets_pure_white
+      );
+      /* top line */
+      menu_display_draw_quad(video_info,
+         0, 0,
+         video_info->width, 1,
+         video_info->width, video_info->height,
+         outline_color
+      );
+      /* bottom line */
+      menu_display_draw_quad(video_info,
+         0, video_info->height-1,
+         video_info->width, 1,
+         video_info->width, video_info->height,
+         outline_color
+      );
+      /* left line */
+      menu_display_draw_quad(video_info,
+         0, 0,
+         1, video_info->height,
+         video_info->width, video_info->height,
+         outline_color
+      );
+      /* right line */
+      menu_display_draw_quad(video_info,
+         video_info->width-1, 0,
+         1, video_info->height,
+         video_info->width, video_info->height,
+         outline_color
+      );
+
+      if (ai_service_overlay_state == 2)
+          ai_service_overlay_state = 3;
+   }
+
 
    /* Libretro message */
    if (libretro_message_alpha > 0.0f)
@@ -1957,6 +2062,9 @@ void menu_widgets_free(void)
    menu_timer_kill(&libretro_message_timer);
    menu_animation_kill_by_tag(&libretro_tag);
 
+   /* AI Service overlay */
+   /* ... */
+
    /* Volume */
    volume_alpha = 0.0f;
 
@@ -2012,6 +2120,46 @@ bool menu_widgets_set_fps_text(const char *new_fps_text)
          new_fps_text, sizeof(menu_widgets_fps_text));
 
    return true;
+}
+
+int menu_widgets_ai_service_overlay_get_state()
+{
+   return ai_service_overlay_state;
+}
+
+bool menu_widgets_ai_service_overlay_set_state(int state)
+{
+   ai_service_overlay_state = state;
+   return true;
+}
+
+
+
+bool menu_widgets_ai_service_overlay_load(
+        char* buffer, unsigned buffer_len, enum image_type_enum image_type)
+{
+   if (ai_service_overlay_state == 0)
+   {
+      bool res;
+      res = menu_display_reset_textures_list_buffer(
+               &ai_service_overlay_texture, 
+               TEXTURE_FILTER_MIPMAP_LINEAR, 
+               (void *) buffer, buffer_len, image_type,
+               &ai_service_overlay_width, &ai_service_overlay_height);
+      if (res)
+         ai_service_overlay_state = 1;
+      return res;
+   }
+   return true;
+}
+
+void menu_widgets_ai_service_overlay_unload()
+{
+   if (ai_service_overlay_state == 1)
+   {
+      video_driver_texture_unload(&ai_service_overlay_texture);
+      ai_service_overlay_state = 0;
+   }
 }
 
 static void menu_widgets_screenshot_fadeout(void *userdata)
