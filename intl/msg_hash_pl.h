@@ -4633,21 +4633,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-      "Wi-Fi Access Point")
+      "Punkt dostępu Wi-Fi")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-      "Enable or disable Wi-Fi Access Point.")
+      "Włącz lub wyłącz punkt dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
-      "Switching off Wi-Fi Access Point.")
+      "Wyłączanie punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
-      "Disconnecting from Wi-Fi '%s'")
+      "Odłączanie od Wi-Fi '%s'")
 MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
-      "Wi-Fi Access Point is already started")
+      "Punkt dostępu Wi-Fi jest już uruchomiony")
 MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
-      "Wi-Fi Access Point is not running")
+      "Punkt dostępu Wi-Fi nie jest uruchomiony")
 MSG_HASH(MSG_LOCALAP_STARTING,
-      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+      "Uruchamianie punktu dostępu Wi-Fi z SSID =% si kluczem dostępu=%s")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
-      "Could not create Wi-Fi Access Point configuration file.")
+      "Nie można utworzyć pliku konfiguracyjnego punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+     "Niepoprawny plik konfiguracyjny - nie można znaleźć APNAME lub PASSWORD w %s")
 #endif
