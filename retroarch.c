@@ -19638,7 +19638,7 @@ static void video_driver_frame(const void *data, unsigned width,
       return;
 
    if (
-         !menu_driver_alive()
+         !menu_driver_is_alive()
          && video_driver_scaler_ptr
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
