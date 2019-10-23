@@ -114,7 +114,27 @@
 #endif
 
 #ifdef HAVE_MATERIALUI
+/* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+#endif
+
+/* Material UI colour theme */
+#define DEFAULT_MATERIALUI_THEME MATERIALUI_THEME_OZONE_DARK
+
+/* Type of animation to use when performing menu transitions
+ * > 'Auto' follows Material UI standards:
+ *   - Slide when switching between parent menus (tabs)
+ *   - Fade when changing levels in a menu
+ * Note: Not wrapping this with a HAVE_MATERIALUI ifdef
+ * because there's too much baggage involved... */
+#define DEFAULT_MATERIALUI_TRANSITION_ANIM MATERIALUI_TRANSITION_ANIM_AUTO
+
+/* Adjust menu padding etc. to better fit the
+ * screen when using landscape layouts */
+#if defined(RARCH_MOBILE)
+#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT false
+#else
+#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT true
 #endif
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
