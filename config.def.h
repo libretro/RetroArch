@@ -542,7 +542,8 @@ static bool rgui_extended_ascii = false;
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
 
-#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST true
+/* TODO/FIXME - this setting is thread-unsafe right now and can corrupt the stack - default to off */
+#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
