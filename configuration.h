@@ -186,6 +186,7 @@ typedef struct settings
       bool menu_show_video_layout;
 #endif
       bool menu_materialui_icons_enable;
+      bool menu_materialui_optimize_landscape_layout;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
@@ -532,6 +533,7 @@ typedef struct settings
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_materialui_color_theme;
+      unsigned menu_materialui_transition_animation;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;

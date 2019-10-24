@@ -3868,6 +3868,55 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
          break;
+      case MATERIALUI_THEME_NORD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD), len);
+         break;
+      case MATERIALUI_THEME_GRUVBOX_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK), len);
+         break;
+      case MATERIALUI_THEME_SOLARIZED_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK), len);
+         break;
+      default:
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_materialui_menu_transition_animation(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MATERIALUI_TRANSITION_ANIM_AUTO:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_FADE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_SLIDE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE), len);
+         break;
       default:
          break;
    }
@@ -12864,7 +12913,7 @@ static bool setting_append_list(
                   &settings->uints.menu_materialui_color_theme,
                   MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-                  MATERIALUI_THEME_BLUE,
+                  DEFAULT_MATERIALUI_THEME,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12875,6 +12924,38 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_materialui_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_materialui_transition_animation,
+                  MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+                  DEFAULT_MATERIALUI_TRANSITION_ANIM,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_materialui_menu_transition_animation;
+            menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_TRANSITION_ANIM_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_optimize_landscape_layout,
+                  MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             /* TODO: These should be removed entirely, but just
              * comment out for now in case users complain...
