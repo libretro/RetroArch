@@ -74,7 +74,7 @@ bool dbus_screensaver_inhibit(void)
       return true; /* Already inhibited */
 
    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-         "/org/freedesktop/ScreenSaver",
+         "/ScreenSaver",
          "org.freedesktop.ScreenSaver",
          "Inhibit");
 
@@ -133,7 +133,7 @@ void dbus_screensaver_uninhibit(void)
       return;
 
    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-         "/org/freedesktop/ScreenSaver",
+         "/ScreenSaver",
          "org.freedesktop.ScreenSaver",
          "UnInhibit");
    if (!msg)
