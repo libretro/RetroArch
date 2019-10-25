@@ -6940,6 +6940,14 @@ MSG_HASH(
     "Automatically adjust menu layout to better fit the screen when using landscape display orientations."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+    "Auto-Rotate Navigation Bar"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+    "Automatically move the navigation bar to the right hand side of the screen when using landscape display orientations."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
     "Settings Tab"
     )

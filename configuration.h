@@ -187,6 +187,7 @@ typedef struct settings
 #endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_optimize_landscape_layout;
+      bool menu_materialui_auto_rotate_nav_bar;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
