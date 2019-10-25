@@ -211,8 +211,8 @@ static const materialui_theme_t materialui_theme_dark_blue = {
    0x4b636e, /* list_switch_off */
    0x607d8b, /* list_switch_off_background */
    /* Navigation bar icon colours */
-   0x90caf9, /* nav_bar_icon_active */
-   0x8eacbb, /* nav_bar_icon_passive */
+   0x6ec6ff, /* nav_bar_icon_active */
+   0xA5B4BB, /* nav_bar_icon_passive */
    0x000000, /* nav_bar_icon_disabled */
    /* Misc. colours */
    0x000000, /* header_shadow */
