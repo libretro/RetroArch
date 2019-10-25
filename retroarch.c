@@ -19637,8 +19637,14 @@ static void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
+   if (data)
+      frame_cache_data = data;
+   frame_cache_width   = width;
+   frame_cache_height  = height;
+   frame_cache_pitch   = pitch;
+   
    if (
-            video_driver_scaler_ptr
+         video_driver_scaler_ptr
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
@@ -19651,12 +19657,6 @@ static void video_driver_frame(const void *data, unsigned width,
       data                = video_driver_scaler_ptr->scaler_out;
       pitch               = video_driver_scaler_ptr->scaler->out_stride;
    }
-
-   if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
 
    video_driver_build_info(&video_info);
 
