@@ -45,6 +45,7 @@
 #include "../menu_input.h"
 
 #include "../widgets/menu_osk.h"
+#include "../widgets/menu_filebrowser.h"
 
 #include "../../core_info.h"
 #include "../../core.h"
@@ -53,6 +54,7 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+#include "../../paths.h"
 #include "../../file_path_special.h"
 
 #include "../../dynamic.h"
@@ -467,7 +469,7 @@ static const materialui_theme_t materialui_theme_ozone_dark = {
    /* Misc. colours */
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
-   0xFFFFFF, /* scrollbar */
+   0x9F9F9F, /* scrollbar */
    0xFFFFFF, /* divider */
    0x000000, /* screen_fade */
    0.3f,     /* header_shadow_opacity */
@@ -535,7 +537,7 @@ static const materialui_theme_t materialui_theme_gruvbox_dark = {
    /* Navigation bar icon colours */
    0xBF9137, /* nav_bar_icon_active */
    0xA89984, /* nav_bar_icon_passive */
-   0x504945, /* nav_bar_icon_disabled */
+   0x3C3836, /* nav_bar_icon_disabled */
    /* Misc. colours */
    0x000000, /* header_shadow */
    0x000000, /* landscape_border_shadow */
@@ -569,8 +571,8 @@ static const materialui_theme_t materialui_theme_solarized_dark = {
    0x6C71C4, /* list_switch_off */
    0x565A9C, /* list_switch_off_background */
    /* Navigation bar icon colours */
-   0x839496, /* nav_bar_icon_active */
-   0x2AA198, /* nav_bar_icon_passive */
+   0x2AA198, /* nav_bar_icon_active */
+   0x839496, /* nav_bar_icon_passive */
    0x00222B, /* nav_bar_icon_disabled */
    /* Misc. colours */
    0x000000, /* header_shadow */
@@ -646,6 +648,8 @@ enum
    MUI_TEXTURE_TAB_MAIN,
    MUI_TEXTURE_TAB_PLAYLISTS,
    MUI_TEXTURE_TAB_SETTINGS,
+   MUI_TEXTURE_TAB_BACK,
+   MUI_TEXTURE_TAB_RESUME,
    MUI_TEXTURE_KEY,
    MUI_TEXTURE_KEY_HOVER,
    MUI_TEXTURE_FOLDER,
@@ -706,15 +710,75 @@ enum
    MUI_TEXTURE_LAST
 };
 
-/* The menu has 3 tabs */
-enum
+/* Maximum number of menu tabs that can be shown on
+ * the navigation bar */
+#define MUI_NAV_BAR_NUM_MENU_TABS_MAX 3
+
+/* Number of action tabs shown on the navigation bar */
+#define MUI_NAV_BAR_NUM_ACTION_TABS 2
+
+/* Defines the various types of menu tab that can
+ * be shown on the navigation bar */
+enum materialui_nav_bar_menu_tab_type
 {
-   MUI_SYSTEM_TAB_MAIN = 0,
-   MUI_SYSTEM_TAB_PLAYLISTS,
-   MUI_SYSTEM_TAB_SETTINGS
+   MUI_NAV_BAR_MENU_TAB_NONE = 0,
+   MUI_NAV_BAR_MENU_TAB_MAIN,
+   MUI_NAV_BAR_MENU_TAB_PLAYLISTS,
+   MUI_NAV_BAR_MENU_TAB_SETTINGS
 };
 
-#define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
+/* Defines the various types of action tab that can
+ * be shown on the navigation bar */
+enum materialui_nav_bar_action_tab_type
+{
+   MUI_NAV_BAR_ACTION_TAB_NONE = 0,
+   MUI_NAV_BAR_ACTION_TAB_BACK,
+   MUI_NAV_BAR_ACTION_TAB_RESUME
+};
+
+/* Defines navigation bar draw locations
+ * Note: Only bottom and right are supported
+ * at present... */
+enum materialui_nav_bar_location_type
+{
+   MUI_NAV_BAR_LOCATION_BOTTOM = 0,
+   MUI_NAV_BAR_LOCATION_RIGHT
+};
+
+/* This structure holds all runtime parameters
+ * associated with a navigation bar menu tab */
+typedef struct
+{
+   enum materialui_nav_bar_menu_tab_type type;
+   unsigned texture_index;
+   bool active;
+} materialui_nav_bar_menu_tab_t;
+
+/* This structure holds all runtime parameters
+ * associated with a navigation bar action tab */
+typedef struct
+{
+   enum materialui_nav_bar_action_tab_type type;
+   unsigned texture_index;
+   bool enabled;
+} materialui_nav_bar_action_tab_t;
+
+/* This structure holds all runtime parameters for
+ * the navigation bar */
+typedef struct
+{
+   unsigned width;
+   unsigned divider_width;
+   unsigned selection_marker_width;
+   unsigned num_menu_tabs;
+   unsigned active_menu_tab_index;
+   unsigned last_active_menu_tab_index;
+   bool menu_navigation_wrapped;
+   enum materialui_nav_bar_location_type location;
+   materialui_nav_bar_action_tab_t back_tab;
+   materialui_nav_bar_action_tab_t resume_tab;
+   materialui_nav_bar_menu_tab_t menu_tabs[MUI_NAV_BAR_NUM_MENU_TABS_MAX];
+} materialui_nav_bar_t;
 
 /* Defines all possible entry value types
  * > Note: These are not necessarily 'values',
@@ -777,6 +841,8 @@ typedef struct materialui_handle
    bool is_file_list;
    bool is_dropdown_list;
    bool last_optimize_landscape_layout;
+   bool last_auto_rotate_nav_bar;
+   bool menu_stack_flushed;
 
    unsigned last_width;
    unsigned last_height;
@@ -787,22 +853,23 @@ typedef struct materialui_handle
 
    unsigned sys_bar_height;
    unsigned title_bar_height;
-   unsigned tabs_height;
    unsigned header_shadow_height;
    unsigned scrollbar_width;
-   unsigned divider_width;
    unsigned icon_size;
    unsigned sys_bar_icon_size;
    unsigned margin;
    unsigned sys_bar_margin;
    unsigned landscape_entry_margin;
-   unsigned categories_active_idx;
-   unsigned categories_active_idx_old;
 
-   size_t categories_selection_ptr;
-   size_t categories_selection_ptr_old;
-
-   bool categories_navigation_wrapped;
+   /* Navigation bar parameters
+    * Note: layout width and height are convenience
+    * variables used when determining usable width/
+    * height for all other menu elements - e.g. when
+    * navigation bar is at the bottom of the screen
+    * nav_bar_screen_width is zero */
+   unsigned nav_bar_layout_width;
+   unsigned nav_bar_layout_height;
+   materialui_nav_bar_t nav_bar;
 
    size_t first_onscreen_entry;
    size_t last_onscreen_entry;
@@ -1024,6 +1091,10 @@ static const char *materialui_texture_path(unsigned id)
          return "playlists_tab_passive.png";
       case MUI_TEXTURE_TAB_SETTINGS:
          return "settings_tab_passive.png";
+      case MUI_TEXTURE_TAB_BACK:
+         return "back_tab.png";
+      case MUI_TEXTURE_TAB_RESUME:
+         return "resume_tab.png";
       case MUI_TEXTURE_KEY:
          return "key.png";
       case MUI_TEXTURE_KEY_HOVER:
@@ -1204,88 +1275,6 @@ static void materialui_draw_icon(
    menu_display_blend_end(video_info);
 }
 
-/* Draw a single tab */
-static void materialui_draw_tab(
-      materialui_handle_t *mui,
-      video_frame_info_t *video_info,
-      unsigned i,
-      unsigned width, unsigned height)
-{
-   unsigned tab_icon = 0;
-   bool is_active    = false;
-
-   switch (i)
-   {
-      case MUI_SYSTEM_TAB_MAIN:
-         tab_icon = MUI_TEXTURE_TAB_MAIN;
-         if (i == mui->categories_selection_ptr)
-            is_active = true;
-         break;
-      case MUI_SYSTEM_TAB_PLAYLISTS:
-         tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
-         if (i == mui->categories_selection_ptr)
-            is_active = true;
-         break;
-      case MUI_SYSTEM_TAB_SETTINGS:
-         tab_icon = MUI_TEXTURE_TAB_SETTINGS;
-         if (i == mui->categories_selection_ptr)
-            is_active = true;
-         break;
-   }
-
-   materialui_draw_icon(video_info,
-         mui->icon_size,
-         mui->textures.list[tab_icon],
-         width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
-         height - mui->tabs_height,
-         width,
-         height,
-         0,
-         1,
-         is_active ? mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive);
-}
-
-/* Draw the tabs background */
-static void materialui_draw_tab_begin(
-      materialui_handle_t *mui,
-      video_frame_info_t *video_info,
-      unsigned width, unsigned height)
-{
-   /* tabs background */
-   menu_display_draw_quad(
-         video_info,
-         0, height - mui->tabs_height, width,
-         mui->tabs_height,
-         width, height,
-         mui->colors.nav_bar_background);
-
-   /* tabs divider */
-   menu_display_draw_quad(
-         video_info,
-         0, height - mui->tabs_height, width,
-         mui->divider_width,
-         width, height,
-         mui->colors.divider);
-}
-
-/* Draw the active tab */
-static void materialui_draw_tab_end(materialui_handle_t *mui,
-      video_frame_info_t *video_info,
-      unsigned width, unsigned height)
-{
-   /* active tab marker */
-   unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
-
-   menu_display_draw_quad(
-         video_info,
-         (int)(mui->categories_selection_ptr * tab_width),
-         height - (mui->tabs_height / 16),
-         tab_width,
-         mui->tabs_height / 16,
-         width, height,
-         mui->colors.nav_bar_icon_active);
-}
-
 static void materialui_get_message(void *data, const char *message)
 {
    materialui_handle_t *mui   = (materialui_handle_t*)data;
@@ -1392,7 +1381,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
       int height)
 {
    unsigned i;
-   size_t usable_width       = width - (mui->margin * 2) - (mui->landscape_entry_margin * 2);
+   size_t usable_width       = width - (mui->margin * 2) - (mui->landscape_entry_margin * 2) - mui->nav_bar_layout_width;
    file_list_t *list         = menu_entries_get_selection_buf_ptr(0);
    float sum                 = 0;
    size_t entries_end        = menu_entries_get_size();
@@ -1503,13 +1492,15 @@ static void materialui_render(void *data,
    if ((scale_factor != mui->last_scale_factor) ||
        (width != mui->last_width) ||
        (height != mui->last_height) ||
-       (settings->bools.menu_materialui_optimize_landscape_layout != mui->last_optimize_landscape_layout))
+       (settings->bools.menu_materialui_optimize_landscape_layout != mui->last_optimize_landscape_layout) ||
+       (settings->bools.menu_materialui_auto_rotate_nav_bar != mui->last_auto_rotate_nav_bar))
    {
       mui->dip_base_unit_size             = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
       mui->last_scale_factor              = scale_factor;
       mui->last_width                     = width;
       mui->last_height                    = height;
       mui->last_optimize_landscape_layout = settings->bools.menu_materialui_optimize_landscape_layout;
+      mui->last_auto_rotate_nav_bar       = settings->bools.menu_materialui_auto_rotate_nav_bar;
       materialui_context_reset_internal(mui, video_driver_is_threaded());
    }
 
@@ -1555,11 +1546,11 @@ static void materialui_render(void *data,
    if (mui->scroll_y < 0.0f)
       mui->scroll_y = 0.0f;
 
-   bottom = mui->content_height - height + header_height + mui->tabs_height;
+   bottom = mui->content_height - height + header_height + mui->nav_bar_layout_height;
    if (mui->scroll_y > (float)bottom)
       mui->scroll_y = (float)bottom;
 
-   if (mui->content_height < (height - header_height - mui->tabs_height))
+   if (mui->content_height < (height - header_height - mui->nav_bar_layout_height))
       mui->scroll_y = 0.0f;
 
    /* Loop over all entries */
@@ -1596,9 +1587,9 @@ static void materialui_render(void *data,
          int16_t pointer_y = mui->pointer.y;
 
          if ((pointer_x >  mui->landscape_entry_margin) &&
-             (pointer_x <  width - mui->landscape_entry_margin) &&
+             (pointer_x <  width - mui->landscape_entry_margin - mui->nav_bar_layout_width) &&
              (pointer_y >= header_height) &&
-             (pointer_y <= height - mui->tabs_height))
+             (pointer_y <= height - mui->nav_bar_layout_height))
          {
             if ((pointer_y > entry_y) &&
                 (pointer_y < (entry_y + node->line_height)))
@@ -1627,7 +1618,7 @@ static void materialui_render(void *data,
       }
 
       /* Check whether this is the last onscreen entry */
-      if (entry_y > ((int)height - (int)mui->tabs_height))
+      if (entry_y > ((int)height - (int)mui->nav_bar_layout_height))
       {
          /* Current entry is off screen - get index
           * of previous entry */
@@ -1717,7 +1708,8 @@ static void materialui_render_switch_icon(
    float *switch_color           = on ?
          mui->colors.list_switch_on : mui->colors.list_switch_off;
    int x                         =
-         x_offset + width - (int)mui->margin - (int)mui->landscape_entry_margin - (int)mui->icon_size;
+         x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin -
+               (int)mui->nav_bar_layout_width - (int)mui->icon_size;
 
    /* Draw background */
    if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
@@ -1767,7 +1759,8 @@ static void materialui_render_menu_entry(
    enum msg_file_type entry_file_type                = FILE_TYPE_NONE;
    int entry_y                                       = header_height - mui->scroll_y + node->y;
    int entry_margin                                  = (int)mui->margin + (int)mui->landscape_entry_margin;
-   int usable_width                                  = (int)width - (int)(mui->margin * 2) - (int)(mui->landscape_entry_margin * 2);
+   int usable_width                                  =
+         (int)width - (int)(mui->margin * 2) - (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
    int label_y                                       = 0;
    int value_icon_y                                  = 0;
    uintptr_t icon_texture                            = 0;
@@ -1911,7 +1904,7 @@ static void materialui_render_menu_entry(
                /* Value text is right aligned, so have to offset x
                 * by the 'padding' width at the end of the ticker string... */
                if (menu_animation_ticker_smooth(&mui->ticker_smooth))
-                  value_x_offset = (mui->ticker_x_offset + mui->ticker_str_width) - entry_value_width;
+                  value_x_offset = ((int)mui->ticker_x_offset + (int)mui->ticker_str_width) - (int)entry_value_width;
             }
             else
             {
@@ -1924,7 +1917,7 @@ static void materialui_render_menu_entry(
 
             /* Draw value string */
             menu_display_draw_text(mui->font_data.list.font, value_buf,
-                  (int)(x_offset + value_x_offset + width - mui->margin - mui->landscape_entry_margin),
+                  x_offset + value_x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin - (int)mui->nav_bar_layout_width,
                   label_y,
                   width, height,
                   (entry_selected || touch_feedback_active) ?
@@ -1953,7 +1946,7 @@ static void materialui_render_menu_entry(
                materialui_draw_icon(video_info,
                      mui->icon_size,
                      mui->textures.list[MUI_TEXTURE_CHECKMARK],
-                     (int)(x_offset + width - mui->margin - mui->landscape_entry_margin - mui->icon_size),
+                     x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin - (int)mui->nav_bar_layout_width - (int)mui->icon_size,
                      value_icon_y,
                      width,
                      height,
@@ -2025,7 +2018,7 @@ static void materialui_render_scrollbar(
       unsigned width, unsigned height,
       int x_offset)
 {
-   float total_height     = height - header_height - mui->tabs_height;
+   float total_height     = height - header_height - mui->nav_bar_layout_height;
    float scrollbar_margin = mui->scrollbar_width;
    float scrollbar_height = total_height / (mui->content_height / total_height);
    float y                = total_height * mui->scroll_y / mui->content_height;
@@ -2045,7 +2038,7 @@ static void materialui_render_scrollbar(
       scrollbar_height = mui->scrollbar_width;
 
    /* Get x position */
-   x = x_offset + (int)width - (int)mui->scrollbar_width - scrollbar_margin;
+   x = x_offset + (int)width - (int)mui->scrollbar_width - (int)scrollbar_margin - (int)mui->nav_bar_layout_width;
    if (mui->landscape_entry_margin > mui->margin)
       x -= (int)mui->landscape_entry_margin - (int)mui->margin;
 
@@ -2122,12 +2115,16 @@ static void materialui_render_menu_list(
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 {
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+
    switch (type)
    {
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_TABS:
-         return MUI_SYSTEM_TAB_END;
+         if (!mui)
+            return 0;
+         return (size_t)mui->nav_bar.num_menu_tabs;
       default:
          break;
    }
@@ -2200,25 +2197,23 @@ static void materialui_render_landscape_border(
       materialui_handle_t *mui, video_frame_info_t *video_info,
       unsigned width, unsigned height, unsigned header_height, int x_offset)
 {
-   if (mui->landscape_entry_margin != 0)
+   if (mui->landscape_entry_margin > mui->margin)
    {
-      int border_width  = (int)mui->landscape_entry_margin - (int)mui->margin;
-      int border_height = height - header_height - mui->tabs_height;
-      int left_x        = x_offset;
-      int right_x       = x_offset + (int)width - (int)mui->landscape_entry_margin + (int)mui->margin;
-      int y             = (int)header_height;
-
-      /* Sanity check */
-      if (border_width <= 0)
-         return;
+      unsigned border_width  = mui->landscape_entry_margin - mui->margin;
+      unsigned border_height = height - header_height - mui->nav_bar_layout_height;
+      int left_x             = x_offset;
+      int right_x            =
+            x_offset + (int)width - (int)mui->landscape_entry_margin +
+                  (int)mui->margin - (int)mui->nav_bar_layout_width;
+      int y                  = (int)header_height;
 
       /* Draw left border */
       menu_display_draw_quad(
             video_info,
             left_x,
             y,
-            (unsigned)border_width,
-            (unsigned)border_height,
+            border_width,
+            border_height,
             width,
             height,
             mui->colors.landscape_border_shadow_left);
@@ -2228,8 +2223,8 @@ static void materialui_render_landscape_border(
             video_info,
             right_x,
             y,
-            (unsigned)border_width,
-            (unsigned)border_height,
+            border_width,
+            border_height,
             width,
             height,
             mui->colors.landscape_border_shadow_right);
@@ -2248,7 +2243,7 @@ static void materialui_render_selection_highlight(
       file_list_t *list        = NULL;
       materialui_node_t *node  = NULL;
       int highlight_x_offset   = x_offset;
-      int highlight_width      = (int)width;
+      int highlight_width      = (int)width - (int)mui->nav_bar_layout_width;
 
       /* If landscape optimisations are enabled/active,
        * adjust highlight layout */
@@ -2298,9 +2293,9 @@ static void materialui_render_entry_touch_feedback(
    if (pointer_active)
       pointer_active = (mui->touch_feedback_selection == menu_input_get_pointer_selection()) &&
                        (mui->pointer.x >  mui->landscape_entry_margin) &&
-                       (mui->pointer.x <  width - mui->landscape_entry_margin) &&
+                       (mui->pointer.x <  width - mui->landscape_entry_margin - mui->nav_bar_layout_width) &&
                        (mui->pointer.y >= header_height) &&
-                       (mui->pointer.y <= height - mui->tabs_height);
+                       (mui->pointer.y <= height - mui->nav_bar_layout_height);
 
    /* Touch feedback highlight fades in when pointer
     * is held stationary on a menu entry */
@@ -2347,17 +2342,16 @@ static void materialui_render_entry_touch_feedback(
    }
 }
 
-static void materialui_render_header(materialui_handle_t *mui, video_frame_info_t *video_info)
+static void materialui_render_header(
+      materialui_handle_t *mui, video_frame_info_t *video_info, unsigned width, unsigned height)
 {
    settings_t *settings          = config_get_ptr();
-   unsigned width                = video_info->width;
-   unsigned height               = video_info->height;
    size_t menu_title_margin      = 0;
-   int usable_sys_bar_width      = (int)width;
-   int usable_title_bar_width    = (int)width;
+   int usable_sys_bar_width      = (int)width - (int)mui->nav_bar_layout_width;
+   int usable_title_bar_width    = usable_sys_bar_width;
    size_t sys_bar_battery_width  = 0;
    size_t sys_bar_clock_width    = 0;
-   int sys_bar_text_y            = (mui->sys_bar_height / 2.0f) + (mui->font_data.hint.font_height / 4.0f);
+   int sys_bar_text_y            = (int)(((float)mui->sys_bar_height / 2.0f) + ((float)mui->font_data.hint.font_height / 4.0f));
    int title_x_offset            = 0;
    int title_x                   = 0;
    bool show_back_icon           = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
@@ -2471,8 +2465,8 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
             materialui_draw_icon(video_info,
                   mui->sys_bar_icon_size,
                   (uintptr_t)texture_battery,
-                  width - (mui->sys_bar_cache.battery_percent_width +
-                        mui->sys_bar_margin + mui->sys_bar_icon_size),
+                  (int)width - ((int)mui->sys_bar_cache.battery_percent_width +
+                        (int)mui->sys_bar_margin + (int)mui->sys_bar_icon_size + (int)mui->nav_bar_layout_width),
                   0,
                   width,
                   height,
@@ -2483,7 +2477,7 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
             /* Draw percent text */
             menu_display_draw_text(mui->font_data.hint.font,
                   mui->sys_bar_cache.battery_percent_str,
-                  width - (mui->sys_bar_cache.battery_percent_width + mui->sys_bar_margin),
+                  (int)width - ((int)mui->sys_bar_cache.battery_percent_width + (int)mui->sys_bar_margin + (int)mui->nav_bar_layout_width),
                   sys_bar_text_y,
                   width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
@@ -2536,7 +2530,7 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
 
          menu_display_draw_text(mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
-               width - (sys_bar_clock_width + sys_bar_battery_width),
+               (int)width - ((int)sys_bar_clock_width + (int)sys_bar_battery_width + (int)mui->nav_bar_layout_width),
                sys_bar_text_y,
                width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
@@ -2580,7 +2574,7 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
       }
 
       menu_display_draw_text(mui->font_data.hint.font, core_title_buf,
-            (int)(mui->ticker_x_offset + mui->sys_bar_margin),
+            (int)mui->ticker_x_offset + (int)mui->sys_bar_margin,
             sys_bar_text_y,
             width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
@@ -2598,7 +2592,7 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_BACK],
             0,
-            mui->sys_bar_height,
+            (int)mui->sys_bar_height,
             width,
             height,
             0,
@@ -2614,8 +2608,8 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
       materialui_draw_icon(video_info,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_SEARCH],
-            width - mui->icon_size,
-            mui->sys_bar_height,
+            (int)width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
+            (int)mui->sys_bar_height,
             width,
             height,
             0,
@@ -2674,8 +2668,224 @@ static void materialui_render_header(materialui_handle_t *mui, video_frame_info_
 
    menu_display_draw_text(mui->font_data.title.font, menu_title_buf,
          title_x,
-         mui->sys_bar_height + (mui->title_bar_height / 2.0f) + (mui->font_data.title.font_height / 4.0f),
+         (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + (mui->font_data.title.font_height / 4.0f)),
          width, height, mui->colors.header_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+}
+
+/* Use seperate functions for bottom/right navigation
+ * bars. This involves substantial code duplication, but if
+ * we try to handle this with a single function then
+ * things get incredibly messy and inefficient... */
+static void materialui_render_nav_bar_bottom(
+      materialui_handle_t *mui, video_frame_info_t *video_info,
+      unsigned width, unsigned height)
+{
+   unsigned nav_bar_width           = width;
+   unsigned nav_bar_height          = mui->nav_bar.width;
+   int nav_bar_x                    = 0;
+   int nav_bar_y                    = (int)height - (int)mui->nav_bar.width;
+   unsigned num_tabs                = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
+   float tab_width                  = (float)width / (float)num_tabs;
+   unsigned tab_width_int           = (unsigned)(tab_width + 0.5f);
+   unsigned selection_marker_width  = tab_width_int;
+   unsigned selection_marker_height = mui->nav_bar.selection_marker_width;
+   int selection_marker_y           = (int)height - (int)mui->nav_bar.selection_marker_width;
+   unsigned i;
+
+   /* Draw navigation bar background */
+
+   /* > Background */
+   menu_display_draw_quad(
+         video_info,
+         nav_bar_x,
+         nav_bar_y,
+         nav_bar_width,
+         nav_bar_height,
+         width,
+         height,
+         mui->colors.nav_bar_background);
+
+   /* > Divider */
+   menu_display_draw_quad(
+         video_info,
+         nav_bar_x,
+         nav_bar_y,
+         nav_bar_width,
+         mui->nav_bar.divider_width,
+         width,
+         height,
+         mui->colors.divider);
+
+   /* Draw tabs */
+
+   /* > Back - left hand side */
+   materialui_draw_icon(video_info,
+         mui->icon_size,
+         mui->textures.list[mui->nav_bar.back_tab.texture_index],
+         (0.5f * tab_width) - ((float)mui->icon_size / 2.0f),
+         nav_bar_y,
+         width,
+         height,
+         0,
+         1,
+         mui->nav_bar.back_tab.enabled ?
+               mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
+
+   /* > Resume - right hand side */
+   materialui_draw_icon(video_info,
+         mui->icon_size,
+         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+         (((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f),
+         nav_bar_y,
+         width,
+         height,
+         0,
+         1,
+         mui->nav_bar.resume_tab.enabled ?
+               mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
+
+   /* Menu tabs - in the centre, left to right */
+   for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+   {
+      materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
+      float *draw_color                  = tab->active ?
+            mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
+
+      /* Draw icon */
+      materialui_draw_icon(video_info,
+            mui->icon_size,
+            mui->textures.list[tab->texture_index],
+            (((float)i + 1.5f) * tab_width) - ((float)mui->icon_size / 2.0f),
+            nav_bar_y,
+            width,
+            height,
+            0,
+            1,
+            draw_color);
+
+      /* Draw selection marker */
+      menu_display_draw_quad(
+            video_info,
+            (int)((i + 1) * tab_width_int),
+            selection_marker_y,
+            selection_marker_width,
+            selection_marker_height,
+            width,
+            height,
+            draw_color);
+   }
+}
+
+static void materialui_render_nav_bar_right(
+      materialui_handle_t *mui, video_frame_info_t *video_info,
+      unsigned width, unsigned height)
+{
+   unsigned nav_bar_width           = mui->nav_bar.width;
+   unsigned nav_bar_height          = height;
+   int nav_bar_x                    = (int)width - (int)mui->nav_bar.width;
+   int nav_bar_y                    = 0;
+   unsigned num_tabs                = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
+   float tab_height                 = (float)height / (float)num_tabs;
+   unsigned tab_height_int          = (unsigned)(tab_height + 0.5f);
+   unsigned selection_marker_width  = mui->nav_bar.selection_marker_width;
+   unsigned selection_marker_height = tab_height_int;
+   int selection_marker_x           = (int)width - (int)mui->nav_bar.selection_marker_width;
+   unsigned i;
+
+   /* Draw navigation bar background */
+
+   /* > Background */
+   menu_display_draw_quad(
+         video_info,
+         nav_bar_x,
+         nav_bar_y,
+         nav_bar_width,
+         nav_bar_height,
+         width,
+         height,
+         mui->colors.nav_bar_background);
+
+   /* > Divider */
+   menu_display_draw_quad(
+         video_info,
+         nav_bar_x,
+         nav_bar_y,
+         mui->nav_bar.divider_width,
+         nav_bar_height,
+         width,
+         height,
+         mui->colors.divider);
+
+   /* Draw tabs */
+
+   /* > Back - bottom */
+   materialui_draw_icon(video_info,
+         mui->icon_size,
+         mui->textures.list[mui->nav_bar.back_tab.texture_index],
+         nav_bar_x,
+         (((float)num_tabs - 0.5f) * tab_height) - ((float)mui->icon_size / 2.0f),
+         width,
+         height,
+         0,
+         1,
+         mui->nav_bar.back_tab.enabled ?
+               mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
+
+   /* > Resume - top */
+   materialui_draw_icon(video_info,
+         mui->icon_size,
+         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+         nav_bar_x,
+         (0.5f * tab_height) - ((float)mui->icon_size / 2.0f),
+         width,
+         height,
+         0,
+         1,
+         mui->nav_bar.resume_tab.enabled ?
+               mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
+
+   /* Menu tabs - in the centre, top to bottom */
+   for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+   {
+      materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
+      float *draw_color                  = tab->active ?
+            mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
+
+      /* Draw icon */
+      materialui_draw_icon(video_info,
+            mui->icon_size,
+            mui->textures.list[tab->texture_index],
+            nav_bar_x,
+            (((float)i + 1.5f) * tab_height) - ((float)mui->icon_size / 2.0f),
+            width,
+            height,
+            0,
+            1,
+            draw_color);
+
+      /* Draw selection marker */
+      menu_display_draw_quad(
+            video_info,
+            selection_marker_x,
+            (int)((i + 1) * tab_height_int),
+            selection_marker_width,
+            selection_marker_height,
+            width,
+            height,
+            draw_color);
+   }
+}
+
+static void materialui_render_nav_bar(
+      materialui_handle_t *mui, video_frame_info_t *video_info,
+      unsigned width, unsigned height)
+{
+   if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
+      materialui_render_nav_bar_right(
+            mui, video_info, width, height);
+   else
+      materialui_render_nav_bar_bottom(
+            mui, video_info, width, height);
 }
 
 /* Sets transparency of all menu list colours if
@@ -2810,7 +3020,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Get x offset for list items, required by
     * menu transition 'slide' animations */
-   list_x_offset = (int)(mui->transition_x_offset * (float)width);
+   list_x_offset = (int)(mui->transition_x_offset * (float)((int)width - (int)mui->nav_bar_layout_width));
 
    /* Draw background */
    materialui_render_background(mui, video_info);
@@ -2842,20 +3052,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->font_data.hint.raster_block.carr.coords.vertices = 0;
 
    /* Draw title + system bar */
-   materialui_render_header(mui, video_info);
+   materialui_render_header(mui, video_info, width, height);
 
    /* Draw navigation bar */
-   if (mui->tabs_height > 0)
-   {
-      unsigned i = 0;
-
-      materialui_draw_tab_begin(mui, video_info, width, height);
-
-      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-         materialui_draw_tab(mui, video_info, i, width, height);
-
-      materialui_draw_tab_end(mui, video_info, width, height);
-   }
+   materialui_render_nav_bar(mui, video_info, width, height);
 
    /* Flush second layer of text
     * > Title + system bar only use title and hint fonts */
@@ -2969,18 +3169,33 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    mui->header_shadow_height = mui->dip_base_unit_size / 36;
    mui->scrollbar_width      = mui->dip_base_unit_size / 36;
 
-   mui->divider_width        = (mui->last_scale_factor > 1.0f) ?
-         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
-
-   mui->tabs_height          = 0;
-   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-      mui->tabs_height       = mui->dip_base_unit_size / 3;
-
    mui->margin               = mui->dip_base_unit_size / 9;
    mui->icon_size            = mui->dip_base_unit_size / 3;
 
    mui->sys_bar_margin       = mui->dip_base_unit_size / 12;
    mui->sys_bar_icon_size    = mui->dip_base_unit_size / 7;
+
+   /* Get navigation bar layout
+    * > Normally drawn at the bottom of the screen,
+    *   but in landscape orientations should be placed
+    *   on the right hand side */
+   mui->nav_bar.width                  = mui->dip_base_unit_size / 3;
+   mui->nav_bar.divider_width          = (mui->last_scale_factor > 1.0f) ?
+         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
+   mui->nav_bar.selection_marker_width = mui->nav_bar.width / 16;
+
+   if (!mui->is_portrait && mui->last_auto_rotate_nav_bar)
+   {
+      mui->nav_bar.location            = MUI_NAV_BAR_LOCATION_RIGHT;
+      mui->nav_bar_layout_width        = mui->nav_bar.width;
+      mui->nav_bar_layout_height       = 0;
+   }
+   else
+   {
+      mui->nav_bar.location            = MUI_NAV_BAR_LOCATION_BOTTOM;
+      mui->nav_bar_layout_width        = 0;
+      mui->nav_bar_layout_height       = mui->nav_bar.width;
+   }
 
    /* In landscape orientations, menu lists are too wide
     * (to the extent that they are rather uncomfortable
@@ -2996,7 +3211,8 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
        * best results */
       const float base_aspect = 4.0f / 3.0f;
       float landscape_margin  =
-            ((float)mui->last_width - (base_aspect * (float)mui->last_height)) / 2.0f;
+            ((float)(mui->last_width - mui->nav_bar_layout_width) -
+                  (base_aspect * (float)mui->last_height)) / 2.0f;
 
       /* Note: Want to round down here */
       if (landscape_margin > 1.0f)
@@ -3088,6 +3304,38 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    mui->need_compute = true;
 }
 
+static void materialui_init_nav_bar(materialui_handle_t *mui)
+{
+   /* Assign action tab textures and types, and ensure sane
+    * menu tab starting values */
+   unsigned i;
+
+   /* Back tab */
+   mui->nav_bar.back_tab.type          = MUI_NAV_BAR_ACTION_TAB_BACK;
+   mui->nav_bar.back_tab.texture_index = MUI_TEXTURE_TAB_BACK;
+   mui->nav_bar.back_tab.enabled       = false;
+
+   /* Resume tab */
+   mui->nav_bar.resume_tab.type          = MUI_NAV_BAR_ACTION_TAB_RESUME;
+   mui->nav_bar.resume_tab.texture_index = MUI_TEXTURE_TAB_RESUME;
+   mui->nav_bar.resume_tab.enabled       = false;
+
+   /* Menu tabs */
+   for (i = 0; i < MUI_NAV_BAR_NUM_MENU_TABS_MAX; i++)
+   {
+      mui->nav_bar.menu_tabs[i].type          = MUI_NAV_BAR_MENU_TAB_NONE;
+      mui->nav_bar.menu_tabs[i].texture_index = 0;
+      mui->nav_bar.menu_tabs[i].active        = false;
+   }
+
+   /* 'Metadata' */
+   mui->nav_bar.num_menu_tabs              = 0;
+   mui->nav_bar.active_menu_tab_index      = 0;
+   mui->nav_bar.last_active_menu_tab_index = 0;
+   mui->nav_bar.menu_navigation_wrapped    = false;
+   mui->nav_bar.location                   = MUI_NAV_BAR_LOCATION_BOTTOM;
+}
+
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
@@ -3122,6 +3370,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->is_playlist          = false;
    mui->is_file_list         = false;
    mui->is_dropdown_list     = false;
+   mui->menu_stack_flushed   = false;
 
    mui->first_onscreen_entry = 0;
    mui->last_onscreen_entry  = 0;
@@ -3151,6 +3400,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    /* Ensure message box string is empty */
    mui->msgbox[0]                      = '\0';
+
+   /* Initialise navigation bar */
+   materialui_init_nav_bar(mui);
 
    return menu;
 error:
@@ -3310,17 +3562,81 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
    materialui_navigation_set(data, true);
 }
 
-static void materialui_init_transition_animation(materialui_handle_t *mui)
+static void materialui_populate_nav_bar(
+      materialui_handle_t *mui, const char *label, settings_t *settings)
 {
-   settings_t *settings                = config_get_ptr();
+   menu_handle_t *menu_data = menu_driver_get_ptr();
+   unsigned menu_tab_index  = 0;
+   bool content_loaded      = false;
+
+   /* Cache last active menu tab index */
+   mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
+
+   /* Back tab */
+   mui->nav_bar.back_tab.enabled = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
+
+   /* Resume tab
+    * > Menu driver must be alive at this point, and retroarch
+    *   must be initialised, so all we have to do (or can do)
+    *   is check whether a non-dummy core is loaded) */
+   mui->nav_bar.resume_tab.enabled = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+
+   /* Menu tabs */
+
+   /* > Main menu */
+   mui->nav_bar.menu_tabs[menu_tab_index].type          =
+         MUI_NAV_BAR_MENU_TAB_MAIN;
+   mui->nav_bar.menu_tabs[menu_tab_index].texture_index =
+         MUI_TEXTURE_TAB_MAIN;
+   mui->nav_bar.menu_tabs[menu_tab_index].active        =
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+
+   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+      mui->nav_bar.active_menu_tab_index = menu_tab_index;
+
+   menu_tab_index++;
+
+   /* > Playlists */
+   if (settings->bools.menu_content_show_playlists)
+   {
+      mui->nav_bar.menu_tabs[menu_tab_index].type          =
+            MUI_NAV_BAR_MENU_TAB_PLAYLISTS;
+      mui->nav_bar.menu_tabs[menu_tab_index].texture_index =
+            MUI_TEXTURE_TAB_PLAYLISTS;
+      mui->nav_bar.menu_tabs[menu_tab_index].active        =
+            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
+      if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+         mui->nav_bar.active_menu_tab_index = menu_tab_index;
+
+      menu_tab_index++;
+   }
+
+   /* > Settings */
+   mui->nav_bar.menu_tabs[menu_tab_index].type          =
+         MUI_NAV_BAR_MENU_TAB_SETTINGS;
+   mui->nav_bar.menu_tabs[menu_tab_index].texture_index =
+         MUI_TEXTURE_TAB_SETTINGS;
+   mui->nav_bar.menu_tabs[menu_tab_index].active        =
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
+
+   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+      mui->nav_bar.active_menu_tab_index = menu_tab_index;
+
+   menu_tab_index++;
+
+   /* Cache current number of menu tabs */
+   mui->nav_bar.num_menu_tabs = menu_tab_index;
+}
+
+static void materialui_init_transition_animation(
+      materialui_handle_t *mui, settings_t *settings)
+{
    size_t stack_size                   = materialui_list_get_size(mui, MENU_LIST_PLAIN);
    menu_animation_ctx_tag alpha_tag    = (uintptr_t)&mui->transition_alpha;
    menu_animation_ctx_tag x_offset_tag = (uintptr_t)&mui->transition_x_offset;
    menu_animation_ctx_entry_t alpha_entry;
    menu_animation_ctx_entry_t x_offset_entry;
-
-   if (!settings)
-      return;
 
    /* If animations are disabled, reset alpha/x offset
     * values and return immediately */
@@ -3361,21 +3677,32 @@ static void materialui_init_transition_animation(materialui_handle_t *mui)
    menu_animation_kill_by_tag(&x_offset_tag);
    mui->transition_x_offset = 0.0f;
 
+   /* >> Menu tab 'reset' action - using navigation
+    *    bar to switch directly from low level menu
+    *    to a top level menu
+    *    - We apply a standard 'back' animation here */
+   if (mui->menu_stack_flushed)
+   {
+      if (settings->uints.menu_materialui_transition_animation !=
+                        MATERIALUI_TRANSITION_ANIM_FADE)
+         mui->transition_x_offset = -1.0f;
+   }
    /* >> Menu 'forward' action */
-   if (mui->last_stack_size < stack_size)
+   else if (stack_size > mui->last_stack_size)
    {
       if (settings->uints.menu_materialui_transition_animation ==
             MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = 1.0f;
    }
    /* >> Menu 'back' action */
-   else if (mui->last_stack_size > stack_size)
+   else if (stack_size < mui->last_stack_size)
    {
       if (settings->uints.menu_materialui_transition_animation ==
             MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = -1.0f;
    }
-   /* >> Menu tab switch action */
+   /* >> Menu tab 'switch' action - using navigation
+    *    bar to switch between top level menus */
    else if ((stack_size == 1) &&
             (settings->uints.menu_materialui_transition_animation !=
                   MATERIALUI_TRANSITION_ANIM_FADE))
@@ -3383,16 +3710,16 @@ static void materialui_init_transition_animation(materialui_handle_t *mui)
       /* We're not changing menu levels here, so set
        * slide to match horizontal list 'movement'
        * direction */
-      if (mui->categories_selection_ptr < mui->categories_selection_ptr_old)
+      if (mui->nav_bar.active_menu_tab_index < mui->nav_bar.last_active_menu_tab_index)
       {
-         if (mui->categories_navigation_wrapped)
+         if (mui->nav_bar.menu_navigation_wrapped)
             mui->transition_x_offset = 1.0f;
          else
             mui->transition_x_offset = -1.0f;
       }
-      else if (mui->categories_selection_ptr > mui->categories_selection_ptr_old)
+      else if (mui->nav_bar.active_menu_tab_index > mui->nav_bar.last_active_menu_tab_index)
       {
-         if (mui->categories_navigation_wrapped)
+         if (mui->nav_bar.menu_navigation_wrapped)
             mui->transition_x_offset = -1.0f;
          else
             mui->transition_x_offset = 1.0f;
@@ -3423,8 +3750,9 @@ static void materialui_populate_entries(
       const char *label, unsigned i)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
+   settings_t *settings     = config_get_ptr();
 
-   if (!mui)
+   if (!mui || !settings)
       return;
 
    /* Set menu title */
@@ -3467,19 +3795,8 @@ static void materialui_populate_entries(
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE));
    }
 
-   /* Set tab bar height
-    * (Tab bar is displayed if menu depth equals one,
-    * otherwise it is hidden) */
-   mui->tabs_height = 0;
-   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-      mui->tabs_height = mui->dip_base_unit_size / 3;
-
-   mui->need_compute = true;
-
-   /* Note: mui->scroll_y position needs to be set here,
-    * but we can't do this until materialui_compute_entries_box()
-    * has been called. We therefore delegate it until mui->need_compute
-    * is acted upon */
+   /* Update navigation bar tabs */
+   materialui_populate_nav_bar(mui, label, settings);
 
    /* Reset touch feedback parameters
     * (i.e. there should be no leftover highlight
@@ -3489,7 +3806,16 @@ static void materialui_populate_entries(
    mui->touch_feedback_alpha           = 0.0f;
 
    /* Initialise menu transition animation */
-   materialui_init_transition_animation(mui);
+   materialui_init_transition_animation(mui, settings);
+
+   /* Reset 'menu stack flushed' state */
+   mui->menu_stack_flushed = false;
+
+   /* Note: mui->scroll_y position needs to be set here,
+    * but we can't do this until materialui_compute_entries_box()
+    * has been called. We therefore delegate it until mui->need_compute
+    * is acted upon */
+   mui->need_compute = true;
 }
 
 static void materialui_context_reset_internal(
@@ -3547,43 +3873,84 @@ static int materialui_environ(enum menu_environ_cb type, void *data, void *userd
    return -1;
 }
 
-/* Called before we push the new list after clicking on a tab */
-static void materialui_preswitch_tabs(materialui_handle_t *mui, unsigned action)
+/* Called before we push the new list after:
+ * - Clicking a menu-type tab on the navigation bar
+ * - Using left/right to navigate between top level menus */
+static bool materialui_preswitch_tabs(
+      materialui_handle_t *mui, materialui_nav_bar_menu_tab_t *target_tab)
 {
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
+   bool stack_flushed      = false;
 
-   if (!mui)
-      return;
+   /* Pressing a navigation menu tab always returns us to
+    * one of the top level menus. There are two ways to
+    * implement this:
+    * 1) Push a new menu list
+    * 2) Reset the current menu stack, then switch
+    *    to new menu
+    * Option 1 seems like a good idea, since it means the
+    * user's last menu position is remembered (so a back
+    * action still works as expected after switching to the
+    * new top level menu) - but the issue here is that the
+    * menu stack can easily balloon to 'infinite' size,
+    * which we simply cannot allow.
+    * So we choose option 2 instead.
+    * Thus, if the current menu stack size is greater than
+    * 1, flush it all away...
+    * Note: As far as I can tell, this if functionally
+    * identical to just triggering multiple 'back' actions,
+    * and so should be 'safe' */
+   if (materialui_list_get_size(mui, MENU_LIST_PLAIN) > 1)
+   {
+      stack_flushed = true;
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), 0);
+      /* Clear this, just in case... */
+      filebrowser_clear_type();
+   }
 
+   /* Get current stack
+    * (stack size should be zero here, but account
+    * for unknown errors)  */
    menu_stack = menu_entries_get_menu_stack_ptr(0);
    stack_size = menu_stack->size;
 
+   /* Sanity check
+    * Note: if this fails, then 'stack flushed'
+    * status is irrelevant... */
+   if (stack_size < 1)
+      return false;
+
+   /* Delete existing label */
    if (menu_stack->list[stack_size - 1].label)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
 
-   switch (mui->categories_selection_ptr)
+   /* Assign new label/type */
+   switch (target_tab->type)
    {
-      case MUI_SYSTEM_TAB_MAIN:
-         menu_stack->list[stack_size - 1].label =
-            strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-         menu_stack->list[stack_size - 1].type =
-            MENU_SETTINGS;
-         break;
-      case MUI_SYSTEM_TAB_PLAYLISTS:
+      case MUI_NAV_BAR_MENU_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label =
             strdup(msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].type =
             MENU_PLAYLISTS_TAB;
          break;
-      case MUI_SYSTEM_TAB_SETTINGS:
+      case MUI_NAV_BAR_MENU_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label =
             strdup(msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
+      case MUI_NAV_BAR_MENU_TAB_MAIN:
+      default:
+         menu_stack->list[stack_size - 1].label =
+            strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+         menu_stack->list[stack_size - 1].type =
+            MENU_SETTINGS;
+         break;
    }
+
+   return stack_flushed;
 }
 
 /* This callback is not caching anything. We use it to navigate the tabs
@@ -3591,48 +3958,53 @@ static void materialui_preswitch_tabs(materialui_handle_t *mui, unsigned action)
 static void materialui_list_cache(void *data,
       enum menu_list_type type, unsigned action)
 {
-   size_t list_size;
-   materialui_handle_t *mui   = (materialui_handle_t*)data;
+   materialui_handle_t *mui = (materialui_handle_t*)data;
 
    if (!mui)
       return;
 
-   mui->need_compute                  = true;
-   list_size                          = MUI_SYSTEM_TAB_END;
-   mui->categories_navigation_wrapped = false;
+   mui->need_compute                    = true;
+   mui->nav_bar.menu_navigation_wrapped = false;
 
    switch (type)
    {
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         mui->categories_selection_ptr_old = mui->categories_selection_ptr;
-
-         switch (action)
          {
-            case MENU_ACTION_LEFT:
-               if (mui->categories_selection_ptr == 0)
-               {
-                  mui->categories_selection_ptr      = list_size;
-                  mui->categories_active_idx         = (unsigned)(list_size - 1);
-                  mui->categories_navigation_wrapped = true;
-               }
-               else
-                  mui->categories_selection_ptr--;
-               break;
-            default:
-               if (mui->categories_selection_ptr == list_size)
-               {
-                  mui->categories_selection_ptr      = 0;
-                  mui->categories_active_idx         = 1;
-                  mui->categories_navigation_wrapped = true;
-               }
-               else
-                  mui->categories_selection_ptr++;
-               break;
-         }
+            int target_tab_index = 0;
 
-         materialui_preswitch_tabs(mui, action);
+            switch (action)
+            {
+               case MENU_ACTION_LEFT:
+
+                  target_tab_index = (int)mui->nav_bar.active_menu_tab_index - 1;
+
+                  if (target_tab_index < 0)
+                  {
+                     target_tab_index = (int)mui->nav_bar.num_menu_tabs - 1;
+                     mui->nav_bar.menu_navigation_wrapped = true;
+                  }
+
+                  break;
+               default:
+
+                  target_tab_index = (int)mui->nav_bar.active_menu_tab_index + 1;
+
+                  if (target_tab_index >= mui->nav_bar.num_menu_tabs)
+                  {
+                     target_tab_index = 0;
+                     mui->nav_bar.menu_navigation_wrapped = true;
+                  }
+
+                  break;
+            }
+
+            /* Note: Since this is only called when we are at
+             * the top level of the menu, this will never cause
+             * a stack flush */
+            materialui_preswitch_tabs(mui, &mui->nav_bar.menu_tabs[target_tab_index]);
+         }
          break;
       default:
          break;
@@ -3840,7 +4212,7 @@ static size_t materialui_list_get_selection(void *data)
    if (!mui)
       return 0;
 
-   return mui->categories_selection_ptr;
+   return (size_t)mui->nav_bar.active_menu_tab_index;
 }
 
 /* Pointer down event
@@ -3921,7 +4293,7 @@ static int materialui_pointer_up_swipe_horz_plain_list(
    else
    {
       float content_height_fraction = mui->content_height * 0.1f;
-      float display_height          = (int)height - (int)header_height - mui->tabs_height;
+      float display_height          = (int)height - (int)header_height - (int)mui->nav_bar_layout_height;
       float scroll_offset           = (display_height > content_height_fraction) ?
             display_height : content_height_fraction;
 
@@ -3993,6 +4365,74 @@ static int materialui_pointer_up_swipe_horz_default(
    return ret;
 }
 
+static int materialui_pointer_up_nav_bar(
+      materialui_handle_t *mui,
+      unsigned x, unsigned y, unsigned width, unsigned height, unsigned selection,
+      menu_file_list_cbs_t *cbs, menu_entry_t *entry, unsigned action)
+{
+   unsigned num_tabs = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
+   unsigned tab_index;
+
+   /* Determine tab 'index' - integer corresponding
+    * to physical location on screen */
+   if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
+      tab_index = y / (height / num_tabs);
+   else
+      tab_index = x / (width / num_tabs);
+
+   /* Check if this is an action tab */
+   if ((tab_index == 0) || (tab_index >= num_tabs - 1))
+   {
+      materialui_nav_bar_action_tab_t *target_tab = NULL;
+
+      if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
+         target_tab = (tab_index == 0) ?
+               &mui->nav_bar.resume_tab : &mui->nav_bar.back_tab;
+      else
+         target_tab = (tab_index == 0) ?
+               &mui->nav_bar.back_tab : &mui->nav_bar.resume_tab;
+
+      switch (target_tab->type)
+      {
+         case MUI_NAV_BAR_ACTION_TAB_BACK:
+            if (target_tab->enabled)
+               return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+            break;
+         case MUI_NAV_BAR_ACTION_TAB_RESUME:
+            if (target_tab->enabled)
+               return command_event(CMD_EVENT_MENU_TOGGLE, NULL) ? 0 : -1;
+            break;
+         default:
+            break;
+      }
+   }
+   /* Tab is a menu tab */
+   else
+   {
+      materialui_nav_bar_menu_tab_t *target_tab =
+            &mui->nav_bar.menu_tabs[tab_index - 1];
+
+      if (!target_tab->active && cbs && cbs->action_content_list_switch)
+      {
+         file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+         bool stack_flushed         = false;
+         int ret                    = 0;
+
+         stack_flushed = materialui_preswitch_tabs(mui, target_tab);
+
+         ret = cbs->action_content_list_switch(
+               selection_buf, menu_stack, "", "", 0);
+
+         mui->menu_stack_flushed = stack_flushed;
+
+         return ret;
+      }
+   }
+
+   return 0;
+}
+
 /* Pointer up event */
 static int materialui_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
@@ -4017,19 +4457,24 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
+            /* Tap/press navigation bar: perform tab-specific action */
+            if ((y > height - mui->nav_bar_layout_height) ||
+                (x > width  - mui->nav_bar_layout_width))
+               return materialui_pointer_up_nav_bar(
+                     mui, x, y, width, height, (unsigned)selection, cbs, entry, action);
             /* Tap/press header: Menu back/cancel, or search */
-            if (y < header_height)
+            else if (y < header_height)
             {
                /* If this is a playlist or file list, enable
                 * search functionality */
                if (mui->is_playlist || mui->is_file_list)
                {
                   /* Check if user has touched search icon */
-                  if (x > (width - mui->icon_size))
+                  if (x > width - mui->icon_size - mui->nav_bar_layout_width)
                      return menu_input_dialog_start_search() ? 0 : -1;
                   /* If not, add a little extra padding to minimise
                    * the risk of accidentally triggering a cancel */
-                  else if (x <= (width - (2 * mui->icon_size)))
+                  else if (x <= width - (2 * mui->icon_size) - mui->nav_bar_layout_width)
                      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
                }
                /* If this is not a playlist or file list, a tap/press
@@ -4038,39 +4483,10 @@ static int materialui_pointer_up(void *userdata,
                else
                   return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
             }
-            /* Tap/press tab bar: Switch to corresponding top-level
-             * menu screen */
-            else if (y > height - mui->tabs_height)
-            {
-               file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-               file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-               for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-               {
-                  unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
-                  unsigned start = tab_width * i;
-
-                  if ((x >= start) && (x < (start + tab_width)))
-                  {
-                     /* Do nothing if currently selected tab is pressed */
-                     if (mui->categories_selection_ptr == i)
-                        break;
-
-                     mui->categories_selection_ptr_old = mui->categories_selection_ptr;
-                     mui->categories_selection_ptr     = i;
-
-                     materialui_preswitch_tabs(mui, action);
-
-                     if (cbs && cbs->action_content_list_switch)
-                        return cbs->action_content_list_switch(selection_buf, menu_stack,
-                              "", "", 0);
-                  }
-               }
-            }
             /* Tap/press menu item: Activate and/or select item */
             else if ((ptr < entries_end) &&
                      (x   > mui->landscape_entry_margin) &&
-                     (x   < width - mui->landscape_entry_margin))
+                     (x   < width - mui->landscape_entry_margin - mui->nav_bar_layout_width))
             {
                if (gesture == MENU_INPUT_GESTURE_TAP)
                {
@@ -4603,21 +5019,11 @@ static void materialui_list_clear(file_list_t *list)
 
    for (i = 0; i < size; ++i)
    {
-      menu_animation_ctx_subject_t subject;
-      float *subjects[2];
       materialui_node_t *node = (materialui_node_t*)
          file_list_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
-
-      subjects[0] = &node->line_height;
-      subjects[1] = &node->y;
-
-      subject.count = 2;
-      subject.data  = subjects;
-
-      menu_animation_kill_by_subject(&subject);
 
       file_list_free_userdata(list, i);
    }

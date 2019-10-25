@@ -137,6 +137,10 @@
 #define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT true
 #endif
 
+/* Reposition navigation bar to make better use
+ * of screen space when using landscape layouts */
+#define DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR true
+
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
