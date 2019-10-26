@@ -2413,8 +2413,7 @@ bool rcheevos_load(const void *data)
       coro->path       = strdup(info->path);
 
       /* if we're looking at an m3u file, get the first disc from the playlist */
-      const char* end = path_get_extension(coro->path);
-      if (string_is_equal_noncase(end, "m3u"))
+      if (string_is_equal_noncase(path_get_extension(coro->path), "m3u"))
       {
          intfstream_t* m3u_stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
          if (m3u_stream)
