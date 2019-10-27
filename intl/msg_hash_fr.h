@@ -2370,7 +2370,7 @@ MSG_HASH(
     "Quitter RetroArch"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
     "Redémarrer RetroArch"
     )
 #endif
@@ -9693,7 +9693,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
-    "Afficher 'Interface utilisateur'
+    "Afficher 'Interface utilisateur'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
