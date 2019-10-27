@@ -1755,7 +1755,7 @@ static void materialui_render_menu_entry(
    const char *entry_sublabel                        = NULL;
    unsigned entry_type                               = 0;
    enum materialui_entry_value_type entry_value_type = MUI_ENTRY_VALUE_NONE;
-   size_t entry_value_width                          = 0;
+   unsigned entry_value_width                        = 0;
    enum msg_file_type entry_file_type                = FILE_TYPE_NONE;
    int entry_y                                       = header_height - mui->scroll_y + node->y;
    int entry_margin                                  = (int)mui->margin + (int)mui->landscape_entry_margin;
@@ -1836,6 +1836,9 @@ static void materialui_render_menu_entry(
     *   affects y offset positions */
    if (!string_is_empty(entry_sublabel))
    {
+      int sublabel_y =
+            entry_y + (int)(mui->dip_base_unit_size / 5.0f) +
+                  (int)mui->font_data.list.font_height;
       char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
 
       wrapped_sublabel[0] = '\0';
@@ -1845,19 +1848,24 @@ static void materialui_render_menu_entry(
             (int)(usable_width / mui->font_data.hint.glyph_width),
             true, 0);
 
-      /* Draw sublabel string */
+      /* Draw sublabel string
+       * > Note: We must allow text to be drawn off-screen
+       *   if the current y position is negative, otherwise topmost
+       *   entries with very long sublabels may get 'clipped' too
+       *   early as they are scrolled upwards beyond the top edge
+       *   of the screen */
       menu_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
             x_offset + entry_margin,
-            entry_y + (mui->dip_base_unit_size / 5) + mui->font_data.list.font_height,
+            sublabel_y,
             width, height,
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
-            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
 
       /* If we have a sublabel, entry label y position has a
        * fixed vertical offset */
-      label_y      = entry_y + (mui->dip_base_unit_size / 5.0f);
-      value_icon_y = entry_y + (mui->dip_base_unit_size / 6.0f) - (mui->icon_size / 2.0f);
+      label_y      = entry_y + (int)(mui->dip_base_unit_size / 5.0f);
+      value_icon_y = entry_y + (int)((mui->dip_base_unit_size / 6.0f) - (mui->icon_size / 2.0f));
    }
    else
    {
@@ -1867,8 +1875,8 @@ static void materialui_render_menu_entry(
        * so we can't do this accurately - but as a general
        * rule of thumb, the descender of a font is at least
        * 20% of it's height - so we just add (font_height / 5) */
-      label_y      = entry_y + (node->line_height / 2.0f) + (mui->font_data.list.font_height / 5.0f);
-      value_icon_y = entry_y + (node->line_height / 2.0f) - (mui->icon_size / 2.0f);
+      label_y      = entry_y + (int)((node->line_height / 2.0f) + (mui->font_data.list.font_height / 5.0f));
+      value_icon_y = entry_y + (int)((node->line_height / 2.0f) - (mui->icon_size / 2.0f));
    }
 
    /* Draw entry value */
@@ -1876,43 +1884,63 @@ static void materialui_render_menu_entry(
    {
       case MUI_ENTRY_VALUE_TEXT:
          {
-            int value_x_offset         = 0;
-            size_t entry_value_len     = utf8len(entry_value);
-            size_t entry_value_len_max =
-                  (size_t)(((usable_width / 2) - mui->margin) / mui->font_data.list.glyph_width);
+            int value_x_offset             = 0;
+            unsigned entry_value_width_max = (usable_width / 2) - mui->margin;
             char value_buf[255];
 
             value_buf[0] = '\0';
 
-            /* Limit length of value string */
-            entry_value_len = (entry_value_len > entry_value_len_max) ?
-                  entry_value_len_max : entry_value_len;
-
-            /* Get effective width of value string
-             * > Approximate value - too expensive to use
-             *   font_driver_get_message_width() here... */
-            entry_value_width = (entry_value_len + 1) * mui->font_data.list.glyph_width;
-
             /* Apply ticker */
             if (mui->use_smooth_ticker)
             {
-               mui->ticker_smooth.field_width = entry_value_width;
+               mui->ticker_smooth.field_width = entry_value_width_max;
                mui->ticker_smooth.src_str     = entry_value;
                mui->ticker_smooth.dst_str     = value_buf;
                mui->ticker_smooth.dst_str_len = sizeof(value_buf);
 
-               /* Value text is right aligned, so have to offset x
-                * by the 'padding' width at the end of the ticker string... */
                if (menu_animation_ticker_smooth(&mui->ticker_smooth))
-                  value_x_offset = ((int)mui->ticker_x_offset + (int)mui->ticker_str_width) - (int)entry_value_width;
+               {
+                  /* If ticker is active, then value text is effectively
+                   * entry_value_width_max pixels wide... */
+                  entry_value_width = entry_value_width_max;
+                  /* ...and since value text is right aligned, have to
+                   * offset x position by the 'padding' width at the
+                   * end of the ticker string */
+                  value_x_offset =
+                        (int)(mui->ticker_x_offset + mui->ticker_str_width) -
+                              (int)entry_value_width_max;
+               }
+               /* If ticker is inactive, width of value string is
+                * exactly mui->ticker_str_width pixels, and no x offset
+                * is required */
+               else
+                  entry_value_width = mui->ticker_str_width;
             }
             else
             {
+               size_t entry_value_len     = utf8len(entry_value);
+               size_t entry_value_len_max =
+                     (size_t)(entry_value_width_max / mui->font_data.list.glyph_width);
+
+               /* Limit length of value string */
+               entry_value_len_max = (entry_value_len_max > 0) ?
+                     entry_value_len_max - 1 : entry_value_len_max;
+               entry_value_len = (entry_value_len > entry_value_len_max) ?
+                     entry_value_len_max : entry_value_len;
+
                mui->ticker.s        = value_buf;
                mui->ticker.len      = entry_value_len;
                mui->ticker.str      = entry_value;
 
                menu_animation_ticker(&mui->ticker);
+
+               /* Get effective width of value string
+                * > Approximate value - only the smooth ticker
+                *   returns the actual width in pixels, and any
+                *   platform too slow to run the smooth ticker
+                *   won't appreciate the overheads of using
+                *   font_driver_get_message_width() here... */
+               entry_value_width = (entry_value_len + 1) * mui->font_data.list.glyph_width;
             }
 
             /* Draw value string */
@@ -1974,7 +2002,7 @@ static void materialui_render_menu_entry(
        * > If a value is present, need additional padding
        *   between label and value */
       label_width = (entry_value_width > 0) ?
-            label_width - (entry_value_width + mui->margin) : label_width;
+            label_width - (int)(entry_value_width + mui->margin) : label_width;
 
       if (label_width > 0)
       {
