@@ -1751,39 +1751,39 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
     "Ozone Dark"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
     "Nord"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
     "Gruvbox Dark"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
     "Solarized Dark"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
     "Menu Transition Animation"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
     "Enable smooth animation effects when navigating between different levels of the menu."
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
     "Auto"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
     "Fade"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
     "Slide"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
     "OFF"
     )
@@ -3473,7 +3473,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_AM_PM,
     "MM-DD-YYYY HH:MM (AM/PM)"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM,
     "HH:MM:SS (AM/PM)"
     )
@@ -6948,11 +6948,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
     "Automatically adjust menu layout to better fit the screen when using landscape display orientations."
     )
- MSG_HASH(
+MSG_HASH(
      MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
      "Auto-Rotate Navigation Bar"
      )
- MSG_HASH(
+MSG_HASH(
      MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
      "Automatically move the navigation bar to the right hand side of the screen when using landscape display orientations."
      )
