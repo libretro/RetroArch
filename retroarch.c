@@ -19637,11 +19637,7 @@ static void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
+   video_driver_cached_frame_set(data, width, height, pitch);
    
    if (
          video_driver_scaler_ptr
