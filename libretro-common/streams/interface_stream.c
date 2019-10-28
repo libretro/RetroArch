@@ -421,6 +421,16 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
    }
 }
 
+uint32_t intfstream_get_chd_pregap(intfstream_internal_t *intf)
+{
+#ifdef HAVE_CHD
+   if (intf->type == INTFSTREAM_CHD)
+      return chdstream_get_pregap(intf->chd.fp);
+#endif
+
+   return 0;
+}
+
 intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints)
 {

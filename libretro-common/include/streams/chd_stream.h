@@ -57,6 +57,8 @@ int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence);
 
 ssize_t chdstream_get_size(chdstream_t *stream);
 
+uint32_t chdstream_get_pregap(chdstream_t* stream);
+
 RETRO_END_DECLS
 
 #endif
