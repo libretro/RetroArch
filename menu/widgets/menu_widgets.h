@@ -55,6 +55,15 @@ void menu_widgets_iterate(unsigned width, unsigned height);
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
+/* AI Service functions */
+int menu_widgets_ai_service_overlay_get_state();
+bool menu_widgets_ai_service_overlay_set_state(int state);
+
+bool menu_widgets_ai_service_overlay_load(
+        char* buffer, unsigned buffer_len, enum image_type_enum image_type);
+void menu_widgets_ai_service_overlay_unload();
+
+
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
 
 void menu_widgets_cleanup_load_content_animation(void);
