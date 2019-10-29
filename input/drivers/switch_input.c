@@ -122,6 +122,10 @@ typedef struct switch_input
    Touch finger[MAX_NUM_FINGERS]; /* keep track of finger status for touch mouse */
    DraggingType multi_finger_dragging; /* keep track whether we are currently drag-and-dropping */
    int32_t simulated_click_start_time[2]; /* initiation time of last simulated left or right click (zero if no click) */
+
+   /* sensor handles */
+   uint32_t sixaxis_handles[DEFAULT_MAX_PADS][4];
+   unsigned sixaxis_handles_count[DEFAULT_MAX_PADS];
 #endif
 } switch_input_t;
 
@@ -805,12 +809,21 @@ void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime)
 
 static void switch_input_free_input(void *data)
 {
+   unsigned i,j;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if (sw && sw->joypad)
-      sw->joypad->destroy();
+   if (sw)
+   {
+      if(sw->joypad)
+         sw->joypad->destroy();
 
-   free(sw);
+      for(i = 0; i < DEFAULT_MAX_PADS; i++)
+         if(sw->sixaxis_handles_count[i] > 0)
+            for(j = 0; j < sw->sixaxis_handles_count[i]; j++)
+               hidStopSixAxisSensor(sw->sixaxis_handles[i][j]);
+
+      free(sw);
+   }
 
 #ifdef HAVE_LIBNX
    hidExit();
@@ -844,7 +857,6 @@ static void* switch_input_init(const char *joypad_driver)
    sw->mouse_y = 0;
    sw->mouse_previous_report = 0;
 
-
    /* touch mouse init */
    sw->touch_mouse_indirect = true; /* direct mode is not calibrated it seems */
    sw->touch_mouse_speed_factor = 1.0;
@@ -855,6 +867,9 @@ static void* switch_input_init(const char *joypad_driver)
 
    for (i = 0; i < 2; i++)
       sw->simulated_click_start_time[i] = 0;
+
+   for(i = 0; i < DEFAULT_MAX_PADS; i++)
+      sw->sixaxis_handles_count[i] = 0;
 #endif
 
    return sw;
@@ -900,19 +915,112 @@ static bool switch_input_set_rumble(void *data, unsigned port,
 #endif
 }
 
+static bool switch_input_set_sensor_state(void *data, unsigned port,
+      enum retro_sensor_action action, unsigned event_rate)
+{
+#ifdef HAVE_LIBNX
+   unsigned i, handles_count;
+   bool available;
+   switch_input_t *sw = (switch_input_t*) data;
+
+   if(!sw)
+      return false;
+
+   switch(action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         available = false;
+         appletIsIlluminanceAvailable(&available);
+         return available;
+
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         return true;
+
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         if(port < DEFAULT_MAX_PADS && sw->sixaxis_handles_count[port] == 0)
+         {
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, TYPE_JOYCON_PAIR);
+
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, TYPE_PROCONTROLLER);
+
+            if(port == 0)
+            {
+               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, CONTROLLER_HANDHELD, TYPE_HANDHELD);
+               handles_count = 4;
+            }
+            else
+            {
+               handles_count = 3;
+            }
+
+            for(i = 0; i < handles_count; i++) {
+               hidStartSixAxisSensor(sw->sixaxis_handles[port][i]);
+            }
+
+            sw->sixaxis_handles_count[port] = handles_count;
+         }
+         return true;
+   }
+#endif
+
+   return false;
+}
+
+static float switch_input_get_sensor_input(void *data,
+      unsigned port, unsigned id)
+{
+#ifdef HAVE_LIBNX
+   float f;
+   SixAxisSensorValues sixaxis;
+
+   if(id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      hidSixAxisSensorValuesRead(&sixaxis, port == 0 ? CONTROLLER_P1_AUTO : port, 1);
+
+      switch(id)
+      {
+         case RETRO_SENSOR_ACCELEROMETER_X:
+            return sixaxis.accelerometer.x;
+         case RETRO_SENSOR_ACCELEROMETER_Y:
+            return sixaxis.accelerometer.y;
+         case RETRO_SENSOR_ACCELEROMETER_Z:
+            return sixaxis.accelerometer.z;
+         case RETRO_SENSOR_GYROSCOPE_X:
+            return sixaxis.gyroscope.x;
+         case RETRO_SENSOR_GYROSCOPE_Y:
+            return sixaxis.gyroscope.y;
+         case RETRO_SENSOR_GYROSCOPE_Z:
+            return sixaxis.gyroscope.z;
+      }
+
+   }
+
+   if(id == RETRO_SENSOR_ILLUMINANCE)
+   {
+      appletGetCurrentIlluminance(&f);
+      return f;
+   }
+#endif
+
+   return 0.0f;
+}
+
 input_driver_t input_switch = {
-	switch_input_init,
-	switch_input_poll,
-	switch_input_state,
-	switch_input_free_input,
-	NULL,
-	NULL,
-	switch_input_get_capabilities,
-	"switch",
-	switch_input_grab_mouse,
-	NULL,
-	switch_input_set_rumble,
-	switch_input_get_joypad_driver,
-	NULL,
+   switch_input_init,
+   switch_input_poll,
+   switch_input_state,
+   switch_input_free_input,
+   switch_input_set_sensor_state,
+   switch_input_get_sensor_input,
+   switch_input_get_capabilities,
+   "switch",
+   switch_input_grab_mouse,
+   NULL,
+   switch_input_set_rumble,
+   switch_input_get_joypad_driver,
+   NULL,
    false
 };
