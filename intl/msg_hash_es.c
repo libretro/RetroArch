@@ -80,7 +80,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 
             const char * t =
                   "RetroArch utiliza un formato único para \n"
-                  "sincronizar el audio y el video. Necesita \n"
+                  "sincronizar el audio y el vídeo. Necesita \n"
                   "calibrarse con la tasa de refresco del monitor \n"
                   "para obtener los mejores resultados. \n"
                   " \n"
@@ -89,11 +89,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "ajustes. Intenta con algunas de la siguientes opciones:\n"
                   " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                  "a) Ve a '%s' -> '%s' -> '%s'\n"
+                  "a) Ve a «%s» -> «%s» -> «%s»\n"
                   "Deja que se ejecute durante\n"
                   "2048 frames y pulsa Aceptar.\n"
                   " \n"
-                  "b) Ve a '%s' -> '%s' y activa '%s'.\n"
+                  "b) Ve a «%s» -> «%s» y activa «%s».\n"
                   "En este modo la tasa de refresco es irrelevante.\n"
                   "Aumentarán los FPS (si es que no estaban al máximo),\n"
                   "a costa de aumentar latencia y podría hacer la imagen menos fluida.",
@@ -110,15 +110,15 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "Para escanear contenidos ve a '%s'\n"
-               "y selecciona '%s' o '%s'.\n"
+               "Para escanear contenidos ve a «%s»\n"
+               "y selecciona «%s» o «%s».\n"
                "\n"
                "Esto comparará los archivos con las entradas en\n"
                "la base de datos. Si hay una coincidencia,\n"
                "añadirá una entrada en una lista de reproducción.\n"
                "\n"
                "Entonces podrás acceder fácilmente al contenido\n"
-               "si vas a '%s' -> '%s'\n"
+               "si vas a «%s» -> «%s»\n"
                "en vez de tener que pasar por el navegador\n"
                "de archivos constantemente.\n"
                "\n"
@@ -197,17 +197,17 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Buscar contenido. \n"
                " \n"
                "Para cargar contenidos necesitas \n"
-               "un 'núcleo' y un archivo de contenido.\n"
+               "un «núcleo» y un archivo de contenido.\n"
                " \n"
                "Para controlar el lugar donde el menú \n"
                "empieza a buscar contenidos, cambia \n"
-               "la opción '%s' en '%s' -> '%s'\n"
+               "la opción «%s» en «%s» -> «%s»\n"
                "En caso de que no esté \n"
                "configurada, empezará desde la raíz.\n"
                " \n"
                "El navegador filtrará las extensiones \n"
                "del último núcleo seleccionado en \n"
-               "'%s' y lo utilizará al \n"
+               "«%s» y lo utilizará al \n"
                "cargar un contenido.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
@@ -377,7 +377,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "escala, el resultado se estirará por \n"
                "toda la pantalla con el filtro especificado.\n"
                " \n"
-               "Si has seleccionado 'No importa', se \n"
+               "Si has seleccionado «No importa», se \n"
                "utilizará o bien la escala 1x o se \n"
                "estirará a pantalla completa en función \n"
                "de si es el último pase o no."
@@ -393,8 +393,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Esta opción especifica la cantidad de pasadas \n"
                "de shaders a utilizar. Si seleccionas 0 y \n"
-               "luego 'Aplicar cambios en shaders', \n"
-               "utilizarás un shader 'en blanco'. \n"
+               "luego «Aplicar cambios en shaders», \n"
+               "utilizarás un shader «en blanco». \n"
                " \n"
                "La opción filtro cambiará \n"
                "el algoritmo de escalado.");
@@ -455,7 +455,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Filtro de hardware para esta pasada. \n"
                " \n"
-               "Si se ha seleccionado 'No importa', \n"
+               "Si se ha seleccionado «No importa», \n"
                "se utilizará el predeterminado."
                );
          break;
@@ -805,7 +805,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Carpeta de sistemas. \n"
                " \n"
-               "Asigna la carpeta 'system'.\n"
+               "Asigna la carpeta «system».\n"
                "Los núcleos pueden buscar dentro \n"
                "de ella para cargar BIOS, \n"
                "configuraciones específicas para \n"
@@ -818,8 +818,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "RetroArch cargará automáticamente cualquier \n"
                "guardado rápido que se encuentre en esa ruta \n"
-               "al arrancar si la opción 'Cargar guardado \n"
-               "rápido automáticamente' está activada.");
+               "al arrancar si la opción «Cargar guardado \n"
+               "rápido automáticamente» está activada.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          snprintf(s, len,
@@ -871,8 +871,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Ajusta la cantidad de fotogramas \n"
                "que puede adelantar la CPU a la GPU \n"
-               "al utilizar 'Sincronía estricta \n"
-               "de CPU'.\n"
+               "al utilizar «Sincronía estricta \n"
+               "de CPU».\n"
                " \n"
                "El valor máximo es 3.\n"
                " \n"
@@ -902,8 +902,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "ha visto por primera vez.\n"
                " \n"
                "Esta opción solo se actualiza dentro \n"
-               "de la configuración si 'Guardar \n"
-               "configuración al salir' está activado.\n");
+               "de la configuración si «Guardar \n"
+               "configuración al salir» está activado.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len,
@@ -1146,25 +1146,25 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "RetroArch, por si solo, no hace nada. \n"
                " \n"
                "Para que haga algo necesitas cargar \n"
-               "programas que llamamos 'núcleos' o \n"
-               "'cores' en inglés. \n"
+               "programas que llamamos «núcleos» o \n"
+               "«cores» en inglés. \n"
                " \n"
                "Para cargar un núcleo, selecciona uno \n"
-               "en 'Cargar núcleo'. \n"
+               "en «Cargar núcleo». \n"
                " \n"
 #ifdef HAVE_NETWORKING
                "Puedes conseguir núcleos de varias formas: \n"
                "* Descárgalos en:\n"
-               "'%s' -> '%s'.\n"
+               "«%s» -> «%s».\n"
                "* Cópialos manualmente a:\n"
-               "'%s'.",
+               "«%s».",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
                "Puedes conseguir núcleos si los\n"
                "copias a mano a la carpeta\n"
-               "'%s'.",
+               "«%s».",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
@@ -1172,8 +1172,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
                "Puedes cambiar la superposición del \n"
-               "mando virtual si vas a '%s' \n"
-               "-> '%s'-> '%s'."
+               "mando virtual si vas a «%s» \n"
+               "-> «%s» -> «%s»."
                " \n"
                "Desde ahí puedes cambiar la superposición, \n"
                "el tamaño y opacidad de sus botones, etc.\n"
@@ -1182,7 +1182,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "virtuales están ocultas de forma \n"
                "predeterminada dentro del menú. \n"
                "Si quieres cambiar este comportamiento, \n"
-               "cambia '%s' a Desactivado/off.",
+               "cambia «%s» a Desactivado/off.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
