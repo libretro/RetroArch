@@ -286,30 +286,21 @@ static void crt_rpi_switch(int width, int height, float hz)
    int ip_flag     = 0;
 
    /* set core refresh from hz */
-   video_monitor_set_refresh_rate(hz);
+      video_monitor_set_refresh_rate(hz);
 
-   /* following code is the mode line generator */
-
-   pwidth = width;
-
-   if (height < 400 && width > 400)
-      pwidth = width / 2;
-
-   roundw = roundf((float)pwidth / (float)height * 100) / 100;
-
-   if (height > width)
-      roundw = roundf((float)height / (float)width * 100) / 100;
-
-   if (roundw > 1.35)
-      roundw = 1.25;
-
-   if (roundw < 1.20)
-      roundw = 1.34;
-   hfp = width * 0.065;
-
-   hsp = width * 0.1433-hfp+(crt_center_adjust*4);
-
-   hbp = width * 0.3-hsp-hfp;
+      /* following code is the mode line generator */
+     hsp    = (width * 0.117) - (xoffset*4);
+      if (width < 700)
+      {
+         hfp    = (width * 0.065);
+         hbp  = width * 0.35-hsp-hfp;
+      }else {
+         hfp  = (width * 0.033) + (width / 112);
+         hbp  = (width * 0.225) + (width /58);
+         xoffset = xoffset*2;
+      }
+   
+      hmax = hbp;
 
    if (height < 241)
       vmax = 261;
