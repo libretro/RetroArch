@@ -30,7 +30,7 @@
 
 #if defined(HAVE_VIDEOCORE)
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
-static void crt_rpi_switch(int width, int height, float hz);
+static void crt_rpi_switch(int width, int height, float hz, int crt_center_adjust);
 #endif
 
 static unsigned ra_core_width     = 0;
@@ -99,7 +99,7 @@ static void switch_res_crt(unsigned width, unsigned height)
    video_display_server_set_resolution(width, height,
          ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index, crt_center_adjust);
 #if defined(HAVE_VIDEOCORE)
-   crt_rpi_switch(width, height, ra_core_hz);
+   crt_rpi_switch(width, height, ra_core_hz, crt_center_adjust);
    video_monitor_set_refresh_rate(ra_core_hz);
    crt_switch_driver_reinit();
 #endif
@@ -259,7 +259,7 @@ int crt_compute_dynamic_width(int width)
 }
 
 #if defined(HAVE_VIDEOCORE)
-static void crt_rpi_switch(int width, int height, float hz)
+static void crt_rpi_switch(int width, int height, float hz, int xoffset)
 {
    char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
