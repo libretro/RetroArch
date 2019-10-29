@@ -930,7 +930,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 
 /* FIXME/TODO: Filters not supported. */
 static void *omap_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
    omap_video_t *vid    = (omap_video_t*)calloc(1, sizeof(omap_video_t));

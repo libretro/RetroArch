@@ -185,7 +185,7 @@ task_finished:
 
          if (task_get_cancelled(task))
             task_set_error(task, strdup("Task cancelled."));
-         else
+         else if (!task->mute)
             task_set_error(task, strdup("Download failed."));
       }
       else
@@ -251,7 +251,7 @@ static void* task_push_http_transfer_generic(
 {
    task_finder_data_t find_data;
    char tmp[255];
-   const char* s           = NULL;
+   const char *s           = NULL;
    retro_task_t  *t        = NULL;
    http_handle_t *http     = NULL;
 
@@ -294,17 +294,19 @@ static void* task_push_http_transfer_generic(
    t->user_data            = user_data;
    t->progress             = -1;
 
-   if (user_data != NULL)
+   if (user_data)
       s = ((file_transfer_t*)user_data)->path;
    else
       s = url;
 
+   strlcpy(tmp,
+         msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
+   strlcat(tmp, " ", sizeof(tmp));
+
    if (strstr(s, ".index"))
-      snprintf(tmp, sizeof(tmp), "%s %s",
-            msg_hash_to_str(MSG_DOWNLOADING), msg_hash_to_str(MSG_INDEX_FILE));
+      strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
    else
-      snprintf(tmp, sizeof(tmp), "%s '%s'",
-            msg_hash_to_str(MSG_DOWNLOADING), s);
+      strlcat(tmp, s, sizeof(tmp));
 
    t->title                = strdup(tmp);
 
@@ -327,7 +329,9 @@ void* task_push_http_transfer(const char *url, bool mute,
 {
    if (string_is_empty(url))
       return NULL;
-   return task_push_http_transfer_generic(net_http_connection_new(url, "GET", NULL), url, mute, type, cb, user_data);
+   return task_push_http_transfer_generic(
+         net_http_connection_new(url, "GET", NULL),
+         url, mute, type, cb, user_data);
 }
 
 void* task_push_http_post_transfer(const char *url,
@@ -336,7 +340,8 @@ void* task_push_http_post_transfer(const char *url,
 {
    if (string_is_empty(url))
       return NULL;
-   return task_push_http_transfer_generic(net_http_connection_new(url, "POST", post_data),
+   return task_push_http_transfer_generic(
+         net_http_connection_new(url, "POST", post_data),
          url, mute, type, cb, user_data);
 }
 

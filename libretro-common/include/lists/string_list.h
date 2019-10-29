@@ -41,6 +41,7 @@ union string_list_elem_attr
 struct string_list_elem
 {
    char *data;
+   void *userdata;
    union string_list_elem_attr attr;
 };
 
@@ -86,6 +87,19 @@ bool string_list_find_elem_prefix(const struct string_list *list,
  * Returns: new string list if successful, otherwise NULL.
  */
 struct string_list *string_split(const char *str, const char *delim);
+
+/**
+ * string_separate:
+ * @str              : string to turn into a string list
+ * @delim            : delimiter character to use for separating the string.
+ *
+ * Creates a new string list based on string @str, delimited by @delim.
+ * Includes empty strings - i.e. two adjacent delimiters will resolve
+ * to a string list element of "".
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+struct string_list *string_separate(char *str, const char *delim);
 
 /**
  * string_list_new:

@@ -19,6 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
+#include <compat/strl.h>
 #include "../../verbosity.h"
 
 using namespace std;
@@ -349,7 +350,7 @@ static bool add_active_buffer_ranges(
 
       if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && tex_sem_index >= reflection->pass_number)
       {
-         RARCH_ERR("[slang]: Non causal filter chain detected."
+         RARCH_ERR("[slang]: Non causal filter chain detected. "
                "Shader is trying to use output from pass #%u,"
                " but this shader is pass #%u.\n",
                tex_sem_index, reflection->pass_number);
@@ -637,7 +638,15 @@ bool slang_reflect(
             *reflection->texture_semantic_map,
             fragment.sampled_images[i].name, &array_index);
 
-      if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
+      if (index == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && array_index >= reflection->pass_number)
+      {
+         RARCH_ERR("[slang]: Non causal filter chain detected. "
+               "Shader is trying to use output from pass #%u,"
+               " but this shader is pass #%u.\n",
+               array_index, reflection->pass_number);
+         return false;
+      }
+      else if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
          RARCH_ERR("[slang]: Non-semantic textures not supported yet.\n");
          return false;
@@ -715,8 +724,13 @@ bool slang_reflect(
       }
    }
 
-   RARCH_LOG("[slang]:\n");
-   RARCH_LOG("[slang]:   Parameters:\n");
+   {
+      char buf[64];
+      buf[0] = '\0';
+      snprintf(buf, sizeof(buf),
+            "[slang]:\n%s [slang]:   Parameters:\n", FILE_PATH_LOG_INFO);
+      RARCH_LOG(buf);
+   }
 
    for (i = 0; i < reflection->semantic_float_parameters.size(); i++)
    {

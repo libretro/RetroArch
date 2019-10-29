@@ -96,6 +96,13 @@ enum overlay_visibility
    OVERLAY_VISIBILITY_HIDDEN
 };
 
+enum overlay_orientation
+{
+   OVERLAY_ORIENTATION_NONE = 0,
+   OVERLAY_ORIENTATION_LANDSCAPE,
+   OVERLAY_ORIENTATION_PORTRAIT
+};
+
 struct overlay
 {
    bool full_screen;
@@ -203,9 +210,6 @@ typedef struct
 void input_overlay_free_overlay(struct overlay *overlay);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
-
-void input_overlay_loaded(retro_task_t *task,
-      void *task_data, void *user_data, const char *err);
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 

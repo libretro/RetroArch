@@ -62,7 +62,7 @@ static int       image_width;
 static int       image_height;
 static bool      image_uploaded;
 static bool      slideshow_enable;
-struct string_list *file_list;
+static struct string_list *image_file_list;
 
 #if 0
 #define DUPE_TEST
@@ -72,7 +72,7 @@ struct string_list *file_list;
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
 
-static const char* IMAGE_CORE_PREFIX(valid_extensions) = 1+ /* to remove the first |, the alternative is 25 extra lines of ifdef/etc */
+static const char image_formats[] =
 
 #ifdef HAVE_RJPEG
 "|jpg|jpeg"
@@ -94,6 +94,9 @@ static const char* IMAGE_CORE_PREFIX(valid_extensions) = 1+ /* to remove the fir
 #error "can't build this core with no image formats"
 #endif
 ;
+
+/* to remove the first |, the alternative is 25 extra lines of ifdef/etc */
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = image_formats + 1;
 
 #endif
 
@@ -287,9 +290,9 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    path_basedir(dir);
 
-   file_list = dir_list_new(dir, IMAGE_CORE_PREFIX(valid_extensions),
+   image_file_list = dir_list_new(dir, IMAGE_CORE_PREFIX(valid_extensions),
          false,true,false,false);
-   dir_list_sort(file_list, false);
+   dir_list_sort(image_file_list, false);
    free(dir);
 
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -352,23 +355,22 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (slideshow_enable)
    {
-      if ((frames % 120 == 0) && image_index < (signed)(file_list->size - 1))
+      if ((frames % 120 == 0) && image_index < (signed)(image_file_list->size - 1))
          next_image = true;
    }
 
    for (i=0;i<16;i++)
    {
-     if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
-     {
-        realinput |= 1<<i;
-     }
+      if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
+         realinput |= 1<<i;
    }
-   input = realinput & ~previnput;
+
+   input     = realinput & ~previnput;
    previnput = realinput;
 
    if (input & (1<<RETRO_DEVICE_ID_JOYPAD_UP))
    {
-      if ((image_index + 5) < (signed)(file_list->size - 1))
+      if ((image_index + 5) < (signed)(image_file_list->size - 1))
          forward_image   = true;
       else
          last_image      = true;
@@ -389,7 +391,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
    if (input & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT))
    {
-      if (image_index < (signed)(file_list->size - 1))
+      if (image_index < (signed)(image_file_list->size - 1))
          next_image = true;
    }
 
@@ -425,13 +427,13 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
    else if (last_image)
    {
-      image_index = (int)(file_list->size - 1);
+      image_index = (int)(image_file_list->size - 1);
       load_image  = true;
    }
 
    if (load_image)
    {
-      if (!imageviewer_load(file_list->elems[image_index].data, image_index))
+      if (!imageviewer_load(image_file_list->elems[image_index].data, image_index))
       {
          IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
       }

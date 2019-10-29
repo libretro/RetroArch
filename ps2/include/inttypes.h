@@ -15,8 +15,8 @@
 #ifndef INTTYPES_H
 #define INTTYPES_H
 
-#define PRId64 "ld"
-#define PRIu64 "lu"
-#define PRIuPTR "lu"
+#define PRId64 "lld"
+#define PRIu64 "llu"
+#define PRIuPTR "llu"
 
 #endif /* INTTYPES_H */

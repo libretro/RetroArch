@@ -23,6 +23,8 @@
 #include "../menu_cbs.h"
 
 #include "../../retroarch.h"
+#include "../../configuration.h"
+#include "../managers/core_option_manager.h"
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) \
@@ -73,8 +75,164 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return 1; \
 }
 
+static int action_get_title_thumbnails(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   const char *title    = NULL;
+   enum msg_hash_enums label_value;
+
+   /* Get label value */
+   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+      label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
+   else
+      label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
+
+   title = msg_hash_to_str(label_value);
+
+   if (s && !string_is_empty(title))
+   {
+      sanitize_to_string(s, title, len);
+      return 1;
+   }
+
+   return 0;
+}
+
+static int action_get_title_left_thumbnails(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   const char *title    = NULL;
+   enum msg_hash_enums label_value;
+
+   /* Get label value */
+   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+      label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
+   else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+      label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
+   else
+      label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
+
+   title = msg_hash_to_str(label_value);
+
+   if (s && !string_is_empty(title))
+   {
+      sanitize_to_string(s, title, len);
+      return 1;
+   }
+
+   return 0;
+}
+
 static int action_get_title_dropdown_item(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
+   /* Sanity check */
+   if (string_is_empty(path))
+      return 0;
+
+   if (strstr(path, "core_option_"))
+   {
+      /* This is a core options item */
+      struct string_list *tmp_str_list = string_split(path, "_");
+      int ret                          = 0;
+
+      if (tmp_str_list && tmp_str_list->size > 0)
+      {
+         core_option_manager_t *coreopts = NULL;
+
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+         if (coreopts)
+         {
+            settings_t *settings            = config_get_ptr();
+            unsigned menu_index             = string_to_unsigned(tmp_str_list->elems[(unsigned)tmp_str_list->size - 1].data);
+            unsigned visible_index          = 0;
+            unsigned option_index           = 0;
+            bool option_found               = false;
+            unsigned i;
+
+            /* Convert menu index to option index */
+            if (settings->bools.game_specific_options)
+               menu_index--;
+
+            for (i = 0; i < coreopts->size; i++)
+            {
+               if (core_option_manager_get_visible(coreopts, i))
+               {
+                  if (visible_index == menu_index)
+                  {
+                     option_found = true;
+                     option_index = i;
+                     break;
+                  }
+                  visible_index++;
+               }
+            }
+
+            /* If option was found, title == option description */
+            if (option_found)
+            {
+               const char *title = core_option_manager_get_desc(coreopts, option_index);
+
+               if (s && !string_is_empty(title))
+               {
+                  sanitize_to_string(s, title, len);
+                  ret = 1;
+               }
+            }
+         }
+      }
+
+      /* Clean up */
+      if (tmp_str_list)
+         string_list_free(tmp_str_list);
+
+      return ret;
+   }
+   else
+   {
+      /* This is a 'normal' drop down list */
+
+      /* In msg_hash.h, msg_hash_enums are generated via
+       * the following macro:
+       *    #define MENU_LABEL(STR) \
+       *       MENU_ENUM_LABEL_##STR, \
+       *       MENU_ENUM_SUBLABEL_##STR, \
+       *       MENU_ENUM_LABEL_VALUE_##STR
+       * to get 'MENU_ENUM_LABEL_VALUE_' from a
+       * 'MENU_ENUM_LABEL_', we therefore add 2... */
+      enum msg_hash_enums enum_idx = (enum msg_hash_enums)(string_to_unsigned(path) + 2);
+
+      /* Check if enum index is valid
+       * Note: This is a very crude check, but better than nothing */
+      if ((enum_idx > MSG_UNKNOWN) && (enum_idx < MSG_LAST))
+      {
+         /* An annoyance: MENU_ENUM_LABEL_THUMBNAILS and
+          * MENU_ENUM_LABEL_LEFT_THUMBNAILS require special
+          * treatment, since their titles depend upon the
+          * current menu driver... */
+         if (enum_idx == MENU_ENUM_LABEL_VALUE_THUMBNAILS)
+         {
+            return action_get_title_thumbnails(path, label, menu_type, s, len);
+         }
+         else if (enum_idx == MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS)
+         {
+            return action_get_title_left_thumbnails(path, label, menu_type, s, len);
+         }
+         else
+         {
+            const char *title = msg_hash_to_str(enum_idx);
+
+            if (s && !string_is_empty(title))
+            {
+               sanitize_to_string(s, title, len);
+               return 1;
+            }
+         }
+      }
+   }
+
    return 0;
 }
 
@@ -90,9 +248,56 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   if (!string_is_empty(path))
-      fill_pathname_base_noext(s, path, len);
+   const char *playlist_file = NULL;
+
+   if (string_is_empty(path))
+      return 0;
+
+   playlist_file = path_basename(path);
+
+   if (string_is_empty(playlist_file))
+      return 0;
+
+   if (string_is_equal_noncase(path_get_extension(playlist_file),
+            "lpl"))
+   {
+      /* Handle content history */
+      if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)))
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
+      /* Handle favourites */
+      else if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
+      /* Handle collection playlists */
+      else
+      {
+         char playlist_name[PATH_MAX_LENGTH];
+
+         playlist_name[0] = '\0';
+
+         strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
+         path_remove_extension(playlist_name);
+
+         strlcpy(s, playlist_name, len);
+      }
+   }
+   /* This should never happen, but if it does just set
+    * the label to the file name (it's better than nothing...) */
+   else
+      strlcpy(s, playlist_file, len);
+
    return 0;
+}
+
+static int action_get_title_dropdown_playlist_right_thumbnail_mode_item(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_thumbnails(path, label, menu_type, s, len);
+}
+
+static int action_get_title_dropdown_playlist_left_thumbnail_mode_item(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_left_thumbnails(path, label, menu_type, s, len);
 }
 
 default_title_macro(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
@@ -133,6 +338,7 @@ default_title_macro(action_get_dump_disc_list,                  MENU_ENUM_LABEL_
 default_title_macro(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
 default_title_macro(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 default_title_macro(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
+default_title_macro(action_get_frame_time_counter_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS)
 default_title_macro(action_get_rewind_settings_list,            MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS)
 default_title_macro(action_get_cheat_details_settings_list,     MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS)
 default_title_macro(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS)
@@ -143,9 +349,11 @@ default_title_macro(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_
 default_title_macro(action_get_onscreen_video_layout_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS)
 #endif
 default_title_macro(action_get_menu_views_settings_list,        MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS)
+default_title_macro(action_get_settings_views_settings_list,  MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS)
 default_title_macro(action_get_quick_menu_views_settings_list,  MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS)
 default_title_macro(action_get_menu_settings_list,              MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 default_title_macro(action_get_user_interface_settings_list,    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS)
+default_title_macro(action_get_ai_service_settings_list,    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS)
 default_title_macro(action_get_power_management_settings_list,  MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS)
 default_title_macro(action_get_menu_sounds_list,                MENU_ENUM_LABEL_VALUE_MENU_SOUNDS)
 default_title_macro(action_get_menu_file_browser_settings_list, MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS)
@@ -153,7 +361,9 @@ default_title_macro(action_get_retro_achievements_settings_list,MENU_ENUM_LABEL_
 default_title_macro(action_get_wifi_settings_list,              MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS)
 default_title_macro(action_get_network_settings_list,           MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS)
 default_title_macro(action_get_netplay_lan_scan_settings_list,  MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS)
+#ifdef HAVE_LAKKA
 default_title_macro(action_get_lakka_services_list,             MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES)
+#endif
 default_title_macro(action_get_user_settings_list,              MENU_ENUM_LABEL_VALUE_USER_SETTINGS)
 default_title_macro(action_get_directory_settings_list,         MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS)
 default_title_macro(action_get_privacy_settings_list,           MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS)
@@ -183,6 +393,10 @@ default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_
 default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
 default_title_macro(action_get_title_deferred_core_list,        MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 
+default_title_macro(action_get_title_dropdown_resolution_item,  MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION)
+default_title_macro(action_get_title_dropdown_playlist_default_core_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE)
+default_title_macro(action_get_title_dropdown_playlist_label_display_mode_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
+
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
 default_fill_title_macro(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
@@ -200,6 +414,7 @@ default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENU
 default_fill_title_macro(action_get_title_dynamic_wallpapers_directory, MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY)
 default_fill_title_macro(action_get_title_core_assets_directory, MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR)
 default_fill_title_macro(action_get_title_config_directory,      MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY)
+default_fill_title_macro(action_get_title_thumbnail_directory,    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY)
 default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY)
 default_fill_title_macro(action_get_title_autoconfig_directory,  MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR )
 default_fill_title_macro(action_get_title_playlist_directory,    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY)
@@ -231,6 +446,9 @@ default_title_copy_macro(action_get_title_input_settings,         MENU_ENUM_LABE
 default_title_copy_macro(action_get_title_cheevos_list,           MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST)
 default_title_copy_macro(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 default_title_copy_macro(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
+default_title_copy_macro(action_get_title_video_shader_preset_save,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
+default_title_copy_macro(action_get_title_video_shader_preset_remove,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE)
+default_title_copy_macro(action_get_title_video_shader_preset_save_list,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
 
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 default_title_macro(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
@@ -258,8 +476,13 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
       if (list_path->size > 0)
          strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
       string_list_free(list_path);
-      snprintf(s, len, "%s - %s", text,
-            (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
+      strlcpy(s, text, len);
+
+      if (!string_is_empty(elem0_path))
+      {
+         strlcat(s, "- ", len);
+         strlcat(s, path_basename(elem0_path), len);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -294,7 +517,10 @@ default_title_generic_macro(action_get_title_list_rdb_entry_database_info,MENU_E
 static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), path);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
+   strlcat(s, " ", len);
+   if (!string_is_empty(path))
+      strlcat(s, path, len);
    return 0;
 }
 
@@ -407,6 +633,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_logging_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_frame_time_counter_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_frame_throttle_settings_list);
@@ -454,6 +685,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_menu_views_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_settings_views_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
@@ -467,6 +703,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_user_interface_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_ai_service_settings_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST)))
@@ -509,11 +750,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_netplay_lan_scan_settings_list);
       return 0;
    }
+#ifdef HAVE_LAKKA
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_lakka_services_list);
       return 0;
    }
+#endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_user_settings_list);
@@ -754,6 +997,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_assets_directory);
             break;
+         case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_thumbnail_directory);
+            break;
          case MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
             break;
@@ -899,6 +1145,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
@@ -1222,6 +1471,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_parameters);
             break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_save);
+            break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
@@ -1343,28 +1595,58 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    }
 #endif
    if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_save_list);
+      return 0;
+   }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_remove);
+      return 0;
+   }
+   if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-         return 0;
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+      return 0;
    }
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)))
    {
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-         return 0;
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+      return 0;
    }
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)))
    {
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-         return 0;
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_resolution_item);
+      return 0;
    }
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)))
    {
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-         return 0;
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_default_core_item);
+      return 0;
+   }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_label_display_mode_item);
+      return 0;
+   }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_right_thumbnail_mode_item);
+      return 0;
+   }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_left_thumbnail_mode_item);
+      return 0;
    }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {

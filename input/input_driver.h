@@ -74,8 +74,6 @@ enum input_action
 enum rarch_input_keyboard_ctl_state
 {
    RARCH_INPUT_KEYBOARD_CTL_NONE = 0,
-   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED,
-   RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
    RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
 
    RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
@@ -164,8 +162,7 @@ struct input_driver
          enum retro_rumble_effect effect, uint16_t state);
    const input_device_driver_t *(*get_joypad_driver)(void *data);
    const input_device_driver_t *(*get_sec_joypad_driver)(void *data);
-   bool (*keyboard_mapping_is_blocked)(void *data);
-   void (*keyboard_mapping_set_block)(void *data, bool value);
+   bool keyboard_mapping_blocked;
 };
 
 struct rarch_joypad_driver
@@ -228,8 +225,6 @@ const input_device_driver_t * input_driver_get_joypad_driver(void);
 
 const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
 
-void input_driver_keyboard_mapping_set_block(bool value);
-
 /**
  * input_sensor_set_state:
  * @port               : User number.
@@ -246,22 +241,11 @@ float input_sensor_get_input(unsigned port, unsigned id);
 
 void *input_driver_get_data(void);
 
-void input_get_state_for_port(
-      void *data, unsigned port, input_bits_t *p_new_state);
-
-const input_driver_t *input_get_ptr(void);
+input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
 
 void input_driver_set_flushing_input(void);
-
-void input_driver_unset_hotkey_block(void);
-
-void input_driver_set_hotkey_block(void);
-
-void input_driver_set_libretro_input_blocked(void);
-
-void input_driver_unset_libretro_input_blocked(void);
 
 bool input_driver_is_libretro_input_blocked(void);
 
@@ -277,22 +261,9 @@ void input_driver_deinit_command(void);
 
 bool input_driver_init_command(void);
 
-void input_driver_deinit_remote(void);
-
-bool input_driver_init_remote(void);
-
-void input_driver_deinit_mapper(void);
-
-bool input_driver_init_mapper(void);
-
 bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
-
-int16_t input_driver_input_state(
-         rarch_joypad_info_t joypad_info,
-         const struct retro_keybind **retro_keybinds,
-         unsigned port, unsigned device, unsigned index, unsigned id);
 
 float *input_driver_get_float(enum input_action action);
 
@@ -729,6 +700,31 @@ extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 extern hid_driver_t null_hid;
 #endif
+
+typedef struct menu_input_ctx_line
+{
+   const char *label;
+   const char *label_setting;
+   unsigned type;
+   unsigned idx;
+   input_keyboard_line_complete_t cb;
+} menu_input_ctx_line_t;
+
+const char *menu_input_dialog_get_label_setting_buffer(void);
+
+const char *menu_input_dialog_get_label_buffer(void);
+
+const char *menu_input_dialog_get_buffer(void);
+
+unsigned menu_input_dialog_get_kb_idx(void);
+
+bool menu_input_dialog_start_search(void);
+
+bool menu_input_dialog_get_display_kb(void);
+
+bool menu_input_dialog_start(menu_input_ctx_line_t *line);
+
+void menu_input_dialog_end(void);
 
 RETRO_END_DECLS
 

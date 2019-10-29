@@ -74,6 +74,8 @@ int64_t intfstream_read(intfstream_internal_t *intf,
 int64_t intfstream_write(intfstream_internal_t *intf,
       const void *s, uint64_t len);
 
+int64_t intfstream_get_ptr(intfstream_internal_t *intf);
+
 char *intfstream_gets(intfstream_internal_t *intf,
       char *buffer, uint64_t len);
 
@@ -94,10 +96,15 @@ int64_t intfstream_get_size(intfstream_internal_t *intf);
 
 int intfstream_flush(intfstream_internal_t *intf);
 
+uint32_t intfstream_get_chd_pregap(intfstream_internal_t *intf);
+
 intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
 
 intfstream_t *intfstream_open_memory(void *data,
+      unsigned mode, unsigned hints, uint64_t size);
+
+intfstream_t *intfstream_open_writable_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size);
 
 intfstream_t *intfstream_open_chd_track(const char *path,

@@ -47,6 +47,7 @@
 #include "../../file_path_special.h"
 
 void RWebAudioRecalibrateTime(void);
+void dummyErrnoCodes(void);
 
 static unsigned emscripten_fullscreen_reinit;
 static unsigned emscripten_frame_count = 0;
@@ -68,7 +69,6 @@ static void emscripten_mainloop(void)
 {
    int ret;
    video_frame_info_t video_info;
-   unsigned sleep_ms = 0;
 
    RWebAudioRecalibrateTime();
 
@@ -98,10 +98,7 @@ static void emscripten_mainloop(void)
          command_event(CMD_EVENT_REINIT, NULL);
    }
 
-   ret = runloop_iterate(&sleep_ms);
-
-   if (ret == 1 && sleep_ms > 0)
-      retro_sleep(sleep_ms);
+   ret = runloop_iterate();
 
    task_queue_check();
 
@@ -225,6 +222,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 int main(int argc, char *argv[])
 {
    EMSCRIPTEN_RESULT r;
+
+   dummyErrnoCodes();
 
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);

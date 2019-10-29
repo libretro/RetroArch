@@ -30,6 +30,7 @@
 #include <boolean.h>
 
 #include "playlist.h"
+#include "menu/menu_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -100,14 +101,21 @@ void runtime_log_get_runtime_hms(runtime_log_t *runtime_log, unsigned *hours, un
 /* Gets runtime in microseconds */
 void runtime_log_get_runtime_usec(runtime_log_t *runtime_log, retro_time_t *usec);
 
+/* Gets runtime as a pre-formatted string */
+void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t len);
+
 /* Gets last played entry values */
 void runtime_log_get_last_played(runtime_log_t *runtime_log,
       unsigned *year, unsigned *month, unsigned *day,
       unsigned *hour, unsigned *minute, unsigned *second);
 
-/* Gets last played entry values as a time_t 'object'
+/* Gets last played entry values as a struct tm 'object'
  * (e.g. for printing with strftime()) */
-void runtime_log_get_last_played_time(runtime_log_t *runtime_log, time_t *time);
+void runtime_log_get_last_played_time(runtime_log_t *runtime_log, struct tm *time_info);
+
+/* Gets last played entry value as a pre-formatted string */
+void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
+      char *str, size_t len, enum playlist_sublabel_last_played_style_type timedate_style);
 
 /* Status */
 

@@ -41,7 +41,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -85,6 +84,8 @@
 #define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
 #endif
+
+static void gfx_ctx_wgl_destroy(void *data);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
@@ -174,21 +175,6 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-static void setup_pixel_format(HDC hdc)
-{
-   PIXELFORMATDESCRIPTOR pfd = {0};
-   pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
-   pfd.nVersion     = 1;
-   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-   pfd.iPixelType   = PFD_TYPE_RGBA;
-   pfd.cColorBits   = 32;
-   pfd.cDepthBits   = 0;
-   pfd.cStencilBits = 0;
-   pfd.iLayerType   = PFD_MAIN_PLANE;
-
-   SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
-}
-
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -196,7 +182,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
    win32_hdc                            = GetDC(hwnd);
 
-   setup_pixel_format(win32_hdc);
+   win32_setup_pixel_format(win32_hdc, true);
 
 #ifdef GL_DEBUG
    debug = true;
@@ -243,7 +229,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
 
    if (core_context || debug)
    {
-      int attribs[16];
+      int attribs[16] = {0};
       int *aptr = attribs;
 
       if (core_context)
@@ -275,29 +261,75 @@ static void create_gl_context(HWND hwnd, bool *quit)
       if (!pcreate_context)
          pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
+      /* In order to support the core info "required_hw_api" field correctly, we should try to init the highest available
+       * version GL context possible. This means trying successively lower versions until it works, because GL has
+       * no facility for determining the highest possible supported version.
+       */
       if (pcreate_context)
       {
-         HGLRC context = pcreate_context(win32_hdc, NULL, attribs);
+         int i;
+         int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
+         int gl_version_rows = ARRAY_SIZE(gl_versions);
+         int (*versions)[2];
+         int version_rows = 0;
+         HGLRC context = NULL;
 
-         if (context)
-         {
-            wglMakeCurrent(NULL, NULL);
-            wglDeleteContext(win32_hrc);
-            win32_hrc = context;
-            if (!wglMakeCurrent(win32_hdc, win32_hrc))
-               *quit = true;
-         }
-         else
-            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+         versions = gl_versions;
+         version_rows = gl_version_rows;
 
-         if (win32_use_hw_ctx)
+         /* only try higher versions when core_context is true */
+         if (!core_context)
+            version_rows = 1;
+
+         /* try versions from highest down to requested version */
+         for (i = 0; i < version_rows; i++)
          {
-            win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
-            if (!win32_hw_hrc)
+            if (core_context)
             {
-               RARCH_ERR("[WGL]: Failed to create shared context.\n");
-               *quit = true;
+               attribs[1] = versions[i][0];
+               attribs[3] = versions[i][1];
             }
+
+            context = pcreate_context(win32_hdc, NULL, attribs);
+
+            if (context)
+            {
+               wglMakeCurrent(NULL, NULL);
+               wglDeleteContext(win32_hrc);
+               win32_hrc = context;
+
+               if (!wglMakeCurrent(win32_hdc, win32_hrc))
+               {
+                  *quit = true;
+                  break;
+               }
+
+               if (win32_use_hw_ctx)
+               {
+                  win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
+
+                  if (!win32_hw_hrc)
+                  {
+                     RARCH_ERR("[WGL]: Failed to create shared context.\n");
+                     *quit = true;
+                     break;
+                  }
+               }
+
+               /* found a suitable version that is high enough, we can stop now */
+               break;
+            }
+            else if (versions[i][0] == win32_major && versions[i][1] == win32_minor)
+            {
+               /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
+               break;
+            }
+         }
+
+         if (!context)
+         {
+            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+            *quit = true;
          }
       }
       else
@@ -312,12 +344,14 @@ static void create_gl_context(HWND hwnd, bool *quit)
       wglGetExtensionsStringARB = (const char *(WINAPI *) (HDC))
          gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
       if (wglGetExtensionsStringARB)
-         extensions = wglGetExtensionsStringARB(win32_hdc);
-      RARCH_LOG("[WGL] extensions: %s\n", extensions);
-      if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
       {
-         RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
-         wgl_adaptive_vsync = true;
+         extensions = wglGetExtensionsStringARB(win32_hdc);
+         RARCH_LOG("[WGL] extensions: %s\n", extensions);
+         if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+         {
+            RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+            wgl_adaptive_vsync = true;
+         }
       }
    }
 }
@@ -480,27 +514,10 @@ static bool gfx_ctx_wgl_set_resize(void *data,
 
 static void gfx_ctx_wgl_update_title(void *data, void *data2)
 {
-   const settings_t *settings = config_get_ptr();
    video_frame_info_t* video_info = (video_frame_info_t*)data2;
    char title[128];
 
    title[0] = '\0';
-
-   if (settings->bools.video_memory_show)
-   {
-#ifndef __WINRT__
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-#endif
-   }
 
    video_driver_get_window_title(title, sizeof(title));
 
@@ -548,7 +565,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
       return NULL;
 
    if (g_win32_inited)
-      goto error;
+      gfx_ctx_wgl_destroy(NULL);
 
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
@@ -690,7 +707,7 @@ error:
 
 static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
 
@@ -718,24 +735,6 @@ static void gfx_ctx_wgl_input_driver(void *data,
 static bool gfx_ctx_wgl_has_focus(void *data)
 {
    return win32_has_focus();
-}
-
-static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
-{
-   return win32_suppress_screensaver(data, enable);
-}
-
-static bool gfx_ctx_wgl_has_windowed(void *data)
-{
-   (void)data;
-
-   return true;
-}
-
-static bool gfx_ctx_wgl_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   return win32_get_metrics(data, type, value);
 }
 
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
@@ -888,14 +887,14 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_video_output_size,
    gfx_ctx_wgl_get_video_output_prev,
    gfx_ctx_wgl_get_video_output_next,
-   gfx_ctx_wgl_get_metrics,
+   win32_get_metrics,
    NULL,
    gfx_ctx_wgl_update_title,
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
    gfx_ctx_wgl_has_focus,
-   gfx_ctx_wgl_suppress_screensaver,
-   gfx_ctx_wgl_has_windowed,
+   win32_suppress_screensaver,
+   true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,
    gfx_ctx_wgl_get_proc_address,

@@ -426,5 +426,22 @@ int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
 
 ssize_t chdstream_get_size(chdstream_t *stream)
 {
-  return stream->track_end;
+   return stream->track_end;
+}
+
+uint32_t chdstream_get_pregap(chdstream_t *stream)
+{
+   metadata_t meta;
+   uint32_t frame_offset = 0;
+   uint32_t i;
+
+   for (i = 0; chdstream_get_meta(stream->chd, i, &meta); ++i)
+   {
+      if (stream->track_frame == frame_offset)
+         return meta.pregap;
+
+      frame_offset += meta.frames + meta.extra;
+   }
+
+   return 0;
 }

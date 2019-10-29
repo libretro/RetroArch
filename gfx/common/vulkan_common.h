@@ -319,6 +319,9 @@ typedef struct vk
    bool quitting;
    bool should_resize;
 
+   unsigned video_width;
+   unsigned video_height;
+
    unsigned tex_w, tex_h;
    unsigned vp_out_width, vp_out_height;
    unsigned rotation;

@@ -105,7 +105,6 @@ typedef struct ui_msg_window
 typedef struct ui_application
 {
    void* (*initialize)(void);
-   bool (*pending_events)(void);
    void (*process_events)(void);
    void (*quit)(void);
    bool exiting;
@@ -128,7 +127,6 @@ typedef struct ui_companion_driver
 {
    void *(*init)(void);
    void (*deinit)(void *data);
-   int  (*iterate)(void *data, unsigned action);
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
@@ -145,22 +143,18 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
-extern ui_browser_window_t   ui_browser_window_null;
 extern ui_browser_window_t   ui_browser_window_cocoa;
 extern ui_browser_window_t   ui_browser_window_qt;
 extern ui_browser_window_t   ui_browser_window_win32;
 
-extern ui_window_t           ui_window_null;
 extern ui_window_t           ui_window_cocoa;
 extern ui_window_t           ui_window_qt;
 extern ui_window_t           ui_window_win32;
 
-extern ui_msg_window_t       ui_msg_window_null;
 extern ui_msg_window_t       ui_msg_window_win32;
 extern ui_msg_window_t       ui_msg_window_qt;
 extern ui_msg_window_t       ui_msg_window_cocoa;
 
-extern ui_application_t      ui_application_null;
 extern ui_application_t      ui_application_cocoa;
 extern ui_application_t      ui_application_qt;
 extern ui_application_t      ui_application_win32;
@@ -171,27 +165,6 @@ extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
 
-/**
- * ui_companion_find_driver:
- * @ident               : Identifier name of driver to find.
- *
- * Finds driver with @ident. Does not initialize.
- *
- * Returns: pointer to driver if successful, otherwise NULL.
- **/
-const ui_companion_driver_t *ui_companion_find_driver(const char *ident);
-
-const ui_companion_driver_t *ui_companion_get_ptr(void);
-
-/**
- * ui_companion_init_first:
- *
- * Finds first suitable driver and initialize.
- *
- * Returns: pointer to first suitable driver, otherwise NULL.
- **/
-const ui_companion_driver_t *ui_companion_init_first(void);
-
 void ui_companion_driver_init_first(void);
 
 bool ui_companion_is_on_foreground(void);
@@ -199,8 +172,6 @@ bool ui_companion_is_on_foreground(void);
 void ui_companion_set_foreground(unsigned enable);
 
 void ui_companion_event_command(enum event_command action);
-
-void ui_companion_driver_deinit(void);
 
 void ui_companion_driver_notify_refresh(void);
 

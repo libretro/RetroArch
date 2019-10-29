@@ -119,9 +119,7 @@ static bool d3d8_font_init_first(
 
 #ifdef HAVE_D3D9
 static const font_renderer_t *d3d9_font_backends[] = {
-#if defined(_XBOX)
-   &d3d_xbox360_font,
-#elif defined(_WIN32) && defined(HAVE_D3DX)
+#if defined(_WIN32) && defined(HAVE_D3DX)
    &d3d_win32_font,
 #endif
    NULL
@@ -187,9 +185,6 @@ static bool gl1_font_init_first(
 #if defined(HAVE_OPENGL)
 static const font_renderer_t *gl_font_backends[] = {
    &gl_raster_font,
-#if defined(HAVE_LIBDBGFONT)
-   &libdbg_font,
-#endif
    NULL,
 };
 

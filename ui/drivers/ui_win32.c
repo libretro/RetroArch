@@ -1,6 +1,7 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2017 - Ali Bouhlel
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -38,6 +39,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
 
@@ -48,6 +50,7 @@
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../frontend/drivers/platform_win32.h"
 
 #include "ui_win32.h"
 
@@ -60,11 +63,15 @@ typedef struct ui_companion_win32
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
+#if _WIN32_WINNT >= 0x0501
+   /* Use the language set in the config for the menubar... also changes the console language. */
+   SetThreadUILanguage(win32_get_langid_from_retro_lang(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)));
+#endif
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->hInstance     = GetModuleHandle(NULL);
    wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
+   wndclass->lpszClassName = (class_name != NULL) ? class_name : msg_hash_to_str(MSG_PROGRAM);
    wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
    wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
@@ -117,7 +124,7 @@ static bool win32_browser(
        * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
-      browser_state.startdir = strdup("");
+      browser_state.startdir = strdup(initial_dir);
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
@@ -142,33 +149,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    switch (mode)
    {
       case ID_M_LOAD_CORE:
-      case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
-            wchar_t title_wide[PATH_MAX];
-            char title_cp[PATH_MAX];
-            const char *extensions  = NULL;
-            const char *title       = NULL;
-            const char *initial_dir = NULL;
+            char    *title_cp       = NULL;
             size_t converted        = 0;
-
-            switch (mode)
-            {
-               /* OPENFILENAME.lpstrFilter requires
-                * a NULL-separated list of name/ext
-                * pairs terminated by a second null at the end. */
-               case ID_M_LOAD_CORE:
-                  extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
-                  title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
-                  initial_dir = settings->paths.directory_libretro;
-                  break;
-               case ID_M_LOAD_CONTENT:
-                  extensions  = "All Files (*.*)\0*.*\0\0";
-                  title       = msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
-                  initial_dir = settings->paths.directory_menu_content;
-                  break;
-            }
+            const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
+            const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
+            const char *initial_dir = settings->paths.directory_libretro;
 
             /* Convert UTF8 to UTF16, then back to the
              * local code page.
@@ -176,25 +163,65 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * string display until Unicode is
              * fully supported.
              */
-            MultiByteToWideChar(CP_UTF8, 0, title, -1,
-                  title_wide,
-                  sizeof(title_wide) / sizeof(title_wide[0]));
-            wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
+            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+
+            if (title_wide)
+               title_cp             = utf16_to_utf8_string_alloc(title_wide);
 
             if (!win32_browser(owner, win32_file, sizeof(win32_file),
                      extensions, title_cp, initial_dir))
-               break;
-
-            switch (mode)
             {
-               case ID_M_LOAD_CORE:
-                  path_set(RARCH_PATH_CORE, win32_file);
-                  cmd         = CMD_EVENT_LOAD_CORE;
-                  break;
-               case ID_M_LOAD_CONTENT:
-                  win32_load_content_from_gui(win32_file);
-                  break;
+               if (title_wide)
+                  free(title_wide);
+               if (title_cp)
+                  free(title_cp);
+               break;
             }
+
+            if (title_wide)
+               free(title_wide);
+            if (title_cp)
+               free(title_cp);
+            path_set(RARCH_PATH_CORE, win32_file);
+            cmd         = CMD_EVENT_LOAD_CORE;
+         }
+         break;
+      case ID_M_LOAD_CONTENT:
+         {
+            char win32_file[PATH_MAX_LENGTH] = {0};
+            char *title_cp          = NULL;
+            size_t converted        = 0;
+            const char *extensions  = "All Files (*.*)\0*.*\0\0";
+            const char *title       = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
+            const char *initial_dir = settings->paths.directory_menu_content;
+
+            /* Convert UTF8 to UTF16, then back to the
+             * local code page.
+             * This is needed for proper multi-byte
+             * string display until Unicode is
+             * fully supported.
+             */
+            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+
+            if (title_wide)
+               title_cp             = utf16_to_utf8_string_alloc(title_wide);
+
+            if (!win32_browser(owner, win32_file, sizeof(win32_file),
+                     extensions, title_cp, initial_dir))
+            {
+               if (title_wide)
+                  free(title_wide);
+               if (title_cp)
+                  free(title_cp);
+               break;
+            }
+
+            if (title_wide)
+               free(title_wide);
+            if (title_cp)
+               free(title_cp);
+            win32_load_content_from_gui(win32_file);
          }
          break;
       case ID_M_RESET:
@@ -290,14 +317,6 @@ static void *ui_companion_win32_init(void)
    return handle;
 }
 
-static int ui_companion_win32_iterate(void *data, unsigned action)
-{
-   (void)data;
-   (void)action;
-
-   return 0;
-}
-
 static void ui_companion_win32_notify_content_loaded(void *data)
 {
    (void)data;
@@ -327,7 +346,6 @@ static void ui_companion_win32_notify_list_pushed(void *data,
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
-   ui_companion_win32_iterate,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,

@@ -31,7 +31,6 @@
 
 typedef struct uwp_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 } uwp_input_t;
 
@@ -107,22 +106,6 @@ static void uwp_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool uwp_keyboard_mapping_is_blocked(void *data)
-{
-   uwp_input_t *uwp = (uwp_input_t*)data;
-   if (!uwp)
-      return false;
-   return uwp->blocked;
-}
-
-static void uwp_keyboard_mapping_set_block(void *data, bool value)
-{
-   uwp_input_t *uwp = (uwp_input_t*)data;
-   if (!uwp)
-      return;
-   uwp->blocked = value;
-}
-
 static bool uwp_pressed_joypad(uwp_input_t *uwp,
    rarch_joypad_info_t joypad_info,
    const struct retro_keybind *binds,
@@ -132,21 +115,21 @@ static bool uwp_pressed_joypad(uwp_input_t *uwp,
 
    /* First, process the keyboard bindings */
    if ((bind->key < RETROK_LAST) && uwp_keyboard_pressed(bind->key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !uwp->blocked)
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_uwp.keyboard_mapping_blocked)
          return true;
 
    /* Then, process the joypad bindings */
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+      const uint64_t joykey  = (binds[id].joykey != NO_BTN)
          ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
          ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
       if (uwp_mouse_state(port, bind->mbutton, false))
          return true;
-      if (joykey != NO_BTN && uwp->joypad->button(joypad_info.joy_idx, joykey))
+      if ((uint16_t)joykey != NO_BTN && uwp->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
          return true;
       if (((float)abs(uwp->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
          return true;
@@ -192,7 +175,6 @@ static int16_t uwp_input_state(void *data,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   int16_t ret                = 0;
    uwp_input_t *uwp           = (uwp_input_t*)data;
 
    switch (device)
@@ -201,23 +183,29 @@ static int16_t uwp_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (uwp_pressed_joypad(
                         uwp, joypad_info, binds[port], port, i))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id);
+               if (uwp_pressed_joypad(uwp, joypad_info, binds[port], port, id))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return uwp_pressed_analog(uwp, joypad_info, binds[port], port, index, id);
-
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && uwp_keyboard_pressed(id);
 
@@ -247,6 +235,5 @@ input_driver_t input_uwp = {
    uwp_input_set_rumble,
    uwp_input_get_joypad_driver,
    NULL,
-   uwp_keyboard_mapping_is_blocked,
-   uwp_keyboard_mapping_set_block,
+   false
 };

@@ -65,11 +65,14 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
     buttons            = &mfi_buttons[slot];
 
     /* retain the values from the paused controller handler and pass them through */
-    if (@available(iOS 13, *)) {
+    if (@available(iOS 13, *))
+    {
         // The menu button can be pressed/unpressed like any other button in iOS 13
         // so no need to passthrough anything
         *buttons = 0;
-    } else {
+    }
+    else
+    {
         // Use the paused controller handler for iOS versions below 13
         pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
         select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
@@ -103,7 +106,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
 #endif
 
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
-        if (@available(iOS 13, *)) {
+        if (@available(iOS 13, *))
+        {
             // Support "Options" button present in PS4 / XBox One controllers
             *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
             
@@ -218,6 +222,11 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
     }
 }
 
+static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
+{
+    input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
+}
+
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
     signed desired_index = (int32_t)controller.playerIndex;
@@ -275,6 +284,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         }
 
         apple_gamecontroller_joypad_register(controller.gamepad);
+        mfi_joypad_autodetect_add(controller.playerIndex);
     }
 }
 
@@ -286,19 +296,15 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
         return;
 
     mfi_controllers[pad] = 0;
-    [mfiControllers removeObject:controller];
-}
-
-static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
-{
-    if ( !input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0) ) {
-        input_config_set_device(autoconf_pad, "mFi Controller");
+    if ( [mfiControllers containsObject:controller] )
+    {
+        [mfiControllers removeObject:controller];
+        input_autoconfigure_disconnect(pad, mfi_joypad.ident);
     }
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
 {
-    mfi_joypad_autodetect_add(0);
     static bool inited = false;
     if (inited)
         return true;

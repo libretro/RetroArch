@@ -2,12 +2,12 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <compat/strl.h>
-#include <verbosity.h>
 
 #include "video_layout.h"
 #include "video_layout/view.h"
 
 #include "../retroarch.h"
+#include "../verbosity.h"
 
 bool load(view_array_t *view_array, rxml_document_t *doc);
 

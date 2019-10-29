@@ -107,8 +107,31 @@ clock_t clock(void)
    return SDL_GetTicks();
 }
 
-time_t time(time_t *t) {
+time_t time(time_t *t)
+{
    time_t tim = -1;
    /* TODO: This function need to be implemented again because the SDK one is not working fine */
-   return time;
+   return tim;
+}
+
+time_t mktime(struct tm *timeptr)
+{
+   time_t tim = -1;
+   /* TODO: This function need to be implemented again because the SDK one is not working fine */
+   return tim;
+}
+
+struct tm *localtime(const time_t *timep)
+{
+   return NULL;
+}
+
+size_t strftime(char *s, size_t max, const char *format, const struct tm *tm)
+{
+   return -1;
+}
+
+char *setlocale(int category, const char *locale)
+{
+   return NULL;
 }

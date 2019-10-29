@@ -31,6 +31,7 @@ QWidget *NotificationsPage::widget()
    CheckableSettingsGroup            *bgGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE);
 
    notificationsGroup->add(MENU_ENUM_LABEL_FPS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL);
    notificationsGroup->add(MENU_ENUM_LABEL_FRAMECOUNT_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);

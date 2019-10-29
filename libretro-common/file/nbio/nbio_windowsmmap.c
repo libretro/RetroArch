@@ -144,7 +144,6 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
        * but it won't work on other nbio implementations */
       /* therefore, it's blocked so nobody accidentally
        * relies on it. */
-      puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
 
@@ -158,10 +157,7 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
 #endif
 
    if (!SetEndOfFile(handle->file))
-   {
-      puts("ERROR - couldn't resize file (SetEndOfFile)");
       abort(); /* this one returns void and I can't find any other way for it to report failure */
-   }
    handle->len = len;
 
    UnmapViewOfFile(handle->ptr);
@@ -170,10 +166,7 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
    CloseHandle(mem);
 
    if (!handle->ptr)
-   {
-      puts("ERROR - couldn't resize file (MapViewOfFile)");
       abort();
-   }
 }
 
 static void *nbio_mmap_win32_get_ptr(void *data, size_t* len)

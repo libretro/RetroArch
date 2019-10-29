@@ -12,15 +12,17 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 DEFINES :=
+INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1
 	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB DEFINES -DHAVE_KEYMAPPER
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER -DHAVE_UPDATE_ASSETS
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER -DHAVE_UPDATE_ASSETS
 	ifeq ($(DEBUG), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
+	INCDIRS += -I. -Ideps/7zip -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -Ideps/stb
 else
 
 	HAVE_NEON		:= 1
@@ -47,6 +49,7 @@ else
 	HAVE_LIBRETRODB		:= 1
 	HAVE_CC_RESAMPLER	:= 1
 	HAVE_CHEEVOS		:= 1
+	HAVE_RUNAHEAD		:= 1
 	RARCH_CONSOLE		:= 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
@@ -59,11 +62,7 @@ else
 	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += input/drivers/psp_input.o
-	OBJ += input/drivers_joypad/psp_joypad.o
-	OBJ += audio/drivers/psp_audio.o
-	OBJ += frontend/drivers/platform_psp.o
+	INCDIRS += $(INCLUDE_DIRS)
 endif
 
 ifeq ($(strip $(VITASDK)),)
@@ -83,22 +82,19 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Ideps/stb
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O2 -g
-else
-   CFLAGS += -O3
+   CFLAGS += -g
 endif
 
 ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
 
-CFLAGS += -Wall -ffast-math
+CFLAGS += -Wall -ffast-math -g
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
@@ -116,7 +112,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
-VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub \
+VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz
@@ -156,17 +152,19 @@ $(TARGET).elf: $(OBJ) libretro_vita.a
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
+	cp $< $<.unstripped.elf
+	$(PREFIX)strip -g $<
 	vita-elf-create $< $@
 
 %.self: %.velf
 	vita-make-fself -c -s $< $@
 
 %.vpk: %.self
-	vita-mksfoex -s TITLE_ID=$(VITA_TITLE_ID) "$(VITA_TITLE_NAME)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(VITA_TITLE_ID) "$(VITA_TITLE_NAME)" -d ATTRIBUTE2=12 param.sfo
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
 	rm -f $(OBJ:.o=.depend)
 
 # Useful for developers

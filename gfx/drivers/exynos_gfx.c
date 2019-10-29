@@ -1164,7 +1164,7 @@ static int exynos_render_msg(struct exynos_video *vid,
 }
 
 static void *exynos_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    struct exynos_video *vid;
    const unsigned fb_bpp = 4; /* Use XRGB8888 framebuffer. */
@@ -1408,25 +1408,9 @@ static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
+   if (!vid)
+      return;
 
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
    vid->aspect_changed = true;
 }
 

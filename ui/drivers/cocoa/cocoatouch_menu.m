@@ -25,7 +25,6 @@
 #include <queues/task_queue.h>
 
 #include "cocoa_common.h"
-#include "../../../input/input_driver.h"
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
@@ -718,9 +717,11 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
                    target:weakSelf
                    action:@selector(menuBack)];
 
-   [self set_rightbutton:BOXSTRING("Switch")
-                   target:[RetroArch_iOS get]
-                   action:@selector(showGameView)];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self set_rightbutton:BOXSTRING("Switch")
+                       target:[RetroArch_iOS get]
+                       action:@selector(showGameView)];
+    });
 }
 
 - (void) set_leftbutton:(NSString *)title target:(id)target action:(SEL)action
@@ -780,6 +781,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
          break;
       case MENU_ENTRY_ENUM:
          me = [RAMenuItemEnum new];
+         break;
+       case MENU_ENTRY_SIZE:
+         /* TODO/FIXME - implement this */
          break;
    };
 

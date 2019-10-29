@@ -237,3 +237,102 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
 
    return buffer;
 }
+
+/* Splits string into tokens seperated by 'delim'
+ * > Returned token string must be free()'d
+ * > Returns NULL if token is not found
+ * > After each call, 'str' is set to the position after the
+ *   last found token
+ * > Tokens *include* empty strings
+ * Usage example:
+ *    char *str      = "1,2,3,4,5,6,7,,,10,";
+ *    char **str_ptr = &str;
+ *    char *token    = NULL;
+ *    while((token = string_tokenize(str_ptr, ",")))
+ *    {
+ *        printf("%s\n", token);
+ *        free(token);
+ *        token = NULL;
+ *    }
+ */
+char* string_tokenize(char **str, const char *delim)
+{
+   /* Taken from https://codereview.stackexchange.com/questions/216956/strtok-function-thread-safe-supports-empty-tokens-doesnt-change-string# */
+   char *str_ptr    = NULL;
+   char *delim_ptr  = NULL;
+   char *token      = NULL;
+   size_t token_len = 0;
+
+   /* Sanity checks */
+   if (!str || string_is_empty(delim))
+      return NULL;
+
+   str_ptr = *str;
+
+   /* Note: we don't check string_is_empty() here,
+    * empty strings are valid */
+   if (!str_ptr)
+      return NULL;
+
+   /* Search for delimiter */
+   delim_ptr = strstr(str_ptr, delim);
+
+   if (delim_ptr)
+      token_len = delim_ptr - str_ptr;
+   else
+      token_len = strlen(str_ptr);
+
+   /* Allocate token string */
+   token = (char *)malloc((token_len + 1) * sizeof(char));
+
+   if (!token)
+      return NULL;
+
+   /* Copy token */
+   strlcpy(token, str_ptr, (token_len + 1) * sizeof(char));
+   token[token_len] = '\0';
+
+   /* Update input string pointer */
+   *str = delim_ptr ? delim_ptr + strlen(delim) : NULL;
+
+   return token;
+}
+
+/* Removes every instance of character 'c' from 'str' */
+void string_remove_all_chars(char *str, char c)
+{
+   char *read_ptr  = NULL;
+   char *write_ptr = NULL;
+
+   if (string_is_empty(str))
+      return;
+
+   read_ptr  = str;
+   write_ptr = str;
+
+   while (*read_ptr != '\0')
+   {
+      *write_ptr = *read_ptr++;
+      write_ptr += (*write_ptr != c) ? 1 : 0;
+   }
+
+   *write_ptr = '\0';
+}
+
+/* Converts string to unsigned integer.
+ * Returns 0 if string is invalid  */
+unsigned string_to_unsigned(const char *str)
+{
+   const char *ptr = NULL;
+
+   if (string_is_empty(str))
+      return 0;
+
+   for (ptr = str; *ptr != '\0'; ptr++)
+   {
+      if (!isdigit(*ptr))
+         return 0;
+   }
+
+   return (unsigned)strtoul(str, NULL, 10);
+}

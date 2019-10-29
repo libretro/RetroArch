@@ -156,7 +156,7 @@ static void frontend_ps2_init(void *data)
    int bootDeviceID;
 
    SifInitRpc(0);
-#if !defined(DEBUG)
+#if !defined(DEBUG) || defined(BUILD_FOR_PCSX2)
    /* Comment this line if you don't wanna debug the output */
    while(!SifIopReset(NULL, 0)){};
 #endif
@@ -225,7 +225,7 @@ static void frontend_ps2_init(void *data)
    waitUntilDeviceIsReady(bootDeviceID);
 
 #if defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("retroarch.log");
+   retro_main_log_file_init("retroarch.log", false);
    verbosity_enable();
 #endif
 }
@@ -368,7 +368,7 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(BUILD_FOR_PCSX2)
    menu_entries_append_enum(list,
          "host:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),

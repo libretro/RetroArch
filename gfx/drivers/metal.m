@@ -61,9 +61,10 @@ static uint32_t metal_get_flags(void *data);
 static bool metal_set_shader(void *data,
                              enum rarch_shader_type type, const char *path);
 
-static void *metal_init(const video_info_t *video,
-                        const input_driver_t **input,
-                        void **input_data)
+static void *metal_init(
+      const video_info_t *video,
+      input_driver_t **input,
+      void **input_data)
 {
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
 
@@ -242,27 +243,6 @@ static void metal_set_filtering(void *data, unsigned index, bool smooth)
 static void metal_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-      aspectratio_lut[aspect_ratio_idx].value);
 
    md.keepAspect = YES;
    [md setNeedsResize];

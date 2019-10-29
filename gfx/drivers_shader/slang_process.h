@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 
 #include "../video_shader_parse.h"
+#include "../../retroarch.h"
 #include "slang_reflection.h"
 #include "glslang_util.h"
 
@@ -84,6 +85,12 @@ typedef struct
 
 RETRO_BEGIN_DECLS
 
+/* Utility function to implement the same parameter reflection
+ * which happens in the slang backend.
+ * This does preprocess over the input file to handle #includes and so on. */
+bool slang_preprocess_parse_parameters(const char *shader_path,
+      struct video_shader *shader);
+
 bool slang_process(
       struct video_shader*   shader_info,
       unsigned               pass_number,
@@ -93,5 +100,13 @@ bool slang_process(
       pass_semantics_t*      out);
 
 RETRO_END_DECLS
+
+#ifdef __cplusplus
+
+#include "glslang_util_cxx.h"
+
+bool slang_preprocess_parse_parameters(glslang_meta& meta,
+      struct video_shader *shader);
+#endif
 
 #endif

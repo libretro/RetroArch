@@ -619,7 +619,7 @@ static void sunxi_vsync_thread_func(void *data)
 }
 
 static void *sunxi_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)
       calloc(1, sizeof(struct sunxi_video));
@@ -916,7 +916,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 }
 
-static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
+static void sunxi_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    float              new_aspect = aspectratio_lut[aspect_ratio_idx].value;

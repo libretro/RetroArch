@@ -147,8 +147,10 @@ menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info
       )
 {
-   static bool mali_4xx_detected = false;
-   static bool scissor_inited    = false;
+   static bool mali_4xx_detected     = false;
+   static bool scissor_inited        = false;
+   static unsigned last_video_width  = 0;
+   static unsigned last_video_height = 0;
 
    if (!scissor_inited)
    {
@@ -156,12 +158,11 @@ menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
       const char *gpu_device_string = NULL;
       scissor_inited                = true;
 
-      if ((scx0 + scx1 + scy0 + scy1) == 0)
-         scissor_set_rectangle(0,
-               video_info->width - 1,
-               0,
-               video_info->height - 1,
-               0);
+      scissor_set_rectangle(0,
+            video_info->width - 1,
+            0,
+            video_info->height - 1,
+            0);
 
       /* TODO/FIXME - This might be thread unsafe in the long run -
        * preferably call this once outside of the menu display driver
@@ -181,20 +182,39 @@ menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
             }
          }
       }
+
+      last_video_width  = video_info->width;
+      last_video_height = video_info->height;
    }
 
-   /* discards not only out-of-bounds scissoring, 
+   /* Early out, to minimise performance impact on
+    * non-mali_4xx devices */
+   if (!mali_4xx_detected)
+      return false;
+
+   /* Have to update scissor_set_rectangle() if the
+    * video dimensions change */
+   if ((video_info->width  != last_video_width) ||
+       (video_info->height != last_video_height))
+   {
+      scissor_set_rectangle(0,
+            video_info->width - 1,
+            0,
+            video_info->height - 1,
+            0);
+
+      last_video_width  = video_info->width;
+      last_video_height = video_info->height;
+   }
+
+   /* Discards not only out-of-bounds scissoring,
     * but also out-of-view draws.
     *
     * This is intentional.
     */
-   if (mali_4xx_detected &&
-       scissor_is_outside_rectangle(
-          draw->x, draw->x + draw->width - 1,
-          draw->y, draw->y + draw->height - 1))
-      return true;
-
-   return false;
+   return scissor_is_outside_rectangle(
+         draw->x, draw->x + draw->width - 1,
+         draw->y, draw->y + draw->height - 1);
 }
 #endif
 

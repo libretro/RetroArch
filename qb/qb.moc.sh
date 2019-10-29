@@ -16,7 +16,7 @@ public:
 };
 EOF
 
-HAVE_MOC=no
+add_opt MOC no
 if [ "$HAVE_QT" = "yes" ]; then
 	moc_works=0
 	if [ "$MOC" ]; then

@@ -187,7 +187,7 @@ static void scroll_on_demand(int pixelheight)
 }
 
 static void *sixel_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
@@ -549,7 +549,7 @@ static void sixel_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
 }
 
 static void sixel_get_video_output_size(void *data,

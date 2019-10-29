@@ -39,10 +39,6 @@
 #endif
 #endif
 
-#ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
-#endif
-
 enum pl_thumb_status
 {
    PL_THUMB_BEGIN = 0,
@@ -280,7 +276,8 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->thumbnail_path_data)
                goto task_finished;
             
-            if (!menu_thumbnail_set_system(pl_thumb->thumbnail_path_data, pl_thumb->system))
+            if (!menu_thumbnail_set_system(
+                  pl_thumb->thumbnail_path_data, pl_thumb->system, pl_thumb->playlist))
                goto task_finished;
             
             /* All good - can start iterating */
@@ -353,7 +350,6 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
       default:
          task_set_progress(task, 100);
          goto task_finished;
-         break;
    }
    
    return;
@@ -475,18 +471,15 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    pl_thumb_handle_t *pl_thumb     = NULL;
    const char *thumbnail_path      = NULL;
    const char *left_thumbnail_path = NULL;
-   playlist_t *current_playlist    = playlist_get_cached();
-   menu_handle_t *menu             = NULL;
    bool do_refresh                 = false;
+   playlist_t *current_playlist    = playlist_get_cached();
+   menu_handle_t *menu             = menu_driver_get_ptr();
    
    if (!task)
       return;
    
    pl_thumb = (pl_thumb_handle_t*)task->state;
-   if (!pl_thumb)
-      return;
-   
-   if (!pl_thumb->thumbnail_path_data)
+   if (!pl_thumb || !pl_thumb->thumbnail_path_data)
       return;
    
    /* Only refresh if current playlist hasn't changed,
@@ -498,16 +491,15 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    
    if (!current_playlist)
       return;
-   
-   if (string_is_empty(playlist_get_conf_path(current_playlist)))
+   if (!menu)
       return;
-   
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (string_is_empty(playlist_get_conf_path(current_playlist)))
       return;
    
    if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
         (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
-       !string_is_equal(pl_thumb->playlist_path, playlist_get_conf_path(current_playlist)))
+         !string_is_equal(pl_thumb->playlist_path,
+            playlist_get_conf_path(current_playlist)))
       return;
    
    /* Only refresh if left/right thumbnails did not exist
@@ -573,7 +565,8 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->thumbnail_path_data)
                goto task_finished;
             
-            if (!menu_thumbnail_set_system(pl_thumb->thumbnail_path_data, pl_thumb->system))
+            if (!menu_thumbnail_set_system(
+                  pl_thumb->thumbnail_path_data, pl_thumb->system, pl_thumb->playlist))
                goto task_finished;
             
             if (!menu_thumbnail_set_content_playlist(
@@ -638,7 +631,6 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
       default:
          task_set_progress(task, 100);
          goto task_finished;
-         break;
    }
    
    return;

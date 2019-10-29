@@ -80,6 +80,8 @@ static int (name)(menu_displaylist_info_t *info) \
 
 generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
+generic_deferred_push(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
+generic_deferred_push(deferred_push_video_shader_preset_remove,       DISPLAYLIST_SHADER_PRESET_REMOVE)
 generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
 generic_deferred_push(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
@@ -150,6 +152,7 @@ generic_deferred_push(deferred_push_mixer_stream_settings_list,     DISPLAYLIST_
 generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
+generic_deferred_push(deferred_push_frame_time_counter_settings_list,           DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_cheat_details_settings_list,    DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_cheat_search_settings_list,     DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
@@ -161,6 +164,7 @@ generic_deferred_push(deferred_push_onscreen_video_layout_settings_list, DISPLAY
 generic_deferred_push(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_settings_views_settings_list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_menu_settings_list,             DISPLAYLIST_MENU_SETTINGS_LIST)
 generic_deferred_push(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_power_management_settings_list, DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
@@ -176,6 +180,7 @@ generic_deferred_push(deferred_push_midi_settings_list,             DISPLAYLIST_
 generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
@@ -219,12 +224,11 @@ static int deferred_push_cursor_manager_list_deferred(
    int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;
-   settings_t *settings           = config_get_ptr();
    const char *path               = info->path;
-   config_file_t *conf            = path ? config_file_new(path) : NULL;
-
-   if (!conf || !settings)
-      goto end;
+   config_file_t *conf            = NULL;
+   
+   if (!(conf = config_file_new_from_path_to_string(path)))
+      return -1;
 
    if (!config_get_string(conf, "query", &query))
       goto end;
@@ -234,9 +238,13 @@ static int deferred_push_cursor_manager_list_deferred(
 
    rdb_path[0] = '\0';
 
-   fill_pathname_join(rdb_path,
-         settings->paths.path_content_database,
-         rdb, sizeof(rdb_path));
+   {
+      settings_t *settings           = config_get_ptr();
+      if (settings)
+         fill_pathname_join(rdb_path,
+               settings->paths.path_content_database,
+               rdb, sizeof(rdb_path));
+   }
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
@@ -255,8 +263,7 @@ static int deferred_push_cursor_manager_list_deferred(
    ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
-   if (conf)
-      config_file_free(conf);
+   config_file_free(conf);
    free(rdb);
    free(query);
    return ret;
@@ -363,12 +370,12 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   settings_t                  *settings = config_get_ptr();
    char                      *newstring2 = NULL;
    core_info_list_t           *list      = NULL;
-   menu_handle_t                  *menu  = NULL;
+   settings_t                  *settings = config_get_ptr();
+   menu_handle_t                  *menu  = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    core_info_get_list(&list);
@@ -423,16 +430,11 @@ static int general_push(menu_displaylist_info_t *info,
    {
       case PUSH_ARCHIVE_OPEN:
          {
-            struct retro_system_info *system      = runloop_get_libretro_system_info();
-            if (system && system->valid_extensions)
+            struct retro_system_info *system = 
+               runloop_get_libretro_system_info();
+            if (system)
             {
-               if (*system->valid_extensions)
-                  strlcpy(newstring2, system->valid_extensions,
-                        PATH_MAX_LENGTH * sizeof(char));
-            }
-            else
-            {
-               if (system)
+               if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
                         PATH_MAX_LENGTH * sizeof(char));
             }
@@ -442,21 +444,14 @@ static int general_push(menu_displaylist_info_t *info,
          {
             bool new_exts_allocated               = false;
             char *new_exts                        = NULL;
-            struct retro_system_info *system      = runloop_get_libretro_system_info();
 
             if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
             {
             }
-            else if (system && system->valid_extensions)
-            {
-               if (*system->valid_extensions)
-               {
-                  new_exts           = strdup(system->valid_extensions);
-                  new_exts_allocated = true;
-               }
-            }
             else
             {
+               struct retro_system_info *system = 
+                  runloop_get_libretro_system_info();
                if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
@@ -508,7 +503,7 @@ static int general_push(menu_displaylist_info_t *info,
             newstring[0]                     = '\0';
             attr.i                           = 0;
 
-            if (system && system->valid_extensions)
+            if (system)
             {
                if (!string_is_empty(system->valid_extensions))
                {
@@ -638,6 +633,9 @@ generic_deferred_push_clear_general(deferred_push_dropdown_box_list, PUSH_DEFAUL
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -678,6 +676,21 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_playlist_default_core);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_playlist_label_display_mode);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_playlist_right_thumbnail_mode);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dropdown_box_list_playlist_left_thumbnail_mode);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_browse_url_list);
@@ -716,6 +729,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frame_throttle_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frame_time_counter_settings_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST)))
@@ -763,6 +781,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_menu_views_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings_views_settings_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST)))
@@ -903,6 +926,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_ai_service_settings_list);
    }
 #ifdef HAVE_NETWORKING
    else if (strstr(label,
@@ -1066,6 +1094,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_twitch_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_save);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_remove);
    }
    else
    {
@@ -1365,6 +1403,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frame_throttle_settings_list);
                break;
+            case MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frame_time_counter_settings_list);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rewind_settings_list);
                break;
@@ -1562,6 +1603,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_save);
                break;
             case MENU_LABEL_CORE_CHEAT_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);

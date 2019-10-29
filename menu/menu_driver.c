@@ -18,18 +18,17 @@
 #include <string.h>
 #include <time.h>
 #include <locale.h>
+
 #include <compat/strl.h>
+#include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
-
-#ifdef WIIU
-#include <wiiu/os/energy.h>
-#endif
 
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
@@ -49,7 +48,9 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 #include "widgets/menu_dialog.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
 
 #include "../config.def.h"
 #include "../content.h"
@@ -58,6 +59,7 @@
 #include "../dynamic.h"
 #include "../driver.h"
 #include "../retroarch.h"
+#include "../version.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../list_special.h"
@@ -72,6 +74,16 @@
 
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
 #define DATETIME_CHECK_INTERVAL    1000000
+
+/* Number of pixels corner-to-corner on a 1080p
+ * display:
+ * > sqrt((1920 * 1920) + (1080 * 1080))
+ * Note: This is a double, so no suffix */
+#define DIAGONAL_PIXELS_1080P 2202.90717008229831581901
+
+/* Standard reference DPI value, used when determining
+ * DPI-aware menu scaling factors */
+#define REFERENCE_DPI 96.0f
 
 typedef struct menu_ctx_load_image
 {
@@ -165,6 +177,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
 #endif
+#ifdef HAVE_FPGA
+   &menu_display_ctx_fpga,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -172,9 +187,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 uintptr_t menu_display_white_texture;
 
 static video_coord_array_t menu_disp_ca;
-
-static enum
-menu_toggle_reason menu_display_toggle_reason    = MENU_TOGGLE_REASON_NONE;
 
 /* Width, height and pitch of the menu framebuffer */
 static unsigned menu_display_framebuf_width      = 0;
@@ -195,26 +207,8 @@ static bool menu_driver_pending_quick_menu      = false;
 
 static bool menu_driver_prevent_populate        = false;
 
-/* Is the menu driver still running? */
-static bool menu_driver_alive                   = false;
-
-/* A menu toggle has been requested; if the menu was running,
- * it will be closed; if the menu was not running, it will be opened */
-static bool menu_driver_toggled                 = false;
-
 /* The menu driver owns the userdata */
 static bool menu_driver_data_own                = false;
-
-/* The user has requested that the menu be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_quit            = false;
-
-/* The user has requested that RetroArch be shut down. This will
- * be enacted upon the next menu iteration */
-static bool menu_driver_pending_shutdown        = false;
-
-/* Are we binding a button inside the menu? */
-static bool menu_driver_is_binding              = false;
 
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
@@ -235,6 +229,1329 @@ static retro_time_t menu_driver_datetime_last_time_us   = 0;
 /* Storage container for current menu datetime
  * representation string */
 static char menu_datetime_cache[255]                    = {0};
+
+/* Flagged when menu entries need to be refreshed */
+static bool menu_entries_need_refresh              = false;
+static bool menu_entries_nonblocking_refresh       = false;
+static size_t menu_entries_begin                   = 0;
+static rarch_setting_t *menu_entries_list_settings = NULL;
+static menu_list_t *menu_entries_list              = NULL;
+
+struct menu_list
+{
+   size_t menu_stack_size;
+   size_t selection_buf_size;
+   file_list_t **menu_stack;
+   file_list_t **selection_buf;
+};
+
+#define menu_entries_need_refresh() ((!menu_entries_nonblocking_refresh) && menu_entries_need_refresh)
+
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   return menu_driver_data;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   return menu_driver_selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   menu_driver_selection_ptr = val;
+}
+
+
+#define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
+
+#define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
+
+#define menu_list_get_stack_size(list, idx) ((list)->menu_stack[(idx)]->size)
+
+#define menu_entries_get_selection_buf_ptr_internal(idx) ((menu_entries_list) ? menu_list_get_selection(menu_entries_list, (unsigned)idx) : NULL)
+
+/* Menu entry interface -
+ *
+ * This provides an abstraction of the currently displayed
+ * menu.
+ *
+ * It is organized into an event-based system where the UI companion
+ * calls this functions and RetroArch responds by changing the global
+ * state (including arranging for these functions to return different
+ * values).
+ *
+ * Its only interaction back to the UI is to arrange for
+ * notify_list_loaded on the UI companion.
+ */
+
+enum menu_entry_type menu_entry_get_type(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = NULL;
+   rarch_setting_t *setting   = NULL;
+   
+   /* FIXME/TODO - XXX Really a special kind of ST_ACTION, 
+    * but this should be changed */
+   if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
+      return MENU_ENTRY_PATH;
+
+   cbs                        = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   setting                    = cbs ? cbs->setting : NULL;
+
+   if (setting)
+   {
+      switch (setting_get_type(setting))
+      {
+         case ST_BOOL:
+            return MENU_ENTRY_BOOL;
+         case ST_BIND:
+            return MENU_ENTRY_BIND;
+         case ST_INT:
+            return MENU_ENTRY_INT;
+         case ST_UINT:
+            return MENU_ENTRY_UINT;
+         case ST_SIZE:
+            return MENU_ENTRY_SIZE;
+         case ST_FLOAT:
+            return MENU_ENTRY_FLOAT;
+         case ST_PATH:
+            return MENU_ENTRY_PATH;
+         case ST_DIR:
+            return MENU_ENTRY_DIR;
+         case ST_STRING_OPTIONS:
+            return MENU_ENTRY_ENUM;
+         case ST_STRING:
+            return MENU_ENTRY_STRING;
+         case ST_HEX:
+            return MENU_ENTRY_HEX;
+
+         default:
+            break;
+      }
+   }
+
+   return MENU_ENTRY_ACTION;
+}
+
+void menu_entry_init(menu_entry_t *entry)
+{
+   entry->path[0]            = '\0';
+   entry->label[0]           = '\0';
+   entry->sublabel[0]        = '\0';
+   entry->rich_label[0]      = '\0';
+   entry->value[0]           = '\0';
+   entry->password_value[0]  = '\0';
+   entry->enum_idx           = MSG_UNKNOWN;
+   entry->entry_idx          = 0;
+   entry->idx                = 0;
+   entry->type               = 0;
+   entry->spacing            = 0;
+   entry->path_enabled       = true;
+   entry->label_enabled      = true;
+   entry->rich_label_enabled = true;
+   entry->value_enabled      = true;
+   entry->sublabel_enabled   = true;
+}
+
+void menu_entry_get_path(menu_entry_t *entry, const char **path)
+{
+   if (!entry || !path)
+      return;
+
+   *path = entry->path;
+}
+
+void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label)
+{
+   if (!entry || !rich_label)
+      return;
+
+   if (!string_is_empty(entry->rich_label))
+      *rich_label = entry->rich_label;
+   else
+      *rich_label = entry->path;
+}
+
+void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel)
+{
+   if (!entry || !sublabel)
+      return;
+
+   *sublabel = entry->sublabel;
+}
+
+void menu_entry_get_label(menu_entry_t *entry, const char **label)
+{
+   if (!entry || !label)
+      return;
+
+   *label = entry->label;
+}
+
+unsigned menu_entry_get_spacing(menu_entry_t *entry)
+{
+   if (entry)
+      return entry->spacing;
+   return 0;
+}
+
+unsigned menu_entry_get_type_new(menu_entry_t *entry)
+{
+   if (!entry)
+      return 0;
+   return entry->type;
+}
+
+uint32_t menu_entry_get_bool_value(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+   bool *ptr                  = setting ? (bool*)setting->value.target.boolean : NULL;
+   if (!ptr)
+      return 0;
+   return *ptr;
+}
+
+struct string_list *menu_entry_enum_values(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+   const char      *values    = setting->values;
+
+   if (!values)
+      return NULL;
+   return string_split(values, "|");
+}
+
+void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+   setting_set_with_string_representation(setting, s);
+}
+
+int32_t menu_entry_bind_index(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting   = cbs ? cbs->setting : NULL;
+
+   if (setting)
+      return setting->index - 1;
+   return 0;
+}
+
+void menu_entry_bind_key_set(uint32_t i, int32_t value)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
+   if (keybind)
+      keybind->key = (enum retro_key)value;
+}
+
+void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
+   if (keybind)
+      keybind->joykey = value;
+}
+
+void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   struct retro_keybind *keybind = setting ? (struct retro_keybind*)setting->value.target.keybind : NULL;
+   if (keybind)
+      keybind->joyaxis = value;
+}
+
+void menu_entry_pathdir_selected(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+
+   if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
+      menu_setting_ctl(MENU_SETTING_CTL_ACTION_RIGHT, setting);
+}
+
+bool menu_entry_pathdir_allow_empty(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
+
+   return flags & SD_FLAG_ALLOW_EMPTY;
+}
+
+uint32_t menu_entry_pathdir_for_directory(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
+
+   return flags & SD_FLAG_PATH_DIR;
+}
+
+void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   const char      *values       = setting->values;
+
+   if (!values)
+      return;
+
+   strlcpy(s, values, len);
+}
+
+void menu_entry_reset(uint32_t i)
+{
+   menu_entry_t entry;
+
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, i, NULL, true);
+
+   menu_entry_action(&entry, i, MENU_ACTION_START);
+}
+
+void menu_entry_get_value(menu_entry_t *entry, const char **value)
+{
+   if (!entry || !value)
+      return;
+
+   if (menu_entry_is_password(entry))
+      *value = entry->password_value;
+   else
+      *value = entry->value;
+}
+
+void menu_entry_set_value(uint32_t i, const char *s)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   setting_set_with_string_representation(setting, s);
+}
+
+bool menu_entry_is_password(menu_entry_t *entry)
+{
+   return entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD;
+}
+
+uint32_t menu_entry_num_has_range(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   uint64_t           flags      = setting->flags;
+
+   return (flags & SD_FLAG_HAS_RANGE);
+}
+
+float menu_entry_num_min(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   double               min      = setting->min;
+   return (float)min;
+}
+
+float menu_entry_num_max(uint32_t i)
+{
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs     = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+   rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
+   double               max      = setting->max;
+   return (float)max;
+}
+
+void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+      size_t i, void *userdata, bool use_representation)
+{
+   char newpath[255];
+   const char *path           = NULL;
+   const char *entry_label    = NULL;
+   menu_file_list_cbs_t *cbs  = NULL;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(stack_idx);
+   file_list_t *list          = (userdata) ? (file_list_t*)userdata : selection_buf;
+   bool path_enabled          = entry->path_enabled;
+
+   newpath[0]                 = '\0';
+
+   if (!list)
+      return;
+
+   path                       = list->list[i].path;
+   entry_label                = list->list[i].label;
+   entry->type                = list->list[i].type;
+   entry->entry_idx           = list->list[i].entry_idx;
+
+   cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
+   entry->idx                 = (unsigned)i;
+
+   if (entry->label_enabled && !string_is_empty(entry_label))
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+
+   if (cbs)
+   {
+      const char *label             = NULL;
+
+      entry->enum_idx               = cbs->enum_idx;
+      entry->checked                = cbs->checked;
+
+      menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+
+      if (entry->rich_label_enabled && cbs->action_label)
+      {
+         cbs->action_label(list,
+               entry->type, (unsigned)i,
+               label, path,
+               entry->rich_label,
+               sizeof(entry->rich_label));
+
+         if (string_is_empty(entry->rich_label))
+            path_enabled = true;
+      }
+
+      if ((path_enabled || entry->value_enabled) &&
+          cbs->action_get_value &&
+          use_representation)
+      {
+         cbs->action_get_value(list,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
+               entry->value,
+               entry->value_enabled ? sizeof(entry->value) : 0,
+               path,
+               newpath,
+               path_enabled ? sizeof(newpath) : 0);
+
+         if (!string_is_empty(entry->value))
+         {
+            if (menu_entry_is_password(entry))
+            {
+               size_t size, i;
+               size = strlcpy(entry->password_value, entry->value,
+                     sizeof(entry->password_value));
+               for (i = 0; i < size; i++)
+                  entry->password_value[i] = '*';
+            }
+         }
+      }
+
+      if (entry->sublabel_enabled)
+      {
+         if (!string_is_empty(cbs->action_sublabel_cache))
+            strlcpy(entry->sublabel,
+                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
+         else if (cbs->action_sublabel)
+         {
+            char tmp[MENU_SUBLABEL_MAX_LENGTH];
+            tmp[0] = '\0';
+
+            if (cbs->action_sublabel(list,
+                     entry->type, (unsigned)i,
+                     label, path,
+                     tmp,
+                     sizeof(tmp)) > 0)
+            {
+               /* If this function callback returns true,
+                * we know that the value won't change - so we
+                * can cache it instead. */
+               strlcpy(cbs->action_sublabel_cache,
+                     tmp, sizeof(cbs->action_sublabel_cache));
+            }
+
+            strlcpy(entry->sublabel, tmp, sizeof(entry->sublabel));
+         }
+      }
+   }
+
+   if (path_enabled)
+   {
+      if (!string_is_empty(path) && !use_representation)
+         strlcpy(newpath, path, sizeof(newpath));
+      else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
+            && !cbs->setting->dont_use_enum_idx_representation)
+         strlcpy(newpath,
+               msg_hash_to_str(cbs->setting->enum_value_idx),
+               sizeof(newpath));
+
+      if (!string_is_empty(newpath))
+         strlcpy(entry->path, newpath, sizeof(entry->path));
+   }
+}
+
+bool menu_entry_is_currently_selected(unsigned id)
+{
+   return id == menu_driver_selection_ptr;
+}
+
+/* Performs whatever actions are associated with menu entry 'i'.
+ *
+ * This is the most important function because it does all the work
+ * associated with clicking on things in the UI.
+ *
+ * This includes loading cores and updating the
+ * currently displayed menu. */
+int menu_entry_select(uint32_t i)
+{
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = i;
+
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, i, NULL, false);
+
+   return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
+}
+
+int menu_entry_action(menu_entry_t *entry,
+      unsigned i, enum menu_action action)
+{
+   int ret                    = 0;
+   file_list_t *selection_buf =
+      menu_entries_get_selection_buf_ptr_internal(0);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
+
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+         if (cbs && cbs->action_up)
+            ret = cbs->action_up(entry->type, entry->label);
+         break;
+      case MENU_ACTION_DOWN:
+         if (cbs && cbs->action_down)
+            ret = cbs->action_down(entry->type, entry->label);
+         break;
+      case MENU_ACTION_SCROLL_UP:
+         menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
+         break;
+      case MENU_ACTION_SCROLL_DOWN:
+         menu_driver_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
+         break;
+      case MENU_ACTION_CANCEL:
+         if (cbs && cbs->action_cancel)
+            ret = cbs->action_cancel(entry->path,
+                  entry->label, entry->type, i);
+         break;
+
+      case MENU_ACTION_OK:
+         if (cbs && cbs->action_ok)
+            ret = cbs->action_ok(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
+         break;
+      case MENU_ACTION_START:
+         if (cbs && cbs->action_start)
+            ret = cbs->action_start(entry->type, entry->label);
+         break;
+      case MENU_ACTION_LEFT:
+         if (cbs && cbs->action_left)
+            ret = cbs->action_left(entry->type, entry->label, false);
+         break;
+      case MENU_ACTION_RIGHT:
+         if (cbs && cbs->action_right)
+            ret = cbs->action_right(entry->type, entry->label, false);
+         break;
+      case MENU_ACTION_INFO:
+         if (cbs && cbs->action_info)
+            ret = cbs->action_info(entry->type, entry->label);
+         break;
+      case MENU_ACTION_SELECT:
+         if (cbs && cbs->action_select)
+            ret = cbs->action_select(entry->path,
+                  entry->label, entry->type, i);
+         break;
+      case MENU_ACTION_SEARCH:
+         menu_input_dialog_start_search();
+         break;
+
+      case MENU_ACTION_SCAN:
+         if (cbs && cbs->action_scan)
+            ret = cbs->action_scan(entry->path,
+                  entry->label, entry->type, i);
+         break;
+
+      default:
+         break;
+   }
+
+   cbs = selection_buf ? (menu_file_list_cbs_t*)
+      selection_buf->list[i].actiondata : NULL;
+
+   if (cbs && cbs->action_refresh)
+   {
+      if (menu_entries_need_refresh())
+      {
+         bool refresh               = false;
+         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+
+         cbs->action_refresh(selection_buf, menu_stack);
+         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+      }
+   }
+
+   return ret;
+}
+
+static void menu_list_free_list(file_list_t *list)
+{
+   unsigned i;
+
+   for (i = 0; i < list->size; i++)
+   {
+      menu_ctx_list_t list_info;
+
+      list_info.list      = list;
+      list_info.idx       = i;
+      list_info.list_size = list->size;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+   }
+
+   file_list_free(list);
+}
+
+static void menu_list_free(menu_list_t *menu_list)
+{
+   if (!menu_list)
+      return;
+
+   if (menu_list->menu_stack)
+   {
+      unsigned i;
+
+      for (i = 0; i < menu_list->menu_stack_size; i++)
+      {
+         if (!menu_list->menu_stack[i])
+            continue;
+
+         menu_list_free_list(menu_list->menu_stack[i]);
+         menu_list->menu_stack[i]    = NULL;
+      }
+
+      free(menu_list->menu_stack);
+   }
+
+   if (menu_list->selection_buf)
+   {
+      unsigned i;
+
+      for (i = 0; i < menu_list->selection_buf_size; i++)
+      {
+         if (!menu_list->selection_buf[i])
+            continue;
+
+         menu_list_free_list(menu_list->selection_buf[i]);
+         menu_list->selection_buf[i] = NULL;
+      }
+
+      free(menu_list->selection_buf);
+   }
+
+   free(menu_list);
+}
+
+static menu_list_t *menu_list_new(void)
+{
+   unsigned i;
+   menu_list_t           *list = (menu_list_t*)malloc(sizeof(*list));
+
+   if (!list)
+      return NULL;
+
+   list->menu_stack_size       = 1;
+   list->selection_buf_size    = 1;
+   list->selection_buf         = NULL;
+   list->menu_stack            = (file_list_t**)
+      calloc(list->menu_stack_size, sizeof(*list->menu_stack));
+
+   if (!list->menu_stack)
+      goto error;
+
+   list->selection_buf         = (file_list_t**)
+      calloc(list->selection_buf_size, sizeof(*list->selection_buf));
+
+   if (!list->selection_buf)
+      goto error;
+
+   for (i = 0; i < list->menu_stack_size; i++)
+      list->menu_stack[i]      = (file_list_t*)
+         calloc(1, sizeof(*list->menu_stack[i]));
+
+   for (i = 0; i < list->selection_buf_size; i++)
+      list->selection_buf[i]   = (file_list_t*)
+         calloc(1, sizeof(*list->selection_buf[i]));
+
+   return list;
+
+error:
+   menu_list_free(list);
+   return NULL;
+}
+
+static int menu_list_flush_stack_type(const char *needle, const char *label,
+      unsigned type, unsigned final_type)
+{
+   return needle ? !string_is_equal(needle, label) : (type != final_type);
+}
+
+static bool menu_list_pop_stack(menu_list_t *list,
+      size_t idx, size_t *directory_ptr, bool animate)
+{
+   menu_ctx_list_t list_info;
+   bool refresh           = false;
+   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
+
+   if (menu_list_get_stack_size(list, idx) <= 1)
+      return false;
+
+   list_info.type   = MENU_LIST_PLAIN;
+   list_info.action = 0;
+
+   if (animate)
+      menu_driver_list_cache(&list_info);
+
+   if (menu_list->size != 0)
+   {
+      menu_ctx_list_t list_info;
+
+      list_info.list      = menu_list;
+      list_info.idx       = menu_list->size - 1;
+      list_info.list_size = menu_list->size - 1;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+   }
+
+   file_list_pop(menu_list, directory_ptr);
+   menu_driver_list_set_selection(menu_list);
+   if (animate)
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   return true;
+}
+
+static void menu_list_flush_stack(menu_list_t *list,
+      size_t idx, const char *needle, unsigned final_type)
+{
+   bool refresh           = false;
+   const char *path       = NULL;
+   const char *label      = NULL;
+   unsigned type          = 0;
+   size_t entry_idx       = 0;
+   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   file_list_get_last(menu_list,
+         &path, &label, &type, &entry_idx);
+
+   while (menu_list_flush_stack_type(
+            needle, label, type, final_type) != 0)
+   {
+      size_t new_selection_ptr = menu_driver_selection_ptr;
+
+      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
+         break;
+
+      menu_driver_selection_ptr = new_selection_ptr;
+
+      menu_list = menu_list_get(list, (unsigned)idx);
+
+      file_list_get_last(menu_list,
+            &path, &label, &type, &entry_idx);
+   }
+}
+
+void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx, const char **alt)
+{
+   file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
+   if (list && alt)
+      *alt = list->list[idx].alt 
+         ? list->list[idx].alt 
+         : list->list[idx].path;
+}
+
+/**
+ * menu_entries_elem_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+static int menu_entries_elem_get_first_char(
+      file_list_t *list, unsigned offset)
+{
+   int ret          = 0;
+   const char *path = NULL;
+
+   if (list)
+      if ((path = list->list[offset].alt
+         ? list->list[offset].alt 
+         : list->list[offset].path))
+         ret = tolower((int)*path);
+
+   /* "Normalize" non-alphabetical entries so they
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      return ('a' - 1);
+   else if (ret > 'z')
+      return ('z' + 1);
+   return ret;
+}
+
+static void menu_navigation_add_scroll_index(size_t sel)
+{
+   scroll_index_list[scroll_index_size]   = sel;
+
+   if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
+      scroll_index_size++;
+}
+
+static void menu_entries_build_scroll_indices(file_list_t *list)
+{
+   int current;
+   bool current_is_dir      = false;
+   unsigned type            = 0;
+   size_t i                 = 0;
+
+   scroll_index_size        = 0;
+
+   menu_navigation_add_scroll_index(0);
+
+   current                  = menu_entries_elem_get_first_char(list, 0);
+   type                     = list->list[0].type;
+
+   if (type == FILE_TYPE_DIRECTORY)
+      current_is_dir = true;
+
+   for (i = 1; i < list->size; i++)
+   {
+      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
+      bool is_dir  = false;
+      unsigned idx = (unsigned)i;
+
+      type         = list->list[idx].type;
+
+      if (type == FILE_TYPE_DIRECTORY)
+         is_dir = true;
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         menu_navigation_add_scroll_index(i);
+
+      current        = first;
+      current_is_dir = is_dir;
+   }
+
+   menu_navigation_add_scroll_index(list->size - 1);
+}
+
+/**
+ * Before a refresh, we could have deleted a
+ * file on disk, causing selection_ptr to
+ * suddendly be out of range.
+ *
+ * Ensure it doesn't overflow.
+ **/
+static bool menu_entries_refresh(file_list_t *list)
+{
+   size_t list_size;
+   size_t selection  = menu_driver_selection_ptr;
+
+   if (list->size)
+      menu_entries_build_scroll_indices(list);
+
+   list_size         = menu_entries_get_size();
+
+   if ((selection >= list_size) && list_size)
+   {
+      size_t idx                = list_size - 1;
+      menu_driver_selection_ptr = idx;
+      menu_driver_navigation_set(true);
+   }
+   else if (!list_size)
+   {
+      bool pending_push = true;
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+   }
+
+   return true;
+}
+
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
+{
+   if (menu_entries_list)
+   {
+      const file_list_t *list = menu_list_get(menu_entries_list, 0);
+      return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   }
+   return NULL;
+}
+
+/* Sets title to what the name of the current menu should be. */
+int menu_entries_get_title(char *s, size_t len)
+{
+   unsigned menu_type            = 0;
+   const char *path              = NULL;
+   const char *label             = NULL;
+   const file_list_t *list       = menu_entries_list ? 
+      menu_list_get(menu_entries_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = list 
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
+      : NULL;
+
+   if (!cbs)
+      return -1;
+
+   if (cbs && cbs->action_get_title)
+   {
+      int ret;
+      if (!string_is_empty(cbs->action_title_cache))
+      {
+         strlcpy(s, cbs->action_title_cache, len);
+         return 0;
+      }
+      menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
+      ret = cbs->action_get_title(path, label, menu_type, s, len);
+      if (ret == 1)
+         strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+      return ret;
+   }
+   return 0;
+}
+
+/* Sets 's' to the name of the current core
+ * (shown at the top of the UI). */
+int menu_entries_get_core_title(char *s, size_t len)
+{
+   struct retro_system_info    *system = runloop_get_libretro_system_info();
+   const char *core_name               = (system && !string_is_empty(system->library_name)) ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   const char *core_version            = (system && system->library_version) ? system->library_version : "";
+#if _MSC_VER == 1200
+   strlcpy(s, PACKAGE_VERSION " msvc6" " - ", len);
+#elif _MSC_VER == 1300
+   strlcpy(s, PACKAGE_VERSION " msvc2002" " - ", len);
+#elif _MSC_VER == 1310
+   strlcpy(s, PACKAGE_VERSION " msvc2003" " - ", len);
+#elif _MSC_VER == 1400
+   strlcpy(s, PACKAGE_VERSION " msvc2005" " - ", len);
+#elif _MSC_VER == 1500
+   strlcpy(s, PACKAGE_VERSION " msvc2008" " - ", len);
+#elif _MSC_VER == 1600
+   strlcpy(s, PACKAGE_VERSION " msvc2010" " - ", len);
+#elif _MSC_VER == 1700
+   strlcpy(s, PACKAGE_VERSION " msvc2012" " - ", len);
+#elif _MSC_VER == 1800
+   strlcpy(s, PACKAGE_VERSION " msvc2013" " - ", len);
+#elif _MSC_VER == 1900
+   strlcpy(s, PACKAGE_VERSION " msvc2015" " - ", len);
+#elif _MSC_VER >= 1910 && _MSC_VER < 2000
+   strlcpy(s, PACKAGE_VERSION " msvc2017" " - ", len);
+#else
+   strlcpy(s, PACKAGE_VERSION " - ", len);
+#endif
+   strlcat(s, core_name, len);
+   if (!string_is_empty(core_version))
+   {
+      strlcat(s, " (", len);
+      strlcat(s, core_version, len);
+      strlcat(s, ")", len);
+   }
+
+   return 0;
+}
+
+file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
+{
+   menu_list_t *menu_list         = menu_entries_list;
+   if (!menu_list)
+      return NULL;
+   return menu_list_get(menu_list, (unsigned)idx);
+}
+
+file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
+{
+   menu_list_t *menu_list         = menu_entries_list;
+   if (!menu_list)
+      return NULL;
+   return menu_list_get_selection(menu_list, (unsigned)idx);
+}
+
+static void menu_entries_list_deinit(void)
+{
+   if (menu_entries_list)
+      menu_list_free(menu_entries_list);
+   menu_entries_list     = NULL;
+}
+
+static void menu_entries_settings_deinit(void)
+{
+   menu_setting_free(menu_entries_list_settings);
+   if (menu_entries_list_settings)
+      free(menu_entries_list_settings);
+   menu_entries_list_settings = NULL;
+}
+
+
+static bool menu_entries_init(void)
+{
+   if (!(menu_entries_list = (menu_list_t*)menu_list_new()))
+      goto error;
+
+   menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_entries_list_settings);
+
+   if (!menu_entries_list_settings)
+      goto error;
+
+   return true;
+
+error:
+   menu_entries_settings_deinit();
+   menu_entries_list_deinit();
+
+   return false;
+}
+
+void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
+      bool checked)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[entry_idx].actiondata;
+
+   if (cbs)
+      cbs->checked = checked;
+}
+
+void menu_entries_append(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   if (!list || !label)
+      return;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   idx                = list->size - 1;
+
+   list_info.list     = list;
+   list_info.path     = path;
+   list_info.fullpath = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   menu_driver_list_insert(&list_info);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+
+   cbs->enum_idx = MSG_UNKNOWN;
+   cbs->setting  = menu_setting_find(label);
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
+}
+
+bool menu_entries_append_enum(file_list_t *list, const char *path,
+      const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   if (!list || !label)
+      return false;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   idx                   = list->size - 1;
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   menu_driver_list_insert(&list_info);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   file_list_set_actiondata(list, idx, cbs);
+
+   cbs->enum_idx = enum_idx;
+
+   if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
+      cbs->setting  = menu_setting_find_enum(enum_idx);
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
+
+   return true;
+}
+
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   if (!list || !label)
+      return;
+
+   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   idx              = 0;
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   menu_driver_list_insert(&list_info);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+
+   cbs->enum_idx = enum_idx;
+   cbs->setting  = menu_setting_find_enum(cbs->enum_idx);
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
+}
+
+void menu_entries_get_last_stack(const char **path, const char **label,
+      unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
+{
+   file_list_t *list              = NULL;
+   if (!menu_entries_list)
+      return;
+
+   list = menu_list_get(menu_entries_list, 0);
+
+   file_list_get_last(list,
+         path, label, file_type, entry_idx);
+
+   if (enum_idx)
+   {
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
+         list->list[list->size - 1].actiondata;
+
+      if (cbs)
+         *enum_idx = cbs->enum_idx;
+   }
+}
+
+void menu_entries_flush_stack(const char *needle, unsigned final_type)
+{
+   menu_list_t *menu_list         = menu_entries_list;
+   if (menu_list)
+      menu_list_flush_stack(menu_list, 0, needle, final_type);
+}
+
+void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
+{
+   menu_list_t *menu_list         = menu_entries_list;
+   if (menu_list)
+      menu_list_pop_stack(menu_list, idx, ptr, animate);
+}
+
+size_t menu_entries_get_stack_size(size_t idx)
+{
+   menu_list_t *menu_list         = menu_entries_list;
+   if (!menu_list)
+      return 0;
+   return menu_list_get_stack_size(menu_list, idx);
+}
+
+size_t menu_entries_get_size(void)
+{
+   const file_list_t *list        = NULL;
+   menu_list_t *menu_list         = menu_entries_list;
+   if (!menu_list)
+      return 0;
+   list                           = menu_list_get_selection(menu_list, 0);
+   return list->size;
+}
+
+bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case MENU_ENTRIES_CTL_NEEDS_REFRESH:
+         if (menu_entries_nonblocking_refresh)
+            return false;
+         if (!menu_entries_need_refresh)
+            return false;
+         break;
+      case MENU_ENTRIES_CTL_LIST_GET:
+         {
+            menu_list_t **list = (menu_list_t**)data;
+            if (!list)
+               return false;
+            *list = menu_entries_list;
+         }
+         return true;
+      case MENU_ENTRIES_CTL_SETTINGS_GET:
+         {
+            rarch_setting_t **settings = (rarch_setting_t**)data;
+            if (!settings)
+               return false;
+            *settings = menu_entries_list_settings;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_entries_nonblocking_refresh = true;
+            else
+               menu_entries_need_refresh        = true;
+         }
+         break;
+      case MENU_ENTRIES_CTL_UNSET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_entries_nonblocking_refresh = false;
+            else
+               menu_entries_need_refresh        = false;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_START:
+         {
+            size_t *idx = (size_t*)data;
+            if (idx)
+               menu_entries_begin = *idx;
+         }
+      case MENU_ENTRIES_CTL_START_GET:
+         {
+            size_t *idx = (size_t*)data;
+            if (!idx)
+               return 0;
+
+            *idx = menu_entries_begin;
+         }
+         break;
+      case MENU_ENTRIES_CTL_REFRESH:
+         if (!data)
+            return false;
+         return menu_entries_refresh((file_list_t*)data);
+      case MENU_ENTRIES_CTL_CLEAR:
+         {
+            unsigned i;
+            file_list_t *list = (file_list_t*)data;
+
+            if (!list)
+               return false;
+
+            menu_driver_list_clear(list);
+
+            for (i = 0; i < list->size; i++)
+               file_list_free_actiondata(list, i);
+
+            file_list_clear(list);
+         }
+         break;
+      case MENU_ENTRIES_CTL_SHOW_BACK:
+         /* Returns true if a Back button should be shown
+          * (i.e. we are at least
+          * one level deep in the menu hierarchy). */
+         if (!menu_entries_list)
+            return false;
+         return (menu_list_get_stack_size(menu_entries_list, 0) > 1);
+      case MENU_ENTRIES_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
 
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -261,28 +1578,13 @@ int menu_display_osk_ptr_at_pos(void *data, int x, int y,
    return -1;
 }
 
-enum menu_toggle_reason menu_display_toggle_get_reason(void)
-{
-  return menu_display_toggle_reason;
-}
-
-void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
-{
-  menu_display_toggle_reason = reason;
-}
-
 /* Check if the current menu driver is compatible
  * with your video driver. */
 static bool menu_display_check_compatibility(
       enum menu_display_driver_type type,
       bool video_is_threaded)
 {
-   const char *video_driver =
-#ifdef HAVE_THREADS
-      (video_is_threaded) ?
-      video_thread_get_ident() :
-#endif
-      video_driver_get_ident();
+   const char *video_driver = video_driver_get_ident();
 
    switch (type)
    {
@@ -356,6 +1658,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vga"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_FPGA:
+         if (string_is_equal(video_driver, "fpga"))
+            return true;
+         break;
       case MENU_VIDEO_DRIVER_SWITCH:
          if (string_is_equal(video_driver, "switch"))
             return true;
@@ -363,6 +1669,30 @@ static bool menu_display_check_compatibility(
    }
 
    return false;
+}
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+#if defined(__linux__) && !defined(ANDROID)
+   strftime(ptr, maxsize, format, timeptr);
+#else
+   strftime(ptr, maxsize, format, timeptr);
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
 }
 
 /* Display the date and time - time_mode will influence how
@@ -392,55 +1722,62 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       /* Format string representation */
       switch (datetime->time_mode)
       {
-         case 0: /* Date and time */
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M:%S", tm_);
             break;
-         case 1: /* YY-MM-DD HH:MM */
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M", tm_);
             break;
-         case 2: /* MM-DD-YYYY HH:MM  */
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m-%d-%Y %H:%M", tm_);
             break;
-         case 3: /* Time */
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M:%S", tm_);
             break;
-         case 4: /* Time (hours-minutes) */
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M", tm_);
             break;
-         case 5: /* Date and time, without year and seconds */
+         case MENU_TIMEDATE_STYLE_DM_HM: /* DD/MM HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m %H:%M", tm_);
             break;
-         case 6:
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m/%d %H:%M", tm_);
             break;
-         case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
-#if defined(__linux__) && !defined(ANDROID)
-            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-               "%I : %M : %S %p", tm_);
-#else
-            {
-               char *local;
-
-               strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM: /* YYYY-MM-DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M:%S %p", tm_);
-               local = local_to_utf8_string_alloc(menu_datetime_cache);
-
-               if (local)
-               {
-                  strlcpy(menu_datetime_cache,
-                        local, sizeof(menu_datetime_cache));
-                  free(local);
-               }
-            }
-#endif
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %I:%M %p", tm_);
+            break;
       }
    }
 
@@ -601,51 +1938,6 @@ video_coord_array_t *menu_display_get_coords_array(void)
    return &menu_disp_ca;
 }
 
-bool menu_display_libretro_running(
-      bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   settings_t *settings = config_get_ptr();
-   if (!settings->bools.menu_pause_libretro)
-   {
-      if (rarch_is_inited && !rarch_is_dummy_core)
-         return true;
-   }
-   return false;
-}
-
-/* Display the libretro core's framebuffer onscreen. */
-bool menu_display_libretro(bool is_idle,
-      bool rarch_is_inited, bool rarch_is_dummy_core)
-{
-   video_driver_set_texture_enable(true, false);
-
-   if (menu_display_libretro_running(
-            rarch_is_inited, rarch_is_dummy_core))
-   {
-      if (!input_driver_is_libretro_input_blocked())
-         input_driver_set_libretro_input_blocked();
-
-      core_run();
-      rarch_core_runtime_tick();
-      input_driver_unset_libretro_input_blocked();
-
-      return true;
-   }
-
-   if (is_idle)
-   {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-      return false; /* Return false here for indication of idleness */
-   }
-   return video_driver_cached_frame();
-}
-
 /* Get the menu framebuffer's size dimensions. */
 void menu_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
@@ -742,33 +2034,198 @@ void menu_display_unset_framebuffer_dirty_flag(void)
    menu_display_framebuf_dirty = false;
 }
 
-/* Get the preferred DPI at which to render the menu.
- * NOTE: Only MaterialUI menu driver so far uses this, neither
- * RGUI or XMB use this. */
-float menu_display_get_dpi(void)
+float menu_display_get_pixel_scale(unsigned width, unsigned height)
 {
-   unsigned width, height;
-   settings_t *settings = config_get_ptr();
-   float            dpi   = 0.0f;
-   float diagonal         = 6.5f;
+   static unsigned last_width  = 0;
+   static unsigned last_height = 0;
+   static float scale          = 0.0f;
+   static bool scale_cached    = false;
+   settings_t *settings        = config_get_ptr();
 
-   video_driver_get_size(&width, &height);
+   /* We need to perform a square root here, which
+    * can be slow on some platforms (not *slow*, but
+    * it involves enough work that it's worth trying
+    * to optimise). We therefore cache the pixel scale,
+    * and only update on first run or when the video
+    * size changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      /* Baseline reference is a 1080p display */
+      scale = (float)(
+            sqrt((double)((width * width) + (height * height))) /
+            DIAGONAL_PIXELS_1080P);
 
-   if (!settings)
-      return true;
+      scale_cached = true;
+      last_width   = width;
+      last_height  = height;
+   }
 
-#ifdef RARCH_MOBILE
-   diagonal                = 5.0f;
+   /* Apply user scaling factor */
+   if (settings)
+      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+            settings->floats.menu_scale_factor : 1.0f);
+
+   return scale;
+}
+
+float menu_display_get_dpi_scale(unsigned width, unsigned height)
+{
+   static unsigned last_width  = 0;
+   static unsigned last_height = 0;
+   static float scale          = 0.0f;
+   static bool scale_cached    = false;
+   settings_t *settings        = config_get_ptr();
+
+   /* Scale is based on display metrics - these are a fixed
+    * hardware property. To minimise performance overheads
+    * we therefore only call video_context_driver_get_metrics()
+    * on first run, or when the current video resolution changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      float diagonal_pixels;
+      float pixel_scale;
+      float dpi;
+      gfx_ctx_metrics_t metrics;
+
+      /* Determine the diagonal 'size' of the display
+       * (or window) in terms of pixels */
+      diagonal_pixels = (float)sqrt(
+            (double)((width * width) + (height * height)));
+
+      /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
+       * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
+       * unfortunate, and needs to be fixed at the gfx context driver
+       * level. Until this is done, all we can do is fallback to using
+       * the old legacy 'magic number' scaling on Mac platforms.
+       * Note: We use a rather ugly construct here so the 'Mac hack'
+       * can be added in one place, without polluting the rest of
+       * the code. */
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+      if (true)
+      {
+         scale        = (diagonal_pixels / 6.5f) / 212.0f;
+         scale_cached = true;
+         last_width   = width;
+         last_height  = height;
+
+         if (settings)
+            return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+                  settings->floats.menu_scale_factor : 1.0f);
+
+         return scale;
+      }
 #endif
 
-   /* Generic dpi calculation formula,
-    * the divider is the screen diagonal in inches */
-   dpi = sqrt((width * width) + (height * height)) / diagonal;
+      /* Get pixel scale relative to baseline 1080p display */
+      pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
 
-   if (settings->bools.menu_dpi_override_enable)
-      return settings->uints.menu_dpi_override_value;
+      /* Attempt to get display DPI */
+      metrics.type  = DISPLAY_METRIC_DPI;
+      metrics.value = &dpi;
 
-   return dpi;
+      if (video_context_driver_get_metrics(&metrics) && (dpi > 0.0f))
+      {
+         float display_size;
+         float dpi_scale;
+
+#if defined(ANDROID) || defined(HAVE_COCOATOUCH)
+         /* Android/iOS devices tell complete lies when
+          * reporting DPI values. From the Android devices
+          * I've had access to, the DPI is generally
+          * overestimated by 17%. All we can do is apply
+          * a blind correction factor... */
+         dpi = dpi * 0.83f;
+#endif
+
+         /* Note: If we are running in windowed mode, this
+          * 'display size' is actually the window size - which
+          * kinda makes a mess of everything. Since we cannot
+          * get fullscreen resolution when running in windowed
+          * mode, there is nothing we can do about this. So just
+          * treat the window as a display, and hope for the best... */
+         display_size = diagonal_pixels / dpi;
+         dpi_scale    = dpi / REFERENCE_DPI;
+
+         /* Note: We have tried leveraging every possible metric
+          * (and numerous studies on TV/monitor/mobile device
+          * usage habits) to determine an appropriate auto scaling
+          * factor. *None of these 'smart'/technical methods work
+          * consistently in the real world* - there is simply too
+          * much variance.
+          * So instead we have implemented a very fuzzy/loose
+          * method which is crude as can be, but actually has
+          * some semblance of usability... */
+
+         if (display_size > 24.0f)
+         {
+            /* DPI scaling fails miserably when using large
+             * displays. Having a UI element that's 1 inch high
+             * on all screens might seem like a good idea - until
+             * you realise that a HTPC user is probably sitting
+             * several metres from their TV, which makes something
+             * 1 inch high virtually invisible.
+             * So we make some assumptions:
+             * - Normal size displays <= 24 inches are probably
+             *   PC monitors, with an eye-to-screen distance of
+             *   1 arm length. Under these conditions, fixed size
+             *   (DPI scaled) UI elements should be visible for most
+             *   users
+             * - Large displays > 24 inches start to encroach on
+             *   TV territory. Once we start working with TVs, we
+             *   have to consider users sitting on a couch - and
+             *   in this situation, we fall back to the age-old
+             *   standard of UI elements occupying a fixed fraction
+             *   of the display size (i.e. just look at the menu of
+             *   any console system for the past decade)
+             * - 24 -> 32 inches is a grey area, where the display
+             *   might be a monitor or a TV. Above 32 inches, a TV
+             *   is almost a certainty. So we simply lerp between
+             *   dpi scaling and pixel scaling as the display size
+             *   increases from 24 to 32 */
+            float fraction = (display_size > 32.0f) ? 32.0f : display_size;
+            fraction       = fraction - 24.0f;
+            fraction       = fraction / (32.0f - 24.0f);
+
+            scale = ((1.0f - fraction) * dpi_scale) + (fraction * pixel_scale);
+         }
+         else if (display_size < 12.0f)
+         {
+            /* DPI scaling also fails when using very small
+             * displays - i.e. mobile devices (tablets/phones).
+             * That 1 inch UI element is going to look pretty
+             * dumb on a 5 inch screen in landscape orientation...
+             * We're essentially in the opposite situation to the
+             * TV case above, and it turns out that a similar
+             * solution provides relief: as screen size reduces
+             * from 12 inches to zero, we lerp from dpi scaling
+             * to pixel scaling */
+            float fraction = display_size / 12.0f;
+
+            scale = ((1.0f - fraction) * pixel_scale) + (fraction * dpi_scale);
+         }
+         else
+            scale = dpi_scale;
+      }
+      /* If DPI retrieval is unsupported, all we can do
+       * is use the raw pixel scale */
+      else
+         scale = pixel_scale;
+
+      scale_cached = true;
+      last_width   = width;
+      last_height  = height;
+   }
+
+   /* Apply user scaling factor */
+   if (settings)
+      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
+            settings->floats.menu_scale_factor : 1.0f);
+
+   return scale;
 }
 
 bool menu_display_driver_exists(const char *s)
@@ -1328,18 +2785,6 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
    matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
 }
 
-bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
-{
-   if (!draw)
-      return false;
-
-   if (!menu_disp || !menu_disp->get_default_tex_coords)
-      return false;
-
-   draw->ptr = menu_disp->get_default_tex_coords();
-   return true;
-}
-
 static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
 {
    if (menu_driver_ctx && menu_driver_ctx->load_image)
@@ -1447,7 +2892,6 @@ void menu_display_draw_cursor(
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->bools.video_fullscreen ||
        !menu_display_has_windowed;
-
    if (!settings->bools.menu_mouse_enable || !cursor_visible)
       return;
 
@@ -1494,8 +2938,8 @@ void menu_display_push_quad(
 {
    float vertex[8];
    video_coords_t coords;
-   menu_display_ctx_coord_draw_t coord_draw;
-   video_coord_array_t *ca = menu_display_get_coords_array();
+   const float *coord_draw_ptr   = NULL;
+   video_coord_array_t       *ca = &menu_disp_ca;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1506,14 +2950,13 @@ void menu_display_push_quad(
    vertex[6]             = x2 / (float)width;
    vertex[7]             = y2 / (float)height;
 
-   coord_draw.ptr        = NULL;
-
-   menu_display_get_tex_coords(&coord_draw);
+   if (menu_disp && menu_disp->get_default_tex_coords)
+      coord_draw_ptr     = menu_disp->get_default_tex_coords();
 
    coords.color          = colors;
    coords.vertex         = vertex;
-   coords.tex_coord      = coord_draw.ptr;
-   coords.lut_tex_coord  = coord_draw.ptr;
+   coords.tex_coord      = coord_draw_ptr;
+   coords.lut_tex_coord  = coord_draw_ptr;
    coords.vertices       = 3;
 
    video_coord_array_append(ca, &coords, 3);
@@ -1545,12 +2988,12 @@ void menu_display_snow(int width, int height)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(
-               MENU_MOUSE_X_AXIS);
+         menu_input_pointer_t pointer;
+         menu_input_get_pointer_state(&pointer);
 
          p->y            += p->yspeed;
          p->x            += menu_display_scalef(
-               mouse_x, 0, width, -0.3, 0.3);
+               pointer.x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < height
@@ -1741,15 +3184,6 @@ bool menu_display_reset_textures_list(
    return true;
 }
 
-bool menu_driver_is_binding_state(void)
-{
-   return menu_driver_is_binding;
-}
-
-void menu_driver_set_binding_state(bool on)
-{
-   menu_driver_is_binding = on;
-}
 
 /**
  * menu_driver_find_handle:
@@ -1841,7 +3275,11 @@ static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
 
-   if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
+   /* Ensure that menu pointer input is correctly
+    * initialised */
+   menu_input_reset();
+
+   if (!menu_entries_init())
       return false;
 
    if (settings->bools.menu_show_start_screen)
@@ -1880,7 +3318,9 @@ static bool menu_init(menu_handle_t *menu_data)
 #endif
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 
    menu_disp_ca.allocated    =  0;
 
@@ -1889,116 +3329,9 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-static void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-#if 0
-   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
-         down, keycode, mod, character);
-#endif
-
-   menu_event_kb_set(down, (enum retro_key)keycode);
-}
-
-/* Gets called when we want to toggle the menu.
- * If the menu is already running, it will be turned off.
- * If the menu is off, then the menu will be started.
- */
-static void menu_driver_toggle(bool on)
-{
-   retro_keyboard_event_t *key_event          = NULL;
-   retro_keyboard_event_t *frontend_key_event = NULL;
-   settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings ?
-      settings->bools.menu_pause_libretro : false;
-   bool enable_menu_sound                     = settings ?
-      settings->bools.audio_enable_menu : false;
-
-   menu_driver_toggled = on;
-
-   if (!on)
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
-
-   if (menu_driver_ctx && menu_driver_ctx->toggle)
-      menu_driver_ctx->toggle(menu_userdata, on);
-
-   if (on)
-      menu_driver_alive = true;
-   else
-      menu_driver_alive = false;
-
-   rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-   rarch_ctl(RARCH_CTL_KEY_EVENT_GET,          &key_event);
-
-   if (menu_driver_alive)
-   {
-      bool refresh = false;
-
-#ifdef WIIU
-      /* Enable burn-in protection menu is running */
-      IMEnableDim();
-#endif
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-      /* Menu should always run with vsync on. */
-      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-      /* Stop all rumbling before entering the menu. */
-      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ... */
-
-      if (key_event && frontend_key_event)
-      {
-         *frontend_key_event        = *key_event;
-         *key_event                 = menu_input_key_event;
-
-         rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
-      }
-   }
-   else
-   {
-#ifdef WIIU
-      /* Disable burn-in protection while core is running; this is needed
-       * because HID inputs don't count for the purpose of Wii U
-       * power-saving. */
-      IMDisableDim();
-#endif
-
-      if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
-         driver_set_nonblock_state();
-
-      if (pause_libretro && !enable_menu_sound)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
-
-      /* Restore libretro keyboard callback. */
-      if (key_event && frontend_key_event)
-         *key_event = *frontend_key_event;
-   }
-}
-
 const char *menu_driver_ident(void)
 {
-   if (!menu_driver_alive)
+   if (!menu_driver_is_alive())
       return NULL;
    if (!menu_driver_ctx || !menu_driver_ctx->ident)
       return NULL;
@@ -2007,7 +3340,7 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (menu_driver_alive && menu_driver_ctx->frame)
+   if (video_info->menu_is_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
@@ -2017,79 +3350,19 @@ bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char *
       && menu_driver_ctx->get_load_content_animation_data(menu_userdata, icon, playlist_name);
 }
 
-bool menu_driver_render(bool is_idle, bool rarch_is_inited,
-      bool rarch_is_dummy_core)
-{
-   if (!menu_driver_data)
-      return false;
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
-         != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
-      BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_framebuf_dirty = true;
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-         && !string_is_empty(menu_driver_data->menu_state_msg))
-   {
-      if (menu_driver_ctx->render_messagebox)
-         menu_driver_ctx->render_messagebox(menu_userdata,
-               menu_driver_data->menu_state_msg);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->render_messagebox)
-            ui->render_messagebox(menu_driver_data->menu_state_msg);
-      }
-   }
-
-   if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
-   {
-      if (menu_driver_ctx->render)
-         menu_driver_ctx->render(menu_userdata, is_idle);
-   }
-
-   if (menu_driver_alive && !is_idle)
-      menu_display_libretro(is_idle, rarch_is_inited, rarch_is_dummy_core);
-
-   if (menu_driver_ctx->set_texture)
-      menu_driver_ctx->set_texture();
-
-   menu_driver_data->state               = 0;
-
-   return true;
-}
-
-/* Checks if the menu is still running */
-bool menu_driver_is_alive(void)
-{
-   return menu_driver_alive;
-}
-
-/* Checks if the menu framebuffer is set.
- * This would usually only return true
- * for framebuffer-based menu drivers, like RGUI. */
-bool menu_driver_is_texture_set(void)
-{
-   if (menu_driver_ctx && menu_driver_ctx->set_texture)
-      return true;
-   return false;
-}
-
 /* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
 {
    /* Get current time */
    menu_driver_current_time_us = cpu_features_get_time_usec();
 
-   /* If the user had requested that the Quick Menu
-    * be spawned during the previous frame, do this now
-    * and exit the function to go to the next frame.
-    */
    if (menu_driver_pending_quick_menu)
    {
+      /* If the user had requested that the Quick Menu
+       * be spawned during the previous frame, do this now
+       * and exit the function to go to the next frame.
+       */
+
       menu_driver_pending_quick_menu = false;
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
       menu_display_set_msg_force(true);
@@ -2097,45 +3370,19 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       generic_action_ok_displaylist_push("", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-      if (menu_driver_pending_quit)
-      {
-         menu_driver_pending_quit     = false;
-         return false;
-      }
-
-      menu_navigation_set_selection(0);
+      menu_driver_selection_ptr = 0;
 
       return true;
    }
 
-   /* If the user had requested that the menu
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_quit)
-   {
-      menu_driver_pending_quit     = false;
-      return false;
-   }
-
-   /* if the user had requested that RetroArch
-    * be shutdown during the previous frame, do
-    * this now. */
-   if (menu_driver_pending_shutdown)
-   {
-      menu_driver_pending_shutdown = false;
-      if (!command_event(CMD_EVENT_QUIT, NULL))
-         return false;
+   if (
+         menu_driver_ctx          &&
+         menu_driver_ctx->iterate &&
+         menu_driver_ctx->iterate(menu_driver_data,
+            menu_userdata, iterate->action) != -1)
       return true;
-   }
 
-   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-      return false;
-
-   if (menu_driver_ctx->iterate(menu_driver_data,
-            menu_userdata, iterate->action) == -1)
-      return false;
-
-   return true;
+   return false;
 }
 
 bool menu_driver_list_cache(menu_ctx_list_t *list)
@@ -2181,53 +3428,47 @@ bool menu_driver_list_set_selection(file_list_t *list)
    return true;
 }
 
-static void menu_update_libretro_info(void)
-{
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-}
-
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
-   settings_t *settings           = config_get_ptr();
-   menu_update_libretro_info();
-
-   if (menu_driver_data)
-      return true;
-
    if (menu_driver_ctx->init)
+   {
       menu_driver_data               = (menu_handle_t*)
          menu_driver_ctx->init(&menu_userdata, video_is_threaded);
+      menu_driver_data->userdata     = menu_userdata;
+      menu_driver_data->driver_ctx   = menu_driver_ctx;
+   }
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
-      goto error;
+      return false;
 
-   strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
-         sizeof(settings->arrays.menu_driver));
+   {
+      settings_t *settings           = config_get_ptr();
+      strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
+            sizeof(settings->arrays.menu_driver));
+   }
 
    if (menu_driver_ctx->lists_init)
       if (!menu_driver_ctx->lists_init(menu_driver_data))
-         goto error;
+         return false;
 
-   return true;
-
-error:
-   retroarch_fail(1, "init_menu()");
-   return false;
-}
-
-static bool menu_driver_context_reset(bool video_is_threaded)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
-      return false;
-   menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
    return true;
 }
 
 bool menu_driver_init(bool video_is_threaded)
 {
-   if (menu_driver_init_internal(video_is_threaded))
-      return menu_driver_context_reset(video_is_threaded);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
+   if (  menu_driver_data || 
+         menu_driver_init_internal(video_is_threaded))
+   {
+      if (menu_driver_ctx && menu_driver_ctx->context_reset)
+      {
+         menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
+         return true;
+      }
+   }
+
    return false;
 }
 
@@ -2276,10 +3517,7 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 void menu_driver_destroy(void)
 {
    menu_driver_pending_quick_menu = false;
-   menu_driver_pending_quit       = false;
-   menu_driver_pending_shutdown   = false;
    menu_driver_prevent_populate   = false;
-   menu_driver_alive              = false;
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;
@@ -2324,22 +3562,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
    {
-      case RARCH_MENU_CTL_DRIVER_DATA_GET:
-         {
-            menu_handle_t **driver_data = (menu_handle_t**)data;
-            if (!driver_data)
-               return false;
-            *driver_data = menu_driver_data;
-         }
-         break;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
+         menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_driver_pending_quick_menu = true;
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_QUIT:
-         menu_driver_pending_quit     = true;
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
-         menu_driver_pending_shutdown = true;
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
@@ -2389,14 +3614,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
          return menu_driver_prevent_populate;
-      case RARCH_MENU_CTL_IS_TOGGLE:
-         return menu_driver_toggled;
-      case RARCH_MENU_CTL_SET_TOGGLE:
-         menu_driver_toggle(true);
-         break;
-      case RARCH_MENU_CTL_UNSET_TOGGLE:
-         menu_driver_toggle(false);
-         break;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;
@@ -2413,7 +3630,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return true;
 
          playlist_free_cached();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
+#endif
 
          if (menu_driver_data)
          {
@@ -2426,7 +3645,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                scroll_index_list[i] = 0;
 
-            menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
+            menu_input_reset();
 
             if (menu_driver_ctx && menu_driver_ctx->free)
                menu_driver_ctx->free(menu_userdata);
@@ -2455,9 +3674,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_display_framebuf_width  = 0;
             menu_display_framebuf_height = 0;
             menu_display_framebuf_pitch  = 0;
-            menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
+            menu_entries_settings_deinit();
+            menu_entries_list_deinit();
+
+            if (menu_driver_data->core_buf)
+               free(menu_driver_data->core_buf);
+            menu_driver_data->core_buf       = NULL;
+
+            menu_entries_need_refresh        = false;
+            menu_entries_nonblocking_refresh = false;
+            menu_entries_begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+            rarch_favorites_deinit();
 
             menu_dialog_reset();
 
@@ -2495,19 +3724,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          return false;
-      case RARCH_MENU_CTL_POINTER_TAP:
-         {
-            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
-            {
-               point->retcode = 0;
-               return false;
-            }
-            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
-                  point->x, point->y, point->ptr,
-                  point->cbs, point->entry, point->action);
-         }
-         break;
       case RARCH_MENU_CTL_POINTER_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
@@ -2531,6 +3747,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             point->retcode = menu_driver_ctx->pointer_up(menu_userdata,
                   point->x, point->y, point->ptr,
+                  point->gesture,
                   point->cbs, point->entry, point->action);
          }
          break;
@@ -2568,7 +3785,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
          {
-            size_t selection = menu_navigation_get_selection();
+            size_t selection = menu_driver_selection_ptr;
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
                return false;
@@ -2592,7 +3809,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
          {
-            size_t selection = menu_navigation_get_selection();
+            size_t selection = menu_driver_selection_ptr;
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_path)
                return false;
@@ -2611,7 +3828,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             bool *pending_push = (bool*)data;
 
             /* Always set current selection to first entry */
-            menu_navigation_set_selection(0);
+            menu_driver_selection_ptr = 0;
 
             /* menu_driver_navigation_set() will be called
              * at the next 'push'.
@@ -2642,7 +3859,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             {
                size_t idx  = menu_driver_selection_ptr + scroll_speed;
 
-               menu_navigation_set_selection(idx);
+               menu_driver_selection_ptr = idx;
                menu_driver_navigation_set(true);
             }
             else
@@ -2680,7 +3897,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   idx = 0;
             }
 
-            menu_navigation_set_selection(idx);
+            menu_driver_selection_ptr = idx;
             menu_driver_navigation_set(true);
 
             if (menu_driver_ctx->navigation_decrement)
@@ -2689,9 +3906,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
-            size_t menu_list_size = menu_entries_get_size();
-            size_t new_selection  = menu_list_size - 1;
-            menu_navigation_set_selection(new_selection);
+            size_t menu_list_size     = menu_entries_get_size();
+            size_t new_selection      = menu_list_size - 1;
+            menu_driver_selection_ptr = new_selection;
 
             if (menu_driver_ctx->navigation_set_last)
                menu_driver_ctx->navigation_set_last(menu_userdata);
@@ -2746,21 +3963,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                      menu_userdata, &menu_driver_selection_ptr);
          }
          break;
-      case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
-         scroll_index_size = 0;
-         break;
-      case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
-         {
-            size_t *sel        = (size_t*)data;
-            if (!sel)
-               return false;
-
-            scroll_index_list[scroll_index_size]   = *sel;
-
-            if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
-               scroll_index_size++;
-         }
-         break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
          {
             size_t *sel = (size_t*)data;
@@ -2783,16 +3985,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    }
 
    return true;
-}
-
-size_t menu_navigation_get_selection(void)
-{
-   return menu_driver_selection_ptr;
-}
-
-void menu_navigation_set_selection(size_t val)
-{
-   menu_driver_selection_ptr = val;
 }
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -2822,7 +4014,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
    int n = 0;
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    
-   /* Select approriate 'star' marker for subsystem menu entries
+   /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
    snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
@@ -2851,7 +4043,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[content_get_subsystem_rom_id()].desc);
 
-                  /* Stupid gcc will warn about snprintf() truncation even though
+                  /* Stupid GCC will warn about snprintf() truncation even though
                    * we couldn't care less about it (if the menu entry label gets
                    * truncated then the string will already be too long to view in
                    * any usable manner on screen, so the fact that the end is
@@ -2867,7 +4059,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
 
@@ -2898,7 +4090,8 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
-                     strlcat(rom_buff, path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                     strlcat(rom_buff,
+                           path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                         strlcat(rom_buff, "|", sizeof(rom_buff));
                   }
@@ -2912,7 +4105,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                      {
                         if (verbosity_is_enabled())
                         {
-                           RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                           RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                         }
                      }
                      
@@ -2953,7 +4146,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   {
                      if (verbosity_is_enabled())
                      {
-                        RARCH_WARN("Menu subsytem entry: Description label truncated.\n");
+                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
                   

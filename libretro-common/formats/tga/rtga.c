@@ -54,16 +54,16 @@ typedef struct
    uint8_t *img_buffer;
    uint8_t *img_buffer_end;
    uint8_t *img_buffer_original;
-} rtga__context;
+} rtga_context;
 
-static INLINE uint8_t rtga__get8(rtga__context *s)
+static INLINE uint8_t rtga_get8(rtga_context *s)
 {
    if (s->img_buffer < s->img_buffer_end)
       return *s->img_buffer++;
    return 0;
 }
 
-static void rtga__skip(rtga__context *s, int n)
+static void rtga_skip(rtga_context *s, int n)
 {
    if (n < 0)
    {
@@ -73,25 +73,12 @@ static void rtga__skip(rtga__context *s, int n)
    s->img_buffer += n;
 }
 
-static int rtga__getn(rtga__context *s, uint8_t *buffer, int n)
+static int rtga_get16le(rtga_context *s)
 {
-   if (s->img_buffer+n <= s->img_buffer_end)
-   {
-      memcpy(buffer, s->img_buffer, n);
-      s->img_buffer += n;
-      return 1;
-   }
-
-   return 0;
+   return rtga_get8(s) + (rtga_get8(s) << 8);
 }
 
-static int rtga__get16le(rtga__context *s)
-{
-   int z = rtga__get8(s);
-   return z + (rtga__get8(s) << 8);
-}
-
-static unsigned char *rtga__convert_format(
+static unsigned char *rtga_convert_format(
       unsigned char *data,
       int img_n,
       int req_comp,
@@ -195,24 +182,24 @@ static unsigned char *rtga__convert_format(
    return good;
 }
 
-static uint8_t *rtga__tga_load(rtga__context *s,
+static uint8_t *rtga_tga_load(rtga_context *s,
       unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    /* Read in the TGA header stuff */
-   int tga_offset          = rtga__get8(s);
-   int tga_indexed         = rtga__get8(s);
-   int tga_image_type      = rtga__get8(s);
+   int tga_offset          = rtga_get8(s);
+   int tga_indexed         = rtga_get8(s);
+   int tga_image_type      = rtga_get8(s);
    int tga_is_RLE          = 0;
-   int tga_palette_start   = rtga__get16le(s);
-   int tga_palette_len     = rtga__get16le(s);
-   int tga_palette_bits    = rtga__get8(s);
-   int tga_x_origin        = rtga__get16le(s);
-   int tga_y_origin        = rtga__get16le(s);
-   int tga_width           = rtga__get16le(s);
-   int tga_height          = rtga__get16le(s);
-   int tga_bits_per_pixel  = rtga__get8(s);
+   int tga_palette_start   = rtga_get16le(s);
+   int tga_palette_len     = rtga_get16le(s);
+   int tga_palette_bits    = rtga_get8(s);
+   int tga_x_origin        = rtga_get16le(s);
+   int tga_y_origin        = rtga_get16le(s);
+   int tga_width           = rtga_get16le(s);
+   int tga_height          = rtga_get16le(s);
+   int tga_bits_per_pixel  = rtga_get8(s);
    int tga_comp            = tga_bits_per_pixel / 8;
-   int tga_inverted        = rtga__get8(s);
+   int tga_inverted        = rtga_get8(s);
 
    /*   image data */
    unsigned char *tga_data = NULL;
@@ -222,7 +209,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
    (void)tga_y_origin;
 
    /*   do a tiny bit of precessing */
-   if ( tga_image_type >= 8 )
+   if (tga_image_type >= 8)
    {
       tga_image_type -= 8;
       tga_is_RLE = 1;
@@ -243,29 +230,36 @@ static uint8_t *rtga__tga_load(rtga__context *s,
       return NULL; /* we don't report this as a bad TGA because we don't even know if it's TGA */
 
    /*   If paletted, then we will use the number of bits from the palette */
-   if ( tga_indexed )
+   if (tga_indexed)
       tga_comp = tga_palette_bits / 8;
 
    /*   TGA info */
    *x = tga_width;
    *y = tga_height;
-   if (comp) *comp = tga_comp;
+   if (comp)
+      *comp = tga_comp;
 
-   tga_data = (unsigned char*)malloc( (size_t)tga_width * tga_height * tga_comp );
+   tga_data = (unsigned char*)malloc((size_t)tga_width * tga_height * tga_comp);
    if (!tga_data)
       return NULL;
 
    /* skip to the data's starting position (offset usually = 0) */
-   rtga__skip(s, tga_offset );
+   rtga_skip(s, tga_offset );
 
-   if ( !tga_indexed && !tga_is_RLE)
+   if (!tga_indexed && !tga_is_RLE)
    {
       int i;
       for (i=0; i < tga_height; ++i)
       {
-         int y = tga_inverted ? tga_height -i - 1 : i;
-         uint8_t *tga_row = tga_data + y*tga_width*tga_comp;
-         rtga__getn(s, tga_row, tga_width * tga_comp);
+         int _y           = tga_inverted ? (tga_height -i - 1) : i;
+         uint8_t *tga_row = tga_data + _y * tga_width * tga_comp;
+         int n            = tga_width * tga_comp;
+
+         if (s->img_buffer + n <= s->img_buffer_end)
+         {
+            memcpy(tga_row, s->img_buffer, n);
+            s->img_buffer += n;
+         }
       }
    }
    else
@@ -278,12 +272,13 @@ static uint8_t *rtga__tga_load(rtga__context *s,
       unsigned char *tga_palette = NULL;
 
       /*   Do I need to load a palette? */
-      if ( tga_indexed)
+      if (tga_indexed)
       {
-         /*   any data to skip? (offset usually = 0) */
-         rtga__skip(s, tga_palette_start );
-         /*   load the palette */
-         tga_palette = (unsigned char*)malloc( tga_palette_len * tga_palette_bits / 8 );
+         int n;
+         /* Any data to skip? (offset usually = 0) */
+         rtga_skip(s, tga_palette_start );
+         /* Load the palette */
+         tga_palette = (unsigned char*)malloc(tga_palette_len * tga_palette_bits / 8);
 
          if (!tga_palette)
          {
@@ -291,7 +286,14 @@ static uint8_t *rtga__tga_load(rtga__context *s,
             return NULL;
          }
 
-         if (!rtga__getn(s, tga_palette, tga_palette_len * tga_palette_bits / 8 ))
+         n = tga_palette_len * tga_palette_bits / 8;
+
+         if (s->img_buffer+n <= s->img_buffer_end)
+         {
+            memcpy(tga_palette, s->img_buffer, n);
+            s->img_buffer += n;
+         }
+         else
          {
             free(tga_data);
             free(tga_palette);
@@ -302,32 +304,32 @@ static uint8_t *rtga__tga_load(rtga__context *s,
       /*   load the data */
       for (i=0; i < tga_width * tga_height; ++i)
       {
-         /*   if I'm in RLE mode, do I need to get a RLE rtga__pngchunk? */
-         if ( tga_is_RLE )
+         /*   if I'm in RLE mode, do I need to get a RLE rtga_png chunk? */
+         if (tga_is_RLE)
          {
-            if ( RLE_count == 0 )
+            if (RLE_count == 0)
             {
                /*   yep, get the next byte as a RLE command */
-               int RLE_cmd     = rtga__get8(s);
+               int RLE_cmd     = rtga_get8(s);
                RLE_count       = 1 + (RLE_cmd & 127);
                RLE_repeating   = RLE_cmd >> 7;
                read_next_pixel = 1;
             }
-            else if ( !RLE_repeating )
+            else if (!RLE_repeating)
                read_next_pixel = 1;
          }
          else
             read_next_pixel = 1;
 
          /*   OK, if I need to read a pixel, do it now */
-         if ( read_next_pixel )
+         if (read_next_pixel)
          {
             /*   load however much data we did have */
-            if ( tga_indexed )
+            if (tga_indexed)
             {
                /*   read in 1 byte, then perform the lookup */
-               int pal_idx = rtga__get8(s);
-               if ( pal_idx >= tga_palette_len ) /* invalid index */
+               int pal_idx = rtga_get8(s);
+               if (pal_idx >= tga_palette_len) /* invalid index */
                   pal_idx = 0;
                pal_idx *= tga_bits_per_pixel / 8;
                for (j = 0; j*8 < tga_bits_per_pixel; ++j)
@@ -337,7 +339,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
             {
                /* read in the data raw */
                for (j = 0; j*8 < tga_bits_per_pixel; ++j)
-                  raw_data[j] = rtga__get8(s);
+                  raw_data[j] = rtga_get8(s);
             }
 
             /*   clear the reading flag for the next pixel */
@@ -353,7 +355,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
       }
 
       /*   do I need to invert the image? */
-      if ( tga_inverted )
+      if (tga_inverted)
       {
          for (j = 0; j*2 < tga_height; ++j)
          {
@@ -372,8 +374,8 @@ static uint8_t *rtga__tga_load(rtga__context *s,
       }
 
       /* Clear my palette, if I had one */
-      if ( tga_palette != NULL )
-         free( tga_palette );
+      if (tga_palette)
+         free(tga_palette);
    }
 
    /* swap RGB */
@@ -396,7 +398,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
          && (req_comp >= 1 && req_comp <= 4)
          && (req_comp != tga_comp))
    {
-      tga_data = rtga__convert_format(tga_data, tga_comp, req_comp, tga_width, tga_height);
+      tga_data = rtga_convert_format(tga_data, tga_comp, req_comp, tga_width, tga_height);
    }
 
    return tga_data;
@@ -405,13 +407,13 @@ static uint8_t *rtga__tga_load(rtga__context *s,
 static uint8_t *rtga_load_from_memory(uint8_t const *buffer, int len,
       unsigned *x, unsigned *y, int *comp, int req_comp)
 {
-   rtga__context s;
+   rtga_context s;
 
    s.img_buffer          = (uint8_t *)buffer;
    s.img_buffer_original = (uint8_t *) buffer;
    s.img_buffer_end      = (uint8_t *) buffer+len;
 
-   return rtga__tga_load(&s,x,y,comp,req_comp);
+   return rtga_tga_load(&s,x,y,comp,req_comp);
 }
 
 int rtga_process_image(rtga_t *rtga, void **buf_data,

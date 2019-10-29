@@ -49,9 +49,14 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <retro_assert.h>
 #include <retro_common_api.h>
 #include <queues/task_queue.h>
+
 #include "../ui_companion_driver.h"
 #include "../../retroarch.h"
 
@@ -97,7 +102,9 @@ class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
 class GridView;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 class ShaderParamsDialog;
+#endif
 class CoreOptionsDialog;
 class CoreInfoDialog;
 class PlaylistEntryDialog;
@@ -611,7 +618,9 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
+#endif
    QPointer<CoreOptionsDialog> m_coreOptionsDialog;
    QNetworkAccessManager *m_networkManager;
 
@@ -653,7 +662,9 @@ protected:
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
 Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 Q_DECLARE_METATYPE(struct video_shader_parameter*)
+#endif
 
 RETRO_BEGIN_DECLS
 

@@ -464,6 +464,19 @@ static void do_memchunkhax1(void)
    write_kaddr(0x1F000008, saved_vram_value);
 }
 
+Result get_luma_version(u32 *major, u32 *minor) {
+  s64 out;
+  u32 version;
+
+  if (R_FAILED(svcGetSystemInfo(&out, 0x10000, 0)))
+    return -1;
+
+  version = (u32)out;
+  *major = GET_VERSION_MAJOR(version);
+  *minor = GET_VERSION_MINOR(version);
+  return 0;
+}
+
 Result svchax_init(bool patch_srv)
 {
    bool isNew3DS;
@@ -475,12 +488,15 @@ Result svchax_init(bool patch_srv)
    {
       if (__service_ptr)
       {
-         if (kver > SYSTEM_VERSION(2, 50, 11))
-            return -1;
-         else if (kver > SYSTEM_VERSION(2, 46, 0))
-            do_memchunkhax2();
-         else
-            do_memchunkhax1();
+        u32 luma_major, luma_minor;
+
+        if (kver > SYSTEM_VERSION(2, 50, 11) &&
+            (R_FAILED(get_luma_version(&luma_major, &luma_minor) || luma_major < 8)))
+          return -1;
+        else if (kver > SYSTEM_VERSION(2, 46, 0) && kver <= SYSTEM_VERSION(2, 50, 11))
+          do_memchunkhax2();
+        else if (kver <= SYSTEM_VERSION(2, 46, 0))
+          do_memchunkhax1();
       }
 
       svc_7b((backdoor_fn)k_enable_all_svcs, isNew3DS);

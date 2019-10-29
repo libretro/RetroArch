@@ -265,7 +265,8 @@ inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, 
    return lhs.value("name").toLower() < rhs.value("name").toLower();
 }
 
-bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions)
+bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
+      QStringList &list, QDir &dir, QStringList &extensions)
 {
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
    QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
@@ -312,16 +313,18 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &l
             {
                if (path_is_compressed_file(pathData))
                {
-                  struct string_list *list = file_archive_get_file_list(pathData, NULL);
+                  struct string_list *archive_list = 
+                     file_archive_get_file_list(pathData, NULL);
 
-                  if (list)
+                  if (archive_list)
                   {
-                     if (list->size == 1)
+                     if (archive_list->size == 1)
                      {
                         /* Assume archives with one file should have that file loaded directly.
                          * Don't just extend this to add all files in a zip, because we might hit
                          * something like MAME/FBA where only the archives themselves are valid content. */
-                        pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
+                        pathArray = (QString(pathData) + "#" 
+                              + archive_list->elems[0].data).toUtf8();
                         pathData = pathArray.constData();
 
                         if (!extensions.isEmpty() && playlistDialog->filterInArchive())
@@ -333,7 +336,7 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog, QStringList &l
                         }
                      }
 
-                     string_list_free(list);
+                     string_list_free(archive_list);
                   }
                }
             }
@@ -423,7 +426,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    if (selectedDatabase.isEmpty())
       selectedDatabase = QFileInfo(currentPlaylistPath).fileName();
    else
-      selectedDatabase += file_path_str(FILE_PATH_LPL_EXTENSION);
+      selectedDatabase += ".lpl";
 
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
@@ -675,7 +678,7 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
 
    if (!dbName.isEmpty())
    {
-      dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
+      dbNameArray = (dbName + ".lpl").toUtf8();
       dbNameData = dbNameArray.constData();
    }
 
@@ -940,8 +943,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
          else
          {
-            playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
-            playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
+            playlist_set_default_core_path(playlist, "DETECT");
+            playlist_set_default_core_name(playlist, "DETECT");
          }
 
          /* Write changes to disk */
@@ -982,7 +985,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    else if (selectedAction == newPlaylistAction.data())
    {
       QString name = QInputDialog::getText(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME));
-      QString newPlaylistPath = playlistDirAbsPath + "/" + name + file_path_str(FILE_PATH_LPL_EXTENSION);
+      QString newPlaylistPath = playlistDirAbsPath + "/" + name + ".lpl";
       QFile file(newPlaylistPath);
 
       if (!name.isEmpty())
@@ -1138,7 +1141,7 @@ void MainWindow::reloadPlaylists()
       QIcon icon;
       QString iconPath;
 
-      fileDisplayName.remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+      fileDisplayName.remove(".lpl");
 
       iconPath = QString(settings->paths.directory_assets) + ICON_PATH + fileDisplayName + ".png";
 
@@ -1331,7 +1334,7 @@ QString MainWindow::getPlaylistDefaultCore(QString dbName)
       playlistPath,
       settings->paths.directory_playlist, dbNameCString,
       sizeof(playlistPath));
-   strlcat(playlistPath, file_path_str(FILE_PATH_LPL_EXTENSION), sizeof(playlistPath));
+   strlcat(playlistPath, ".lpl", sizeof(playlistPath));
 
    /* Load playlist, if required */
    if (cachedPlaylist)
@@ -1352,7 +1355,7 @@ QString MainWindow::getPlaylistDefaultCore(QString dbName)
 
       /* Get default core path */
       if (!string_is_empty(defaultCorePath) &&
-          !string_is_equal(defaultCorePath, file_path_str(FILE_PATH_DETECT)))
+          !string_is_equal(defaultCorePath, "DETECT"))
          corePath = QString::fromUtf8(defaultCorePath);
 
       /* Free playlist, if required */
@@ -1422,7 +1425,7 @@ void PlaylistModel::getPlaylistItems(QString path)
       if (!string_is_empty(entry->db_name))
       {
          hash["db_name"] = entry->db_name;
-         hash["db_name"].remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+         hash["db_name"].remove(".lpl");
       }
 
       m_contents.append(hash);

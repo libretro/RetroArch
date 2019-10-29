@@ -123,17 +123,15 @@ QWidget *VideoPage::widget()
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
    syncGroup->addRow(vSyncGroup);
 
+   rarch_setting_t *hardSyncSetting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
+
+   if (hardSyncSetting)
    {
-      rarch_setting_t *hardSyncSetting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
+      CheckableSettingsGroup *hardSyncGroup = new CheckableSettingsGroup(hardSyncSetting);
 
-      if (hardSyncSetting)
-      {
-         CheckableSettingsGroup *hardSyncGroup = new CheckableSettingsGroup(hardSyncSetting);
+      hardSyncGroup->add(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
 
-         hardSyncGroup->add(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
-
-         syncGroup->addRow(hardSyncGroup);
-      }
+      syncGroup->addRow(hardSyncGroup);
    }
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
@@ -144,6 +142,7 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);

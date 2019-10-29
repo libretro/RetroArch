@@ -28,7 +28,7 @@
 #include <file/file_path.h>
 #include <rhash.h>
 #include <string/stdstring.h>
-#include <streams/interface_stream.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #include "../configuration.h"
@@ -40,7 +40,7 @@
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-#include "drivers_shader/slang_preprocess.h"
+#include "drivers_shader/slang_process.h"
 #endif
 
 static path_change_data_t *file_change_data = NULL;
@@ -125,41 +125,33 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type_x[64];
    char scale_type_y[64];
    char frame_count_mod[64];
-   size_t path_size             = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp_str                = (char*)malloc(path_size);
-   char *tmp_path               = NULL;
+   size_t path_size             = PATH_MAX_LENGTH;
+   char *tmp_path               = (char*)malloc(path_size);
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
    float fattr                  = 0.0f;
    int iattr                    = 0;
 
-   fp_fbo_buf[0]     = mipmap_buf[0]    = alias_buf[0]           =
-   scale_name_buf[0] = attr_name_buf[0] = scale_type[0]          =
-   scale_type_x[0]   = scale_type_y[0]  = frame_count_mod[0]     =
-   tmp_str[0]        = shader_name[0]   = filter_name_buf[0]     =
-   wrap_name_buf[0]  = wrap_mode[0]     = frame_count_mod_buf[0] = '\0';
-   srgb_output_buf[0] = '\0';
+   if (!tmp_path)
+      return false;
+
+   fp_fbo_buf[0]      = mipmap_buf[0]          = alias_buf[0]       =
+   scale_name_buf[0]  = attr_name_buf[0]       = scale_type[0]      =
+   scale_type_x[0]    = scale_type_y[0]        = frame_count_mod[0] =
+   shader_name[0]     = filter_name_buf[0]     = wrap_name_buf[0]   = 
+   wrap_mode[0]       = frame_count_mod_buf[0] = srgb_output_buf[0] = '\0';
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
-   if (!config_get_path(conf, shader_name, tmp_str, path_size))
+   if (!config_get_path(conf, shader_name, tmp_path, path_size))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
-      if (tmp_str)
-         free(tmp_str);
+      free(tmp_path);
       return false;
    }
 
-   tmp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   strlcpy(tmp_path, tmp_str, path_size);
-   path_resolve_realpath(tmp_path, path_size);
-
-   if (!path_is_valid(tmp_path))
-      strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
-   else
-      strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
-
-   free(tmp_str);
+   fill_pathname_resolve_relative(pass->source.path,
+         conf->path, tmp_path, sizeof(pass->source.path));
    free(tmp_path);
 
    /* Smooth */
@@ -322,14 +314,18 @@ static bool video_shader_parse_pass(config_file_t *conf,
 static bool video_shader_parse_textures(config_file_t *conf,
       struct video_shader *shader)
 {
-   size_t path_size     = PATH_MAX_LENGTH * sizeof(char);
+   size_t path_size     = PATH_MAX_LENGTH;
    const char *id       = NULL;
    char *save           = NULL;
-   char *textures       = (char*)malloc(1024 * sizeof(char));
+   char *textures       = (char*)malloc(1024 + path_size);
+   char *tmp_path       = textures + 1024;
 
-   textures[0]          = '\0';
+   if (!textures)
+      return false;
 
-   if (!config_get_array(conf, "textures", textures, 1024 * sizeof(char)))
+   textures[0] = '\0';
+
+   if (!config_get_array(conf, "textures", textures, 1024))
    {
       free(textures);
       return true;
@@ -345,44 +341,37 @@ static bool video_shader_parse_textures(config_file_t *conf,
       char id_mipmap[64];
       bool mipmap         = false;
       bool smooth         = false;
-      char *tmp_path      = NULL;
 
       id_filter[0] = id_wrap[0] = wrap_mode[0] = id_mipmap[0] = '\0';
 
-      if (!config_get_array(conf, id, shader->lut[shader->luts].path,
-               sizeof(shader->lut[shader->luts].path)))
+      if (!config_get_array(conf, id, tmp_path, path_size))
       {
          RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
          free(textures);
          return false;
       }
 
-      tmp_path            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      tmp_path[0]         = '\0';
-      strlcpy(tmp_path, shader->lut[shader->luts].path,
-            path_size);
-      path_resolve_realpath(tmp_path, path_size);
-
-      if (path_is_valid(tmp_path))
-         strlcpy(shader->lut[shader->luts].path,
-            tmp_path, sizeof(shader->lut[shader->luts].path));
-      free(tmp_path);
+      fill_pathname_resolve_relative(shader->lut[shader->luts].path,
+            conf->path, tmp_path, sizeof(shader->lut[shader->luts].path));
 
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
 
-      snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
+      strlcpy(id_filter, id, sizeof(id_filter));
+      strlcat(id_filter, "_linear", sizeof(id_filter));
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ?
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      snprintf(id_wrap, sizeof(id_wrap), "%s_wrap_mode", id);
+      strlcpy(id_wrap, id, sizeof(id_wrap));
+      strlcat(id_wrap, "_wrap_mode", sizeof(id_wrap));
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
-      snprintf(id_mipmap, sizeof(id_mipmap), "%s_mipmap", id);
+      strlcpy(id_mipmap, id, sizeof(id_mipmap));
+      strlcat(id_mipmap, "_mipmap", sizeof(id_mipmap));
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
@@ -497,13 +486,17 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      intfstream_t *file = NULL;
-      size_t line_size   = 4096 * sizeof(char);
-      char *line         = NULL;
-      const char *path   = shader->pass[i].source.path;
+      const char *path          = shader->pass[i].source.path;
+      uint8_t *buf              = NULL;
+      int64_t buf_len           = 0;
+      struct string_list *lines = NULL;
+      size_t line_index         = 0;
 
-     if (string_is_empty(path))
-        continue;
+      if (string_is_empty(path))
+         continue;
+
+      if (!path_is_valid(path))
+         continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* First try to use the more robust slang
@@ -518,24 +511,39 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-      file = intfstream_open_file(path,
-            RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      if (!file)
+      /* Read file contents */
+      if (!filestream_read_file(path, (void**)&buf, &buf_len))
          continue;
 
-      line    = (char*)malloc(line_size);
-      line[0] = '\0';
+      /* Split into lines */
+      if (buf_len > 0)
+         lines = string_split((const char*)buf, "\n");
+
+      /* Buffer is no longer required - clean up */
+      if ((void*)buf)
+         free((void*)buf);
+
+      if (!lines)
+         continue;
 
       /* even though the pass is set in the loop too, not all passes have parameters */
       param->pass = i;
 
-      while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
-            && intfstream_gets(file, line, line_size))
+      while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) &&
+             (line_index < lines->size))
       {
-         int ret = sscanf(line,
-               "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+         int ret;
+         const char *line = lines->elems[line_index].data;
+         line_index++;
+
+         /* Check if this is a '#pragma parameter' line */
+         if (strncmp("#pragma parameter", line,
+                  STRLEN_CONST("#pragma parameter")))
+            continue;
+
+         /* Parse line */
+         ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                param->id,        param->desc,    &param->initial,
                &param->minimum, &param->maximum, &param->step);
 
@@ -559,15 +567,236 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param++;
       }
 
-      free(line);
-      intfstream_close(file);
-      free(file);
+      string_list_free(lines);
    }
 
-   if (conf && !video_shader_resolve_current_parameters(conf, shader))
+   return video_shader_resolve_current_parameters(conf, shader);
+}
+
+/**
+ * video_shader_write_preset:
+ * @path              : File to write to
+ * @shader            : Shader preset to write
+ * @reference         : Whether a reference preset should be written
+ *
+ * Writes a preset to disk. Can be written as a reference preset.
+ * See: video_shader_read_preset
+ **/
+bool video_shader_write_preset(const char *path,
+      const struct video_shader *shader, bool reference)
+{
+   /* We need to clean up paths to be able to properly process them
+    * path and shader->path can use '/' on Windows due to Qt being Qt */
+   char clean_path[PATH_MAX_LENGTH];
+   char clean_shader_path[PATH_MAX_LENGTH];
+   char preset_dir[PATH_MAX_LENGTH];
+
+   if (!shader || string_is_empty(path))
       return false;
 
-   return true;
+   fill_pathname_join(
+      preset_dir,
+      config_get_ptr()->paths.directory_video_shader,
+      "presets",
+      sizeof(preset_dir));
+
+   strlcpy(clean_shader_path, shader->path, PATH_MAX_LENGTH);
+   path_resolve_realpath(clean_shader_path, PATH_MAX_LENGTH, false);
+
+   if (string_is_empty(shader->path))
+      reference = false;
+
+   /* Auto-shaders can be written as copies or references.
+    * If we write a reference to a copy, we could then overwrite the copy 
+    * with any reference, thus creating a reference to a reference.
+    * To prevent this, we disallow saving references to auto-shaders. */
+   if (reference && !strncmp(preset_dir, clean_shader_path, strlen(preset_dir)))
+      reference = false;
+
+   /* Don't ever create a reference to the ever-changing retroarch preset
+    * TODO remove once we don't write this preset anymore */
+   if (reference && !strncmp(path_basename(clean_shader_path), "retroarch", STRLEN_CONST("retroarch")))
+      reference = false;
+
+   if (reference)
+   {
+      /* write a reference preset */
+      char buf[STRLEN_CONST("#reference \"") + PATH_MAX_LENGTH + 1] = "#reference \"";
+      size_t len = STRLEN_CONST("#reference \"");
+
+      char *preset_ref = buf + len;
+
+      strlcpy(clean_path, path, PATH_MAX_LENGTH);
+      path_resolve_realpath(clean_path, PATH_MAX_LENGTH, false);
+
+      path_relative_to(preset_ref, clean_shader_path, clean_path, PATH_MAX_LENGTH);
+      len += strlen(preset_ref);
+
+      buf[len++] = '\"';
+
+      return filestream_write_file(clean_path, (void *)buf, len);
+   }
+   else
+   {
+      /* regular saving function */
+      config_file_t *conf;
+      bool ret;
+
+      if (!(conf = config_file_new_alloc()))
+         return false;
+
+      video_shader_write_conf_preset(conf, shader, path);
+
+      ret = config_file_write(conf, path, false);
+
+      config_file_free(conf);
+
+      return ret;
+   }
+}
+
+/**
+ * video_shader_read_reference_path:
+ * @path              : File to read
+ *
+ * Returns: the reference path of a preset if it exists,
+ * otherwise returns NULL.
+ *
+ * The returned string needs to be freed.
+ */
+char *video_shader_read_reference_path(const char *path)
+{
+   /* We want shader presets that point to other presets.
+    *
+    * While config_file_new_from_path_to_string() does support the
+    * #include directive, it will not rebase relative paths on
+    * the include path.
+    *
+    * There's a plethora of reasons why a general solution is hard:
+    *  - it's impossible to distinguish a generic string from a (relative) path
+    *  - config_file_new_from_path_to_string() doesn't return the include path,
+    *    so we cannot rebase afterwards
+    *  - #include is recursive, so we'd actually need to track the include path
+    *    for every setting
+    *
+    * So instead, we use a custom #reference directive, which is just a
+    * one-time/non-recursive redirection, e.g.
+    *
+    * #reference "<path to config>"
+    * or
+    * #reference <path to config>
+    *
+    * which we will load as config_file_new_from_path_to_string(<path to config>).
+    */
+   char *reference     = NULL;
+   RFILE *file         = NULL;
+   char *line          = NULL;
+
+   if (string_is_empty(path))
+     goto end;
+   if (!path_is_valid(path))
+     goto end;
+
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+     goto end;
+
+   line = filestream_getline(file);
+   filestream_close(file);
+
+   if (line && !strncmp("#reference", line, STRLEN_CONST("#reference")))
+   {
+      char *ref_path = line + STRLEN_CONST("#reference");
+
+      /* have at least 1 whitespace */
+      if (!isspace(*ref_path))
+         goto end;
+      ref_path++;
+
+      while (isspace(*ref_path))
+         ref_path++;
+
+      if (*ref_path == '\"')
+      {
+         /* remove "" */
+         char *p;
+         ref_path++;
+
+         p = ref_path;
+         while (*p != '\0' && *p != '\"')
+            p++;
+
+         if (*p == '\"')
+         {
+            *p = '\0';
+         }
+         else
+         {
+            /* if there's no second ", remove whitespace at the end */
+            p--;
+            while (isspace(*p))
+               *p-- = '\0';
+         }
+      }
+      else
+      {
+         /* remove whitespace at the end (e.g. carriage return) */
+         char *end = ref_path + strlen(ref_path) - 1;
+         while (isspace(*end))
+            *end-- = '\0';
+      }
+
+      if (string_is_empty(ref_path))
+         goto end;
+
+      reference = (char *)malloc(PATH_MAX_LENGTH);
+
+      if (!reference)
+         goto end;
+
+      /* rebase relative reference path */
+      if (!path_is_absolute(ref_path))
+      {
+         fill_pathname_resolve_relative(reference,
+               path, ref_path, PATH_MAX_LENGTH);
+      }
+      else
+         strlcpy(reference, ref_path, PATH_MAX_LENGTH);
+   }
+
+end:
+   if (line)
+      free(line);
+
+   return reference;
+}
+
+/**
+ * video_shader_read_preset:
+ * @path              : File to read
+ *
+ * Reads a preset from disk.
+ * If the preset is a reference preset, the referenced preset
+ * is loaded instead.
+ *
+ * Returns the read preset as a config object.
+ *
+ * The returned config object needs to be freed.
+ **/
+config_file_t *video_shader_read_preset(const char *path)
+{
+   config_file_t *conf;
+   char *reference = video_shader_read_reference_path(path);
+   if (reference)
+   {
+      conf = config_file_new_from_path_to_string(reference);
+      free(reference);
+   }
+   else
+      conf = config_file_new_from_path_to_string(path);
+
+   return conf;
 }
 
 /**
@@ -589,8 +818,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
    bool watch_files                 = settings->bools.video_shader_watch_files;
-
-   (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
 
@@ -656,8 +883,6 @@ bool video_shader_read_conf_preset(config_file_t *conf,
          string_list_free(file_list);
    }
 
-   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-
    if (!video_shader_parse_textures(conf, shader))
       return false;
 
@@ -722,52 +947,73 @@ static void shader_write_fbo(config_file_t *conf,
          fbo->scale_y, fbo->abs_y, i);
 }
 
+static void make_relative_path_portable(char *path)
+{
+#ifdef _WIN32
+   /* use '/' instead of '\' for maximum portability */
+   if (!path_is_absolute(path))
+   {
+      char *p;
+      for (p = path; *p; p++)
+         if (*p == '\\')
+            *p = '/';
+   }
+#endif
+}
+
 /**
  * video_shader_write_conf_preset:
  * @conf              : Preset file to write to.
  * @shader            : Shader passes handle.
  * @preset_path       : Optional path to where the preset will be written.
  *
- * Saves preset and all associated state (passes,
- * textures, imports, etc) to disk.
+ * Writes preset and all associated state (passes,
+ * textures, imports, etc) into @conf.
  * If @preset_path is not NULL, shader paths are saved
  * relative to it.
  **/
 void video_shader_write_conf_preset(config_file_t *conf,
-      struct video_shader *shader, const char *preset_path)
+      const struct video_shader *shader, const char *preset_path)
 {
    unsigned i;
    char key[64];
    size_t tmp_size = PATH_MAX_LENGTH;
-   char *tmp       = (char*)malloc(tmp_size);
-   char *tmp_rel   = (char*)malloc(tmp_size);
-   char *tmp_base  = (char*)malloc(tmp_size);
+   char *tmp       = (char*)malloc(3*tmp_size);
+   char *tmp_rel   = tmp +   tmp_size;
+   char *tmp_base  = tmp + 2*tmp_size;
 
-   if (!tmp || !tmp_rel || !tmp_base)
+   if (!tmp)
       return;
 
    config_set_int(conf, "shaders", shader->passes);
    if (shader->feedback_pass >= 0)
       config_set_int(conf, "feedback_pass", shader->feedback_pass);
 
+   if (preset_path)
+   {
+      strlcpy(tmp_base, preset_path, tmp_size);
+
+      /* ensure we use a clean base like the shader passes and texture paths do */
+      path_resolve_realpath(tmp_base, tmp_size, false);
+      path_basedir(tmp_base);
+   }
+
    for (i = 0; i < shader->passes; i++)
    {
       const struct video_shader_pass *pass = &shader->pass[i];
 
       snprintf(key, sizeof(key), "shader%u", i);
-      strlcpy(tmp, pass->source.path, tmp_size);
 
       if (preset_path)
       {
-         strlcpy(tmp_base, preset_path, tmp_size);
-
-         path_basedir(tmp_base);
+         strlcpy(tmp, pass->source.path, tmp_size);
          path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
+         make_relative_path_portable(tmp_rel);
 
          config_set_path(conf, key, tmp_rel);
       }
       else
-         config_set_path(conf, key, tmp);
+         config_set_path(conf, key, pass->source.path);
 
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
@@ -794,9 +1040,6 @@ void video_shader_write_conf_preset(config_file_t *conf,
       shader_write_fbo(conf, &pass->fbo, i);
    }
 
-   free(tmp);
-   free(tmp_rel);
-   free(tmp_base);
 
    if (shader->num_parameters)
    {
@@ -849,31 +1092,49 @@ void video_shader_write_conf_preset(config_file_t *conf,
 
          for (i = 0; i < shader->luts; i++)
          {
-            char key[128];
+            if (preset_path)
+            {
+               strlcpy(tmp, shader->lut[i].path, tmp_size);
+               path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
+               make_relative_path_portable(tmp_rel);
 
-            key[0] = '\0';
-
-            config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
+               config_set_path(conf, shader->lut[i].id, tmp_rel);
+            }
+            else
+               config_set_path(conf, shader->lut[i].id, shader->lut[i].path);
 
             if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
             {
-               snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_linear", sizeof(key));
                config_set_bool(conf, key,
                      shader->lut[i].filter == RARCH_FILTER_LINEAR);
             }
 
-            snprintf(key, sizeof(key),
-                  "%s_wrap_mode", shader->lut[i].id);
-            config_set_string(conf, key,
-                  wrap_mode_to_str(shader->lut[i].wrap));
+            {
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_wrap_mode", sizeof(key));
+               config_set_string(conf, key,
+                     wrap_mode_to_str(shader->lut[i].wrap));
+            }
 
-            snprintf(key, sizeof(key),
-                  "%s_mipmap", shader->lut[i].id);
-            config_set_bool(conf, key,
-                  shader->lut[i].mipmap);
+            {
+               char key[128];
+               key[0]  = '\0';
+               strlcpy(key, shader->lut[i].id, sizeof(key));
+               strlcat(key, "_mipmap", sizeof(key));
+               config_set_bool(conf, key,
+                     shader->lut[i].mipmap);
+            }
          }
       }
    }
+
+   free(tmp);
 }
 
 const char *video_shader_to_str(enum rarch_shader_type type)
@@ -907,7 +1168,9 @@ const char *video_shader_to_str(enum rarch_shader_type type)
 bool video_shader_is_supported(enum rarch_shader_type type)
 {
    gfx_ctx_flags_t flags;
-   enum display_flags testflag;
+   enum display_flags testflag = GFX_CTX_FLAGS_NONE;
+
+   flags.flags     = 0;
 
    switch (type)
    {
@@ -937,12 +1200,12 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
    switch (type)
    {
       case RARCH_SHADER_GLSL:
-         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+         return ".glslp";
       case RARCH_SHADER_SLANG:
-         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+         return ".slangp";
       case RARCH_SHADER_HLSL:
       case RARCH_SHADER_CG:
-         return file_path_str(FILE_PATH_CGP_EXTENSION);
+         return ".cgp";
       default:
          break;
    }
@@ -952,11 +1215,15 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 
 bool video_shader_any_supported(void)
 {
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
+
    return
-      video_shader_is_supported(RARCH_SHADER_SLANG) ||
-      video_shader_is_supported(RARCH_SHADER_HLSL)  ||
-      video_shader_is_supported(RARCH_SHADER_GLSL)  ||
-      video_shader_is_supported(RARCH_SHADER_CG);
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG) ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)  ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)    ||
+      BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 }
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
@@ -968,10 +1235,11 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
    if (strlen(ext) > 1 && ext[0] == '.')
       ext++;
 
-   *is_preset =
-      string_is_equal_case_insensitive(ext, "cgp")   ||
-      string_is_equal_case_insensitive(ext, "glslp") ||
-      string_is_equal_case_insensitive(ext, "slangp");
+   if (is_preset)
+      *is_preset =
+         string_is_equal_case_insensitive(ext, "cgp")   ||
+         string_is_equal_case_insensitive(ext, "glslp") ||
+         string_is_equal_case_insensitive(ext, "slangp");
 
    if (string_is_equal_case_insensitive(ext, "cgp") ||
        string_is_equal_case_insensitive(ext, "cg")
@@ -1002,50 +1270,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
  **/
 enum rarch_shader_type video_shader_parse_type(const char *path)
 {
-   bool is_preset = false;
-   if (!path)
-      return RARCH_SHADER_NONE;
-   return video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
-}
-
-/**
- * video_shader_resolve_relative:
- * @shader            : Shader pass handle.
- * @ref_path          : Relative shader path.
- *
- * Resolves relative shader path (@ref_path) into absolute
- * shader paths.
- **/
-void video_shader_resolve_relative(struct video_shader *shader,
-      const char *ref_path)
-{
-   unsigned i;
-   size_t tmp_path_size = 4096 * sizeof(char);
-   char *tmp_path       = (char*)malloc(tmp_path_size);
-
-   if (!tmp_path)
-      return;
-
-   tmp_path[0] = '\0';
-
-   for (i = 0; i < shader->passes; i++)
-   {
-      if (!*shader->pass[i].source.path)
-         continue;
-
-      strlcpy(tmp_path, shader->pass[i].source.path, tmp_path_size);
-      fill_pathname_resolve_relative(shader->pass[i].source.path,
-            ref_path, tmp_path, sizeof(shader->pass[i].source.path));
-   }
-
-   for (i = 0; i < shader->luts; i++)
-   {
-      strlcpy(tmp_path, shader->lut[i].path, tmp_path_size);
-      fill_pathname_resolve_relative(shader->lut[i].path,
-            ref_path, tmp_path, sizeof(shader->lut[i].path));
-   }
-
-   free(tmp_path);
+   return video_shader_get_type_from_ext(path_get_extension(path), NULL);
 }
 
 bool video_shader_check_for_changes(void)

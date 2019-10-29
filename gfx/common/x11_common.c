@@ -554,6 +554,8 @@ bool x11_alive(void *data)
                case 4: /* Grabbed  */
                        /* Scroll up */
                case 5: /* Scroll down */
+               case 6: /* Scroll wheel left */
+               case 7: /* Scroll wheel right */
                   x_input_poll_wheel(&event.xbutton, true);
                   break;
             }
@@ -606,9 +608,9 @@ void x11_check_window(void *data, bool *quit,
 
    if (new_width != *width || new_height != *height)
    {
-      *resize = true;
       *width  = new_width;
       *height = new_height;
+      *resize = true;
    }
 
    x11_alive(data);
@@ -679,30 +681,17 @@ bool x11_connect(void)
 
 void x11_update_title(void *data, void *data2)
 {
-   const settings_t *settings = config_get_ptr();
    video_frame_info_t *video_info = (video_frame_info_t*)data2;
    char title[128];
 
    title[0] = '\0';
 
-   if (settings->bools.video_memory_show)
-   {
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-   }
-
    video_driver_get_window_title(title, sizeof(title));
 
    if (title[0])
-      XStoreName(g_x11_dpy, g_x11_win, title);
+      XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (const unsigned char*)title,
+            strlen(title));
 }
 
 bool x11_input_ctx_new(bool true_full)

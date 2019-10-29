@@ -36,7 +36,6 @@
 
 #include "../../dynamic.h"
 #include "../../configuration.h"
-#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -57,21 +56,6 @@ typedef struct gfx_ctx_gdi_data
 
 void *dinput_gdi;
 
-static void setup_gdi_pixel_format(HDC hdc)
-{
-   PIXELFORMATDESCRIPTOR pfd = {0};
-   pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
-   pfd.nVersion     = 1;
-   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-   pfd.iPixelType   = PFD_TYPE_RGBA;
-   pfd.cColorBits   = 32;
-   pfd.cDepthBits   = 0;
-   pfd.cStencilBits = 0;
-   pfd.iLayerType   = PFD_MAIN_PLANE;
-
-   SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
-}
-
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
@@ -81,44 +65,16 @@ static void gfx_ctx_gdi_check_window(void *data, bool *quit,
 static bool gfx_ctx_gdi_set_resize(void *data,
       unsigned width, unsigned height)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    return false;
 }
 
-static void gfx_ctx_gdi_update_window_title(void *data, void *data2)
+static void gfx_ctx_gdi_update_title(void *data, void *data2)
 {
-   const settings_t *settings = config_get_ptr();
    video_frame_info_t* video_info = (video_frame_info_t*)data2;
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
    char title[128];
 
    title[0] = '\0';
-
-   if (settings->bools.video_memory_show)
-   {
-#ifndef __WINRT__
-      int64_t mem_bytes_used = frontend_driver_get_used_memory();
-      int64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-#endif
-   }
 
    video_driver_get_window_title(title, sizeof(title));
 
@@ -171,13 +127,6 @@ static void *gfx_ctx_gdi_init(
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    return gdi;
 
 error:
@@ -190,13 +139,6 @@ static void gfx_ctx_gdi_destroy(void *data)
 {
    gfx_ctx_gdi_data_t *gdi = (gfx_ctx_gdi_data_t*)data;
    HWND     window         = win32_get_window();
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    if (window && win32_gdi_hdc)
    {
@@ -232,26 +174,16 @@ static bool gfx_ctx_gdi_set_video_mode(void *data,
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[GDI]: win32_set_video_mode failed.\n");
-      goto error;
-   }
-
-   switch (win32_gdi_api)
-   {
-      case GFX_CTX_NONE:
-      default:
-         break;
+      gfx_ctx_gdi_destroy(data);
+      return false;
    }
 
    return true;
-
-error:
-   gfx_ctx_gdi_destroy(data);
-   return false;
 }
 
 static void gfx_ctx_gdi_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
 #if _WIN32_WINNT >= 0x0501
    settings_t *settings = config_get_ptr();
@@ -262,7 +194,7 @@ static void gfx_ctx_gdi_input_driver(void *data,
       *input_data = input_winraw.init(joypad_name);
       if (*input_data)
       {
-         *input = &input_winraw;
+         *input     = &input_winraw;
          dinput_gdi = NULL;
          return;
       }
@@ -282,24 +214,6 @@ static void gfx_ctx_gdi_input_driver(void *data,
 static bool gfx_ctx_gdi_has_focus(void *data)
 {
    return win32_has_focus();
-}
-
-static bool gfx_ctx_gdi_suppress_screensaver(void *data, bool enable)
-{
-   return win32_suppress_screensaver(data, enable);
-}
-
-static bool gfx_ctx_gdi_has_windowed(void *data)
-{
-   (void)data;
-
-   return true;
-}
-
-static bool gfx_ctx_gdi_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   return win32_get_metrics(data, type, value);
 }
 
 static enum gfx_ctx_api gfx_ctx_gdi_get_api(void *data)
@@ -353,10 +267,9 @@ static void gfx_ctx_gdi_swap_buffers(void *data, void *data2)
 
 void create_gdi_context(HWND hwnd, bool *quit)
 {
-   (void)quit;
    win32_gdi_hdc = GetDC(hwnd);
 
-   setup_gdi_pixel_format(win32_gdi_hdc);
+   win32_setup_pixel_format(win32_gdi_hdc, false);
 
    g_win32_inited = true;
 }
@@ -373,14 +286,14 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_gdi_get_metrics,
+   win32_get_metrics,
    NULL,
-   gfx_ctx_gdi_update_window_title,
+   gfx_ctx_gdi_update_title,
    gfx_ctx_gdi_check_window,
    gfx_ctx_gdi_set_resize,
    gfx_ctx_gdi_has_focus,
-   gfx_ctx_gdi_suppress_screensaver,
-   gfx_ctx_gdi_has_windowed,
+   win32_suppress_screensaver,
+   true, /* has_windowed */
    gfx_ctx_gdi_swap_buffers,
    gfx_ctx_gdi_input_driver,
    NULL,

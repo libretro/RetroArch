@@ -32,7 +32,6 @@
 
 #include "../../autosave.h"
 #include "../../retroarch.h"
-#include "../../input/input_driver.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
 #define HAVE_INET6 1

@@ -19,7 +19,6 @@
 #include "../retroarch.h"
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
-#include "../input/input_driver.h"
 #include "../verbosity.h"
 #include "../libretro-common/include/encodings/utf.h"
 #include "../libretro-common/include/lists/string_list.h"
@@ -315,11 +314,7 @@ void App::Run()
 	{
 		CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
-		unsigned sleep_ms = 0;
-		int           ret = runloop_iterate(&sleep_ms);
-
-		if (ret == 1 && sleep_ms > 0)
-			retro_sleep(sleep_ms);
+		int           ret = runloop_iterate();
 
 		task_queue_check();
 

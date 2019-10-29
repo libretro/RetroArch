@@ -19,20 +19,21 @@ constexpr size_t MaxMessageSize{16 * 1024};
 constexpr size_t MessageQueueSize{8};
 constexpr size_t JoinQueueSize{8};
 
-struct QueuedMessage {
-    size_t length;
-    char buffer[MaxMessageSize];
+struct QueuedMessage
+{
+   size_t length;
+   char buffer[MaxMessageSize];
 
-    void Copy(const QueuedMessage& other)
-    {
-        length = other.length;
-        if (length) {
-            memcpy(buffer, other.buffer, length);
-        }
-    }
+   void Copy(const QueuedMessage& other)
+   {
+      length = other.length;
+      if (length)
+         memcpy(buffer, other.buffer, length);
+   }
 };
 
-struct User {
+struct User
+{
     // snowflake (64bit int), turned into a ascii decimal string, at most 20 chars +1 null
     // terminator = 21
     char userId[32];
@@ -104,9 +105,8 @@ public:
     {
         keepRunning.exchange(false);
         Notify();
-        if (ioThread.joinable()) {
+        if (ioThread.joinable())
             ioThread.join();
-        }
     }
 
     ~IoThreadHolder() { Stop(); }
@@ -123,7 +123,7 @@ static IoThreadHolder* IoThread{nullptr};
 
 static void UpdateReconnectTime()
 {
-    NextConnect = std::chrono::system_clock::now() +
+   NextConnect = std::chrono::system_clock::now() +
       std::chrono::duration<int64_t, std::milli>{ReconnectTimeMs.nextDelay()};
 }
 
@@ -133,102 +133,111 @@ extern "C" DISCORD_EXPORT void Discord_UpdateConnection(void)
 static void Discord_UpdateConnection(void)
 #endif
 {
-    if (!Connection) {
+    if (!Connection)
         return;
-    }
 
-    if (!Connection->IsOpen()) {
-        if (std::chrono::system_clock::now() >= NextConnect) {
+    if (!Connection->IsOpen())
+    {
+        if (std::chrono::system_clock::now() >= NextConnect)
+        {
             UpdateReconnectTime();
             Connection->Open();
         }
     }
-    else {
+    else
+    {
         // reads
 
-        for (;;) {
+        for (;;)
+        {
             JsonDocument message;
 
-            if (!Connection->Read(message)) {
+            if (!Connection->Read(message))
                 break;
-            }
 
             const char* evtName = GetStrMember(&message, "evt");
             const char* nonce = GetStrMember(&message, "nonce");
 
-            if (nonce) {
+            if (nonce)
+            {
                 // in responses only -- should use to match up response when needed.
 
-                if (evtName && strcmp(evtName, "ERROR") == 0) {
+                if (evtName && strcmp(evtName, "ERROR") == 0)
+                {
                     auto data = GetObjMember(&message, "data");
                     LastErrorCode = GetIntMember(data, "code");
                     StringCopy(LastErrorMessage, GetStrMember(data, "message", ""));
                     GotErrorMessage.store(true);
                 }
             }
-            else {
+            else
+            {
                 // should have evt == name of event, optional data
-                if (evtName == nullptr) {
+                if (evtName == nullptr)
                     continue;
-                }
 
                 auto data = GetObjMember(&message, "data");
 
-                if (strcmp(evtName, "ACTIVITY_JOIN") == 0) {
+                if (strcmp(evtName, "ACTIVITY_JOIN") == 0)
+                {
                     auto secret = GetStrMember(data, "secret");
-                    if (secret) {
+                    if (secret)
+                    {
                         StringCopy(JoinGameSecret, secret);
                         WasJoinGame.store(true);
                     }
                 }
-                else if (strcmp(evtName, "ACTIVITY_SPECTATE") == 0) {
-                    auto secret = GetStrMember(data, "secret");
-                    if (secret) {
-                        StringCopy(SpectateGameSecret, secret);
-                        WasSpectateGame.store(true);
-                    }
+                else if (strcmp(evtName, "ACTIVITY_SPECTATE") == 0)
+                {
+                   auto secret = GetStrMember(data, "secret");
+                   if (secret)
+                   {
+                      StringCopy(SpectateGameSecret, secret);
+                      WasSpectateGame.store(true);
+                   }
                 }
-                else if (strcmp(evtName, "ACTIVITY_JOIN_REQUEST") == 0) {
-                    auto user = GetObjMember(data, "user");
-                    auto userId = GetStrMember(user, "id");
-                    auto username = GetStrMember(user, "username");
-                    auto avatar = GetStrMember(user, "avatar");
-                    auto joinReq = JoinAskQueue.GetNextAddMessage();
-                    if (userId && username && joinReq) {
-                        StringCopy(joinReq->userId, userId);
-                        StringCopy(joinReq->username, username);
-                        auto discriminator = GetStrMember(user, "discriminator");
-                        if (discriminator) {
-                            StringCopy(joinReq->discriminator, discriminator);
-                        }
-                        if (avatar) {
-                            StringCopy(joinReq->avatar, avatar);
-                        }
-                        else {
-                            joinReq->avatar[0] = 0;
-                        }
-                        JoinAskQueue.CommitAdd();
-                    }
+                else if (strcmp(evtName, "ACTIVITY_JOIN_REQUEST") == 0)
+                {
+                   auto user = GetObjMember(data, "user");
+                   auto userId = GetStrMember(user, "id");
+                   auto username = GetStrMember(user, "username");
+                   auto avatar = GetStrMember(user, "avatar");
+                   auto joinReq = JoinAskQueue.GetNextAddMessage();
+                   if (userId && username && joinReq)
+                   {
+                      StringCopy(joinReq->userId, userId);
+                      StringCopy(joinReq->username, username);
+                      auto discriminator = GetStrMember(user, "discriminator");
+                      if (discriminator)
+                         StringCopy(joinReq->discriminator, discriminator);
+                      if (avatar)
+                         StringCopy(joinReq->avatar, avatar);
+                      else
+                         joinReq->avatar[0] = 0;
+                      JoinAskQueue.CommitAdd();
+                   }
                 }
             }
         }
 
         // writes
-        if (QueuedPresence.length) {
-            QueuedMessage local;
-            {
-                std::lock_guard<std::mutex> guard(PresenceMutex);
-                local.Copy(QueuedPresence);
-                QueuedPresence.length = 0;
-            }
-            if (!Connection->Write(local.buffer, local.length)) {
-                // if we fail to send, requeue
-                std::lock_guard<std::mutex> guard(PresenceMutex);
-                QueuedPresence.Copy(local);
-            }
+        if (QueuedPresence.length)
+        {
+           QueuedMessage local;
+           {
+              std::lock_guard<std::mutex> guard(PresenceMutex);
+              local.Copy(QueuedPresence);
+              QueuedPresence.length = 0;
+           }
+           if (!Connection->Write(local.buffer, local.length)) {
+              // if we fail to send, requeue
+              std::lock_guard<std::mutex> guard(PresenceMutex);
+              QueuedPresence.Copy(local);
+           }
         }
 
-        while (SendQueue.HavePendingSends()) {
+        while (SendQueue.HavePendingSends())
+        {
             auto qmessage = SendQueue.GetNextSendMessage();
             Connection->Write(qmessage->buffer, qmessage->length);
             SendQueue.CommitSend();
@@ -236,24 +245,19 @@ static void Discord_UpdateConnection(void)
     }
 }
 
-static void SignalIOActivity()
-{
-    if (IoThread != nullptr) {
-        IoThread->Notify();
-    }
-}
-
 static bool RegisterForEvent(const char* evtName)
 {
-    auto qmessage = SendQueue.GetNextAddMessage();
-    if (qmessage) {
-        qmessage->length =
-          JsonWriteSubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
-        SendQueue.CommitAdd();
-        SignalIOActivity();
-        return true;
-    }
-    return false;
+   auto qmessage = SendQueue.GetNextAddMessage();
+   if (qmessage)
+   {
+      qmessage->length =
+         JsonWriteSubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
+      SendQueue.CommitAdd();
+      if (IoThread)
+         IoThread->Notify();
+      return true;
+   }
+   return false;
 }
 
 static bool DeregisterForEvent(const char* evtName)
@@ -263,7 +267,8 @@ static bool DeregisterForEvent(const char* evtName)
         qmessage->length =
           JsonWriteUnsubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
         SendQueue.CommitAdd();
-        SignalIOActivity();
+        if (IoThread)
+           IoThread->Notify();
         return true;
     }
     return false;
@@ -275,17 +280,15 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
                                                   const char* optionalSteamId)
 {
     IoThread = new (std::nothrow) IoThreadHolder();
-    if (IoThread == nullptr) {
+    if (IoThread == nullptr)
         return;
-    }
 
-    if (autoRegister) {
-        if (optionalSteamId && optionalSteamId[0]) {
-            Discord_RegisterSteamGame(applicationId, optionalSteamId);
-        }
-        else {
-            Discord_Register(applicationId, nullptr);
-        }
+    if (autoRegister)
+    {
+       if (optionalSteamId && optionalSteamId[0])
+          Discord_RegisterSteamGame(applicationId, optionalSteamId);
+       else
+          Discord_Register(applicationId, nullptr);
     }
 
     Pid = GetProcessId();
@@ -293,46 +296,43 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
     {
         std::lock_guard<std::mutex> guard(HandlerMutex);
 
-        if (handlers) {
+        if (handlers)
             QueuedHandlers = *handlers;
-        }
-        else {
+        else
             QueuedHandlers = {};
-        }
 
         Handlers = {};
     }
 
-    if (Connection) {
+    if (Connection)
         return;
-    }
 
     Connection = RpcConnection::Create(applicationId);
-    Connection->onConnect = [](JsonDocument& readyMessage) {
+    Connection->onConnect = [](JsonDocument& readyMessage)
+    {
         Discord_UpdateHandlers(&QueuedHandlers);
-        auto data = GetObjMember(&readyMessage, "data");
-        auto user = GetObjMember(data, "user");
-        auto userId = GetStrMember(user, "id");
+        auto data     = GetObjMember(&readyMessage, "data");
+        auto user     = GetObjMember(data, "user");
+        auto userId   = GetStrMember(user, "id");
         auto username = GetStrMember(user, "username");
-        auto avatar = GetStrMember(user, "avatar");
-        if (userId && username) {
+        auto avatar   = GetStrMember(user, "avatar");
+        if (userId && username)
+        {
             StringCopy(connectedUser.userId, userId);
             StringCopy(connectedUser.username, username);
             auto discriminator = GetStrMember(user, "discriminator");
-            if (discriminator) {
+            if (discriminator)
                 StringCopy(connectedUser.discriminator, discriminator);
-            }
-            if (avatar) {
+            if (avatar)
                 StringCopy(connectedUser.avatar, avatar);
-            }
-            else {
+            else
                 connectedUser.avatar[0] = 0;
-            }
         }
         WasJustConnected.exchange(true);
         ReconnectTimeMs.reset();
     };
-    Connection->onDisconnect = [](int err, const char* message) {
+    Connection->onDisconnect = [](int err, const char* message)
+    {
         LastDisconnectErrorCode = err;
         StringCopy(LastDisconnectErrorMessage, message);
         {
@@ -348,13 +348,13 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
 
 extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
 {
-    if (!Connection) {
+    if (!Connection)
         return;
-    }
-    Connection->onConnect = nullptr;
+    Connection->onConnect    = nullptr;
     Connection->onDisconnect = nullptr;
     Handlers = {};
-    if (IoThread != nullptr) {
+    if (IoThread != nullptr)
+    {
         IoThread->Stop();
         delete IoThread;
         IoThread = nullptr;
@@ -363,14 +363,16 @@ extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
     RpcConnection::Destroy(Connection);
 }
 
-extern "C" DISCORD_EXPORT void Discord_UpdatePresence(const DiscordRichPresence* presence)
+extern "C" DISCORD_EXPORT void 
+Discord_UpdatePresence(const DiscordRichPresence* presence)
 {
     {
         std::lock_guard<std::mutex> guard(PresenceMutex);
         QueuedPresence.length = JsonWriteRichPresenceObj(
           QueuedPresence.buffer, sizeof(QueuedPresence.buffer), Nonce++, Pid, presence);
     }
-    SignalIOActivity();
+    if (IoThread)
+       IoThread->Notify();
 }
 
 extern "C" DISCORD_EXPORT void Discord_ClearPresence(void)
@@ -381,15 +383,16 @@ extern "C" DISCORD_EXPORT void Discord_ClearPresence(void)
 extern "C" DISCORD_EXPORT void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int reply)
 {
     // if we are not connected, let's not batch up stale messages for later
-    if (!Connection || !Connection->IsOpen()) {
+    if (!Connection || !Connection->IsOpen())
         return;
-    }
     auto qmessage = SendQueue.GetNextAddMessage();
-    if (qmessage) {
+    if (qmessage)
+    {
         qmessage->length =
           JsonWriteJoinReply(qmessage->buffer, sizeof(qmessage->buffer), userId, reply, Nonce++);
         SendQueue.CommitAdd();
-        SignalIOActivity();
+        if (IoThread)
+           IoThread->Notify();
     }
 }
 
@@ -399,24 +402,25 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
     // of times inbetween calls here. Externally, we want the sequence to seem sane, so any other
     // signals are book-ended by calls to ready and disconnect.
 
-    if (!Connection) {
+    if (!Connection)
         return;
-    }
 
     bool wasDisconnected = WasJustDisconnected.exchange(false);
-    bool isConnected = Connection->IsOpen();
+    bool isConnected     = Connection->IsOpen();
 
-    if (isConnected) {
+    if (isConnected)
+    {
         // if we are connected, disconnect cb first
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (wasDisconnected && Handlers.disconnected) {
+        if (wasDisconnected && Handlers.disconnected)
             Handlers.disconnected(LastDisconnectErrorCode, LastDisconnectErrorMessage);
-        }
     }
 
-    if (WasJustConnected.exchange(false)) {
+    if (WasJustConnected.exchange(false))
+    {
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (Handlers.ready) {
+        if (Handlers.ready)
+        {
             DiscordUser du{connectedUser.userId,
                            connectedUser.username,
                            connectedUser.discriminator,
@@ -425,25 +429,25 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
         }
     }
 
-    if (GotErrorMessage.exchange(false)) {
+    if (GotErrorMessage.exchange(false))
+    {
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (Handlers.errored) {
+        if (Handlers.errored)
             Handlers.errored(LastErrorCode, LastErrorMessage);
-        }
     }
 
-    if (WasJoinGame.exchange(false)) {
+    if (WasJoinGame.exchange(false))
+    {
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (Handlers.joinGame) {
+        if (Handlers.joinGame)
             Handlers.joinGame(JoinGameSecret);
-        }
     }
 
-    if (WasSpectateGame.exchange(false)) {
+    if (WasSpectateGame.exchange(false))
+    {
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (Handlers.spectateGame) {
+        if (Handlers.spectateGame)
             Handlers.spectateGame(SpectateGameSecret);
-        }
     }
 
     // Right now this batches up any requests and sends them all in a burst; I could imagine a world
@@ -451,11 +455,13 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
     // is sent. I left it this way because I could also imagine wanting to process these all and
     // maybe show them in one common dialog and/or start fetching the avatars in parallel, and if
     // not it should be trivial for the implementer to make a queue themselves.
-    while (JoinAskQueue.HavePendingSends()) {
+    while (JoinAskQueue.HavePendingSends())
+    {
         auto req = JoinAskQueue.GetNextSendMessage();
         {
             std::lock_guard<std::mutex> guard(HandlerMutex);
-            if (Handlers.joinRequest) {
+            if (Handlers.joinRequest)
+            {
                 DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
                 Handlers.joinRequest(&du);
             }
@@ -463,38 +469,37 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
         JoinAskQueue.CommitSend();
     }
 
-    if (!isConnected) {
+    if (!isConnected)
+    {
         // if we are not connected, disconnect message last
         std::lock_guard<std::mutex> guard(HandlerMutex);
-        if (wasDisconnected && Handlers.disconnected) {
+        if (wasDisconnected && Handlers.disconnected)
             Handlers.disconnected(LastDisconnectErrorCode, LastDisconnectErrorMessage);
-        }
     }
 }
 
+#ifndef HANDLE_EVENT_REGISTRATION
+#define HANDLE_EVENT_REGISTRATION(handler_name, event)              \
+      if (!Handlers.handler_name && newHandlers->handler_name)      \
+      RegisterForEvent(event);                                    \
+      else if (Handlers.handler_name && !newHandlers->handler_name) \
+      DeregisterForEvent(event)
+#endif
+
 extern "C" DISCORD_EXPORT void Discord_UpdateHandlers(DiscordEventHandlers* newHandlers)
 {
-    if (newHandlers) {
-#define HANDLE_EVENT_REGISTRATION(handler_name, event)              \
-    if (!Handlers.handler_name && newHandlers->handler_name) {      \
-        RegisterForEvent(event);                                    \
-    }                                                               \
-    else if (Handlers.handler_name && !newHandlers->handler_name) { \
-        DeregisterForEvent(event);                                  \
-    }
+   if (newHandlers)
+   {
+      std::lock_guard<std::mutex> guard(HandlerMutex);
+      HANDLE_EVENT_REGISTRATION(joinGame, "ACTIVITY_JOIN");
+      HANDLE_EVENT_REGISTRATION(spectateGame, "ACTIVITY_SPECTATE");
+      HANDLE_EVENT_REGISTRATION(joinRequest, "ACTIVITY_JOIN_REQUEST");
 
-        std::lock_guard<std::mutex> guard(HandlerMutex);
-        HANDLE_EVENT_REGISTRATION(joinGame, "ACTIVITY_JOIN")
-        HANDLE_EVENT_REGISTRATION(spectateGame, "ACTIVITY_SPECTATE")
-        HANDLE_EVENT_REGISTRATION(joinRequest, "ACTIVITY_JOIN_REQUEST")
-
-#undef HANDLE_EVENT_REGISTRATION
-
-        Handlers = *newHandlers;
-    }
-    else {
-        std::lock_guard<std::mutex> guard(HandlerMutex);
-        Handlers = {};
-    }
-    return;
+      Handlers = *newHandlers;
+   }
+   else
+   {
+      std::lock_guard<std::mutex> guard(HandlerMutex);
+      Handlers = {};
+   }
 }

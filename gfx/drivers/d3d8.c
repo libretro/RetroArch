@@ -1078,27 +1078,6 @@ static void d3d8_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
-
    if (!d3d)
       return;
 
@@ -1126,7 +1105,7 @@ static void d3d8_set_osd_msg(void *data,
 }
 
 static bool d3d8_init_internal(d3d8_video_t *d3d,
-      const video_info_t *info, const input_driver_t **input,
+      const video_info_t *info, input_driver_t **input,
       void **input_data)
 {
 #ifdef HAVE_MONITOR
@@ -1237,7 +1216,7 @@ static void d3d8_show_mouse(void *data, bool state)
 }
 
 static void *d3d8_init(const video_info_t *info,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)calloc(1, sizeof(*d3d));
 
@@ -1481,28 +1460,9 @@ static void d3d8_get_overlay_interface(void *data,
 
 static void d3d8_update_title(video_frame_info_t *video_info)
 {
-   const settings_t *settings = config_get_ptr();
 #ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-#endif
 
-   if (settings->bools.video_memory_show)
-   {
-#ifndef __WINRT__
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-#endif
-   }
-
-#ifndef _XBOX
    if (window)
    {
       char title[128];

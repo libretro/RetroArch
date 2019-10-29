@@ -1,9 +1,18 @@
-//
-//  metal_common.h
-//  RetroArch_Metal
-//
-//  Created by Stuart Carnie on 5/14/18.
-//
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018-2019 - Stuart Carnie
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef METAL_COMMON_H__
 #define METAL_COMMON_H__
@@ -25,6 +34,38 @@ extern MTLPixelFormat glslang_format_to_metal(glslang_format fmt);
 extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 #pragma mark - Classes
+
+#import <MetalKit/MetalKit.h>
+
+@interface MetalView : MTKView
+@end
+
+#ifdef HAVE_COCOA_METAL
+
+@protocol ApplePlatform
+
+/*! @brief renderView returns the current render view based on the viewType */
+@property (readonly) id renderView;
+
+/*! @brief isActive returns true if the application has focus */
+@property (readonly) bool hasFocus;
+
+@property (readwrite) apple_view_type_t viewType;
+
+/*! @brief setVideoMode adjusts the video display to the specified mode */
+- (void)setVideoMode:(gfx_ctx_mode_t)mode;
+
+/*! @brief setCursorVisible specifies whether the cursor is visible */
+- (void)setCursorVisible:(bool)v;
+
+/*! @brief controls whether the screen saver should be disabled and
+ * the displays should not sleep.
+ */
+- (bool)setDisableDisplaySleep:(bool)disable;
+@end
+
+extern id<ApplePlatform> apple_platform;
+#endif
 
 @interface FrameView : NSObject
 
@@ -80,7 +121,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (nonatomic, readonly) Uniforms *viewportMVP;
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(const input_driver_t **)input
+                        input:(input_driver_t **)input
                     inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;

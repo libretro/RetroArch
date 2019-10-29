@@ -56,6 +56,9 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch);
 
+uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
+      unsigned width, unsigned height, signed pitch, uint64_t *bytes);
+
 RETRO_END_DECLS
 
 #endif

@@ -35,6 +35,13 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct nbio_buf
+{
+   void *buf;
+   unsigned bufsize;
+   char *path;
+} nbio_buf_t;
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -134,7 +141,7 @@ unsigned input_autoconfigure_get_device_name_index(unsigned i);
 
 void input_autoconfigure_reset(void);
 
-bool input_autoconfigure_connect(
+void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,

@@ -49,6 +49,8 @@
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 #include "../../paths.h"
+#include "platform_win32.h"
+
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
@@ -70,6 +72,79 @@ VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 static bool dwm_composition_disabled;
 
 static bool console_needs_free;
+
+#if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
+#if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
+struct win32_lang_pair
+{
+   unsigned short lang_ident;
+   enum retro_language lang;
+};
+
+/* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
+const struct win32_lang_pair win32_lang_pairs[] =
+{
+   /* array order MUST be kept, always largest ID first */
+   {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
+   {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
+   {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
+   {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+   {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+   {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+   {0x2a, RETRO_LANGUAGE_VIETNAMESE},
+   {0x19, RETRO_LANGUAGE_RUSSIAN},
+   {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+   {0x15, RETRO_LANGUAGE_POLISH},
+   {0x13, RETRO_LANGUAGE_DUTCH},
+   {0x12, RETRO_LANGUAGE_KOREAN},
+   {0x11, RETRO_LANGUAGE_JAPANESE},
+   {0x10, RETRO_LANGUAGE_ITALIAN},
+   {0xc, RETRO_LANGUAGE_FRENCH},
+   {0xa, RETRO_LANGUAGE_SPANISH},
+   {0x9, RETRO_LANGUAGE_ENGLISH},
+   {0x8, RETRO_LANGUAGE_GREEK},
+   {0x7, RETRO_LANGUAGE_GERMAN},
+   {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
+   {0x1, RETRO_LANGUAGE_ARABIC},
+   /* MS does not support Esperanto */
+   /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
+};
+
+unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
+{
+   unsigned i;
+
+   for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
+   {
+      if (win32_lang_pairs[i].lang == lang)
+         return win32_lang_pairs[i].lang_ident;
+   }
+
+   return 0x409; /* fallback to US English */
+}
+
+enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
+{
+   unsigned i;
+
+   for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
+   {
+      if (win32_lang_pairs[i].lang_ident > 0x3ff)
+      {
+         if (langid == win32_lang_pairs[i].lang_ident)
+            return win32_lang_pairs[i].lang;
+      }
+      else
+      {
+         if ((langid & 0x3ff) == win32_lang_pairs[i].lang_ident)
+            return win32_lang_pairs[i].lang;
+      }
+   }
+
+   return RETRO_LANGUAGE_ENGLISH;
+}
+#endif
+#endif
 
 static void gfx_dwm_shutdown(void)
 {
@@ -479,8 +554,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   snprintf(g_defaults.settings.menu,
-         sizeof(g_defaults.settings.menu), "xmb");
+   strlcpy(g_defaults.settings.menu, "xmb", sizeof(g_defaults.settings.menu));
 #endif
 #endif
 }
@@ -549,6 +623,8 @@ static void frontend_win32_attach_console(void)
       if(!AttachConsole( ATTACH_PARENT_PROCESS))
          AllocConsole();
 
+      SetConsoleTitle("Log Console");
+
       if(need_stdout) freopen( "CONOUT$", "w", stdout );
       if(need_stderr) freopen( "CONOUT$", "w", stderr );
 
@@ -591,51 +667,7 @@ enum retro_language frontend_win32_get_user_language(void)
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
    LANGID langid = GetUserDefaultUILanguage();
-   unsigned i;
-
-   struct lang_pair
-   {
-      unsigned short lang_ident;
-      enum retro_language lang;
-   };
-
-   /* https://docs.microsoft.com/en-us/windows/desktop/Intl/language-identifier-constants-and-strings */
-   const struct lang_pair pairs[] =
-   {
-      /* array order MUST be kept, always largest ID first */
-      {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
-      {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
-      {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
-      {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
-      {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
-      {0x2a, RETRO_LANGUAGE_VIETNAMESE},
-      {0x19, RETRO_LANGUAGE_RUSSIAN},
-      {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-      {0x15, RETRO_LANGUAGE_POLISH},
-      {0x13, RETRO_LANGUAGE_DUTCH},
-      {0x12, RETRO_LANGUAGE_KOREAN},
-      {0x11, RETRO_LANGUAGE_JAPANESE},
-      {0x10, RETRO_LANGUAGE_ITALIAN},
-      {0xc, RETRO_LANGUAGE_FRENCH},
-      {0xa, RETRO_LANGUAGE_SPANISH},
-      {0x9, RETRO_LANGUAGE_ENGLISH},
-      {0x8, RETRO_LANGUAGE_GREEK},
-      {0x7, RETRO_LANGUAGE_GERMAN},
-      {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
-      {0x1, RETRO_LANGUAGE_ARABIC},
-      /* MS does not support Esperanto */
-      /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
-   };
-
-   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
-   {
-      if ((langid & pairs[i].lang_ident) == pairs[i].lang_ident)
-      {
-         lang = pairs[i].lang;
-         break;
-      }
-   }
+   lang = win32_get_retro_lang_from_langid(langid);
 #endif
 #endif
    return lang;

@@ -569,10 +569,6 @@ void Parser::parse(const Instruction &instruction)
 		type.image.sampled = ops[6];
 		type.image.format = static_cast<ImageFormat>(ops[7]);
 		type.image.access = (length >= 9) ? static_cast<AccessQualifier>(ops[8]) : AccessQualifierMax;
-
-		if (type.image.sampled == 0)
-			SPIRV_CROSS_THROW("OpTypeImage Sampled parameter must not be zero.");
-
 		break;
 	}
 

@@ -1,4 +1,4 @@
-BUILD_PRX          = 0
+BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
@@ -31,13 +31,13 @@ ifeq ($(MUTE_WARNINGS), 1)
 endif
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include -I$(CDVD_DIR)/ee
-INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
-INCDIR += -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
+INCDIR += -Ips2 -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
+INCDIR += -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 GPVAL = -G0
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG
+RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
@@ -45,6 +45,9 @@ LDFLAGS += -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L$(CD
 LIBS += -lretro_ps2 -lgskit -ldmakit -lgskit_toolkit -laudsrv -lmf -lpadx -lmtap -lmc -lhdd -lsdl -lfileXio -lz
 LIBS += -lcdvdfs -lpatches -lpoweroff
 
+ifeq ($(BUILD_FOR_PCSX2), 1)
+RARCH_DEFINES += -DBUILD_FOR_PCSX2
+endif
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS

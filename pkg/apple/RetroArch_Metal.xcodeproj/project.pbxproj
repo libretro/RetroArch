@@ -408,8 +408,8 @@
 		05A8C78820DB72F100FF7857 /* gl_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_raster_font.c; sourceTree = "<group>"; };
 		05A8C78920DB72F100FF7857 /* vulkan_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_raster_font.c; sourceTree = "<group>"; };
 		05A8C78D20DB72F100FF7857 /* video_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_filter.c; sourceTree = "<group>"; };
-		05A8C78F20DB72F100FF7857 /* slang_preprocess.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_preprocess.cpp; sourceTree = "<group>"; };
 		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glslang_util.h; sourceTree = "<group>"; };
+		05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
 		05A8C79120DB72F100FF7857 /* shader_glsl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_glsl.c; sourceTree = "<group>"; };
 		05A8C79220DB72F100FF7857 /* slang_process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_process.h; sourceTree = "<group>"; };
 		05A8C79320DB72F100FF7857 /* slang_reflection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_reflection.h; sourceTree = "<group>"; };
@@ -418,8 +418,8 @@
 		05A8C79620DB72F100FF7857 /* slang_reflection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_reflection.cpp; sourceTree = "<group>"; };
 		05A8C79720DB72F100FF7857 /* shader_glsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_glsl.h; sourceTree = "<group>"; };
 		05A8C79820DB72F100FF7857 /* shader_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_null.c; sourceTree = "<group>"; };
-		05A8C79920DB72F100FF7857 /* glslang_util.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glslang_util.cpp; sourceTree = "<group>"; };
-		05A8C79A20DB72F100FF7857 /* slang_preprocess.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_preprocess.h; sourceTree = "<group>"; };
+		05A8C79920DB72F100FF7857 /* glslang_util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = glslang_util.c; sourceTree = "<group>"; };
+		05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glslang_util_cxx.cpp; sourceTree = "<group>"; };
 		05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_gl_cg.c; sourceTree = "<group>"; };
 		05A8C79C20DB72F100FF7857 /* shader_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_vulkan.h; sourceTree = "<group>"; };
 		05A8C79D20DB72F100FF7857 /* video_crt_switch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_crt_switch.h; sourceTree = "<group>"; };
@@ -1187,16 +1187,16 @@
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C79920DB72F100FF7857 /* glslang_util.cpp */,
+				05A8C79920DB72F100FF7857 /* glslang_util.c */,
+				05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */,
 				05A8C79020DB72F100FF7857 /* glslang_util.h */,
+				05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */,
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
 				05A8C79720DB72F100FF7857 /* shader_glsl.h */,
 				05A8C79820DB72F100FF7857 /* shader_null.c */,
 				05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */,
 				05A8C79C20DB72F100FF7857 /* shader_vulkan.h */,
-				05A8C78F20DB72F100FF7857 /* slang_preprocess.cpp */,
-				05A8C79A20DB72F100FF7857 /* slang_preprocess.h */,
 				05A8C79420DB72F100FF7857 /* slang_process.cpp */,
 				05A8C79220DB72F100FF7857 /* slang_process.h */,
 				05A8C79620DB72F100FF7857 /* slang_reflection.cpp */,
@@ -1633,7 +1633,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_MENU_WIDGETS=1 HAVE_QT=1 MOC=${QT_INSTALL}/bin/moc generate\n";
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_MENU_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1848,6 +1848,7 @@
 					"$(SRCBASE)",
 					"$(SRCBASE)/gfx/include",
 					"$(SRCBASE)/libretro-common/include",
+					"$(SRCBASE)/libretro-common/include/compat/zlib",
 					"$(DEPS_DIR)/libFLAC/include",
 					"$(DEPS_DIR)/7zip",
 					"$(DEPS_DIR)/rcheevos/include",
@@ -1903,6 +1904,7 @@
 					"$(SRCBASE)",
 					"$(SRCBASE)/gfx/include",
 					"$(SRCBASE)/libretro-common/include",
+					"$(SRCBASE)/libretro-common/include/compat/zlib",
 					"$(DEPS_DIR)/libFLAC/include",
 					"$(DEPS_DIR)/7zip",
 					"$(DEPS_DIR)/rcheevos/include",

@@ -16,6 +16,7 @@
 
 #include "shader_vulkan.h"
 #include "glslang_util.h"
+#include "glslang_util_cxx.h"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -2348,7 +2349,7 @@ void Pass::build_commands(
    }
    else
    {
-      const VkViewport vp = {
+      const VkViewport _vp = {
          0.0f, 0.0f,
          float(current_framebuffer_size.width),
          float(current_framebuffer_size.height),
@@ -2362,7 +2363,7 @@ void Pass::build_commands(
          },
       };
 
-      vkCmdSetViewport(cmd, 0, 1, &vp);
+      vkCmdSetViewport(cmd, 0, 1, &_vp);
       vkCmdSetScissor(cmd, 0, 1, &sci);
    }
 
@@ -2886,14 +2887,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, ConfigDeleter> conf{ config_file_new(path) };
+   unique_ptr<config_file_t, ConfigDeleter> conf{ video_shader_read_preset(path) };
    if (!conf)
       return nullptr;
 
    if (!video_shader_read_conf_preset(conf.get(), shader.get()))
       return nullptr;
-
-   video_shader_resolve_relative(shader.get(), path);
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
    auto tmpinfo          = *info;

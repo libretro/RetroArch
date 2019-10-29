@@ -227,7 +227,8 @@ static void sdl_gfx_set_handles(void)
 #endif
 }
 
-static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *sdl_gfx_init(const video_info_t *video,
+      input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
    const SDL_VideoInfo *video_info = NULL;
@@ -441,29 +442,6 @@ static void sdl_set_filtering(void *data, unsigned index, bool smooth)
    vid->scaler.scaler_type = smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
 }
 
-static void sdl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
-{
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
-}
-
 static void sdl_apply_state_changes(void *data)
 {
    (void)data;
@@ -538,7 +516,7 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   sdl_set_aspect_ratio,
+   NULL,
    sdl_apply_state_changes,
    sdl_set_texture_frame,
    sdl_set_texture_enable,

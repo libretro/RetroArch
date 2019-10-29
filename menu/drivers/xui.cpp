@@ -453,13 +453,7 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void xui_render_background(void)
 {
-#if 0
-   /* TODO/FIXME - refactor this */
-   if (menu_display_libretro_running())
-      XuiElementSetShow(m_background, FALSE);
-   else
-#endif
-      XuiElementSetShow(m_background, TRUE);
+   XuiElementSetShow(m_background, TRUE);
 }
 
 static void xui_render_messagebox(void *data, const char *message)
@@ -525,7 +519,9 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void xui_render(void *data, bool is_idle)
+static void xui_render(void *data,
+      unsigned width, unsigned height,
+      bool is_idle)
 {
    size_t end, i, selection, fb_pitch;
    unsigned fb_width, fb_height;
@@ -541,7 +537,6 @@ static void xui_render(void *data, bool is_idle)
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-         && menu_driver_is_alive()
          && !msg_force
       )
       return;
@@ -726,7 +721,6 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* load_image */
    "xui",
    xui_environ,
-   NULL,          /* pointer_tap */
    NULL,          /* update_thumbnail_path */
    NULL,          /* update_thumbnail_image */
    NULL,          /* refresh_thumbnail_image */

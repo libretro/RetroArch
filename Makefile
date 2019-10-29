@@ -1,6 +1,6 @@
 HAVE_FILE_LOGGER=1
-HAVE_CC_RESAMPLER=1
-NEED_CXX_LINKER=0
+NEED_CXX_LINKER?=0
+NEED_GOLD_LINKER?=0
 MISSING_DECLS   =0
 
 ifneq ($(C90_BUILD),)
@@ -25,6 +25,10 @@ DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 OBJDIR_BASE := obj-unix
 
+ifeq ($(NEED_GOLD_LINKER), 1)
+   LDFLAGS += -fuse-ld=gold
+endif
+
 ifeq ($(DEBUG), 1)
    OBJDIR := $(OBJDIR_BASE)/debug
    CFLAGS ?= -O0 -g
@@ -47,6 +51,10 @@ endif
 ifneq ($(findstring DOS,$(OS)),)
    DEF_FLAGS += -march=i386
    LDFLAGS += -lemu
+endif
+
+ifneq ($(findstring FPGA,$(OS)),)
+   DEFINES += -DHAVE_FPGA
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -192,6 +200,8 @@ config.mk: configure qb/*
 	@exit 1
 endif
 endif
+
+SYMBOL_MAP := -Wl,-Map=output.map
 
 retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)

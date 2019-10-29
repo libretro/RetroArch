@@ -24,7 +24,6 @@
 
 #include "SDL.h"
 
-#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../retroarch.h"
@@ -36,7 +35,6 @@
 
 typedef struct sdl_input
 {
-   bool blocked;
    const input_device_driver_t *joypad;
 
    int mouse_x, mouse_y;
@@ -98,7 +96,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       unsigned port, unsigned id, enum input_device_type *device)
 {
    /* Auto-binds are per joypad, not per user. */
-   const uint16_t joykey  = (binds[id].joykey != NO_BTN)
+   const uint64_t joykey  = (binds[id].joykey != NO_BTN)
       ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
    const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
       ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
@@ -109,7 +107,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       return 1;
    }
 
-   if (joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, joykey))
+   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;
@@ -224,7 +222,6 @@ static int16_t sdl_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                 = 0;
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t            *sdl = (sdl_input_t*)data;
 
@@ -234,27 +231,35 @@ static int16_t sdl_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
+
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (sdl_joypad_device_state(
                         sdl, joypad_info, binds[port], port, i, &type))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             if (id < RARCH_BIND_LIST_END)
-               ret = sdl_joypad_device_state(sdl,
-                     joypad_info, binds[port], port, id, &type);
+               if (sdl_joypad_device_state(sdl,
+                     joypad_info, binds[port], port, id, &type))
+                  return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
             int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(sdl->joypad,
-                     joypad_info, port, idx, id, binds[port]);
+                        joypad_info, port, idx, id, binds[port]);
             return ret;
          }
          break;
@@ -263,7 +268,8 @@ static int16_t sdl_input_state(void *data,
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return sdl_pointer_device_state(sdl, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+            return sdl_pointer_device_state(sdl, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && sdl_key_pressed(id);
@@ -414,22 +420,6 @@ static uint64_t sdl_get_capabilities(void *data)
    return caps;
 }
 
-static bool sdl_keyboard_mapping_is_blocked(void *data)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-   if (!sdl)
-      return false;
-   return sdl->blocked;
-}
-
-static void sdl_keyboard_mapping_set_block(void *data, bool value)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-   if (!sdl)
-      return;
-   sdl->blocked = value;
-}
-
 input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
@@ -448,6 +438,5 @@ input_driver_t input_sdl = {
    sdl_set_rumble,
    sdl_get_joypad_driver,
    NULL,
-   sdl_keyboard_mapping_is_blocked,
-   sdl_keyboard_mapping_set_block,
+   false
 };

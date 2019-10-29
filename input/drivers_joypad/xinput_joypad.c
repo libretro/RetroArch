@@ -35,6 +35,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
@@ -127,7 +129,8 @@ typedef uint32_t (__stdcall *XInputSetState_t)(uint32_t, XINPUT_VIBRATION*);
 static XInputSetState_t g_XInputSetState;
 
 /* Guide button may or may not be available */
-static bool g_xinput_guide_button_supported;
+static bool g_xinput_guide_button_supported = false;
+static unsigned g_xinput_num_buttons        = 0;
 
 typedef struct
 {
@@ -144,7 +147,8 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 #ifdef HAVE_DINPUT
    return g_xinput_pad_indexes[pad];
 #else
-   return pad < MAX_PADS && g_xinput_states[pad].connected ? pad : -1;
+   return pad < DEFAULT_MAX_PADS 
+      && g_xinput_states[pad].connected ? pad : -1;
 #endif
 }
 
@@ -226,7 +230,7 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
    if (!g_xinput_dll)
       if (!load_xinput_dll())
-         return false;
+         goto error;
 
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
@@ -261,7 +265,7 @@ static bool xinput_joypad_init(void *data)
          dylib_close(g_xinput_dll);
 #endif
          /* DLL was loaded but did not contain the correct function. */
-         return false; 
+         goto error;
       }
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
@@ -278,7 +282,7 @@ static bool xinput_joypad_init(void *data)
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif
-      return false; /* DLL was loaded but did not contain the correct function. */
+      goto error; /* DLL was loaded but did not contain the correct function. */
    }
 
    /* Zero out the states. */
@@ -298,9 +302,9 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
 #ifdef __WINRT__
-      return true;
+      goto succeeded;
 #else
-      return false;
+      goto error;
 #endif
 
    RARCH_LOG("[XInput]: Pads connected: %d\n",
@@ -317,7 +321,7 @@ static bool xinput_joypad_init(void *data)
    if (!dinput_joypad.init(data))
    {
       g_xinput_block_pads = false;
-      return false;
+      goto error;
    }
 #endif
 
@@ -342,18 +346,27 @@ static bool xinput_joypad_init(void *data)
                   vid, pid, dinput_index, xinput_joypad_name(j), j);
 #endif
 
-         if (!input_autoconfigure_connect(
+         input_autoconfigure_connect(
                xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
                j,
                vid,
-               pid))
-            input_config_set_device_name(j, xinput_joypad_name(j));
+               pid);
       }
    }
 
+#ifdef __WINRT__
+succeeded:
+#endif
+   /* non-hat button. */
+   g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
    return true;
+
+error:
+   /* non-hat button. */
+   g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
+   return false;
 }
 
 static bool xinput_joypad_query_pad(unsigned pad)
@@ -411,7 +424,6 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word    = 0;
-   unsigned num_buttons = 0;
    unsigned hat_dir     = 0;
    int xuser            = pad_index_to_xuser_index(port_num);
 
@@ -443,10 +455,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false; /* hat requested and no hat button down. */
    }
 
-   /* non-hat button. */
-   num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-
-   if (joykey < num_buttons)
+   if (joykey < g_xinput_num_buttons)
       return btn_word & button_index_to_bitmap_code[joykey];
 
    return false;
@@ -531,10 +540,13 @@ static void xinput_joypad_poll(void)
 #ifdef HAVE_DINPUT
       if (g_xinput_states[i].connected)
       {
-         if (g_XInputGetStateEx && g_XInputGetStateEx(i,
+         if (g_XInputGetStateEx(i,
                   &(g_xinput_states[i].xstate))
                == ERROR_DEVICE_NOT_CONNECTED)
+         {
             g_xinput_states[i].connected = false;
+            input_autoconfigure_disconnect(i, xinput_joypad_name(i));
+         }
       }
 #else
       /* Normally, dinput handles device insertion/removal for us, but
@@ -542,7 +554,7 @@ static void xinput_joypad_poll(void)
       /* Also note that on UWP, the controllers are not available on startup
        * and are instead 'plugged in' a moment later because Microsoft reasons */
       /* TODO: This may be bad for performance? */
-      bool new_connected = g_XInputGetStateEx && g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
+      bool new_connected = g_XInputGetStateEx(i, &(g_xinput_states[i].xstate)) != ERROR_DEVICE_NOT_CONNECTED;
       if (new_connected != g_xinput_states[i].connected)
       {
          if (new_connected)
@@ -552,10 +564,10 @@ static void xinput_joypad_poll(void)
             xinput_joypad_init(NULL);
             return;
          }
-         else
-         {
-            g_xinput_states[i].connected = new_connected;
-         }
+
+         g_xinput_states[i].connected = new_connected;
+         if (!g_xinput_states[i].connected)
+            input_autoconfigure_disconnect(i, xinput_joypad_name(i));
       }
 #endif
    }

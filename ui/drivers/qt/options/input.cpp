@@ -39,24 +39,24 @@ QWidget *InputPage::widget()
    QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->add(MENU_ENUM_LABEL_INPUT_MAX_USERS);
-   layout->add(MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS);
-   layout->add(MENU_ENUM_LABEL_QUIT_PRESS_TWICE);
-   layout->add(MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS);
-   layout->add(MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION);
-   layout->add(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR);
-   layout->add(MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO);
-   layout->add(MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL);
-   layout->add(MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU);
-   layout->add(MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE);
-   layout->add(MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE);
-   layout->add(MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD);
-   layout->add(MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE);
-   layout->add(MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY);
-   layout->add(MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT);
-   layout->add(MENU_ENUM_LABEL_INPUT_BIND_HOLD);
-   layout->add(MENU_ENUM_LABEL_INPUT_TURBO_PERIOD);
-   layout->add(MENU_ENUM_LABEL_INPUT_DUTY_CYCLE);
+   {
+      unsigned i;
+      file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
+      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST);
+
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+
+         if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
+            break;
+
+         layout->add(cbs->enum_idx);
+      }
+
+      file_list_free(list);
+   }
 
    widget->setLayout(layout);
 

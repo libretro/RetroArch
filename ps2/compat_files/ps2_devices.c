@@ -179,8 +179,9 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 
       retries--;
    };
-
-   fileXioDclose(openFile);
+   if (openFile > 0) {
+      fileXioDclose(openFile);
+   }
    
    return openFile >= 0;
 }

@@ -6,7 +6,7 @@ LD	 := g++
 OBJS   := main.o
 INCLUDES := -I.
 
-CFLAGS   := -O2 -Wall -std=c++14
+CFLAGS   := -O3 -Wall -std=c++14 -DNDEBUG
 LDFLAGS  := -lz
 
 ifneq ($(findstring Linux,$(shell uname -a)),)

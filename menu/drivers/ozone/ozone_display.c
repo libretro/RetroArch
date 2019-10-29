@@ -30,7 +30,6 @@
 #include "../../menu_input.h"
 #include "../../menu_animation.h"
 
-#include "../../widgets/menu_input_dialog.h"
 #include "../../widgets/menu_osk.h"
 
 static void ozone_cursor_animation_cb(void *userdata);

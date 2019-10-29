@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <rhash.h>
 
@@ -753,9 +754,7 @@ bool task_push_overlay_load_default(
    if (!loader)
       return false;
 
-   conf = config_file_new(overlay_path);
-
-   if (!conf)
+   if (!(conf = config_file_new_from_path_to_string(overlay_path)))
    {
       free(loader);
       return false;

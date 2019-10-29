@@ -56,6 +56,8 @@ void memstream_set_buffer(uint8_t *buffer, uint64_t size);
 
 uint64_t memstream_get_last_size(void);
 
+uint64_t memstream_get_ptr(memstream_t *stream);
+
 RETRO_END_DECLS
 
 #endif

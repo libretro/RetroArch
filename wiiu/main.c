@@ -84,12 +84,7 @@ void _start(int argc, char **argv)
    fsdev_init();
    main(argc, argv);
    fsdev_exit();
-
-   /* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
-      for relocation" then uncomment this */
-#if 0
    __fini();
-#endif
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);

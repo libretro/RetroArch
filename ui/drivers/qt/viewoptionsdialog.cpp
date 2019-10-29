@@ -164,6 +164,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    addCategory(new RecordingCategory(this));
    addCategory(new OnscreenDisplayCategory(this));
    addCategory(new UserInterfaceCategory(mainwindow, this));
+   addCategory(new AIServiceCategory(this));
    addCategory(new AchievementsCategory(this));
    addCategory(new NetworkCategory(this));
    addCategory(new PlaylistsCategory(this));

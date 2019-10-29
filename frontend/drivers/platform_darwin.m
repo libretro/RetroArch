@@ -358,6 +358,13 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
             resolved_home_dir_buf,
             sizeof(home_dir_buf)) < sizeof(home_dir_buf));
    }
+    char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
+    {
+        retro_assert(strlcpy(bundle_path_buf,
+                             resolved_bundle_dir_buf,
+                             sizeof(bundle_path_buf)) < sizeof(bundle_path_buf));
+    }
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
@@ -440,10 +447,12 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE
     char assets_zip_path[PATH_MAX_LENGTH];
+#if TARGET_OS_IOS
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
+#endif
 
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 
@@ -545,6 +554,51 @@ static int frontend_darwin_get_rating(void)
    /* iPad Air 2 */
    if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
       return 18;
+
+   /* iPad Pro (12.9 Inch) */
+   if (strstr(model, "iPad6,7") || strstr(model, "iPad6,8"))
+     return 19;
+
+   /* iPad Pro (9.7 Inch) */
+   if (strstr(model, "iPad6,3") || strstr(model, "iPad6,4"))
+     return 19;
+
+   /* iPad 5th Generation */
+   if (strstr(model, "iPad6,11") || strstr(model, "iPad6,12"))
+     return 19;
+
+   /* iPad Pro (12.9 Inch 2nd Generation) */
+   if (strstr(model, "iPad7,1") || strstr(model, "iPad7,2"))
+     return 19;
+
+   /* iPad Pro (10.5 Inch) */
+   if (strstr(model, "iPad7,3") || strstr(model, "iPad7,4"))
+     return 19;
+
+   /* iPad Pro 6th Generation) */
+   if (strstr(model, "iPad7,5") || strstr(model, "iPad7,6"))
+     return 19;
+
+   /* iPad Pro (11 Inch) */
+   if (     strstr(model, "iPad8,1")
+         || strstr(model, "iPad8,2")
+         || strstr(model, "iPad8,3")
+         || strstr(model, "iPad8,4")
+      )
+      return 19;
+
+   /* iPad Pro (12.9 3rd Generation) */
+    if (   strstr(model, "iPad8,5")
+        || strstr(model, "iPad8,6")
+        || strstr(model, "iPad8,7")
+        || strstr(model, "iPad8,8")
+       )
+       return 19;
+
+   /* iPad Air 3rd Generation) */
+    if (   strstr(model, "iPad11,3")
+        || strstr(model, "iPad11,4"))
+       return 19;
 
    /* TODO/FIXME -
       - more ratings for more systems

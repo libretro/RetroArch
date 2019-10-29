@@ -31,6 +31,8 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
+#include <file/file_path.h>
+
 #include "../font_driver.h"
 
 #define CT_ATLAS_ROWS 16
@@ -262,13 +264,14 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    ct_font_renderer_t *handle = (ct_font_renderer_t*)
       calloc(1, sizeof(*handle));
 
-   if (!handle)
+   if (!handle || !path_is_valid(font_path))
    {
       err = 1;
       goto error;
    }
 
-   cf_font_path = CFStringCreateWithCString(NULL, font_path, kCFStringEncodingASCII);
+   cf_font_path = CFStringCreateWithCString(
+         NULL, font_path, kCFStringEncodingASCII);
 
    if (!cf_font_path)
    {
@@ -276,10 +279,11 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   url = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false);
+   url          = CFURLCreateWithFileSystemPath(
+         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false);
    dataProvider = CGDataProviderCreateWithURL(url);
-   theCGFont = CGFontCreateWithDataProvider(dataProvider);
-   face = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL);
+   theCGFont    = CGFontCreateWithDataProvider(dataProvider);
+   face         = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL);
 
    if (!face)
    {

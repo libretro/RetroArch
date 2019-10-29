@@ -36,13 +36,10 @@
 #include <streams/file_stream.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifndef PI
 #define PI 3.14159265359f
-#endif
-
-#ifndef max
-#define max(x, y) x >= y ? x : y
 #endif
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
@@ -67,9 +64,7 @@ static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
 static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
 
-static bool menu_widgets_inited              = false;
 static uint64_t menu_widgets_frame_count     = 0;
-static menu_animation_ctx_tag generic_tag    = (uintptr_t) &menu_widgets_inited;
 
 /* Font data */
 static font_data_t *font_regular;
@@ -84,6 +79,9 @@ static float menu_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
 };
+
+/* FPS */
+static char menu_widgets_fps_text[255] = {0};
 
 /* Achievement notification */
 static char *cheevo_title              = NULL;
@@ -184,6 +182,8 @@ static menu_texture_item msg_queue_icon_outline  = 0;
 static menu_texture_item msg_queue_icon_rect     = 0;
 static bool msg_queue_has_icons                  = false;
 
+extern menu_animation_ctx_tag menu_widgets_generic_tag;
+
 /* there can only be one message animation at a time to avoid confusing users */
 static bool widgets_moving   = false;
 
@@ -241,13 +241,6 @@ static float volume_text_alpha             = 0.0f;
 static menu_animation_ctx_tag volume_tag   = (uintptr_t) &volume_alpha;
 static bool volume_mute                    = false;
 
-/* FPS */
-static char menu_widgets_fps_text[255];
-
-/* Status icons */
-static bool menu_widgets_paused              = false;
-static bool menu_widgets_fast_forward        = false;
-static bool menu_widgets_rewinding           = false;
 
 /* Screenshot */
 static float screenshot_alpha                = 0.0f;
@@ -309,15 +302,6 @@ static unsigned msg_queue_task_hourglass_x;
 
 static unsigned generic_message_height; /* used for both generic and libretro messages */
 
-bool menu_widgets_set_paused(bool is_paused)
-{
-   if (!menu_widgets_inited)
-      return false;
-
-   menu_widgets_paused = is_paused;
-   return true;
-}
-
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
    menu_widget_msg_t *msg = (menu_widget_msg_t*) userdata;
@@ -329,7 +313,7 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
-bool menu_widgets_msg_queue_push(
+void menu_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -475,13 +459,13 @@ bool menu_widgets_msg_queue_push(
             {
                menu_animation_ctx_entry_t entry;
 
-               entry.easing_enum = EASING_OUT_QUAD;
-               entry.tag = (uintptr_t) NULL;
-               entry.duration = MSG_QUEUE_ANIMATION_DURATION*2;
-               entry.target_value = msg_queue_height/2.0f;
-               entry.subject = &msg_widget->msg_transition_animation;
-               entry.cb = msg_widget_msg_transition_animation_done;
-               entry.userdata = msg_widget;
+               entry.easing_enum    = EASING_OUT_QUAD;
+               entry.tag            = (uintptr_t) msg_widget;
+               entry.duration       = MSG_QUEUE_ANIMATION_DURATION*2;
+               entry.target_value   = msg_queue_height/2.0f;
+               entry.subject        = &msg_widget->msg_transition_animation;
+               entry.cb             = msg_widget_msg_transition_animation_done;
+               entry.userdata       = msg_widget;
 
                menu_animation_push(&entry);
             }
@@ -501,8 +485,6 @@ bool menu_widgets_msg_queue_push(
          msg_widget->task_progress     = task->progress;
       }
    }
-
-   return true;
 }
 
 static void menu_widgets_unfold_end(void *userdata)
@@ -525,7 +507,7 @@ static void menu_widgets_move_end(void *userdata)
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
       entry.easing_enum    = EASING_OUT_QUAD;
       entry.subject        = &unfold->unfold;
-      entry.tag            = generic_tag;
+      entry.tag            = (uintptr_t) unfold;
       entry.target_value   = 1.0f;
       entry.userdata       = unfold;
 
@@ -577,9 +559,9 @@ static void menu_widgets_msg_queue_move(void)
          entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
          entry.easing_enum    = EASING_OUT_QUAD;
          entry.subject        = &msg->offset_y;
-         entry.tag            = generic_tag;
+         entry.tag            = (uintptr_t) msg;
          entry.target_value   = y;
-         entry.userdata       = unfold; 
+         entry.userdata       = unfold;
 
          menu_animation_push(&entry);
 
@@ -608,6 +590,10 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
    /* Kill all animations */
    menu_timer_kill(&msg->hourglass_timer);
    menu_animation_kill_by_tag(&tag);
+
+   /* Kill all timers */
+   if (msg->expiration_timer_started)
+      menu_timer_kill(&msg->expiration_timer);
 
    /* Free it */
    if (msg->msg)
@@ -657,7 +643,7 @@ static void menu_widgets_msg_queue_kill(unsigned idx)
    entry.cb             = NULL;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = generic_tag;
+   entry.tag            = (uintptr_t) msg;
    entry.userdata       = NULL;
    entry.subject        = &msg->offset_y;
    entry.target_value   = msg->offset_y - msg_queue_height/4;
@@ -746,7 +732,7 @@ static void menu_widgets_screenshot_end(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &screenshot_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = -((float)screenshot_height);
    entry.userdata       = NULL;
 
@@ -791,24 +777,21 @@ static void menu_widgets_hourglass_tick(void *userdata)
 
    menu_animation_ctx_entry_t entry;
 
-   entry.easing_enum = EASING_OUT_QUAD;
-   entry.tag = tag;
-   entry.duration = HOURGLASS_DURATION;
-   entry.target_value = -(2 * PI);
-   entry.subject = &msg->hourglass_rotation;
-   entry.cb = menu_widgets_hourglass_end;
-   entry.userdata = msg;
+   entry.easing_enum    = EASING_OUT_QUAD;
+   entry.tag            = tag;
+   entry.duration       = HOURGLASS_DURATION;
+   entry.target_value   = -(2 * PI);
+   entry.subject        = &msg->hourglass_rotation;
+   entry.cb             = menu_widgets_hourglass_end;
+   entry.userdata       = msg;
 
    menu_animation_push(&entry);
 }
 
-void menu_widgets_iterate(void)
+void menu_widgets_iterate(unsigned width, unsigned height)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
-
-   if (!menu_widgets_inited)
-      return;
 
    /* Messages queue */
 
@@ -849,7 +832,7 @@ void menu_widgets_iterate(void)
       }
 
       /* Start expiration timer if not associated to a task */
-      if (msg_widget->task_ptr == NULL)
+      if (!msg_widget->task_ptr)
       {
          menu_widgets_start_msg_expiration_timer(msg_widget, MSG_QUEUE_ANIMATION_DURATION*2 + msg_widget->duration);
       }
@@ -873,7 +856,7 @@ void menu_widgets_iterate(void)
       if (!msg)
          continue;
 
-      if (msg->task_ptr != NULL && (msg->task_finished || msg->task_cancelled))
+      if (msg->task_ptr && (msg->task_finished || msg->task_cancelled))
          menu_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
 
       if (msg->expired && !widgets_moving)
@@ -887,12 +870,11 @@ void menu_widgets_iterate(void)
    if (screenshot_filename[0] != '\0')
    {
       menu_timer_ctx_entry_t timer;
-      unsigned width;
-
       video_driver_texture_unload(&screenshot_texture);
-      menu_display_reset_textures_list(screenshot_filename, "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR, &screenshot_texture_width, &screenshot_texture_height);
 
-      video_driver_get_size(&width, NULL);
+      menu_display_reset_textures_list(screenshot_filename,
+            "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR,
+            &screenshot_texture_width, &screenshot_texture_height);
 
       screenshot_height = settings->floats.video_font_size * 4;
       screenshot_width  = width;
@@ -999,14 +981,13 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
    if (msg->task_finished)
    {
       if (msg->task_error)
-         snprintf(task_percentage, sizeof(task_percentage), "Task failed");
+         strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
       else
-         snprintf(task_percentage, sizeof(task_percentage), " ");
+         strlcpy(task_percentage, " ", sizeof(task_percentage));
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
-   {
-      snprintf(task_percentage, sizeof(task_percentage), "%i%%", msg->task_progress);
-   }
+      snprintf(task_percentage, sizeof(task_percentage),
+            "%i%%", msg->task_progress);
 
    rect_width = simple_widget_padding + msg->width + task_percentage_offset;
    bar_width  = rect_width * msg->task_progress/100.0f;
@@ -1293,9 +1274,6 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    int top_right_x_advance = video_info->width;
 
    settings_t *settings = config_get_ptr();
-
-   if (!menu_widgets_inited)
-      return;
 
    menu_widgets_frame_count++;
 
@@ -1645,12 +1623,15 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* FPS Counter */
-   if (video_info->fps_show || video_info->framecount_show)
+   if (     video_info->fps_show 
+         || video_info->framecount_show
+         || video_info->memory_show
+         )
    {
-      const char *text      = *menu_widgets_fps_text == '\0' ? "n/a" : menu_widgets_fps_text;
+      const char *text      = *menu_widgets_fps_text == '\0' ? "N/A" : menu_widgets_fps_text;
 
-      int text_width  = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
-      int total_width = text_width + simple_widget_padding * 2;
+      int text_width        = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
+      int total_width       = text_width + simple_widget_padding * 2;
 
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1672,17 +1653,17 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    }
 
    /* Indicators */
-   if (menu_widgets_paused)
+   if (video_info->widgets_is_paused)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (menu_widgets_fast_forward)
+   if (video_info->widgets_is_fast_forwarding)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (menu_widgets_rewinding)
+   if (video_info->widgets_is_rewinding)
       top_right_x_advance -= menu_widgets_draw_indicator(video_info,
          menu_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_REWINDING);
@@ -1719,58 +1700,45 @@ void menu_widgets_frame(video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-void menu_widgets_init(bool video_is_threaded)
+bool menu_widgets_init(bool video_is_threaded)
 {
-   if (menu_widgets_inited)
-      return;
-
    if (!menu_display_init_first_driver(video_is_threaded))
-      goto err;
+      goto error;
 
    menu_widgets_frame_count = 0;
-
-   menu_widgets_fps_text[0] = '\0';
 
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
    if (!msg_queue)
-      goto err;
+      goto error;
 
    current_msgs = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!current_msgs)
-      goto err;
+      goto error;
 
    if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
-      goto err;
+      goto error;
 
-   menu_widgets_inited = true;
+   return true;
 
-   return;
-err:
-   menu_widgets_free();
+error:
+   if (menu_widgets_ready())
+      menu_widgets_free();
+   return false;
 }
 
-void menu_widgets_context_reset(bool is_threaded)
+void menu_widgets_context_reset(bool is_threaded,
+      unsigned width, unsigned height)
 {
+   int i;
    char xmb_path[PATH_MAX_LENGTH];
+   char monochrome_png_path[PATH_MAX_LENGTH];
    char menu_widgets_path[PATH_MAX_LENGTH];
    char theme_path[PATH_MAX_LENGTH];
-   int i;
-
-   char monochrome_png_path[PATH_MAX_LENGTH];
-
    char ozone_path[PATH_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
-
    settings_t *settings = config_get_ptr();
-
-   unsigned video_info_width;
-
-   if (!menu_widgets_inited)
-      return;
-
-   video_driver_get_size(&video_info_width, NULL);
 
    /* Textures paths */
    fill_pathname_join(
@@ -1859,7 +1827,7 @@ void menu_widgets_context_reset(bool is_threaded)
    }
 
    msg_queue_text_scale_factor      = 0.69f;
-   msg_queue_base_width             = video_info_width / 4;
+   msg_queue_base_width             = width / 4;
    msg_queue_spacing                = msg_queue_height / 3;
    msg_queue_glyph_width            = glyph_width * msg_queue_text_scale_factor;
    msg_queue_rect_start_x           = msg_queue_spacing + msg_queue_icon_size_x;
@@ -1892,8 +1860,6 @@ void menu_widgets_context_reset(bool is_threaded)
 void menu_widgets_context_destroy(void)
 {
    int i;
-   if (!menu_widgets_inited)
-      return;
 
    /* TODO: Dismiss onscreen notifications that have been freed */
 
@@ -1933,15 +1899,11 @@ static void menu_widgets_achievement_free(void *userdata)
 void menu_widgets_free(void)
 {
    size_t i;
-
-   if (!menu_widgets_inited)
-      return;
-
-   menu_widgets_inited = false;
+   menu_animation_ctx_tag libretro_tag;
 
    /* Kill any pending animation */
    menu_animation_kill_by_tag(&volume_tag);
-   menu_animation_kill_by_tag(&generic_tag);
+   menu_animation_kill_by_tag(&menu_widgets_generic_tag);
 
    /* Purge everything from the fifo */
    if (msg_queue)
@@ -1990,7 +1952,10 @@ void menu_widgets_free(void)
    generic_message_alpha = 0.0f;
 
    /* Libretro message */
+   libretro_tag = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
+   menu_timer_kill(&libretro_message_timer);
+   menu_animation_kill_by_tag(&libretro_tag);
 
    /* Volume */
    volume_alpha = 0.0f;
@@ -2019,15 +1984,12 @@ static void menu_widgets_volume_timer_end(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_volume_update_and_show(void)
+void menu_widgets_volume_update_and_show(void)
 {
    settings_t *settings = config_get_ptr();
    bool mute            = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
    float new_volume     = settings->floats.audio_volume;
    menu_timer_ctx_entry_t entry;
-
-   if (!menu_widgets_inited)
-      return false;
 
    menu_animation_kill_by_tag(&volume_tag);
 
@@ -2042,37 +2004,12 @@ bool menu_widgets_volume_update_and_show(void)
    entry.userdata    = NULL;
 
    menu_timer_start(&volume_timer, &entry);
-
-   return true;
 }
 
-bool menu_widgets_set_fps_text(char *new_fps_text)
+bool menu_widgets_set_fps_text(const char *new_fps_text)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    strlcpy(menu_widgets_fps_text,
          new_fps_text, sizeof(menu_widgets_fps_text));
-
-   return true;
-}
-
-bool menu_widgets_set_fast_forward(bool is_fast_forward)
-{
-   if (!menu_widgets_inited)
-      return false;
-
-   menu_widgets_fast_forward = is_fast_forward;
-
-   return true;
-}
-
-bool menu_widgets_set_rewind(bool is_rewind)
-{
-   if (!menu_widgets_inited)
-      return false;
-
-   menu_widgets_rewinding = is_rewind;
 
    return true;
 }
@@ -2081,14 +2018,11 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
 {
    menu_animation_ctx_entry_t entry;
 
-   if (!menu_widgets_inited)
-      return;
-
    entry.cb             = NULL;
    entry.duration       = SCREENSHOT_DURATION_OUT;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &screenshot_alpha;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2099,14 +2033,11 @@ static void menu_widgets_play_screenshot_flash(void)
 {
    menu_animation_ctx_entry_t entry;
 
-   if (!menu_widgets_inited)
-      return;
-
    entry.cb             = menu_widgets_screenshot_fadeout;
    entry.duration       = SCREENSHOT_DURATION_IN;
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &screenshot_alpha;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
@@ -2115,9 +2046,6 @@ static void menu_widgets_play_screenshot_flash(void)
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
 {
-   if (!menu_widgets_inited)
-      return;
-
    menu_widgets_play_screenshot_flash();
    strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
    strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
@@ -2174,7 +2102,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    /* Setup the animation */
    entry.cb          = NULL;
    entry.easing_enum = EASING_OUT_QUAD;
-   entry.tag         = (uintptr_t) NULL;
+   entry.tag         = menu_widgets_generic_tag;
    entry.userdata    = NULL;
 
    /* Stage one: icon animation */
@@ -2248,7 +2176,7 @@ static void menu_widgets_achievement_dismiss(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = (float)(-(int)(cheevo_height));
    entry.userdata       = NULL;
 
@@ -2264,7 +2192,7 @@ static void menu_widgets_achievement_fold(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_unfold;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2281,7 +2209,7 @@ static void menu_widgets_achievement_unfold(void *userdata)
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_unfold;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
@@ -2300,7 +2228,7 @@ static void menu_widgets_start_achievement_notification()
    settings_t *settings = config_get_ptr();
    menu_animation_ctx_entry_t entry;
    cheevo_height  = settings->floats.video_font_size * 4;
-   cheevo_width   = max(
+   cheevo_width   = MAX(
          font_driver_get_message_width(font_regular, msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), 0, 1),
          font_driver_get_message_width(font_regular, cheevo_title, 0, 1)
    );
@@ -2313,7 +2241,7 @@ static void menu_widgets_start_achievement_notification()
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &cheevo_y;
-   entry.tag            = generic_tag;
+   entry.tag            = menu_widgets_generic_tag;
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
@@ -2331,8 +2259,8 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
       return;
    }
 
-   snprintf(badge_file, sizeof(badge_file), "%s.png", badge);
-
+   strlcpy(badge_file, badge, sizeof(badge_file));
+   strlcat(badge_file, ".png", sizeof(badge_file));
    fill_pathname_application_special(fullpath,
          PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
@@ -2341,11 +2269,8 @@ static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *b
          tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 }
 
-bool menu_widgets_push_achievement(const char *title, const char *badge)
+void menu_widgets_push_achievement(const char *title, const char *badge)
 {
-   if (!menu_widgets_inited)
-      return false;
-
    menu_widgets_achievement_free(NULL);
 
    /* TODO: Make a queue of notifications to display */
@@ -2354,8 +2279,6 @@ bool menu_widgets_push_achievement(const char *title, const char *badge)
    menu_widgets_get_badge_texture(&cheevo_badge, badge);
 
    menu_widgets_start_achievement_notification();
-
-   return true;
 }
 
 static void menu_widgets_generic_message_fadeout(void *userdata)
@@ -2375,15 +2298,12 @@ static void menu_widgets_generic_message_fadeout(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_set_message(char *msg)
+void menu_widgets_set_message(char *msg)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
    menu_timer_ctx_entry_t timer;
 
-   if (!menu_widgets_inited)
-      return false;
-
-   snprintf(generic_message, GENERIC_MESSAGE_SIZE, "%s", msg);
+   strlcpy(generic_message, msg, GENERIC_MESSAGE_SIZE);
 
    generic_message_alpha = DEFAULT_BACKDROP;
 
@@ -2396,8 +2316,6 @@ bool menu_widgets_set_message(char *msg)
    timer.userdata = NULL;
 
    menu_timer_start(&generic_message_timer, &timer);
-
-   return true;
 }
 
 static void menu_widgets_libretro_message_fadeout(void *userdata)
@@ -2417,15 +2335,12 @@ static void menu_widgets_libretro_message_fadeout(void *userdata)
    menu_animation_push(&entry);
 }
 
-bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
+void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
    menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
    menu_timer_ctx_entry_t timer;
 
-   if (!menu_widgets_inited)
-      return false;
-
-   snprintf(libretro_message, LIBRETRO_MESSAGE_SIZE, "%s", msg);
+   strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
 
    libretro_message_alpha = DEFAULT_BACKDROP;
 
@@ -2441,11 +2356,4 @@ bool menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 
    /* Compute text width */
    libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
-
-   return true;
-}
-
-bool menu_widgets_ready(void)
-{
-   return menu_widgets_inited;
 }

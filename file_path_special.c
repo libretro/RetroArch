@@ -171,7 +171,8 @@ void fill_pathname_application_special(char *s,
             char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-            s1[0] = s2[0] = '\0';
+            s1[0]    = '\0';
+            s2[0]    = '\0';
 
             fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
@@ -204,9 +205,7 @@ void fill_pathname_application_special(char *s,
                fill_pathname_application_special(s1,
                      PATH_MAX_LENGTH * sizeof(char),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-               fill_pathname_join(s, s1,
-                     file_path_str(FILE_PATH_BACKGROUND_IMAGE),
-                     len);
+               fill_pathname_join(s, s1, "bg.png", len);
                free(s1);
             }
          }
@@ -280,10 +279,9 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_XMB
          {
             char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             settings_t *settings     = config_get_ptr();
 
-            s1[0] = s2[0] = '\0';
+            s1[0] = '\0';
 
             fill_pathname_join(
                   s1,
@@ -291,13 +289,9 @@ void fill_pathname_application_special(char *s,
                   "xmb",
                   PATH_MAX_LENGTH * sizeof(char)
                   );
-            fill_pathname_join(s2,
-                  s1, xmb_theme_ident(),
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
-            strlcpy(s, s2, len);
+            fill_pathname_join(s,
+                  s1, xmb_theme_ident(), len);
             free(s1);
-            free(s2);
          }
 #endif
          break;
@@ -365,10 +359,7 @@ void fill_pathname_application_special(char *s,
                fill_pathname_application_special(s1,
                      PATH_MAX_LENGTH * sizeof(char),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-               fill_pathname_join(s, s1,
-                     file_path_str(FILE_PATH_TTF_FONT),
-                     len);
-
+               fill_pathname_join(s, s1, "font.ttf", len);
                free(s1);
             }
          }
@@ -376,11 +367,12 @@ void fill_pathname_application_special(char *s,
          break;
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
       {
-        char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-        char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-        settings_t *settings     = config_get_ptr();
+        char *s1             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        settings_t *settings = config_get_ptr();
 
-        s1[0] = s2[0] = '\0';
+        s1[0]                = '\0';
+        s2[0]                = '\0';
 
         fill_pathname_join(s1,
               settings->paths.directory_thumbnails,
@@ -401,11 +393,12 @@ void fill_pathname_application_special(char *s,
 
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
-        char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-        char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-        settings_t *settings     = config_get_ptr();
+        char *s1             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        settings_t *settings = config_get_ptr();
 
-        s1[0] = s2[0] = '\0';
+        s1[0]                = '\0';
+        s2[0]                = '\0';
 
         fill_pathname_join(s1,
               settings->paths.directory_thumbnails,

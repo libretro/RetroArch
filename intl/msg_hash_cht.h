@@ -1,4 +1,4 @@
-﻿#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
@@ -375,10 +375,12 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
       "載入儲存狀態時不覆蓋SaveRAM"
       )
+#ifdef HAVE_LAKKA
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
       "啟用藍牙服務"
       )
+#endif
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
       "構建機器人資源URL"
@@ -590,10 +592,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "下載核心……")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "下載遊戲內容")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "啟用DPI覆蓋")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "DPI覆蓋")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "驅動")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -894,8 +892,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
       "輸入設備自動設定目錄")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
       "手柄驅動")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
       "Lakka 服務")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
       "簡體中文")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
@@ -993,7 +993,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "限制選單幀率")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - update */
-      "選單文件瀏覽器")
+      "File Browser")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "選單線性過濾")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -1156,6 +1156,42 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
       "遊戲列表目錄")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "遊戲列表")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Label Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Change how the content labels are displayed in this playlist."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+    "Show full labels"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+    "Remove () content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+    "Remove [] content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+    "Remove () and []"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+    "Keep region"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+    "Keep disc index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+    "Keep region and disc index"
+    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "觸控支援")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PORT,
@@ -1287,8 +1323,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
       "右側搖桿")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "運行")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
       "啟用SAMBA文件共享服務")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
       "存檔文件目錄")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -1357,8 +1395,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "排序文件夾中的存檔")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
       "排序文件夾中的狀態存儲")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
       "啟用SSH遠程終端服務")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_CORE,
       "啟動核心")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -1757,7 +1797,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "火山紅")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "選單Shader管線")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
       "選單縮放因子")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "啟用圖標陰影")
@@ -1819,8 +1859,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "下載且/或者掃瞄遊戲內容，並將其加入你的收藏中。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "調整聲音輸出的選項。")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "啟用或者禁止藍牙。")
+#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "程序將在退出時儲存修改到設定文件。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
@@ -1849,14 +1891,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
       "顯示核心、網路和系統的訊息。顯示數據庫和光標的管理器。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "下載並更新RetroArch的附加插件和組件。")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
       "啟用或者禁止網路文件夾共享(SAMBA)。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
       "管理操作系統層級的服務。")
+#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
       "在文件瀏覽器中顯示隱藏的文件或文件夾。")
+#ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
       "啟用或者禁止遠程終端訪問(SSH)。")
+#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "阻止系統激活營幕保護程序。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
@@ -2936,10 +2982,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
       "Modify the opacity of the header graphic.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
       "Modify the opacity of the footer graphic.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-      "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Save all downloaded files to this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
@@ -3558,3 +3600,325 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
     "View information about inserted media discs."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+    "Frontend Logging Level"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+    "Sets log level for the frontend. If a log level issued by the frontend is below this value, it is ignored."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+      "Framerate Update Interval (in frames)")
+MSG_HASH(MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+      "Framerate display will be updated at the set interval (in frames).")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+    "Show Restart Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+    "Show/hide the 'Restart Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+    "Show Close Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+    "Show/hide the 'Close Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+    "Show Resume Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+    "Show/hide the 'Resume Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+    "Show Input"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+    "Show or hide 'Input Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+    "AI Service"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+    "Change settings for the AI Service (Translation/TTS/Misc)."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+      "AI Service Output")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+      "AI Service URL")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+      "AI Service Enabled")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+      "Show translation as a text overlay (Image mode), or play as Text-To-Speech (Speech mode)")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+      "A http:// url pointing to the translation service to use.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+      "Enable AI Service to run when the AI Service hotkey is pressed.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+      "Target Language")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+      "The language the service will translate to. If set to 'Don't Care', it will default to English.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+      "Source Language")
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+      "The language the service will translate from. If set to 'Don't Care', it will attempt to auto-detect the language. Setting it to a specific language will make the translation more accurate.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CZECH,
+    "Czech"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_DANISH,
+    "Danish"
+    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
+   "Swedish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
+   "Croatian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
+   "Catalan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
+   "Bulgarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
+   "Bengali"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
+   "Basque"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
+   "Azerbaijani"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
+   "Albanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
+   "Afrikaans"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
+   "Estonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+   "Filipino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
+   "Finnish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
+   "Galician"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
+   "Georgian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
+   "Gujarati"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
+   "Haitian Creole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
+   "Hebrew"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
+   "Hindi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
+   "Hungarian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
+   "Icelandic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
+   "Indonesian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
+   "Irish"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
+   "Kannada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
+   "Latin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
+   "Latvian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
+   "Lithuanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
+   "Macedonian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
+   "Malay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
+   "Maltese"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
+   "Norwegian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
+   "Persian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
+   "Romanian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
+   "Serbian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
+   "Slovak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
+   "Slovenian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
+   "Swahili"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
+   "Tamil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
+   "Telugu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_THAI,
+   "Thai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
+   "Ukrainian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_URDU,
+   "Urdu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
+   "Welsh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
+   "Yiddish"
+   )
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DISC,
+      "Load a physical media disc. You should first select the core (Load Core)  you intend to use with the disc.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DUMP_DISC,
+      "Dump the physical media disc to internal storage. It will be saved as an image file.")
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+   "Image Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   "Speech Mode"
+   )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+      "Remove")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+      "Remove shader presets of a specific type.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+      "Remove Global Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+      "Remove the Global Preset, used by all content and all cores.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+      "Remove Core Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+      "Remove the Core Preset, used by all content ran with the currently loaded core.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+      "Remove Content Directory Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+      "Remove the Content Directory Preset, used by all content inside the current working directory.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+      "Remove Game Preset")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+      "Remove the Game Preset, used only for the specific game in question.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+      "Frame Time Counter")
+MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+      "Adjust settings influencing the frame time counter (only active when threaded video is disabled).")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+      "Use modern decorated animations, notifications, indicators and controls instead of the old text only system.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+      "刪除播放清單")
+#ifdef HAVE_LAKKA
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+      "Wi-Fi Access Point")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+      "Enable or disable Wi-Fi Access Point.")
+MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
+      "Switching off Wi-Fi Access Point.")
+MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
+      "Disconnecting from Wi-Fi '%s'")
+MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
+      "Wi-Fi Access Point is already started")
+MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
+      "Wi-Fi Access Point is not running")
+MSG_HASH(MSG_LOCALAP_STARTING,
+      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
+      "Could not create Wi-Fi Access Point configuration file.")
+MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
+     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+#endif

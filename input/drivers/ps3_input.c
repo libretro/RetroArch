@@ -36,10 +36,6 @@
 #endif
 #endif
 
-#ifndef __PSL1GHT__
-#define MAX_PADS 7
-#endif
-
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -52,7 +48,6 @@ typedef struct
 
 typedef struct ps3_input
 {
-   bool blocked;
 #ifdef HAVE_MOUSE
    unsigned mice_connected;
 #endif
@@ -107,7 +102,6 @@ static int16_t ps3_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    ps3_input_t *ps3           = (ps3_input_t*)data;
 
    if (!ps3)
@@ -119,38 +113,43 @@ static int16_t ps3_input_state(void *data,
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
+            int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
-               const uint16_t joykey  = (binds[port][i].joykey != NO_BTN)
+               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
                   ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
                   ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
-               bool res               = false;
 
-               if (joykey != NO_BTN && ps3->joypad->button(joypad_info.joy_idx, joykey))
-                  res = true;
-               else if (((float)abs(ps3->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-                  res = true;
-
-               if (res)
+               if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
                   ret |= (1 << i);
+                  continue;
+               }
+               else if (((float)abs(ps3->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               {
+                  ret |= (1 << i);
+                  continue;
+               }
             }
+
+            return ret;
          }
          else
          {
             /* Auto-binds are per joypad, not per user. */
-            const uint16_t joykey  = (binds[port][id].joykey != NO_BTN)
+            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
                ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
                ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
 
-            if (joykey != NO_BTN && ps3->joypad->button(joypad_info.joy_idx, joykey))
-               ret = 1;
-            else if (((float)abs(ps3->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
-               ret = 1;
+            if ((uint16_t)joykey != NO_BTN && ps3->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               return true;
+            if (((float)abs(ps3->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               return true;
          }
-         return ret;
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
@@ -278,22 +277,6 @@ static void ps3_input_grab_mouse(void *data, bool state)
    (void)state;
 }
 
-static bool ps3_input_keyboard_mapping_is_blocked(void *data)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (!ps3)
-      return false;
-   return ps3->blocked;
-}
-
-static void ps3_input_keyboard_mapping_set_block(void *data, bool value)
-{
-   ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (!ps3)
-      return;
-   ps3->blocked = value;
-}
-
 input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -309,6 +292,5 @@ input_driver_t input_ps3 = {
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
    NULL,
-   ps3_input_keyboard_mapping_is_blocked,
-   ps3_input_keyboard_mapping_set_block,
+   false
 };

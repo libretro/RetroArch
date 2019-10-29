@@ -800,9 +800,9 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    if (!config)
       return true;
 
-   params->conf             = config_file_new(config);
    RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
-   if (!params->conf)
+
+   if (!(params->conf = config_file_new_from_path_to_string(config)))
    {
       RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
       return false;

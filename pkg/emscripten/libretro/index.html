@@ -96,6 +96,8 @@
                         <button class="btn btn-primary disabled tooltip-enable" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
                            <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
                         </button>
+                        </button>
+                        <button type="button" class="btn btn-primary tooltip-enable" data-toggle="modal" data-target="#helpModal">Help</button>
                    </li>
                 </div>
                </ul>
@@ -105,6 +107,43 @@
                   </button>
                </div>
            </div>
+           <!-- Basics steps modal for Web Libretro -->
+  <div class="modal fade" id="helpModal" role="dialog"  style="color:black;">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h1 class="modal-title">Basics</h1>
+        </div>
+        <div class="modal-body">
+      <h3><b>Load Core</b></h3>
+      <p>Load your core by clicking on the first tab. Scroll down until you reach the desired Core. We will use Nestopia for now. Don't forget - Content must be compatible with the matched Core.</p>
+          <li>Nes: <i>NESTOPIA</i></li>
+      <li>Game Boy / Color: <i>Gambatte</i></li>
+    </ul>
+      <p>etc.</p>
+        <p></p>
+      <h3><b>Load Content</b></h3>
+      <p>After selecting Core, click Run. After RetroArch opens, click Add Content and select your compatible ROM.</p>
+      <li>Nestopia > <i>YourGame.nes</i></li>
+      <li>Gambatte > <i>YourGame.gbc</i></li>
+    </ul>
+    <p>etc.</p>
+              <p></p>
+      <h3><b><span class="fa fa-trash-o"></span> Cleanup Storage</b></h3>
+      <p>The trashcan erases your existing configuration and presets. If the Web Player doesn't start, you should click the trashcan and refresh the cache in your browser (usually F5 or Shift+F5).</p>
+                  <p></p>
+      <h3><b><span class="fa fa-bars"></span> Quick Menu</b></h3>
+      <p>If you click on the three line icons, the Quick Menu will open here as in RetroArch.</p>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
            <!--/.navbar content-->
        </div>
    </nav>

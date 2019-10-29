@@ -207,6 +207,21 @@ static void app_terminate(void)
 #endif
          /* TODO/FIXME - properly implement. */
          break;
+       case NSEventTypeLeftMouseDown:
+       case NSEventTypeRightMouseDown:
+       case NSEventTypeOtherMouseDown:
+       {
+#ifdef HAVE_COCOA_METAL
+           NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+#else
+           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+#endif
+           apple = (cocoa_input_data_t*)input_driver_get_data();
+           if (!apple || pos.y < 0)
+               return;
+           apple->mouse_buttons |= (1 << event.buttonNumber);
+       }
+           break;
       case NSEventTypeLeftMouseUp:
       case NSEventTypeRightMouseUp:
       case NSEventTypeOtherMouseUp:
@@ -413,7 +428,6 @@ static char** waiting_argv;
     do
     {
        int ret;
-       unsigned sleep_ms = 0;
 #ifdef HAVE_QT
        const ui_application_t *application = &ui_application_qt;
 #else
@@ -422,10 +436,7 @@ static char** waiting_argv;
        if (application)
           application->process_events();
 
-       ret = runloop_iterate(&sleep_ms);
-
-       if (ret == 1 && sleep_ms > 0)
-          retro_sleep(sleep_ms);
+       ret = runloop_iterate();
 
        task_queue_check();
 
@@ -710,13 +721,6 @@ static void ui_companion_cocoa_toggle(void *data, bool force)
    (void)force;
 }
 
-static int ui_companion_cocoa_iterate(void *data, unsigned action)
-{
-   (void)data;
-
-   return 0;
-}
-
 static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
@@ -753,17 +757,12 @@ static void ui_companion_cocoa_notify_list_pushed(void *data,
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
-#if defined(HAVE_COCOA_METAL)
     return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-#elif defined(HAVE_COCOA)
-    return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-#endif
 }
 
 ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
-   ui_companion_cocoa_iterate,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,

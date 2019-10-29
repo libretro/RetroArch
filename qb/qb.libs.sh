@@ -16,7 +16,7 @@ SHARE_DIR="${SHARE_DIR:-${PREFIX}/share}"
 # $2 = define
 # $3 = value
 add_define()
-{ eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
+{ 	eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
 # add_dirs:
 # $1 = INCLUDE or LIBRARY
@@ -52,14 +52,15 @@ check_compiler()
 # $2 = USER_$2 [Enabled feature]
 # $3 = lib
 # $4 = feature
-# $5 = enable lib when true [checked only if non-empty]
+# $5 = enable lib when true, disable errors with 'user' [checked only if non-empty]
 check_enabled()
-{	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+{	add_opt "$2"
+	setval="$(eval "printf %s \"\$HAVE_$2\"")"
 
 	for val in $(printf %s "$1"); do
 		tmpvar="$(eval "printf %s \"\$HAVE_$val\"")"
 		if [ "$tmpvar" != 'no' ]; then
-			if [ "$setval" != 'no' ] && [ "${5:-}" = 'true' ]; then
+			if [ "$setval" != 'no' ] && match "${5:-}" true user; then
 				eval "HAVE_$2=yes"
 			fi
 			return 0
@@ -71,41 +72,59 @@ check_enabled()
 	if [ "$tmpval" != 'yes' ]; then
 		if [ "$setval" != 'no' ]; then
 			eval "HAVE_$2=no"
-			if [ "${5:-}" != 'true' ]; then
+			if ! match "${5:-}" true user; then
 				die : "Notice: $4 disabled, $3 support will also be disabled."
 			fi
 		fi
 		return 0
 	fi
 
-	die 1 "Error: $4 disabled and forced to build with $3 support."
+	if [ "${5:-}" != 'user' ]; then
+		die 1 "Error: $4 disabled and forced to build with $3 support."
+	fi
 }
 
 # check_platform:
-# $1 = OS
+# $1 = OS ['OS' or 'OS OS2 OS3', $1 = name]
 # $2 = HAVE_$2
 # $3 = feature
-# $4 = enable feature when true [checked only if non-empty]
+# $4 = enable feature when 'true', disable errors with 'user' [checked only if non-empty]
 check_platform()
-{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+{	add_opt "$2"
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
+	error=
+	newval=
 	setval="$(eval "printf %s \"\$USER_$2\"")"
 
-	if [ "$setval" = 'yes' ]; then
-		if { [ "$1" != "$OS" ] && [ "${4:-}" = 'true' ]; } ||
-				{ [ "$1" = "$OS" ] &&
-				[ "${4:-}" != 'true' ]; }; then
-			die 1 "Error: $3 not supported for $OS."
+	for platform in $(printf %s "$1"); do
+		if [ "$setval" = 'yes' ]; then
+			if [ "$error" != 'no' ] && [ "${4:-}" != 'user' ] &&
+					{ { [ "$platform" != "$OS" ] &&
+					match "${4:-}" true user; } ||
+					{ [ "$platform" = "$OS" ] &&
+					! match "${4:-}" true user; }; }; then
+				error='yes'
+			elif match "${4:-}" true user; then
+				error='no'
+			fi
+		elif [ "$platform" = "$OS" ]; then
+			if match "${4:-}" true user; then
+				newval=yes
+				break
+			else
+				newval=no
+			fi
+		elif match "${4:-}" true user; then
+			newval=auto
 		fi
-	elif [ "$1" = "$OS" ]; then
-		if [ "${4:-}" = 'true' ]; then
-			eval "HAVE_$2=yes"
-		else
-			eval "HAVE_$2=no"
-		fi
-	elif [ "${4:-}" = 'true' ]; then
-		eval "HAVE_$2="
+	done
+
+	if [ "${error}" = 'yes' ]; then
+		die 1 "Error: $3 not supported for $OS."
+	else
+		eval "HAVE_$2=\"${newval:-$tmpval}\""
 	fi
 }
 
@@ -120,7 +139,8 @@ check_platform()
 # $7 = include directory [checked only if non-empty]
 # $8 = critical error message [checked only if non-empty]
 check_lib()
-{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+{	add_opt "$2"
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
 	check_compiler "$1" "$4"
@@ -186,7 +206,8 @@ check_lib()
 # $4 = critical error message [checked only if non-empty]
 # $5 = force check_lib when true [checked only if non-empty, set by check_val]
 check_pkgconf()
-{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+{	add_opt "$1"
+	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
 
@@ -246,7 +267,8 @@ check_pkgconf()
 # $1 = HAVE_$1
 # $@ = header files
 check_header()
-{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+{	add_opt "$1"
+	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	rm -f -- "$TEMP_C"
 	val="$1"
@@ -275,7 +297,8 @@ check_header()
 # $2 = macro name
 # $3 = header name [included only if non-empty]
 check_macro()
-{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+{	add_opt "$1"
+	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	header_include=''
 	ECHOBUF=''
@@ -311,7 +334,8 @@ EOF
 # $3 = switch
 # $4 = critical error message [checked only if non-empty]
 check_switch()
-{	check_compiler "$1" ''
+{	add_opt "$2"
+	check_compiler "$1" ''
 
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'

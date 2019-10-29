@@ -153,10 +153,6 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-bool core_load(unsigned poll_type_behavior);
-
-bool core_unload(void);
-
 bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
 bool core_set_rewind_callbacks(void);
@@ -167,43 +163,26 @@ bool core_set_netplay_callbacks(void);
 bool core_unset_netplay_callbacks(void);
 #endif
 
-bool core_set_poll_type(unsigned *type);
+bool core_set_poll_type(unsigned type);
 
 /* Runs the core for one frame. */
 bool core_run(void);
 
-bool core_init(void);
-
-bool core_unload_game(void);
-
 bool core_reset(void);
-
-bool core_set_environment(retro_ctx_environ_info_t *info);
 
 bool core_serialize_size(retro_ctx_size_info_t *info);
 
 uint64_t core_serialization_quirks(void);
 
-void core_set_serialization_quirks(uint64_t quirks);
-
 bool core_serialize(retro_ctx_serialize_info_t *info);
 
 bool core_unserialize(retro_ctx_serialize_info_t *info);
-
-bool core_init_symbols(enum rarch_core_type *type);
 
 bool core_set_cheat(retro_ctx_cheat_info_t *info);
 
 bool core_reset_cheat(void);
 
-bool core_api_version(retro_ctx_api_info_t *api);
-
-bool core_get_region(retro_ctx_region_info_t *info);
-
 bool core_get_memory(retro_ctx_memory_info_t *info);
-
-/* Initialize system A/V information. */
-bool core_get_system_av_info(struct retro_system_av_info *av_info);
 
 /* Get system A/V information. */
 bool core_get_system_info(struct retro_system_info *system);
@@ -213,14 +192,6 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info);
 bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
 
 bool core_has_set_input_descriptor(void);
-
-void core_uninit_symbols(void);
-
-bool core_is_symbols_inited(void);
-
-bool core_is_inited(void);
-
-void core_free_retro_game_info(struct retro_game_info *dest);
 
 RETRO_END_DECLS
 

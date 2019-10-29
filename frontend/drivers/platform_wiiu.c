@@ -409,7 +409,6 @@ static void main_teardown(void)
 
 static void main_loop(void)
 {
-   unsigned sleep_ms = 0;
    OSTime start_time;
    int status;
 
@@ -423,12 +422,9 @@ static void main_loop(void)
       else
          task_queue_wait(NULL, NULL);
 
-      status = runloop_iterate(&sleep_ms);
+      status = runloop_iterate();
 
-      if(status == 1 && sleep_ms > 0)
-         usleep(sleep_ms);
-
-      if(status == -1)
+      if (status == -1)
          break;
    } while(true);
 }

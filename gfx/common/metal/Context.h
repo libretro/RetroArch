@@ -23,6 +23,11 @@ typedef struct
    __unsafe_unretained id<MTLBuffer> buffer;
 } BufferRange;
 
+typedef NS_ENUM(NSUInteger, ViewportResetMode) {
+   kFullscreenViewport,
+   kVideoViewport
+};
+
 /*! @brief Context contains the render state used by various components */
 @interface Context : NSObject
 
@@ -59,8 +64,8 @@ typedef struct
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
 
-/*! @brief resets the viewport for the main render encoder to the drawable size */
-- (void)resetRenderViewport;
+/*! @brief resets the viewport for the main render encoder to \a mode */
+- (void)resetRenderViewport:(ViewportResetMode)mode;
 
 /*! @brief resets the scissor rect for the main render encoder to the drawable size */
 - (void)resetScissorRect;

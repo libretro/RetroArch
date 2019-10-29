@@ -222,7 +222,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
          }
 
          if (selectedDatabase.isEmpty())
-            selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+            selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(".lpl");
 
          contentHash["label"]     = selectedName;
          contentHash["path"]      = selectedPath;

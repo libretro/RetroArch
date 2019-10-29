@@ -24,6 +24,7 @@
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_LIBUSB
@@ -68,7 +69,6 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #endif
 #endif
 
-#include "../input/input_driver.h"
 #include "../input/include/blissbox.h"
 
 #include "../configuration.h"
@@ -200,18 +200,6 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
          && !string_is_empty(ident)
          && string_is_equal(ident, params->name))
       score += 2;
-#if 0
-   else
-   {
-      if (string_is_empty(params->name))
-         RARCH_LOG("[Autoconf]: failed match because params->name was empty\n");
-      else if (string_is_empty(ident))
-         RARCH_LOG("[Autoconf]: failed match because ident was empty\n");
-      else
-         RARCH_LOG("[Autoconf]: failed match because ident '%s' != param->name '%s'\n",
-               ident, params->name);
-   }
-#endif
 
    return score;
 }
@@ -245,10 +233,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    if (string_is_equal(device_type, "remote"))
    {
       static bool remote_is_bound        = false;
-
-      snprintf(msg, sizeof(msg), "%s configured.",
-            (string_is_empty(display_name) &&
-            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
+      const char *autoconfig_str         = (string_is_empty(display_name) &&
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+      strlcpy(msg, autoconfig_str, sizeof(msg));
+      strlcat(msg, " configured.", sizeof(msg));
 
       if (!remote_is_bound)
       {
@@ -261,11 +249,13 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      bool tmp = false;
-      snprintf(msg, sizeof(msg), "%s %s #%u.",
-            (string_is_empty(display_name) &&
+      bool tmp                    = false;
+      const char *autoconfig_str  = (string_is_empty(display_name) &&
             !string_is_empty(params->name))
-            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
+            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+
+      snprintf(msg, sizeof(msg), "%s %s #%u.",
+            autoconfig_str,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 
@@ -321,11 +311,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 {
    size_t i;
    char path[PATH_MAX_LENGTH];
+   char best_path[PATH_MAX_LENGTH];
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
+   config_file_t *best_conf   = NULL;
    struct string_list *list   = NULL;
 
+   best_path[0]               = '\0';
    path[0]                    = '\0';
 
    fill_pathname_application_special(path, sizeof(path),
@@ -355,39 +348,37 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    for (i = 0; i < list->size; i++)
    {
-      config_file_t *conf = config_file_new(list->elems[i].data);
+      int res;
+      config_file_t *conf = config_file_new_from_path_to_string(list->elems[i].data);
+      
+      if (!conf)
+         continue;
 
-      if (conf)
-         ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
+      res  = input_autoconfigure_joypad_try_from_conf(conf, params);
 
-      if (ret >= current_best)
+      if (res >= current_best)
       {
          index        = (int)i;
-         current_best = ret;
+         current_best = res;
+         if (best_conf)
+            config_file_free(best_conf);
+         strlcpy(best_path, list->elems[i].data, sizeof(best_path));
+         best_conf    = NULL;
+         best_conf    = conf;
       }
-      config_file_free(conf);
-   }
-
-   if (index >= 0 && current_best > 0)
-   {
-      config_file_t *conf = config_file_new(list->elems[index].data);
-
-      if (conf)
-      {
-         char conf_path[PATH_MAX_LENGTH];
-
-         conf_path[0] = '\0';
-
-         config_get_config_path(conf, conf_path, sizeof(conf_path));
-
-         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
-         input_autoconfigure_joypad_add(conf, params, task);
+      else
          config_file_free(conf);
-         ret = 1;
-      }
    }
-   else
-      ret = 0;
+
+   if (index >= 0 && current_best > 0 && best_conf)
+   {
+      RARCH_LOG("[Autoconf]: selected configuration: %s\n", best_path);
+      input_autoconfigure_joypad_add(best_conf, params, task);
+      ret = 1;
+   }
+
+   if (best_conf)
+      config_file_free(best_conf);
 
    string_list_free(list);
 
@@ -405,7 +396,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(
-            input_builtin_autoconfs[i]);
+            input_builtin_autoconfs[i], NULL);
       if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
         return true;
    }
@@ -690,9 +681,7 @@ done:
 
    return NULL;
 }
-#endif
-
-#ifndef _WIN32
+#else
 static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
 {
 #ifdef HAVE_LIBUSB
@@ -969,7 +958,7 @@ unsigned input_autoconfigure_get_device_name_index(unsigned i)
    return input_device_name_index[i];
 }
 
-bool input_autoconfigure_connect(
+void input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,
@@ -985,7 +974,18 @@ bool input_autoconfigure_connect(
    bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
 
    if (!task || !state || !autodetect_enable)
-      goto error;
+   {
+      if (state)
+      {
+         input_autoconfigure_params_free(state);
+         free(state);
+      }
+      if (task)
+         free(task);
+
+      input_config_set_device_name(idx, name);
+      return;
+   }
 
    if (!string_is_empty(name))
       state->name                 = strdup(name);
@@ -1002,7 +1002,7 @@ bool input_autoconfigure_connect(
    input_autoconfigure_override_handler(state);
 
    if (!string_is_empty(state->name))
-         input_config_set_device_name(state->idx, state->name);
+      input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
    input_config_set_vid(state->idx, state->vid);
 
@@ -1011,10 +1011,10 @@ bool input_autoconfigure_connect(
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
       if (
-          !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
+            !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
          free(input_autoconf_binds[state->idx][i].joykey_label);
       if (
-          !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
+            !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
          free(input_autoconf_binds[state->idx][i].joyaxis_label);
       input_autoconf_binds[state->idx][i].joykey_label      = NULL;
       input_autoconf_binds[state->idx][i].joyaxis_label     = NULL;
@@ -1026,17 +1026,4 @@ bool input_autoconfigure_connect(
    task->handler                    = input_autoconfigure_connect_handler;
 
    task_queue_push(task);
-
-   return true;
-
-error:
-   if (state)
-   {
-      input_autoconfigure_params_free(state);
-      free(state);
-   }
-   if (task)
-      free(task);
-
-   return false;
 }

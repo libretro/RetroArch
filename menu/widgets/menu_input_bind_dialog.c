@@ -221,7 +221,7 @@ static void menu_input_key_bind_poll_bind_state(
 {
    unsigned b;
    rarch_joypad_info_t joypad_info;
-   const input_driver_t *input_ptr         = input_get_ptr();
+   input_driver_t *input_ptr               = input_get_ptr();
    void *input_data                        = input_get_data();
    const input_device_driver_t *joypad     =
       input_driver_get_joypad_driver();
@@ -260,13 +260,11 @@ bool menu_input_key_bind_set_mode(
 {
    unsigned index_offset;
    input_keyboard_ctx_wait_t keys;
-   menu_handle_t       *menu = NULL;
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
+   menu_handle_t       *menu = menu_driver_get_ptr();
 
-   if (!setting)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!setting || !menu)
       return false;
    if (menu_input_key_bind_set_mode_common(state, setting) == -1)
       return false;
@@ -554,7 +552,10 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
    if (rarch_timer_has_expired(&menu_input_binds.timer_timeout))
    {
-      input_driver_keyboard_mapping_set_block(false);
+      input_driver_t *input_drv = input_get_ptr();
+
+      if (input_drv)
+         input_drv->keyboard_mapping_blocked = false;
 
       /*skip to next bind*/
       menu_input_binds.begin++;
@@ -578,11 +579,13 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
    }
 
    {
-      bool complete = false;
-      struct menu_bind_state binds;
-      binds = menu_input_binds;
+      bool complete                = false;
+      struct menu_bind_state binds = menu_input_binds;
+      input_driver_t *input_drv    = input_get_ptr();
 
-      input_driver_keyboard_mapping_set_block( true );
+      if (input_drv)
+         input_drv->keyboard_mapping_blocked = true;
+
       menu_input_key_bind_poll_bind_state( &binds, menu_bind_port, timed_out );
 
 #ifdef ANDROID
@@ -627,10 +630,13 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       if ( complete )
       {
+         input_driver_t *input_drv    = input_get_ptr();
+
          /*update bind*/
          *( binds.output ) = binds.buffer;
 
-         input_driver_keyboard_mapping_set_block( false );
+         if (input_drv)
+            input_drv->keyboard_mapping_blocked = false;
 
          /* Avoid new binds triggering things right away. */
          input_driver_set_flushing_input();

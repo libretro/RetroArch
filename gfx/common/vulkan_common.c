@@ -1603,9 +1603,6 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    union string_list_elem_attr attr = {0};
    settings_t *settings             = config_get_ptr();
 
-   if (vk->context.gpu != VK_NULL_HANDLE)
-      return true;
-
    if (vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
    {
@@ -1905,11 +1902,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   if (vk->context.queue == VK_NULL_HANDLE)
-   {
-      vkGetDeviceQueue(vk->context.device,
-            vk->context.graphics_queue_index, 0, &vk->context.queue);
-   }
+   vkGetDeviceQueue(vk->context.device,
+      vk->context.graphics_queue_index, 0, &vk->context.queue);
 
 #ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
@@ -2034,9 +2028,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ext_count);
 
-   app.pApplicationName              = "RetroArch";
+   app.pApplicationName              = msg_hash_to_str(MSG_PROGRAM);
    app.applicationVersion            = 0;
-   app.pEngineName                   = "RetroArch";
+   app.pEngineName                   = msg_hash_to_str(MSG_PROGRAM);
    app.engineVersion                 = 0;
    app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
 
@@ -2674,13 +2668,17 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    else
    {
       if (vk->context.device)
+      {
          vkDestroyDevice(vk->context.device, NULL);
+         vk->context.device = NULL;
+      }
       if (vk->context.instance)
       {
          if (vk->context.destroy_device)
             vk->context.destroy_device();
 
          vkDestroyInstance(vk->context.instance, NULL);
+         vk->context.instance = NULL;
 
          if (vulkan_library)
          {
@@ -2690,6 +2688,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
+   video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, NULL);
    if (vulkan_gpu_list)
    {
       string_list_free(vulkan_gpu_list);

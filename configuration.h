@@ -130,6 +130,7 @@ typedef struct settings
       bool input_overlay_hide_in_menu;
       bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
+      bool input_overlay_auto_rotate;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -138,6 +139,11 @@ typedef struct settings
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
+
+      /* Frame time counter */
+      bool frame_time_counter_reset_after_fastforwarding;
+      bool frame_time_counter_reset_after_load_state;
+      bool frame_time_counter_reset_after_save_state;
 
       /* Menu */
       bool filter_by_current_core;
@@ -155,7 +161,6 @@ typedef struct settings
       bool menu_pointer_enable;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
-      bool menu_dpi_override_enable;
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
@@ -164,6 +169,8 @@ typedef struct settings
       bool menu_show_core_updater;
       bool menu_show_load_core;
       bool menu_show_load_content;
+      bool menu_show_load_disc;
+      bool menu_show_dump_disc;
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
@@ -179,6 +186,8 @@ typedef struct settings
       bool menu_show_video_layout;
 #endif
       bool menu_materialui_icons_enable;
+      bool menu_materialui_optimize_landscape_layout;
+      bool menu_materialui_auto_rotate_nav_bar;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
@@ -201,6 +210,30 @@ typedef struct settings
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
+      bool menu_ticker_smooth;
+      bool settings_show_drivers;
+      bool settings_show_video;
+      bool settings_show_audio;
+      bool settings_show_input;
+      bool settings_show_latency;
+      bool settings_show_core;
+      bool settings_show_configuration;
+      bool settings_show_saving;
+      bool settings_show_logging;
+      bool settings_show_frame_throttle;
+      bool settings_show_recording;
+      bool settings_show_onscreen_display;
+      bool settings_show_user_interface;
+      bool settings_show_ai_service;
+      bool settings_show_power_management;
+      bool settings_show_achievements;
+      bool settings_show_network;
+      bool settings_show_playlists;
+      bool settings_show_user;
+      bool settings_show_directory;
+      bool quick_menu_show_resume_content;
+      bool quick_menu_show_restart_content;
+      bool quick_menu_show_close_content;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
@@ -272,6 +305,9 @@ typedef struct settings
       bool bundle_finished;
       bool bundle_assets_extract_enable;
 
+      /* Driver */
+      bool driver_switch_enable;
+
       /* Misc. */
       bool discord_enable;
       bool threaded_data_runloop_enable;
@@ -303,6 +339,7 @@ typedef struct settings
       bool game_specific_options;
       bool auto_overrides_enable;
       bool auto_remaps_enable;
+      bool global_core_options;
       bool auto_shaders_enable;
 
       bool sort_savefiles_enable;
@@ -317,6 +354,7 @@ typedef struct settings
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+      bool localap_enable;
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
@@ -335,6 +373,8 @@ typedef struct settings
       bool vibrate_on_keypress;
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
+      bool ozone_truncate_playlist_name;
+      bool ozone_scroll_content_metadata;
 
       bool log_to_file;
       bool log_to_file_timestamp;
@@ -342,6 +382,7 @@ typedef struct settings
       bool scan_without_core_match;
 
       bool ai_service_enable;
+      bool ai_service_pause;
    } bools;
 
    struct
@@ -359,11 +400,13 @@ typedef struct settings
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
 
+      float menu_scale_factor;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
       float menu_header_opacity;
       float menu_ticker_speed;
+      float menu_rgui_particle_effect_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -399,6 +442,7 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+      int content_favorites_size;
    } ints;
 
    struct
@@ -407,6 +451,8 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
+
+      unsigned fps_update_interval;
 
       unsigned input_block_timeout;
 
@@ -417,7 +463,9 @@ typedef struct settings
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;
-
+#ifdef GEKKO
+      unsigned input_mouse_scale;
+#endif
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
@@ -429,6 +477,7 @@ typedef struct settings
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;
+      unsigned frontend_log_level;
       unsigned libretro_log_level;
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
@@ -466,6 +515,7 @@ typedef struct settings
       unsigned video_overscan_correction_top;
       unsigned video_overscan_correction_bottom;
 #endif
+      unsigned video_shader_delay;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
@@ -473,19 +523,18 @@ typedef struct settings
       unsigned menu_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
-      unsigned menu_dpi_override_value;
       unsigned menu_rgui_color_theme;
       unsigned menu_xmb_animation_opening_main_menu;
       unsigned menu_xmb_animation_horizontal_highlight;
       unsigned menu_xmb_animation_move_up_down;
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
-      unsigned menu_xmb_scale_factor;
       unsigned menu_xmb_alpha_factor;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_materialui_color_theme;
+      unsigned menu_materialui_transition_animation;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
@@ -499,6 +548,7 @@ typedef struct settings
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
       unsigned playlist_sublabel_runtime_type;
+      unsigned playlist_sublabel_last_played_style;
 
       unsigned camera_width;
       unsigned camera_height;
@@ -534,6 +584,8 @@ typedef struct settings
 
       unsigned libnx_overclock;
       unsigned ai_service_mode;
+      unsigned ai_service_target_lang;
+      unsigned ai_service_source_lang;
    } uints;
 
    struct
@@ -596,6 +648,7 @@ typedef struct settings
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
       char browse_url[4096];
+      char path_stream_url[8192];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];
@@ -608,7 +661,6 @@ typedef struct settings
 #endif
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
-      char path_stream_url[8192];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
@@ -620,7 +672,6 @@ typedef struct settings
       char path_content_video_history[PATH_MAX_LENGTH];
       char path_libretro_info[PATH_MAX_LENGTH];
       char path_cheat_settings[PATH_MAX_LENGTH];
-      char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
       char path_rgui_theme_preset[PATH_MAX_LENGTH];
 
@@ -784,7 +835,7 @@ bool config_unload_override(void);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_remap(void);
+bool config_load_remap(const char *directory_input_remapping);
 
 /**
  * config_save_autoconf_profile:

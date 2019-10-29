@@ -26,7 +26,8 @@ element_t *layer_add_element(layer_t *layer)
 {
    element_t *elem;
 
-   vec_size((void**)&layer->elements, sizeof(element_t), ++layer->elements_count);
+   vec_size((void**)&layer->elements,
+         sizeof(element_t), ++layer->elements_count);
 
    elem = &layer->elements[layer->elements_count - 1];
    element_init(elem, NULL, 0);
@@ -36,12 +37,12 @@ element_t *layer_add_element(layer_t *layer)
 
 void view_init(view_t *view, const char *name)
 {
-   view->name = init_string(name);
-   view->bounds = make_bounds();
+   view->name          = init_string(name);
+   view->bounds        = make_bounds();
    view->render_bounds = make_bounds_unit();
-   view->layers = NULL;
-   view->layers_count = 0;
-   view->screens = NULL;
+   view->layers        = NULL;
+   view->layers_count  = 0;
+   view->screens       = NULL;
    view->screens_count = 0;
 }
 
@@ -197,9 +198,8 @@ void view_normalize(view_t *view)
 
 void view_count_screens(view_t *view)
 {
-   int idx, i, j, k;
-
-   idx = -1;
+   int i, j, k;
+   int idx = -1;
 
    for (i = 0; i < view->layers_count; ++i)
    {

@@ -36,6 +36,10 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#ifdef HAVE_SDL2
+#include "../common/sdl2_common.h"
+#endif
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -211,28 +215,6 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    }
 }
 
-static void sdl2_gfx_set_handles(sdl2_video_t *vid)
-{
-   /* SysWMinfo headers are broken on OSX. */
-#if defined(_WIN32) || defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWindowWMInfo(vid->window, &info) != 1)
-      return;
-
-#if defined(_WIN32)
-   video_driver_display_type_set(RARCH_DISPLAY_WIN32);
-   video_driver_display_set(0);
-   video_driver_window_set((uintptr_t)info.info.win.window);
-#elif defined(HAVE_X11)
-   video_driver_display_type_set(RARCH_DISPLAY_X11);
-   video_driver_display_set((uintptr_t)info.info.x11.display);
-   video_driver_window_set((uintptr_t)info.info.x11.window);
-#endif
-#endif
-}
-
 static void sdl2_init_renderer(sdl2_video_t *vid)
 {
    unsigned flags = SDL_RENDERER_ACCELERATED;
@@ -375,7 +357,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 }
 
 static void *sdl2_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    int i;
    unsigned flags;
@@ -448,7 +430,13 @@ static void *sdl2_gfx_init(const video_info_t *video,
    sdl2_init_renderer(vid);
    sdl2_init_font(vid, settings->paths.path_font, settings->floats.video_font_size);
 
-   sdl2_gfx_set_handles(vid);
+#if defined(_WIN32)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_WIN32);
+#elif defined(HAVE_X11)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_X11);
+#elif defined(HAVE_COCOA)
+   sdl2_set_handles(vid->window, RARCH_DISPLAY_OSX);
+#endif
 
    sdl_refresh_viewport(vid);
 
@@ -522,7 +510,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    video_driver_get_window_title(title, sizeof(title));
 
    if (title[0])
-      SDL_SetWindowTitle(vid->window, title);
+      SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
 
    return true;
 }
@@ -642,32 +630,12 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    sdl2_video_t *vid    = (sdl2_video_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
-
    /* FIXME: Why is vid NULL here when starting content? */
-   if (vid)
-   {
-      vid->video.force_aspect = true;
-      vid->should_resize = true;
-   }
+   if (!vid)
+      return;
+
+   vid->video.force_aspect = true;
+   vid->should_resize      = true;
 }
 
 static void sdl2_poke_apply_state_changes(void *data)

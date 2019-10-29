@@ -132,6 +132,15 @@ void slock_free(slock_t *lock);
 void slock_lock(slock_t *lock);
 
 /**
+ * slock_try_lock:
+ * @lock                    : pointer to mutex object
+ *
+ * Attempts to lock a mutex. If a mutex is already locked by
+ * another thread, return false.  If the lock is acquired, return true.
+**/
+bool slock_try_lock(slock_t *lock);
+
+/**
  * slock_unlock:
  * @lock                    : pointer to mutex object
  *
@@ -236,10 +245,24 @@ void *sthread_tls_get(sthread_tls_t *tls);
 /**
  * @brief Binds thread specific data to a key
  * @param tls
- * @return whether the operation suceeded or not
+ * @return Whether the operation suceeded or not
  */
 bool sthread_tls_set(sthread_tls_t *tls, const void *data);
 #endif
+
+/*
+ * @brief Get thread ID of specified thread
+ * @param thread
+ * @return The ID of the specified thread
+ */
+uintptr_t sthread_get_thread_id(sthread_t *thread);
+
+/*
+ * @brief Get thread ID of the current thread
+ * @param 
+ * @return The ID of the current thread
+ */
+uintptr_t sthread_get_current_thread_id(void);
 
 RETRO_END_DECLS
 

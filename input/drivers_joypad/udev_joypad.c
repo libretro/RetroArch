@@ -51,7 +51,10 @@
 
 #define UDEV_NUM_BUTTONS 32
 #define NUM_AXES 32
+
+#ifndef NUM_HATS
 #define NUM_HATS 4
+#endif
 
 #define test_bit(nr, addr) \
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
@@ -239,14 +242,13 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (!string_is_empty(pad->ident))
    {
-      if (!input_autoconfigure_connect(
+      input_autoconfigure_connect(
                pad->ident,
                NULL,
                udev_joypad.ident,
                p,
                pad->vid,
-               pad->pid))
-         input_config_set_device_name(p, pad->ident);
+               pad->pid);
 
       ret = 1;
    }

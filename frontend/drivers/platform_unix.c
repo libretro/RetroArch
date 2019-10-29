@@ -144,10 +144,14 @@ int system_property_get(const char *command,
    char buffer[PATH_MAX_LENGTH] = {0};
    char cmd[PATH_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
+   size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
-   snprintf(cmd, sizeof(cmd), "%s %s", command, args);
+   cmd[buf_pos]                 = ' ';
+   cmd[buf_pos+1]               = '\0';
 
-   pipe = popen(cmd, "r");
+   buf_pos                      = strlcat(cmd, args, sizeof(cmd));
+
+   pipe                         = popen(cmd, "r");
 
    if (!pipe)
       goto error;
@@ -411,28 +415,7 @@ static void android_app_entry(void *data)
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
 
-   if (rarch_main(argc, argv, data) != 0)
-      goto end;
-#ifndef HAVE_MAIN
-   do
-   {
-      unsigned sleep_ms = 0;
-      int           ret = runloop_iterate(&sleep_ms);
-
-      if (ret == 1 && sleep_ms > 0)
-         retro_sleep(sleep_ms);
-
-      task_queue_check();
-
-      if (ret == -1)
-         break;
-   }while(1);
-
-   main_exit(data);
-#endif
-
-end:
-   exit(0);
+   rarch_main(argc, argv, data);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
@@ -1710,13 +1693,17 @@ static void frontend_unix_get_env(int *argc,
    const char *home         = getenv("HOME");
 
    if (xdg)
-      snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", xdg);
+   {
+      strlcpy(base_path, xdg, sizeof(base_path));
+      strlcat(base_path, "/retroarch", sizeof(base_path));
+   }
    else if (home)
-      snprintf(base_path, sizeof(base_path),
-            "%s/.config/retroarch", home);
+   {
+      strlcpy(base_path, home, sizeof(base_path));
+      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+   }
    else
-      snprintf(base_path, sizeof(base_path), "retroarch");
+      strlcpy(base_path, "retroarch", sizeof(base_path));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -1806,11 +1793,8 @@ static void free_saved_state(struct android_app* android_app)
 static void android_app_destroy(struct android_app *android_app)
 {
    JNIEnv *env = NULL;
+   int result  = system("sh -c \"sh /sdcard/reset\"");
 
-   RARCH_LOG("android_app_destroy\n");
-   int result;
-   result = system("sh -c \"sh /sdcard/reset\"");
-   RARCH_LOG("Result: %d\n", result);
    free_saved_state(android_app);
 
    slock_lock(android_app->mutex);
@@ -2060,28 +2044,14 @@ static void frontend_unix_exitspawn(char *core_path, size_t core_path_size)
 
 static uint64_t frontend_unix_get_mem_total(void)
 {
-   char line[256];
-   uint64_t total = 0;
-   FILE    * data = fopen("/proc/meminfo", "r");
-   if (!data)
-      return 0;
-
-   while (fgets(line, sizeof(line), data))
-   {
-      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total) == 1)
-      {
-         fclose(data);
-         total *= 1024;
-         return total;
-      }
-   }
-
-   fclose(data);
-   return 0;
+   long pages            = sysconf(_SC_PHYS_PAGES);
+   long page_size        = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
 }
 
-static uint64_t frontend_unix_get_mem_used(void)
+static uint64_t frontend_unix_get_mem_free(void)
 {
+#ifdef ANDROID
    char line[256];
    uint64_t total    = 0;
    uint64_t freemem  = 0;
@@ -2104,7 +2074,12 @@ static uint64_t frontend_unix_get_mem_used(void)
    }
 
    fclose(data);
-   return total - freemem - buffers - cached;
+   return freemem - buffers - cached;
+#else
+   unsigned long long ps = sysconf(_SC_PAGESIZE);
+   unsigned long long pn = sysconf(_SC_AVPHYS_PAGES);
+   return ps * pn;
+#endif
 }
 
 /*#include <valgrind/valgrind.h>*/
@@ -2335,11 +2310,8 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
          i += sizeof(struct inotify_event) + event->len;
       }
    }
-
-   return false;
-#else
-   return false;
 #endif
+   return false;
 }
 
 static void frontend_unix_set_sustained_performance_mode(bool on)
@@ -2361,7 +2333,8 @@ static const char* frontend_unix_get_cpu_model_name(void)
 #ifdef ANDROID
    return NULL;
 #else
-   cpu_features_get_model_name(unix_cpu_model_name, sizeof(unix_cpu_model_name));
+   cpu_features_get_model_name(unix_cpu_model_name,
+         sizeof(unix_cpu_model_name));
    return unix_cpu_model_name;
 #endif
 }
@@ -2379,7 +2352,8 @@ enum retro_language frontend_unix_get_user_language(void)
 
    if (g_android->getUserLanguageString)
    {
-      CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz, g_android->getUserLanguageString);
+      CALL_OBJ_METHOD(env, jstr,
+            g_android->activity->clazz, g_android->getUserLanguageString);
 
       if (jstr)
       {
@@ -2431,7 +2405,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_powerstate,
    frontend_unix_parse_drive_list,
    frontend_unix_get_mem_total,
-   frontend_unix_get_mem_used,
+   frontend_unix_get_mem_free,
    frontend_unix_install_signal_handlers,
    frontend_unix_get_signal_handler_state,
    frontend_unix_set_signal_handler_state,

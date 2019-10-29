@@ -28,6 +28,9 @@
 #include <langinfo.h>
 #endif
 #include <locale.h>
+#ifdef RARCH_INTERNAL
+#include <retro_miscellaneous.h>
+#endif
 
 using namespace spv;
 using namespace SPIRV_CROSS_NAMESPACE;
@@ -1087,7 +1090,11 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 
 		// In std140, struct alignment is rounded up to 16.
 		if (packing_is_vec4_padded(packing))
+#if defined(RARCH_INTERNAL)
+			alignment = MAX(alignment, 16u);
+#else
 			alignment = max(alignment, 16u);
+#endif
 
 		return alignment;
 	}
@@ -1311,7 +1318,11 @@ bool CompilerGLSL::buffer_is_packing_standard(const SPIRType &type, BufferPackin
 			uint32_t begin_word = offset / 16;
 			uint32_t end_word = (offset + packed_size - 1) / 16;
 			if (begin_word != end_word)
+#if defined(RARCH_INTERNAL)
+				packed_alignment = MAX(packed_alignment, 16u);
+#else
 				packed_alignment = max(packed_alignment, 16u);
+#endif
 		}
 
 		uint32_t alignment = max(packed_alignment, pad_alignment);
@@ -2884,6 +2895,49 @@ string CompilerGLSL::to_extract_component_expression(uint32_t id, uint32_t index
 		return join(expr, "[", index, "]");
 	else
 		return join(expr, ".", index_to_swizzle(index));
+}
+
+string CompilerGLSL::to_rerolled_array_expression(const string &base_expr, const SPIRType &type)
+{
+	uint32_t size = to_array_size_literal(type);
+	auto &parent = get<SPIRType>(type.parent_type);
+	string expr = "{ ";
+
+	for (uint32_t i = 0; i < size; i++)
+	{
+		auto subexpr = join(base_expr, "[", convert_to_string(i), "]");
+		if (parent.array.empty())
+			expr += subexpr;
+		else
+			expr += to_rerolled_array_expression(subexpr, parent);
+
+		if (i + 1 < size)
+			expr += ", ";
+	}
+
+	expr += " }";
+	return expr;
+}
+
+string CompilerGLSL::to_composite_constructor_expression(uint32_t id)
+{
+	auto &type = expression_type(id);
+	if (!backend.array_is_value_type && !type.array.empty())
+	{
+		// For this case, we need to "re-roll" an array initializer from a temporary.
+		// We cannot simply pass the array directly, since it decays to a pointer and it cannot
+		// participate in a struct initializer. E.g.
+		// float arr[2] = { 1.0, 2.0 };
+		// Foo foo = { arr }; must be transformed to
+		// Foo foo = { { arr[0], arr[1] } };
+		// The array sizes cannot be deduced from specialization constants since we cannot use any loops.
+
+		// We're only triggering one read of the array expression, but this is fine since arrays have to be declared
+		// as temporaries anyways.
+		return to_rerolled_array_expression(to_enclosed_expression(id), type);
+	}
+	else
+		return to_expression(id);
 }
 
 string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
@@ -5876,13 +5930,38 @@ string CompilerGLSL::bitcast_glsl_op(const SPIRType &out_type, const SPIRType &i
 	// Floating <-> Integer special casts. Just have to enumerate all cases. :(
 	// 16-bit, 32-bit and 64-bit floats.
 	if (out_type.basetype == SPIRType::UInt && in_type.basetype == SPIRType::Float)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Float -> Uint bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "floatBitsToUint";
+	}
 	else if (out_type.basetype == SPIRType::Int && in_type.basetype == SPIRType::Float)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Float -> Int bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "floatBitsToInt";
+	}
 	else if (out_type.basetype == SPIRType::Float && in_type.basetype == SPIRType::UInt)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Uint -> Float bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "uintBitsToFloat";
+	}
 	else if (out_type.basetype == SPIRType::Float && in_type.basetype == SPIRType::Int)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Int -> Float bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "intBitsToFloat";
+	}
+
 	else if (out_type.basetype == SPIRType::Int64 && in_type.basetype == SPIRType::Double)
 		return "doubleBitsToInt64";
 	else if (out_type.basetype == SPIRType::UInt64 && in_type.basetype == SPIRType::Double)
@@ -7302,7 +7381,7 @@ string CompilerGLSL::build_composite_combiner(uint32_t return_type, const uint32
 
 			if (i)
 				op += ", ";
-			subop = to_expression(elems[i]);
+			subop = to_composite_constructor_expression(elems[i]);
 		}
 
 		base = e ? e->base_expression : 0;
@@ -7858,15 +7937,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			forward = false;
 
 		string constructor_op;
-		if (!backend.array_is_value_type && out_type.array.size() > 1)
-		{
-			// We cannot construct array of arrays because we cannot treat the inputs
-			// as value types. Need to declare the array-of-arrays, and copy in elements one by one.
-			emit_uninitialized_temporary_expression(result_type, id);
-			for (uint32_t i = 0; i < length; i++)
-				emit_array_copy(join(to_expression(id), "[", i, "]"), elems[i]);
-		}
-		else if (backend.use_initializer_list && composite)
+		if (backend.use_initializer_list && composite)
 		{
 			// Only use this path if we are building composites.
 			// This path cannot be used for arithmetic.
@@ -11922,6 +11993,11 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		uint32_t var = block.dominated_variables[i];
 		get<SPIRVariable>(var).deferred_declaration = rearm_dominated_variables[i];
 	}
+
+	// Just like for deferred declaration, we need to forget about loop variable enable
+	// if our block chain is reinstantiated later.
+	for (auto &var_id : block.loop_variables)
+		get<SPIRVariable>(var_id).loop_variable_enable = false;
 }
 
 void CompilerGLSL::begin_scope()

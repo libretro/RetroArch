@@ -28,6 +28,10 @@
 
 #include "SDL.h"
 
+#ifdef HAVE_SDL2
+#include "../common/sdl2_common.h"
+#endif
+
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major   = 2;
 static unsigned       g_minor = 1;
@@ -214,6 +218,14 @@ static bool sdl_ctx_set_video_mode(void *data,
       goto error;
 
 #ifdef HAVE_SDL2
+#if defined(_WIN32)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_WIN32);
+#elif defined(HAVE_X11)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_X11);
+#elif defined(HAVE_COCOA)
+   sdl2_set_handles(sdl->g_win, RARCH_DISPLAY_OSX);
+#endif
+
    if (sdl->g_ctx)
       video_driver_set_video_cache_context_ack();
    else
@@ -276,20 +288,18 @@ static void sdl_ctx_get_video_size(void *data,
 static void sdl_ctx_update_title(void *data, void *data2)
 {
    char title[128];
-
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
 
-#ifdef HAVE_SDL2
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
-
-   if (sdl && title[0])
-      SDL_SetWindowTitle(sdl->g_win, title);
-#else
    if (title[0])
+   {
+#ifdef HAVE_SDL2
+      SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
+#else
       SDL_WM_SetCaption(title, NULL);
 #endif
+   }
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit,
@@ -366,12 +376,6 @@ static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool sdl_ctx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void sdl_ctx_swap_buffers(void *data, void *data2)
 {
 #ifdef HAVE_SDL2
@@ -385,7 +389,7 @@ static void sdl_ctx_swap_buffers(void *data, void *data2)
 
 static void sdl_ctx_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;
@@ -434,7 +438,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL, /* set_resize */
    sdl_ctx_has_focus,
    sdl_ctx_suppress_screensaver,
-   sdl_ctx_has_windowed,
+   true, /* has_windowed */
    sdl_ctx_swap_buffers,
    sdl_ctx_input_driver,
    sdl_ctx_get_proc_address,

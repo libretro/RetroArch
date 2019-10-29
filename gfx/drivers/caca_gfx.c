@@ -66,7 +66,7 @@ static void caca_gfx_create(void)
 }
 
 static void *caca_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    caca_t *caca        = (caca_t*)calloc(1, sizeof(*caca));
 
@@ -320,7 +320,7 @@ static void caca_gfx_get_poke_interface(void *data,
    *iface = &caca_poke_interface;
 }
 
-void caca_gfx_set_viewport(void *data, unsigned viewport_width,
+static void caca_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
 }

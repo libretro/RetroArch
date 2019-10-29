@@ -504,9 +504,9 @@ static uint64_t frontend_ctr_get_mem_total(void)
    return osGetMemRegionSize(MEMREGION_ALL);
 }
 
-static uint64_t frontend_ctr_get_mem_used(void)
+static uint64_t frontend_ctr_get_mem_free(void)
 {
-   return osGetMemRegionUsed(MEMREGION_ALL);
+   return osGetMemRegionFree(MEMREGION_ALL);
 }
 
 static enum frontend_powerstate frontend_ctr_get_powerstate(
@@ -609,7 +609,7 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_get_powerstate,
    frontend_ctr_parse_drive_list,
    frontend_ctr_get_mem_total,
-   frontend_ctr_get_mem_used,
+   frontend_ctr_get_mem_free,
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state */

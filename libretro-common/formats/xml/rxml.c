@@ -240,10 +240,10 @@ static bool rxml_parse_tag(struct rxml_node *node, const char *str)
 
 static struct rxml_node *rxml_parse_node(const char **ptr_)
 {
-   const char *ptr     = NULL;
-   const char *closing = NULL;
-   char *str           = NULL;
-   bool is_closing     = false;
+   const char *ptr        = NULL;
+   const char *closing    = NULL;
+   char *str              = NULL;
+   bool is_closing        = false;
 
    struct rxml_node *node = (struct rxml_node*)calloc(1, sizeof(*node));
    if (!node)
@@ -272,17 +272,25 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
    /* Look for more data. Either child nodes or data. */
    if (!is_closing)
    {
-      size_t closing_tag_size = strlen(node->name) + 4;
-      char *closing_tag = (char*)malloc(closing_tag_size);
+      size_t copied             = 0;
+      size_t closing_tag_size   = strlen(node->name) + 4;
+      char *closing_tag         = (char*)malloc(closing_tag_size);
 
-      const char *cdata_start = NULL;
-      const char *child_start = NULL;
+      const char *cdata_start   = NULL;
+      const char *child_start   = NULL;
       const char *closing_start = NULL;
 
       if (!closing_tag)
          goto error;
 
-      snprintf(closing_tag, closing_tag_size, "</%s>", node->name);
+      closing_tag[copied]       = '<';
+      closing_tag[copied+1]     = '/';
+      closing_tag[copied+2]     = '\0';
+
+      copied  = strlcat(closing_tag, node->name, closing_tag_size);
+
+      closing_tag[copied]       = '>';
+      closing_tag[copied+1]     = '\0';
 
       cdata_start   = strstr(closing + 1, "<![CDATA[");
       child_start   = strchr(closing + 1, '<');

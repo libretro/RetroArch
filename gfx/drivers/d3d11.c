@@ -45,7 +45,7 @@
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
-#include "../drivers_shader/slang_preprocess.h"
+#include "../drivers_shader/slang_process.h"
 #include "../../managers/state_manager.h"
 
 #include "../common/d3d_common.h"
@@ -378,17 +378,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = video_shader_read_preset(path)))
       return false;
 
    d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
    if (!video_shader_read_conf_preset(conf, d3d11->shader_preset))
       goto error;
-
-   video_shader_resolve_relative(d3d11->shader_preset, path);
 
    source = &d3d11->frame.texture[0];
    for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
@@ -625,8 +621,8 @@ static void d3d11_gfx_free(void* data)
    free(d3d11);
 }
 
-   static void*
-d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
+static void *d3d11_gfx_init(const video_info_t* video,
+      input_driver_t** input, void** input_data)
 {
    unsigned       i;
 #ifdef HAVE_MONITOR
@@ -786,6 +782,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->viewport.Width  = d3d11->vp.full_width;
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
+   d3d11->keep_aspect     = video->force_aspect;
    d3d11->vsync           = video->vsync;
    d3d11->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
@@ -1570,7 +1567,8 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 

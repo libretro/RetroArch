@@ -360,17 +360,13 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   conf = config_file_new(path);
-
-   if (!conf)
+   if (!(conf = video_shader_read_preset(path)))
       return false;
 
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
 
    if (!video_shader_read_conf_preset(conf, d3d10->shader_preset))
       goto error;
-
-   video_shader_resolve_relative(d3d10->shader_preset, path);
 
    source = &d3d10->frame.texture[0];
    for (i = 0; i < d3d10->shader_preset->passes; source = &d3d10->pass[i++].rt)
@@ -610,9 +606,8 @@ static void d3d10_gfx_free(void* data)
    free(d3d10);
 }
 
-   static void*
-d3d10_gfx_init(const video_info_t* video,
-      const input_driver_t** input, void** input_data)
+static void *d3d10_gfx_init(const video_info_t* video,
+      input_driver_t** input, void** input_data)
 {
    unsigned i;
 #ifdef HAVE_MONITOR
@@ -709,6 +704,7 @@ d3d10_gfx_init(const video_info_t* video,
    d3d10->viewport.Width  = d3d10->vp.full_width;
    d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->resize_viewport = true;
+   d3d10->keep_aspect     = video->force_aspect;
    d3d10->vsync           = video->vsync;
    d3d10->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
@@ -975,9 +971,11 @@ d3d10_gfx_init(const video_info_t* video,
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
       video_context_driver_set(&d3d10_fake_context); 
+#ifdef HAVE_SLANG
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d10_gfx_set_shader(d3d10, type, shader_preset);
+#endif
    }
 
 #if 0
@@ -1503,7 +1501,8 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 

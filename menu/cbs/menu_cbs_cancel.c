@@ -18,7 +18,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../configuration.h"
+#include "../../configuration.h"
 #include "../../msg_hash.h"
 #include "../../managers/cheat_manager.h"
 
@@ -36,14 +36,8 @@ int action_cancel_pop_default(const char *path,
 {
    size_t new_selection_ptr;
    const char *menu_label       = NULL;
-   settings_t *settings         = config_get_ptr();
-
-   (void)path;
-   (void)label;
-   (void)type;
-   (void)idx;
-
 #ifdef HAVE_AUDIOMIXER
+   settings_t *settings         = config_get_ptr();
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_cancel)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
 #endif

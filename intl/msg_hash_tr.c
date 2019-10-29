@@ -207,10 +207,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_STATE_SLOT_PLUS:
           case RARCH_STATE_SLOT_MINUS:
              snprintf(s, len,
-                   "Konum Yuvaları \n"
+                   "Konum Kayıtları \n"
                    " \n"
                    "Yuva 0 olarak ayarlanmış durumdayken, \n"
-                   "kaydetme adı * .state (ya da komut satırında tanımlanmışsa) olur. \n"
+                   "kaydetme adı *.state (ya da komut satırında ne tanımlanmışsa) olur. \n"
                    " \n"
                    "Alan 0 değilse, yol <dizin> olduğu yerde, \n"
                    "<dizin><d> olur.");
@@ -273,7 +273,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                     "kullanılan yazı tipini değiştirin.");
             break;
         case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-            snprintf(s, len, "İçeriğe özgü Core seçeneklerini otomatik olarak yükle.");
+            snprintf(s, len, "İçeriğe özgü Çekirdek seçeneklerini otomatik olarak yükle.");
             break;
         case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
             snprintf(s, len, "Üzerine yazma yapılandırmalarını otomatik olarak yükle.");
@@ -287,7 +287,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
             snprintf(s, len, "Sıralama kullanılan libretro \n"
-                    "core adını klasörlerdeki dosyalarına kaydeder. ");
+                    "Çekirdek adını klasörlerdeki dosyalarına kaydeder. ");
             break;
         case MENU_ENUM_LABEL_RESUME_CONTENT:
             snprintf(s, len, "Menüden çıkar ve içeriğe geri döner.");
@@ -359,9 +359,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
             snprintf(s, len,
-                     "Core Bilgi Dizini. \n"
+                     "Çekirdek Bilgi Dizini. \n"
                              " \n"
-                             "Libretro core bilgisini nerede \n"
+                             "Libretro Çekirdek bilgisini nerede \n"
                              "arayacağınıza dair bir dizin.");
             break;
         case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
@@ -380,7 +380,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "kapatma prosedürünün seçilmesi RetroArch'in \n"
                              "kapatılmasını tetikler. \n"
                              " \n"
-                             "Bu seçeneği etkinleştirmek kukla bir core \n"
+                             "Bu seçeneği etkinleştirmek kukla bir Çekirdek \n"
                              "yükler böylelikle menüde kalırız \n"
                              "ve RetroArch kapanmaz.");
             break;
@@ -473,9 +473,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
             snprintf(s, len,
-                     "Libretro core. \n"
+                     "Libretro Core. \n"
                              " \n"
-                             "RetroArch'ın bu çekirdeği yüklemesi için bu dosyayı seçin.");
+                             "RetroArch'ın bu Core'u yüklemesi için bu dosyayı seçin.");
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
             snprintf(s, len,
@@ -522,7 +522,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
             snprintf(s, len,
-                     "Core tarafından ayarlanmamış giriş \n"
+                     "Çekirdek tarafından ayarlanmamış giriş \n"
                              "tanımlayıcılarını gizleyin.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
@@ -560,7 +560,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
             snprintf(s, len,
                      "Varsayılan olanların yerine \n"
-                             "Core tarafından ayarlanan giriş tanımlayıcılarını gösterin.");
+                             "Çekirdek tarafından ayarlanan giriş tanımlayıcılarını gösterin.");
             break;
         case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
             snprintf(s, len,
@@ -659,15 +659,15 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CORE_LIST:
             snprintf(s, len,
-                     "Core yükle. \n"
+                     "Çekirdek Yükle. \n"
                              " \n"
-                             "Libretro Core uygulaması \n"
+                             "Libretro Çekirdek uygulaması \n"
                              "için göz atın. Tarayıcının başladığı yer \n"
-                             "Core Dizin yolunuza bağlıdır \n"
+                             "Çekirdek Dizin yolunuza bağlıdır \n"
                              "Boşsa, root'ta başlayacaktır. \n"
                              " \n"
-                             "Core Dizini bir dizinse, menü bunu üst klasör olarak kullanır. \n"
-                             "Core Dizini tam yol ise, \n"
+                             "Çekirdek Dizini bir dizinse, menü bunu üst klasör olarak kullanır. \n"
+                             "Çekirdek Dizini tam yol ise, \n"
                              "dosyanın bulunduğu klasörde \n"
                              "başlayacaktır.");
             break;
@@ -796,7 +796,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "ayarlayın. Ayarlanmazsa, \n"
                              "kök dizininden başlayacaktır. \n"
                              " \n"
-                             "Tarayıcı, 'Core Yükle'den ayarlanan son Core \n"
+                             "Tarayıcı, 'Çekirdek Yükle'den ayarlanan son Çekirdek \n"
                              "için uzantıları filtreleyecek ve içerik \n"
                              "yüklendiğinde bu çekirdeği kullanacaktır."
             );
@@ -806,7 +806,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Geçmişten içerik yükleniyor. \n"
                              " \n"
                              "İçerik yüklendikçe, içerik ve libretro \n"
-                             "Core kombinasyonları geçmişe kaydedilir. \n"
+                             "Çekirdek kombinasyonları geçmişe kaydedilir. \n"
                              " \n"
                              "Geçmiş, RetroArch yapılandırma dosyasıyla aynı \n"
                              "dizindeki bir dosyaya kaydedilir. Başlangıçta hiçbir \n"
@@ -824,11 +824,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                          "OpenGL Video sürücüsü. \n"
                                  " \n"
                                  "Bu sürücü, yazılım tarafından oluşturulan \n"
-                                 "Core uygulamalarına ek olarak libretro GL \n"
+                                 "Çekirdek uygulamalarına ek olarak libretro GL \n"
                                  "çekirdeklerinin kullanılmasına izin verir.\n"
                                  " \n"
                                  "Yazılım tarafından oluşturulan ve libretro GL \n"
-                                 "Core uygulamaları için performans, \n"
+                                 "Çekirdek uygulamaları için performans, \n"
                                  "grafik kartınızın temelindeki GL sürücüsüne bağlıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
@@ -839,7 +839,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                                  "Bu bir SDL 2 yazılımı tarafından oluşturulan \n"
                                  "video sürücüsüdür.\n"
                                  " \n"
-                                 "Yazılım tarafından oluşturulan libretro Core uygulamaları \n"
+                                 "Yazılım tarafından oluşturulan libretro Çekirdek uygulamaları \n"
                                  "için performans, SDL uygulamanıza bağlıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
@@ -858,7 +858,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                 snprintf(s, len,
                          "Direct3D Video sürücüsü. \n"
                                  " \n"
-                                 "Yazılım tarafından oluşturulan Core performansı,\n"
+                                 "Yazılım tarafından oluşturulan Çekirdek performansı,\n"
                                  "grafik kartınızın temelindeki D3D \n"
                                  "sürücüsüne bağlıdır.");
             }
@@ -871,7 +871,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                                  "Karışım işlemleri için Samsung Exynos SoC'daki \n"
                                  " G2D bloğunu kullanır. \n"
                                  " \n"
-                                 "Yazılım tarafından oluşturulan Core performansı \n"
+                                 "Yazılım tarafından oluşturulan Çekirdek performansı \n"
                                  "optimum olmalıdır.");
             }
             else if (string_is_equal(settings->arrays.video_driver, "drm"))
@@ -1202,9 +1202,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
             snprintf(s, len,
-                     "Core Dizini. \n"
+                     "Çekirdek Dizini. \n"
                              " \n"
-                             "Libretro Core uygulamalarının \n"
+                             "Libretro Çekirdek uygulamalarının \n"
                              "aranacağı dizin. ");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -1383,11 +1383,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_THREADED:
             snprintf(s, len,
-                     "Use threaded video driver.\n"
+                     "Threaded video sürücüsü kullanın.\n"
                              " \n"
-                             "Using this might improve performance at the \n"
-                             "possible cost of latency and more video \n"
-                             "stuttering.");
+                             "Bunu kullanmak, olası gecikme maliyetinde \n"
+                             "ve daha fazla video kasılmasında performansı \n"
+                             "artırabilir.");
             break;
         case MENU_ENUM_LABEL_VIDEO_VSYNC:
             snprintf(s, len,
@@ -1442,20 +1442,20 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             snprintf(s, len,
-                     "Sets how many frames CPU can \n"
-                             "run ahead of GPU when using 'GPU \n"
-                             "Hard Sync'.\n"
+                     "'GPU Hard Sync' kullanırken CPU'nun \n"
+                             "kaç tane GPU önünde çalışabileceğini \n"
+                             "ayarlar.\n"
                              " \n"
-                             "Maximum is 3.\n"
+                             "Maksimum 3.\n"
                              " \n"
-                             " 0: Syncs to GPU immediately.\n"
-                             " 1: Syncs to previous frame.\n"
+                             " 0: Hemen GPU'ya senkronize edilir.\n"
+                             " 1: Önceki kareye senkronize eder.\n"
                              " 2: Etc ...");
             break;
         case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
             snprintf(s, len,
-                     "Inserts a black frame inbetween \n"
-                             "frames.\n"
+                     "Çerçevelerin arasına siyah bir \n"
+                             "çerçeve ekler.\n"
                              " \n"
                              "Useful for 120 Hz monitors who want to \n"
                              "play 60 Hz material with eliminated \n"
@@ -1467,12 +1467,12 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
             snprintf(s, len,
-                     "Show startup screen in menu.\n"
-                             "Is automatically set to false when seen\n"
-                             "for the first time.\n"
+                     "Menüde başlangıç ekranını göster.\n"
+                             "İlk kez görüldüğünde otomatik olarak \n"
+                             "false olarak ayarlanır.\n"
                              " \n"
-                             "This is only updated in config if\n"
-                             "'Save Configuration on Exit' is enabled.\n");
+                             "Bu, yalnızca 'Çıkışta Konfigürasyonu Kaydet'\n"
+                             "etkinse config dosyasında güncellenir.\n");
             break;
         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
             snprintf(s, len, "Toggles fullscreen.");
@@ -1574,10 +1574,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Duty cycle.\n"
                              " \n"
-                             "Describes how long the period of a turbo-enabled\n"
-                             "should be.\n"
+                             "Turbo etkin bir sürenin ne kadar sürmesi\n"
+                             "gerektiğini açıklar.\n"
                              " \n"
-                             "Numbers are described in frames."
+                             "Sayılar çerçevelerde açıklanmıştır."
             );
             break;
         case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
@@ -1620,10 +1620,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
             snprintf(s, len,
-                     "The amount of delay frames to use for netplay. \n"
+                     "Netplay için kullanılacak gecikme karelerinin miktarı. \n"
                              " \n"
-                             "Increasing this value will increase \n"
-                             "performance, but introduce more latency.");
+                             "Bu değerin arttırılması performansı \n"
+                             "artıracak ancak daha fazla gecikme sağlayacaktır.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
             snprintf(s, len,
@@ -1634,11 +1634,11 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
             snprintf(s, len,
-                     "Whether to start netplay in spectator mode. \n"
+                     "İzleyici modunda netplay başlatılıp başlatılmayacağı. \n"
                              " \n"
-                             "If set to true, netplay will be in spectator mode \n"
-                             "on start. It's always possible to change mode \n"
-                             "later.");
+                             "True olarak ayarlanırsa, netplay başlangıçta izleyici \n"
+                             "modunda olacaktır. Daha sonra modu değiştirmek her \n"
+                             "zaman mümkündür.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
             snprintf(s, len,
@@ -1784,19 +1784,19 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
             snprintf(s, len,
-                     "URL to core updater directory on the \n"
-                             "Libretro buildbot.");
+                     "Libretro buildbotundaki çekirdek \n"
+                             "güncelleyici dizininin URL'si.");
             break;
         case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
             snprintf(s, len,
-                     "URL to assets updater directory on the \n"
-                             "Libretro buildbot.");
+                     "Libretro buildbot'taki içerikler \n"
+                             "dizinindeki URL.");
             break;
         case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
             snprintf(s, len,
-                     "if enabled, overrides the input binds \n"
-                             "with the remapped binds set for the \n"
-                             "current core.");
+                     "etkinse, giriş, geçerli \n"
+                             "çekirdek için ayarlanan yeniden \n"
+                             "birleştirilen atamalarla geçersiz kılınır.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
             snprintf(s, len,
@@ -1818,32 +1818,32 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
             snprintf(s, len,
-                     "Filter files being shown by \n"
-                             "supported extensions.");
+                     "Desteklenen uzantılar tarafından \n"
+                             "gösterilen dosyaları filtrele.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
             snprintf(s, len,
-                     "The username of the person running RetroArch. \n"
-                             "This will be used for playing online games.");
+                     "RetroArch çalıştıran kişinin kullanıcı adı. \n"
+                             "Çevrimiçi oyunlar oynamak için kullanılacak.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
-                     "The port of the host IP address. \n"
-                             "Can be either a TCP or UDP port.");
+                     "Ana bilgisayar IP adresinin bağlantı noktası. \n"
+                             "Bir TCP veya UDP bağlantı noktası olabilir.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
             snprintf(s, len,
-                     "Enable or disable spectator mode for \n"
-                             "the user during netplay.");
+                     "Netplay sırasında kullanıcı için seyirci modunu \n"
+                             "etkinleştirin veya devre dışı bırakın.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
             snprintf(s, len,
-                     "The address of the host to connect to.");
+                     "Bağlanılacak ana bilgisayarın adresi.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
             snprintf(s, len,
-                     "The password for connecting to the netplay \n"
-                             "host. Used only in host mode.");
+                     "Netplay ana bilgisayarına bağlanmak için şifre. \n"
+                             "Yalnızca ana bilgisayar modunda kullanılır.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
             snprintf(s, len,
@@ -1861,7 +1861,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "boot sırasında (varsa).");
             break;
         case MENU_ENUM_LABEL_MENU_DRIVER:
-            snprintf(s, len, "Menu driver to use.");
+            snprintf(s, len, "Kullanılacak Menü sürücüsü.");
             break;
         case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             snprintf(s, len,
@@ -1880,20 +1880,20 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
             snprintf(s, len,
-                     "Enable input auto-detection.\n"
+                     "Otomatik giriş algılamayı etkinleştir.\n"
                              " \n"
-                             "Will attempt to auto-configure \n"
-                             "joypads, Plug-and-Play style.");
+                             "Joypad'leri, Tak ve Çalıştır \n"
+                             "stilini otomatik olarak yapılandırmaya çalışır.");
             break;
         case MENU_ENUM_LABEL_CAMERA_ALLOW:
             snprintf(s, len,
-                     "Kameranın Core tarafından erişimine izin ver \n"
+                     "Kameranın Çekirdek tarafından erişimine izin ver \n"
                              "veya verme.");
             break;
         case MENU_ENUM_LABEL_LOCATION_ALLOW:
             snprintf(s, len,
                      "Konum servislerine izin ver veya verme \n"
-                             "Corelar tarafından erişilir.");
+                             "çekirdekler tarafından erişilir.");
             break;
         case MENU_ENUM_LABEL_TURBO:
             snprintf(s, len,
@@ -2111,14 +2111,14 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                             "Bir şeyler yapması için programa \n"
                             "bir program yüklemeniz gerekir.. \n"
                             "\n"
-                            "Böylelikle programa 'Libretro Core', \n"
-                            "yada kısaca 'core' diyoruz. \n"
+                            "Böylelikle programa 'Libretro Çekirdek', \n"
+                            "yada kısaca 'Çekirdek' diyoruz. \n"
                             " \n"
-                            "Core yüklemek için 'Core Yükle' \n"
+                            "Çekirdek yüklemek için 'Çekirdek Yükle' \n"
                             "kısmından bir tane seçin.\n"
                             " \n"
 #ifdef HAVE_NETWORKING
-                    "Coreları birkaç yolla elde edebilirsiniz: \n"
+                    "Çekirdekleri birkaç yolla elde edebilirsiniz: \n"
                     "* İndirmek için şöyle\n"
                     "'%s' -> '%s'.\n"
                     "* El ile yapmak için 'Core' klasörüne taşıyın\n"

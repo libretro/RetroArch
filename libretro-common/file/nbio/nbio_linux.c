@@ -92,10 +92,7 @@ static void nbio_begin_op(struct nbio_linux_t* handle, uint16_t op)
    handle->cb.aio_nbytes     = handle->len;
 
    if (io_submit(handle->ctx, 1, &cbp) != 1)
-   {
-      puts("ERROR - io_submit() failed");
       abort();
-   }
 
    handle->busy = true;
 }
@@ -160,21 +157,16 @@ static void nbio_linux_resize(void *data, size_t len)
    if (!handle)
       return;
 
+   /* This works perfectly fine if this check is removed, but it
+    * won't work on other nbio implementations */
+   /* therefore, it's blocked so nobody accidentally relies on it */
    if (len < handle->len)
-   {
-      /* this works perfectly fine if this check is removed, but it
-       * won't work on other nbio implementations */
-      /* therefore, it's blocked so nobody accidentally relies on it */
-      puts("ERROR - attempted file shrink operation, not implemented");
       abort();
-   }
 
    if (ftruncate(handle->fd, len) != 0)
-   {
-      puts("ERROR - couldn't resize file (ftruncate)");
       abort(); /* this one returns void and I can't find any other way
                   for it to report failure */
-   }
+
    handle->ptr = realloc(handle->ptr, len);
    handle->len = len;
 }

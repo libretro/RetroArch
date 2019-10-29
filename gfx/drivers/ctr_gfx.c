@@ -326,7 +326,7 @@ static void ctr_set_bottom_screen_enable(void* data, bool enabled)
 }
 
 static void* ctr_init(const video_info_t* video,
-      const input_driver_t** input, void** input_data)
+      input_driver_t** input, void** input_data)
 {
    float refresh_rate;
    u8 device_model      = 0xFF;
@@ -747,9 +747,9 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->frame_coords->u1 = width;
       ctr->frame_coords->v1 = height;
       GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
-      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    }
 
+   ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
                   (ctr->smooth? GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
                               : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |
@@ -1067,30 +1067,10 @@ static void ctr_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    ctr_video_t *ctr = (ctr_video_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
-
    if(!ctr)
       return;
 
-   ctr->keep_aspect = true;
+   ctr->keep_aspect   = true;
    ctr->should_resize = true;
 }
 

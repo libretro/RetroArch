@@ -44,7 +44,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
 
 static void *vita2d_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
    unsigned temp_width                = PSP_FB_WIDTH;
@@ -444,7 +444,6 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
@@ -452,13 +451,9 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
    settings_t *settings     = config_get_ptr();
    vita_video_t *vita       = (vita_video_t*)data;
 
-   video_driver_get_size(&width, &height);
-
-   aspect_data.aspect     = &device_aspect;
-   aspect_data.width      = viewport_width;
-   aspect_data.height     = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
+   aspect_data.aspect       = &device_aspect;
+   aspect_data.width        = viewport_width;
+   aspect_data.height       = viewport_height;
 
    if (settings->bools.video_scale_integer && !force_full)
    {
@@ -581,27 +576,6 @@ static void vita_set_filtering(void *data, unsigned index, bool smooth)
 static void vita_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    vita_video_t               *vita = (vita_video_t*)data;
-
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
 
    if (!vita)
       return;

@@ -24,8 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libretro.h>
 #include <encodings/crc32.h>
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 #include <streams/trans_stream.h>
 
 #include "rpng_internal.h"
@@ -37,6 +38,9 @@
    goto end; \
 } while(0)
 
+double DEFLATE_PADDING = 1.1;
+int PNG_ROUGH_HEADER = 100;
+
 static void dword_write_be(uint8_t *buf, uint32_t val)
 {
    *buf++ = (uint8_t)(val >> 24);
@@ -45,16 +49,16 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
    *buf++ = (uint8_t)(val >>  0);
 }
 
-static bool png_write_crc(RFILE *file, const uint8_t *data, size_t size)
+static bool png_write_crc_string(intfstream_t *intf_s, const uint8_t *data, size_t size)
 {
    uint8_t crc_raw[4] = {0};
    uint32_t crc       = encoding_crc32(0, data, size);
 
    dword_write_be(crc_raw, crc);
-   return filestream_write(file, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
+   return intfstream_write(intf_s, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
 }
 
-static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
+static bool png_write_ihdr_string(intfstream_t *intf_s, const struct png_ihdr *ihdr)
 {
    uint8_t ihdr_raw[21];
 
@@ -83,42 +87,33 @@ static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
    dword_write_be(ihdr_raw +  0, sizeof(ihdr_raw) - 8);
    dword_write_be(ihdr_raw +  8, ihdr->width);
    dword_write_be(ihdr_raw + 12, ihdr->height);
-   if (filestream_write(file, ihdr_raw, sizeof(ihdr_raw)) != sizeof(ihdr_raw))
+   if (intfstream_write(intf_s, ihdr_raw, sizeof(ihdr_raw)) != sizeof(ihdr_raw))
       return false;
 
-   if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t),
-            sizeof(ihdr_raw) - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc_string(intf_s, ihdr_raw + sizeof(uint32_t),
+         sizeof(ihdr_raw) - sizeof(uint32_t));
 }
 
-static bool png_write_idat(RFILE *file, const uint8_t *data, size_t size)
+static bool png_write_idat_string(intfstream_t* intf_s, const uint8_t *data, size_t size)
 {
-   if (filestream_write(file, data, size) != (ssize_t)size)
+   if (intfstream_write(intf_s, data, size) != (ssize_t)size)
       return false;
 
-   if (!png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc_string(intf_s, data + sizeof(uint32_t), size - sizeof(uint32_t));
 }
 
-static bool png_write_iend(RFILE *file)
+static bool png_write_iend_string(intfstream_t* intf_s)
 {
    const uint8_t data[] = {
       0, 0, 0, 0,
       'I', 'E', 'N', 'D',
    };
 
-   if (filestream_write(file, data, sizeof(data)) != sizeof(data))
+   if (intfstream_write(intf_s, data, sizeof(data)) != sizeof(data))
       return false;
 
-   if (!png_write_crc(file, data + sizeof(uint32_t),
-            sizeof(data) - sizeof(uint32_t)))
-      return false;
-
-   return true;
+   return png_write_crc_string(intf_s, data + sizeof(uint32_t),
+         sizeof(data) - sizeof(uint32_t));
 }
 
 static void copy_argb_line(uint8_t *dst, const uint32_t *src, unsigned width)
@@ -208,14 +203,12 @@ static unsigned filter_paeth(uint8_t *target,
    return count_sad(target, width);
 }
 
-static bool rpng_save_image(const char *path,
-      const uint8_t *data,
-      unsigned width, unsigned height, unsigned pitch, unsigned bpp)
+bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
+      unsigned width, unsigned height, signed pitch, unsigned bpp)
 {
    unsigned h;
-   bool ret = true;
    struct png_ihdr ihdr = {0};
-
+   bool ret = true;
    const struct trans_stream_backend *stream_backend = NULL;
    size_t encode_buf_size  = 0;
    uint8_t *encode_buf     = NULL;
@@ -230,26 +223,24 @@ static bool rpng_save_image(const char *path,
    void *stream            = NULL;
    uint32_t total_in       = 0;
    uint32_t total_out      = 0;
-   RFILE *file             = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
+   
+   if (!intf_s)
       GOTO_END_ERROR();
 
    stream_backend = trans_stream_get_zlib_deflate_backend();
 
-   if (filestream_write(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
+   if (intfstream_write(intf_s, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
 
    ihdr.width = width;
    ihdr.height = height;
    ihdr.depth = 8;
    ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; /* RGBA or RGB */
-   if (!png_write_ihdr(file, &ihdr))
+   if (!png_write_ihdr_string(intf_s, &ihdr))
       GOTO_END_ERROR();
 
    encode_buf_size = (width * bpp + 1) * height;
-   encode_buf = (uint8_t*)malloc(encode_buf_size);
+   encode_buf      = (uint8_t*)malloc(encode_buf_size);
    if (!encode_buf)
       GOTO_END_ERROR();
 
@@ -344,21 +335,16 @@ static bool rpng_save_image(const char *path,
          (unsigned)(encode_buf_size * 2));
 
    if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
-   {
       GOTO_END_ERROR();
-   }
 
    memcpy(deflate_buf + 4, "IDAT", 4);
    dword_write_be(deflate_buf + 0,        ((uint32_t)total_out));
-   if (!png_write_idat(file, deflate_buf, ((size_t)total_out + 8)))
+   if (!png_write_idat_string(intf_s, deflate_buf, ((size_t)total_out + 8)))
       GOTO_END_ERROR();
 
-   if (!png_write_iend(file))
+   if (!png_write_iend_string(intf_s))
       GOTO_END_ERROR();
-
 end:
-   if (file)
-      filestream_close(file);
    free(encode_buf);
    free(deflate_buf);
    free(rgba_line);
@@ -382,13 +368,78 @@ end:
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
       unsigned width, unsigned height, unsigned pitch)
 {
-   return rpng_save_image(path, (const uint8_t*)data,
-         width, height, pitch, sizeof(uint32_t));
+   bool ret                      = false;
+   intfstream_t* intf_s          = NULL;
+   
+   intf_s = intfstream_open_file(path, 
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   ret = rpng_save_image_stream((const uint8_t*) data, intf_s,
+                                width, height,
+                                (signed) pitch, sizeof(uint32_t));
+   intfstream_close(intf_s);
+   free(intf_s);
+   return ret;
 }
 
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch)
 {
-   return rpng_save_image(path, (const uint8_t*)data,
-         width, height, pitch, 3);
+   bool ret                      = false;
+   intfstream_t* intf_s          = NULL;
+   
+   intf_s = intfstream_open_file(path, 
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   ret = rpng_save_image_stream(data, intf_s, width, height, 
+                                (signed) pitch, 3);
+   intfstream_close(intf_s);
+   free(intf_s);
+   return ret;
 }
+
+
+uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
+      unsigned width, unsigned height, signed pitch, uint64_t* bytes)
+{
+   bool ret                    = false;
+   uint8_t* buf                = NULL;
+   uint8_t* output             = NULL;
+   int buf_length              = 0;
+   intfstream_t* intf_s        = NULL;
+
+   buf_length = (int)(width*height*3*DEFLATE_PADDING)+PNG_ROUGH_HEADER;
+   buf        = (uint8_t*)malloc(buf_length*sizeof(uint8_t));
+   if (!buf)
+      GOTO_END_ERROR(); 
+   
+   intf_s = intfstream_open_writable_memory(buf, 
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         buf_length);
+
+   ret = rpng_save_image_stream((const uint8_t*)data, 
+            intf_s, width, height, pitch, 3);
+
+   *bytes = intfstream_get_ptr(intf_s);
+   intfstream_rewind(intf_s);
+   output = (uint8_t*)malloc((*bytes)*sizeof(uint8_t));
+   if (!output)
+      GOTO_END_ERROR();
+   intfstream_read(intf_s, output, *bytes);
+
+end:
+   if (buf)
+      free(buf);
+   if (intf_s)
+      free(intf_s);
+   if (ret == false)
+   {
+      if (output)
+         free(output);
+      return NULL;
+   }
+   return output;
+}
+

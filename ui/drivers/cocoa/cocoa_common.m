@@ -23,42 +23,15 @@
 
 #include "../../../verbosity.h"
 
-#include "../../../input/input_driver.h"
 #include "../../../input/drivers/cocoa_input.h"
 #include "../../../retroarch.h"
 
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
-
 #endif
 
-#ifdef HAVE_METAL
-@implementation MetalView
 
-- (void)keyDown:(NSEvent*)theEvent
-{
-}
-
-/* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder
-{
-   return YES;
-}
-
-- (BOOL)isFlipped
-{
-   return YES;
-}
-@end
-#endif
-
-static CocoaView* g_instance;
-
-void *nsview_get_ptr(void)
-{
-    return (BRIDGE void *)g_instance;
-}
 
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
@@ -88,10 +61,13 @@ void *glkitview_init(void);
 
 + (CocoaView*)get
 {
-   if (!g_instance)
-      g_instance = [CocoaView new];
-
-   return g_instance;
+   CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
+   if (!view)
+   {
+      view = [CocoaView new];
+      nsview_set_ptr(view);
+   }
+   return view;
 }
 
 - (id)init
@@ -117,6 +93,16 @@ void *glkitview_init(void);
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #endif
+#endif
+    
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
    return self;
@@ -182,7 +168,9 @@ void *glkitview_init(void);
 
 #elif TARGET_OS_IOS
 -(void) showNativeMenu {
-    [[RetroArch_iOS get] toggleUI];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[RetroArch_iOS get] toggleUI];
+    });
 }
 
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
@@ -326,6 +314,6 @@ void *glkitview_init(void);
     }];
 #endif
 }
-#endif  // end HAVE_COCOATOUCH
+#endif
 
 @end

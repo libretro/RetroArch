@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -118,8 +119,6 @@ void win32_destroy_window(void);
 
 bool win32_taskbar_is_created(void);
 
-void win32_set_taskbar_created(bool created);
-
 float win32_get_refresh_rate(void *data);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
@@ -142,6 +141,8 @@ BOOL IsIconic(HWND hwnd);
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 bool win32_load_content_from_gui(const char *szFilename);
+
+void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
 RETRO_END_DECLS
 

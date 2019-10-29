@@ -66,7 +66,7 @@ static void gfx_ctx_null_destroy(void *data)
 
 static void gfx_ctx_null_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    (void)data;
    (void)input;
@@ -151,7 +151,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    NULL, /* set_resize */
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,

@@ -36,7 +36,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NATIVE,
-    "Native")
+    "Native"
+    )
 MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Device disconnected from port"
@@ -382,6 +383,14 @@ MSG_HASH(
     "Load Remap Files Automatically"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+    "Use Global Core Options File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+    "Save all core options to a common settings file (retroarch-core-options.cfg). When disabled, options for each core will be saved to a separate core-specific folder/file in RetroArch's 'Config' directory."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
     "Load Shader Presets Automatically"
     )
@@ -457,10 +466,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
     "Don't overwrite SaveRAM on loading savestate"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
     "Bluetooth"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
     "Buildbot Assets URL"
@@ -606,6 +617,14 @@ MSG_HASH(
     "History List Size"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+    "Favorites List Size"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+    "Limit the number of entries in the favorites playlist. Once limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' (99999) entries. WARNING: Reducing the value will delete existing entries!"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
     "Allow to remove entries"
     )
@@ -676,6 +695,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
     "System name"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+    "Required graphics API"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -814,12 +837,12 @@ MSG_HASH(
     "Content Downloader"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-    "DPI Override"
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+    "Menu Scale Factor"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-    "DPI Override"
+    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
+    "Applies a global scaling factor when drawing the menu. Can be used to increase or decrease the size of the user interface."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -1065,6 +1088,16 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
     "Analog Sensitivity"
     )
+#ifdef GEKKO
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+    "Mouse Scale"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+    "Adjust x/y scale for Wiimote lightgun speed."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
     "Menu Swap OK & Cancel Buttons"
@@ -1425,6 +1458,14 @@ MSG_HASH(
     "Show Mouse Cursor With Overlay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+    "Auto-Rotate Overlay"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+    "If supported by current overlay, automatically rotate layout to match screen orientation/aspect ratio."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Show Inputs Listen Port"
     )
@@ -1500,10 +1541,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
     "Joypad"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
     "Services"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
     "Chinese (Simplified)"
@@ -1612,10 +1655,14 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Load Content"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+    "Load Disc"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+    "Dump Disc"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "Load State"
@@ -1693,6 +1740,54 @@ MSG_HASH(
     "Yellow"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI,
+    "Material UI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
+    "Material UI Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
+    "Ozone Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
+    "Nord"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+    "Gruvbox Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+    "Solarized Dark"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+    "Menu Transition Animation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+    "Enable smooth animation effects when navigating between different levels of the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+    "Auto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
+    "Fade"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
+    "Slide"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+    "OFF"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
     "Footer Opacity"
     )
@@ -1710,7 +1805,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-    "Settings"
+    "File Browser"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -2013,6 +2108,10 @@ MSG_HASH(
     "No settings found."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+    "No automatic shader presets found."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
     "No shader parameters."
     )
@@ -2193,6 +2292,46 @@ MSG_HASH(
     "Cores reset: "
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Label Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Change how the content labels are displayed in this playlist."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+    "Show full labels"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+    "Remove () content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+    "Remove [] content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+    "Remove () and []"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+    "Keep region"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+    "Keep disc index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+    "Keep region and disc index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+    "System Default"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
     "Touch Support"
     )
@@ -2227,10 +2366,14 @@ MSG_HASH(
     "Restart RetroArch"
     )
 #endif
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
-      "Database Entry")
-MSG_HASH(MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-      "Show database information for current content")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+    "Database Entry"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+    "Show database information for current content"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
     "Analog supported"
@@ -2570,10 +2713,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
     "Run"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
     "SAMBA"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
     "Savefile"
@@ -2746,10 +2891,12 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
     "Write Screenshots to Content Dir"
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
     "SSH"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_START_CORE,
     "Start Core"
@@ -3279,44 +3426,68 @@ MSG_HASH(
     "Show date / time"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-     "Style of date / time"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    "Style of date / time"
     )
 MSG_HASH(
-     MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
-     "Changes the style current date and/or time is shown inside the menu."
+    MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+    "Changes the style current date and/or time is shown inside the menu."
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
-     "YYYY-MM-DD HH:MM:SS"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+    "YYYY-MM-DD HH:MM:SS"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
-     "YYYY-MM-DD HH:MM"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+    "YYYY-MM-DD HH:MM"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
-     "MM-DD-YYYY HH:MM"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+    "MM-DD-YYYY HH:MM"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
-     "HH:MM:SS"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+    "HH:MM:SS"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
-     "HH:MM"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+    "HH:MM"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
-     "DD/MM HH:MM"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+    "DD/MM HH:MM"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
-     "MM/DD HH:MM"
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+    "MM/DD HH:MM"
     )
- MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
-     "HH:MM:SS (AM/PM)"
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS_AM_PM,
+    "YYYY-MM-DD HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM_AM_PM,
+    "YYYY-MM-DD HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_AM_PM,
+    "MM-DD-YYYY HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM,
+    "HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM,
+    "HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM_AM_PM,
+    "DD/MM HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM,
+    "MM/DD HH:MM (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -3341,6 +3512,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
     "Animation speed when scrolling long menu text strings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+    "Smooth Ticker Text"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+    "Use smooth scrolling animation when displaying long menu text strings. Has a small performance impact."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -3512,7 +3691,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-    "Menubar"
+    "Menu Bar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
@@ -3709,6 +3888,10 @@ MSG_HASH(
     "Frame Delay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+    "Auto-Shader Delay"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
     "Start in Fullscreen Mode"
     )
@@ -3805,8 +3988,16 @@ MSG_HASH(
     "Load Shader Preset"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
+    "Save"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
     "Save Shader Preset As"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+    "Save Global Preset"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -4067,10 +4258,6 @@ MSG_HASH(
     "Menu Shader Pipeline"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
-    "Menu Scale Factor"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
     "Icon Shadows"
     )
@@ -4231,10 +4418,12 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
     "Change audio output settings."
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
     "Determines the state of Bluetooth."
     )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
     "Saves changes to the configuration file on exit."
@@ -4303,6 +4492,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
     "Download add-ons, components, and content for RetroArch."
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
     "Share network folders through the SMB protocol."
@@ -4311,14 +4501,17 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
     "Manage operating system level services."
     )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
     "Show hidden files/directories inside the file browser."
     )
+#ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SSH_ENABLE,
     "Use SSH to access the command line remotely."
     )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
     "Prevents your system's screensaver from becoming active."
@@ -4338,6 +4531,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
     "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay after V-Sync (in ms)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+    "Delays auto-loading shaders (in ms). Can work around graphical glitches when using 'screen grabbing' software."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
@@ -4374,6 +4571,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ADDED_TO_FAVORITES,
     "Added to favorites"
+    )
+MSG_HASH(
+    MSG_ADD_TO_FAVORITES_FAILED,
+    "Failed to add favorite: playlist full"
     )
 MSG_HASH(
     MSG_SET_CORE_ASSOCIATION,
@@ -4618,6 +4819,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_FAILED_TO_APPLY_SHADER,
     "Failed to apply shader."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_APPLY_SHADER_PRESET,
+    "Failed to apply shader preset:"
     )
 MSG_HASH(
     MSG_FAILED_TO_BIND_SOCKET,
@@ -4884,6 +5089,10 @@ MSG_HASH(
     "Loading history file"
     )
 MSG_HASH(
+    MSG_LOADING_FAVORITES_FILE,
+    "Loading favorites file"
+    )
+MSG_HASH(
     MSG_LOADING_STATE,
     "Loading state"
     )
@@ -5120,9 +5329,9 @@ MSG_HASH(
     "Screenshot saved"
     )
 MSG_HASH(
-   MSG_ACHIEVEMENT_UNLOCKED,
-   "Achievement Unlocked"
-   )
+    MSG_ACHIEVEMENT_UNLOCKED,
+    "Achievement Unlocked"
+    )
 MSG_HASH(
     MSG_CHANGE_THUMBNAIL_TYPE,
     "Change thumbnail type"
@@ -6037,9 +6246,9 @@ MSG_HASH(
     "Type of thumbnail to display at the bottom right of playlists."
     )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Replace the content metadata panel by another thumbnail."
-   )
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+    "Replace the content metadata panel by another thumbnail."
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
     "Display the left thumbnail under the right one, on the right side of the screen."
@@ -6394,15 +6603,6 @@ MSG_HASH(
     "Modify the opacity of the footer graphic."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
-    "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Set the custom scaling size here.\n"
-    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
     "Save all downloaded files to this directory."
     )
@@ -6505,6 +6705,10 @@ MSG_HASH(
     "Load a shader preset. The shader pipeline will be automatically set-up."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+    "Save the current shader preset."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
     "Save the current shader settings as a new shader preset."
     )
@@ -6519,6 +6723,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
     "Save the current shader settings as the default settings for the content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+    "Save the current shader settings as the default global setting."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
@@ -6733,6 +6941,22 @@ MSG_HASH(
     "Show icons at the left of the menu entries."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    "Optimize Landscape Layout"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    "Automatically adjust menu layout to better fit the screen when using landscape display orientations."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+    "Auto-Rotate Navigation Bar"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+    "Automatically move the navigation bar to the right hand side of the screen when using landscape display orientations."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
     "Settings Tab"
     )
@@ -6791,6 +7015,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
     "Show/hide the 'Load Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+    "Show Load Disc"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
+    "Show/hide the 'Load Disc' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+    "Show Dump Disc"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+    "Show/hide the 'Dump Disc' option."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -7236,6 +7476,14 @@ MSG_HASH(
     "Star Field"
 )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+    "Background Animation Speed"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+    "Adjust speed of background particle animation effects."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Extended ASCII Support"
     )
@@ -7498,9 +7746,9 @@ MSG_HASH(
     "%1 items"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "Drop image here"
-   )
+    MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
+    "Drop image here"
+    )
 #ifdef HAVE_QT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
@@ -8423,6 +8671,10 @@ MSG_HASH(
     "Remove"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+    "Remove Passes"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_APPLY,
     "Apply"
     )
@@ -8463,13 +8715,13 @@ MSG_HASH(
     "Start on playlist:"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
-   "Thumbnail"
-   )
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+    "Thumbnail"
+    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
-   "Thumbnail cache limit:"
-   )
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+    "Thumbnail cache limit:"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
     "Download All Thumbnails"
@@ -8672,6 +8924,22 @@ MSG_HASH(
     "Have the left sidebar always collapsed."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+    "Truncate Playlist names"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+    "When enabled, will remove the system names from the playlists. For example, display 'PlayStation' instead of 'Sony - PlayStation'. Changes require a restart to take effect."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+    "Use Ticker Text For Content Metadata"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+    "When enabled, each item of content metadata shown on the right sidebar of playlists (associated core, play time) will occupy a single line; strings exceeding the width of the sidebar will be displayed as scrolling ticker text. When disabled, each item of content metadata will be displayed statically, wrapped to occupy as many lines as required."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
     "Use preferred system color theme"
     )
@@ -8864,16 +9132,64 @@ MSG_HASH(
     "Per Core"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+    "Aggregate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+    "Playlist sublabel runtime 'last played' format"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+    "Selects date/time formatting style used when displaying runtime log record 'last played' timestamp information. Note: '(AM/PM)' options will have a small performance impact on some platforms."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS,
+    "YYYY/MM/DD - HH:MM:SS"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM,
+    "YYYY/MM/DD - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY,
+    "MM/DD/YYYY - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM,
+    "DD/MM - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM,
+    "MM/DD - HH:MM"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS_AM_PM,
+    "YYYY/MM/DD - HH:MM:SS (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM,
+    "YYYY/MM/DD - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_AM_PM,
+    "MM/DD/YYYY - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM_AM_PM,
+    "DD/MM - HH:MM (AM/PM)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM,
+    "MM/DD - HH:MM (AM/PM)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "Fuzzy archive matching"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
-    "Aggregate"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
@@ -8923,34 +9239,62 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_DIR,
     "Save system event log files to this directory."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-      "Menu Widgets")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-      "Video Shaders")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-      "Scan without core match")
-MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-      "When disabled, content is only added to playlists if you have a core installed that supports its extension. By enabling this, it will add to playlist regardless. This way, you can install the core you need later on after scanning.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-      "Animation Horizontal Icon Highlight")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-      "Animation Move Up/Down")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-      "Animation Main Menu Opens/Closes")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-      "GPU Index")
-MSG_HASH(MSG_DUMPING_DISC,
-      "Dumping disc...")
-MSG_HASH(MSG_DRIVE_NUMBER,
-      "Drive %d")
-MSG_HASH(MSG_LOAD_CORE_FIRST,
-      "Please load a core first.")
-MSG_HASH(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-      "Failed to read from drive. Dump aborted.")
-MSG_HASH(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-      "Failed to write to disk. Dump aborted.")
-MSG_HASH(MSG_NO_DISC_INSERTED,
-      "No disc is inserted in the drive.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+    "Menu Widgets"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+    "Video Shaders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+    "Scan without core match"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+    "When disabled, content is only added to playlists if you have a core installed that supports its extension. By enabling this, it will add to playlist regardless. This way, you can install the core you need later on after scanning."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+    "Animation Horizontal Icon Highlight"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+    "Animation Move Up/Down"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+    "Animation Main Menu Opens/Closes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+    "GPU Index"
+    )
+MSG_HASH(
+    MSG_DUMPING_DISC,
+    "Dumping disc..."
+    )
+MSG_HASH(
+    MSG_DRIVE_NUMBER,
+    "Drive %d"
+    )
+MSG_HASH(
+    MSG_LOAD_CORE_FIRST,
+    "Please load a core first."
+    )
+MSG_HASH(
+    MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+    "Failed to read from drive. Dump aborted."
+    )
+MSG_HASH(
+    MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+    "Failed to write to disk. Dump aborted."
+    )
+MSG_HASH(
+    MSG_NO_DISC_INSERTED,
+    "No disc is inserted in the drive."
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
     "Disc Information"
@@ -8958,4 +9302,618 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISC_INFORMATION,
     "View information about inserted media discs."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET,
+    "Reset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+    "Reset All"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+    "Frontend Logging Level"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+    "Sets log level for the frontend. If a log level issued by the frontend is below this value, it is ignored."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+    "Framerate Update Interval (in frames)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+    "Framerate display will be updated at the set interval (in frames)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+    "Show Restart Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+    "Show/hide the 'Restart Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+    "Show Close Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+    "Show/hide the 'Close Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+    "Show Resume Content"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+    "Show/hide the 'Resume Content' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+    "Settings"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+    "Show or hide elements on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+    "Show Input"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+    "Show or hide 'Input Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+    "AI Service"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+    "Change settings for the AI Service (Translation/TTS/Misc)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+    "AI Service Output"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+    "AI Service URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+    "AI Service Enabled"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+    "Show translation as a text overlay (Image mode), or play as Text-To-Speech (Speech mode)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+    "A http:// url pointing to the translation service to use."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+    "Enable AI Service to run when the AI Service hotkey is pressed."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+    "Target Language"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+    "The language the service will translate to. If set to 'Don't Care', it will default to English."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+    "Source Language"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+    "The language the service will translate from. If set to 'Don't Care', it will attempt to auto-detect the language. Setting it to a specific language will make the translation more accurate."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CZECH,
+    "Czech"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_DANISH,
+    "Danish"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
+    "Swedish"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
+    "Croatian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
+    "Catalan"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
+    "Bulgarian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
+    "Bengali"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
+    "Basque"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
+    "Azerbaijani"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
+    "Albanian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
+    "Afrikaans"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
+    "Estonian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
+    "Filipino"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
+    "Finnish"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
+    "Galician"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
+    "Georgian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
+    "Gujarati"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
+    "Haitian Creole"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
+    "Hebrew"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_HINDI,
+    "Hindi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
+    "Hungarian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
+    "Icelandic"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
+    "Indonesian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_IRISH,
+    "Irish"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
+    "Kannada"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
+    "Latin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
+    "Latvian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
+    "Lithuanian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
+    "Macedonian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_MALAY,
+    "Malay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
+    "Maltese"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
+    "Norwegian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
+    "Persian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
+    "Romanian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
+    "Serbian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
+    "Slovak"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
+    "Slovenian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
+    "Swahili"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
+    "Tamil"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
+    "Telugu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_THAI,
+    "Thai"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
+    "Ukrainian"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_URDU,
+    "Urdu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_WELSH,
+    "Welsh"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
+    "Yiddish"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+    "Show Drivers"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+    "Show or hide 'Driver Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+    "Show Video"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+    "Show or hide 'Video Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+    "Show Audio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+    "Show or hide 'Audio Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+    "Show Latency"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+    "Show or hide 'Latency Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+    "Show Core"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+    "Show or hide 'Core Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+    "Show Configuration"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+    "Show or hide 'Configuration Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+    "Show Saving"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+    "Show or hide 'Saving Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+    "Show Logging"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+    "Show or hide 'Logging Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Show Frame Throttle"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Show or hide 'Frame Throttle Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+    "Show Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+    "Show or hide 'Recording Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Show Onscreen Display"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Show or hide 'Onscreen Display Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+    "Show User Interface"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+    "Show or hide 'User Interface Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+    "Show AI Service"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+    "Show or hide 'AI Service Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Show Power Management"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Show or hide 'Power Management Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Show Achievements"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Show or hide 'Achievements Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+    "Show Network"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+    "Show or hide 'Network Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+    "Show Playlists"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+    "Show or hide 'Playlists Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+    "Show User"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+    "Show or hide 'User Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+    "Show Directory"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+    "Show or hide 'Directory Settings' on the Settings screen."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOAD_DISC,
+    "Load a physical media disc. You should first select the core (Load Core)  you intend to use with the disc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DUMP_DISC,
+    "Dump the physical media disc to internal storage. It will be saved as an image file."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+    "Image Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+    "Speech Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+    "Remove"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+    "Remove an automatic shader preset."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+    "Remove Global Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+    "Remove the Global Preset, used by all content and all cores."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+    "Remove Core Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+    "Remove the Core Preset, used by all content ran with the currently loaded core."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+    "Remove Content Directory Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+    "Remove the Content Directory Preset, used by all content inside the current working directory."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+    "Remove Game Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+    "Remove the Game Preset, used only for the specific game in question."
+    )
+MSG_HASH(
+    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+    "Shader preset removed successfully."
+    )
+MSG_HASH(
+    MSG_ERROR_REMOVING_SHADER_PRESET,
+    "Error removing shader preset."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+    "Frame Time Counter"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+    "Adjust settings influencing the frame time counter (only active when threaded video is disabled)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+    "Reset After Fastforward"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+    "Reset the frame time counter after fastforwarding."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+    "Reset After Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+    "Reset the frame time counter after loading a state."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+    "Reset After Save State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+    "Reset the frame time counter after saving a state."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+    "Use modern decorated animations, notifications, indicators and controls instead of the old text only system."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+    "The animation that triggers when scrolling between tabs."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+    "The animation that triggers when moving up or down."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+    "The animation that triggers when opening a submenu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+    "Delete Playlist"
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+    "Wi-Fi Access Point"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+    "Enable or disable Wi-Fi Access Point."
+    )
+MSG_HASH(
+    MSG_LOCALAP_SWITCHING_OFF,
+    "Switching off Wi-Fi Access Point."
+    )
+MSG_HASH(
+    MSG_WIFI_DISCONNECT_FROM,
+    "Disconnecting from Wi-Fi '%s'"
+    )
+MSG_HASH(
+    MSG_LOCALAP_ALREADY_RUNNING,
+    "Wi-Fi Access Point is already started"
+    )
+MSG_HASH(
+    MSG_LOCALAP_NOT_RUNNING,
+    "Wi-Fi Access Point is not running"
+    )
+MSG_HASH(
+    MSG_LOCALAP_STARTING,
+    "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s"
+    )
+MSG_HASH(
+    MSG_LOCALAP_ERROR_CONFIG_CREATE,
+    "Could not create Wi-Fi Access Point configuration file."
+    )
+MSG_HASH(
+    MSG_LOCALAP_ERROR_CONFIG_PARSE,
+    "Wrong configuration file - could not find APNAME or PASSWORD in %s"
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+    "Allow cores to switch the video driver"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+    "Allow cores to force switch to a different video driver than is currently loaded."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+    "AI Service Pause Toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+    "Pauses core while screen is translated."
     )

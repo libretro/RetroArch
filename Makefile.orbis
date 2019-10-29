@@ -17,7 +17,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1
 	DEFINES += -DHAVE_MENU -DHAVE_LIBRETRODB
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
 	ifeq ($(DEBUG), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
@@ -35,6 +35,7 @@ else
 	HAVE_7ZIP		:= 1
 	HAVE_EGL 		:= 1
 	HAVE_MENU_WIDGETS := 1
+	HAVE_GLSL      := 1
 	HAVE_OPENGLES  		:= 1
 	HAVE_NETWORKING		:= 0
 	HAVE_SOCKET_LEGACY	:= 0
@@ -59,11 +60,6 @@ else
 	CFLAGS += $(DEF_FLAGS)
 	BLACKLIST :=
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += input/drivers/ps4_input.o
-	OBJ += input/drivers_joypad/ps4_joypad.o
-	OBJ += audio/drivers/psp_audio.o
-	#OBJ += frontend/drivers/platform_orbis.o
 endif
 
 ifeq ($(strip $(PS4SDK)),)
@@ -83,7 +79,7 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Ideps/stb -Ilibretro-common/include/compat/zlib
+INCDIRS := -I. -Ideps/7zip -Ilibretro-common/include -Ideps/stb -Ilibretro-common/include/compat/zlib
 LIBDIRS := -L.
 
 ARCHFLAGS := -m64 -DORBIS

@@ -180,7 +180,7 @@ error:
 
 static void gfx_ctx_opendingux_input_driver(void *data,
       const char *name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    *input      = NULL;
    *input_data = NULL;
@@ -284,7 +284,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    NULL, /* set_resize */
    gfx_ctx_opendingux_has_focus,
    gfx_ctx_opendingux_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    gfx_ctx_opendingux_swap_buffers,
    gfx_ctx_opendingux_input_driver,
    gfx_ctx_opendingux_get_proc_address,

@@ -87,6 +87,9 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM,
    MENU_SETTING_DROPDOWN_ITEM_RESOLUTION,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
+   MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -121,6 +124,9 @@ enum menu_settings_type
    MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS,
    MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
    MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE,
+   MENU_SETTING_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
+   MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
    MENU_WIFI,
    MENU_ROOM,
    MENU_ROOM_LAN,
@@ -197,6 +203,7 @@ enum menu_settings_type
    MENU_SET_CDROM_LIST,
    MENU_SET_LOAD_CDROM_LIST,
    MENU_SET_CDROM_INFO,
+   MENU_SETTING_ACTION_DELETE_PLAYLIST,
 
    MENU_SETTINGS_LAST
 };
@@ -238,6 +245,87 @@ typedef struct menu_display_ctx_driver
    void (*scissor_end)(video_frame_info_t *video_info);
 } menu_display_ctx_driver_t;
 
+typedef struct menu_ctx_driver
+{
+   /* Set a framebuffer texture. This is used for instance by RGUI. */
+   void  (*set_texture)(void);
+   /* Render a messagebox to the screen. */
+   void  (*render_messagebox)(void *data, const char *msg);
+   int   (*iterate)(void *data, void *userdata, enum menu_action action);
+   void  (*render)(void *data, unsigned width, unsigned height, bool is_idle);
+   void  (*frame)(void *data, video_frame_info_t *video_info);
+   /* Initializes the menu driver. (setup) */
+   void* (*init)(void**, bool);
+   /* Frees the menu driver. (teardown) */
+   void  (*free)(void*);
+   /* This will be invoked when we are running a hardware context
+    * and we have just flushed the state. For instance - we have
+    * just toggled fullscreen, the GL driver did a teardown/setup -
+    * we now need to rebuild all of our textures and state for the
+    * menu driver. */
+   void  (*context_reset)(void *data, bool video_is_threaded);
+   /* This will be invoked when we are running a hardware context
+    * and the context in question wants to tear itself down. All
+    * textures and related state on the menu driver will also
+    * be freed up then. */
+   void  (*context_destroy)(void *data);
+   void  (*populate_entries)(void *data,
+         const char *path, const char *label,
+         unsigned k);
+   void  (*toggle)(void *userdata, bool);
+   /* This will clear the navigation position. */
+   void  (*navigation_clear)(void *, bool);
+   /* This will decrement the navigation position by one. */
+   void  (*navigation_decrement)(void *data);
+   /* This will increment the navigation position by one. */
+   void  (*navigation_increment)(void *data);
+   void  (*navigation_set)(void *data, bool);
+   void  (*navigation_set_last)(void *data);
+   /* This will descend the navigation position by one alphabet letter. */
+   void  (*navigation_descend_alphabet)(void *, size_t *);
+   /* This will ascend the navigation position by one alphabet letter. */
+   void  (*navigation_ascend_alphabet)(void *, size_t *);
+   /* Initializes a new menu list. */
+   bool  (*lists_init)(void*);
+   void  (*list_insert)(void *userdata,
+         file_list_t *list, const char *, const char *, const char *, size_t,
+         unsigned);
+   int   (*list_prepend)(void *userdata,
+         file_list_t *list, const char *, const char *, size_t);
+   void  (*list_free)(file_list_t *list, size_t, size_t);
+   void  (*list_clear)(file_list_t *list);
+   void  (*list_cache)(void *data, enum menu_list_type, unsigned);
+   int   (*list_push)(void *data, void *userdata, menu_displaylist_info_t*, unsigned);
+   size_t(*list_get_selection)(void *data);
+   size_t(*list_get_size)(void *data, enum menu_list_type type);
+   void *(*list_get_entry)(void *data, enum menu_list_type type, unsigned i);
+   void  (*list_set_selection)(void *data, file_list_t *list);
+   int   (*bind_init)(menu_file_list_cbs_t *cbs,
+         const char *path, const char *label, unsigned type, size_t idx);
+   /* Load an image for use by the menu driver */
+   bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
+   const char *ident;
+   int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
+   void (*update_thumbnail_path)(void *data, unsigned i, char pos);
+   void (*update_thumbnail_image)(void *data);
+   void (*refresh_thumbnail_image)(void *data);
+   void (*set_thumbnail_system)(void *data, char* s, size_t len);
+   void (*get_thumbnail_system)(void *data, char* s, size_t len);
+   void (*set_thumbnail_content)(void *data, const char *s);
+   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
+   void (*update_savestate_thumbnail_path)(void *data, unsigned i);
+   void (*update_savestate_thumbnail_image)(void *data);
+   int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
+         menu_file_list_cbs_t *cbs,
+         menu_entry_t *entry, unsigned action);
+   int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
+         enum menu_input_pointer_gesture gesture,
+         menu_file_list_cbs_t *cbs,
+         menu_entry_t *entry, unsigned action);
+   bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
+} menu_ctx_driver_t;
+
+
 typedef struct
 {
    unsigned rpl_entry_selection_ptr;
@@ -265,6 +353,8 @@ typedef struct
    {
       unsigned                unsigned_var;
    } scratchpad;
+   const menu_ctx_driver_t *driver_ctx;
+   void *userdata;
 } menu_handle_t;
 
 struct menu_display_ctx_draw
@@ -323,88 +413,6 @@ typedef struct menu_display_ctx_powerstate
    bool charging;
 } menu_display_ctx_powerstate_t;
 
-typedef struct menu_ctx_driver
-{
-   /* Set a framebuffer texture. This is used for instance by RGUI. */
-   void  (*set_texture)(void);
-   /* Render a messagebox to the screen. */
-   void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(menu_handle_t *menu, void *userdata, enum menu_action action);
-   void  (*render)(void *data, bool is_idle);
-   void  (*frame)(void *data, video_frame_info_t *video_info);
-   /* Initializes the menu driver. (setup) */
-   void* (*init)(void**, bool);
-   /* Frees the menu driver. (teardown) */
-   void  (*free)(void*);
-   /* This will be invoked when we are running a hardware context
-    * and we have just flushed the state. For instance - we have
-    * just toggled fullscreen, the GL driver did a teardown/setup -
-    * we now need to rebuild all of our textures and state for the
-    * menu driver. */
-   void  (*context_reset)(void *data, bool video_is_threaded);
-   /* This will be invoked when we are running a hardware context
-    * and the context in question wants to tear itself down. All
-    * textures and related state on the menu driver will also
-    * be freed up then. */
-   void  (*context_destroy)(void *data);
-   void  (*populate_entries)(void *data,
-         const char *path, const char *label,
-         unsigned k);
-   void  (*toggle)(void *userdata, bool);
-   /* This will clear the navigation position. */
-   void  (*navigation_clear)(void *, bool);
-   /* This will decrement the navigation position by one. */
-   void  (*navigation_decrement)(void *data);
-   /* This will increment the navigation position by one. */
-   void  (*navigation_increment)(void *data);
-   void  (*navigation_set)(void *data, bool);
-   void  (*navigation_set_last)(void *data);
-   /* This will descend the navigation position by one alphabet letter. */
-   void  (*navigation_descend_alphabet)(void *, size_t *);
-   /* This will ascend the navigation position by one alphabet letter. */
-   void  (*navigation_ascend_alphabet)(void *, size_t *);
-   /* Initializes a new menu list. */
-   bool  (*lists_init)(void*);
-   void  (*list_insert)(void *userdata,
-         file_list_t *list, const char *, const char *, const char *, size_t,
-         unsigned);
-   int   (*list_prepend)(void *userdata,
-         file_list_t *list, const char *, const char *, size_t);
-   void  (*list_free)(file_list_t *list, size_t, size_t);
-   void  (*list_clear)(file_list_t *list);
-   void  (*list_cache)(void *data, enum menu_list_type, unsigned);
-   int   (*list_push)(void *data, void *userdata, menu_displaylist_info_t*, unsigned);
-   size_t(*list_get_selection)(void *data);
-   size_t(*list_get_size)(void *data, enum menu_list_type type);
-   void *(*list_get_entry)(void *data, enum menu_list_type type, unsigned i);
-   void  (*list_set_selection)(void *data, file_list_t *list);
-   int   (*bind_init)(menu_file_list_cbs_t *cbs,
-         const char *path, const char *label, unsigned type, size_t idx);
-   /* Load an image for use by the menu driver */
-   bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
-   const char *ident;
-   int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
-   int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
-         menu_file_list_cbs_t *cbs,
-         menu_entry_t *entry, unsigned action);
-   void (*update_thumbnail_path)(void *data, unsigned i, char pos);
-   void (*update_thumbnail_image)(void *data);
-   void (*refresh_thumbnail_image)(void *data);
-   void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   void (*get_thumbnail_system)(void *data, char* s, size_t len);
-   void (*set_thumbnail_content)(void *data, const char *s);
-   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
-   void (*update_savestate_thumbnail_path)(void *data, unsigned i);
-   void (*update_savestate_thumbnail_image)(void *data);
-   int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
-         menu_file_list_cbs_t *cbs,
-         menu_entry_t *entry, unsigned action);
-   int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
-         menu_file_list_cbs_t *cbs,
-         menu_entry_t *entry, unsigned action);
-   bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
-} menu_ctx_driver_t;
-
 typedef struct menu_ctx_displaylist
 {
    menu_displaylist_info_t *info;
@@ -451,6 +459,7 @@ typedef struct menu_ctx_pointer
    unsigned y;
    unsigned ptr;
    unsigned action;
+   enum menu_input_pointer_gesture gesture;
    int retcode;
    menu_file_list_cbs_t *cbs;
    menu_entry_t *entry;
@@ -498,23 +507,11 @@ const char* config_get_menu_driver_options(void);
 
 const char *menu_driver_ident(void);
 
-bool menu_driver_render(bool is_idle, bool is_inited, bool is_dummy);
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
-
-bool menu_driver_is_binding_state(void);
-
-void menu_driver_set_binding_state(bool on);
 
 void menu_driver_frame(video_frame_info_t *video_info);
 
 bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
-
-/* Is a background texture set for the current menu driver?  Should
- * return true for RGUI, for instance. */
-bool menu_driver_is_texture_set(void);
-
-bool menu_driver_is_alive(void);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
@@ -550,9 +547,6 @@ size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
 
-enum menu_toggle_reason menu_display_toggle_get_reason(void);
-void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
-
 void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
 
@@ -563,9 +557,6 @@ void menu_display_font_free(font_data_t *font);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);
-bool menu_display_libretro(bool is_idle, bool is_inited, bool is_dummy);
-bool menu_display_libretro_running(bool rarch_is_inited,
-      bool rarch_is_dummy_core);
 
 void menu_display_set_width(unsigned width);
 void menu_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
@@ -584,7 +575,8 @@ void menu_display_unset_viewport(unsigned width, unsigned height);
 bool menu_display_get_framebuffer_dirty_flag(void);
 void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
-float menu_display_get_dpi(void);
+float menu_display_get_pixel_scale(unsigned width, unsigned height);
+float menu_display_get_dpi_scale(unsigned width, unsigned height);
 bool menu_display_init_first_driver(bool video_is_threaded);
 bool menu_display_restore_clear_color(void);
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
@@ -630,9 +622,9 @@ void menu_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h, unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
+
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
       video_frame_info_t *video_info);
-bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
 void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate);
@@ -700,6 +692,8 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
 void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
 
+menu_handle_t *menu_driver_get_ptr(void);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
@@ -718,6 +712,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_wiiu;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
 extern menu_display_ctx_driver_t menu_display_ctx_vga;
+extern menu_display_ctx_driver_t menu_display_ctx_fpga;
 extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;

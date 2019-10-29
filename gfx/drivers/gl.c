@@ -272,50 +272,6 @@ static bool gl2_shader_scale(gl_t *gl,
    return true;
 }
 
-static void gl2_renderchain_convert_geometry(
-      struct video_fbo_rect *fbo_rect,
-      struct gfx_fbo_scale *fbo_scale,
-      unsigned last_width, unsigned last_max_width,
-      unsigned last_height, unsigned last_max_height,
-      unsigned vp_width, unsigned vp_height)
-{
-   switch (fbo_scale->type_x)
-   {
-      case RARCH_SCALE_INPUT:
-         fbo_rect->img_width      = fbo_scale->scale_x * last_width;
-         fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         fbo_rect->img_width      = fbo_rect->max_img_width =
-            fbo_scale->abs_x;
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_width      = fbo_rect->max_img_width =
-            fbo_scale->scale_x * vp_width;
-         break;
-   }
-
-   switch (fbo_scale->type_y)
-   {
-      case RARCH_SCALE_INPUT:
-         fbo_rect->img_height     = last_height * fbo_scale->scale_y;
-         fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         fbo_rect->img_height     = fbo_scale->abs_y;
-         fbo_rect->max_img_height = fbo_scale->abs_y;
-         break;
-
-      case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_height     = fbo_rect->max_img_height =
-            fbo_scale->scale_y * vp_height;
-         break;
-   }
-}
-
 static void gl2_size_format(GLint* internalFormat)
 {
 #ifndef HAVE_PSGL
@@ -403,59 +359,6 @@ static bool gl2_recreate_fbo(
 
    RARCH_WARN("Failed to reinitialize FBO texture.\n");
    return false;
-}
-
-/* On resize, we might have to recreate our FBOs
- * due to "Viewport" scale, and set a new viewport. */
-
-static void gl2_renderchain_check_fbo_dimensions(
-      gl_t *gl, gl2_renderchain_data_t *chain)
-{
-   unsigned i;
-
-   /* Check if we have to recreate our FBO textures. */
-   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
-   {
-      struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-      if (fbo_rect)
-      {
-         unsigned img_width   = fbo_rect->max_img_width;
-         unsigned img_height  = fbo_rect->max_img_height;
-
-         if ((img_width  > fbo_rect->width) ||
-             (img_height > fbo_rect->height))
-         {
-            /* Check proactively since we might suddently
-             * get sizes of tex_w width or tex_h height. */
-            unsigned max                    = img_width > img_height ? img_width : img_height;
-            unsigned pow2_size              = next_pow2(max);
-            bool update_feedback            = gl->fbo_feedback_enable
-               && (unsigned)i == gl->fbo_feedback_pass;
-
-            fbo_rect->width                 = pow2_size;
-            fbo_rect->height                = pow2_size;
-
-            gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
-
-            /* Update feedback texture in-place so we avoid having to
-             * juggle two different fbo_rect structs since they get updated here. */
-            if (update_feedback)
-            {
-               if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
-                        &gl->fbo_feedback_texture))
-               {
-                  /* Make sure the feedback textures are cleared
-                   * so we don't feedback noise. */
-                  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-                  glClear(GL_COLOR_BUFFER_BIT);
-               }
-            }
-
-            RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
-                  i, fbo_rect->width, fbo_rect->height);
-         }
-      }
-   }
 }
 
 static void gl2_set_projection(gl_t *gl,
@@ -1019,12 +922,41 @@ static void gl2_renderchain_recompute_pass_sizes(
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
 
-      gl2_renderchain_convert_geometry(
-            fbo_rect, fbo_scale,
-            last_width, last_max_width,
-            last_height, last_max_height,
-            vp_width, vp_height
-            );
+      switch (fbo_scale->type_x)
+      {
+         case RARCH_SCALE_INPUT:
+            fbo_rect->img_width      = fbo_scale->scale_x * last_width;
+            fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_scale->abs_x;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_scale->scale_x * vp_width;
+            break;
+      }
+
+      switch (fbo_scale->type_y)
+      {
+         case RARCH_SCALE_INPUT:
+            fbo_rect->img_height     = last_height * fbo_scale->scale_y;
+            fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
+            break;
+
+         case RARCH_SCALE_ABSOLUTE:
+            fbo_rect->img_height     = fbo_scale->abs_y;
+            fbo_rect->max_img_height = fbo_scale->abs_y;
+            break;
+
+         case RARCH_SCALE_VIEWPORT:
+            fbo_rect->img_height     = fbo_rect->max_img_height =
+               fbo_scale->scale_y * vp_height;
+            break;
+      }
 
       if (fbo_rect->img_width > (unsigned)max_size)
       {
@@ -1111,7 +1043,8 @@ static void gl2_renderchain_init(
    if (!gl || shader_info.num == 0)
       return;
 
-   video_driver_get_size(&width, &height);
+   width        = gl->video_width;
+   height       = gl->video_height;
 
    scaler.idx   = 1;
    scaler.scale = &scale;
@@ -1425,53 +1358,19 @@ error:
    return false;
 }
 
-static void gl2_renderchain_bind_vao(
-      gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glBindVertexArray(chain->vao);
+#ifdef HAVE_OPENGLES
+#define gl2_renderchain_restore_default_state(gl) \
+   glDisable(GL_DEPTH_TEST); \
+   glDisable(GL_CULL_FACE); \
+   glDisable(GL_DITHER)
+#else
+#define gl2_renderchain_restore_default_state(gl) \
+   if (!gl->core_context_in_use) \
+      glEnable(GL_TEXTURE_2D); \
+   glDisable(GL_DEPTH_TEST); \
+   glDisable(GL_CULL_FACE); \
+   glDisable(GL_DITHER)
 #endif
-}
-
-static void gl2_renderchain_unbind_vao(void)
-{
-#ifndef HAVE_OPENGLES
-   glBindVertexArray(0);
-#endif
-}
-
-static void gl2_renderchain_new_vao(gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glGenVertexArrays(1, &chain->vao);
-#endif
-}
-
-static void gl2_renderchain_free_vao(
-      gl2_renderchain_data_t *chain)
-{
-#ifndef HAVE_OPENGLES
-   if (!chain)
-      return;
-   glDeleteVertexArrays(1, &chain->vao);
-#endif
-}
-
-static void gl2_renderchain_restore_default_state(
-      gl_t *gl)
-{
-#ifndef HAVE_OPENGLES
-   if (!gl->core_context_in_use)
-      glEnable(GL_TEXTURE_2D);
-#endif
-   glDisable(GL_DEPTH_TEST);
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_DITHER);
-}
 
 static void gl2_renderchain_copy_frame(
       gl_t *gl,
@@ -1726,8 +1625,10 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
       chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    /* Use regular textures if we use HW render. */
-   chain->egl_images                = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer(video);
+   chain->egl_images                = !gl->hw_render_use 
+      && gl_check_capability(GL_CAPS_EGLIMAGE) 
+      && gl->ctx_driver->image_buffer_init
+      && gl->ctx_driver->image_buffer_init(gl->ctx_data, video);
 }
 
 static void gl_load_texture_data(
@@ -2322,11 +2223,12 @@ static void gl2_init_textures(gl_t *gl, const video_info_t *video)
 
 static INLINE void gl2_set_shader_viewports(gl_t *gl)
 {
-   unsigned i, width, height;
+   unsigned i;
    video_frame_info_t video_info;
+   unsigned width                = gl->video_width;
+   unsigned height               = gl->video_height;
 
    video_driver_build_info(&video_info);
-   video_driver_get_size(&width, &height);
 
    for (i = 0; i < 2; i++)
    {
@@ -2499,7 +2401,10 @@ static void gl2_set_osd_msg(void *data,
 
 static void gl2_show_mouse(void *data, bool state)
 {
-   video_context_driver_show_mouse(&state);
+   gl_t                            *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static struct video_shader *gl2_get_current_shader(void *data)
@@ -2923,8 +2828,10 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl2_context_bind_hw_render(gl, false);
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
-      gl2_renderchain_bind_vao(chain);
+      glBindVertexArray(chain->vao);
+#endif
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
@@ -2946,19 +2853,59 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      gfx_ctx_mode_t mode;
-
-      gl->should_resize = false;
-
-      mode.width        = width;
-      mode.height       = height;
-
       video_info->cb_set_resize(video_info->context_data,
-            mode.width, mode.height);
+            width, height);
+      gl->should_resize = false;
 
       if (gl->fbo_inited)
       {
-         gl2_renderchain_check_fbo_dimensions(gl, chain);
+         /* On resize, we might have to recreate our FBOs
+          * due to "Viewport" scale, and set a new viewport. */
+         unsigned i;
+
+         /* Check if we have to recreate our FBO textures. */
+         for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+         {
+            struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+            if (fbo_rect)
+            {
+               unsigned img_width   = fbo_rect->max_img_width;
+               unsigned img_height  = fbo_rect->max_img_height;
+
+               if ((img_width  > fbo_rect->width) ||
+                     (img_height > fbo_rect->height))
+               {
+                  /* Check proactively since we might suddently
+                   * get sizes of tex_w width or tex_h height. */
+                  unsigned max                    = img_width > img_height ? img_width : img_height;
+                  unsigned pow2_size              = next_pow2(max);
+                  bool update_feedback            = gl->fbo_feedback_enable
+                     && (unsigned)i == gl->fbo_feedback_pass;
+
+                  fbo_rect->width                 = pow2_size;
+                  fbo_rect->height                = pow2_size;
+
+                  gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
+
+                  /* Update feedback texture in-place so we avoid having to
+                   * juggle two different fbo_rect structs since they get updated here. */
+                  if (update_feedback)
+                  {
+                     if (gl2_recreate_fbo(fbo_rect, gl->fbo_feedback,
+                              &gl->fbo_feedback_texture))
+                     {
+                        /* Make sure the feedback textures are cleared
+                         * so we don't feedback noise. */
+                        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                        glClear(GL_COLOR_BUFFER_BIT);
+                     }
+                  }
+
+                  RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
+                        i, fbo_rect->width, fbo_rect->height);
+               }
+            }
+         }
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
@@ -3095,17 +3042,8 @@ static bool gl2_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-
-#if 0
-         osd_params->y               = 0.350f;
-         osd_params->scale           = 0.75f;
-         font_driver_render_msg(video_info, NULL, video_info->chat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-#endif
-      }
    }
 #endif
 
@@ -3115,7 +3053,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -3125,8 +3064,9 @@ static bool gl2_frame(void *data, const void *frame,
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
-   video_info->cb_update_window_title(
-         video_info->context_data, video_info);
+   if (video_info->cb_update_window_title)
+      video_info->cb_update_window_title(
+            video_info->context_data, video_info);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -3179,11 +3119,11 @@ static bool gl2_frame(void *data, const void *frame,
             video_info->hard_sync_frames);
    }
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
-      gl2_renderchain_unbind_vao();
-
+      glBindVertexArray(0);
+#endif
    gl2_context_bind_hw_render(gl, true);
-
    return true;
 }
 
@@ -3258,12 +3198,16 @@ static void gl2_free(void *data)
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 
+#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
    {
-      gl2_renderchain_unbind_vao();
-      gl2_renderchain_free_vao((gl2_renderchain_data_t*)
-            gl->renderchain_data);
+      gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+         gl->renderchain_data;
+
+      glBindVertexArray(0);
+      glDeleteVertexArrays(1, &chain->vao);
    }
+#endif
 
    gl2_renderchain_deinit_fbo(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
    gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
@@ -3290,7 +3234,14 @@ static void gl2_set_nonblock_state(void *data, bool state)
    if (!state)
       interval = settings->uints.video_swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+   }
    gl2_context_bind_hw_render(gl, true);
 }
 
@@ -3636,7 +3587,7 @@ static bool renderchain_gl2_init_first(void **renderchain_handle)
 }
 
 static void *gl2_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    enum gfx_wrap_type wrap_type;
    gfx_ctx_mode_t mode;
@@ -3682,7 +3633,14 @@ static void *gl2_init(const video_info_t *video,
    if (video->vsync)
       interval = video->swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+   }
 
    win_width   = video->width;
    win_height  = video->height;
@@ -3743,9 +3701,9 @@ static void *gl2_init(const video_info_t *video,
    if (string_is_equal(vendor, "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         rarch_force_video_driver_fallback("gl1");
+         retroarch_force_video_driver_fallback("gl1");
 #else
-         rarch_force_video_driver_fallback("gdi");
+         retroarch_force_video_driver_fallback("gdi");
 #endif
 #endif
 
@@ -3774,9 +3732,15 @@ static void *gl2_init(const video_info_t *video,
 
    gl2_renderchain_restore_default_state(gl);
 
+#ifndef HAVE_OPENGLES
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
-      gl2_renderchain_new_vao((gl2_renderchain_data_t*)
-            gl->renderchain_data);
+   {
+      gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+         gl->renderchain_data;
+
+      glGenVertexArrays(1, &chain->vao);
+   }
+#endif
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
@@ -3813,6 +3777,8 @@ static void *gl2_init(const video_info_t *video,
       video_driver_set_size(&temp_width, &temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
+   gl->video_width       = temp_width;
+   gl->video_height      = temp_height;
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
@@ -3979,16 +3945,13 @@ error:
 
 static bool gl2_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    gl_t         *gl     = (gl_t*)data;
    bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
-
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
+   unsigned temp_width  = gl->video_width;
+   unsigned temp_height = gl->video_height;
 
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height, is_shutdown);
@@ -4001,7 +3964,11 @@ static bool gl2_alive(void *data)
    ret = !gl->quitting;
 
    if (temp_width != 0 && temp_height != 0)
+   {
       video_driver_set_size(&temp_width, &temp_height);
+      gl->video_width  = temp_width;
+      gl->video_height = temp_height;
+   }
 
    return ret;
 }
@@ -4009,7 +3976,11 @@ static bool gl2_alive(void *data)
 static bool gl2_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   return video_context_driver_suppress_screensaver(&enabled);
+   gl_t *gl     = (gl_t*)data;
+
+   if (gl->ctx_data && gl->ctx_driver->suppress_screensaver)
+      return gl->ctx_driver->suppress_screensaver(gl->ctx_data, enabled);
+   return false;
 }
 
 static void gl2_update_tex_filter_frame(gl_t *gl)
@@ -4166,11 +4137,10 @@ error:
 
 static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
-   unsigned width, height;
    unsigned top_y, top_dist;
    gl_t *gl        = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
+   unsigned width  = gl->video_width;
+   unsigned height = gl->video_height;
 
    *vp             = gl->vp;
    vp->full_width  = width;
@@ -4318,8 +4288,8 @@ static void gl2_overlay_enable(void *data, bool state)
 
    gl->overlay_enable = state;
 
-   if (gl->fullscreen)
-      video_context_driver_show_mouse(&state);
+   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl2_overlay_full_screen(void *data, bool enable)
@@ -4365,45 +4335,22 @@ static void gl2_get_overlay_interface(void *data,
 
 static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
 {
-   gfx_ctx_proc_address_t proc_address;
+   gl_t *gl = (gl_t*)data;
 
-   proc_address.addr = NULL;
-   proc_address.sym  = sym;
+   if (gl && gl->ctx_driver->get_proc_address)
+      return gl->ctx_driver->get_proc_address(sym);
 
-   video_context_driver_get_proc_address(&proc_address);
-
-   return proc_address.addr;
+   return NULL;
 }
 
 static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_t *gl = (gl_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
-
    if (!gl)
       return;
 
-   gl->keep_aspect = true;
+   gl->keep_aspect   = true;
    gl->should_resize = true;
 }
 

@@ -26,6 +26,9 @@
 
 RETRO_BEGIN_DECLS
 
+/* Default maximum playlist size */
+#define COLLECTION_SIZE 99999
+
 typedef struct content_playlist playlist_t;
 
 enum playlist_runtime_status
@@ -33,6 +36,41 @@ enum playlist_runtime_status
    PLAYLIST_RUNTIME_UNKNOWN = 0,
    PLAYLIST_RUNTIME_MISSING,
    PLAYLIST_RUNTIME_VALID
+};
+
+enum playlist_file_mode
+{
+   PLAYLIST_LOAD = 0,
+   PLAYLIST_SAVE
+};
+
+enum playlist_label_display_mode
+{
+   LABEL_DISPLAY_MODE_DEFAULT = 0,
+   LABEL_DISPLAY_MODE_REMOVE_PARENTHESES,
+   LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   LABEL_DISPLAY_MODE_REMOVE_PARENTHESES_AND_BRACKETS,
+   LABEL_DISPLAY_MODE_KEEP_REGION,
+   LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX
+};
+
+enum playlist_thumbnail_mode
+{
+   PLAYLIST_THUMBNAIL_MODE_DEFAULT = 0,
+   PLAYLIST_THUMBNAIL_MODE_OFF,
+   PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
+   PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
+   PLAYLIST_THUMBNAIL_MODE_BOXARTS
+};
+
+/* Note: We already have a left/right enum defined
+ * in menu_thumbnail_path.h - but we can't include
+ * menu code here, so have to make a 'duplicate'... */
+enum playlist_thumbnail_id
+{
+   PLAYLIST_THUMBNAIL_RIGHT = 0,
+   PLAYLIST_THUMBNAIL_LEFT
 };
 
 struct playlist_entry
@@ -45,6 +83,8 @@ struct playlist_entry
    char *crc32;
    char *subsystem_ident;
    char *subsystem_name;
+   char *runtime_str;
+   char *last_played_str;
    struct string_list *subsystem_roms;
    enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
@@ -98,6 +138,15 @@ void playlist_clear(playlist_t *playlist);
 size_t playlist_size(playlist_t *playlist);
 
 /**
+ * playlist_capacity:
+ * @playlist        	   : Playlist handle.
+ *
+ * Gets maximum capacity of playlist.
+ * Returns: maximum capacity of playlist.
+ **/
+size_t playlist_capacity(playlist_t *playlist);
+
+/**
  * playlist_get_index:
  * @playlist               : Playlist handle.
  * @idx                 : Index of playlist entry.
@@ -117,6 +166,21 @@ void playlist_get_index(playlist_t *playlist,
  **/
 void playlist_delete_index(playlist_t *playlist,
       size_t idx);
+
+/**
+ * playlist_resolve_path:
+ * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
+ * @path        : The path to be modified
+ *
+ * Resolves the path of an item, such as the content path or path to the core, to a format
+ * appropriate for saving or loading depending on the @mode parameter
+ *
+ * Can be platform specific. File paths for saving can be abbreviated to avoid saving absolute
+ * paths, as the base directory (home or application dir) may change after each subsequent
+ * install (iOS)
+ **/
+void playlist_resolve_path(enum playlist_file_mode mode,
+      char *path, size_t size);
 
 /**
  * playlist_push:
@@ -192,9 +256,15 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
 
 char *playlist_get_default_core_path(playlist_t *playlist);
 char *playlist_get_default_core_name(playlist_t *playlist);
+enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
+enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
+void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode);
+void playlist_set_thumbnail_mode(
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
 
 RETRO_END_DECLS
 

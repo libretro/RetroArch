@@ -99,8 +99,6 @@ static void init_ps2_video(ps2_video_t *ps2)
 
 static void deinitTexture(GSTEXTURE *texture)
 {
-   free(texture->Mem);
-   free(texture->Clut);
    texture->Mem = NULL;
    texture->Clut = NULL;
 }
@@ -222,7 +220,7 @@ static void ps2_texture_upload(GSGLOBAL *gsGlobal, GSTEXTURE *Texture, bool send
 }
 
 static void *ps2_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *ps2input = NULL;
    *input_data = NULL;
@@ -369,6 +367,9 @@ static void ps2_gfx_free(void *data)
    deinitTexture(ps2->menuTexture);
    deinitTexture(ps2->coreTexture);
 
+   free(ps2->menuTexture);
+   free(ps2->coreTexture);
+
    gsKit_deinit_global(ps2->gsGlobal);
 
    free(data);
@@ -389,16 +390,6 @@ static void ps2_set_filtering(void *data, unsigned index, bool smooth)
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
    ps2->menu_filter = smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
-}
-
-static void ps2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
-{
-   ps2_video_t *ps2 = (ps2_video_t*)data;
-}
-
-static void ps2_apply_state_changes(void *data)
-{
-   ps2_video_t *ps2 = (ps2_video_t*)data;
 }
 
 static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -458,8 +449,8 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   ps2_set_aspect_ratio,
-   ps2_apply_state_changes,
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
    ps2_set_texture_frame,
    ps2_set_texture_enable,
    ps2_set_osd_msg,             /* set_osd_msg */

@@ -26,7 +26,9 @@
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../core.h"
@@ -37,7 +39,6 @@
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 
-#include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 
 #include "../../config.def.h"
@@ -47,6 +48,8 @@
    cbs->action_start = name; \
    cbs->action_start_ident = #name;
 #endif
+
+int generic_action_ok_command(enum event_command cmd);
 
 #ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
@@ -65,6 +68,21 @@ static int action_start_audio_mixer_stream_volume(unsigned type, const char *lab
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
    input_remapping_set_defaults(true);
+   return 0;
+}
+
+static int action_start_shader_preset(unsigned type, const char *label)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
+
+   shader->passes = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+#endif
    return 0;
 }
 
@@ -130,6 +148,7 @@ static int action_start_input_desc(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_action_parameter(
       unsigned type, const char *label)
 {
@@ -147,19 +166,20 @@ static int action_start_shader_action_parameter(
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
-   return menu_shader_manager_clear_parameter(parameter);
+   return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_shader_manager_clear_pass_path(menu->scratchpad.unsigned_var);
+   menu_shader_manager_clear_pass_path(menu_shader_get(),
+         menu->scratchpad.unsigned_var);
 
    return 0;
 }
@@ -168,7 +188,7 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
-   menu_shader_manager_clear_pass_scale(pass);
+   menu_shader_manager_clear_pass_scale(menu_shader_get(), pass);
 
    return 0;
 }
@@ -176,8 +196,9 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
 static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   return menu_shader_manager_clear_pass_filter(pass);
+   return menu_shader_manager_clear_pass_filter(menu_shader_get(), pass);
 }
+#endif
 
 static int action_start_netplay_mitm_server(unsigned type, const char *label)
 {
@@ -186,6 +207,7 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
    return 0;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
@@ -195,8 +217,9 @@ static int action_start_shader_watch_for_changes(unsigned type, const char *labe
 
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
-   return menu_shader_manager_clear_num_passes();
+   return menu_shader_manager_clear_num_passes(menu_shader_get());
 }
+#endif
 
 static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
@@ -237,6 +260,48 @@ static int action_start_playlist_association(unsigned type, const char *label)
    return 0;
 }
 
+static int action_start_playlist_label_display_mode(unsigned type, const char *label)
+{
+   playlist_t *playlist  = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   /* Set label display mode to the default */
+   playlist_set_label_display_mode(playlist, LABEL_DISPLAY_MODE_DEFAULT);
+   playlist_write_file(playlist);
+
+   return 0;
+}
+
+static int action_start_playlist_right_thumbnail_mode(unsigned type, const char *label)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   /* Set thumbnail_mode to default value */
+   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
+   playlist_write_file(playlist);
+
+   return 0;
+}
+
+static int action_start_playlist_left_thumbnail_mode(unsigned type, const char *label)
+{
+   playlist_t *playlist = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   /* Set thumbnail_mode to default value */
+   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
+   playlist_write_file(playlist);
+
+   return 0;
+}
+
 static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
@@ -260,6 +325,17 @@ static int action_start_video_resolution(unsigned type, const char *label)
    return 0;
 }
 
+static int action_start_load_core(unsigned type, const char *label)
+{
+   int ret                     = generic_action_ok_command(
+         CMD_EVENT_UNLOAD_CORE);
+   bool refresh                = false;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return ret;
+}
+
 static int action_start_lookup_setting(unsigned type, const char *label)
 {
    return menu_setting_set(type, MENU_ACTION_START, false);
@@ -271,6 +347,12 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CORE_LIST:
+            BIND_ACTION_START(cbs, action_start_load_core);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+            BIND_ACTION_START(cbs, action_start_shader_preset);
+            break;
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_START(cbs, action_start_remap_file_load);
             break;
@@ -278,19 +360,29 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_scale_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+#endif
             break;
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_watch_for_changes);
+#endif
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_num_passes);
+#endif
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
@@ -304,6 +396,15 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
             BIND_ACTION_START(cbs, action_start_playlist_association);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
+            BIND_ACTION_START(cbs, action_start_playlist_label_display_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
+            BIND_ACTION_START(cbs, action_start_playlist_right_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
+            BIND_ACTION_START(cbs, action_start_playlist_left_thumbnail_mode);
+            break;
          default:
             return -1;
       }
@@ -315,6 +416,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -325,7 +427,9 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_shader_action_parameter);
    }
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+   else
+#endif
+   if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_core);
@@ -340,7 +444,8 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
    }
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
+            (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_START(cbs, action_start_core_setting);
    }

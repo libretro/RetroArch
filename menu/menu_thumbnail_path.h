@@ -73,19 +73,22 @@ bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_direct
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *menu_thumbnail_get_type(enum menu_thumbnail_id thumbnail_id);
+const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool menu_thumbnail_is_enabled(enum menu_thumbnail_id thumbnail_id);
+bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
 
 /* Setters */
 
 /* Sets current 'system' (default database name).
  * Returns true if 'system' is valid.
+ * If playlist is provided, extracts system-specific
+ * thumbnail assignment metadata (required for accurate
+ * usage of menu_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system);
+bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
 
 /* Sets current thumbnail content according to the specified label.
  * Returns true if content is valid */

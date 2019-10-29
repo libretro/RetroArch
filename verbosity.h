@@ -27,11 +27,17 @@
 
 RETRO_BEGIN_DECLS
 
+#define FILE_PATH_LOG_INFO  "[INFO]"
+#define FILE_PATH_LOG_ERROR "[ERROR]"
+#define FILE_PATH_LOG_WARN  "[WARN]"
+
 bool verbosity_is_enabled(void);
 
 void verbosity_enable(void);
 
 void verbosity_disable(void);
+
+void verbosity_set_log_level(unsigned level);
 
 bool *verbosity_get_ptr(void);
 

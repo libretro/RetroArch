@@ -49,26 +49,8 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 
 #define string_is_not_equal(a, b)         !string_is_equal((a), (b))
 
-#define string_add_pair_open(s, size)     strlcat((s), " (", (size))
-#define string_add_pair_close(s, size)    strlcat((s), ")",  (size))
-#define string_add_bracket_open(s, size)  strlcat((s), "{",  (size))
-#define string_add_bracket_close(s, size) strlcat((s), "}",  (size))
-#define string_add_single_quote(s, size)  strlcat((s), "'",  (size))
-#define string_add_quote(s, size)         strlcat((s), "\"",  (size))
-#define string_add_colon(s, size)         strlcat((s), ":",  (size))
-#define string_add_glob_open(s, size)     strlcat((s), "glob('*",  (size))
-#define string_add_glob_close(s, size)    strlcat((s), "*')",  (size))
-
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
-
-static INLINE void string_add_between_pairs(char *s, const char *str,
-      size_t size)
-{
-   string_add_pair_open(s, size);
-   strlcat(s, str,  size);
-   string_add_pair_close(s, size);
-}
 
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
@@ -128,6 +110,32 @@ char *string_trim_whitespace(char *const s);
 /* max_lines == 0 means no limit */
 char *word_wrap(char *buffer, const char *string,
       int line_width, bool unicode, unsigned max_lines);
+
+/* Splits string into tokens seperated by 'delim'
+ * > Returned token string must be free()'d
+ * > Returns NULL if token is not found
+ * > After each call, 'str' is set to the position after the
+ *   last found token
+ * > Tokens *include* empty strings
+ * Usage example:
+ *    char *str      = "1,2,3,4,5,6,7,,,10,";
+ *    char **str_ptr = &str;
+ *    char *token    = NULL;
+ *    while((token = string_tokenize(str_ptr, ",")))
+ *    {
+ *        printf("%s\n", token);
+ *        free(token);
+ *        token = NULL;
+ *    }
+ */
+char* string_tokenize(char **str, const char *delim);
+
+/* Removes every instance of character 'c' from 'str' */
+void string_remove_all_chars(char *str, char c);
+
+/* Converts string to unsigned integer.
+ * Returns 0 if string is invalid  */
+unsigned string_to_unsigned(const char *str);
 
 RETRO_END_DECLS
 

@@ -79,46 +79,44 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc);
 
 /* needs 32 bytes for full vendor, product and version */
-int cdrom_get_inquiry(const libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom);
+int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom);
 
 int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
-int cdrom_read_lba(libretro_vfs_implementation_file *stream, unsigned lba, void *s, size_t len, size_t skip);
-
 int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed);
 
-int cdrom_stop(const libretro_vfs_implementation_file *stream);
+int cdrom_stop(libretro_vfs_implementation_file *stream);
 
-int cdrom_unlock(const libretro_vfs_implementation_file *stream);
+int cdrom_unlock(libretro_vfs_implementation_file *stream);
 
-int cdrom_open_tray(const libretro_vfs_implementation_file *stream);
+int cdrom_open_tray(libretro_vfs_implementation_file *stream);
 
-int cdrom_close_tray(const libretro_vfs_implementation_file *stream);
+int cdrom_close_tray(libretro_vfs_implementation_file *stream);
 
 /* must be freed by the caller */
 struct string_list* cdrom_get_available_drives(void);
 
-bool cdrom_is_media_inserted(const libretro_vfs_implementation_file *stream);
+bool cdrom_is_media_inserted(libretro_vfs_implementation_file *stream);
 
 bool cdrom_drive_has_media(const char drive);
 
-void cdrom_get_current_config_core(const libretro_vfs_implementation_file *stream);
+void cdrom_get_current_config_core(libretro_vfs_implementation_file *stream);
 
-void cdrom_get_current_config_profiles(const libretro_vfs_implementation_file *stream);
+void cdrom_get_current_config_profiles(libretro_vfs_implementation_file *stream);
 
-void cdrom_get_current_config_cdread(const libretro_vfs_implementation_file *stream);
+void cdrom_get_current_config_cdread(libretro_vfs_implementation_file *stream);
 
-void cdrom_get_current_config_multiread(const libretro_vfs_implementation_file *stream);
+void cdrom_get_current_config_multiread(libretro_vfs_implementation_file *stream);
 
-void cdrom_get_current_config_random_readable(const libretro_vfs_implementation_file *stream);
+void cdrom_get_current_config_random_readable(libretro_vfs_implementation_file *stream);
 
-int cdrom_get_sense(const libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len);
+int cdrom_get_sense(libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len);
 
-bool cdrom_set_read_cache(const libretro_vfs_implementation_file *stream, bool enabled);
+bool cdrom_set_read_cache(libretro_vfs_implementation_file *stream, bool enabled);
 
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
-bool cdrom_has_atip(const libretro_vfs_implementation_file *stream);
+bool cdrom_has_atip(libretro_vfs_implementation_file *stream);
 
 void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char track, bool is_cue);
 

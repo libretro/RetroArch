@@ -26,12 +26,15 @@
 		9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		9204BE261D319EF300BD49DB /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
+		9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
+		9222F2002314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
+		9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9222F2082315DAD50097C0FD /* Launch Screen.storyboard */; };
+		9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 9222F20A2315DD3D0097C0FD /* retroarch_logo.png */; };
 		926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 926C77E221FD1E6700103EDE /* Assets.xcassets */; };
 		926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77EE21FD263800103EDE /* AudioToolbox.framework */; };
 		926C77F121FD26E800103EDE /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77F021FD26E800103EDE /* GameController.framework */; };
-		927BD1A42203DA3A00ECF6C9 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
 		92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -67,6 +70,7 @@
 		92CC05C321FE3C6D00FF79F0 /* WebServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05C121FE3C6D00FF79F0 /* WebServer.m */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
+		92E5DCD4231A5786006491BF /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92E5DCD3231A5786006491BF /* modules */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,7 +85,10 @@
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS11.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9204BE2B1D319EF300BD49DB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
+		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
 		926C77D721FD1E6500103EDE /* RetroArchTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		926C77E221FD1E6700103EDE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		926C77E421FD1E6700103EDE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -123,6 +130,12 @@
 		92CC05C121FE3C6D00FF79F0 /* WebServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebServer.m; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		92D3D56B232D86AC001B0D86 /* cocoa_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_common.h; path = ../../../../../../ui/drivers/cocoa/cocoa_common.h; sourceTree = "<group>"; };
+		92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoatouch_menu.m; path = ../../../../../../ui/drivers/cocoa/cocoatouch_menu.m; sourceTree = "<group>"; };
+		92D3D56D232D86AC001B0D86 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = cocoa_common.m; path = ../../../../../../ui/drivers/cocoa/cocoa_common.m; sourceTree = "<group>"; };
+		92D3D56F232D86AC001B0D86 /* cocoa_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cocoa_defines.h; path = ../../../../../../ui/drivers/cocoa/cocoa_defines.h; sourceTree = "<group>"; };
+		92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ui_cocoatouch.m; path = ../../../../ui/drivers/ui_cocoatouch.m; sourceTree = "<group>"; };
+		92E5DCD3231A5786006491BF /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -175,6 +188,7 @@
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
@@ -185,6 +199,7 @@
 		926C77D821FD1E6500103EDE /* tvOS */ = {
 			isa = PBXGroup;
 			children = (
+				92E5DCD3231A5786006491BF /* modules */,
 				926C77E221FD1E6700103EDE /* Assets.xcassets */,
 				926C77E421FD1E6700103EDE /* Info.plist */,
 			);
@@ -271,12 +286,51 @@
 			path = WebServer;
 			sourceTree = "<group>";
 		};
+		92D3D565232D8661001B0D86 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D566232D867C001B0D86 /* ui */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		92D3D566232D867C001B0D86 /* ui */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D567232D8688001B0D86 /* drivers */,
+				92D3D572232D8AEF001B0D86 /* ui_cocoatouch.m */,
+			);
+			path = ui;
+			sourceTree = "<group>";
+		};
+		92D3D567232D8688001B0D86 /* drivers */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D568232D868E001B0D86 /* cocoa */,
+			);
+			path = drivers;
+			sourceTree = "<group>";
+		};
+		92D3D568232D868E001B0D86 /* cocoa */ = {
+			isa = PBXGroup;
+			children = (
+				92D3D56B232D86AC001B0D86 /* cocoa_common.h */,
+				92D3D56D232D86AC001B0D86 /* cocoa_common.m */,
+				92D3D56F232D86AC001B0D86 /* cocoa_defines.h */,
+				92D3D56C232D86AC001B0D86 /* cocoatouch_menu.m */,
+			);
+			path = cocoa;
+			sourceTree = "<group>";
+		};
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
+				9222F1FE2314BA7C0097C0FD /* assets.zip */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
+				92D3D565232D8661001B0D86 /* Sources */,
 				92CC05CC21FF782C00FF79F0 /* WebServer */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
@@ -289,7 +343,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */,
+				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
 				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
 			);
 			name = Products;
@@ -366,7 +420,7 @@
 			);
 			name = RetroArchiOS11;
 			productName = RetroArch;
-			productReference = 9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */;
+			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		926C77D621FD1E6500103EDE /* RetroArchTV */ = {
@@ -397,12 +451,10 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = R72X3BF4KE;
 						DevelopmentTeamName = RetroArch;
 					};
 					926C77D621FD1E6500103EDE = {
 						CreatedOnToolsVersion = 10.1;
-						DevelopmentTeam = R72X3BF4KE;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -432,10 +484,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */,
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
+				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */,
 				9204BE261D319EF300BD49DB /* iOS/modules in Resources */,
+				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -443,8 +498,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				927BD1A42203DA3A00ECF6C9 /* iOS/modules in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
+				92E5DCD4231A5786006491BF /* modules in Resources */,
+				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
 				926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -480,7 +536,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./code-sign-cores.sh\n";
+			shellScript = "./code-sign-cores.sh tvos\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -552,27 +608,28 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				CURRENT_PROJECT_VERSION = 1.7.9;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.7.9;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
@@ -582,6 +639,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -608,6 +666,7 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -627,8 +686,8 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -641,27 +700,28 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				CURRENT_PROJECT_VERSION = 1.7.9;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
+				MARKETING_VERSION = 1.7.9;
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -672,6 +732,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -699,6 +760,7 @@
 					"-DHAVE_DYNAMIC",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -718,8 +780,8 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -730,7 +792,7 @@
 		926C77E721FD1E6700103EDE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -758,6 +820,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1.7.9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -772,13 +835,14 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.7.9;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -790,6 +854,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -816,6 +881,7 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -834,7 +900,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchTV;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArchTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
@@ -846,7 +912,7 @@
 		926C77E821FD1E6700103EDE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -874,8 +940,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1.7.9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = BJ7B9HU3GU;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -888,13 +955,14 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
-					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.7.9;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -907,6 +975,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -933,6 +1002,7 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -952,7 +1022,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchTV;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArchTV;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
@@ -986,7 +1056,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
@@ -996,6 +1066,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -1024,6 +1095,7 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1058,7 +1130,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -1069,6 +1141,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
@@ -1097,6 +1170,7 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
+					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",

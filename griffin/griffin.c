@@ -123,6 +123,7 @@ ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
 #include "../libretro-common/encodings/encoding_crc32.c"
+#include "../libretro-common/encodings/encoding_base64.c"
 
 /*============================================================
 PERFORMANCE
@@ -156,6 +157,7 @@ ACHIEVEMENTS
 #endif
 
 #include "../libretro-common/formats/json/jsonsax.c"
+#include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
 #include "../cheevos-new/cheevos.c"
@@ -297,7 +299,13 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../gfx/video_shader_parse.c"
+#endif
+
+#ifdef HAVE_SLANG
+#include "../gfx/drivers_shader/glslang_util.c"
+#endif
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
@@ -333,9 +341,9 @@ VIDEO IMAGE
 #endif
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
-#include "../libretro-common/formats/bmp/rbmp_encode.c"
 #endif
 
+#include "../libretro-common/formats/bmp/rbmp_encode.c"
 #include "../libretro-common/formats/wav/rwav.c"
 
 /*============================================================
@@ -398,6 +406,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
+#include "../gfx/common/sdl2_common.c"
 #endif
 
 #ifdef HAVE_VG
@@ -512,10 +521,6 @@ FONTS
 
 #if defined(__APPLE__) && defined(HAVE_CORETEXT)
 #include "../gfx/drivers_font_renderer/coretext.c"
-#endif
-
-#if defined(HAVE_LIBDBGFONT)
-#include "../gfx/drivers_font/ps_libdbgfont.c"
 #endif
 
 #ifdef HAVE_OPENGL1
@@ -725,6 +730,7 @@ INPUT (HID)
 #include "../input/connect/connect_wiiugca.c"
 #include "../input/connect/connect_ps2adapter.c"
 #include "../input/connect/connect_psxadapter.c"
+#include "../input/connect/connect_retrode.c"
 #endif
 
 /*============================================================
@@ -872,6 +878,10 @@ AUDIO
 
 #include "../audio/drivers/nullaudio.c"
 
+#if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
+#include "../audio/common/mmdevice_common.c"
+#endif
+
 /*============================================================
 MIDI
 ============================================================ */
@@ -970,6 +980,7 @@ FILE
 #ifdef HAVE_CDROM
 #include "../libretro-common/cdrom/cdrom.c"
 #include "../libretro-common/vfs/vfs_implementation_cdrom.c"
+#include "../libretro-common/media/media_detect_cd.c"
 #endif
 
 #include "../list_special.c"
@@ -1057,12 +1068,6 @@ FRONTEND
 /*============================================================
 UI
 ============================================================ */
-#include "../ui/drivers/ui_null.c"
-#include "../ui/drivers/null/ui_null_window.c"
-#include "../ui/drivers/null/ui_null_browser_window.c"
-#include "../ui/drivers/null/ui_null_msg_window.c"
-#include "../ui/drivers/null/ui_null_application.c"
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
 #include "../ui/drivers/win32/ui_win32_window.c"
@@ -1070,11 +1075,6 @@ UI
 #include "../ui/drivers/win32/ui_win32_msg_window.c"
 #include "../ui/drivers/win32/ui_win32_application.c"
 #endif
-
-/*============================================================
-MAIN
-============================================================ */
-#include "../frontend/frontend.c"
 
 /*============================================================
 GIT
@@ -1163,7 +1163,6 @@ THREAD
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
-#include "../libretro-common/rthreads/rsemaphore.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
@@ -1232,20 +1231,21 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
 #include "../menu/menu_shader.c"
+#endif
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
-#include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
-#include "../menu/menu_content.c"
 
+#if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
+#endif
 
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
-#include "../menu/widgets/menu_input_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
 #ifdef HAVE_MENU_WIDGETS
 #include "../menu/widgets/menu_widgets.c"
@@ -1376,38 +1376,18 @@ MENU
 
 #include "../input/input_mapper.c"
 
-#include "../command.c"
-
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
 #endif
 
 #ifdef HAVE_RUNAHEAD
 #include "../runahead/mem_util.c"
-#include "../runahead/copy_load_info.c"
 #include "../runahead/mylist.c"
 #endif
 
 /*============================================================
 DEPENDENCIES
 ============================================================ */
-#ifdef WANT_ZLIB
-#include "../deps/libz/adler32.c"
-#include "../deps/libz/compress.c"
-#include "../deps/libz/libz-crc32.c"
-#include "../deps/libz/deflate.c"
-#include "../deps/libz/gzclose.c"
-#include "../deps/libz/gzlib.c"
-#include "../deps/libz/gzread.c"
-#include "../deps/libz/gzwrite.c"
-#include "../deps/libz/inffast.c"
-#include "../deps/libz/inflate.c"
-#include "../deps/libz/inftrees.c"
-#include "../deps/libz/trees.c"
-#include "../deps/libz/uncompr.c"
-#include "../deps/libz/zutil.c"
-#endif
-
 #ifdef HAVE_FLAC
 #include "../deps/libFLAC/bitmath.c"
 #include "../deps/libFLAC/bitreader.c"
@@ -1427,6 +1407,22 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_ZLIB
+#ifndef HAVE_NO_BUILTINZLIB
+#include "../deps/libz/adler32.c"
+#include "../deps/libz/compress.c"
+#include "../deps/libz/libz-crc32.c"
+#include "../deps/libz/deflate.c"
+#include "../deps/libz/gzclose.c"
+#include "../deps/libz/gzlib.c"
+#include "../deps/libz/gzread.c"
+#include "../deps/libz/gzwrite.c"
+#include "../deps/libz/inffast.c"
+#include "../deps/libz/inflate.c"
+#include "../deps/libz/inftrees.c"
+#include "../deps/libz/trees.c"
+#include "../deps/libz/uncompr.c"
+#include "../deps/libz/zutil.c"
+#endif
 
 #ifdef HAVE_CHD
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
@@ -1532,6 +1528,15 @@ HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
 #include "../discord/discord.c"
+
+#if defined(_WIN32)
+#include "../deps/discord-rpc/src/discord_register_win.c"
+#endif
+
+#if defined(__linux__)
+#include "../deps/discord-rpc/src/discord_register_linux.c"
+#endif
+
 #endif
 
 /*============================================================
@@ -1622,3 +1627,8 @@ SSL
 #ifdef HAVE_EASTEREGG
 #include "../cores/libretro-gong/gong.c"
 #endif
+
+/*============================================================
+PLAYLIST NAME SANITIZATION
+============================================================ */
+#include "../libretro-common/playlists/label_sanitization.c"

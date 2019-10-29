@@ -228,7 +228,7 @@ static unsigned get_pot(unsigned x)
 }
 
 static void *gl1_gfx_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
    gfx_ctx_input_t inp;
@@ -309,7 +309,14 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    interval = video->swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video->adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      ctx_driver->swap_interval(gl1->ctx_data, interval);
+   }
 
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
@@ -380,7 +387,7 @@ static void *gl1_gfx_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL1_API);
 
-   gl1->smooth = settings->bools.video_smooth;
+   gl1->smooth        = settings->bools.video_smooth;
    gl1->supports_bgra = string_list_find_elem(gl1->extensions, "GL_EXT_bgra");
 
    glDisable(GL_BLEND);
@@ -539,10 +546,12 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 
 static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
+   uint8_t *frame       = NULL;
+   uint8_t *frame_rgba  = NULL;
    /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
    GLint internalFormat = GL_RGB8;
-   GLenum format = (gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA);
-   GLenum type = GL_UNSIGNED_BYTE;
+   GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
+   GLenum type          = GL_UNSIGNED_BYTE;
 
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
@@ -550,16 +559,41 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glDisable(GL_SCISSOR_TEST);
    glEnable(GL_TEXTURE_2D);
 
-   /* multi-texture not part of GL 1.1 */
+   /* Multi-texture not part of GL 1.1 */
    /*glActiveTexture(GL_TEXTURE0);*/
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
    glBindTexture(GL_TEXTURE_2D, tex);
 
-   /* TODO: We could implement red/blue swap if client GL does not support BGRA... but even MS GDI Generic supports it */
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, NULL);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame_to_copy);
+   /* For whatever reason you can't send NULL in GLDirect,
+      so we send the frame as dummy data */
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame_to_copy);
+
+   frame = (uint8_t*)frame_to_copy;
+   if (!gl1->supports_bgra)
+   {
+      frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
+      if (frame_rgba)
+      {
+         int x, y;
+         for (y = 0; y < pot_height; y++)
+         {
+            for (x = 0; x < pot_width; x++)
+            {
+               int index             = (y * pot_width + x) * 4;
+               frame_rgba[index + 2] = frame[index + 0];
+               frame_rgba[index + 1] = frame[index + 1];
+               frame_rgba[index + 0] = frame[index + 2];
+               frame_rgba[index + 3] = frame[index + 3];
+            }
+         }
+         frame = frame_rgba;
+      }
+   }
+
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame);
+   free(frame_rgba);
 
    if (tex == gl1->tex)
    {
@@ -606,16 +640,16 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glBegin(GL_QUADS);
 
    {
-      float tex_BL[2] = {0.0f, 0.0f};
-      float tex_BR[2] = {1.0f, 0.0f};
-      float tex_TL[2] = {0.0f, 1.0f};
-      float tex_TR[2] = {1.0f, 1.0f};
+      float tex_BL[2]      = {0.0f, 0.0f};
+      float tex_BR[2]      = {1.0f, 0.0f};
+      float tex_TL[2]      = {0.0f, 1.0f};
+      float tex_TR[2]      = {1.0f, 1.0f};
       float *tex_mirror_BL = tex_TL;
       float *tex_mirror_BR = tex_TR;
       float *tex_mirror_TL = tex_BL;
       float *tex_mirror_TR = tex_BR;
-      float norm_width = (1.0f / (float)pot_width) * (float)width;
-      float norm_height = (1.0f / (float)pot_height) * (float)height;
+      float norm_width     = (1.0f / (float)pot_width) * (float)width;
+      float norm_height    = (1.0f / (float)pot_height) * (float)height;
 
       /* remove extra POT padding */
       tex_mirror_BR[0] = norm_width;
@@ -836,7 +870,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 
@@ -904,7 +939,14 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state)
    if (!state)
       interval = settings->uints.video_swap_interval;
 
-   video_context_driver_swap_interval(&interval);
+   if (gl1->ctx_driver->swap_interval)
+   {
+      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
+            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+      if (adaptive_vsync_enabled && interval == 1)
+         interval = -1;
+      gl1->ctx_driver->swap_interval(gl1->ctx_data, interval);
+   }
    gl1_context_bind_hw_render(gl1, true);
 }
 
@@ -1275,31 +1317,10 @@ static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl1_t *gl1         = (gl1_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
-
    if (!gl1)
       return;
 
-   gl1->keep_aspect = true;
+   gl1->keep_aspect   = true;
    gl1->should_resize = true;
 }
 
@@ -1470,8 +1491,8 @@ static void gl1_overlay_enable(void *data, bool state)
 
    gl->overlay_enable = state;
 
-   if (gl->fullscreen)
-      video_context_driver_show_mouse(&state);
+   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+      gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl1_overlay_full_screen(void *data, bool enable)

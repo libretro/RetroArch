@@ -7,11 +7,12 @@
 die()
 {	ret="$1"
 	shift 1
-	printf %s\\n "$@" >&2
 	case "$ret" in
-		: ) return 0 ;;
-		* ) exit "$ret" ;;
+		: ) printf %s\\n "$@" >&2; return 0 ;;
+		0 ) printf %s\\n "$@" ;;
+		* ) printf %s\\n "$@" >&2 ;;
 	esac
+	exit "$ret"
 }
 
 # exists:
@@ -40,4 +41,20 @@ exists()
 		done
 	done
 	return $v
+}
+
+# match:
+# Compares a variable against a list of variables
+# $1 = variable
+# $@ = list of variables
+match()
+{
+	var="$1"
+	shift
+	for string do
+		case "$string" in
+			"$var" ) return 0 ;;
+		esac
+	done
+	return 1
 }

@@ -363,7 +363,7 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 
 static void android_gfx_ctx_input_driver(void *data,
       const char *joypad_name,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    void *androidinput   = input_android.init(joypad_name);
 
@@ -437,10 +437,29 @@ static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
 
 static void dpi_get_density(char *s, size_t len)
 {
-   system_property_get("getprop", "ro.sf.lcd_density", s);
+   static bool inited_once             = false;
+   static bool inited2_once            = false;
+   static char string[PROP_VALUE_MAX]  = {0};
+   static char string2[PROP_VALUE_MAX] = {0};
+   if (!inited_once)
+   {
+      system_property_get("getprop", "ro.sf.lcd_density", string);
+      inited_once = true;
+   }
 
-   if (string_is_empty(s))
-      system_property_get("wm", "density", s);
+   if (!string_is_empty(string))
+   {
+      strlcpy(s, string, len);
+      return;
+   }
+
+   if (!inited2_once)
+   {
+      system_property_get("wm", "density", string2);
+      inited2_once = true;
+   }
+
+   strlcpy(s, string2, len);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,
@@ -615,26 +634,6 @@ static void android_gfx_ctx_set_flags(void *data, uint32_t flags)
    (void)flags;
 }
 
-static void android_gfx_update_window_title(void *data, void *data2)
-{
-   const settings_t *settings = config_get_ptr();
-   video_frame_info_t* video_info = (video_frame_info_t*)data2;
-
-   if (settings->bools.video_memory_show)
-   {
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-   }
-}
-
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -649,12 +648,12 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_next */
    android_gfx_ctx_get_metrics,
    NULL,
-   android_gfx_update_window_title,
+   NULL, /* update_title */
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
-   NULL, /* has_windowed */
+   false, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,

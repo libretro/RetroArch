@@ -17,13 +17,15 @@
 #include <stdint.h>
 #include <retro_inline.h>
 
+#include "../../config.def.h"
+
 #include "../../tasks/tasks_internal.h"
 
-static uint64_t pad_state[MAX_PADS];
-static int16_t analog_state[MAX_PADS][2][2];
-static uint64_t pads_connected[MAX_PADS];
+static uint64_t pad_state[DEFAULT_MAX_PADS];
+static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+static uint64_t pads_connected[DEFAULT_MAX_PADS];
 #if 0
-sensor_t accelerometer_state[MAX_PADS];
+sensor_t accelerometer_state[DEFAULT_MAX_PADS];
 #endif
 
 static INLINE int16_t convert_u8_to_s16(uint8_t val)
@@ -40,29 +42,28 @@ static const char *ps3_joypad_name(unsigned pad)
 
 static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   if (!input_autoconfigure_connect(
-            ps3_joypad_name(autoconf_pad),
-            NULL,
-            ps3_joypad.ident,
-            autoconf_pad,
-            0,
-            0
-            ))
-      input_config_set_device_name(autoconf_pad, ps3_joypad_name(autoconf_pad));
+   input_autoconfigure_connect(
+         ps3_joypad_name(autoconf_pad),
+         NULL,
+         ps3_joypad.ident,
+         autoconf_pad,
+         0,
+         0
+         );
 }
 
 static bool ps3_joypad_init(void *data)
 {
    (void)data;
 
-   cellPadInit(MAX_PADS);
+   cellPadInit(DEFAULT_MAX_PADS);
 
    return true;
 }
 
 static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   if (port_num >= MAX_PADS)
+   if (port_num >= DEFAULT_MAX_PADS)
       return false;
 
    return pad_state[port_num] & (UINT64_C(1) << joykey);
@@ -70,7 +71,7 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < MAX_PADS)
+	if (port_num < DEFAULT_MAX_PADS)
    {
 		BITS_COPY16_PTR( state, pad_state[port_num] );
 	}
@@ -85,7 +86,7 @@ static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= DEFAULT_MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -130,7 +131,7 @@ static void ps3_joypad_poll(void)
 
    cellPadGetInfo2(&pad_info);
 
-   for (port = 0; port < MAX_PADS; port++)
+   for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
       CellPadData state_tmp;
 

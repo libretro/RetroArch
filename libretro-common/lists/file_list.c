@@ -265,15 +265,6 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       list->list[idx].alt   = strdup(alt);
 }
 
-void file_list_get_alt_at_offset(const file_list_t *list, size_t idx,
-      const char **alt)
-{
-   if (list && alt)
-      *alt = list->list[idx].alt 
-         ? list->list[idx].alt 
-         : list->list[idx].path;
-}
-
 static int file_list_alt_cmp(const void *a_, const void *b_)
 {
    const struct item_file *a = (const struct item_file*)a_;
@@ -384,7 +375,6 @@ void file_list_get_last(const file_list_t *list,
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
 {
    size_t i;
-   const char *alt = NULL;
    bool ret        = false;
 
    if (!list)
@@ -393,8 +383,10 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
    for (i = 0; i < list->size; i++)
    {
       const char *str = NULL;
+      const char *alt = list->list[i].alt 
+            ? list->list[i].alt 
+            : list->list[i].path;
 
-      file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
       {
          file_list_get_label_at_offset(list, i, &alt);

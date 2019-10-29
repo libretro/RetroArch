@@ -211,6 +211,9 @@ struct gl
    GLuint video_layout_white_texture;
 #endif
 
+   unsigned video_width;
+   unsigned video_height;
+
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned fbo_feedback_pass;

@@ -31,6 +31,10 @@
 
 #include <d3d9.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
@@ -325,7 +329,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    unsigned i;
    bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
-   config_file_t            *conf = config_file_new(shader_path);
+   config_file_t            *conf = video_shader_read_preset(shader_path);
 
    if (!conf)
    {
@@ -344,8 +348,6 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    config_file_free(conf);
 
-   if (!string_is_empty(shader_path))
-      video_shader_resolve_relative(&d3d->shader, shader_path);
    RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
@@ -1093,27 +1095,6 @@ static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
-         break;
-
-      case ASPECT_RATIO_CORE:
-         video_driver_set_viewport_core();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
-         break;
-
-      default:
-         break;
-   }
-
-   video_driver_set_aspect_ratio_value(
-         aspectratio_lut[aspect_ratio_idx].value);
-
    if (!d3d)
       return;
 
@@ -1146,7 +1127,7 @@ static void d3d9_set_osd_msg(void *data,
 }
 
 static bool d3d9_init_internal(d3d9_video_t *d3d,
-      const video_info_t *info, const input_driver_t **input,
+      const video_info_t *info, input_driver_t **input,
       void **input_data)
 {
 #ifdef HAVE_MONITOR
@@ -1233,16 +1214,17 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
       return false;
 
    {
-      const char *shader_preset;
-      enum rarch_shader_type type;
 
       d3d9_fake_context.get_flags = d3d9_get_flags;
       video_context_driver_set(&d3d9_fake_context); 
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+      {
+         const char *shader_preset   = retroarch_get_shader_preset();
+         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-      shader_preset = retroarch_get_shader_preset();
-      type = video_shader_parse_type(shader_preset);
-
-      d3d9_set_shader(d3d, type, shader_preset);
+         d3d9_set_shader(d3d, type, shader_preset);
+      }
+#endif
    }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
@@ -1288,7 +1270,7 @@ static void d3d9_show_mouse(void *data, bool state)
 }
 
 static void *d3d9_init(const video_info_t *info,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)calloc(1, sizeof(*d3d));
 
@@ -1528,30 +1510,9 @@ static void d3d9_get_overlay_interface(void *data,
 
 static void d3d9_update_title(video_frame_info_t *video_info)
 {
-   const settings_t *settings = config_get_ptr();
-#ifdef _XBOX
-   const ui_window_t *window      = NULL;
-#else
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-#endif
-
-   if (settings->bools.video_memory_show)
-   {
-#ifndef __WINRT__
-      uint64_t mem_bytes_used = frontend_driver_get_used_memory();
-      uint64_t mem_bytes_total = frontend_driver_get_total_memory();
-      char         mem[128];
-
-      mem[0] = '\0';
-
-      snprintf(
-            mem, sizeof(mem), " || MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
-            mem_bytes_total / (1024.0f * 1024.0f));
-      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
-#endif
-   }
-
 #ifndef _XBOX
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
    if (window)
    {
       char title[128];
@@ -1676,7 +1637,8 @@ static bool d3d9_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
-   menu_widgets_frame(video_info);
+   if (video_info->widgets_inited)
+      menu_widgets_frame(video_info);
 #endif
 #endif
 
@@ -1754,6 +1716,7 @@ end:
 static bool d3d9_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
    d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
@@ -1792,6 +1755,9 @@ static bool d3d9_set_shader(void *data,
    }
 
    return true;
+#else
+   return false;
+#endif
 }
 
 static void d3d9_set_menu_texture_frame(void *data,
@@ -1943,6 +1909,7 @@ static void d3d9_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
+#ifdef HAVE_THREADS
 static int d3d9_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
@@ -1952,6 +1919,7 @@ static int d3d9_video_texture_load_wrap_d3d(void *data)
    d3d9_video_texture_load_d3d(info, &id);
    return id;
 }
+#endif
 
 static uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
@@ -1963,9 +1931,11 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    info.data     = data;
    info.type     = filter_type;
 
+#ifdef HAVE_THREADS
    if (threaded)
       return video_thread_texture_load(&info,
             d3d9_video_texture_load_wrap_d3d);
+#endif
 
    d3d9_video_texture_load_d3d(&info, &id);
    return id;

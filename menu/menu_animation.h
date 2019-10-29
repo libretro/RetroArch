@@ -23,6 +23,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../gfx/font_driver.h"
+
 RETRO_BEGIN_DECLS
 
 #define TICKER_SPACER_DEFAULT "   |   "
@@ -126,6 +128,57 @@ typedef struct menu_animation_ctx_ticker
    const char *spacer;
 } menu_animation_ctx_ticker_t;
 
+typedef struct menu_animation_ctx_ticker_smooth
+{
+   bool selected;
+   font_data_t *font;
+   float font_scale;
+   unsigned glyph_width; /* Fallback if font == NULL */
+   unsigned field_width;
+   enum menu_animation_ticker_type type_enum;
+   uint64_t idx;
+   const char *src_str;
+   const char *spacer;
+   char *dst_str;
+   size_t dst_str_len;
+   unsigned *dst_str_width; /* May be set to NULL (RGUI + XMB do not require this info) */
+   unsigned *x_offset;
+} menu_animation_ctx_ticker_smooth_t;
+
+typedef struct menu_animation_ctx_line_ticker
+{
+   size_t line_len;
+   size_t max_lines;
+   uint64_t idx;
+   enum menu_animation_ticker_type type_enum;
+   char *s;
+   size_t len;
+   const char *str;
+} menu_animation_ctx_line_ticker_t;
+
+typedef struct menu_animation_ctx_line_ticker_smooth
+{
+   bool fade_enabled;
+   font_data_t *font;
+   float font_scale;
+   unsigned field_width;
+   unsigned field_height;
+   enum menu_animation_ticker_type type_enum;
+   uint64_t idx;
+   const char *src_str;
+   char *dst_str;
+   size_t dst_str_len;
+   float *y_offset;
+   char *top_fade_str;
+   size_t top_fade_str_len;
+   float *top_fade_y_offset;
+   float *top_fade_alpha;
+   char *bottom_fade_str;
+   size_t bottom_fade_str_len;
+   float *bottom_fade_y_offset;
+   float *bottom_fade_alpha;
+} menu_animation_ctx_line_ticker_smooth_t;
+
 typedef float menu_timer_t;
 
 typedef struct menu_timer_ctx_entry
@@ -145,9 +198,15 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
-bool menu_animation_update(void);
+bool menu_animation_update(unsigned video_width, unsigned video_height);
 
 bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
+
+bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker);
+
+bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker);
+
+bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 float menu_animation_get_delta_time(void);
 
@@ -166,6 +225,8 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 uint64_t menu_animation_get_ticker_idx(void);
 
 uint64_t menu_animation_get_ticker_slow_idx(void);
+
+uint64_t menu_animation_get_ticker_pixel_idx(void);
 
 RETRO_END_DECLS
 

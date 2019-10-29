@@ -38,8 +38,7 @@ int database_info_build_query_enum(char *s, size_t len,
    bool add_quotes = true;
    bool add_glob   = false;
 
-   string_add_bracket_open(s, len);
-   string_add_single_quote(s, len);
+   strlcpy(s, "{'", len);
 
    switch (type)
    {
@@ -51,7 +50,7 @@ int database_info_build_query_enum(char *s, size_t len,
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
          strlcat(s, "developer", len);
-         add_glob = true;
+         add_glob   = true;
          add_quotes = false;
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
@@ -110,19 +109,18 @@ int database_info_build_query_enum(char *s, size_t len,
          break;
    }
 
-   string_add_single_quote(s, len);
-   string_add_colon(s, len);
+   strlcat(s, "':", len);
    if (add_glob)
-      string_add_glob_open(s, len);
+      strlcat(s, "glob('*", len);
    if (add_quotes)
-      string_add_quote(s, len);
+      strlcat(s, "\"", len);
    strlcat(s, path, len);
    if (add_glob)
-      string_add_glob_close(s, len);
+      strlcat(s, "*')", len);
    if (add_quotes)
-      string_add_quote(s, len);
+      strlcat(s, "\"", len);
 
-   string_add_bracket_close(s, len);
+   strlcat(s, "}", len);
 
 #if 0
    RARCH_LOG("query: %s\n", s);
