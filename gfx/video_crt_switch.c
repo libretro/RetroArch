@@ -30,7 +30,7 @@
 
 #if defined(HAVE_VIDEOCORE)
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
-static void crt_rpi_switch(int width, int height, float hz);
+static void crt_rpi_switch(int width, int height, float hz, int xoffset);
 #endif
 
 static unsigned ra_core_width     = 0;
