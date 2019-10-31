@@ -20,7 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
