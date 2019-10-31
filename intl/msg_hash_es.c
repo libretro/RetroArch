@@ -866,18 +866,19 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Carga contenidos.\n"
                      "Busca contenidos.\n"
                      " \n"
-                     "Para cargar contenidos necesitas un «núcleo»\n"
-                     "y un archivo de contenido.\n"
+                     "Para cargar contenidos necesitas un\n"
+                     "«núcleo» y un archivo de contenido.\n"
                      " \n"
-                     "Para controlar el lugar donde el menú empezará\n"
-                     "a buscar contenidos, cambia la carpeta del\n"
-                     "Explorador de archivos. En caso de que\n"
-                     "no esté configurada, empezará a buscar desde\n"
-                     "la raíz.\n"
+                     "Para controlar el lugar donde el menú\n"
+                     "empezará a buscar contenidos, cambia\n"
+                     "la carpeta del explorador de archivos.\n"
+                     "En caso de que no esté configurada,\n"
+                     "empezará a buscar desde la raíz.\n"
                      " \n"
-                     "El explorador filtrará las extensiones del último\n"
-                     "núcleo seleccionado en Cargar núcleo y lo utilizará\n"
-                     "al cargar un contenido.",
+                     "El explorador filtrará las extensiones\n"
+                     "del último núcleo seleccionado en\n"
+                     "Cargar núcleo y lo utilizará al cargar\n"
+                     "un contenido."
             );
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
@@ -2434,7 +2435,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "La salida de sonido MIDI se desactivará\n"
                      "al desactivar esta opción. También se puede\n"
                      "introducir el nombre del dispositivo de\n"
-                     "forma manual.\n")
+                     "forma manual.\n"
                      " \n"
                      "Al activar la salida MIDI y si el núcleo y\n"
                      "el juego o aplicación son compatibles con la\n"
