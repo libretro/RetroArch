@@ -748,7 +748,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Puedes utilizar los siguientes controles,\n"
                      "tanto con el mando como con el teclado,\n"
-                     "para controlar el menú: \n"
+                     "para controlar el menú:\n"
                      " \n");
             break;
         case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
@@ -757,6 +757,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
             /* Work around C89 limitations */
+            /* Arreglo para saltarse la limitación de 509 caracteres por cadena. */
             char u[501];
             const char *t =
                      "RetroArch utiliza un formato único para\n"
@@ -790,16 +791,16 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Para escanear contenidos ve a «%s»\n"
                      "y selecciona «%s» o «%s».\n"
-                     "\n"
+                     " \n"
                      "Los archivos serán contrastados con las entradas\n"
                      "en la base de datos. Si hay una coincidencia,\n"
                      "se añadirá una entrada en una lista de reproducción.\n"
-                     "\n"
+                     " \n"
                      "Podrás acceder fácilmente a estos contenidos\n"
                      "a través de «%s» -> «%s»\n"
                      "en vez de tener que pasar por el explorador\n"
                      "de archivos constantemente.\n"
-                     "\n"
+                     " \n"
                      "NOTA: El contenido de algunos núcleos podría\n"
                      "no ser localizable.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
@@ -812,7 +813,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
             snprintf(s, len,
                      "Te damos la bienvenida a RetroArch.\n"
-                     "\n"
+                     " \n"
                      "Extrayendo recursos, espera, por favor.\n"
                      "Este proceso puede llevar un tiempo...\n"
             );
@@ -1095,7 +1096,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "la configuración existente.\n"
                " \n"
                "No se preservarán los #include y\n"
-               "los comentarios. \n"
+               "los comentarios.\n"
                " \n"
                "El archivo de configuración se considera\n"
                "inmutable por diseño ya que es probable\n"
@@ -1153,8 +1154,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " libretro está por debajo del nivel\n"
                " indicado en libretro_log, será ignorado.\n"
                " \n"
-               " Los registros DEBUG siempre son ignorados \n"
-               " a menos que esté activado el modo \n"
+               " Los registros DEBUG siempre son ignorados\n"
+               " a menos que esté activado el modo\n"
                " de verbosidad (--verbose).\n"
                " \n"
                " DEBUG = 0\n"
@@ -1189,7 +1190,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Al aplicar shaders, se guarda su configuración\n"
                "en un archivo temporal (menu.cgp o menu.glslp)\n"
-               "y se cargan. El archivo persistirá al \n"
+               "y se cargan. El archivo persistirá al\n"
                "abandonar RetroArch y se guardará en la carpeta\n"
                "Shader."
             );
@@ -1321,6 +1322,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "implementaciones de núcleos libretro.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
+            /* Work around C89 limitations */
+            /* Arreglo para saltarse la limitación de 509 caracteres por cadena. */
             snprintf(s, len,
                      "Frecuencia de actualización automática.\n"
                      " \n"
@@ -1332,7 +1335,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "audio_input_rate (frecuencia de entrada\n"
                      "de audio) = velocidad de entrada de juego\n"
                      "* frecuencia de actualización de pantalla\n"
-                     "/ frecuencia de actualización de juego\n"
+                     "/ frecuencia de actualización de juego\n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      " \n"
                      "Si la implementación no indica un valor, se\n"
                      "asumirá de forma predeterminada el sistema\n"
@@ -1409,8 +1413,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Obliga a recortar los fotogramas\n"
                      "con overscan.\n"
                      " \n"
-                     "El comportamiento exacto de esta \n"
-                     "opción depende de la implementación \n"
+                     "El comportamiento exacto de esta\n"
+                     "opción depende de la implementación\n"
                      "del núcleo.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
@@ -1448,8 +1452,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Define cuánta frecuencia de entrada puede\n"
                      "ajustarse de forma dinámica.\n"
                      " \n"
-                     " La frecuencia de entrada se define como: \n"
-                     " frecuencia de entrada * (1.0 +/- \n"
+                     " La frecuencia de entrada se define como:\n"
+                     " frecuencia de entrada * (1.0 +/-\n"
                      " (delta de control de frecuencia))");
             break;
         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
@@ -1583,7 +1587,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Ajusta la cantidad de milisegundos de retraso\n"
                      "previos a la carga automática de shaders.\n"
-                     "\n"
+                     " \n"
                      "Esto puede evitar defectos gráficos provocados\n"
                      "por aplicaciones de captura de pantalla, como\n"
                      "el software para streaming.");
@@ -1831,8 +1835,10 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "rebobinados, de modo que no habrá tirones\n"
                      "durante la sesión.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            snprintf(s, len,
+        case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES: {
+            /* Work around C89 limitations */
+            char u[501];
+            const char *t =
                      "Indica la frecuencia (en fotogramas) con la\n"
                      "que el servidor del juego en red verificará\n"
                      "que está sincronizado con el cliente.\n"
@@ -1841,7 +1847,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "mayoría de los núcleos y puede ser ignorado.\n"
                      "En el caso de los núcleos no deterministas,\n"
                      "este valor determina las veces en las que los\n"
-                     "clientes de juego en red serán sincronizados.\n"
+                     "clientes de juego en red serán sincronizados.\n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "En el caso de los núcleos con fallos, asignar\n"
                      "un valor que no sea cero provocará problemas\n"
                      "graves de rendimiento.\n"
@@ -1867,7 +1874,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "El rango de fotogramas de retraso de entrada\n"
                      "que puede utilizar el juego en red para\n"
                      "camuflar la latencia de red.\n"
-                     "\n"
+                     " \n"
                      "Si esta opción está activada, el juego en red\n"
                      "ajustará de forma dinámica el número de\n"
                      "fotogramas de retraso en la entrada para\n"
