@@ -28,10 +28,6 @@
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
 
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Winvalid-source-encoding"
-#endif
-
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
 /* https://support.microsoft.com/en-us/kb/980263 */
