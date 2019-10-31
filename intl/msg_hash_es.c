@@ -1321,10 +1321,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "La carpeta donde se buscarán las\n"
                "implementaciones de núcleos libretro.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
+        case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO: {
             /* Work around C89 limitations */
             /* Arreglo para saltarse la limitación de 509 caracteres por cadena. */
-            snprintf(s, len,
+            char u[501];
+            const char *t =
                      "Frecuencia de actualización automática.\n"
                      " \n"
                      "La frecuencia de actualización precisa del\n"
