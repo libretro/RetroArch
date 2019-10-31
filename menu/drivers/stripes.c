@@ -1086,7 +1086,7 @@ static void stripes_update_thumbnail_image(void *data)
       }
 }
 
-static void stripes_refresh_thumbnail_image(void *data)
+static void stripes_refresh_thumbnail_image(void *data, unsigned i)
 {
    stripes_update_thumbnail_image(data);
 }

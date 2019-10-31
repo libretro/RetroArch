@@ -4635,7 +4635,7 @@ static void rgui_update_thumbnail_image(void *userdata)
    rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
-static void rgui_refresh_thumbnail_image(void *userdata)
+static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    rgui_t *rgui         = (rgui_t*)userdata;
    settings_t *settings = config_get_ptr();

@@ -3961,6 +3961,69 @@ static void setting_get_string_representation_uint_materialui_menu_transition_an
          break;
    }
 }
+
+static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM), len);
+         break;
+      default:
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
+         break;
+      default:
+         break;
+   }
+}
 #endif
 
 #ifdef HAVE_XMB
@@ -13012,6 +13075,40 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_materialui_thumbnail_view_portrait,
+                  MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+                  DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait;
+            menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_materialui_thumbnail_view_landscape,
+                  MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+                  DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape;
+            menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
             /* TODO: These should be removed entirely, but just
              * comment out for now in case users complain...
             CONFIG_FLOAT(
@@ -13149,7 +13246,10 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone") || string_is_equal(settings->arrays.menu_driver, "rgui"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             string_is_equal(settings->arrays.menu_driver, "rgui") ||
+             string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             enum msg_hash_enums thumbnails_label_value;
             enum msg_hash_enums left_thumbnails_label_value;
@@ -13187,22 +13287,26 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_left_thumbnails,
-                  MENU_ENUM_LABEL_LEFT_THUMBNAILS,
-                  left_thumbnails_label_value,
-                  menu_left_thumbnails_default,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_menu_left_thumbnails;
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+            /* Material UI does not use left thumbnails (yet...) */
+            if (!string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.menu_left_thumbnails,
+                     MENU_ENUM_LABEL_LEFT_THUMBNAILS,
+                     left_thumbnails_label_value,
+                     menu_left_thumbnails_default,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_menu_left_thumbnails;
+               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+            }
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -13238,7 +13342,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 100, 1, true, true);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
