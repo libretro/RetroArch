@@ -6,7 +6,7 @@
 - LOCALIZATION: Update Polish translation
 - MENU/MATERIALUI: Bugfix - Under certain extreme circumstances, entries with very long sublabel strings could have their text prematurely 'clipped' as the entry is scrolled beyond the top of the screen
 - MENU/MATERIALUI: Bugfix - Certain setting value strings were unnecessarily truncated (with a ...) when using smooth ticker text
-
+- VITA: Accelerometer and gyroscope support
 
 # (1.8.0)
 - AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
