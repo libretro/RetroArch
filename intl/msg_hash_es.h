@@ -116,7 +116,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NETPLAY_OUT_OF_DATE,
-    "El cliente del juego en red utiliza una versión antigua de RetroArch. No se puede conectar con el par."
+    "El cliente del juego en red utiliza una versión antigua de RetroArch. No se puede conectar con el cliente."
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -124,7 +124,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_CORES,
-    "Un cliente de juego en red está utilizando una versión distinta del núcleo. No se puede conectar con el par."
+    "Un cliente de juego en red está utilizando una versión distinta del núcleo. No se puede conectar con el cliente."
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
@@ -348,7 +348,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-    "Control de frecuencia de audio dinámico"
+    "Control dinámico de frecuencia de audio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -5959,7 +5959,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
     "¿Te has equivocado? Rebobina y vuelve a intentarlo.\n"
-	"Ten en cuenta que afectará al rendimiento."
+    "Ten en cuenta que afectará al rendimiento."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
@@ -9852,11 +9852,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-    "Contador de frame time"
+    "Contador de duración de fotogramas"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-    "Modifica la configuración del contador de frame time (solo se activará al desactivar el vídeo multihilo)."
+    "Modifica la configuración del contador de duración de fotogramas (solo se activará al desactivar el vídeo multihilo)."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
@@ -9864,7 +9864,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-    "Reinicia el contador de frame time tras usar el avance rápido."
+    "Reinicia el contador de duración de fotogramas al usar el avance rápido."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -9872,7 +9872,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-    "Reinicia el contador de frame time tras cargar un guardado rápido."
+    "Reinicia el contador de duración de fotogramas al cargar un guardado rápido."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -9880,7 +9880,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-    "Reinicia el contador de frame time tras guardar rápidamente."
+    "Reinicia el contador de duración de fotogramas al generar un guardado rápido."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
