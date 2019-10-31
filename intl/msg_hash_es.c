@@ -2352,8 +2352,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
             snprintf(s, len,
                      "Puedes cambiar la superposición del mando\n"
-                     "virtual si vas a «%s» -> «%s»\n"
-                     "-> «%s».\n"
+                     "virtual si vas a «%s» ->\n"
+                     "«%s».\n"
                      " \n"
                      "Allí podrás cambiar la superposición,\n"
                      "el tamaño y opacidad de sus botones, etc.\n"
