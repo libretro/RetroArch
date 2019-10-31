@@ -29,6 +29,7 @@
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/hid.h>
+#include <psp2/motion.h>
 #define VITA_NUM_SCANCODES 115 /* size of rarch_key_map_vita */
 #define VITA_MAX_SCANCODE 0xE7
 #define VITA_NUM_MODIFIERS 11 /* number of modifiers reported */
@@ -86,6 +87,8 @@ typedef struct psp_input
    bool mouse_button_left;
    bool mouse_button_right;
    bool mouse_button_middle;
+   
+   bool sensors_enabled;
 #endif
 } psp_input_t;
 
@@ -445,13 +448,96 @@ static bool psp_input_set_rumble(void *data, unsigned port,
    return false;
 }
 
+#ifdef VITA
+static bool psp_input_set_sensor_state(void *data, unsigned port,
+      enum retro_sensor_action action, unsigned event_rate)
+{
+   psp_input_t *psp = (psp_input_t*)data;
+	
+   if(!psp)
+      return false;
+  
+   switch(action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         return false;
+
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         return true;
+		 
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         if(psp->sensors_enabled)
+         {
+           psp->sensors_enabled = false;
+           sceMotionMagnetometerOff();
+           sceMotionStopSampling();
+         }
+         return true;
+
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         if(!psp->sensors_enabled)
+         {
+           psp->sensors_enabled = true;
+           sceMotionStartSampling();
+           sceMotionMagnetometerOn();
+         }
+         return true;
+   }
+   
+   return false;
+}
+
+static float psp_input_get_sensor_input(void *data,
+      unsigned port, unsigned id)
+{
+   SceMotionSensorState sixaxis;
+   
+   psp_input_t *psp = (psp_input_t*)data;
+	
+   if(!psp || !psp->sensors_enabled)
+      return false;
+
+   if(id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      sceMotionGetSensorState(&sixaxis, port);
+
+      switch(id)
+      {
+         case RETRO_SENSOR_ACCELEROMETER_X:
+            return sixaxis.accelerometer.x;
+         case RETRO_SENSOR_ACCELEROMETER_Y:
+            return sixaxis.accelerometer.y;
+         case RETRO_SENSOR_ACCELEROMETER_Z:
+            return sixaxis.accelerometer.z;
+         case RETRO_SENSOR_GYROSCOPE_X:
+            return sixaxis.gyro.x;
+         case RETRO_SENSOR_GYROSCOPE_Y:
+            return sixaxis.gyro.y;
+         case RETRO_SENSOR_GYROSCOPE_Z:
+            return sixaxis.gyro.z;
+      }
+
+   }
+
+   return 0.0f;
+}
+	
+#endif
+
 input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
    psp_input_state,
    psp_input_free_input,
+#ifdef VITA
+   psp_input_set_sensor_state,
+   psp_input_get_sensor_input,
+#else
    NULL,
    NULL,
+#endif
    psp_input_get_capabilities,
 #ifdef VITA
    "vita",
