@@ -1837,6 +1837,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES: {
             /* Work around C89 limitations */
+            /* Arreglo para saltarse la limitación de 509 caracteres por cadena. */
             char u[501];
             const char *t =
                      "Indica la frecuencia (en fotogramas) con la\n"
