@@ -114,8 +114,32 @@
 #endif
 
 #ifdef HAVE_MATERIALUI
+/* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
 #endif
+
+/* Material UI colour theme */
+#define DEFAULT_MATERIALUI_THEME MATERIALUI_THEME_OZONE_DARK
+
+/* Type of animation to use when performing menu transitions
+ * > 'Auto' follows Material UI standards:
+ *   - Slide when switching between parent menus (tabs)
+ *   - Fade when changing levels in a menu
+ * Note: Not wrapping this with a HAVE_MATERIALUI ifdef
+ * because there's too much baggage involved... */
+#define DEFAULT_MATERIALUI_TRANSITION_ANIM MATERIALUI_TRANSITION_ANIM_AUTO
+
+/* Adjust menu padding etc. to better fit the
+ * screen when using landscape layouts */
+#if defined(RARCH_MOBILE)
+#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT false
+#else
+#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT true
+#endif
+
+/* Reposition navigation bar to make better use
+ * of screen space when using landscape layouts */
+#define DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR true
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
@@ -126,6 +150,8 @@
 #define DEFAULT_HISTORY_LIST_ENABLE true
 
 #define DEFAULT_PLAYLIST_ENTRY_RENAME true
+
+#define DEFAULT_DRIVER_SWITCH_ENABLE true
 
 #define DEFAULT_USER_LANGUAGE 0
 
@@ -520,7 +546,8 @@ static bool rgui_extended_ascii = false;
 #define DEFAULT_BLOCK_CONFIG_READ false
 #endif
 
-#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST true
+/* TODO/FIXME - this setting is thread-unsafe right now and can corrupt the stack - default to off */
+#define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
 static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = true;
@@ -1117,6 +1144,8 @@ static char default_discord_app_id[] = "475456035851599874";
 #define DEFAULT_AI_SERVICE_TARGET_LANG 0
 
 #define DEFAULT_AI_SERVICE_ENABLE true
+
+#define DEFAULT_AI_SERVICE_PAUSE false
 
 #define DEFAULT_AI_SERVICE_MODE 1
 

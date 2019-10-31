@@ -3868,6 +3868,95 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
          break;
+      case MATERIALUI_THEME_NORD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD), len);
+         break;
+      case MATERIALUI_THEME_GRUVBOX_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK), len);
+         break;
+      case MATERIALUI_THEME_SOLARIZED_DARK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_CYAN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_GREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_ORANGE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_PINK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_PURPLE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE), len);
+         break;
+      case MATERIALUI_THEME_CUTIE_RED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED), len);
+         break;
+      case MATERIALUI_THEME_VIRTUAL_BOY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY), len);
+         break;
+      default:
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_materialui_menu_transition_animation(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MATERIALUI_TRANSITION_ANIM_AUTO:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_FADE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_SLIDE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE), len);
+         break;
+      case MATERIALUI_TRANSITION_ANIM_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE), len);
+         break;
       default:
          break;
    }
@@ -7822,8 +7911,8 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CORE:
          {
-            unsigned i;
-            struct bool_entry bool_entries[5];
+            unsigned i, listing = 0;
+            struct bool_entry bool_entries[6];
 
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -7836,35 +7925,47 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
 
-            bool_entries[0].target         = &settings->bools.video_shared_context;
-            bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
-            bool_entries[0].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.video_shared_context;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
-            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[1].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.driver_switch_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_DRIVER_SWITCH_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[2].target         = &settings->bools.set_supports_no_game_enable;
-            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
-            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
-            bool_entries[2].default_value  = true;
-            bool_entries[2].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.load_dummy_on_core_shutdown;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[3].target         = &settings->bools.check_firmware_before_loading;
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[3].default_value  = true;
-            bool_entries[3].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.set_supports_no_game_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[listing].default_value  = true;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
-            bool_entries[4].target         = &settings->bools.video_allow_rotate;
-            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
-            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
-            bool_entries[4].default_value  = DEFAULT_ALLOW_ROTATE;
-            bool_entries[4].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].target         = &settings->bools.check_firmware_before_loading;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[listing].default_value  = true;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.video_allow_rotate;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
+            bool_entries[listing].default_value  = DEFAULT_ALLOW_ROTATE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
@@ -12858,7 +12959,7 @@ static bool setting_append_list(
                   &settings->uints.menu_materialui_color_theme,
                   MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-                  MATERIALUI_THEME_BLUE,
+                  DEFAULT_MATERIALUI_THEME,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12869,6 +12970,53 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_materialui_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_materialui_transition_animation,
+                  MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+                  DEFAULT_MATERIALUI_TRANSITION_ANIM,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_materialui_menu_transition_animation;
+            menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_TRANSITION_ANIM_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_optimize_landscape_layout,
+                  MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_auto_rotate_nav_bar,
+                  MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+                  DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             /* TODO: These should be removed entirely, but just
              * comment out for now in case users complain...
@@ -13403,6 +13551,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AI_SERVICE_ENABLE,
                MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
                DEFAULT_AI_SERVICE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ai_service_pause,
+               MENU_ENUM_LABEL_AI_SERVICE_PAUSE,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+               DEFAULT_AI_SERVICE_PAUSE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

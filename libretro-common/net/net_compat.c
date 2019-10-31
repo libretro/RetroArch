@@ -149,12 +149,16 @@ int retro_epoll_fd;
 #define SOC_ALIGN       0x1000
 #define SOC_BUFFERSIZE  0x100000
 static u32* _net_compat_net_memory;
-#elif defined(_WIN32)
+#endif
+
+#if defined(_WIN32)
 int inet_aton(const char *cp, struct in_addr *inp)
 {
 	uint32_t addr = 0;
+#ifndef _XBOX
 	if (cp == 0 || inp == 0)
 		return -1;
+#endif
 
 	addr = inet_addr(cp);
 	if (addr == INADDR_NONE || addr == INADDR_ANY)
@@ -387,13 +391,6 @@ uint16_t inet_htons(uint16_t hostshort)
 #endif
 }
 
-#ifdef _XBOX
-static int inet_aton(const char *cp, struct in_addr *addr)
-{
-  addr->s_addr = inet_addr(cp);
-  return (addr->s_addr == INADDR_NONE) ? 0 : 1;
-}
-#endif
 
 int inet_ptrton(int af, const char *src, void *dst)
 {

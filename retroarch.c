@@ -2730,11 +2730,10 @@ static void handle_translation_cb(
    int i                             = 0;
    int start                         = -1;
    char* found_string                = NULL;
+   char* error_string                = NULL;
    int curr_state                    = 0;
 
-   if (!is_paused && settings->uints.ai_service_mode != 1)
-      goto finish;
-
+   RARCH_LOG("RESULT FROM AI SERVICE...\n");
    if (!data || error)
       goto finish;
 
@@ -2762,38 +2761,63 @@ static void handle_translation_cb(
            
             if (curr_state == 1)/*image*/
             {
-              raw_image_file_data = (char*)unbase64(found_string,
+               raw_image_file_data = (char*)unbase64(found_string,
                     strlen(found_string),
                     &new_image_size);
-              curr_state = 0;
+               curr_state = 0;
             }
 #ifdef HAVE_AUDIOMIXER
             else if (curr_state == 2)
             {
-              raw_sound_data = (void*)unbase64(found_string,
+               raw_sound_data = (void*)unbase64(found_string,
                     strlen(found_string), &new_sound_size);
-              curr_state     = 0;
+               curr_state = 0;
             }
 #endif
+            else if (curr_state == 3)
+            {
+               error_string = (char*)malloc(i-start+1);
+               strlcpy(error_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
             else if (string_is_equal(found_string, "image"))
             {
-              curr_state = 1;
-              free(found_string);
+               curr_state = 1;
+               free(found_string);
             }
             else if (string_is_equal(found_string, "sound"))
             {
-              curr_state = 2;
-              free(found_string);
+               curr_state = 2;
+               free(found_string);
+            }
+            else if (string_is_equal(found_string, "error"))
+            {
+               curr_state = 3;
+               free(found_string);
             }
             else
+            {
               curr_state = 0;
+              free(found_string);
+            }
             start = -1;
          }
       }
       i++;
    }
-   if (found_string)
-      free(found_string);
+   
+   if (string_is_equal(error_string, "No text found."))
+   {
+      RARCH_LOG("No text found...\n");
+#ifdef HAVE_MENU_WIDGETS
+      if (menu_widgets_paused)
+      {
+         /* In this case we have to unpause and then repause for a frame */
+         menu_widgets_ai_service_overlay_set_state(2);
+         command_event(CMD_EVENT_UNPAUSE, NULL);        
+      }
+#endif
+   }
 
    if (!raw_image_file_data && !raw_sound_data)
    {
@@ -2806,140 +2830,193 @@ static void handle_translation_cb(
       /* Get the video frame dimensions reference */
       video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
 
-      if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
+      /* try two different modes for text display *
+       * In the first mode, we use menu widget overlays, but they require
+       * the video poke interface to be able to load image buffers.
+       *
+       * The other method is to draw to the video buffer directly, which needs
+       * a software core to be running. */
+#ifdef HAVE_MENU_WIDGETS
+      if (video_driver_poke
+          && video_driver_poke->load_texture && video_driver_poke->unload_texture)
       {
-         /* This is a BMP file coming back. */
-         /* Get image data (24 bit), and convert to the emulated pixel format */
-         image_width    =
-            ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
-
-         image_height   =
-            ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
-            ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-         raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
-         memcpy(raw_image_data, 
-                raw_image_file_data+54*sizeof(uint8_t), 
-                image_width*image_height*3*sizeof(uint8_t));
-      }
-      else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
-               raw_image_file_data[3] == 'G')
-      {
-         rpng_t *rpng = NULL;
-         /* PNG coming back from the url */
-         image_width  =
-             ((uint32_t) ((uint8_t)raw_image_file_data[16])<<24)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[17])<<16)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[18])<<8)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[19])<<0);
-         image_height =
-             ((uint32_t) ((uint8_t)raw_image_file_data[20])<<24)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[21])<<16)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
-             ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
-         rpng = rpng_alloc();
-         
-         if (!rpng)
+         bool ai_res;
+         enum image_type_enum image_type;
+         /* Write to overlay */
+         if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
          {
-            error = "Can't allocate memory.";
+             image_type = IMAGE_TYPE_BMP;
+         }
+         else if (raw_image_file_data[1] == 'P' && 
+                  raw_image_file_data[2] == 'N' &&
+                  raw_image_file_data[3] == 'G')
+         {
+            image_type = IMAGE_TYPE_PNG;
+         }
+         else
+         {
+            RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
-         rpng_set_buf_ptr(rpng, raw_image_file_data, new_image_size);
-         rpng_start(rpng);
-         while (rpng_iterate_image(rpng));
-
-         do
+         
+         ai_res = menu_widgets_ai_service_overlay_load(
+                     raw_image_file_data, (unsigned) new_image_size, 
+                     image_type);
+         
+         if (!ai_res)
          {
-            retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
+            RARCH_LOG("Video driver not supported for AI Service.");
+            runloop_msg_queue_push(
+               /* msg_hash_to_str(MSG_VIDEO_DRIVER_NOT_SUPPORTED), */
+               "Video driver not supported.",
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
-         while(retval == IMAGE_PROCESS_NEXT);
-
-         /* Returned output from the png processor is an upside down RGBA
-          * image, so we have to change that to RGB first.  This should
-          * probably be replaced with a scaler call.*/
+         else if (menu_widgets_paused)
          {
-            int d,tw,th,tc;
-            d=0;
+            /* In this case we have to unpause and then repause for a frame */
+            menu_widgets_ai_service_overlay_set_state(2);/* Unpausing state */
+            command_event(CMD_EVENT_UNPAUSE, NULL);
+         }
+      }
+      else 
+#endif
+      /* Can't use menu widget overlays, so try writing to video buffer */
+      {
+         /* Write to video buffer directly (software cores only) */
+         if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
+         {
+            /* This is a BMP file coming back. */
+            /* Get image data (24 bit), and convert to the emulated pixel format */
+            image_width    =
+               ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
+
+            image_height   =
+               ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
+               ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
             raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
-            for (i=0;i<image_width*image_height*4;i++)
+            memcpy(raw_image_data, 
+                   raw_image_file_data+54*sizeof(uint8_t), 
+                   image_width*image_height*3*sizeof(uint8_t));
+         }
+         else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
+                  raw_image_file_data[3] == 'G')
+         {
+            rpng_t *rpng = NULL;
+            /* PNG coming back from the url */
+            image_width  =
+                ((uint32_t) ((uint8_t)raw_image_file_data[16])<<24)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[17])<<16)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[18])<<8)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[19])<<0);
+            image_height =
+                ((uint32_t) ((uint8_t)raw_image_file_data[20])<<24)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[21])<<16)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
+            rpng = rpng_alloc();
+         
+            if (!rpng)
             {
-               if (i%4 != 3)
+               error = "Can't allocate memory.";
+               goto finish;
+            }
+            rpng_set_buf_ptr(rpng, raw_image_file_data, new_image_size);
+            rpng_start(rpng);
+            while (rpng_iterate_image(rpng));
+
+            do
+            {
+               retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
+            }
+            while(retval == IMAGE_PROCESS_NEXT);
+
+            /* Returned output from the png processor is an upside down RGBA
+             * image, so we have to change that to RGB first.  This should
+             * probably be replaced with a scaler call.*/
+            {
+               int d,tw,th,tc;
+               d=0;
+               raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
+               for (i=0;i<image_width*image_height*4;i++)
                {
-                  tc = d%3;
-                  th = image_height-d/(3*image_width)-1;
-                  tw = (d%(image_width*3))/3;
-                  ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[i];
-                  d+=1;
+                  if (i%4 != 3)
+                  {
+                     tc = d%3;
+                     th = image_height-d/(3*image_width)-1;
+                     tw = (d%(image_width*3))/3;
+                     ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[i];
+                     d+=1;
+                  }
                }
             }
+            rpng_free(rpng);
          }
-         rpng_free(rpng);
-      }
-      else
-      {
-         RARCH_LOG("Output from URL not a valid file type, or is not supported.\n");
-         goto finish;
-      }
-      scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
-      if (!scaler)
-         goto finish;
+         else
+         {
+            RARCH_LOG("Output from URL not a valid file type, or is not supported.\n");
+            goto finish;
+         }    
 
-      if (dummy_data == RETRO_HW_FRAME_BUFFER_VALID)
-      {
-         /*
-            In this case, we used the viewport to grab the image
-            and translate it, and we have the translated image in
-            the raw_image_data buffer.
+         scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
+         if (!scaler)
+            goto finish;
+
+         if (dummy_data == RETRO_HW_FRAME_BUFFER_VALID)
+         {
+            /*
+               In this case, we used the viewport to grab the image
+               and translate it, and we have the translated image in
+               the raw_image_data buffer.
+            */
+            RARCH_LOG("Hardware frame buffer core, but selected video driver isn't supported.\n");
+            goto finish;
+         }
+
+         /* The assigned pitch may not be reliable.  The width of
+            the video frame can change during run-time, but the
+            pitch may not, so we just assign it as the width
+            times the byte depth.
          */
 
-         /* TODO: write to the viewport in this case */
-         RARCH_LOG("Hardware frame buffer... writing to viewport"
-               " not yet supported.\n");
-         goto finish;
+         if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+         {
+            raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
+            scaler->out_fmt    = SCALER_FMT_ARGB8888;
+            pitch              = width * 4;
+            scaler->out_stride = width * 4;
+         }
+         else
+         {
+            raw_output_data    = (uint8_t*)malloc(width * height * 2 * sizeof(uint8_t));
+            scaler->out_fmt    = SCALER_FMT_RGB565;
+            pitch              = width * 2;
+            scaler->out_stride = width * 1;
+         }
+
+         if (!raw_output_data)
+            goto finish;
+
+         scaler->in_fmt        = SCALER_FMT_BGR24;
+         scaler->in_width      = image_width;
+         scaler->in_height     = image_height;
+         scaler->out_width     = width;
+         scaler->out_height    = height;
+         scaler->scaler_type   = SCALER_TYPE_POINT;
+         scaler_ctx_gen_filter(scaler);
+         scaler->in_stride     = -1 * width * 3;
+
+         scaler_ctx_scale_direct(scaler, raw_output_data,
+               (uint8_t*)raw_image_data + (image_height - 1) * width * 3);
+         video_driver_frame(raw_output_data, image_width, image_height, pitch);
       }
-
-      /* The assigned pitch may not be reliable.  The width of
-         the video frame can change during run-time, but the
-         pitch may not, so we just assign it as the width
-         times the byte depth.
-      */
-
-      if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
-      {
-         raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
-         scaler->out_fmt    = SCALER_FMT_ARGB8888;
-         pitch              = width * 4;
-         scaler->out_stride = width * 4;
-      }
-      else
-      {
-         raw_output_data    = (uint8_t*)malloc(width * height * 2 * sizeof(uint8_t));
-         scaler->out_fmt    = SCALER_FMT_RGB565;
-         pitch              = width * 2;
-         scaler->out_stride = width * 1;
-      }
-
-      if (!raw_output_data)
-         goto finish;
-
-      scaler->in_fmt        = SCALER_FMT_BGR24;
-      scaler->in_width      = image_width;
-      scaler->in_height     = image_height;
-      scaler->out_width     = width;
-      scaler->out_height    = height;
-      scaler->scaler_type   = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(scaler);
-      scaler->in_stride     = -1 * width * 3;
-
-      scaler_ctx_scale_direct(scaler, raw_output_data,
-            (uint8_t*)raw_image_data + (image_height - 1) * width * 3);
-      video_driver_frame(raw_output_data, image_width, image_height, pitch);
    }
-
+  
 #ifdef HAVE_AUDIOMIXER
    if (raw_sound_data)
    {
@@ -2998,7 +3075,8 @@ finish:
       free(raw_image_data);
    if (scaler)
       free(scaler);
-
+   if (error_string)
+      free(error_string);
    if (raw_output_data)
       free(raw_output_data);
 }
@@ -3163,10 +3241,10 @@ static const char *ai_service_get_str(enum translation_lang id)
 
    To make your own server, it must listen for a POST request, which
    will consist of a JSON body, with the "image" field as a base64
-   encoded string of a 24bit-BMP that the will be translated.  The server
-   must output the translated image in the form of a JSON body, with
-   the "image" field also as a base64 encoded 24bit-BMP, or
-   as an alpha channel png.
+   encoded string of a 24bit-BMP/PNG that the will be translated.  
+   The server must output the translated image in the form of a 
+   JSON body, with the "image" field also as a base64 encoded 
+   24bit-BMP, or as an alpha channel png.
    */
 static bool run_translation_service(void)
 {
@@ -3194,10 +3272,36 @@ static bool run_translation_service(void)
    const char *rf2                       = "\"}\0";
    char *rf3                             = NULL;
    bool TRANSLATE_USE_BMP                = false;
+   bool use_overlay                      = true;
 
    const char *label                     = NULL;
    char* system_label                    = NULL;
    core_info_t *core_info                = NULL;
+
+#ifdef HAVE_MENU_WIDGETS   
+   if (menu_widgets_ai_service_overlay_get_state() != 0)
+   {
+      /* For the case when ai service pause is disabled. */
+      menu_widgets_ai_service_overlay_unload();
+      goto finish;
+   }
+#else
+   if (!settings->bools.ai_service_pause)
+   {
+      RARCH_LOG("Pause toggle not supported without menu widgets.\n");
+   }
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   if (video_driver_poke
+       && video_driver_poke->load_texture && video_driver_poke->unload_texture)
+   {
+      use_overlay = true;
+   }
+   else
+#endif
+      use_overlay = false; 
+
 
    /* get the core info here so we can pass long the game name */
    core_info_get_current_core(&core_info);
@@ -3264,16 +3368,29 @@ static bool run_translation_service(void)
          goto finish;
 
       if (!video_driver_read_viewport(bit24_image_prev, false))
+      {
+         RARCH_LOG("Could not read viewport for translation service...\n");
          goto finish;
+      }
 
       /* TODO: Rescale down to regular resolution */
-      width = vp.width;
-      height = vp.height;
-      bit24_image      = bit24_image_prev;
-      bit24_image_prev = NULL;
+      scaler->in_fmt = SCALER_FMT_BGR24;
+      scaler->out_fmt = SCALER_FMT_BGR24;
+      scaler->scaler_type = SCALER_TYPE_POINT;
+      scaler->in_width = vp.width;
+      scaler->in_height = vp.height;
+      scaler->out_width = width;
+      scaler->out_height = height;
+      scaler_ctx_gen_filter(scaler);
+
+      scaler->in_stride = vp.width*3;
+      scaler->out_stride = width*3;
+      scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
+      scaler_ctx_gen_reset(scaler);
    }
    else
    {
+      /* This is a software core, so just change the pixel format to 24-bit. */
       bit24_image = (uint8_t*)malloc(width * height * 3);
       if (!bit24_image)
           goto finish;
@@ -3298,13 +3415,14 @@ static bool run_translation_service(void)
       goto finish;
    }
 
-   /*
-     At this point, we should have a screenshot in the buffer, so allocate
-     an array to contain the BMP image along with the BMP header as bytes,
-     and then covert that to a b64 encoded array for transport in JSON.
-   */
    if (TRANSLATE_USE_BMP)
    {
+      /*
+        At this point, we should have a screenshot in the buffer, so allocate
+        an array to contain the BMP image along with the BMP header as bytes,
+        and then covert that to a b64 encoded array for transport in JSON.
+      */
+
       form_bmp_header(header, width, height, false);
       bmp_buffer = (uint8_t*)malloc(width * height * 3+54);
       if (!bmp_buffer)
@@ -3355,7 +3473,7 @@ static bool run_translation_service(void)
       memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));   
    else
       memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
-
+   RARCH_LOG("Request size: %d\n", out_length);
    {
       char separator  = '?';
       char new_ai_service_url[PATH_MAX_LENGTH];
@@ -3409,9 +3527,23 @@ static bool run_translation_service(void)
 
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
-         char* mode_chr = "image,png";
-         if (settings->uints.ai_service_mode == 1)
+         char* mode_chr;
+         if (settings->uints.ai_service_mode == 0)
+         {
+            if (use_overlay)
+               mode_chr = "image,png,png-a";
+            else
+               mode_chr = "image,png";
+         }
+         else if (settings->uints.ai_service_mode == 1)
             mode_chr = "sound,wav";
+         else if (settings->uints.ai_service_mode == 2)
+         {
+            if (use_overlay)
+               mode_chr = "image,png,png-a,sound,wav";
+            else
+               mode_chr = "image,png,sound,wav";         
+         }
 
          snprintf(temp_string,
                sizeof(temp_string),
@@ -3421,7 +3553,7 @@ static bool run_translation_service(void)
          strlcat(new_ai_service_url, temp_string,
                  sizeof(new_ai_service_url));
       }
-
+      RARCH_LOG("SENDING... %s\n", new_ai_service_url);
       task_push_http_post_transfer(new_ai_service_url,
             json_buffer, true, NULL, handle_translation_cb, NULL);
    }
@@ -4625,7 +4757,6 @@ static void retroarch_pause_checks(void)
    if (is_paused)
    {
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
-      command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
       if (menu_widgets_inited)
@@ -4652,8 +4783,13 @@ static void retroarch_pause_checks(void)
          menu_widgets_paused = is_paused;
 #endif
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-      command_event(CMD_EVENT_AUDIO_START, NULL);
+
    }
+
+#ifdef HAVE_MENU_WIDGETS
+   if (menu_widgets_ai_service_overlay_get_state() == 1)
+      menu_widgets_ai_service_overlay_unload();
+#endif
 }
 
 static void retroarch_frame_time_free(void)
@@ -4749,23 +4885,26 @@ bool command_event(enum event_command cmd, void *data)
       {
 #ifdef HAVE_TRANSLATE
          settings_t *settings      = configuration_settings;
-         if (settings->uints.ai_service_mode == 0)
+         if (settings->bools.ai_service_pause)
          {
-            /* Default mode - pause on call, unpause on second press. */
+            /* pause on call, unpause on second press. */
             if (!runloop_paused)
             {
                command_event(CMD_EVENT_PAUSE, NULL);
                command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
             }
             else
+            {
                command_event(CMD_EVENT_UNPAUSE, NULL);
-         }
-         /* Text-to-Speech mode - don't pause */
-         else if (settings->uints.ai_service_mode == 1)
-            command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+            }
+         }       
          else
          {
-            RARCH_LOG("Invalid AI Service Mode.\n");
+           /* Don't pause - useful for Text-To-Speech since
+            * the audio can't currently play while paused.
+            * Also useful for cases when users don't want the
+            * core's sound to stop while translating. */       
+            command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
          }
 #endif
          break;
@@ -4965,7 +5104,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event_save_auto_state();
             command_event_disable_overrides();
             retroarch_unset_runtime_shader_preset();
-			
+
             if (cached_video_driver[0])
             {
                settings_t *settings = configuration_settings;
@@ -7284,6 +7423,43 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
+static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
+      unsigned minor, unsigned major)
+{
+   settings_t *settings  = configuration_settings;
+   const char *video_ident = settings->arrays.video_driver;
+
+   if (settings->bools.driver_switch_enable)
+      return true;
+
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_VULKAN:
+         if (!string_is_equal(video_ident, "vulkan"))
+            return false;
+         break;
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         if (!string_is_equal(video_ident, "gl") &&
+             !string_is_equal(video_ident, "glcore"))
+         {
+            return false;
+         }
+         break;
+      case RETRO_HW_CONTEXT_DIRECT3D:
+         if (!(string_is_equal(video_ident, "d3d11") && major == 11))
+            return false;
+         break;
+      default:
+         break;
+   }
+
+   return true;
+}
+
 static void rarch_log_libretro(enum retro_log_level level,
       const char *fmt, ...)
 {
@@ -7841,7 +8017,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned *cb = (unsigned*)data;
          settings_t *settings  = configuration_settings;
          RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
-         if (!strcmp(settings->arrays.video_driver, "glcore"))
+         if (!settings->bools.driver_switch_enable)
+             return false;
+         else if (!strcmp(settings->arrays.video_driver, "glcore"))
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
          else if (!strcmp(settings->arrays.video_driver, "gl"))
              *cb = RETRO_HW_CONTEXT_OPENGL;
@@ -7863,8 +8041,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             video_driver_get_hw_context_internal();
 
          RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
-
+         
          if (!dynamic_request_hw_context(
+                  cb->context_type, cb->version_minor, cb->version_major))
+            return false;
+
+         if (!dynamic_verify_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
@@ -19594,8 +19776,14 @@ static void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
+   if (data)
+      frame_cache_data = data;
+   frame_cache_width   = width;
+   frame_cache_height  = height;
+   frame_cache_pitch   = pitch;
+   
    if (
-            video_driver_scaler_ptr
+         video_driver_scaler_ptr
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
@@ -19608,12 +19796,6 @@ static void video_driver_frame(const void *data, unsigned width,
       data                = video_driver_scaler_ptr->scaler_out;
       pitch               = video_driver_scaler_ptr->scaler->out_stride;
    }
-
-   if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
 
    video_driver_build_info(&video_info);
 
@@ -21307,6 +21489,10 @@ static void drivers_init(int flags)
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
                video_driver_width, video_driver_height);
+   }
+   else
+   {
+      menu_display_init_first_driver(video_is_threaded);
    }
 #endif
 
@@ -24800,6 +24986,14 @@ static enum runloop_state runloop_check_state(void)
 #ifdef HAVE_EASTEREGG
    static uint64_t seq                 = 0;
 #endif
+#endif
+
+#ifdef HAVE_MENU_WIDGETS
+   if (menu_widgets_ai_service_overlay_get_state() == 3)
+   {
+      command_event(CMD_EVENT_PAUSE, NULL);
+      menu_widgets_ai_service_overlay_set_state(1);
+   }
 #endif
 
 #ifdef HAVE_LIBNX

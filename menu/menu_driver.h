@@ -27,6 +27,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
+#include <formats/image.h>
 #include <queues/task_queue.h>
 
 #include "menu_defines.h"
@@ -583,6 +584,8 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
       video_frame_info_t *video_info);
 void menu_display_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
+void menu_display_draw_blend(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
@@ -679,6 +682,11 @@ bool menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
+
+bool menu_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height);
 
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,

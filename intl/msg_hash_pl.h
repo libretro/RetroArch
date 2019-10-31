@@ -1022,9 +1022,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Załaduj zawartość")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "Załaduj dysk")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "Zrzut dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
       "Wczytaj zapis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -1064,7 +1064,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "Menu obrotowe przepustnicy częstotliwości wyświetlania klatek")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-      "File Browser")
+      "Przeglądarka plików")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Menu filtra liniowego")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -1261,39 +1261,39 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Listy odtwarzania")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Label Display Mode"
+    "Tryb wyświetlania etykiet"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Change how the content labels are displayed in this playlist."
+    "Zmień sposób wyświetlania etykiet treści na tej liście odtwarzania."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-    "Show full labels"
+    "Pokaż pełne etykiety"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-    "Remove () content"
+    "Usuń () treść"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-    "Remove [] content"
+    "Usuń [] treść"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
-    "Remove () and []"
+    "Usuń () i []"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-    "Keep region"
+    "Zachowaj region"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-    "Keep disc index"
+    "Zachowaj indeks płyty"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-    "Keep region and disc index"
+    "Zachowaj indeks regionu i dysku"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "Obsługa dotyku")
@@ -4325,7 +4325,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
       "Adres URL usługi AI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
       "Usługa AI włączona")
-MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
       "Wstrzymuje grę podczas tłumaczenia (tryb obrazu) lub kontynuuje działanie (tryb mowy)")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
       "Adres URL http: // wskazujący na usługę tłumaczeniową do użycia.")
@@ -4635,21 +4635,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-      "Wi-Fi Access Point")
+      "Punkt dostępu Wi-Fi")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-      "Enable or disable Wi-Fi Access Point.")
+      "Włącz lub wyłącz punkt dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
-      "Switching off Wi-Fi Access Point.")
+      "Wyłączanie punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
-      "Disconnecting from Wi-Fi '%s'")
+      "Odłączanie od Wi-Fi '%s'")
 MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
-      "Wi-Fi Access Point is already started")
+      "Punkt dostępu Wi-Fi jest już uruchomiony")
 MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
-      "Wi-Fi Access Point is not running")
+      "Punkt dostępu Wi-Fi nie jest uruchomiony")
 MSG_HASH(MSG_LOCALAP_STARTING,
-      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+      "Uruchamianie punktu dostępu Wi-Fi z SSID =% si kluczem dostępu=%s")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
-      "Could not create Wi-Fi Access Point configuration file.")
+      "Nie można utworzyć pliku konfiguracyjnego punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+     "Niepoprawny plik konfiguracyjny - nie można znaleźć APNAME lub PASSWORD w %s")
 #endif

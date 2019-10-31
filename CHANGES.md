@@ -1,10 +1,33 @@
-# Future (1.7.9) [v3]
+# Future
+- BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
+- CDROM: Adds pregap support to cdfs helper methods
+- CHEEVOS: Provides the new PCEngine hashing algorithm for RetroAchievements
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Polish translation
+- MENU/MATERIALUI: Bugfix - Under certain extreme circumstances, entries with very long sublabel strings could have their text prematurely 'clipped' as the entry is scrolled beyond the top of the screen
+- MENU/MATERIALUI: Bugfix - Certain setting value strings were unnecessarily truncated (with a ...) when using smooth ticker text
+
+
+# (1.8.0)
 - AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
 - BSV: Fix BSV recording/playback
 - BUGFIX: Fix crash when setting Thumbnail Directory
+- BUGFIX/STABILITY: Set "Automatically Add Content to Playlist" to false by default, this was unstable on PS3 and Mac and other platforms potentially as well.
 - COMMON: Graceful driver switching for Windows and Linux
+- COMMON: Cache frame before converting 0RGB1555
 - LAKKA: Wi-Fi Access Point settings
 - MENU: Menu scaling improvements
+- MENU/MATERIALUI: There are no longer any animation glitches when 'wraparound' scrolling from the last entry in a list to the first, or when performing horizontal swipe navigation gestures on certain settings-type entries
+- MENU/MATERIALUI: List entries underneath the title and navigation bars are no longer highlighted when touching the title/navigation bars (this was only a cosmetic issue, but it was annoying...)
+- MENU/MATERIALUI: The current menu list is no longer reloaded when pressing the currently active tab on the navigation bar
+- MENU/MATERIALUI: The ticker text spacer has been set to a 'bullet' character (same as Ozone)
+- MENU/MATERIALUI: The default colour theme has been set to 'Ozone Dark'
+- MENU/MATERIALUI: Three new colour themes have been added.
+- MENU/MATERIALUI: A new Menu Transition Animation option has been added under User Interface > Appearance. When this is enabled, menu transition events are animated
+- MENU/MATERIALUI: The navigation bar is now shown at all times - i.e. it is an actual navigation tool, rather than a 'top-level-menu' curiosity
+- MENU/MATERIALUI: Two new context-sensitive buttons have been added to the navigation bar - back button and resume button
+- MENU/MATERIALUI: A new Auto-Rotate Navigation Bar option has been added under User Interface > Appearance. When enabled (this is the default setting), the navigation bar is moved to the right hand side of the screen when using landscape screen orientations.
+- MENU/MATERIALUI: The playlists tab is now correctly hidden when User Interface > Views > Show Playlist Tabs is disabled
 - MENU/MATERIALUI: Material UI now correctly readjusts its layout when screen orientation changes on mobile devices
 - MENU/MATERIALUI: Material UI now resizes in real-time when the user manually sets the Menu Scale Factor (this never worked properly with the old DPI override)
 - MENU/MATERIALUI: Material UI no longer leaks memory on 'context reset' (fonts were previously never free()'d)
@@ -16,7 +39,7 @@
 - OSD: Fix fast forward indicator when not using menu widgets
 - PSP1: Remove duplicated FPS indicator on the screen
 - SWITCH: Make audren threaded audio driver the new default
-- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx. Only works with GL driver for now
+- VIDEO LAYOUT: Add video layout mame overlay compatibility. Enabled for Windows/Linux/OSX/iOS/Android/libnx. Only works with GL driver for now, no glcore yet
 
 # (1.7.9) (v2)
 - 3DS: Fix 3DS screen flickering when OSD is enabled
@@ -961,4 +984,5 @@ Skipped this one
 - WINDOWS: Logging to file no longer spawns an empty window
 
 # 1.4.1
+
 

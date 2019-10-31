@@ -3827,6 +3827,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_AI_SERVICE_MODE,                               PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_AI_SERVICE_URL,                               PARSE_ONLY_STRING, true },
                {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,                                   PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_AI_SERVICE_PAUSE,                                   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,                                   PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,                                   PARSE_ONLY_UINT, true},
             };
@@ -5225,6 +5226,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          {
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,  PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,    PARSE_ONLY_BOOL},
@@ -5444,7 +5446,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,                 PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,               PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,                  PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,         PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,               PARSE_ONLY_FLOAT},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,               PARSE_ONLY_FLOAT},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL },

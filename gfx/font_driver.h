@@ -162,7 +162,6 @@ int font_driver_get_line_height(void *font_data, float scale);
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t gl_core_raster_font;
 extern font_renderer_t gl1_raster_font;
-extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
 extern font_renderer_t ps2_font;
