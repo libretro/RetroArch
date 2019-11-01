@@ -1869,10 +1869,26 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
       int height)
 {
    unsigned i;
-   size_t usable_width       = width - (mui->margin * 2) - (mui->landscape_entry_margin * 2) - mui->nav_bar_layout_width;
-   file_list_t *list         = menu_entries_get_selection_buf_ptr(0);
-   float sum                 = 0;
-   size_t entries_end        = menu_entries_get_size();
+   int usable_width     =
+            (int)width - (int)(mui->margin * 2) - (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
+   file_list_t *list    = menu_entries_get_selection_buf_ptr(0);
+   float sum            = 0;
+   size_t entries_end   = menu_entries_get_size();
+
+   /* If this is a playlist and thumbnails are enabled,
+    * must reduce usable width by thumbnail width */
+   if ((mui->list_view_type != MUI_LIST_VIEW_DEFAULT) &&
+       (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST))
+   {
+      int thumbnail_margin = 0;
+
+      /* Account for additional padding in landscape mode */
+      if (!mui->is_portrait)
+         if (mui->landscape_entry_margin < mui->margin)
+            thumbnail_margin = (int)(mui->margin - mui->landscape_entry_margin);
+
+      usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+   }
 
    for (i = 0; i < entries_end; i++)
    {
@@ -1896,15 +1912,20 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
 
       if (!string_is_empty(sublabel_str))
       {
-         int icon_margin = 0;
+         int sublabel_width_max = usable_width;
 
-         if (node->has_icon)
-            if (mui->textures.list[node->icon_texture_index])
-               icon_margin = mui->icon_size;
+         /* If this is a default menu list with an icon,
+          * must subtract icon size from sublabel width */
+         if (mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
+            if (node->has_icon)
+               if (mui->textures.list[node->icon_texture_index])
+                  sublabel_width_max -= (int)mui->icon_size;
 
-         word_wrap(wrapped_sublabel_str, sublabel_str,
-               (int)((usable_width - icon_margin) / mui->font_data.hint.glyph_width),
+         word_wrap(
+               wrapped_sublabel_str, sublabel_str,
+               sublabel_width_max / (int)mui->font_data.hint.glyph_width,
                false, 0);
+
          num_sublabel_lines = materialui_count_lines(wrapped_sublabel_str);
       }
 
@@ -4367,10 +4388,30 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
    video_driver_texture_unload(&menu_display_white_texture);
 }
 
+static void materialui_reset_thumbnails(void)
+{
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   unsigned i;
+
+   if (!list)
+      return;
+
+   /* Free node thumbnails */
+   for (i = 0; i < list->size; i++)
+   {
+      materialui_node_t *node = (materialui_node_t*)
+            file_list_get_userdata_at_offset(list, i);
+
+      if (!node)
+         continue;
+
+      menu_thumbnail_reset(&node->thumbnail);
+   }
+}
+
 static void materialui_context_destroy(void *data)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
    unsigned i;
 
    if (!mui)
@@ -4394,19 +4435,7 @@ static void materialui_context_destroy(void *data)
    mui->font_data.hint.font = NULL;
 
    /* Free node thumbnails */
-   if (list)
-   {
-      for (i = 0; i < list->size; i++)
-      {
-         materialui_node_t *node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list, i);
-
-         if (!node)
-            continue;
-
-         menu_thumbnail_reset(&node->thumbnail);
-      }
-   }
+   materialui_reset_thumbnails();
 
    /* Free background/wallpaper textures */
    materialui_context_bg_destroy(mui);
@@ -5420,9 +5449,20 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
          settings->uints.menu_materialui_thumbnail_view_landscape = 0;
    }
 
-   /* Update list view parameters, and trigger
-    * transition animation */
+   /* Update list view parameters */
    materialui_update_list_view(mui);
+
+   /* If the new list view does not have thumbnails
+    * enabled, reset all existing thumbnails
+    * (this would happen automatically at the next
+    * menu level change - or destroy context, etc.
+    * - but it's cleanest to do it here) */
+   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+      materialui_reset_thumbnails();
+
+   /* We want to 'fade in' when swtiching views, so
+    * trigger normal transition animation */
    materialui_init_transition_animation(mui, settings);
 
    mui->need_compute = true;
