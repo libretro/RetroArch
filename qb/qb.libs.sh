@@ -162,22 +162,22 @@ check_lib()
 	include="${7:-}"
 	error="${8:-}"
 	answer='no'
-	printf %s "$MSG $lib"
+	printf %s "$MSG $lib ... "
 	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $FLAGS $LDFLAGS $lib"
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
-	printf %s\\n " ... $answer"
+	printf %s\\n "$answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
 		answer='no'
 		eval "set -- $INCLUDES"
 		for dir do
 			[ "$answer" = 'yes' ] && break
-			printf %s "Checking existence of /$dir/$include"
+			printf %s "Checking existence of /$dir/$include ... "
 			if [ -d "/$dir/$include" ]; then
 				eval "${val}_CFLAGS=\"-I/$dir/$include\""
 				answer='yes'
 			fi
-			printf %s\\n " ... $answer"
+			printf %s\\n "$answer"
 		done
 	fi
 
@@ -234,7 +234,7 @@ check_pkgconf()
 	eval "set -- ${2#* }"
 	for pkgnam do
 		[ "$answer" = 'yes' ] && break
-		printf %s "$MSG $pkgnam$ECHOBUF"
+		printf %s "$MSG $pkgnam$ECHOBUF ... "
 		eval "set -- $ver"
 		for pkgver do
 			if "$PKG_CONF_PATH" --atleast-version="$pkgver" "$pkgnam"; then
@@ -246,7 +246,7 @@ check_pkgconf()
 				break
 			fi
 		done
-		printf %s\\n " ... $version"
+		printf %s\\n "$version"
 	done
 
 	eval "HAVE_$val=\"$answer\""
@@ -280,11 +280,11 @@ check_header()
 	done
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
-	printf %s "Checking presence of header file $CHECKHEADER"
+	printf %s "Checking presence of header file $CHECKHEADER ... "
 	eval "set -- $CFLAGS $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n " ... $answer"
+	printf %s\\n "$answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	setval="$(eval "printf %s \"\$USER_$val\"")"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
@@ -316,11 +316,11 @@ EOF
 	answer='no'
 	val="$1"
 	macro="$2"
-	printf %s "Checking presence of predefined macro $macro$ECHOBUF"
+	printf %s "Checking presence of predefined macro $macro$ECHOBUF ... "
 	eval "set -- $CFLAGS $INCLUDE_DIRS"
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$val=\"$answer\""
-	printf %s\\n " ... $answer"
+	printf %s\\n "$answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	setval="$(eval "printf %s \"\$USER_$val\"")"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
@@ -339,10 +339,10 @@ check_switch()
 
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
-	printf %s "Checking for availability of switch $3 in $COMPILER"
+	printf %s "Checking for availability of switch $3 in $COMPILER ... "
 	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$3" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$2=\"$answer\""
-	printf %s\\n " ... $answer"
+	printf %s\\n "$answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 	if [ "$answer" = 'no' ] && [ "${4:-}" ]; then
 		die 1 "$4"
