@@ -1,13 +1,17 @@
 # Future
+
+# (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
 - CDROM: Adds pregap support to cdfs helper methods
 - CHEEVOS: Provides the new PCEngine hashing algorithm for RetroAchievements
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
+- MENU/MATERIALUI: Initial thumbnail support
 - MENU/MATERIALUI: Bugfix - Under certain extreme circumstances, entries with very long sublabel strings could have their text prematurely 'clipped' as the entry is scrolled beyond the top of the screen
 - MENU/MATERIALUI: Bugfix - Certain setting value strings were unnecessarily truncated (with a ...) when using smooth ticker text
-- VITA: Accelerometer and gyroscope support
+- SWITCH: Accelerometer, gyroscope and illuminance sensor support
+- VITA: Accelerometer and gyroscope sensor support
 
 # (1.8.0)
 - AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call
