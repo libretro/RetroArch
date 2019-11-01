@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (runtime_file.c).
+ * The following license statement only applies to this file (menu_thumbnail_path.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,

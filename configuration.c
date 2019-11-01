@@ -1812,6 +1812,8 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, DEFAULT_MATERIALUI_THEME, false);
    SETTING_UINT("materialui_menu_transition_animation", &settings->uints.menu_materialui_transition_animation, true, DEFAULT_MATERIALUI_TRANSITION_ANIM, false);
+   SETTING_UINT("materialui_thumbnail_view_portrait", &settings->uints.menu_materialui_thumbnail_view_portrait, true, DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT, false);
+   SETTING_UINT("materialui_thumbnail_view_landscape", &settings->uints.menu_materialui_thumbnail_view_landscape, true, DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, DEFAULT_MENU_SHADER_PIPELINE, false);
 #ifdef HAVE_OZONE
    SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, 1, false);

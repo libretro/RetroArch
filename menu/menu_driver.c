@@ -3845,9 +3845,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
          {
-            if (!menu_driver_ctx || !menu_driver_ctx->refresh_thumbnail_image)
+            unsigned *i = (unsigned*)data;
+
+            if (!i || !menu_driver_ctx || !menu_driver_ctx->refresh_thumbnail_image)
                return false;
-            menu_driver_ctx->refresh_thumbnail_image(menu_userdata);
+            menu_driver_ctx->refresh_thumbnail_image(menu_userdata, *i);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:

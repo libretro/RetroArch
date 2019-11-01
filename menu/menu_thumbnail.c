@@ -1,0 +1,355 @@
+/* Copyright  (C) 2010-2019 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (menu_thumbnail.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
+
+#include <features/features_cpu.h>
+#include <file/file_path.h>
+
+#include "../retroarch.h"
+#include "../configuration.h"
+#include "../tasks/tasks_internal.h"
+#include "menu_animation.h"
+
+#include "menu_thumbnail.h"
+
+/* When streaming thumbnails, to minimise the processing
+ * of unnecessary images (i.e. when scrolling rapidly through
+ * playlists), we delay loading until an entry has been on screen
+ * for at least menu_thumbnail_delay ms */
+#define DEFAULT_MENU_THUMBNAIL_STREAM_DELAY 83.333333f
+static float menu_thumbnail_stream_delay = DEFAULT_MENU_THUMBNAIL_STREAM_DELAY;
+
+/* Duration in ms of the thumbnail 'fade in' animation */
+#define DEFAULT_MENU_THUMBNAIL_FADE_DURATION 166.66667f
+static float menu_thumbnail_fade_duration = DEFAULT_MENU_THUMBNAIL_FADE_DURATION;
+
+/* Due to the asynchronous nature of thumbnail
+ * loading, it is quite possible to trigger a load
+ * then navigate to a different menu list before
+ * the load is complete/handled. As an additional
+ * safety check, we therefore tag the current menu
+ * list with counter value that is incremented whenever
+ * a list is cleared/set. This is sent as userdata when
+ * requesting a thumbnail, and the upload is only
+ * handled if the tag matches the most recent value
+ * at the time when the load completes */
+static uint64_t menu_thumbnail_list_id = 0;
+
+/* Utility structure, sent as userdata when pushing
+ * an image load */
+typedef struct
+{
+   menu_thumbnail_t *thumbnail;
+   retro_time_t list_id;
+} menu_thumbnail_tag_t;
+
+/* Setters */
+
+/* When streaming thumbnails, sets time in ms that an
+ * entry must be on screen before an image load is
+ * requested */
+void menu_thumbnail_set_stream_delay(float delay)
+{
+   menu_thumbnail_stream_delay = (delay >= 0.0f) ?
+         delay : DEFAULT_MENU_THUMBNAIL_STREAM_DELAY;
+}
+
+/* Sets duration in ms of the thumbnail 'fade in'
+ * animation */
+void menu_thumbnail_set_fade_duration(float duration)
+{
+   menu_thumbnail_fade_duration = (duration >= 0.0f) ?
+         duration : DEFAULT_MENU_THUMBNAIL_FADE_DURATION;
+}
+
+/* Getters */
+
+/* Fetches current streaming thumbnails request delay */
+float menu_thumbnail_get_stream_delay(void)
+{
+   return menu_thumbnail_stream_delay;
+}
+
+/* Fetches current 'fade in' animation duration */
+float menu_thumbnail_get_fade_duration(void)
+{
+   return menu_thumbnail_fade_duration;
+}
+
+/* Callbacks */
+
+/* Used to process thumbnail data following completion
+ * of image load task */
+static void menu_thumbnail_handle_upload(
+      retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   struct texture_image *img           = (struct texture_image*)task_data;
+   menu_thumbnail_tag_t *thumbnail_tag = (menu_thumbnail_tag_t*)user_data;
+   menu_animation_ctx_entry_t animation_entry;
+
+   /* Sanity check */
+   if (!thumbnail_tag)
+      goto end;
+
+   /* Ensure that we are operating on the correct
+    * thumbnail... */
+   if (thumbnail_tag->list_id != menu_thumbnail_list_id)
+      goto end;
+
+   /* Only process image if we are waiting for it */
+   if (thumbnail_tag->thumbnail->status != MENU_THUMBNAIL_STATUS_PENDING)
+      goto end;
+
+   /* Sanity check: if thumbnail already has a texture,
+    * we're in some kind of weird error state - in this
+    * case, the best course of action is to just reset
+    * the thumbnail... */
+   if (thumbnail_tag->thumbnail->texture)
+      menu_thumbnail_reset(thumbnail_tag->thumbnail);
+
+   /* Set thumbnail 'missing' status by default
+    * (saves a number of checks later) */
+   thumbnail_tag->thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+
+   /* Check we have a valid image */
+   if (!img)
+      goto end;
+
+   if (img->width < 1 || img->height < 1)
+      goto end;
+
+   /* Upload texture to GPU */
+   video_driver_texture_load(
+         img, TEXTURE_FILTER_MIPMAP_LINEAR, &thumbnail_tag->thumbnail->texture);
+
+   /* Cache dimensions */
+   thumbnail_tag->thumbnail->width  = img->width;
+   thumbnail_tag->thumbnail->height = img->height;
+
+   /* Update thumbnail status */
+   thumbnail_tag->thumbnail->status = MENU_THUMBNAIL_STATUS_AVAILABLE;
+
+   /* Trigger 'fade in' animation */
+   thumbnail_tag->thumbnail->alpha  = 0.0f;
+
+   animation_entry.easing_enum      = EASING_OUT_QUAD;
+   animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
+   animation_entry.duration         = menu_thumbnail_fade_duration;
+   animation_entry.target_value     = 1.0f;
+   animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
+   animation_entry.cb               = NULL;
+   animation_entry.userdata         = NULL;
+
+   menu_animation_push(&animation_entry);
+
+end:
+   /* Clean up */
+   if (img)
+   {
+      image_texture_free(img);
+      free(img);
+   }
+
+   if (thumbnail_tag)
+      free(thumbnail_tag);
+}
+
+/* Core interface */
+
+/* When called, prevents the handling of any pending
+ * thumbnail load requests
+ * >> **MUST** be called before deleting any menu_thumbnail_t
+ *    objects passed to menu_thumbnail_request() or
+ *    menu_thumbnail_process_stream(), otherwise
+ *    heap-use-after-free errors *will* occur */
+void menu_thumbnail_cancel_pending_requests(void)
+{
+   menu_thumbnail_list_id++;
+}
+
+/* Requests loading of the specified thumbnail
+ * - If operation fails, 'thumbnail->status' will be set to
+ *   MENU_THUMBNAIL_STATUS_MISSING
+ * - If operation is successful, 'thumbnail->status' will be
+ *   set to MENU_THUMBNAIL_STATUS_PENDING
+ * 'thumbnail' will be populated with texture info/metadata
+ * once the image load is complete
+ * NOTE 1: Must be called *after* menu_thumbnail_set_system()
+ *         and menu_thumbnail_set_content*()
+ * NOTE 2: 'playlist' and 'idx' are only required here for
+ *         on-demand thumbnail download support
+ *         (an annoyance...) */ 
+void menu_thumbnail_request(
+      menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail)
+{
+   settings_t *settings                = config_get_ptr();
+   const char *thumbnail_path          = NULL;
+   bool has_thumbnail                  = false;
+
+   if (!path_data || !thumbnail || !settings)
+      return;
+
+   /* Reset thumbnail, then set 'missing' status by default
+    * (saves a number of checks later) */
+   menu_thumbnail_reset(thumbnail);
+   thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+
+   /* Update/extract thumbnail path */
+   if (menu_thumbnail_is_enabled(path_data, thumbnail_id))
+      if (menu_thumbnail_update_path(path_data, thumbnail_id))
+         has_thumbnail = menu_thumbnail_get_path(path_data, thumbnail_id, &thumbnail_path);
+
+   /* Load thumbnail, if required */
+   if (has_thumbnail)
+   {
+      if (path_is_valid(thumbnail_path))
+      {
+         menu_thumbnail_tag_t *thumbnail_tag =
+               (menu_thumbnail_tag_t*)calloc(1, sizeof(menu_thumbnail_tag_t));
+
+         if (!thumbnail_tag)
+            return;
+
+         /* Configure user data */
+         thumbnail_tag->thumbnail = thumbnail;
+         thumbnail_tag->list_id   = menu_thumbnail_list_id;
+
+         /* Would like to cancel any existing image load tasks
+          * here, but can't see how to do it... */
+         if(task_push_image_load(
+               thumbnail_path, video_driver_supports_rgba(),
+               settings->uints.menu_thumbnail_upscale_threshold,
+               menu_thumbnail_handle_upload, thumbnail_tag))
+            thumbnail->status = MENU_THUMBNAIL_STATUS_PENDING;
+      }
+#ifdef HAVE_NETWORKING
+      /* Handle on demand thumbnail downloads */
+      else if (settings->bools.network_on_demand_thumbnails)
+      {
+         const char *system = NULL;
+
+         if (menu_thumbnail_get_system(path_data, &system))
+            task_push_pl_entry_thumbnail_download(
+                  system, playlist_get_cached(), (unsigned)idx,
+                  false, true);
+      }
+#endif
+   }
+}
+
+/* Resets (and free()s the current texture of) the
+ * specified thumbnail */
+void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
+{
+   if (!thumbnail)
+      return;
+
+   if (thumbnail->texture)
+   {
+      menu_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
+
+      /* Unload texture */
+      video_driver_texture_unload(&thumbnail->texture);
+
+      /* Ensure any 'fade in' animation is killed */
+      menu_animation_kill_by_tag(&tag);
+   }
+
+   /* Reset all parameters */
+   thumbnail->status      = MENU_THUMBNAIL_STATUS_UNKNOWN;
+   thumbnail->texture     = 0;
+   thumbnail->width       = 0;
+   thumbnail->height      = 0;
+   thumbnail->alpha       = 0.0f;
+   thumbnail->delay_timer = 0.0f;
+}
+
+/* Stream processing */
+
+/* Handles streaming of the specified thumbnail as it moves
+ * on/off screen
+ * - Must be called each frame for every on-screen entry
+ * - Must be called once for each entry as it moves off-screen
+ * NOTE 1: Must be called *after* menu_thumbnail_set_system()
+ * NOTE 2: This function calls menu_thumbnail_set_content*()
+ *         > It is therefore intended for use in situations
+ *           where each entry has a *single* thumbnail
+ *         > Since I can't think of any view mode that needs
+ *           two thumbnails, this should be fine (i.e. we might
+ *           want one additional image to go with the currently
+ *           selected item, but this is not a streaming thing -
+ *           the auxiliary image can just be loaded via a normal
+ *           menu_thumbnail_request() */
+void menu_thumbnail_process_stream(
+      menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen)
+{
+   if (!thumbnail)
+      return;
+
+   if (on_screen)
+   {
+      /* Entry is on-screen
+       * > Only process if current status is
+       *   MENU_THUMBNAIL_STATUS_UNKNOWN */
+      if (thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+      {
+         /* Check if stream delay timer has elapsed */
+         thumbnail->delay_timer += menu_animation_get_delta_time();
+
+         if (thumbnail->delay_timer > menu_thumbnail_stream_delay)
+         {
+            /* Sanity check */
+            if (!path_data || !playlist)
+               return;
+
+            /* Update thumbnail content */
+            if (!menu_thumbnail_set_content_playlist(path_data, playlist, idx))
+            {
+               /* Content is invalid
+                * > Reset thumbnail and set missing status */
+               menu_thumbnail_reset(thumbnail);
+               thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+               return;
+            }
+
+            /* Request image load */
+            menu_thumbnail_request(
+                  path_data, thumbnail_id, playlist, idx, thumbnail);
+         }
+      }
+   }
+   else
+   {
+      /* Entry is off-screen
+       * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
+       *   thumbnail is already in a blank state - do nothing
+       * In all other cases, reset thumbnail */
+      if (thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+         menu_thumbnail_reset(thumbnail);
+   }
+}

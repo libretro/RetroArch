@@ -474,8 +474,9 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    bool do_refresh                 = false;
    playlist_t *current_playlist    = playlist_get_cached();
    menu_handle_t *menu             = menu_driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
    
-   if (!task)
+   if (!task || !settings)
       return;
    
    pl_thumb = (pl_thumb_handle_t*)task->state;
@@ -487,7 +488,9 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
     * (Note: this is crude, but it's sufficient to prevent
     * 'refresh' from getting spammed when switching
     * playlists or scrolling through one playlist at
-    * maximum speed with on demand downloads enabled) */
+    * maximum speed with on demand downloads enabled)
+    * NOTE: GLUI requires special treatment, since
+    * it displays multiple thumbnails at a time... */
    
    if (!current_playlist)
       return;
@@ -496,11 +499,20 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    if (string_is_empty(playlist_get_conf_path(current_playlist)))
       return;
    
-   if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
-        (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
-         !string_is_equal(pl_thumb->playlist_path,
+   if (string_is_equal(settings->arrays.menu_driver, "glui"))
+   {
+      if (!string_is_equal(pl_thumb->playlist_path,
             playlist_get_conf_path(current_playlist)))
-      return;
+         return;
+   }
+   else
+   {
+      if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
+           (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
+            !string_is_equal(pl_thumb->playlist_path,
+               playlist_get_conf_path(current_playlist)))
+         return;
+   }
    
    /* Only refresh if left/right thumbnails did not exist
     * when the task began, but do exist now
@@ -519,7 +531,10 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
                do_refresh = path_is_valid(left_thumbnail_path);
    
    if (do_refresh)
-      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, NULL);
+   {
+      unsigned i = (unsigned)pl_thumb->list_index;
+      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+   }
    
 #endif
 }

@@ -458,7 +458,7 @@ static void ozone_update_thumbnail_image(void *data)
 #endif
 }
 
-static void ozone_refresh_thumbnail_image(void *data)
+static void ozone_refresh_thumbnail_image(void *data, unsigned i)
 {
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
 

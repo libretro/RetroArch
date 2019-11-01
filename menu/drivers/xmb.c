@@ -1082,7 +1082,7 @@ static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
    return UINT_MAX;
 }
 
-static void xmb_refresh_thumbnail_image(void *data)
+static void xmb_refresh_thumbnail_image(void *data, unsigned i)
 {
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
 

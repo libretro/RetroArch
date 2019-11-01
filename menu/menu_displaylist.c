@@ -1129,9 +1129,11 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
        * since menu drivers cannot handle multiple successive
        * calls of menu_driver_set_thumbnail_content()...
        * Note that thumbnail updates must be disabled when using
-       * RGUI, since this functionality is handled elsewhere
+       * RGUI and GLUI, since this functionality is handled elsewhere
        * (and doing it here creates harmful conflicts) */
-      if ((i == 0) && !string_is_equal(settings->arrays.menu_driver, "rgui"))
+      if ((i == 0) &&
+          !string_is_equal(settings->arrays.menu_driver, "rgui") &&
+          !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
          if (!string_is_empty(db_info_entry->name))
             strlcpy(thumbnail_content, db_info_entry->name,
@@ -2831,11 +2833,12 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, 0, 0);
 
    /* > Left thumbnail mode */
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(left_thumbnail_label_value),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
-         MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
+   if (!string_is_equal(settings->arrays.menu_driver, "glui"))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(left_thumbnail_label_value),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
+            MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
 
    /* TODO - Add:
     * - Remove invalid entries */
@@ -5454,6 +5457,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,               PARSE_ONLY_FLOAT},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL },
                {MENU_ENUM_LABEL_MENU_RGUI_INLINE_THUMBNAILS,                  PARSE_ONLY_BOOL },
+               {MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,      PARSE_ONLY_UINT },
+               {MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,     PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_THUMBNAILS,                                   PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_LEFT_THUMBNAILS,                              PARSE_ONLY_UINT },
                {MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,                      PARSE_ONLY_BOOL },

@@ -108,9 +108,13 @@ int action_switch_thumbnail(const char *path,
    if (settings->uints.menu_thumbnails == 0)
    {
       /* RGUI is a special case where thumbnail 'switch' corresponds to
-       * toggling thumbnail view on/off. For other menu drivers, we
-       * cycle through available thumbnail types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui"))
+       * toggling thumbnail view on/off.
+       * GLUI is a special case where thumbnail 'switch' corresponds to
+       * changing thumbnail view mode.
+       * For other menu drivers, we cycle through available thumbnail
+       * types. */
+      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+         !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
 			settings->uints.menu_left_thumbnails++;
 			if (settings->uints.menu_left_thumbnails > 3)
@@ -122,9 +126,13 @@ int action_switch_thumbnail(const char *path,
    else
    {
       /* RGUI is a special case where thumbnail 'switch' corresponds to
-       * toggling thumbnail view on/off. For other menu drivers, we
-       * cycle through available thumbnail types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui"))
+       * toggling thumbnail view on/off.
+       * GLUI is a special case where thumbnail 'switch' corresponds to
+       * changing thumbnail view mode.
+       * For other menu drivers, we cycle through available thumbnail
+       * types. */
+      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+         !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
          settings->uints.menu_thumbnails++;
          if (settings->uints.menu_thumbnails > 3)

@@ -535,6 +535,8 @@ typedef struct settings
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
+      unsigned menu_materialui_thumbnail_view_portrait;
+      unsigned menu_materialui_thumbnail_view_landscape;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
