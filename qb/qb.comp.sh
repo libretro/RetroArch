@@ -15,6 +15,8 @@ cat << EOF > "$TEMP_C"
 int main(void) { puts("Hai world!"); return 0; }
 EOF
 
+printf %s 'Checking for suitable working C compiler ... '
+
 cc_works=0
 add_opt CC no
 if [ "$CC" ]; then
@@ -40,7 +42,7 @@ elif [ -z "$CC" ]; then
 	cc_status='not found'
 fi
 
-printf %s\\n "Checking for suitable working C compiler ... $CC $cc_status"
+printf %s\\n "$CC $cc_status"
 
 if [ "$cc_works" = '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
 	die 1 'Error: Cannot proceed without a working C compiler.'
@@ -51,6 +53,8 @@ cat << EOF > "$TEMP_CXX"
 #include <iostream>
 int main() { std::cout << "Hai guise" << std::endl; return 0; }
 EOF
+
+printf %s 'Checking for suitable working C++ compiler ... '
 
 cxx_works=0
 add_opt CXX no
@@ -77,7 +81,7 @@ elif [ -z "$CXX" ]; then
 	cxx_status='not found'
 fi
 
-printf %s\\n "Checking for suitable working C++ compiler ... $CXX $cxx_status"
+printf %s\\n "$CXX $cxx_status"
 
 if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
 	die : 'Warning: A working C++ compiler was not found, C++ features will be disabled.'
