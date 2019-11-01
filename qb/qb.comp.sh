@@ -84,12 +84,15 @@ if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
 fi
 
 if [ "$OS" = "Win32" ]; then
-	echobuf="Checking for windres"
-	if [ -z "$WINDRES" ]; then
-		WINDRES="$(exists "${CROSS_COMPILE}windres")" || WINDRES=""
-		[ -z "$WINDRES" ] && die 1 "$echobuf ... Not found. Exiting."
+	printf %s 'Checking for windres ... '
+
+	WINDRES="${WINDRES:-$(exists "${CROSS_COMPILE}windres" || :)}"
+
+	printf %s\\n "${WINDRES:=none}"
+
+	if [ "$WINDRES" = none ]; then
+		die 1 'Error: Cannot proceed without windres.'
 	fi
-	printf %s\\n "$echobuf ... $WINDRES"
 fi
 
 printf %s 'Checking for pkg-config ... '
