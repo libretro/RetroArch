@@ -8,6 +8,7 @@
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - MENU/MATERIALUI: Initial thumbnail support
+- MENU/MATERIALUI: Cutie / Virtual Boy theme added
 - MENU/MATERIALUI: Bugfix - Under certain extreme circumstances, entries with very long sublabel strings could have their text prematurely 'clipped' as the entry is scrolled beyond the top of the screen
 - MENU/MATERIALUI: Bugfix - Certain setting value strings were unnecessarily truncated (with a ...) when using smooth ticker text
 - SWITCH: Accelerometer, gyroscope and illuminance sensor support
