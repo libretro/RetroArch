@@ -92,14 +92,12 @@ if [ "$OS" = "Win32" ]; then
 	printf %s\\n "$echobuf ... $WINDRES"
 fi
 
-if [ -z "$PKG_CONF_PATH" ]; then
-	PKGCONF="$(exists "${CROSS_COMPILE}pkgconf" ||
-			exists "${CROSS_COMPILE}pkg-config" || :)"
+printf %s 'Checking for pkg-config ... '
 
-	PKG_CONF_PATH="${PKGCONF:-none}"
-fi
+PKG_CONF_PATH="${PKG_CONF_PATH:-$(exists "${CROSS_COMPILE}pkgconf" ||
+	exists "${CROSS_COMPILE}pkg-config" || :)}"
 
-printf %s\\n "Checking for pkg-config ... $PKG_CONF_PATH"
+printf %s\\n "${PKG_CONF_PATH:=none}"
 
 if [ "$PKG_CONF_PATH" = "none" ]; then
 	die : 'Warning: pkg-config not found, package checks will fail.'
