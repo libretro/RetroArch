@@ -4155,6 +4155,10 @@ MSG_HASH(
     "볼캐닉 빨강"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Sunbeam"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
     "메뉴 쉐이더 파이프라인"
     )

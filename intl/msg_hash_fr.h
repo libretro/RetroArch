@@ -5181,10 +5181,6 @@ MSG_HASH(
     "Redirection du fichier de sauvegarde vers"
     )
 MSG_HASH(
-    MSG_REDIRECTING_SAVESTATE_TO,
-    "Redirection de la sauvegarde instantanée vers"
-    )
-MSG_HASH(
     MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
     "Fichier de remappage enregistré avec succès."
     )

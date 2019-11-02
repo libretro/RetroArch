@@ -4108,6 +4108,12 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
                   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE),
                len);
          break;
+      case XMB_THEME_SUNBEAM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
+               len);
+         break;         
    }
 }
 #endif
