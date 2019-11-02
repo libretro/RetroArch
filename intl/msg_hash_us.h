@@ -3750,6 +3750,10 @@ MSG_HASH(
     "Anti-Zenburn"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX,
+    "Flux"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "True"
     )
