@@ -808,16 +808,15 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 
 static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, unsigned id )
 {
-   const int edge_detect = 32700;
-   struct video_viewport vp;
+   const int edge_detect       = 32700;
    bool inside                 = false;
+   int16_t abs_x 			       = 0;
+   int16_t abs_y  			    = 0;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
-
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-
+   struct video_viewport vp;
    vp.x                        = 0;
    vp.y                        = 0;
    vp.width                    = 0;
@@ -825,9 +824,17 @@ static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, uns
    vp.full_width               = 0;
    vp.full_height              = 0;
 
-   if (!mouse)
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+
+	if (!mouse)
       return 0;
 
+   /* The existing code only set values with X11, if you follow these methods through they state this.
+	 * So added an X11 if-block and provided an alternative that does work with absolute mouse
+	 * device in non-X11. */
+	#ifdef HAVE_X11
+   
+	/* udev->pointer_x and y is only set in X11 */
    if (!(video_driver_translate_coord_viewport_wrap(&vp, udev->pointer_x, udev->pointer_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
@@ -847,6 +854,30 @@ static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, uns
    }
 
    return 0;
+   
+   #else 
+	/* Non X11 code branch.
+    * Use similar code to touchscreen methods to get abs mouse which works on non X11. */
+
+   abs_x = udev_mouse_get_pointer_x(mouse, false);
+   abs_y = udev_mouse_get_pointer_y(mouse, false);
+   
+   inside = (abs_x >= -edge_detect) && (abs_y >= -edge_detect) && (abs_x <= edge_detect) && (abs_y <= edge_detect);
+   
+   switch ( id )
+   {
+   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+      return inside ? abs_x : 0;
+   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+      return inside ? abs_y : 0;
+   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+      return !inside;
+   default:
+      break;
+   }
+
+   return 0;
+   #endif
 }
 
 static int16_t udev_mouse_state(udev_input_t *udev,
