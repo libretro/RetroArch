@@ -878,7 +878,7 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
 static const materialui_theme_t materialui_theme_flux = {
    /* Text (& small inline icon) colours */
    0xFFE28A, /* on_sys_bar */
-   0x666547, /* on_header */
+   0xFB2E01, /* on_header */
    0x666547, /* list_text */
    0x6FCB9F, /* list_text_highlighted */
    0xFB2E01, /* list_hint_text */
@@ -888,7 +888,7 @@ static const materialui_theme_t materialui_theme_flux = {
    0xFFE28A, /* title_bar_background */
    0xFFE28A, /* list_background */
    0xFFFEB3, /* list_highlighted_background */
-   0xFFE28A, /* nav_bar_background */
+   0xFFFEB3, /* nav_bar_background */
    0x666547, /* surface_background */
    /* List icon colours */
    0x6FCB9F, /* list_icon */
@@ -902,8 +902,8 @@ static const materialui_theme_t materialui_theme_flux = {
    0x3C3836, /* nav_bar_icon_disabled */
    /* Misc. colours */
    0x000000, /* header_shadow */
-   0x6FCB9F, /* landscape_border_shadow */
-   0x7C6F64, /* scrollbar */
+   0xFFE28A, /* landscape_border_shadow */
+   0xFB2E01, /* scrollbar */
    0xD5C4A1, /* divider */
    0x000000, /* screen_fade */
    0.4f,     /* header_shadow_opacity */
