@@ -875,6 +875,42 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0.75f     /* screen_fade_opacity */
 };
 
+static const materialui_theme_t materialui_theme_flux = {
+   /* Text (& small inline icon) colours */
+   0xFFE28A, /* on_sys_bar */
+   0x666547, /* on_header */
+   0x666547, /* list_text */
+   0x6FCB9F, /* list_text_highlighted */
+   0xFB2E01, /* list_hint_text */
+   0xFB2E01, /* list_hint_text_highlighted */
+   /* Background colours */
+   0x000000, /* sys_bar_background */
+   0xFFE28A, /* title_bar_background */
+   0xFFE28A, /* list_background */
+   0xFFFEB3, /* list_highlighted_background */
+   0xFFE28A, /* nav_bar_background */
+   0x666547, /* surface_background */
+   /* List icon colours */
+   0x6FCB9F, /* list_icon */
+   0xB8BB26, /* list_switch_on */
+   0x98971A, /* list_switch_on_background */
+   0xFB4934, /* list_switch_off */
+   0xCC241D, /* list_switch_off_background */
+   /* Navigation bar icon colours */
+   0xBF9137, /* nav_bar_icon_active */
+   0xA89984, /* nav_bar_icon_passive */
+   0x3C3836, /* nav_bar_icon_disabled */
+   /* Misc. colours */
+   0x000000, /* header_shadow */
+   0x6FCB9F, /* landscape_border_shadow */
+   0x7C6F64, /* scrollbar */
+   0xD5C4A1, /* divider */
+   0x000000, /* screen_fade */
+   0.4f,     /* header_shadow_opacity */
+   0.45f,    /* landscape_border_shadow_opacity */
+   0.75f     /* screen_fade_opacity */
+};
+
 typedef struct
 {
    /* Text */
@@ -1302,6 +1338,8 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
          return &materialui_theme_cutie_red;
       case MATERIALUI_THEME_VIRTUAL_BOY:
          return &materialui_theme_virtual_boy;
+      case MATERIALUI_THEME_FLUX:
+         return &materialui_theme_flux;         
       default:
          break;
    }
