@@ -1140,7 +1140,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-    "Controlador de entrada"
+    "Entrada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -1669,7 +1669,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-    "Controlador de localización"
+    "Localización"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2009,7 +2009,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-    "Desactivar clientes sin modo esclavo"
+    "Bloquear clientes sin modo esclavo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -3051,15 +3051,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-    "Mostrar DPI métricos"
+    "DPI de pantalla (métrico)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-    "Mostrar alto en milímetros"
+    "Alto de pantalla (en milímetros)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-    "Mostrar ancho en milímetros"
+    "Ancho de pantalla (en milímetros)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -3075,7 +3075,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-    "Carga dinámica en tiempo real de librería libretro"
+    "Carga dinámica en tiempo real de librerías libretro"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
@@ -3207,7 +3207,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
-    "Soporte de Python (soporte de scripts para shaders)"
+    "Soporte de Python (scripts para shaders)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
@@ -4017,7 +4017,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-    "Establecer la frecuencia reportada"
+    "Frecuencia declarada por la pantalla"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -4121,11 +4121,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-    "Pos. X de la resolución personalizada"
+    "Posición X de resolución personalizada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-    "Pos. Y de la resolución personalizada"
+    "Posición Y de resolución personalizada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
@@ -4239,7 +4239,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
-    "Monochrome invertida"
+    "Monochrome invertido"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
@@ -4398,7 +4398,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Duplica los puntos conseguidos, a costa de desactivar las funciones de guardado rápido, trucos, rebobinado, pausa y cámara lenta en todos los juegos.\n"
+    "Duplica los puntos conseguidos a costa de desactivar las funciones de guardado rápido, trucos, rebobinado, pausa y cámara lenta en todos los juegos.\n"
     "Si cambias este ajuste en mitad de una partida, el juego se reiniciará."
     )
 MSG_HASH(
@@ -4506,7 +4506,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CPU_CORES,
-    "Muestra la cantidad de núcleos que tiene la CPU."
+    "La cantidad de núcleos que tiene la CPU."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -4618,11 +4618,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-    "Muestra la estimación exacta de la frecuencia de actualización/tasa de refresco de la pantalla en hercios."
+    "Muestra la estimación exacta de la frecuencia de actualización de la pantalla en hercios."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-    "Muestra la frecuencia de actualización/tasa de refresco según el controlador de pantalla."
+    "Muestra la frecuencia de actualización según el controlador de pantalla."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -5498,7 +5498,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-    "Influencia cómo se realiza el sondeo de control dentro de RetroArch. «Temprano» o «Tarde» pueden reducir la latencia en función de tu configuración."
+    "Influencia cómo se realiza el sondeo de control dentro de RetroArch. «Temprano» o «Tardío» pueden reducir la latencia en función de tu configuración."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -5506,7 +5506,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-    "Ajusta el volumen de audio (en dB). 0 dB es el volumen normal, sin ninguna ganancia."
+    "Ajusta el volumen de audio (en dB). 0 dB es el volumen normal, sin ganancia alguna."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -5546,7 +5546,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-    "Sincroniza la señal de vídeo de la tarjeta gráfica con la frecuencia de actualización/tasa de refresco de pantalla. Recomendado."
+    "Sincroniza la señal de vídeo de la tarjeta gráfica con la frecuencia de actualización de pantalla. Recomendado."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
@@ -5562,7 +5562,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Ajusta la frecuencia de actualización/tasa de refresco vertical de tu pantalla. Se utiliza para calcular la velocidad de audio.\n"
+    "Ajusta la frecuencia de actualización vertical de tu pantalla para calcular la velocidad de audio.\n"
     "Nota: Este valor se ignorará si la opción Vídeo multihilo está activada."
     )
 MSG_HASH(
@@ -5808,7 +5808,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-    "Introduce el Nombre de usuario de tu cuenta de RetroAchievements."
+    "Introduce el nombre de usuario de tu cuenta de RetroAchievements."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
@@ -5919,7 +5919,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-    "Solo se permite escalar el vídeo mediante múltiplos enteros. El tamaño base dependerá de la geometría del sistema y la relación de aspecto. Si la opción «Forzar aspecto» no está activada, los valores X e Y serán escalados individualmente."
+    "Limita el escalado de vídeo a múltiplos enteros. El tamaño base dependerá de la geometría del sistema y la relación de aspecto. Si la opción «Forzar aspecto» está desactivada, los valores X e Y serán escalados individualmente."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -6118,7 +6118,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-    "Asigna el nivel de registro de los núcleos. Si el nivel de un registro del núcleo es inferior a este valor, será ignorado."
+    "Asigna el nivel de registro de los núcleos. Si el valor de un registro del núcleo es inferior a este, será ignorado."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
@@ -6143,7 +6143,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-    "Al activar esta opción, se utilizan la reasignación de controles para el núcleo actual en vez de la reasignación estándar."
+    "Al activar esta opción, se utilizará la reasignación de controles para el núcleo actual en vez de la reasignación estándar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
@@ -6307,7 +6307,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
-    "Tipo de miniaturas a mostrar a la izquierda."
+    "Tipo de miniaturas a mostrar en la parte izquierda de la pantalla."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
@@ -6319,7 +6319,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
-    "Muestra la miniatura izquierda bajo la que se encuentra a la derecha, en la parte derecha de la pantalla."
+    "Muestra la miniatura izquierda bajo la que se encuentra en la parte derecha de la pantalla."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
@@ -6355,7 +6355,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-    "Utiliza un valor personalizado para el intervalo de la sincronía vertical, reduciendo a la mitad la frecuencia de actualización/tasa de refresco del monitor."
+    "Utiliza un valor personalizado para el intervalo de la sincronía vertical, reduciendo a la mitad la frecuencia de actualización del monitor."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -6587,7 +6587,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-    "Evita desviarse del timing que solicita el núcleo. Usar con pantallas con una frecuencia de actualización/tasa de refresco variable, G-Sync, FreeSync."
+    "Evita desviarse del timing que solicita el núcleo. Usar con pantallas con una frecuencia de actualización variable, G-Sync, FreeSync."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -6902,7 +6902,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-    "Volumen del mezclador de audio global (en dB). 0 dB es el volumen normal sin ganancia alguna."
+    "Volumen del mezclador de audio global (en dB). 0 dB es el volumen normal, sin ganancia alguna."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -7425,7 +7425,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-    "Baja este valor para favorecer el rendimiento y bajan la latencia a costa de la calidad o súbelo para mejorar la calidad a costa del rendimiento y latencia."
+    "Baja este valor para favorecer el rendimiento y la latencia a costa de la calidad o súbelo para mejorar la calidad a costa de perder rendimiento y latencia."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
@@ -7561,7 +7561,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "Para pantallas CRT. Intenta usar la resolución y frecuencia de actualización/tasa de refresco exactos del núcleo/juego."
+    "Para pantallas CRT. Intenta usar la resolución y frecuencia de actualización exactas del núcleo/juego."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -8048,7 +8048,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-    "Ajusta el volumen de salida (%)."
+    "Ajusta el volumen de salida (en porcentaje)."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -8824,11 +8824,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-    "Vsync adaptativo"
+    "Vsync adaptativa"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "La sincronía vertical estará activada hasta que el rendimiento sea inferior al necesario para mantener la frecuencia de actualización/tasa de refresco de la pantalla.\n"
+    "La sincronía vertical estará activada hasta que el rendimiento sea inferior al necesario para mantener la frecuencia de actualización de la pantalla.\n"
     "Esta opción reduce los tirones provocados al bajar los FPS y tiene una mayor eficiencia energética."
     )
 MSG_HASH(
@@ -8841,7 +8841,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-    "Utiliza estas opciones si la imagen no está centrada en la pantalla."
+    "Modifica esta opción si la imagen no está centrada en la pantalla."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
@@ -8849,7 +8849,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-    "Utiliza una frecuencia de actualización/tasa de refresco personalizada especificada en el archivo de configuración."
+    "Utiliza una frecuencia de actualización personalizada especificada en el archivo de configuración."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -9329,7 +9329,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-    "Subir/bajar animación"
+    "Animación de subida/bajada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
@@ -9441,7 +9441,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-    "Cambia la configuración del servicio de IA (Traducción/Texto a voz/Etc.)."
+    "Cambia la configuración del servicio de IA (Traducción/texto a voz/etc.)."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
