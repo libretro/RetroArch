@@ -1648,6 +1648,10 @@ MSG_HASH(
     "Cargar archivos recientes"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+    "Selecciona un contenido de la lista de contenidos recientes."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Cargar contenido"
     )
@@ -4294,6 +4298,10 @@ MSG_HASH(
     "Azul mañana"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Sunbeam"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
     "Violeta"
     )
@@ -4325,8 +4333,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
     "Rojo volcánico"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
-    "Sunbeam")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
     "Canal de shaders del menú"
