@@ -67,6 +67,13 @@ matrix:
       script:
         - brew update-reset
         - brew install --force-bottle qt5
+        - security create-keychain -p travis build.keychain
+        - security default-keychain -s build.keychain
+        - security unlock-keychain -p travis build.keychain
+        - echo $OSX_CERT | base64 --decode > dev.p12
+        - security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
+        - rm dev.p12
+        - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
         - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
         skip_cleanup: true
