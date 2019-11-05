@@ -1,4 +1,5 @@
 # Future
+- MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
