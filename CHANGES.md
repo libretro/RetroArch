@@ -1,4 +1,5 @@
 # Future
+- CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 
