@@ -9190,11 +9190,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
     "Ayarlar ekranında 'Günlük Ayarlarını' göster veya gizle."
     )
-MSG_HASH( //Mantıklı bir açıklama bulana kadar ingilizce kalmasında sakınca yok. @Gadsby
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
     "Show Frame Throttle"
     )
-MSG_HASH( //Mantıklı bir açıklama bulana kadar ingilizce kalmasında sakınca yok. @Gadsby
+MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
     "Show or hide 'Frame Throttle Settings' on the Settings screen."
     )
