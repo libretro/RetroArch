@@ -1,4 +1,5 @@
 # Future
+- LOCALIZATION: Update Portuguese Brazilian Translation
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 
 # (1.8.1)
