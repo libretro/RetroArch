@@ -122,11 +122,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
-                   "Ativar/desativar a hospedagem de jogo em rede.");
+                   "Ativar ou desativar a hospedagem de jogo em rede.");
              break;
           case RARCH_NETPLAY_GAME_WATCH:
              snprintf(s, len,
-                   "Alternar modo jogador/espectador do Jogo em Rede.");
+                   "Alternar modo jogador ou espectador do Jogo em Rede.");
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
@@ -185,7 +185,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "o cursor do mouse dentro da janela.");
              break;
           case RARCH_MENU_TOGGLE:
-                snprintf(s, len, "Alternar o menu.");
+                snprintf(s, len, "Mostrar ou ocultar o menu.");
              break;
           case RARCH_LOAD_STATE_KEY:
              snprintf(s, len,
@@ -247,7 +247,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
     {
         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             snprintf(s, len, "Detalhes de acesso para \n"
-                    "sua conta Retro Achievements. \n"
+                    "sua conta RetroAchievements. \n"
                     " \n"
                     "Visite retroachievements.org e inscreva-se \n"
                     "em uma conta gratuita. \n"
@@ -257,10 +257,10 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                     "no RetroArch.");
             break;
         case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-            snprintf(s, len, "Nome de usuário da conta Retro Achievements.");
+            snprintf(s, len, "Nome de usuário da conta RetroAchievements.");
             break;
         case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-            snprintf(s, len, "Senha da conta Retro Achievements.");
+            snprintf(s, len, "Senha da conta RetroAchievements.");
             break;
         case MENU_ENUM_LABEL_USER_LANGUAGE:
             snprintf(s, len, "Altera o idioma do menu e todas as mensagens \n"
