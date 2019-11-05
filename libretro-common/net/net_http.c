@@ -84,6 +84,7 @@ struct http_connection_t
    char *methodcopy;
    char *contenttypecopy;
    char *postdatacopy;
+   char* useragentcopy;
    int port;
    struct http_socket_state_t sock_state;
 };
@@ -424,12 +425,24 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->postdatacopy)
       free(conn->postdatacopy);
 
+   if (conn->useragentcopy)
+      free(conn->useragentcopy);
+
    conn->urlcopy         = NULL;
    conn->methodcopy      = NULL;
    conn->contenttypecopy = NULL;
    conn->postdatacopy    = NULL;
+   conn->useragentcopy   = NULL;
 
    free(conn);
+}
+
+void net_http_connection_set_user_agent(struct http_connection_t* conn, const char* user_agent)
+{
+   if (conn->useragentcopy)
+      free(conn->useragentcopy);
+
+   conn->useragentcopy = user_agent ? strdup(user_agent) : NULL;
 }
 
 const char *net_http_connection_url(struct http_connection_t *conn)
@@ -523,7 +536,13 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       free(len_str);
    }
 
-   net_http_send_str(&conn->sock_state, &error, "User-Agent: libretro\r\n");
+   net_http_send_str(&conn->sock_state, &error, "User-Agent: ");
+   if (conn->useragentcopy)
+      net_http_send_str(&conn->sock_state, &error, conn->useragentcopy);
+   else
+      net_http_send_str(&conn->sock_state, &error, "libretro");
+   net_http_send_str(&conn->sock_state, &error, "\r\n");
+
    net_http_send_str(&conn->sock_state, &error, "Connection: close\r\n");
    net_http_send_str(&conn->sock_state, &error, "\r\n");
 

@@ -262,7 +262,12 @@ static void* task_push_http_transfer_generic(
 
    /* Concurrent download of the same file is not allowed */
    if (task_queue_find(&find_data))
+   {
+      if (conn)
+         net_http_connection_free(conn);
+
       return NULL;
+   }
 
    if (!conn)
       return NULL;
@@ -332,6 +337,26 @@ void* task_push_http_transfer(const char *url, bool mute,
    return task_push_http_transfer_generic(
          net_http_connection_new(url, "GET", NULL),
          url, mute, type, cb, user_data);
+}
+
+void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
+   const char *type, const char* user_agent,
+   retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t* conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   conn = net_http_connection_new(url, "GET", NULL);
+   if (!conn)
+      return NULL;
+
+   if (user_agent != NULL)
+      net_http_connection_set_user_agent(conn, user_agent);
+
+   /* assert: task_push_http_transfer_generic will free conn on failure */
+   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
 void* task_push_http_post_transfer(const char *url,

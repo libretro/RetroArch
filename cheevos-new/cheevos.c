@@ -61,7 +61,9 @@
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../core.h"
+#include "../version.h"
 
+#include "../frontend/frontend_driver.h"
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
@@ -169,6 +171,7 @@ bool rcheevos_hardcore_paused = false;
 bool rcheevos_state_loaded_flag = false;
 int rcheevos_cheats_are_enabled = 0;
 int rcheevos_cheats_were_enabled = 0;
+char rcheevos_user_agent_prefix[128] = "";
 
 #ifdef HAVE_THREADS
 #define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
@@ -192,6 +195,80 @@ void rcheevos_log(const char *fmt, ...)
 }
 
 #endif
+
+static void rcheevos_get_user_agent(char* buffer)
+{
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char* scan;
+   char* ptr;
+
+   if (!rcheevos_user_agent_prefix[0])
+   {
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      int major, minor;
+      char tmp[64];
+
+      ptr = rcheevos_user_agent_prefix + sprintf(rcheevos_user_agent_prefix, "RetroArch/" PACKAGE_VERSION);
+
+      if (frontend && frontend->get_os)
+      {
+         frontend->get_os(tmp, sizeof(tmp), &major, &minor);
+         ptr += sprintf(ptr, " (%s %d.%d)", tmp, major, minor);
+      }
+   }
+
+   ptr = buffer + sprintf(buffer, "%s", rcheevos_user_agent_prefix);
+
+   if (system && !string_is_empty(system->library_name))
+   {
+      const char* path = path_get(RARCH_PATH_CORE);
+      if (!string_is_empty(path))
+      {
+         sprintf(ptr, " %s", path_basename(path));
+         path_remove_extension(ptr);
+         ptr += strlen(ptr);
+      }
+      else
+      {
+         *ptr++ = ' ';
+
+         scan = system->library_name;
+         while (*scan)
+         {
+            if (*scan == ' ')
+            {
+               *ptr++ = '_';
+               ++scan;
+            }
+            else
+            {
+               *ptr++ = *scan++;
+            }
+         }
+      }
+
+      if (system->library_version)
+      {
+         *ptr++ = '/';
+
+         scan = system->library_version;
+         while (*scan)
+         {
+            if (*scan == ' ')
+            {
+               *ptr++ = '_';
+               ++scan;
+            }
+            else
+            {
+               *ptr++ = *scan++;
+            }
+         }
+      }
+   }
+
+   *ptr = '\0';
+}
 
 static void rcheevos_log_url(const char* format, const char* url)
 {
@@ -431,7 +508,7 @@ static void rcheevos_award_task_softcore(retro_task_t *task, void* task_data, vo
 {
    settings_t *settings = config_get_ptr();
    const rcheevos_cheevo_t* cheevo = (const rcheevos_cheevo_t*)user_data;
-   char buffer[256];
+   char buffer[256], user_agent[256];
    int ret;
    buffer[0] = 0;
 
@@ -453,8 +530,10 @@ static void rcheevos_award_task_softcore(retro_task_t *task, void* task_data, vo
       return;
    }
 
+   rcheevos_get_user_agent(user_agent);
+
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_award_cheevo: %s\n", buffer);
-   task_push_http_transfer(buffer, true, NULL, rcheevos_award_task_softcore, user_data);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_award_task_softcore, user_data);
 }
 
 static void rcheevos_award_task_hardcore(retro_task_t *task, void* task_data, void* user_data,
@@ -462,7 +541,7 @@ static void rcheevos_award_task_hardcore(retro_task_t *task, void* task_data, vo
 {
    settings_t *settings = config_get_ptr();
    const rcheevos_cheevo_t* cheevo = (const rcheevos_cheevo_t*)user_data;
-   char buffer[256];
+   char buffer[256], user_agent[256];
    int ret;
    buffer[0] = 0;
 
@@ -484,8 +563,10 @@ static void rcheevos_award_task_hardcore(retro_task_t *task, void* task_data, vo
       return;
    }
 
+   rcheevos_get_user_agent(user_agent);
+
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_award_cheevo: %s\n", buffer);
-   task_push_http_transfer(buffer, true, NULL, rcheevos_award_task_hardcore, user_data);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_award_task_hardcore, user_data);
 }
 
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
@@ -613,6 +694,7 @@ static void rcheevos_lboard_submit_task(retro_task_t *task, void* task_data, voi
    uint8_t hash[16];
    char signature[64];
    char buffer[256];
+   char user_agent[256];
    int ret;
 
    if (!error)
@@ -643,8 +725,10 @@ static void rcheevos_lboard_submit_task(retro_task_t *task, void* task_data, voi
       return;
    }
 
+   rcheevos_get_user_agent(user_agent);
+
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_submit_lboard: %s\n", buffer);
-   task_push_http_transfer(buffer, true, NULL, rcheevos_lboard_submit_task, user_data);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_lboard_submit_task, user_data);
 }
 
 static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
@@ -2185,6 +2269,8 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_HTTP_GET)
 
+      rcheevos_get_user_agent(buffer);
+
       for (coro->k = 0; coro->k < 5; coro->k++)
       {
          if (coro->k != 0)
@@ -2209,6 +2295,8 @@ found:
             net_http_connection_free(coro->conn);
             continue;
          }
+
+         net_http_connection_set_user_agent(coro->conn, buffer);
 
          coro->http = net_http_new(coro->conn);
 
