@@ -408,8 +408,7 @@
 		05A8C78820DB72F100FF7857 /* gl_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_raster_font.c; sourceTree = "<group>"; };
 		05A8C78920DB72F100FF7857 /* vulkan_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_raster_font.c; sourceTree = "<group>"; };
 		05A8C78D20DB72F100FF7857 /* video_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_filter.c; sourceTree = "<group>"; };
-		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glslang_util.h; sourceTree = "<group>"; };
-		05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
+		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
 		05A8C79120DB72F100FF7857 /* shader_glsl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_glsl.c; sourceTree = "<group>"; };
 		05A8C79220DB72F100FF7857 /* slang_process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_process.h; sourceTree = "<group>"; };
 		05A8C79320DB72F100FF7857 /* slang_reflection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_reflection.h; sourceTree = "<group>"; };
@@ -418,7 +417,6 @@
 		05A8C79620DB72F100FF7857 /* slang_reflection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_reflection.cpp; sourceTree = "<group>"; };
 		05A8C79720DB72F100FF7857 /* shader_glsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_glsl.h; sourceTree = "<group>"; };
 		05A8C79820DB72F100FF7857 /* shader_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_null.c; sourceTree = "<group>"; };
-		05A8C79920DB72F100FF7857 /* glslang_util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = glslang_util.c; sourceTree = "<group>"; };
 		05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glslang_util_cxx.cpp; sourceTree = "<group>"; };
 		05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_gl_cg.c; sourceTree = "<group>"; };
 		05A8C79C20DB72F100FF7857 /* shader_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_vulkan.h; sourceTree = "<group>"; };
@@ -1187,10 +1185,8 @@
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C79920DB72F100FF7857 /* glslang_util.c */,
 				05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */,
 				05A8C79020DB72F100FF7857 /* glslang_util.h */,
-				05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */,
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
 				05A8C79720DB72F100FF7857 /* shader_glsl.h */,
@@ -1572,6 +1568,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* RetroArch */;
@@ -1756,8 +1753,10 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
@@ -1779,6 +1778,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -1787,8 +1787,10 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -1807,6 +1809,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
 		};
