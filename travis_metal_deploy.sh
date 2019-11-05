@@ -17,6 +17,18 @@ echo "Copying binary into dist folder..."
 
 cp -rv  ${TRAVIS_BUILD_DIR}/pkg/apple/build/Release/RetroArch.app .
 
+echo "Code signing..."
+
+security create-keychain -p travis build.keychain
+security default-keychain -s build.keychain
+security unlock-keychain -p travis build.keychain
+echo $OSX_CERT | base64 --decode > dev.p12
+security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
+rm dev.p12
+security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
+codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" RetroArch.app/Contents/MacOS/RetroArch
+codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" RetroArch.app
+
 echo "Downloading assets..."
 
 cd RetroArch.app/Contents/Resources/
@@ -32,6 +44,15 @@ FILENAME=$(date +%F)_RetroArch_Metal.dmg
 
 hdiutil create -volname RetroArch -srcfolder ./ -ov -format UDZO ~/${FILENAME}
 cp -f ~/${FILENAME} ~/RetroArch_Metal.dmg
+
+echo "Notarizing DMG..."
+
+codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" ~/RetroArch_Metal.dmg
+REQUESTUUID=$(xcrun altool --notarize-app -t osx -f ~/RetroArch_Metal.dmg --primary-bundle-id libretro.RetroArch -u $APPLE_ID -p $APPLE_ID_PASS -itc_provider ZE9XE938Z2 | awk '/RequestUUID/ { print $NF; }')
+sleep 100
+xcrun altool --notarization-info $REQUESTUUID -u $APPLE_ID -p $APPLE_ID_PASS -ascprovider ZE9XE938Z2
+xcrun stapler staple ~/RetroArch_Metal.dmg
+xcrun stapler validate ~/RetroArch_Metal.dmg
 
 echo "Uploading to server..."
 
