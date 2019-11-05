@@ -75,8 +75,6 @@ matrix:
         - rm dev.p12
         - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
         - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
-        - codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" pkg/apple/build/Release/RetroArch.app/Contents/MacOS/RetroArch
-        - codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" pkg/apple/build/Release/RetroArch.app
         - REQUESTUUID=$(xcrun altool --notarize-app -t osx -f pkg/apple/build/Release/RetroArch.app --primary-bundle-id libretro.RetroArch -u $APPLE_ID -p $APPLE_ID_PASS -itc_provider ZE9XE938Z2 | awk '/RequestUUID/ { print $NF; }')
         - sleep 100
         - xcrun altool --notarization-info $REQUESTUUID -u $APPLE_ID -p $APPLE_ID_PASS -ascprovider ZE9XE938Z2
