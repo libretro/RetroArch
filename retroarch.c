@@ -13606,6 +13606,28 @@ static int menu_input_pointer_post_iterate(
                   menu_input->pointer.dx              = 0;
                   menu_input->pointer.dy              = 0;
                   menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+
+                  /* Standard behaviour (on Android, at least) is to stop
+                   * scrolling when the user touches the screen. We should
+                   * therefore 'reset' y acceleration whenever the pointer
+                   * is stationary - with two caveats:
+                   * - We only disable scrolling if the pointer *remains*
+                   *   stationary. If the pointer is held down then
+                   *   subsequently moves, normal scrolling should resume
+                   * - Halting the scroll immediately produces a very
+                   *   unpleasant 'jerky' user experience. To avoid this,
+                   *   we add a small delay between detecting a pointer
+                   *   down event and forcing y acceleration to zero */
+                  if (!menu_input->pointer.dragged)
+                  {
+                     if (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY)
+                     {
+                        menu_input->pointer.y_accel = 0.0f;
+                        accel0                      = 0.0f;
+                        accel1                      = 0.0f;
+                        attenuate_y_accel           = false;
+                     }
+                  }
                }
             }
             else
@@ -13615,6 +13637,9 @@ static int menu_input_pointer_post_iterate(
                menu_input->pointer.dy              = 0;
                menu_input->pointer.y_accel         = 0.0f;
                menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+               accel0                              = 0.0f;
+               accel1                              = 0.0f;
+               attenuate_y_accel                   = false;
             }
 
             /* > Update remaining variables */

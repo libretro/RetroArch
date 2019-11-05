@@ -1238,9 +1238,9 @@ typedef struct materialui_handle
    unsigned ticker_str_width;
 
    /* Touch feedback animation parameters */
-   bool touch_feedback_cache_selection;
    unsigned touch_feedback_selection;
    float touch_feedback_alpha;
+   bool touch_feedback_update_selection;
 
    /* Menu transition animation parameters */
    float transition_alpha;
@@ -2157,33 +2157,46 @@ static void materialui_render(void *data,
          int16_t pointer_x = mui->pointer.x;
          int16_t pointer_y = mui->pointer.y;
 
+         /* Check if pointer is within the 'list' region of
+          * the window (i.e. exclude header, navigation bar,
+          * landscape borders) */
          if ((pointer_x >  mui->landscape_entry_margin) &&
              (pointer_x <  width - mui->landscape_entry_margin - mui->nav_bar_layout_width) &&
              (pointer_y >= header_height) &&
              (pointer_y <= height - mui->nav_bar_layout_height))
          {
+            /* Check if pointer is within the bounds of the
+             * current entry */
             if ((pointer_y > entry_y) &&
                 (pointer_y < (entry_y + node->entry_height)))
             {
+               /* Pointer selection is always updated */
                menu_input_set_pointer_selection(i);
 
-               /* The first time this runs following a pointer
-                * down event, we have to cache the current
-                * pointer selection value in order to correctly
-                * handle touch feedback animations */
-               if (mui->touch_feedback_cache_selection)
+               /* If pointer is pressed and stationary... */
+               if (mui->pointer.pressed && !mui->pointer.dragged)
                {
-                  mui->touch_feedback_selection       = i;
-                  mui->touch_feedback_cache_selection = false;
-               }
+                  /* ...check whether feedback selection updates
+                   * are enabled... */
+                  if (mui->touch_feedback_update_selection)
+                  {
+                     /* ...apply touch feedback to current entry */
+                     mui->touch_feedback_selection = i;
 
-               /* If pointer is pressed, stationary, and has been pressed
-                * for at least MENU_INPUT_PRESS_TIME_SHORT ms, select current
-                * entry */
-               if (mui->pointer.pressed &&
-                   !mui->pointer.dragged &&
-                   (mui->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT))
-                  menu_navigation_set_selection(i);
+                     /* ...and if pointer has been held for at least
+                      * MENU_INPUT_PRESS_TIME_SHORT ms, automatically
+                      * select current entry */
+                     if (mui->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT)
+                     {
+                        menu_navigation_set_selection(i);
+
+                        /* Once an entry has been auto selected, disable
+                         * touch feedback selection updates until the next
+                         * pointer down event */
+                        mui->touch_feedback_update_selection = false;
+                     }
+                  }
+               }
             }
          }
       }
@@ -3078,9 +3091,9 @@ static void materialui_render_entry_touch_feedback(
 
    /* If pointer is held and stationary, need to check
     * that current pointer selection is valid
-    * i.e. item touched at pointer down event may
-    * have changed due to scroll acceleration, or
-    * user may be touching the header/navigation bar */
+    * i.e. user may be touching the header/navigation bar,
+    * or pointer may no longer be held above the entry
+    * currently selected for feedback animations */
    if (pointer_active)
       pointer_active = (mui->touch_feedback_selection == menu_input_get_pointer_selection()) &&
                        (mui->pointer.x >  mui->landscape_entry_margin) &&
@@ -3107,7 +3120,7 @@ static void materialui_render_entry_touch_feedback(
       mui->touch_feedback_alpha = (mui->touch_feedback_alpha > 1.0f) ? 1.0f : mui->touch_feedback_alpha;
    }
    /* If pointer has moved, or has been released, any
-    * unfinished feedback hightlight animation must
+    * unfinished feedback highlight animation must
     * fade out */
    else if (mui->touch_feedback_alpha > 0.0f)
    {
@@ -4371,15 +4384,15 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    /* Ensure menu animation parameters are properly
     * reset */
-   mui->touch_feedback_cache_selection = false;
-   mui->touch_feedback_selection       = 0;
-   mui->touch_feedback_alpha           = 0.0f;
-   mui->transition_alpha               = 1.0f;
-   mui->transition_x_offset            = 0.0f;
-   mui->last_stack_size                = 1;
+   mui->touch_feedback_selection        = 0;
+   mui->touch_feedback_alpha            = 0.0f;
+   mui->touch_feedback_update_selection = false;
+   mui->transition_alpha                = 1.0f;
+   mui->transition_x_offset             = 0.0f;
+   mui->last_stack_size                 = 1;
 
    /* Ensure message box string is empty */
-   mui->msgbox[0]                      = '\0';
+   mui->msgbox[0] = '\0';
 
    /* Initialise navigation bar */
    materialui_init_nav_bar(mui);
@@ -4813,9 +4826,9 @@ static void materialui_populate_entries(
    /* Reset touch feedback parameters
     * (i.e. there should be no leftover highlight
     * animations when switching to a new list) */
-   mui->touch_feedback_cache_selection = false;
-   mui->touch_feedback_selection       = 0;
-   mui->touch_feedback_alpha           = 0.0f;
+   mui->touch_feedback_selection        = 0;
+   mui->touch_feedback_alpha            = 0.0f;
+   mui->touch_feedback_update_selection = false;
 
    /* Initialise menu transition animation */
    materialui_init_transition_animation(mui, settings);
@@ -5231,15 +5244,15 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
-   mui->pointer_start_x             = x;
-   mui->pointer_start_y             = y;
-   mui->pointer_start_scroll_y      = mui->scroll_y;
+   mui->pointer_start_x        = x;
+   mui->pointer_start_y        = y;
+   mui->pointer_start_scroll_y = mui->scroll_y;
 
    /* Note: ptr argument is useless here, since it
     * has no meaning when handling touch screen input... */
-   mui->touch_feedback_cache_selection = true;
-   mui->touch_feedback_selection       = 0;
-   mui->touch_feedback_alpha           = 0.0f;
+   mui->touch_feedback_selection        = 0;
+   mui->touch_feedback_alpha            = 0.0f;
+   mui->touch_feedback_update_selection = true;
 
    return 0;
 }

@@ -55,6 +55,13 @@ RETRO_BEGIN_DECLS
  * a touchscreen) */
 #define MENU_INPUT_SWIPE_TIMEOUT 500000              /* 500 ms */
 
+/* Standard behaviour (on Android, at least) is to stop
+ * scrolling when the user touches the screen. To prevent
+ * jerky stop/start scrolling, we wait MENU_INPUT_Y_ACCEL_RESET_DELAY
+ * ms before resetting y acceleration after a stationary
+ * pointer down event is detected */
+#define MENU_INPUT_Y_ACCEL_RESET_DELAY 50000         /* 50 ms */
+
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
 
 /* Pointer is considered stationary if dx/dy remain
