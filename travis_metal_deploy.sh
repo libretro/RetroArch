@@ -17,18 +17,6 @@ echo "Copying binary into dist folder..."
 
 cp -rv  ${TRAVIS_BUILD_DIR}/pkg/apple/build/Release/RetroArch.app .
 
-echo "Code signing..."
-
-security create-keychain -p travis build.keychain
-security default-keychain -s build.keychain
-security unlock-keychain -p travis build.keychain
-echo $OSX_CERT | base64 --decode > dev.p12
-security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
-rm dev.p12
-security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
-codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" RetroArch.app/Contents/MacOS/RetroArch
-codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" RetroArch.app
-
 echo "Downloading assets..."
 
 cd RetroArch.app/Contents/Resources/
