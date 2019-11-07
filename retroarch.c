@@ -4853,6 +4853,14 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          retroarch_overlay_deinit();
 #endif
+#ifdef HAVE_MENU_WIDGETS
+         if (menu_widgets_ai_service_overlay_get_state() != 0)
+         {
+            /* Because the overlay is a menu widget, it's going to be written
+             * over the menu, so we unset it here. */
+            menu_widgets_ai_service_overlay_unload();
+         }
+#endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
 #ifdef HAVE_OVERLAY
