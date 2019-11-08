@@ -186,8 +186,8 @@ typedef struct settings
       bool menu_show_video_layout;
 #endif
       bool menu_materialui_icons_enable;
-      bool menu_materialui_optimize_landscape_layout;
       bool menu_materialui_auto_rotate_nav_bar;
+      bool menu_materialui_dual_thumbnail_list_view_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
@@ -537,6 +537,7 @@ typedef struct settings
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
       unsigned menu_materialui_thumbnail_view_landscape;
+      unsigned menu_materialui_landscape_layout_optimization;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;

@@ -7026,11 +7026,11 @@ MSG_HASH(
     "Muestra iconos a la izquierda de las entradas del menú."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Optimizar disposición en modo horizontal"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Ajusta automáticamente la disposición del menú para que se adapte a la pantalla con la orientación horizontal."
     )
 MSG_HASH(

@@ -85,6 +85,8 @@ static int action_get_title_thumbnails(
    /* Get label value */
    if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
+   else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+      label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
    else
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
 
@@ -111,6 +113,8 @@ static int action_get_title_left_thumbnails(
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
    else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
+   else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+      label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
    else
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
 

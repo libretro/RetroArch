@@ -7033,11 +7033,11 @@ MSG_HASH(
     "Exibe ícones à esquerda das entradas do menu."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Otimizar o Esquema no Modo Paisagem"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Ajusta automaticamente o esquema do menu para se adequar a tela com orientação de paisagem."
     )
 MSG_HASH(

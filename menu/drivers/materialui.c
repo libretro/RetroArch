@@ -98,6 +98,7 @@ typedef struct
    uint32_t list_highlighted_background;
    uint32_t nav_bar_background;
    uint32_t surface_background;
+   uint32_t thumbnail_background;
    /* List icon colours */
    uint32_t list_icon;
    uint32_t list_switch_on;
@@ -114,6 +115,7 @@ typedef struct
    uint32_t scrollbar;
    uint32_t divider;
    uint32_t screen_fade;
+   uint32_t missing_thumbnail_icon;
    float header_shadow_opacity;
    float landscape_border_shadow_opacity;
    float screen_fade_opacity;
@@ -134,6 +136,7 @@ static const materialui_theme_t materialui_theme_blue = {
    0xc1d5e0, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0x0069c0, /* list_icon */
    0x2196f3, /* list_switch_on */
@@ -150,6 +153,7 @@ static const materialui_theme_t materialui_theme_blue = {
    0x0069c0, /* scrollbar */
    0x9ea7aa, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -170,6 +174,7 @@ static const materialui_theme_t materialui_theme_blue_grey = {
    0xe0e0e0, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0x34515e, /* list_icon */
    0x607d8b, /* list_switch_on */
@@ -186,6 +191,7 @@ static const materialui_theme_t materialui_theme_blue_grey = {
    0x34515e, /* scrollbar */
    0xc2c2c2, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -206,6 +212,7 @@ static const materialui_theme_t materialui_theme_dark_blue = {
    0x34515e, /* list_highlighted_background */
    0x242424, /* nav_bar_background */
    0x1D1D1D, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0x90caf9, /* list_icon */
    0x64b5f6, /* list_switch_on */
@@ -222,6 +229,7 @@ static const materialui_theme_t materialui_theme_dark_blue = {
    0x90caf9, /* scrollbar */
    0x607d8b, /* divider */
    0x000000, /* screen_fade */
+   0xDEDEDE, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -242,6 +250,7 @@ static const materialui_theme_t materialui_theme_green = {
    0xdcedc8, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0x087f23, /* list_icon */
    0x4caf50, /* list_switch_on */
@@ -258,6 +267,7 @@ static const materialui_theme_t materialui_theme_green = {
    0x087f23, /* scrollbar */
    0xaabb97, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -278,6 +288,7 @@ static const materialui_theme_t materialui_theme_red = {
    0xf8bbd0, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0xba000d, /* list_icon */
    0xf44336, /* list_switch_on */
@@ -294,6 +305,7 @@ static const materialui_theme_t materialui_theme_red = {
    0xba000d, /* scrollbar */
    0xbf5f82, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -314,6 +326,7 @@ static const materialui_theme_t materialui_theme_yellow = {
    0xffecb3, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0xc6a700, /* list_icon */
    0xffeb3b, /* list_switch_on */
@@ -330,6 +343,7 @@ static const materialui_theme_t materialui_theme_yellow = {
    0xc6a700, /* scrollbar */
    0xcbba83, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -350,6 +364,7 @@ static const materialui_theme_t materialui_theme_nvidia_shield = {
    0x255d00, /* list_highlighted_background */
    0x242424, /* nav_bar_background */
    0x1D1D1D, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0x7ab547, /* list_icon */
    0x85bb5c, /* list_switch_on */
@@ -366,6 +381,7 @@ static const materialui_theme_t materialui_theme_nvidia_shield = {
    0x7ab547, /* scrollbar */
    0x498515, /* divider */
    0x000000, /* screen_fade */
+   0xDEDEDE, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -386,6 +402,7 @@ static const materialui_theme_t materialui_theme_materialui = {
    0xe7b9ff, /* list_highlighted_background */
    0xE1E2E1, /* nav_bar_background */
    0xFFFFFF, /* surface_background */
+   0x242424, /* thumbnail_background */
    /* List icon colours */
    0x3700B3, /* list_icon */
    0x03DAC6, /* list_switch_on */
@@ -402,6 +419,7 @@ static const materialui_theme_t materialui_theme_materialui = {
    0x018786, /* scrollbar */
    0x018786, /* divider */
    0x000000, /* screen_fade */
+   0xF5F5F6, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.35f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -422,6 +440,7 @@ static const materialui_theme_t materialui_theme_materialui_dark = {
    0x51455E, /* list_highlighted_background */
    0x242424, /* nav_bar_background */
    0x1D1D1D, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xbb86fc, /* list_icon */
    0x03DAC5, /* list_switch_on */
@@ -438,6 +457,7 @@ static const materialui_theme_t materialui_theme_materialui_dark = {
    0xC89EFC, /* scrollbar */
    0x03DAC6, /* divider */
    0x000000, /* screen_fade */
+   0xDEDEDE, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -458,6 +478,7 @@ static const materialui_theme_t materialui_theme_ozone_dark = {
    0x268C75, /* list_highlighted_background */
    0x373737, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x0B0B0B, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0x00FFC5, /* list_switch_on */
@@ -474,6 +495,7 @@ static const materialui_theme_t materialui_theme_ozone_dark = {
    0x9F9F9F, /* scrollbar */
    0xFFFFFF, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -494,6 +516,7 @@ static const materialui_theme_t materialui_theme_nord = {
    0x3f444f, /* list_highlighted_background */
    0x3B4252, /* nav_bar_background */
    0x3B4252, /* surface_background */
+   0x0B0B0B, /* thumbnail_background */
    /* List icon colours */
    0xD8DEE9, /* list_icon */
    0xA3BE8C, /* list_switch_on */
@@ -510,6 +533,7 @@ static const materialui_theme_t materialui_theme_nord = {
    0xA0A5AD, /* scrollbar */
    0x81A1C1, /* divider */
    0x000000, /* screen_fade */
+   0xD8DEE9, /* missing_thumbnail_icon */
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -530,6 +554,7 @@ static const materialui_theme_t materialui_theme_gruvbox_dark = {
    0x3C3836, /* list_highlighted_background */
    0x1D2021, /* nav_bar_background */
    0x32302F, /* surface_background */
+   0x0B0B0B, /* thumbnail_background */
    /* List icon colours */
    0xA89984, /* list_icon */
    0xB8BB26, /* list_switch_on */
@@ -546,6 +571,7 @@ static const materialui_theme_t materialui_theme_gruvbox_dark = {
    0x7C6F64, /* scrollbar */
    0xD5C4A1, /* divider */
    0x000000, /* screen_fade */
+   0xA89984, /* missing_thumbnail_icon */
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -566,6 +592,7 @@ static const materialui_theme_t materialui_theme_solarized_dark = {
    0x073642, /* list_highlighted_background */
    0x003541, /* nav_bar_background */
    0x073642, /* surface_background */
+   0x0B0B0B, /* thumbnail_background */
    /* List icon colours */
    0x657B83, /* list_icon */
    0x859900, /* list_switch_on */
@@ -582,6 +609,7 @@ static const materialui_theme_t materialui_theme_solarized_dark = {
    0x586E75, /* scrollbar */
    0x2AA198, /* divider */
    0x000000, /* screen_fade */
+   0x657B83, /* missing_thumbnail_icon */
    0.4f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -602,6 +630,7 @@ static const materialui_theme_t materialui_theme_cutie_blue = {
    0x3399FF, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0x3399FF, /* list_switch_on */
@@ -618,6 +647,7 @@ static const materialui_theme_t materialui_theme_cutie_blue = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -638,6 +668,7 @@ static const materialui_theme_t materialui_theme_cutie_cyan = {
    0x39859A, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0x39859A, /* list_switch_on */
@@ -654,6 +685,7 @@ static const materialui_theme_t materialui_theme_cutie_cyan = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -674,6 +706,7 @@ static const materialui_theme_t materialui_theme_cutie_green = {
    0x23A367, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0x23A367, /* list_switch_on */
@@ -690,6 +723,7 @@ static const materialui_theme_t materialui_theme_cutie_green = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -710,6 +744,7 @@ static const materialui_theme_t materialui_theme_cutie_orange = {
    0xCE6E1F, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0xCE6E1F, /* list_switch_on */
@@ -726,6 +761,7 @@ static const materialui_theme_t materialui_theme_cutie_orange = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -746,6 +782,7 @@ static const materialui_theme_t materialui_theme_cutie_pink = {
    0xD16FD8, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0xD16FD8, /* list_switch_on */
@@ -762,6 +799,7 @@ static const materialui_theme_t materialui_theme_cutie_pink = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -782,6 +820,7 @@ static const materialui_theme_t materialui_theme_cutie_purple = {
    0x814FFF, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0x814FFF, /* list_switch_on */
@@ -798,6 +837,7 @@ static const materialui_theme_t materialui_theme_cutie_purple = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -818,6 +858,7 @@ static const materialui_theme_t materialui_theme_cutie_red = {
    0xCB1619, /* list_highlighted_background */
    0x282828, /* nav_bar_background */
    0x333333, /* surface_background */
+   0x000000, /* thumbnail_background */
    /* List icon colours */
    0xFFFFFF, /* list_icon */
    0xCB1619, /* list_switch_on */
@@ -834,6 +875,7 @@ static const materialui_theme_t materialui_theme_cutie_red = {
    0x727272, /* scrollbar */
    0x727272, /* divider */
    0x000000, /* screen_fade */
+   0xDADADA, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -854,6 +896,7 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0x400000, /* list_highlighted_background */
    0x350000, /* nav_bar_background */
    0x400000, /* surface_background */
+   0x250000, /* thumbnail_background */
    /* List icon colours */
    0xE60000, /* list_icon */
    0xE60000, /* list_switch_on */
@@ -870,6 +913,7 @@ static const materialui_theme_t materialui_theme_virtual_boy = {
    0xA10000, /* scrollbar */
    0xE60000, /* divider */
    0x000000, /* screen_fade */
+   0xE60000, /* missing_thumbnail_icon */
    0.3f,     /* header_shadow_opacity */
    0.45f,    /* landscape_border_shadow_opacity */
    0.75f     /* screen_fade_opacity */
@@ -891,6 +935,7 @@ typedef struct
    float list_highlighted_background[16];
    float nav_bar_background[16];
    float surface_background[16];
+   float thumbnail_background[16];
    /* System bar + header icon colours */
    float sys_bar_icon[16];
    float header_icon[16];
@@ -911,6 +956,7 @@ typedef struct
    float scrollbar[16];
    float divider[16];
    float screen_fade[16];
+   float missing_thumbnail_icon[16];
    float landscape_border_shadow_opacity;
 } materialui_colors_t;
 
@@ -936,7 +982,8 @@ enum materialui_list_view_type
    MUI_LIST_VIEW_PLAYLIST,
    MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL,
    MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM,
-   MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE
+   MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE,
+   MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON
 };
 
 /* This structure holds auxiliary information for
@@ -949,7 +996,14 @@ typedef struct
    float entry_height;
    float text_height;
    float y;
-   menu_thumbnail_t thumbnail;
+
+   /* Thumbnail containers */
+   struct
+   {
+      menu_thumbnail_t primary;
+      menu_thumbnail_t secondary;
+   } thumbnails;
+
 } materialui_node_t;
 
 /* Defines all standard menu textures */
@@ -1155,9 +1209,11 @@ typedef struct materialui_handle
    bool is_playlist;
    bool is_file_list;
    bool is_dropdown_list;
-   bool last_optimize_landscape_layout;
    bool last_auto_rotate_nav_bar;
    bool menu_stack_flushed;
+
+   enum materialui_landscape_layout_optimization_type
+         last_landscape_layout_optimization;
 
    playlist_t *playlist;
 
@@ -1251,6 +1307,7 @@ typedef struct materialui_handle
    menu_thumbnail_path_data_t *thumbnail_path_data;
    unsigned thumbnail_width_max;
    unsigned thumbnail_height_max;
+   bool secondary_thumbnail_enabled;
 
    enum materialui_list_view_type list_view_type;
 
@@ -1343,6 +1400,9 @@ static void materialui_prepare_colors(
    hex32_to_rgba_normalized(
             current_theme->surface_background,
             mui->colors.surface_background, 1.0f);
+   hex32_to_rgba_normalized(
+            current_theme->thumbnail_background,
+            mui->colors.thumbnail_background, 1.0f);
 
    /* > System bar + header icon colours */
    hex32_to_rgba_normalized(
@@ -1399,6 +1459,9 @@ static void materialui_prepare_colors(
    hex32_to_rgba_normalized(
             current_theme->screen_fade,
             mui->colors.screen_fade, current_theme->screen_fade_opacity);
+   hex32_to_rgba_normalized(
+            current_theme->missing_thumbnail_icon,
+            mui->colors.missing_thumbnail_icon, 1.0f);
 
    /* Shadow colours require special handling
     * (since they are gradients) */
@@ -1638,30 +1701,40 @@ static void materialui_draw_thumbnail(
       menu_thumbnail_t *thumbnail,
       float x, float y,
       unsigned width, unsigned height,
-      float rotation, float scale_factor)
+      float scale_factor)
 {
-   /* If thumbnail is missing, draw fallback image */
+   float bg_x;
+   float bg_y;
+   float bg_width;
+   float bg_height;
+
+   /* Sanity check */
+   if (scale_factor <= 0)
+      return;
+
+   /* Get background draw position + dimensions,
+    * accounting for scale factor */
+   bg_width  = (float)mui->thumbnail_width_max * scale_factor;
+   bg_height = (float)mui->thumbnail_height_max * scale_factor;
+   bg_x      = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
+   bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
+
+   /* If thumbnail is missing, draw fallback image... */
    if (thumbnail->status == MENU_THUMBNAIL_STATUS_MISSING)
    {
-      float bg_x;
-      float bg_y;
-      float bg_width;
-      float bg_height;
       float icon_size;
 
-      /* Account for scale factor */
-      bg_width  = (float)mui->thumbnail_width_max * scale_factor;
-      bg_height = (float)mui->thumbnail_height_max * scale_factor;
-
-      bg_x = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
-      bg_y = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
-
+      /* Adjust icon size based on scale factor */
       if (scale_factor >= 1.0f)
          icon_size = (float)mui->icon_size;
       else
          icon_size = (float)mui->icon_size * scale_factor;
 
       /* Background */
+      menu_display_set_alpha(
+            mui->colors.thumbnail_background,
+            mui->transition_alpha);
+
       menu_display_draw_quad(
             video_info,
             bg_x,
@@ -1670,7 +1743,7 @@ static void materialui_draw_thumbnail(
             (unsigned)bg_height,
             width,
             height,
-            mui->colors.surface_background);
+            mui->colors.thumbnail_background);
 
       /* Icon */
       materialui_draw_icon(video_info,
@@ -1682,85 +1755,49 @@ static void materialui_draw_thumbnail(
             height,
             0.0f,
             1.0f,
-            mui->colors.list_icon);
+            mui->colors.missing_thumbnail_icon);
    }
-   /* If thumbnail is available, draw it */
+   /* If thumbnail is available, draw it
+    * > Note that other conditions are ignored - i.e. we
+    *   we draw nothing if thumbnail status is unknown,
+    *   or we are waiting for a thumbnail to load) */
    else if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
    {
-      menu_display_ctx_rotate_draw_t rotate_draw;
-      menu_display_ctx_draw_t draw;
-      struct video_coords coords;
-      math_matrix_4x4 mymat;
-      float draw_width;
-      float draw_height;
-      float thumbnail_aspect;
-      float thumbnail_alpha      =
-            thumbnail->alpha * mui->transition_alpha;
-      float thumbnail_color[16]  = {
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f
-      };
+      float bg_alpha = mui->transition_alpha * thumbnail->alpha;
 
-      /* Set thumbnail opacity */
-      if (thumbnail_alpha < 1.0f)
-         menu_display_set_alpha(thumbnail_color, thumbnail_alpha);
+      /* Background
+       * > We draw a background here to ensure a uniform
+       *   visual appearance regardless of thumbnail size
+       * NOTE: Have to round up and add 1 to height,
+       * otherwise background and thumbnail have obvious
+       * misalignment (due to various rounding errors...) */
 
-      /* Get thumbnail dimensions */
-      thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+      /* > Set background alpha
+       *   - Can't do this in materialui_colors_set_transition_alpha()
+       *     because it's dependent upon thumbnail opacity
+       *   - No need to restore the original alpha value, since it is
+       *     only used in this function */
+      menu_display_set_alpha(
+            mui->colors.thumbnail_background,
+            mui->transition_alpha * thumbnail->alpha);
 
-      if (thumbnail_aspect > MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO)
-      {
-         draw_width  = (float)mui->thumbnail_width_max;
-         draw_height = (float)thumbnail->height * (draw_width / (float)thumbnail->width);
-      }
-      else
-      {
-         draw_height = (float)mui->thumbnail_height_max;
-         draw_width  = (float)thumbnail->width * (draw_height / (float)thumbnail->height);
-      }
+      /* > Draw background quad */
+      menu_display_draw_quad(
+            video_info,
+            (int)bg_x,
+            (int)bg_y,
+            (unsigned)(bg_width + 0.5f),
+            (unsigned)(bg_height + 1.5f),
+            width,
+            height,
+            mui->colors.thumbnail_background);
 
-      /* Account for scale factor */
-      draw_width  *= scale_factor;
-      draw_height *= scale_factor;
-
-      menu_display_blend_begin(video_info);
-
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = rotation;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = true;
-
-      menu_display_rotate_z(&rotate_draw, video_info);
-
-      coords.vertices      = 4;
-      coords.vertex        = NULL;
-      coords.tex_coord     = NULL;
-      coords.lut_tex_coord = NULL;
-      coords.color         = (const float*)thumbnail_color;
-
-      draw.x               = x + ((float)mui->thumbnail_width_max - draw_width) / 2.0f;
-      draw.y               = height - y - draw_height - ((float)mui->thumbnail_height_max - draw_height) / 2.0f;
-      draw.width           = (unsigned)draw_width;
-      draw.height          = (unsigned)draw_height;
-      draw.scale_factor    = 1.0f;
-      draw.rotation        = rotation;
-      draw.coords          = &coords;
-      draw.matrix_data     = &mymat;
-      draw.texture         = thumbnail->texture;
-      draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.pipeline.id     = 0;
-
-      menu_display_draw(&draw, video_info);
-      menu_display_blend_end(video_info);
+      /* Thumbnail */
+      menu_thumbnail_draw(
+            video_info, thumbnail,
+            x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
+            mui->transition_alpha, scale_factor);
    }
-
-   /* All other thumbnail statuses are ignored
-    * (i.e. we draw nothing if thumbnail status is unknown,
-    *  or we are waiting for a thumbnail to load) */
 }
 
 static void materialui_get_message(void *data, const char *message)
@@ -1875,19 +1912,64 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
    float sum            = 0;
    size_t entries_end   = menu_entries_get_size();
 
-   /* If this is a playlist and thumbnails are enabled,
-    * must reduce usable width by thumbnail width */
+   /* If this is a playlist and the 'dual icon'
+    * thumbnail view mode is enabled, each node has
+    * a fixed height - and we can skip all the
+    * usual calculations */
+   if (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON)
+   {
+      /* One line of list text */
+      float node_text_height  = (float)mui->font_data.list.font_height;
+      /* List text + thumbnail height + padding */
+      float node_entry_height =
+            node_text_height + (float)mui->thumbnail_height_max +
+            ((float)mui->dip_base_unit_size / 5.0f);
+
+      for (i = 0; i < entries_end; i++)
+      {
+         materialui_node_t *node = (materialui_node_t*)
+                  file_list_get_userdata_at_offset(list, i);
+
+         node->text_height  = node_text_height;
+         node->entry_height = node_entry_height;
+         node->y            = sum;
+         sum               += node_entry_height;
+      }
+
+      mui->content_height = sum;
+      return;
+   }
+
+   /* If this is a playlist and any other thumbnail view
+    * mode is enabled, must reduce usable width by
+    * thumbnail width */
    if ((mui->list_view_type != MUI_LIST_VIEW_DEFAULT) &&
        (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST))
    {
       int thumbnail_margin = 0;
 
+      /* Account for additional padding in portrait mode */
+      if (mui->is_portrait)
+      {
+         if (mui->secondary_thumbnail_enabled)
+            thumbnail_margin = (int)mui->scrollbar_width;
+      }
       /* Account for additional padding in landscape mode */
-      if (!mui->is_portrait)
+      else
          if (mui->landscape_entry_margin < mui->margin)
             thumbnail_margin = (int)(mui->margin - mui->landscape_entry_margin);
 
       usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+
+      /* Account for second thumbnail, if enabled */
+      if (mui->secondary_thumbnail_enabled)
+         usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+      /* If there is no second thumbnail and landscape
+       * optimisations are active, increase width to
+       * balance x offset of primary thumbnail */
+      else if (mui->landscape_entry_margin > 0)
+         usable_width += (mui->margin > mui->landscape_entry_margin) ?
+               (int)mui->landscape_entry_margin : (int)mui->margin;
    }
 
    for (i = 0; i < entries_end; i++)
@@ -2014,7 +2096,7 @@ static void materialui_layout(
       materialui_handle_t *mui, bool video_is_threaded);
 
 /* Called on each frame. We use this callback to:
- * - Determine current scroll postion
+ * - Determine current scroll position
  * - Determine index of first/last onscreen entries
  * - Handle dynamic pointer input
  * - Handle streaming thumbnails */
@@ -2043,15 +2125,19 @@ static void materialui_render(void *data,
    if ((scale_factor != mui->last_scale_factor) ||
        (width != mui->last_width) ||
        (height != mui->last_height) ||
-       (settings->bools.menu_materialui_optimize_landscape_layout != mui->last_optimize_landscape_layout) ||
+       ((enum materialui_landscape_layout_optimization_type)
+            settings->uints.menu_materialui_landscape_layout_optimization !=
+                  mui->last_landscape_layout_optimization) ||
        (settings->bools.menu_materialui_auto_rotate_nav_bar != mui->last_auto_rotate_nav_bar))
    {
-      mui->dip_base_unit_size             = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
-      mui->last_scale_factor              = scale_factor;
-      mui->last_width                     = width;
-      mui->last_height                    = height;
-      mui->last_optimize_landscape_layout = settings->bools.menu_materialui_optimize_landscape_layout;
-      mui->last_auto_rotate_nav_bar       = settings->bools.menu_materialui_auto_rotate_nav_bar;
+      mui->dip_base_unit_size                 = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
+      mui->last_scale_factor                  = scale_factor;
+      mui->last_width                         = width;
+      mui->last_height                        = height;
+      mui->last_landscape_layout_optimization =
+            (enum materialui_landscape_layout_optimization_type)
+                  settings->uints.menu_materialui_landscape_layout_optimization;
+      mui->last_auto_rotate_nav_bar           = settings->bools.menu_materialui_auto_rotate_nav_bar;
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
@@ -2209,9 +2295,15 @@ static void materialui_render(void *data,
       {
          bool on_screen = first_entry_found && !last_entry_found;
 
-         menu_thumbnail_process_stream(
-               mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
-               mui->playlist, i, &node->thumbnail, on_screen);
+         if (mui->secondary_thumbnail_enabled)
+            menu_thumbnail_process_streams(
+               mui->thumbnail_path_data, mui->playlist, i,
+               &node->thumbnails.primary, &node->thumbnails.secondary,
+               on_screen);
+         else
+            menu_thumbnail_process_stream(
+                  mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
+                  mui->playlist, i, &node->thumbnails.primary, on_screen);
       }
       else if (last_entry_found)
          break;
@@ -2681,36 +2773,74 @@ static void materialui_render_menu_entry_playlist_list(
    menu_entry_get_rich_label(entry, &entry_label);
    menu_entry_get_sublabel(entry, &entry_sublabel);
 
-   /* Draw entry thumbnail
+   /* Draw entry thumbnail(s)
     * > Has to be done first, since it affects the left
-    *   hand margin size for label + sublabel text */
+    *   hand margin size and total width for label +
+    *   sublabel text */
    if (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST)
    {
       int thumbnail_margin = 0;
+      float thumbnail_y    =
+            (float)entry_y + ((float)node->entry_height / 2.0f) - ((float)mui->thumbnail_height_max / 2.0f);
 
+      /* When using portrait display orientations with
+       * secondary thumbnails enabled, have to add a
+       * left/right margin equal to the scroll bar
+       * width (to prevent the scroll bar from being
+       * drawn on top of the secondary thumbnail) */
+      if (mui->is_portrait)
+      {
+         if (mui->secondary_thumbnail_enabled)
+            thumbnail_margin = (int)mui->scrollbar_width;
+      }
       /* When using landscape display orientations, we
        * have enough screen space to improve thumbnail
-       * appearance by adding a left hand margin - but
+       * appearance by adding left/right margins - but
        * we only need to do this if landscape optimisations
        * are disabled (or landscape_entry_margin is less
        * than mui->margin) */
-      if (!mui->is_portrait)
+      else
          if (mui->landscape_entry_margin < mui->margin)
             thumbnail_margin = (int)(mui->margin - mui->landscape_entry_margin);
 
+      /* Draw primary thumbnail */
       materialui_draw_thumbnail(
             mui,
             video_info,
-            &node->thumbnail,
+            &node->thumbnails.primary,
             (float)(x_offset + thumbnail_margin + (int)mui->landscape_entry_margin),
-            (float)entry_y + ((float)node->entry_height / 2.0f) - ((float)mui->thumbnail_height_max / 2.0f),
+            thumbnail_y,
             width,
             height,
-            0.0f,
             1.0f);
 
       entry_margin += mui->thumbnail_width_max + thumbnail_margin;
       usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+
+      /* Draw secondary thumbnail, if required */
+      if (mui->secondary_thumbnail_enabled)
+      {
+         materialui_draw_thumbnail(
+               mui,
+               video_info,
+               &node->thumbnails.secondary,
+               (float)(x_offset + (int)width - thumbnail_margin - (int)mui->landscape_entry_margin -
+                     (int)mui->nav_bar_layout_width - (int)mui->thumbnail_width_max),
+               thumbnail_y,
+               width,
+               height,
+               1.0f);
+
+         usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+      }
+      /* If there is no secondary thumbnail and landscape
+       * optimisations are active, must increase usable width
+       * to balance out the margin of the primary thumbnail
+       * (since this is effectively left shifted when landscape
+       * optimisations are active...) */
+      else if (mui->landscape_entry_margin > 0)
+         usable_width += (mui->margin > mui->landscape_entry_margin) ?
+               (int)mui->landscape_entry_margin : (int)mui->margin;
    }
 
    /* Draw entry label */
@@ -2781,6 +2911,171 @@ static void materialui_render_menu_entry_playlist_list(
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
    }
+
+   /* When using the larger thumbnail views, the horizontal
+    * text area is unpleasantly vacuous, such that the
+    * label + sublabel strings float in a sea of nothingness.
+    * We can partially mitigate the visual 'emptiness' of this
+    * by drawing a divider between entries. This is particularly
+    * beneficial when dual thumbnails are enabled, since it
+    * 'ties' the left/right thumbnails together
+    * NOTE: This does not work at all for the smallest thumbnail
+    * list view, or when thumbnails are disabled - the result is
+    * just too 'busy'/visually cluttered */
+   if ((mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM) ||
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE))
+   {
+      if (usable_width > 0)
+         menu_display_draw_quad(
+               video_info,
+               (float)(x_offset + entry_margin),
+               entry_y + (float)node->entry_height,
+               (unsigned)usable_width,
+               mui->nav_bar.divider_width,
+               width,
+               height,
+               mui->colors.divider);
+   }
+}
+
+/* Draws specified menu entry
+ * > Used for playlist 'dual icon' entries
+ * >> MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON */
+static void materialui_render_menu_entry_playlist_dual_icon(
+      materialui_handle_t *mui,
+      video_frame_info_t *video_info,
+      materialui_node_t *node,
+      menu_entry_t *entry,
+      bool entry_selected,
+      bool touch_feedback_active,
+      unsigned header_height,
+      unsigned width, unsigned height,
+      int x_offset)
+{
+   const char *entry_label = NULL;
+   int usable_width        =
+         (int)width - (int)(mui->margin * 2) -
+         (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
+   float entry_y           = (float)header_height - mui->scroll_y + node->y;
+   float thumbnail_y;
+
+   /* Initial ticker configuration
+    * > Note: ticker is only used for labels */
+   if (mui->use_smooth_ticker)
+   {
+      mui->ticker_smooth.font     = mui->font_data.list.font;
+      mui->ticker_smooth.selected = entry_selected;
+   }
+   else
+      mui->ticker.selected = entry_selected;
+
+   /* Read entry parameters */
+   menu_entry_get_rich_label(entry, &entry_label);
+
+   /* Draw thumbnails
+    * > These go at the top of the entry, with a
+    *   small vertical margin */
+   thumbnail_y           =
+         entry_y + ((float)mui->dip_base_unit_size / 10.0f);
+
+   /* > Primary thumbnail */
+   materialui_draw_thumbnail(
+         mui,
+         video_info,
+         &node->thumbnails.primary,
+         (float)(x_offset + (int)mui->margin + (int)mui->landscape_entry_margin),
+         thumbnail_y,
+         width,
+         height,
+         1.0f);
+
+   /* > Secondary thumbnail */
+   materialui_draw_thumbnail(
+         mui,
+         video_info,
+         &node->thumbnails.secondary,
+         (float)(x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin -
+               (int)mui->nav_bar_layout_width - (int)mui->thumbnail_width_max),
+         thumbnail_y,
+         width,
+         height,
+         1.0f);
+
+   /* Draw entry label */
+   if (!string_is_empty(entry_label))
+   {
+      float label_x          = 0.0f;
+      /* Label is drawn beneath thumbnails,
+       * with a small vertical margin */
+      float label_y          =
+            thumbnail_y + (float)mui->thumbnail_height_max +
+            ((float)mui->dip_base_unit_size / 10.0f) +
+            (9.0f * (float)mui->font_data.list.font_height / 20.0f);
+
+      bool draw_text_outside = (x_offset != 0);
+      char label_buf[255];
+
+      label_buf[0] = '\0';
+
+      if (usable_width > 0)
+      {
+         /* Apply ticker */
+         if (mui->use_smooth_ticker)
+         {
+            /* Label */
+            mui->ticker_smooth.field_width = (unsigned)usable_width;
+            mui->ticker_smooth.src_str     = entry_label;
+            mui->ticker_smooth.dst_str     = label_buf;
+            mui->ticker_smooth.dst_str_len = sizeof(label_buf);
+
+            /* If ticker is inactive, centre the text */
+            if (!menu_animation_ticker_smooth(&mui->ticker_smooth))
+               label_x = (float)(usable_width - mui->ticker_str_width) / 2.0f;
+         }
+         else
+         {
+            /* Label */
+            mui->ticker.s   = label_buf;
+            mui->ticker.len = (size_t)(usable_width / mui->font_data.list.glyph_width);
+            mui->ticker.str = entry_label;
+
+            /* If ticker is inactive, centre the text */
+            if (!menu_animation_ticker(&mui->ticker))
+            {
+               int str_width = (int)(utf8len(label_buf) *
+                  mui->font_data.list.glyph_width);
+
+               label_x = (float)(usable_width - str_width) / 2.0f;
+            }
+         }
+
+         label_x += (float)(x_offset + (int)mui->ticker_x_offset +
+               (int)mui->margin + (int)mui->landscape_entry_margin);
+
+         /* Draw label string */
+         menu_display_draw_text(mui->font_data.list.font, label_buf,
+               label_x,
+               label_y,
+               width, height,
+               (entry_selected || touch_feedback_active) ?
+                     mui->colors.list_text_highlighted : mui->colors.list_text,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside);
+      }
+   }
+
+   /* Draw divider */
+   if (usable_width > 0)
+      menu_display_draw_quad(
+            video_info,
+            (float)(x_offset + (int)mui->margin + (int)mui->landscape_entry_margin),
+            thumbnail_y + (float)mui->thumbnail_height_max +
+                  ((float)mui->dip_base_unit_size / 10.0f) +
+                  (float)mui->font_data.list.font_height,
+            (unsigned)usable_width,
+            mui->nav_bar.divider_width,
+            width,
+            height,
+            mui->colors.divider);
 }
 
 static void materialui_render_scrollbar(
@@ -2790,36 +3085,48 @@ static void materialui_render_scrollbar(
       unsigned width, unsigned height,
       int x_offset)
 {
-   float total_height     = height - header_height - mui->nav_bar_layout_height;
-   float scrollbar_margin = mui->scrollbar_width;
-   float scrollbar_height = total_height / (mui->content_height / total_height);
-   float y                = total_height * mui->scroll_y / mui->content_height;
+   int view_height = (int)height - (int)header_height - (int)mui->nav_bar_layout_height;
+   int scrollbar_height;
    int x;
+   int y;
 
-   if (mui->content_height < total_height)
+   /* Sanity check */
+   if (view_height <= 0)
       return;
 
-   /* Apply a margin on the top and bottom of the scrollbar
-    * for aesthetic reasons */
-   scrollbar_height      -= scrollbar_margin * 2;
-   y                     += scrollbar_margin;
+   if (mui->content_height < (float)view_height)
+      return;
+
+   /* Get scrollbar height */
+   scrollbar_height = (int)((float)(view_height * view_height) / mui->content_height);
+
+   /* Get scrollbar y position */
+   y = (int)header_height + (int)(mui->scroll_y * (float)view_height / mui->content_height);
+
+   /* Apply vertical padding to improve visual appearance */
+   scrollbar_height -= (int)mui->scrollbar_width * 2;
+   y                += (int)mui->scrollbar_width;
 
    /* If the scrollbar is extremely short, display
     * it as a square */
-   if (scrollbar_height < mui->scrollbar_width)
-      scrollbar_height = mui->scrollbar_width;
+   if (scrollbar_height < (int)mui->scrollbar_width)
+      scrollbar_height = (int)mui->scrollbar_width;
 
-   /* Get x position */
-   x = x_offset + (int)width - (int)mui->scrollbar_width - (int)scrollbar_margin - (int)mui->nav_bar_layout_width;
+   /* Get scrollbar x position */
+   x = x_offset + (int)width - (int)mui->scrollbar_width - (int)mui->nav_bar_layout_width;
+   /* > Scrollbar must be offset by the current
+    *   landscape border width when landscape optimisations
+    *   are enabled */
    if (mui->landscape_entry_margin > mui->margin)
       x -= (int)mui->landscape_entry_margin - (int)mui->margin;
 
+   /* Draw scrollbar */
    menu_display_draw_quad(
          video_info,
          x,
-         header_height + y,
+         y,
          mui->scrollbar_width,
-         scrollbar_height,
+         (unsigned)scrollbar_height,
          width, height,
          mui->colors.scrollbar);
 }
@@ -2863,7 +3170,9 @@ static void materialui_render_menu_list(
 
       /* Get current entry */
       menu_entry_init(&entry);
-      entry.path_enabled = false;
+      entry.path_enabled     = false;
+      entry.value_enabled    = (mui->list_view_type == MUI_LIST_VIEW_DEFAULT);
+      entry.sublabel_enabled = (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON);
       menu_entry_get(&entry, 0, i, NULL, true);
 
       /* Render label, value, and associated icons
@@ -2884,6 +3193,19 @@ static void materialui_render_menu_list(
          case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM:
          case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE:
             materialui_render_menu_entry_playlist_list(
+                  mui,
+                  video_info,
+                  node,
+                  &entry,
+                  entry_selected,
+                  touch_feedback_active,
+                  header_height,
+                  width,
+                  height,
+                  x_offset);
+            break;
+         case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
+            materialui_render_menu_entry_playlist_dual_icon(
                   mui,
                   video_info,
                   node,
@@ -3068,12 +3390,16 @@ static void materialui_render_selection_highlight(
       if (!node)
          return;
 
+      /* Note: we add 1 to the height here to avoid obvious
+       * 'seams' when entries have dividers
+       * (rounding errors would otherwise cause 1px vertical
+       * gaps...) */
       menu_display_draw_quad(
             video_info,
             highlight_x_offset,
             header_height - mui->scroll_y + node->y,
             (unsigned)highlight_width,
-            node->entry_height,
+            node->entry_height + 1,
             width,
             height,
             color);
@@ -3162,8 +3488,8 @@ static void materialui_render_header(
    bool show_search_icon         = mui->is_playlist || mui->is_file_list;
    bool show_switch_view_icon    = mui->is_playlist &&
          menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
-
-   bool use_landscape_layout     = !mui->is_portrait && settings->bools.menu_materialui_optimize_landscape_layout;
+   bool use_landscape_layout     = !mui->is_portrait &&
+         (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
    char menu_title_buf[255];
 
    menu_title_buf[0]  = '\0';
@@ -3761,6 +4087,7 @@ static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
       menu_display_set_alpha(mui->colors.list_switch_off_background,  alpha);
       menu_display_set_alpha(mui->colors.scrollbar,                   alpha);
       menu_display_set_alpha(mui->colors.surface_background,          alpha);
+      menu_display_set_alpha(mui->colors.missing_thumbnail_icon,      alpha);
 
       /* Landscape border shadow only fades if:
        * - Landscape border is shown
@@ -3800,6 +4127,7 @@ static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
       menu_display_set_alpha(mui->colors.list_switch_off_background,  1.0f);
       menu_display_set_alpha(mui->colors.scrollbar,                   1.0f);
       menu_display_set_alpha(mui->colors.surface_background,          1.0f);
+      menu_display_set_alpha(mui->colors.missing_thumbnail_icon,      1.0f);
 
       /* Landscape border shadow only fades if:
        * - Landscape border is shown
@@ -3997,24 +4325,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    menu_display_unset_viewport(width, height);
 }
 
-/* Determines current list view mode, based upon
- * display orientation and user config, then
- * calculates appropriate thumbnail dimensions.
- * Must be called when updating menu layout and
- * populating menu lists. */
-static void materialui_update_list_view(materialui_handle_t *mui)
+/* Determines current list view type, based on
+ * whether current menu is a playlist, and whether
+ * user has enabled playlist thumbnails */
+static void materialui_set_list_view_type(
+      materialui_handle_t *mui, settings_t *settings)
 {
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-   {
-      /* This will never happen, but might as well set the
-       * appropriate fallback... */
-      mui->list_view_type = mui->is_playlist ?
-            MUI_LIST_VIEW_PLAYLIST : MUI_LIST_VIEW_DEFAULT;
-      return;
-   }
-
    if (!mui->is_playlist)
       mui->list_view_type = MUI_LIST_VIEW_DEFAULT;
    else
@@ -4037,6 +4353,9 @@ static void materialui_update_list_view(materialui_handle_t *mui)
                   break;
                case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM:
                   mui->list_view_type = MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM;
+                  break;
+               case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON:
+                  mui->list_view_type = MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON;
                   break;
                case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED:
                default:
@@ -4063,73 +4382,272 @@ static void materialui_update_list_view(materialui_handle_t *mui)
                   break;
             }
          }
+      }
+   }
+}
 
-         /* Set thumbnail dimensions */
+/* Determines whether landscape optimisations should
+ * be applied, and calculates appropriate landscape
+ * entry margin size */
+static void materialui_set_landscape_optimisations_enable(
+      materialui_handle_t *mui, settings_t *settings)
+{
+   bool optimize_landscape_layout = false;
+
+   /* In landscape orientations, menu lists are too wide
+    * (to the extent that they are rather uncomfortable
+    * to look at...)
+    * > Depending upon user configuration, we therefore
+    *   use additional padding at the left/right sides of
+    *   the screen */
+
+   /* Disable optimisations by default */
+   mui->landscape_entry_margin = 0;
+
+   /* Early out if current orientation is portrait */
+   if (mui->is_portrait)
+      return;
+
+   /* Check whether optimisations are enabled, globally
+    * or for current list view type */
+   switch (mui->last_landscape_layout_optimization)
+   {
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS:
+         optimize_landscape_layout = true;
+         break;
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS:
+
          switch (mui->list_view_type)
          {
             case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL:
-
-               /* Maximum height is just standard icon size */
-               mui->thumbnail_height_max = mui->icon_size;
-
-               /* Set thumbnail width based on max height */
-               mui->thumbnail_width_max =
-                     (unsigned)(((float)mui->thumbnail_height_max *
-                           MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
-
-               break;
-
             case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM:
-
-               /* Maximum height corresponds to text height when
-                * showing full playlist sublabel metadata
-                * (core association + runtime info)
-                * > One line of list text + three lines of
-                *   hint text + padding */
-               mui->thumbnail_height_max =
-                     mui->font_data.list.font_height +
-                     (3 * mui->font_data.hint.font_height) +
-                     (mui->dip_base_unit_size / 10);
-
-               /* Set thumbnail width based on max height
-                * Note: We're duplicating this calculation each time
-                * for consistency - some view modes will require
-                * something different, and we want each case to
-                * be self-contained */
-               mui->thumbnail_width_max =
-                     (unsigned)(((float)mui->thumbnail_height_max *
-                           MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
-
-               break;
-
             case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE:
-
-               /* Maximum height corresponds to twice the
-                * text height when showing full playlist sublabel
-                * metadata (core association + runtime info)
-                * > Two lines of list text + three lines of
-                *   hint text (no padding) */
-               mui->thumbnail_height_max =
-                     (mui->font_data.list.font_height +
-                      (3 * mui->font_data.hint.font_height)) * 2;
-
-               /* Set thumbnail width based on max height */
-               mui->thumbnail_width_max =
-                     (unsigned)(((float)mui->thumbnail_height_max *
-                           MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
-
+            case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
+               optimize_landscape_layout = false;
                break;
-
             case MUI_LIST_VIEW_PLAYLIST:
+            case MUI_LIST_VIEW_DEFAULT:
             default:
-               /* Not required, but might as well zero
-                * out thumbnail dimensions... */
-               mui->thumbnail_height_max = 0;
-               mui->thumbnail_width_max  = 0;
+               optimize_landscape_layout = true;
                break;
          }
-      }
+
+         break;
+
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED:
+      default:
+         optimize_landscape_layout = false;
+         break;
    }
+
+   /* Calculate landscape entry margin size, if required */
+   if (optimize_landscape_layout)
+   {
+      /* After testing various approaches, it seems that
+       * simply enforcing a 4:3 aspect ratio produces the
+       * best results */
+      const float base_aspect = 4.0f / 3.0f;
+      float landscape_margin  =
+            ((float)(mui->last_width - mui->nav_bar_layout_width) -
+                  (base_aspect * (float)mui->last_height)) / 2.0f;
+
+      /* Note: Want to round down here */
+      if (landscape_margin > 1.0f)
+         mui->landscape_entry_margin = (unsigned)landscape_margin;
+   }
+}
+
+/* Determines appropriate thumbnail dimensions based
+ * on current list view type */
+static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
+{
+   switch (mui->list_view_type)
+   {
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL:
+
+         /* Maximum height is just standard icon size */
+         mui->thumbnail_height_max = mui->icon_size;
+
+         /* Set thumbnail width based on max height */
+         mui->thumbnail_width_max =
+               (unsigned)(((float)mui->thumbnail_height_max *
+                     MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+
+         break;
+
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM:
+
+         /* Maximum height corresponds to text height when
+          * showing full playlist sublabel metadata
+          * (core association + runtime info)
+          * > One line of list text + three lines of
+          *   hint text + padding */
+         mui->thumbnail_height_max =
+               mui->font_data.list.font_height +
+               (3 * mui->font_data.hint.font_height) +
+               (mui->dip_base_unit_size / 10);
+
+         /* Set thumbnail width based on max height
+          * Note: We're duplicating this calculation each time
+          * for consistency - some view modes will require
+          * something different, and we want each case to
+          * be self-contained */
+         mui->thumbnail_width_max =
+               (unsigned)(((float)mui->thumbnail_height_max *
+                     MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+
+         break;
+
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE:
+
+         /* Maximum height corresponds to twice the
+          * text height when showing full playlist sublabel
+          * metadata (core association + runtime info)
+          * > Two lines of list text + three lines of
+          *   hint text (no padding) */
+         mui->thumbnail_height_max =
+               (mui->font_data.list.font_height +
+                (3 * mui->font_data.hint.font_height)) * 2;
+
+         /* Set thumbnail width based on max height */
+         mui->thumbnail_width_max =
+               (unsigned)(((float)mui->thumbnail_height_max *
+                     MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+
+         break;
+
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
+         {
+            /* This view shows two thumbnail icons
+             * side-by-side across the full width of
+             * the list area */
+
+            /* > Get total usable width
+             *   (list view width minus padding between
+             *   and either side of thumbnails) */
+            int usable_width =
+                  (int)mui->last_width - (int)(mui->margin * 3) -
+                  (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
+
+            /* > Sanity check */
+            if (usable_width < 2)
+            {
+               mui->thumbnail_width_max  = 0;
+               mui->thumbnail_height_max = 0;
+            }
+
+            /* > Get maximum thumbnail width */
+            mui->thumbnail_width_max = (usable_width >> 1);
+
+            /* > Set thumbnail height based on max width */
+            mui->thumbnail_height_max =
+                  (unsigned)(((float)mui->thumbnail_width_max *
+                        (1.0f / MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO)) + 0.5f);                  
+         }
+         break;
+
+      case MUI_LIST_VIEW_PLAYLIST:
+      case MUI_LIST_VIEW_DEFAULT:
+      default:
+         /* Not required, but might as well zero
+          * out thumbnail dimensions... */
+         mui->thumbnail_height_max = 0;
+         mui->thumbnail_width_max  = 0;
+         break;
+   }
+}
+
+/* Determines whether dual thumbnails should be enabled
+ * based on current list view mode, thumbnail dimensions
+ * and screen size */
+static void materialui_set_secondary_thumbnail_enable(
+      materialui_handle_t *mui, settings_t *settings)
+{
+   switch (mui->list_view_type)
+   {
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL:
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM:
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE:
+         /* List view has optional secondary thumbnails */
+         {
+            int usable_width     = 0;
+            int thumbnail_margin = 0;
+
+            /* Disable by default */
+            mui->secondary_thumbnail_enabled = false;
+
+            /* Check whether user has manually disabled
+             * secondary thumbnails */
+            if (!settings->bools.menu_materialui_dual_thumbnail_list_view_enable)
+               return;
+
+            /* Check whether 'Secondary Thumbnail' type is
+             * set to OFF */
+            if (!menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+               return;
+
+            /* Secondary thumbnails are supported/enabled
+             * Check whether screen has sufficient
+             * width to display them */
+
+            /* > Get total usable width */
+            usable_width =
+                  (int)mui->last_width - (int)(mui->margin * 2) -
+                  (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
+
+            /* > Account for additional padding (margins) when
+             *   using portrait orientations */
+            if (mui->is_portrait)
+               thumbnail_margin = (int)mui->scrollbar_width;
+            /* > Account for additional padding (margins) when
+             *   using landscape orientations */
+            else
+               if (mui->landscape_entry_margin < mui->margin)
+                  thumbnail_margin = (int)(mui->margin - mui->landscape_entry_margin);
+
+            /* > Get remaining (text) width after drawing
+             *   primary + secondary thumbnails */
+            usable_width -= 2 * ((int)mui->thumbnail_width_max + thumbnail_margin);
+
+            /* > A secondary thumbnail may only be drawn
+             *   if the remaining (text) width is greater
+             *   than twice the thumbnail width */
+            mui->secondary_thumbnail_enabled =
+                  usable_width > (int)(mui->thumbnail_width_max * 2);
+         }
+         break;
+      case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
+         /* List view requires secondary thumbnails */
+         mui->secondary_thumbnail_enabled = true;
+         break;
+      case MUI_LIST_VIEW_PLAYLIST:
+      case MUI_LIST_VIEW_DEFAULT:
+      default:
+         /* List view has no thumbnails */
+         mui->secondary_thumbnail_enabled = false;
+         break;
+   }
+}
+
+/* Determines current list view mode based upon
+ * display orientation and user config, then
+ * applies view-dependent landscape display optimisations
+ * and calculates appropriate thumbnail dimensions/settings.
+ * Must be called when updating menu layout and
+ * populating menu lists. */
+static void materialui_update_list_view(materialui_handle_t *mui)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   materialui_set_list_view_type(mui, settings);
+   materialui_set_landscape_optimisations_enable(mui, settings);
+   materialui_set_thumbnail_dimensions(mui);
+   materialui_set_secondary_thumbnail_enable(mui, settings);
+
+   mui->need_compute = true;
 }
 
 /* Compute the positions of the widgets */
@@ -4181,28 +4699,6 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
       mui->nav_bar.location            = MUI_NAV_BAR_LOCATION_BOTTOM;
       mui->nav_bar_layout_width        = 0;
       mui->nav_bar_layout_height       = mui->nav_bar.width;
-   }
-
-   /* In landscape orientations, menu lists are too wide
-    * (to the extent that they are rather uncomfortable
-    * to look at...)
-    * > When using a landscape layout, we therefore use
-    *   additional padding at the left/right sides of
-    *   the screen */
-   mui->landscape_entry_margin = 0;
-   if (!mui->is_portrait && mui->last_optimize_landscape_layout)
-   {
-      /* After testing various approaches, it seems that
-       * simply enforcing a 4:3 aspect ratio produces the
-       * best results */
-      const float base_aspect = 4.0f / 3.0f;
-      float landscape_margin  =
-            ((float)(mui->last_width - mui->nav_bar_layout_width) -
-                  (base_aspect * (float)mui->last_height)) / 2.0f;
-
-      /* Note: Want to round down here */
-      if (landscape_margin > 1.0f)
-         mui->landscape_entry_margin = (unsigned)landscape_margin;
    }
 
    /* We assume the average glyph aspect ratio is close to 3:4 */
@@ -4447,7 +4943,8 @@ static void materialui_reset_thumbnails(void)
       if (!node)
          continue;
 
-      menu_thumbnail_reset(&node->thumbnail);
+      menu_thumbnail_reset(&node->thumbnails.primary);
+      menu_thumbnail_reset(&node->thumbnails.secondary);
    }
 }
 
@@ -5451,8 +5948,9 @@ static int materialui_pointer_up_nav_bar(
 
 static void materialui_switch_list_view(materialui_handle_t *mui)
 {
-   settings_t *settings = config_get_ptr();
-   size_t selection     = menu_navigation_get_selection();
+   settings_t *settings                  = config_get_ptr();
+   size_t selection                      = menu_navigation_get_selection();
+   bool secondary_thumbnail_enabled_prev = mui->secondary_thumbnail_enabled;
 
    if (!settings)
       return;
@@ -5495,12 +5993,14 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
    materialui_update_list_view(mui);
 
    /* If the new list view does not have thumbnails
-    * enabled, reset all existing thumbnails
+    * enabled, or last view had dual thumbnails and
+    * current does not, reset all existing thumbnails
     * (this would happen automatically at the next
     * menu level change - or destroy context, etc.
     * - but it's cleanest to do it here) */
    if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST) ||
+       (secondary_thumbnail_enabled_prev && !mui->secondary_thumbnail_enabled))
       materialui_reset_thumbnails();
 
    /* We want to 'fade in' when swtiching views, so
@@ -5701,7 +6201,8 @@ static void materialui_list_insert(
    {
       /* If node already exists, must free any
        * existing thumbnail */
-      menu_thumbnail_reset(&node->thumbnail);
+      menu_thumbnail_reset(&node->thumbnails.primary);
+      menu_thumbnail_reset(&node->thumbnails.secondary);
       thumbnail_reset = true;
    }
 
@@ -5718,7 +6219,10 @@ static void materialui_list_insert(
    node->y                  = 0.0f;
 
    if (!thumbnail_reset)
-      menu_thumbnail_reset(&node->thumbnail);
+   {
+      menu_thumbnail_reset(&node->thumbnails.primary);
+      menu_thumbnail_reset(&node->thumbnails.secondary);
+   }
 
    if (settings->bools.menu_materialui_icons_enable)
    {
@@ -6124,7 +6628,7 @@ static void materialui_list_clear(file_list_t *list)
    size_t size = list ? list->size : 0;
 
    /* Must cancel pending thumbnail requests before
-    * freeing node->thumbnail objects */
+    * freeing node->thumbnails objects */
    menu_thumbnail_cancel_pending_requests();
 
    for (i = 0; i < size; i++)
@@ -6135,7 +6639,8 @@ static void materialui_list_clear(file_list_t *list)
       if (!node)
          continue;
 
-      menu_thumbnail_reset(&node->thumbnail);
+      menu_thumbnail_reset(&node->thumbnails.primary);
+      menu_thumbnail_reset(&node->thumbnails.secondary);
       file_list_free_userdata(list, i);
    }
 }
@@ -6189,6 +6694,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
    {
       file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
+      float stream_delay      = menu_thumbnail_get_stream_delay();
 
       if (!list)
          return;
@@ -6198,15 +6704,16 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
       if (!node)
          return;
 
-      /* Reset existing thumbnail */
-      menu_thumbnail_reset(&node->thumbnail);
+      /* Reset existing thumbnails */
+      menu_thumbnail_reset(&node->thumbnails.primary);
+      menu_thumbnail_reset(&node->thumbnails.secondary);
 
-      /* Request new thumbnail */
-      if (menu_thumbnail_set_content_playlist(
-            mui->thumbnail_path_data, mui->playlist, (size_t)i))
-         menu_thumbnail_request(
-               mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
-               mui->playlist, (size_t)i, &node->thumbnail);
+      /* No need to actually request thumbnails here
+       * > Just set delay timer to the current maximum
+       *   value, and thumbnails will be processed via
+       *   regular means on the next frame */
+      node->thumbnails.primary.delay_timer   = stream_delay;
+      node->thumbnails.secondary.delay_timer = stream_delay;
    }
 }
 
