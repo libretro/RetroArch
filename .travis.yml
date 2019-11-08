@@ -57,7 +57,7 @@ matrix:
       script:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       script:
         - brew update-reset
         - brew install --force-bottle qt5
