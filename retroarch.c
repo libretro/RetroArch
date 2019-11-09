@@ -3524,10 +3524,12 @@ static bool run_translation_service(void)
       /* mode */
       {
          char temp_string[PATH_MAX_LENGTH];
-
+         char *mode_chr                    = NULL;
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
-         char* mode_chr;
+
+         temp_string[0] = '\0';
+
          if (settings->uints.ai_service_mode == 0)
          {
             if (use_overlay)
