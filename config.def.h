@@ -132,9 +132,9 @@
 /* Adjust menu padding etc. to better fit the
  * screen when using landscape layouts */
 #if defined(RARCH_MOBILE)
-#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT false
+#define DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED
 #else
-#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT true
+#define DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS
 #endif
 
 /* Reposition navigation bar to make better use
@@ -145,6 +145,16 @@
  * (when thumbnails are enabled) */
 #define DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL
 #define DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM
+
+/* Enable second thumbnail when using 'list view'
+ * thumbnail views
+ * Note: Second thumbnail will only be drawn if
+ * display has sufficient horizontal real estate */
+#if defined(RARCH_MOBILE)
+#define DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE false
+#else
+#define DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE true
+#endif
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 

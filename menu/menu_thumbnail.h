@@ -109,19 +109,48 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail);
  * on/off screen
  * - Must be called each frame for every on-screen entry
  * - Must be called once for each entry as it moves off-screen
+ *   (or can be called each frame - overheads are small)
  * NOTE 1: Must be called *after* menu_thumbnail_set_system()
  * NOTE 2: This function calls menu_thumbnail_set_content*()
- *         > It is therefore intended for use in situations
- *           where each entry has a *single* thumbnail
- *         > Since I can't think of any view mode that needs
- *           two thumbnails, this should be fine (i.e. we might
- *           want one additional image to go with the currently
- *           selected item, but this is not a streaming thing -
- *           the auxiliary image can just be loaded via a normal
- *           menu_thumbnail_request() */
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has a *single* thumbnail.
+ *         If each entry has two thumbnails, use
+ *         menu_thumbnail_process_streams() for improved
+ *         performance */
 void menu_thumbnail_process_stream(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
       playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen);
+
+/* Handles streaming of the specified thumbnails as they move
+ * on/off screen
+ * - Must be called each frame for every on-screen entry
+ * - Must be called once for each entry as it moves off-screen
+ *   (or can be called each frame - overheads are small)
+ * NOTE 1: Must be called *after* menu_thumbnail_set_system()
+ * NOTE 2: This function calls menu_thumbnail_set_content*()
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has *two* thumbnails.
+ *         If each entry only has a single thumbnail, use
+ *         menu_thumbnail_process_stream() for improved
+ *         performance */
+void menu_thumbnail_process_streams(
+      menu_thumbnail_path_data_t *path_data,
+      playlist_t *playlist, size_t idx,
+      menu_thumbnail_t *right_thumbnail, menu_thumbnail_t *left_thumbnail,
+      bool on_screen);
+
+/* Thumbnail rendering */
+
+/* Draws specified thumbnail centred (with aspect correct
+ * scaling) within a rectangle of (width x height)
+ * NOTE: Setting scale_factor > 1.0f will increase the
+ *       size of the thumbnail beyond the limits of the
+ *       (width x height) rectangle (centring + aspect
+ *       correct scaling is preserved). Use with caution */
+void menu_thumbnail_draw(
+      video_frame_info_t *video_info, menu_thumbnail_t *thumbnail,
+      float x, float y, unsigned width, unsigned height,
+      float alpha, float scale_factor);
 
 RETRO_END_DECLS
 

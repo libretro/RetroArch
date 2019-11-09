@@ -1669,10 +1669,12 @@ MSG_HASH(MENU_ENUM_LABEL_GOTO_VIDEO,
       "goto_video")
 MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
       "materialui_icons_enable")
-MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
-      "materialui_optimize_landscape_layout")
+MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+      "materialui_landscape_layout_optimization")
 MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
       "materialui_auto_rotate_nav_bar")
+MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+      "materialui_dual_thumbnail_list_view_enable")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "rename_entry")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,

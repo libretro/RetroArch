@@ -3986,6 +3986,11 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM), len);
          break;
+      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON), len);
+         break;
       default:
          break;
    }
@@ -4019,6 +4024,35 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
+         break;
+      default:
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_materialui_landscape_layout_optimization(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED), len);
+         break;
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS), len);
+         break;
+      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS), len);
          break;
       default:
          break;
@@ -13051,20 +13085,22 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_TRANSITION_ANIM_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->bools.menu_materialui_optimize_landscape_layout,
-                  MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
-                  DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
+                  &settings->uints.menu_materialui_landscape_layout_optimization,
+                  MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+                  DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_materialui_landscape_layout_optimization;
+            menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -13114,6 +13150,21 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape;
             menu_settings_list_current_add_range(list, list_info, 0, MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_dual_thumbnail_list_view_enable,
+                  MENU_ENUM_LABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+                  DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             /* TODO: These should be removed entirely, but just
              * comment out for now in case users complain...
@@ -13270,6 +13321,11 @@ static bool setting_append_list(
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
             }
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
+               left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
+            }
             else
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
@@ -13293,26 +13349,22 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
-            /* Material UI does not use left thumbnails (yet...) */
-            if (!string_is_equal(settings->arrays.menu_driver, "glui"))
-            {
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.menu_left_thumbnails,
-                     MENU_ENUM_LABEL_LEFT_THUMBNAILS,
-                     left_thumbnails_label_value,
-                     menu_left_thumbnails_default,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_menu_left_thumbnails;
-               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
-            }
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_left_thumbnails,
+                  MENU_ENUM_LABEL_LEFT_THUMBNAILS,
+                  left_thumbnails_label_value,
+                  menu_left_thumbnails_default,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_left_thumbnails;
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))

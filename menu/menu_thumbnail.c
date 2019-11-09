@@ -27,11 +27,13 @@
 
 #include <features/features_cpu.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../retroarch.h"
 #include "../configuration.h"
 #include "../tasks/tasks_internal.h"
 #include "menu_animation.h"
+#include "menu_driver.h"
 
 #include "menu_thumbnail.h"
 
@@ -138,12 +140,13 @@ static void menu_thumbnail_handle_upload(
    if (!img)
       goto end;
 
-   if (img->width < 1 || img->height < 1)
+   if ((img->width < 1) || (img->height < 1))
       goto end;
 
    /* Upload texture to GPU */
-   video_driver_texture_load(
-         img, TEXTURE_FILTER_MIPMAP_LINEAR, &thumbnail_tag->thumbnail->texture);
+   if (!video_driver_texture_load(
+            img, TEXTURE_FILTER_MIPMAP_LINEAR, &thumbnail_tag->thumbnail->texture))
+      goto end;
 
    /* Cache dimensions */
    thumbnail_tag->thumbnail->width  = img->width;
@@ -250,12 +253,42 @@ void menu_thumbnail_request(
       /* Handle on demand thumbnail downloads */
       else if (settings->bools.network_on_demand_thumbnails)
       {
-         const char *system = NULL;
+         const char *system                         = NULL;
+         const char *img_name                       = NULL;
+         static char last_img_name[PATH_MAX_LENGTH] = {0};
 
-         if (menu_thumbnail_get_system(path_data, &system))
-            task_push_pl_entry_thumbnail_download(
-                  system, playlist_get_cached(), (unsigned)idx,
-                  false, true);
+         if (!playlist)
+            return;
+
+         /* Get current image name */
+         if (!menu_thumbnail_get_img_name(path_data, &img_name))
+            return;
+
+         /* Only trigger a thumbnail download if image
+          * name has changed since the last call of
+          * menu_thumbnail_request()
+          * > Allows menu_thumbnail_request() to be used
+          *   for successive right/left thumbnail requests
+          *   with minimal duplication of effort
+          *   (i.e. task_push_pl_entry_thumbnail_download()
+          *   will automatically cancel if a download for the
+          *   existing playlist entry is pending, but the
+          *   checks required for this involve significant
+          *   overheads. We can avoid this entirely with
+          *   a simple string comparison) */
+         if (string_is_equal(img_name, last_img_name))
+            return;
+
+         strlcpy(last_img_name, img_name, sizeof(last_img_name));
+
+         /* Get system name */
+         if (!menu_thumbnail_get_system(path_data, &system))
+            return;
+
+         /* Trigger thumbnail download */
+         task_push_pl_entry_thumbnail_download(
+               system, playlist, (unsigned)idx,
+               false, true);
       }
 #endif
    }
@@ -294,16 +327,14 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
  * on/off screen
  * - Must be called each frame for every on-screen entry
  * - Must be called once for each entry as it moves off-screen
+ *   (or can be called each frame - overheads are small)
  * NOTE 1: Must be called *after* menu_thumbnail_set_system()
  * NOTE 2: This function calls menu_thumbnail_set_content*()
- *         > It is therefore intended for use in situations
- *           where each entry has a *single* thumbnail
- *         > Since I can't think of any view mode that needs
- *           two thumbnails, this should be fine (i.e. we might
- *           want one additional image to go with the currently
- *           selected item, but this is not a streaming thing -
- *           the auxiliary image can just be loaded via a normal
- *           menu_thumbnail_request() */
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has a *single* thumbnail.
+ *         If each entry has two thumbnails, use
+ *         menu_thumbnail_process_streams() for improved
+ *         performance */
 void menu_thumbnail_process_stream(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
       playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen)
@@ -351,5 +382,222 @@ void menu_thumbnail_process_stream(
        * In all other cases, reset thumbnail */
       if (thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
          menu_thumbnail_reset(thumbnail);
+   }
+}
+
+/* Handles streaming of the specified thumbnails as they move
+ * on/off screen
+ * - Must be called each frame for every on-screen entry
+ * - Must be called once for each entry as it moves off-screen
+ *   (or can be called each frame - overheads are small)
+ * NOTE 1: Must be called *after* menu_thumbnail_set_system()
+ * NOTE 2: This function calls menu_thumbnail_set_content*()
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has *two* thumbnails.
+ *         If each entry only has a single thumbnail, use
+ *         menu_thumbnail_process_stream() for improved
+ *         performance */
+void menu_thumbnail_process_streams(
+      menu_thumbnail_path_data_t *path_data,
+      playlist_t *playlist, size_t idx,
+      menu_thumbnail_t *right_thumbnail, menu_thumbnail_t *left_thumbnail,
+      bool on_screen)
+{
+   if (!right_thumbnail || !left_thumbnail)
+      return;
+
+   if (on_screen)
+   {
+      /* Entry is on-screen
+       * > Only process if current status is
+       *   MENU_THUMBNAIL_STATUS_UNKNOWN */
+      bool process_right = (right_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_left  = (left_thumbnail->status  == MENU_THUMBNAIL_STATUS_UNKNOWN);
+
+      if (process_right || process_left)
+      {
+         /* Check if stream delay timer has elapsed */
+         float delta_time   = menu_animation_get_delta_time();
+         bool request_right = false;
+         bool request_left  = false;
+
+         if (process_right)
+         {
+            right_thumbnail->delay_timer += delta_time;
+            request_right                 =
+                  (right_thumbnail->delay_timer > menu_thumbnail_stream_delay);
+         }
+
+         if (process_left)
+         {
+            left_thumbnail->delay_timer  += delta_time;
+            request_left                  =
+                  (left_thumbnail->delay_timer > menu_thumbnail_stream_delay);
+         }
+
+         /* Check if one or more thumbnails should be requested */
+         if (request_right || request_left)
+         {
+            /* Sanity check */
+            if (!path_data || !playlist)
+               return;
+
+            /* Update thumbnail content */
+            if (!menu_thumbnail_set_content_playlist(path_data, playlist, idx))
+            {
+               /* Content is invalid
+                * > Reset thumbnail and set missing status */
+               if (request_right)
+               {
+                  menu_thumbnail_reset(right_thumbnail);
+                  right_thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+               }
+
+               if (request_left)
+               {
+                  menu_thumbnail_reset(left_thumbnail);
+                  left_thumbnail->status  = MENU_THUMBNAIL_STATUS_MISSING;
+               }
+
+               return;
+            }
+
+            /* Request image load */
+            if (request_right)
+               menu_thumbnail_request(
+                     path_data, MENU_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail);
+
+            if (request_left)
+               menu_thumbnail_request(
+                     path_data, MENU_THUMBNAIL_LEFT, playlist, idx, left_thumbnail);
+         }
+      }
+   }
+   else
+   {
+      /* Entry is off-screen
+       * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
+       *   thumbnail is already in a blank state - do nothing
+       * In all other cases, reset thumbnail */
+      if (right_thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+         menu_thumbnail_reset(right_thumbnail);
+
+      if (left_thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+         menu_thumbnail_reset(left_thumbnail);
+   }
+}
+
+/* Thumbnail rendering */
+
+/* Draws specified thumbnail centred (with aspect correct
+ * scaling) within a rectangle of (width x height)
+ * NOTE: Setting scale_factor > 1.0f will increase the
+ *       size of the thumbnail beyond the limits of the
+ *       (width x height) rectangle (centring + aspect
+ *       correct scaling is preserved). Use with caution */
+void menu_thumbnail_draw(
+      video_frame_info_t *video_info, menu_thumbnail_t *thumbnail,
+      float x, float y, unsigned width, unsigned height,
+      float alpha, float scale_factor)
+{
+   /* Sanity check */
+   if (!video_info || !thumbnail ||
+       (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
+      return;
+
+   /* Only draw thumbnail if it is available... */
+   if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
+   {
+      menu_display_ctx_rotate_draw_t rotate_draw;
+      menu_display_ctx_draw_t draw;
+      struct video_coords coords;
+      math_matrix_4x4 mymat;
+      float draw_width;
+      float draw_height;
+      float display_aspect;
+      float thumbnail_aspect;
+      float thumbnail_alpha     = thumbnail->alpha * alpha;
+      float thumbnail_color[16] = {
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f
+      };
+
+      /* Set thumbnail opacity */
+      if (thumbnail_alpha <= 0.0f)
+         return;
+      else if (thumbnail_alpha < 1.0f)
+         menu_display_set_alpha(thumbnail_color, thumbnail_alpha);
+
+      /* Get thumbnail dimensions */
+      display_aspect   = (float)width            / (float)height;
+      thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+
+      if (thumbnail_aspect > display_aspect)
+      {
+         draw_width  = (float)width;
+         draw_height = (float)thumbnail->height * (draw_width / (float)thumbnail->width);
+      }
+      else
+      {
+         draw_height = (float)height;
+         draw_width  = (float)thumbnail->width * (draw_height / (float)thumbnail->height);
+      }
+
+      /* Account for scale factor
+       * > We have to do it like this rather than using the
+       *   draw.scale_factor parameter, because the latter
+       *   clips off any part of the expanded image that
+       *   extends beyond the bounding box... */
+      draw_width  *= scale_factor;
+      draw_height *= scale_factor;
+
+      menu_display_blend_begin(video_info);
+
+      /* Perform 'rotation' step
+       * > Note that rotation does not actually work...
+       * > It rotates the image all right, but distorts it
+       *   to fit the aspect of the bounding box while clipping
+       *   off any 'corners' that extend beyond the bounding box
+       * > Since the result is visual garbage, we disable
+       *   rotation entirely
+       * > But we still have to call menu_display_rotate_z(),
+       *   or nothing will be drawn...
+       * Note that we also disable scaling here (scale_enable),
+       * since we handle scaling internally... */
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = 0.0f;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = false;
+
+      menu_display_rotate_z(&rotate_draw, video_info);
+
+      /* Configure draw object */
+      coords.vertices      = 4;
+      coords.vertex        = NULL;
+      coords.tex_coord     = NULL;
+      coords.lut_tex_coord = NULL;
+      coords.color         = (const float*)thumbnail_color;
+
+      draw.width           = (unsigned)draw_width;
+      draw.height          = (unsigned)draw_height;
+      draw.scale_factor    = 1.0f;
+      draw.rotation        = 0.0f;
+      draw.coords          = &coords;
+      draw.matrix_data     = &mymat;
+      draw.texture         = thumbnail->texture;
+      draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+      draw.pipeline.id     = 0;
+
+      /* > Ensure thumbnail is centred */
+      draw.x               = x + ((float)width - draw_width) / 2.0f;
+      draw.y               = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+
+      /* Draw thumbnail */
+      menu_display_draw(&draw, video_info);
+      menu_display_blend_end(video_info);
    }
 }

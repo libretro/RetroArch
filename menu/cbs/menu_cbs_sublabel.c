@@ -198,8 +198,9 @@ default_sublabel_macro(action_bind_sublabel_netplay_settings,              MENU_
 default_sublabel_macro(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
 default_sublabel_macro(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
 default_sublabel_macro(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
-default_sublabel_macro(action_bind_sublabel_materialui_optimize_landscape_layout, MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT)
+default_sublabel_macro(action_bind_sublabel_materialui_landscape_layout_optimization, MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION)
 default_sublabel_macro(action_bind_sublabel_materialui_auto_rotate_nav_bar, MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR)
+default_sublabel_macro(action_bind_sublabel_materialui_dual_thumbnail_list_view_enable, MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE)
 default_sublabel_macro(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
 default_sublabel_macro(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 default_sublabel_macro(action_bind_sublabel_video_shader_delay,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY)
@@ -400,9 +401,11 @@ default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_
 default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_thumbnails_rgui,               MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI)
+default_sublabel_macro(action_bind_sublabel_thumbnails_materialui,         MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_rgui,          MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
+default_sublabel_macro(action_bind_sublabel_left_thumbnails_materialui,    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI)
 default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
@@ -1255,11 +1258,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
             break;
-         case MENU_ENUM_LABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_optimize_landscape_layout);
+         case MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_landscape_layout_optimization);
             break;
          case MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_auto_rotate_nav_bar);
+            break;
+         case MENU_ENUM_LABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_dual_thumbnail_list_view_enable);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_height);
@@ -1976,6 +1982,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
             }
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
+            }
             else
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
@@ -1990,6 +2000,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+            }
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
             }
             else
             {
@@ -2710,6 +2724,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
             }
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
+            }
             else
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
@@ -2725,6 +2743,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+            }
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            {
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
             }
             else
             {

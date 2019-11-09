@@ -6945,11 +6945,11 @@ MSG_HASH(
     "Affiche les icônes à gauche des entrées du menu."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Optimiser pour l'affichage en mode paysage"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Ajuste automatiquement la disposition du menu pour être mieux adapté à l'utilisation d'une orientation d'écran en mode paysage."
     )
 MSG_HASH(
