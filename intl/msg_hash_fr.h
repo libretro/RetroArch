@@ -1860,6 +1860,10 @@ MSG_HASH(
     "Liste (Moyenne)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+    "Double icône"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
     "Désactivées"
     )
@@ -3330,6 +3334,10 @@ MSG_HASH(
     "Miniature du haut"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+    "Miniature principale"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
     "Miniature de gauche"
     )
@@ -3339,6 +3347,10 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+    "Miniature secondaire"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
     "Miniature secondaire"
     )
 MSG_HASH(
@@ -6326,6 +6338,10 @@ MSG_HASH(
     "Type de miniatures à afficher en haut à droite des listes de lecture. Cette vignette peut être basculée en mode plein écran en appuyant sur RetroManette Y."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+    "Type de miniatures principal à associer à chaque entrée de liste de lecture. Habituellement utilisée comme icône pour le contenu."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
     "Type de miniatures à afficher à gauche."
     )
@@ -6336,6 +6352,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
     "Remplacer le panneau des métadonnées du contenu par une autre miniature."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+    "Type de miniatures auxiliaire à associer à chaque entrée de liste de lecture. L'utilisation dépend du mode d'affichage actuel des miniatures dans les listes de lecture."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -7029,12 +7049,24 @@ MSG_HASH(
     "Affiche les icônes à gauche des entrées du menu."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Optimiser pour l'affichage en mode paysage"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT,
+    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
     "Ajuste automatiquement la disposition du menu pour être mieux adapté à l'utilisation d'une orientation d'écran en mode paysage."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+    "Désactivé"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+    "Activé"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+    "Exclure l'affichage des miniatures"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -7043,6 +7075,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
     "Déplace automatiquement la barre de navigation vers le côté droit de l'écran lors de l'utilisation d'une orientation d'écran en mode paysage."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+    "Affiche la miniature secondaire lors de l'affichage par liste"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+    "Affiche une miniature secondaire lors de l'utilisation de listes de lecture de type 'Liste'. Notez que ce réglage n'est appliqué que si l'écran dispose d'une largeur suffisante pour afficher deux miniatures."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
