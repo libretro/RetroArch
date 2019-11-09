@@ -7082,7 +7082,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-    "Affiche une miniature secondaire lors de l'utilisation de listes de lecture de type 'Liste'. Notez que ce réglage n'est appliqué que si l'écran dispose d'une largeur suffisante pour afficher deux miniatures."
+    "Affiche une miniature secondaire lors de l'utilisation d'un mode d'affichage de type 'Liste' dans les listes de lecture. Notez que ce réglage n'est appliqué que si l'écran dispose d'une largeur suffisante pour afficher deux miniatures."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
