@@ -8534,9 +8534,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+#ifdef HAVE_LIBNX
          /* TODO/FIXME - Force this off for now for Switch 
           * until shared HW context can work there */
-#ifndef HAVE_LIBNX
+         return false;
+#else
          core_set_shared_context = true;
 #endif
          break;
