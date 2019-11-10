@@ -7357,11 +7357,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-    "Show Download Thumbnails"
+    "Afficher 'Télécharger les miniatures'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-    "Show/hide the 'Download Thumbnails' option."
+    "Afficher/masquer l'option 'Télécharger les miniatures'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
