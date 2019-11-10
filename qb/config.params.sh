@@ -121,6 +121,7 @@ HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_FLAC=auto             # Compile in flac support
 HAVE_DR_MP3=yes            # Compile in Dr. MP3 support
 HAVE_BUILTINFLAC=auto      # Bake in flac support
+HAVE_UPDATE_CORES=yes      # Disable downloading cores  with online updater
 HAVE_UPDATE_ASSETS=yes     # Disable downloading assets with online updater
 HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support
 HAVE_PARPORT=auto          # Parallel port joypad support
