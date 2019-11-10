@@ -8451,11 +8451,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_NETPLAY,
                      PARSE_ACTION, false) == 0)
                   count++;
+#ifdef HAVE_ONLINE_UPDATER
             if (settings->bools.menu_show_online_updater)
                if (menu_displaylist_parse_settings_enum(info->list,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
                      PARSE_ACTION, false) == 0)
                   count++;
+#endif
             if (menu_displaylist_parse_settings_enum(info->list,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false) == 0)
                count++;

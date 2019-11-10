@@ -5653,13 +5653,13 @@ static int materialui_list_push(void *data, void *userdata,
             entry.enum_idx      = MENU_ENUM_LABEL_UPDATE_LAKKA;
             menu_displaylist_setting(&entry);
 #else
+#ifdef HAVE_ONLINE_UPDATER
+            if (settings->bools.menu_show_online_updater)
             {
-               if (settings->bools.menu_show_online_updater)
-               {
-                  entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-                  menu_displaylist_setting(&entry);
-               }
+               entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
+               menu_displaylist_setting(&entry);
             }
+#endif
 #endif
 
             if (settings->bools.menu_content_show_netplay)

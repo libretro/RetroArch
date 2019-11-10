@@ -903,11 +903,13 @@ static int ozone_list_push(void *data, void *userdata,
             }
 #endif
 #if defined(HAVE_NETWORKING)
+#if defined(HAVE_ONLINE_UPDATER)
             if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
                menu_displaylist_setting(&entry);
             }
+#endif
 #endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
