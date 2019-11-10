@@ -6966,11 +6966,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Show Legacy Thumbnails Updater"
+    "Afficher la mise à jour des miniatures héritée"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Show/hide the ability to download legacy thumbnail packages."
+    "Afficher/masquer l'option obsolète pour télécharger des packs de miniatures."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
