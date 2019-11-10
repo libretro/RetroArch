@@ -69,7 +69,7 @@ int rc_url_award_cheevo(char* buffer, size_t size, const char* user_name, const 
   return (size_t)written >= size ? -1 : 0;
 }
 
-int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, unsigned value, unsigned char hash[16]) {
+int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, int value, unsigned char hash[16]) {
   char urle_user_name[64];
   char urle_login_token[64];
   int written;
@@ -85,7 +85,7 @@ int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%u&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+    "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%d&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
     urle_user_name,
     urle_login_token,
     lboard_id,

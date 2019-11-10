@@ -29,12 +29,18 @@ int rc_parse_format(const char* format_str) {
       if (!strcmp(format_str, "CORE")) {
         return RC_FORMAT_SCORE;
       }
+      if (!strcmp(format_str, "ECS_AS_MINS")) {
+        return RC_FORMAT_SECONDS_AS_MINUTES;
+      }
 
       break;
     
     case 'M':
       if (!strcmp(format_str, "ILLISECS")) {
         return RC_FORMAT_CENTISECS;
+      }
+      if (!strcmp(format_str, "INUTES")) {
+        return RC_FORMAT_MINUTES;
       }
 
       break;
@@ -55,7 +61,7 @@ int rc_parse_format(const char* format_str) {
 
     case 'O':
       if (!strcmp(format_str, "THER")) {
-        return RC_FORMAT_OTHER;
+        return RC_FORMAT_SCORE;
       }
 
       break;
@@ -64,45 +70,82 @@ int rc_parse_format(const char* format_str) {
   return RC_FORMAT_VALUE;
 }
 
-int rc_format_value(char* buffer, int size, unsigned value, int format) {
-  unsigned a, b, c;
+static int rc_format_value_minutes(char* buffer, int size, unsigned minutes) {
+    unsigned hours;
+
+    hours = minutes / 60;
+    minutes -= hours * 60;
+    return snprintf(buffer, size, "%uh%02u", hours, minutes);
+}
+
+static int rc_format_value_seconds(char* buffer, int size, unsigned seconds) {
+  unsigned hours, minutes;
+
+  /* apply modulus math to split the seconds into hours/minutes/seconds */
+  minutes = seconds / 60;
+  seconds -= minutes * 60;
+  if (minutes < 60) {
+    return snprintf(buffer, size, "%u:%02u", minutes, seconds);
+  }
+
+  hours = minutes / 60;
+  minutes -= hours * 60;
+  return snprintf(buffer, size, "%uh%02u:%02u", hours, minutes, seconds);
+}
+
+static int rc_format_value_centiseconds(char* buffer, int size, unsigned centiseconds) {
+  unsigned seconds;
+  int chars, chars2;
+
+  /* modulus off the centiseconds */
+  seconds = centiseconds / 100;
+  centiseconds -= seconds * 100;
+
+  chars = rc_format_value_seconds(buffer, size, seconds);
+  if (chars > 0) {
+    chars2 = snprintf(buffer + chars, size - chars, ".%02u", centiseconds);
+    if (chars2 > 0) {
+      chars += chars2;
+    } else {
+      chars = chars2;
+    }
+  }
+
+  return chars;
+}
+
+int rc_format_value(char* buffer, int size, int value, int format) {
   int chars;
 
   switch (format) {
     case RC_FORMAT_FRAMES:
-      a = value * 10 / 6; /* centisecs */
-      b = a / 100; /* seconds */
-      a -= b * 100;
-      c = b / 60; /* minutes */
-      b -= c * 60;
-      chars = snprintf(buffer, size, "%02u:%02u.%02u", c, b, a);
+      /* 60 frames per second = 100 centiseconds / 60 frames; multiply frames by 100 / 60 */
+      chars = rc_format_value_centiseconds(buffer, size, value * 10 / 6);
       break;
 
     case RC_FORMAT_SECONDS:
-      a = value / 60; /* minutes */
-      value -= a * 60;
-      chars = snprintf(buffer, size, "%02u:%02u", a, value);
+      chars = rc_format_value_seconds(buffer, size, value);
       break;
 
     case RC_FORMAT_CENTISECS:
-      a = value / 100; /* seconds */
-      value -= a * 100;
-      b = a / 60; /* minutes */
-      a -= b * 60;
-      chars = snprintf(buffer, size, "%02u:%02u.%02u", b, a, value);
+      chars = rc_format_value_centiseconds(buffer, size, value);
+      break;
+
+    case RC_FORMAT_SECONDS_AS_MINUTES:
+      chars = rc_format_value_minutes(buffer, size, value / 60);
+      break;
+
+    case RC_FORMAT_MINUTES:
+      chars = rc_format_value_minutes(buffer, size, value);
       break;
 
     case RC_FORMAT_SCORE:
-      chars = snprintf(buffer, size, "%06u Points", value);
+      chars = snprintf(buffer, size, "%06d", value);
       break;
 
-    case RC_FORMAT_VALUE:
-      chars = snprintf(buffer, size, "%01u", value);
-      break;
-
-    case RC_FORMAT_OTHER:
     default:
-      chars = snprintf(buffer, size, "%06u", value);
+    case RC_FORMAT_VALUE:
+      chars = snprintf(buffer, size, "%d", value);
       break;
   }
 

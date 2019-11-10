@@ -44,6 +44,7 @@ void rc_init_parse_state(rc_parse_state_t* parse, void* buffer, lua_State* L, in
   parse->scratch.memref_size = sizeof(parse->scratch.memref_buffer) / sizeof(parse->scratch.memref_buffer[0]);
   parse->scratch.memref_count = 0;
   parse->first_memref = 0;
+  parse->measured_target = 0;
 }
 
 void rc_destroy_parse_state(rc_parse_state_t* parse)

@@ -110,7 +110,7 @@ typedef struct
    rc_lboard_t* lboard;
    const rcheevos_ralboard_t* info;
    bool active;
-   unsigned last_value;
+   int last_value;
    int format;
 } rcheevos_lboard_t;
 
@@ -355,6 +355,13 @@ static const char* rcheevos_rc_error(int ret)
       case RC_MISSING_SUBMIT: return "Missing submit condition";
       case RC_MISSING_VALUE: return "Missing value expression";
       case RC_INVALID_LBOARD_FIELD: return "Invalid field in leaderboard";
+      case RC_MISSING_DISPLAY_STRING: return "Missing display string";
+      case RC_OUT_OF_MEMORY: return "Out of memory";
+      case RC_INVALID_VALUE_FLAG: return "Invalid flag in value expression";
+      case RC_MISSING_VALUE_MEASURED: return "Missing value (measured)";
+      case RC_MULTIPLE_MEASURED: return "Multiple measured targets";
+      case RC_INVALID_MEASURED_TARGET: return "Invalid measured target";
+
       default: return "Unknown error";
    }
 }
@@ -803,7 +810,6 @@ static void rcheevos_test_leaderboards(void)
 
             CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard started: %s\n", lboard->info->title);
             lboard->active     = 1;
-            lboard->last_value = 0;
 
             snprintf(buffer, sizeof(buffer),
                   "Leaderboard Active: %s", lboard->info->title);
@@ -824,19 +830,29 @@ void rcheevos_reset_game(void)
    cheevo = rcheevos_locals.core;
    for (i = 0; i < rcheevos_locals.patchdata.core_count; i++, cheevo++)
    {
+      rc_reset_trigger(cheevo->trigger);
       cheevo->last = 1;
    }
 
    cheevo = rcheevos_locals.unofficial;
    for (i = 0; i < rcheevos_locals.patchdata.unofficial_count; i++, cheevo++)
    {
+      rc_reset_trigger(cheevo->trigger);
       cheevo->last = 1;
    }
 
    lboard = rcheevos_locals.lboards;
    for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
    {
-      lboard->active = 0;
+      rc_reset_lboard(lboard->lboard);
+
+      if (lboard->active)
+      {
+         lboard->active = 0;
+
+         /* this ensures the leaderboard won't restart until the start trigger is false for at least one frame */
+         lboard->lboard->submitted = 1;
+      }
    }
 }
 

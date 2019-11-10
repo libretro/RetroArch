@@ -9,7 +9,7 @@ extern "C" {
 
 int rc_url_award_cheevo(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned cheevo_id, int hardcore);
 
-int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, unsigned value, unsigned char hash[16]);
+int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, int value, unsigned char hash[16]);
 
 int rc_url_get_gameid(char* buffer, size_t size, unsigned char hash[16]);
 
