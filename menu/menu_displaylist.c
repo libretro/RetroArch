@@ -7861,6 +7861,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #elif defined(HAVE_NETWORKING)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #else
+#ifdef HAVE_UPDATE_CORES
             if (settings->bools.menu_show_core_updater)
             {
                if (menu_entries_append_enum(info->list,
@@ -7870,6 +7871,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
+#endif
 #endif
             if (settings->bools.menu_show_legacy_thumbnail_updater)
             {
@@ -7896,7 +7898,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
 
 #ifdef HAVE_COMPRESSION
-#ifdef HAVE_UPDATE_CORES
             if (settings->bools.menu_show_core_updater)
             {
                if (menu_entries_append_enum(info->list,
@@ -7906,7 +7907,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
-#endif
 
 #ifdef HAVE_UPDATE_ASSETS
             if (menu_entries_append_enum(info->list,
