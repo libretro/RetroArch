@@ -1660,6 +1660,10 @@ MSG_HASH(
     "Charger l'élément récent"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+    "Sélectionner du contenu depuis la liste de lecture d'historique récent."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Charger du contenu"
     )
@@ -1753,11 +1757,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
-    "Material UI Sombre"
+    "Material UI sombre"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
-    "Ozone Sombre"
+    "Ozone sombre"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
@@ -1765,11 +1769,43 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-    "Gruvbox Sombre"
+    "Gruvbox sombre"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-    "Solarisé Sombre"
+    "Solarisé sombre"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
+    "Cutie blue"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
+    "Cutie cyan"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
+    "Cutie green"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
+    "Cutie orange"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
+    "Cutie pink"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
+    "Cutie purple"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
+    "Cutie red"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY,
+    "Virtual Boy"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -1794,6 +1830,54 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
     "Désactivée"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+    "Miniatures en mode portrait"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+    "Spécifie le mode d'affichage des miniatures dans les listes de lecture lors de l'utilisation d'un écran orienté en mode portrait."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+    "Miniatures en mode paysage"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+    "Spécifie le mode d'affichage des miniatures dans les listes de lecture lors de l'utilisation d'un écran orienté en mode paysage."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+    "Désactivées"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+    "Liste (Petite)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
+    "Liste (Moyenne)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+    "Double icône"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+    "Désactivées"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
+    "Liste (Petite)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
+    "Liste (Moyenne)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
+    "Liste (Grande)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -3250,6 +3334,10 @@ MSG_HASH(
     "Miniature du haut"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+    "Miniature principale"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
     "Miniature de gauche"
     )
@@ -3259,6 +3347,10 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+    "Miniature secondaire"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
     "Miniature secondaire"
     )
 MSG_HASH(
@@ -4228,6 +4320,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
     "Bleu du matin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Rayon de soleil"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
@@ -6242,6 +6338,10 @@ MSG_HASH(
     "Type de miniatures à afficher en haut à droite des listes de lecture. Cette vignette peut être basculée en mode plein écran en appuyant sur RetroManette Y."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+    "Type de miniatures principal à associer à chaque entrée de liste de lecture. Habituellement utilisée comme icône pour le contenu."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
     "Type de miniatures à afficher à gauche."
     )
@@ -6252,6 +6352,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
     "Remplacer le panneau des métadonnées du contenu par une autre miniature."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+    "Type de miniatures auxiliaire à associer à chaque entrée de liste de lecture. L'utilisation dépend du mode d'affichage actuel des miniatures dans les listes de lecture."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -6862,11 +6966,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Show Legacy Thumbnails Updater"
+    "Afficher la mise à jour des miniatures héritée"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Show/hide the ability to download legacy thumbnail packages."
+    "Afficher/masquer l'option obsolète pour télécharger des packs de miniatures."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
@@ -6953,12 +7057,32 @@ MSG_HASH(
     "Ajuste automatiquement la disposition du menu pour être mieux adapté à l'utilisation d'une orientation d'écran en mode paysage."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+    "Désactivé"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+    "Activé"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+    "Exclure l'affichage des miniatures"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
     "Rotation automatique de la barre de navigation"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
     "Déplace automatiquement la barre de navigation vers le côté droit de l'écran lors de l'utilisation d'une orientation d'écran en mode paysage."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+    "Affiche la miniature secondaire lors de l'affichage par liste"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+    "Affiche une miniature secondaire lors de l'utilisation d'un mode d'affichage de type 'Liste' dans les listes de lecture. Notez que ce réglage n'est appliqué que si l'écran dispose d'une largeur suffisante pour afficher deux miniatures."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -7233,11 +7357,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-    "Show Download Thumbnails"
+    "Afficher 'Télécharger les miniatures'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-    "Show/hide the 'Download Thumbnails' option."
+    "Afficher/masquer l'option 'Télécharger les miniatures'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
