@@ -1,6 +1,7 @@
 # Future
 - CHEEVOS: display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
+- LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
