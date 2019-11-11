@@ -1,5 +1,5 @@
 # Future
-- CHEEVOS: display Unofficial and Unsupported achievement states
+- CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
