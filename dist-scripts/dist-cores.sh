@@ -32,8 +32,8 @@ EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
 
-make -C ../bootstrap/${platform}/kernel_functions_prx/ clean || exit 1
-make -C ../bootstrap/${platform}/kernel_functions_prx/ || exit 1
+make -C ../bootstrap/${platform}/kernel_functions_prx/ clean || linking_error="$linking_error | $name"
+make -C ../bootstrap/${platform}/kernel_functions_prx/ || linking_error="$linking_error | $name"
 cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 
 # Vita
@@ -64,7 +64,7 @@ EXT=bc
 
 if [ -z "$EMSCRIPTEN" ] ; then
    echo "run this script with emmake. Ex: emmake $0"
-   exit 1
+   linking_error="$linking_error | $name"
 fi
 
 # Wii
@@ -122,23 +122,23 @@ fi
 
 # Cleanup Salamander core if it exists
 if [ $SALAMANDER = "yes" ]; then
-make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+make -C ../ -f Makefile.${platform}.salamander clean || linking_error="$linking_error | $name"
 fi
 
 # Cleanup existing core if it exists
 if [ $PLATFORM = "ode-ps3" ]; then
-   make -C ../ -f Makefile.${platform}.cobra clean || exit 1
+   make -C ../ -f Makefile.${platform}.cobra clean || linking_error="$linking_error | $name"
 elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
-   make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+   make -C ../ -f Makefile.griffin platform=${platform} clean || linking_error="$linking_error | $name"
 elif [ $PLATFORM = "unix" ]; then
-   LINK=g++ make -C ../ -f Makefile clean || exit 1
+   LINK=g++ make -C ../ -f Makefile clean || linking_error="$linking_error | $name"
 else
-   make -C ../ -f Makefile.${platform} clean || exit 1
+   make -C ../ -f Makefile.${platform} clean || linking_error="$linking_error | $name"
 fi
 
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
-   make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
+   make -C ../ -f Makefile.${platform}.salamander $OPTS || linking_error="$linking_error | $name"
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
@@ -148,7 +148,7 @@ if [ $SALAMANDER = "yes" ]; then
      vita-mksfoex -s TITLE_ID=RETROVITA "RetroArch" -d ATTRIBUTE2=12 ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/param.sfo
      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/icon0.png
      cp -R ../pkg/${platform}/assets/livearea ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/
-     make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+     make -C ../ -f Makefile.${platform}.salamander clean || linking_error="$linking_error | $name"
    fi
    if [ $PLATFORM = "ctr" ] ; then
    mv -f ../retroarch_3ds_salamander.cia ../pkg/${platform}/build/cia/retroarch_3ds.cia
@@ -156,7 +156,7 @@ if [ $SALAMANDER = "yes" ]; then
    mv -f ../retroarch_3ds_salamander.3dsx ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.3dsx
    mv -f ../retroarch_3ds_salamander.smdh ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.smdh
    # the .3ds port cant use salamander since you can only have one ROM on a cartridge at once
-   make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+   make -C ../ -f Makefile.${platform}.salamander clean || linking_error="$linking_error | $name"
    fi
    if [ $PLATFORM = "wii" ] ; then
    mv -f ../retroarch-salamander_wii.dol ../pkg/${platform}/boot.dol
@@ -168,9 +168,9 @@ COUNTER=0
 if [ $PLATFORM = "libnx" ]; then
    echo Buildbot: building static core for ${platform}
    mkdir -p ../pkg/${platform}/switch
-   make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
+   make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || linking_error="$linking_error | $name"
    mv -f ../retroarch_switch.nro ../pkg/${platform}/switch/retroarch_switch.nro
-   make -C ../ -f Makefile.${platform} clean || exit 1
+   make -C ../ -f Makefile.${platform} clean || linking_error="$linking_error | $name"
 fi
 
 #for f in *_${platform}.${EXT} ; do
@@ -209,33 +209,33 @@ for f in `ls -v *_${platform}.${EXT}`; do
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
-         make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+         make -C ../ -f Makefile.griffin platform=${platform} clean || linking_error="$linking_error | $name"
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || linking_error="$linking_error | $name"
       elif [ $PLATFORM = "unix" ]; then
-         make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || linking_error="$linking_error | $name"
       else
-         make -C ../ -f Makefile.${platform} clean || exit 1
+         make -C ../ -f Makefile.${platform} clean || linking_error="$linking_error | $name"
       fi
    fi
 
    # Compile core
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
-      make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || linking_error="$linking_error | $name"
    elif [ $PLATFORM = "emscripten" ]; then
        echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || linking_error="$linking_error | $name"
    elif [ $PLATFORM = "unix" ]; then
-      make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || linking_error="$linking_error | $name"
    elif [ $PLATFORM = "ctr" ]; then
-      make -C ../ -f Makefile.${platform} $OPTS LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS LIBRETRO=$name $whole_archive $big_stack -j3 || linking_error="$linking_error | $name"
    elif [ $PLATFORM = "libnx" ]; then
-      make -C ../ -f Makefile.${platform} $OPTS APP_TITLE="$name" LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS APP_TITLE="$name" LIBRETRO=$name $whole_archive $big_stack -j3 || linking_error="$linking_error | $name"
    elif [ $PLATFORM = "ps2" ]; then
       # TODO PS2 should be able to compile in parallel
-      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack || linking_error="$linking_error | $name"
    else
-      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || linking_error="$linking_error | $name"
    fi
 
    # Do manual executable step
@@ -328,13 +328,13 @@ for f in `ls -v *_${platform}.${EXT}`; do
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
-         make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+         make -C ../ -f Makefile.griffin platform=${platform} clean || linking_error="$linking_error | $name"
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || linking_error="$linking_error | $name"
       elif [ $PLATFORM = "unix" ]; then
-         make -C ../ -f Makefile LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile LTO=$lto -j7 clean || linking_error="$linking_error | $name"
       else
-         make -C ../ -f Makefile.${platform} clean || exit 1
+         make -C ../ -f Makefile.${platform} clean || linking_error="$linking_error | $name"
       fi
    fi
 done
@@ -415,3 +415,8 @@ elif [ $PLATFORM = "ode-ps3" ] ; then
 
    $GENPS3ISO_PATH ../pkg/${platform}_iso ../pkg/${platform}/RetroArch.PS3.ODE.PS3.iso
 fi
+
+if [ ! -z $linking_error ];
+   echo error
+   exit 1
++fi
