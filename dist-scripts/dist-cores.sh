@@ -64,7 +64,7 @@ EXT=bc
 
 if [ -z "$EMSCRIPTEN" ] ; then
    echo "run this script with emmake. Ex: emmake $0"
-   linking_error="$linking_error | $name"
+   exit 1
 fi
 
 # Wii
@@ -419,4 +419,4 @@ fi
 if [ ! -z $linking_error ];
    echo error
    exit 1
-+fi
+fi
