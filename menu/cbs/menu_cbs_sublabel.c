@@ -2516,6 +2516,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_UNSUPPORTED_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_UNOFFICIAL_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
             break;
 #ifdef HAVE_NETWORKING
