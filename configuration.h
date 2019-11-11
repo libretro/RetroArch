@@ -188,6 +188,7 @@ typedef struct settings
       bool menu_materialui_icons_enable;
       bool menu_materialui_auto_rotate_nav_bar;
       bool menu_materialui_dual_thumbnail_list_view_enable;
+      bool menu_materialui_thumbnail_background_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;

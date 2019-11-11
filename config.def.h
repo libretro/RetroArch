@@ -156,6 +156,12 @@
 #define DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE true
 #endif
 
+/* Draw solid colour 4:3 background when rendering
+ * thumbnails
+ * > Helps to unify menu appearance when viewing
+ *   thumbnails of different sizes */
+#define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
+
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560

@@ -968,6 +968,16 @@ typedef struct
  * images */
 #define MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO 1.3333333f
 
+/* Default thumbnail type to select when force-enabling
+ * secondary thumbnails
+ * > 1 == Named_Snaps */
+#define MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE 1
+/* Default thumbnail type to select when force-enabling
+ * secondary thumbnails *if* primary thumbnail is
+ * already set to MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE
+ * > 3 == Named_Boxarts */
+#define MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE 3
+
 /* Defines the various types of supported menu
  * list views
  * - MUI_LIST_VIEW_DEFAULT is the standard for
@@ -1763,34 +1773,41 @@ static void materialui_draw_thumbnail(
     *   or we are waiting for a thumbnail to load) */
    else if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
    {
-      float bg_alpha = mui->transition_alpha * thumbnail->alpha;
+      settings_t *settings = config_get_ptr();
 
-      /* Background
-       * > We draw a background here to ensure a uniform
-       *   visual appearance regardless of thumbnail size
-       * NOTE: Have to round up and add 1 to height,
-       * otherwise background and thumbnail have obvious
-       * misalignment (due to various rounding errors...) */
+      if (!settings)
+         return;
 
-      /* > Set background alpha
-       *   - Can't do this in materialui_colors_set_transition_alpha()
-       *     because it's dependent upon thumbnail opacity
-       *   - No need to restore the original alpha value, since it is
-       *     only used in this function */
-      menu_display_set_alpha(
-            mui->colors.thumbnail_background,
-            mui->transition_alpha * thumbnail->alpha);
+      /* Background */
+      if (settings->bools.menu_materialui_thumbnail_background_enable)
+      {
+         /* > If enabled by the user, we draw a background here
+          *   to ensure a uniform visual appearance regardless
+          *   of thumbnail size
+          * NOTE: Have to round up and add 1 to height,
+          * otherwise background and thumbnail have obvious
+          * misalignment (due to various rounding errors...) */
 
-      /* > Draw background quad */
-      menu_display_draw_quad(
-            video_info,
-            (int)bg_x,
-            (int)bg_y,
-            (unsigned)(bg_width + 0.5f),
-            (unsigned)(bg_height + 1.5f),
-            width,
-            height,
-            mui->colors.thumbnail_background);
+         /* > Set background alpha
+          *   - Can't do this in materialui_colors_set_transition_alpha()
+          *     because it's dependent upon thumbnail opacity
+          *   - No need to restore the original alpha value, since it is
+          *     only used in this function */
+         menu_display_set_alpha(
+               mui->colors.thumbnail_background,
+               mui->transition_alpha * thumbnail->alpha);
+
+         /* > Draw background quad */
+         menu_display_draw_quad(
+               video_info,
+               (int)bg_x,
+               (int)bg_y,
+               (unsigned)(bg_width + 0.5f),
+               (unsigned)(bg_height + 1.5f),
+               width,
+               height,
+               mui->colors.thumbnail_background);
+      }
 
       /* Thumbnail */
       menu_thumbnail_draw(
@@ -4557,6 +4574,53 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
    }
 }
 
+/* Checks global 'Secondary Thumbnail' option - if
+ * currently set to 'OFF', changes value to
+ * MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE
+ * - Does not affect per-playlist thumbnail settings,
+ *   i.e. a user with custom config may selectively
+ *   force-disable secondary thumbnails regardless of
+ *   list view mode
+ * - Follows the existing precedent of automatically
+ *   changing global settings->uints.menu_left_thumbnails
+ *   value (i.e. XMB/Ozone already allow this parameter
+ *   to be cycled via the 'scan' function)
+ * - Returns false if secondary thumbnails cannot be
+ *   enabled (due to per-playlist override) */
+static bool materialui_force_enable_secondary_thumbnail(
+      materialui_handle_t *mui, settings_t *settings)
+{
+   /* If secondary thumbnail is already enabled,
+    * do nothing */
+   if (menu_thumbnail_is_enabled(
+         mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+      return true;
+
+   /* Secondary thumbnail is disabled
+    * > Check if this is a global setting... */
+   if (settings->uints.menu_left_thumbnails == 0)
+   {
+      /* > If possible, set secondary thumbnail
+       *   type to MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE
+       * > If primary thumbnail is already set to
+       *   MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE, use
+       *   MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE
+       *   instead */
+      if (settings->uints.menu_thumbnails ==
+            MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE)
+         settings->uints.menu_left_thumbnails =
+               MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE;
+      else
+         settings->uints.menu_left_thumbnails =
+               MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE;
+   }
+
+   /* Final check - this will return true unless a
+    * per-playlist override is in place */
+   return menu_thumbnail_is_enabled(
+         mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT);
+}
+
 /* Determines whether dual thumbnails should be enabled
  * based on current list view mode, thumbnail dimensions
  * and screen size */
@@ -4581,9 +4645,9 @@ static void materialui_set_secondary_thumbnail_enable(
             if (!settings->bools.menu_materialui_dual_thumbnail_list_view_enable)
                return;
 
-            /* Check whether 'Secondary Thumbnail' type is
-             * set to OFF */
-            if (!menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+            /* Attempt to force enable secondary thumbnails if
+             * global 'Secondary Thumbnail' type is set to OFF */
+            if (!materialui_force_enable_secondary_thumbnail(mui, settings))
                return;
 
             /* Secondary thumbnails are supported/enabled
@@ -4617,7 +4681,14 @@ static void materialui_set_secondary_thumbnail_enable(
          }
          break;
       case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
-         /* List view requires secondary thumbnails */
+         /* List view requires secondary thumbnails
+          * > Attempt to force enable, but set
+          *   mui->secondary_thumbnail_enabled to 'true'
+          *   regardless of the result since we still
+          *   want 'missing thumbnail' images if
+          *   thumbnails are actively disabled via
+          *   a per-playlist override */
+         materialui_force_enable_secondary_thumbnail(mui, settings);
          mui->secondary_thumbnail_enabled = true;
          break;
       case MUI_LIST_VIEW_PLAYLIST:
