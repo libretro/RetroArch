@@ -317,7 +317,7 @@
 #endif
 
 /* Smooths picture. */
-#define DEFAULT_VIDEO_SMOOTH true
+#define DEFAULT_VIDEO_SMOOTH false
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
