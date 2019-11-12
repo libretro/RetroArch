@@ -82,7 +82,7 @@ static void gl1_raster_font_free_font(void *data,
    free(font);
 }
 
-#ifdef VITA
+#if 0
 static bool gl1_raster_font_upload_atlas(gl1_raster_t *font)
 {
    unsigned i, j;
@@ -115,7 +115,8 @@ static bool gl1_raster_font_upload_atlas(gl1_raster_t *font)
 
    return true;
 }
-#else
+#endif
+
 static bool gl1_raster_font_upload_atlas(gl1_raster_t *font)
 {
    unsigned i, j;
@@ -159,7 +160,7 @@ static bool gl1_raster_font_upload_atlas(gl1_raster_t *font)
 
    return true;
 }
-#endif
+
 static void *gl1_raster_font_init_font(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
