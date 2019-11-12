@@ -416,7 +416,7 @@ elif [ $PLATFORM = "ode-ps3" ] ; then
    $GENPS3ISO_PATH ../pkg/${platform}_iso ../pkg/${platform}/RetroArch.PS3.ODE.PS3.iso
 fi
 
-if [ ! -z $linking_error ];
+if [ ! -z $linking_error ]; then
    echo error
    exit 1
 fi
