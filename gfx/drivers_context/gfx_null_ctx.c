@@ -42,8 +42,13 @@ static void gfx_ctx_null_swap_buffers(void *data, void *data2)
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
+#ifdef VITA
+   *width  = 960;
+   *height = 544;
+#else
    *width  = 320;
    *height = 240;
+#endif
 }
 
 static bool gfx_ctx_null_set_video_mode(void *data,

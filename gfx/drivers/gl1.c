@@ -286,14 +286,16 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   vglInitExtended(0x100000, 960, 544, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+   vglInitExtended(0x1400000, full_x, full_y, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+   vglUseVram(GL_TRUE);
+   vglStartRendering();
 #endif
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
-
+#ifndef VITA
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
-
+#endif
    RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
@@ -718,9 +720,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned pot_height       = 0;
 
    gl1_context_bind_hw_render(gl1, false);
-#ifdef VITA   
-   vglStartRendering();
-#endif   
+   
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
@@ -927,9 +927,10 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
-#ifdef VITA  
+#ifdef VITA
    vglStopRendering();
-#endif
+   vglStartRendering();
+#endif   
    gl1_context_bind_hw_render(gl1, true);
 
    return true;
