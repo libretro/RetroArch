@@ -56,6 +56,10 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+#ifdef VITA
+static bool vgl_inited = false;
+#endif
+
 static unsigned char *gl1_menu_frame = NULL;
 static unsigned gl1_menu_width       = 0;
 static unsigned gl1_menu_height      = 0;
@@ -286,9 +290,12 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
-   vglUseVram(GL_TRUE);
-   vglStartRendering();
+   if (!vgl_inited) {
+      vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+      vglUseVram(GL_TRUE);
+      vglStartRendering();
+      vgl_inited = true;
+   }
 #endif
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
@@ -628,8 +635,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    float vertices[] = {
 	   -1.0f, -1.0f, 0.0f,
 	   -1.0f, 1.0f, 0.0f,
+	   1.0f, -1.0f, 0.0f,
 	   1.0f, 1.0f, 0.0f,
-	   1.0f, -1.0f, 0.0f
    };
    
    float colors[] = {
@@ -645,8 +652,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    float texcoords[] = {
       0.0f, norm_height,
       0.0f, 0.0f,
-      norm_width, 1.0f,
-      norm_width, norm_height
+      norm_width, norm_height,
+      norm_width, 0.0f
    };
    
    glEnableClientState(GL_COLOR_ARRAY);
