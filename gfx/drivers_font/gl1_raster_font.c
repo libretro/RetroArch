@@ -274,6 +274,7 @@ static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
    int i;
    for (i = 0; i < coords->vertices; i++) {
       memcpy(&vertices3[i*3], &coords->vertex[i*2], sizeof(float) * 2);
+      vertices3[i*3] -= 0.5f;
       vertices3[i*3+2] = 0.0f;
    }
    glVertexPointer(3, GL_FLOAT, 0, vertices3);   

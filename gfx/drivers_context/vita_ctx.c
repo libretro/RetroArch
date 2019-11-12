@@ -121,7 +121,7 @@ static void *vita_init(video_frame_info_t *video_info, void *video_driver)
 {
    (void)video_driver;
 
-   return (void*)"null";
+   return (void*)"vita";
 }
 
 static uint32_t vita_get_flags(void *data)
