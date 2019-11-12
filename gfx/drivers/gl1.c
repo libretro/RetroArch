@@ -299,10 +299,10 @@ static void *gl1_gfx_init(const video_info_t *video,
 #endif
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
-#ifndef VITA
+
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
-#endif
+
    RARCH_LOG("[GL1]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
