@@ -285,7 +285,9 @@ static void *gl1_gfx_init(const video_info_t *video,
    full_y      = mode.height;
    mode.width  = 0;
    mode.height = 0;
-
+#ifdef VITA
+   vglInitExtended(0x100000, 960, 544, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+#endif
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
 
@@ -395,7 +397,9 @@ static void *gl1_gfx_init(const video_info_t *video,
    glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
    glDisable(GL_SCISSOR_TEST);
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+#endif
    glGenTextures(1, &gl1->tex);
    glGenTextures(1, &gl1->menu_tex);
 
@@ -562,9 +566,12 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    /* Multi-texture not part of GL 1.1 */
    /*glActiveTexture(GL_TEXTURE0);*/
 
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
+#endif
    glBindTexture(GL_TEXTURE_2D, tex);
+
 
    /* For whatever reason you can't send NULL in GLDirect,
       so we send the frame as dummy data */
@@ -686,10 +693,11 @@ static void gl1_readback(
       unsigned fmt, unsigned type,
       void *src)
 {
+#ifndef VITA
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
-
+#endif
    glReadPixels(gl1->vp.x, gl1->vp.y,
          gl1->vp.width, gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
@@ -710,7 +718,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned pot_height       = 0;
 
    gl1_context_bind_hw_render(gl1, false);
-
+#ifdef VITA   
+   vglStartRendering();
+#endif   
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
@@ -917,7 +927,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
-
+#ifdef VITA  
+   vglStopRendering();
+#endif
    gl1_context_bind_hw_render(gl1, true);
 
    return true;
@@ -1259,7 +1271,9 @@ static void gl1_load_texture_data(
 
    gl1_bind_texture(id, wrap, mag_filter, min_filter);
 
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+#endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,

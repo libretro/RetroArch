@@ -6,8 +6,8 @@
 
 #define RAM_THRESHOLD 0xA00000 // Memory left to the system for threads and other internal stuffs
 
-static int _newlib_heap_memblock;
-static unsigned _newlib_heap_size;
+int _newlib_heap_memblock;
+unsigned _newlib_heap_size;
 char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 static char _newlib_sbrk_mutex[32] __attribute__ ((aligned (8)));
 
