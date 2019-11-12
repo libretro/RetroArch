@@ -4748,6 +4748,23 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
+static void command_event_reinit(const int flags)
+{
+   video_driver_reinit(flags);
+   /* Poll input to avoid possibly stale data to corrupt things. */
+   if (current_input && current_input->poll)
+      current_input->poll(current_input_data);
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
+
+#ifdef HAVE_MENU
+   menu_display_set_framebuffer_dirty_flag();
+   if (configuration_settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
+   if (menu_driver_alive && current_video->set_nonblock_state)
+      current_video->set_nonblock_state(video_driver_data, false);
+#endif
+}
+
 static void retroarch_pause_checks(void)
 {
 #ifdef HAVE_DISCORD
@@ -5169,29 +5186,7 @@ bool command_event(enum event_command cmd, void *data)
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
-         video_driver_reinit();
-         {
-            input_driver_t *input_drv       = current_input;
-            void *input_data                = current_input_data;
-            /* Poll input to avoid possibly stale data to corrupt things. */
-            if (input_drv && input_drv->poll)
-               input_drv->poll(input_data);
-         }
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
-#ifdef HAVE_MENU
-         {
-            settings_t *settings      = configuration_settings;
-            menu_display_set_framebuffer_dirty_flag();
-            if (settings->bools.video_fullscreen)
-               video_driver_hide_mouse();
-
-            if (menu_driver_alive)
-            {
-               if (current_video->set_nonblock_state)
-                  current_video->set_nonblock_state(video_driver_data, false);
-            }
-         }
-#endif
+         command_event_reinit(data ? *(const int*)data : DRIVERS_CMD_ALL);
          break;
       case CMD_EVENT_CHEATS_APPLY:
          cheat_manager_apply_cheats();
@@ -8242,7 +8237,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       /**
        * Update the system Audio/Video information.
-       * Will reinitialize audio/video drivers.
+       * Will reinitialize audio/video drivers if needed.
        * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
        **/
       {
@@ -8251,11 +8246,21 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          if (info && av_info)
          {
             settings_t *settings                  = configuration_settings;
+            int reinit_flags                      = DRIVERS_CMD_ALL;
 
             RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO.\n");
 
+            if (settings->uints.crt_switch_resolution == 0 && data
+                && (*info)->geometry.max_width == av_info->geometry.max_width
+                && (*info)->geometry.max_height == av_info->geometry.max_height)
+            {
+               /* When not doing video reinit, we also must not do input and
+                * menu reinit, otherwise the input driver crashes and the menu
+                * gets corrupted. */
+               reinit_flags &= ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK);
+            }
             memcpy(av_info, *info, sizeof(*av_info));
-            command_event(CMD_EVENT_REINIT, NULL);
+            command_event(CMD_EVENT_REINIT, &reinit_flags);
 
             /* Cannot continue recording with different parameters.
              * Take the easiest route out and just restart the recording. */
@@ -19630,7 +19635,7 @@ void video_driver_save_settings(config_file_t *conf)
          global->console.screen.flicker_filter_index);
 }
 
-static void video_driver_reinit_context(void)
+static void video_driver_reinit_context(int flags)
 {
    /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
     * need to make sure to keep a copy */
@@ -19640,15 +19645,15 @@ static void video_driver_reinit_context(void)
       video_driver_get_context_negotiation_interface();
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(flags);
 
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    hw_render_context_negotiation = iface;
 
-   drivers_init(DRIVERS_CMD_ALL);
+   drivers_init(flags);
 }
 
-void video_driver_reinit(void)
+void video_driver_reinit(int flags)
 {
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context_internal();
@@ -19659,7 +19664,7 @@ void video_driver_reinit(void)
       video_driver_cache_context = false;
 
    video_driver_cache_context_ack = false;
-   video_driver_reinit_context();
+   video_driver_reinit_context(flags);
    video_driver_cache_context = false;
 }
 
@@ -20085,7 +20090,7 @@ static void video_driver_frame(const void *data, unsigned width,
 
 void crt_switch_driver_reinit(void)
 {
-   video_driver_reinit();
+   video_driver_reinit(DRIVERS_CMD_ALL);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
