@@ -26,6 +26,10 @@
 
 #include "../menu_driver.h"
 
+#ifdef VITA
+static float *vertices3 = NULL;
+#endif
+
 static const GLfloat gl1_menu_vertexes[] = {
    0, 0,
    1, 0,
@@ -133,8 +137,21 @@ static void menu_display_gl1_draw(menu_display_ctx_draw_t *draw,
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
+#ifdef VITA
+   if (vertices3)
+      free(vertices3);
+   vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
+   int i;
+   for (i = 0; i < draw->coords->vertices; i++) {
+      memcpy(&vertices3[i*3], &draw->coords->vertex[i*2], sizeof(float) * 2);
+      vertices3[i*3+2] = 0.0f;
+   }
+   glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+#else
    glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+#endif
+
+   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
    glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
 
    glDrawArrays(menu_display_prim_to_gl1_enum(

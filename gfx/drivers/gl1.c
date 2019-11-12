@@ -286,7 +286,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   vglInitExtended(0x1400000, full_x, full_y, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+   vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
    vglUseVram(GL_TRUE);
    vglStartRendering();
 #endif
@@ -574,11 +574,6 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
 #endif
    glBindTexture(GL_TEXTURE_2D, tex);
 
-
-   /* For whatever reason you can't send NULL in GLDirect,
-      so we send the frame as dummy data */
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame_to_copy);
-
    frame = (uint8_t*)frame_to_copy;
    if (!gl1->supports_bgra)
    {
@@ -600,9 +595,10 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
          frame = frame_rgba;
       }
    }
-
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame);
-   free(frame_rgba);
+   RARCH_LOG("draw_tex\n");
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
+   if (frame_rgba)
+       free(frame_rgba);
 
    if (tex == gl1->tex)
    {
@@ -643,45 +639,44 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
 
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
+   
+   float vertices[] = {
+	   -1.0f, -1.0f, 0.0f,
+	   -1.0f, 1.0f, 0.0f,
+	   1.0f, 1.0f, 0.0f,
+	   1.0f, -1.0f, 0.0f
+   };
+   
+   float colors[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
+   
+   float norm_width     = (1.0f / (float)pot_width) * (float)width;
+   float norm_height    = (1.0f / (float)pot_height) * (float)height;
+   
+   float texcoords[] = {
+      0.0f, norm_height,
+      0.0f, 0.0f,
+	  norm_width, 1.0f,
+	  norm_width, norm_height
+   };
+   
+   glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   
+   glColorPointer(4, GL_FLOAT, 0, colors);
+   glVertexPointer(3, GL_FLOAT, 0, vertices);
+   glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
 
-   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-   glBegin(GL_QUADS);
-
-   {
-      float tex_BL[2]      = {0.0f, 0.0f};
-      float tex_BR[2]      = {1.0f, 0.0f};
-      float tex_TL[2]      = {0.0f, 1.0f};
-      float tex_TR[2]      = {1.0f, 1.0f};
-      float *tex_mirror_BL = tex_TL;
-      float *tex_mirror_BR = tex_TR;
-      float *tex_mirror_TL = tex_BL;
-      float *tex_mirror_TR = tex_BR;
-      float norm_width     = (1.0f / (float)pot_width) * (float)width;
-      float norm_height    = (1.0f / (float)pot_height) * (float)height;
-
-      /* remove extra POT padding */
-      tex_mirror_BR[0] = norm_width;
-      tex_mirror_TR[0] = norm_width;
-
-      /* normally this would be 1.0 - height, but we're drawing upside-down */
-      tex_mirror_BL[1] = norm_height;
-      tex_mirror_BR[1] = norm_height;
-
-      glTexCoord2f(tex_mirror_BL[0], tex_mirror_BL[1]);
-      glVertex2f(-1.0f, -1.0f);
-
-      glTexCoord2f(tex_mirror_TL[0], tex_mirror_TL[1]);
-      glVertex2f(-1.0f, 1.0f);
-
-      glTexCoord2f(tex_mirror_TR[0], tex_mirror_TR[1]);
-      glVertex2f(1.0f, 1.0f);
-
-      glTexCoord2f(tex_mirror_BR[0], tex_mirror_BR[1]);
-      glVertex2f(1.0f, -1.0f);
-   }
-
-   glEnd();
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
 
    glMatrixMode(GL_MODELVIEW);
    glPopMatrix();
@@ -1275,6 +1270,7 @@ static void gl1_load_texture_data(
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 #endif
+   RARCH_LOG("gl1_load_texture_data\n");
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,

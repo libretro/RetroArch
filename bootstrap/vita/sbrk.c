@@ -4,7 +4,7 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
 
-#define RAM_THRESHOLD 0xA00000 // Memory left to the system for threads and other internal stuffs
+#define RAM_THRESHOLD 0x1000000 // Memory left to the system for threads and other internal stuffs
 
 int _newlib_heap_memblock;
 unsigned _newlib_heap_size;
