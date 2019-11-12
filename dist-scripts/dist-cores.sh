@@ -417,6 +417,6 @@ elif [ $PLATFORM = "ode-ps3" ] ; then
 fi
 
 if [ ! -z $linking_error ]; then
-   echo error
+   echo $linking_error
    exit 1
 fi
