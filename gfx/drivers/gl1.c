@@ -595,7 +595,7 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
          frame = frame_rgba;
       }
    }
-   RARCH_LOG("draw_tex\n");
+
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
    if (frame_rgba)
        free(frame_rgba);
@@ -622,21 +622,6 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glPushMatrix();
    glLoadIdentity();
 
-   /* stock coord set does not handle POT, disable for now */
-   /*glEnableClientState(GL_COLOR_ARRAY);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-   glColorPointer(4, GL_FLOAT, 0, gl1->coords.color);
-   glVertexPointer(2, GL_FLOAT, 0, gl1->coords.vertex);
-   glTexCoordPointer(2, GL_FLOAT, 0, gl1->coords.tex_coord);
-
-   glDrawArrays(GL_TRIANGLES, 0, gl1->coords.vertices);
-
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_COLOR_ARRAY);*/
-
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
    
@@ -660,8 +645,8 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    float texcoords[] = {
       0.0f, norm_height,
       0.0f, 0.0f,
-	  norm_width, 1.0f,
-	  norm_width, norm_height
+      norm_width, 1.0f,
+      norm_width, norm_height
    };
    
    glEnableClientState(GL_COLOR_ARRAY);
@@ -922,10 +907,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
-#ifdef VITA
-   vglStopRendering();
-   vglStartRendering();
-#endif   
+ 
    gl1_context_bind_hw_render(gl1, true);
 
    return true;
@@ -1270,7 +1252,7 @@ static void gl1_load_texture_data(
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 #endif
-   RARCH_LOG("gl1_load_texture_data\n");
+
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,

@@ -452,6 +452,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
 #endif
+#if defined(VITA)
+   &vita_ctx,
+#endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif

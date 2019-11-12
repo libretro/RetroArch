@@ -1160,6 +1160,7 @@ ifeq ($(HAVE_VITAGL), 1)
    DEFINES += -DHAVE_OPENGL1
    OBJ += gfx/drivers/gl1.o \
           gfx/drivers_font/gl1_raster_font.o \
+          gfx/drivers_context/vita_ctx.o \
           menu/drivers_display/menu_display_gl1.o
 endif
 
