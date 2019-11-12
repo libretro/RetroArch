@@ -39,7 +39,7 @@
 #include <windows.h>
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || ( defined(__OpenBSD__) && defined(__powerpc__) )
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
