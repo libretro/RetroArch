@@ -21,7 +21,9 @@
 static void vita_swap_interval(void *data, int interval)
 {
    (void)data;
-   (void)interval;
+#ifdef VITA
+   vglWaitVblankStart(interval);
+#endif
 }
 
 static void vita_check_window(void *data, bool *quit,
