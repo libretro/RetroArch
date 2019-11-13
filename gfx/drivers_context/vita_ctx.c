@@ -21,28 +21,7 @@
 static void vita_swap_interval(void *data, int interval)
 {
    (void)data;
-#ifdef VITA
    vglWaitVblankStart(interval);
-#endif
-}
-
-static void vita_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
-{
-   (void)data;
-   (void)quit;
-   (void)width;
-   (void)height;
-   (void)resize;
-}
-
-static void vita_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-#ifdef VITA
-   vglStopRendering();
-   vglStartRendering();
-#endif
 }
 
 static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -50,6 +29,30 @@ static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
    (void)data;
    *width  = 960;
    *height = 544;
+}
+
+static void vita_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+{
+   unsigned new_width, new_height;
+
+   vita_get_video_size(data, &new_width, &new_height);
+
+   if (new_width != *width || new_height != *height)
+   {
+      *width = new_width;
+      *height = new_height;
+      *resize = true;
+   }
+
+   *quit = (bool)false;
+}
+
+static void vita_swap_buffers(void *data, void *data2)
+{
+   (void)data;
+   vglStopRendering();
+   vglStartRendering();
 }
 
 static bool vita_set_video_mode(void *data,
