@@ -566,6 +566,33 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
    GLenum type          = GL_UNSIGNED_BYTE;
 
+   float vertices[] = {
+	   -1.0f, -1.0f, 0.0f,
+	   -1.0f, 1.0f, 0.0f,
+	   1.0f, -1.0f, 0.0f,
+	   1.0f, 1.0f, 0.0f,
+   };
+
+   float colors[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
+
+   float norm_width     = (1.0f / (float)pot_width) * (float)width;
+   float norm_height    = (1.0f / (float)pot_height) * (float)height;
+   
+   float texcoords[] = {
+      0.0f, 0.0f,
+      0.0f, 0.0f,
+      0.0f, 0.0f,
+      0.0f, 0.0f
+   };
+   
+   texcoords[1] = texcoords[5] = norm_height;
+   texcoords[4] = texcoords[6] = norm_width;
+
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
@@ -631,30 +658,6 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
 
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
-   
-   float vertices[] = {
-	   -1.0f, -1.0f, 0.0f,
-	   -1.0f, 1.0f, 0.0f,
-	   1.0f, -1.0f, 0.0f,
-	   1.0f, 1.0f, 0.0f,
-   };
-   
-   float colors[] = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f
-   };
-   
-   float norm_width     = (1.0f / (float)pot_width) * (float)width;
-   float norm_height    = (1.0f / (float)pot_height) * (float)height;
-   
-   float texcoords[] = {
-      0.0f, norm_height,
-      0.0f, 0.0f,
-      norm_width, norm_height,
-      norm_width, 0.0f
-   };
    
    glEnableClientState(GL_COLOR_ARRAY);
    glEnableClientState(GL_VERTEX_ARRAY);
