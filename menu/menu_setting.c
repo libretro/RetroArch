@@ -5475,17 +5475,17 @@ static void setting_get_string_representation_poll_type_behavior(
 
    switch (*setting->value.target.unsigned_integer)
    {
-      case 0:
+      case RARCH_POLL_TYPE_EARLY:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
          break;
-      case 1:
+      case RARCH_POLL_TYPE_NORMAL:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
          break;
-      case 2:
+      case RARCH_POLL_TYPE_LATE:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
@@ -6261,8 +6261,20 @@ void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+      {
+         global_t *global = global_get_ptr();
+
+         /* Core keeps track of the user-set poll type */
          core_set_poll_type(*setting->value.target.integer);
+
+         /* Frontend will change poll types if poll type isn't locked
+          * by e.g. Netplay or RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE */
+         if (global && !(global->poll_type_lock))
+            rarch_set_input_cbs(*setting->value.target.integer);
+
+         /* TODO - OSD message when this fails because of the lock? */
          break;
+      }
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_viewport_t vp;
@@ -10584,7 +10596,7 @@ static bool setting_append_list(
                   &settings->uints.input_poll_type_behavior,
                   MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-                  input_poll_type_behavior,
+                  default_input_poll_type_behavior,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -10594,7 +10606,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_poll_type_behavior;
-            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RARCH_POLL_TYPE_MIN, RARCH_POLL_TYPE_MAX, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef GEKKO
