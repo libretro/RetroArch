@@ -340,6 +340,9 @@ static const audio_driver_t *audio_drivers[] = {
 
 
 static const video_driver_t *video_drivers[] = {
+#ifdef HAVE_VITA2D
+   &video_vita2d,
+#endif
 #ifdef HAVE_OPENGL
    &video_gl2,
 #endif
@@ -372,9 +375,6 @@ static const video_driver_t *video_drivers[] = {
 #endif
 #if defined(HAVE_D3D8)
    &video_d3d8,
-#endif
-#ifdef HAVE_VITA2D
-   &video_vita2d,
 #endif
 #ifdef PSP
    &video_psp1,
