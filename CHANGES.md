@@ -5,8 +5,10 @@
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
+- MENU/LINUX: Add proper drives to Load Content
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
+- OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
