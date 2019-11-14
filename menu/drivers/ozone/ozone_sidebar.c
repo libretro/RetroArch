@@ -117,6 +117,8 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    uint32_t text_alpha  = ozone->animations.sidebar_text_alpha * 255.0f;
    bool use_smooth_ticker = settings->bools.menu_ticker_smooth;
 
+   float scale = ozone->scale_factor;
+
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
@@ -214,7 +216,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       /* Text */
       if (!ozone->sidebar_collapsed)
          ozone_draw_text(video_info, ozone, title, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-            y + ozone->dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR  * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.sidebar, text_color, true);
+            y + ozone->dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR * scale * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.sidebar, text_color, true);
 
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
@@ -271,7 +273,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
          }
 
          ozone_draw_text(video_info, ozone, console_title, ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-            y + ozone->dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT,
+            y + ozone->dimensions.sidebar_entry_height / 2 + FONT_SIZE_SIDEBAR * scale * 3/8 + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT,
             video_info->width, video_info->height, ozone->fonts.sidebar, text_color, true);
 
 console_iterate:

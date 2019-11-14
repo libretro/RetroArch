@@ -244,6 +244,7 @@ struct ozone_handle
 
    bool is_db_manager_list;
    bool first_frame;
+   float scale_factor;
 };
 
 /* If you change this struct, also

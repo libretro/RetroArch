@@ -497,6 +497,8 @@ border_iterate:
       float *icon_color            = NULL;
       bool use_smooth_ticker       = settings->bools.menu_ticker_smooth;
 
+      float scale = ozone->scale_factor;
+
       /* Initial ticker configuration */
       if (use_smooth_ticker)
       {
@@ -628,10 +630,10 @@ border_iterate:
 
       /* Draw text */
       ozone_draw_text(video_info, ozone, rich_label, ticker_x_offset + text_offset + (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
-         y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
+         y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * scale * 3/8 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
       if (!string_is_empty(sublabel_str))
          ozone_draw_text(video_info, ozone, sublabel_str, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
-            y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
+            y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL * scale + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
       if (use_smooth_ticker)
@@ -661,7 +663,7 @@ border_iterate:
 
       ozone_draw_entry_value(ozone, video_info, entry_value_ticker,
             value_x_offset + (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
-            y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, alpha_uint32, &entry);
+            y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * scale * 3/8 + scroll_y, alpha_uint32, &entry);
 
 icons_iterate:
       y += node->height;
@@ -681,6 +683,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    unsigned icon        = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size   = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
    unsigned text_height = font_driver_get_line_height(ozone->fonts.footer, 1.0f);
+   float scale = ozone->scale_factor;
 
    menu_display_blend_begin(video_info);
    ozone_draw_icon(video_info,
@@ -698,7 +701,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
       ozone,
       msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
       x_position + sidebar_width/2,
-      video_info->height / 2 - icon_size/2 + text_height * 3 + FONT_SIZE_FOOTER - y_offset,
+      video_info->height / 2 - icon_size/2 + text_height * 3 + FONT_SIZE_FOOTER * scale - y_offset,
       TEXT_ALIGN_CENTER,
       video_info->width, video_info->height,
       ozone->fonts.footer,
@@ -710,12 +713,13 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
    unsigned *y, unsigned column_x, const char *text, unsigned lines_count)
 {
+   float scale = ozone->scale_factor;
    int line_height = font_driver_get_line_height(ozone->fonts.footer, 1);
 
    ozone_draw_text(video_info, ozone,
       text,
       column_x,
-      *y + FONT_SIZE_FOOTER,
+      *y + FONT_SIZE_FOOTER * scale,
       TEXT_ALIGN_LEFT,
       video_info->width, video_info->height,
       ozone->fonts.footer,
