@@ -290,6 +290,7 @@ static const char *font_paths[] = {
    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
    "/usr/share/fonts/TTF/Vera.ttf",
    "/usr/share/fonts/google-droid/DroidSansFallback.ttf", /* Fedora, RHEL, CentOS */
+   "/usr/share/fonts/droid/DroidSansFallback.ttf",        /* Arch Linux */
    "/usr/share/fonts/truetype/DroidSansFallbackFull.ttf", /* openSUSE, SLE */
    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", /* Arch Linux, Debian, Ubuntu */
 #endif
