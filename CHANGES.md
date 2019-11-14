@@ -4,6 +4,7 @@
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
+- LOCALIZATION: Update Turkish translation
 - LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
 - MENU/LINUX: Add proper drives to Load Content
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
