@@ -1,8 +1,10 @@
 # Future
 - CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
+- LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
+- LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
 
