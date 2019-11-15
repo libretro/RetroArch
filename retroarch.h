@@ -67,7 +67,7 @@ RETRO_BEGIN_DECLS
 #define RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE (4 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* unsigned * --
                                             * Tells the frontend to override the poll type behavior. 
-                                            * Allows the frontend to influence the polling behavior of the
+                                            * Allows the core to influence the polling behavior of the
                                             * frontend.
                                             *
                                             * Will be unset when retro_unload_game is called.
@@ -208,6 +208,26 @@ enum rarch_override_setting
    RARCH_OVERRIDE_SETTING_LAST
 };
 
+/* RetroArch input polling behavior */
+enum rarch_poll_type
+{
+   RARCH_POLL_TYPE_MIN = 1,
+   
+   /* Polling is performed before retro_run.
+    * The core's polling requests will be ignored. */
+   RARCH_POLL_TYPE_EARLY = RARCH_POLL_TYPE_MIN,
+
+   /* Polling is performed when requested. */
+   RARCH_POLL_TYPE_NORMAL,
+
+   /* Polling is performed on first call to retro_input_state per frame
+    * or after retro_run if it retro_input_state wasn't called.
+    * The core's polling requests will be ignored. */
+   RARCH_POLL_TYPE_LATE,
+
+   RARCH_POLL_TYPE_MAX = RARCH_POLL_TYPE_LATE
+};
+
 enum runloop_action
 {
    RUNLOOP_ACTION_NONE = 0,
@@ -299,9 +319,10 @@ typedef struct global
       retro_time_t noop_start_time  ;
       retro_time_t action_start_time  ;
       retro_time_t action_press_time ;
-      enum menu_action prev_action ;
+      enum menu_action prev_action ; 
    } menu;
 #endif
+   bool poll_type_lock; /* RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE and Netplay */
 } global_t;
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
@@ -398,6 +419,8 @@ enum retro_language rarch_get_language_from_iso(const char *lang);
 void rarch_favorites_init(void);
 
 void rarch_favorites_deinit(void);
+
+void rarch_set_input_cbs(enum rarch_poll_type type);
 
 /* Audio */
 

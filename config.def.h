@@ -984,7 +984,9 @@ static const bool input_descriptor_hide_unbound = false;
 
 static const unsigned input_max_users = 5;
 
-static const unsigned input_poll_type_behavior = 2;
+/* Refer to retroarch.h, enum rarch_poll_type  */
+/* Default behavior is "Late" */
+static const unsigned default_input_poll_type_behavior = 3;
 
 static const unsigned input_bind_timeout = 5;
 
