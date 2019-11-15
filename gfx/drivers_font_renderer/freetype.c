@@ -292,7 +292,7 @@ static const char *font_paths[] = {
    "/usr/share/fonts/google-droid/DroidSansFallback.ttf", /* Fedora, RHEL, CentOS */
    "/usr/share/fonts/droid/DroidSansFallback.ttf",        /* Arch Linux */
    "/usr/share/fonts/truetype/DroidSansFallbackFull.ttf", /* openSUSE, SLE */
-   "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", /* Arch Linux, Debian, Ubuntu */
+   "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", /* Debian, Ubuntu */
 #endif
    "osd-font.ttf", /* Magic font to search for, useful for distribution. */
 };
