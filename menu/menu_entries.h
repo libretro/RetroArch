@@ -276,8 +276,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
 int menu_entry_select(uint32_t i);
 
-int menu_entry_action(menu_entry_t *entry,
-                      unsigned i, enum menu_action action);
+int menu_entry_action(
+      menu_entry_t *entry, size_t i, enum menu_action action);
 
 void menu_entry_init(menu_entry_t *entry);
 

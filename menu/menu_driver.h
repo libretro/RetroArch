@@ -324,6 +324,9 @@ typedef struct menu_ctx_driver
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
    bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
+   /* This will be invoked whenever a menu entry action
+    * (menu_entry_action()) is performed */
+   int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 } menu_ctx_driver_t;
 
 

@@ -4403,11 +4403,11 @@ static int stripes_pointer_up(void *userdata,
             unsigned header_height = menu_display_get_header_height();
 
             if (y < header_height)
-               return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
             else if (ptr <= (menu_entries_get_size() - 1))
             {
                if (ptr == selection && cbs && cbs->action_select)
-                  return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                  return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
                menu_navigation_set_selection(ptr);
                menu_driver_navigation_set(false);
@@ -4418,7 +4418,7 @@ static int stripes_pointer_up(void *userdata,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -4473,5 +4473,6 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_savestate_thumbnail_image,
    NULL,                                     /* pointer_down */
    stripes_pointer_up,                       /* pointer_up   */
-   NULL                                      /* get_load_content_animation_data   */
+   NULL,                                     /* get_load_content_animation_data   */
+   generic_menu_entry_action
 };

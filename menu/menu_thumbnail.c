@@ -378,9 +378,12 @@ void menu_thumbnail_process_stream(
    {
       /* Entry is off-screen
        * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
-       *   thumbnail is already in a blank state - do nothing
-       * In all other cases, reset thumbnail */
-      if (thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+       *   thumbnail is already in a blank state - but we
+       *   must ensure that delay timer is set to zero */
+      if (thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+         thumbnail->delay_timer = 0.0f;
+      /* In all other cases, reset thumbnail */
+      else
          menu_thumbnail_reset(thumbnail);
    }
 }
@@ -477,12 +480,17 @@ void menu_thumbnail_process_streams(
    {
       /* Entry is off-screen
        * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
-       *   thumbnail is already in a blank state - do nothing
-       * In all other cases, reset thumbnail */
-      if (right_thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+       *   thumbnail is already in a blank state - but we
+       *   must ensure that delay timer is set to zero
+       * > In all other cases, reset thumbnail */
+      if (right_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+         right_thumbnail->delay_timer = 0.0f;
+      else
          menu_thumbnail_reset(right_thumbnail);
 
-      if (left_thumbnail->status != MENU_THUMBNAIL_STATUS_UNKNOWN)
+      if (left_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+         left_thumbnail->delay_timer = 0.0f;
+      else
          menu_thumbnail_reset(left_thumbnail);
    }
 }

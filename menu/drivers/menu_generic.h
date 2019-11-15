@@ -22,6 +22,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_input.h"
+#include "../menu_entries.h"
 
 enum action_iterate_type
 {
@@ -34,5 +35,7 @@ enum action_iterate_type
 int generic_menu_iterate(void *data, void *userdata, enum menu_action action);
 
 bool generic_menu_init_list(void *data);
+
+int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 #endif

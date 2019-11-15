@@ -100,4 +100,5 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* pointer_down */
   NULL,  /* pointer_up   */
   NULL,  /* get_load_content_animation_data */
+  NULL   /* entry_action */
 };

@@ -805,7 +805,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    size_t selection   = menu_navigation_get_selection();
 
    menu_entry_get(&entry, 0, selection, NULL, false);
-   menu_entry_action(&entry, (unsigned int)selection, MENU_ACTION_CANCEL);
+   menu_entry_action(&entry, selection, MENU_ACTION_CANCEL);
 #endif
 }
 

@@ -31,6 +31,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <encodings/utf.h>
+#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -978,6 +979,16 @@ typedef struct
  * > 3 == Named_Boxarts */
 #define MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE 3
 
+/* Thumbnail stream delay when performing standard
+ * menu navigation */
+#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT 83.333333f
+/* Thumbnail stream delay when performing 'fast'
+ * navigation by dragging the scrollbar
+ * > Must increase stream delay, otherwise it's
+ *   too easy to enqueue vast numbers of image
+ *   requests... */
+#define MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG 166.66667f
+
 /* Defines the various types of supported menu
  * list views
  * - MUI_LIST_VIEW_DEFAULT is the standard for
@@ -1159,6 +1170,18 @@ typedef struct
    materialui_nav_bar_menu_tab_t menu_tabs[MUI_NAV_BAR_NUM_MENU_TABS_MAX];
 } materialui_nav_bar_t;
 
+/* This structure holds all runtime parameters for
+ * the scrollbar */
+typedef struct
+{
+   unsigned width;
+   unsigned height;
+   int x;
+   int y;
+   bool active;
+   bool dragged;
+} materialui_scrollbar_t;
+
 /* Defines all possible entry value types
  * > Note: These are not necessarily 'values',
  *   but they correspond to the object drawn in
@@ -1211,6 +1234,19 @@ typedef struct
  * animations too 'jarring'... */
 #define MUI_ANIM_DURATION_MENU_TRANSITION 200.0f
 
+/* Defines common positions when referencing
+ * the list of currently on screen menu entries
+ * > Used to specify a target when the current
+ *   selection is off screen, and we wish to
+ *   automatically move the selection marker
+ *   to a specific on screen location */
+enum materialui_onscreen_entry_position_type
+{
+   MUI_ONSCREEN_ENTRY_FIRST = 0,
+   MUI_ONSCREEN_ENTRY_LAST,
+   MUI_ONSCREEN_ENTRY_CENTRE
+};
+
 typedef struct materialui_handle
 {
    bool is_portrait;
@@ -1237,12 +1273,12 @@ typedef struct materialui_handle
    unsigned sys_bar_height;
    unsigned title_bar_height;
    unsigned header_shadow_height;
-   unsigned scrollbar_width;
    unsigned icon_size;
    unsigned sys_bar_icon_size;
    unsigned margin;
    unsigned sys_bar_margin;
    unsigned landscape_entry_margin;
+   unsigned entry_divider_width;
 
    /* Navigation bar parameters
     * Note: layout width and height are convenience
@@ -1254,14 +1290,15 @@ typedef struct materialui_handle
    unsigned nav_bar_layout_height;
    materialui_nav_bar_t nav_bar;
 
+   /* Scrollbar parameters */
+   materialui_scrollbar_t scrollbar;
+
    size_t first_onscreen_entry;
    size_t last_onscreen_entry;
 
    /* Y position of the vertical scroll */
    float scroll_y;
    float content_height;
-   float textures_arrow_alpha;
-   float categories_x_pos;
 
    char msgbox[1024];
 
@@ -1317,6 +1354,7 @@ typedef struct materialui_handle
    menu_thumbnail_path_data_t *thumbnail_path_data;
    unsigned thumbnail_width_max;
    unsigned thumbnail_height_max;
+   bool primary_thumbnail_available;
    bool secondary_thumbnail_enabled;
 
    enum materialui_list_view_type list_view_type;
@@ -1918,9 +1956,54 @@ static unsigned materialui_count_lines(const char *str)
    return lines;
 }
 
-/* Compute the line height for each menu entry. */
-static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
-      int height)
+/* Initialises scrollbar parameters (width/height) */
+static void materialui_scrollbar_init(
+      materialui_handle_t* mui,
+      unsigned width, unsigned height, unsigned header_height)
+{
+   int view_height = (int)height - (int)header_height - (int)mui->nav_bar_layout_height;
+   int scrollbar_height;
+
+   /* Set initial defaults */
+   mui->scrollbar.width   = mui->dip_base_unit_size / 36;
+   mui->scrollbar.height  = 0;
+   mui->scrollbar.x       = 0;
+   mui->scrollbar.y       = 0;
+   mui->scrollbar.active  = false;
+   mui->scrollbar.dragged = false;
+
+   /* If current window is too small to show any content
+    * (unlikely) or all entries currently fit on a single
+    * screen, scrollbar is disabled - can return immediately */
+   if ((view_height <= 0) ||
+       (mui->content_height <= (float)view_height))
+      return;
+
+   /* If we pass the above check, scrollbar is enabled */
+   mui->scrollbar.active = true;
+
+   /* Get scrollbar height */
+   scrollbar_height = (int)((float)(view_height * view_height) / mui->content_height);
+
+   /* > Apply vertical padding to improve visual appearance */
+   scrollbar_height -= (int)mui->scrollbar.width * 2;
+
+   /* > If the scrollbar is extremely short, display
+    *   it as a square */
+   if (scrollbar_height < (int)mui->scrollbar.width)
+      scrollbar_height = (int)mui->scrollbar.width;
+
+   mui->scrollbar.height = (unsigned)scrollbar_height;
+
+   /* X and Y position are dynamic, and must be
+    * set elsewhere */
+}
+
+/* Calculate physical size of each menu entry, plus
+ * any derived screen dimensions of menu list elements */
+static void materialui_compute_entries_box(
+      materialui_handle_t* mui,
+      unsigned width, unsigned height, unsigned header_height)
 {
    unsigned i;
    int usable_width     =
@@ -1954,6 +2037,10 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
       }
 
       mui->content_height = sum;
+
+      /* Total height is now known - can initialise scrollbar */
+      materialui_scrollbar_init(mui, width, height, header_height);
+
       return;
    }
 
@@ -1969,7 +2056,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
       if (mui->is_portrait)
       {
          if (mui->secondary_thumbnail_enabled)
-            thumbnail_margin = (int)mui->scrollbar_width;
+            thumbnail_margin = (int)mui->scrollbar.width;
       }
       /* Account for additional padding in landscape mode */
       else
@@ -2048,6 +2135,9 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width,
    }
 
    mui->content_height = sum;
+
+   /* Total height is now known - can initialise scrollbar */
+   materialui_scrollbar_init(mui, width, height, header_height);
 }
 
 /* Compute the scroll value depending on the highlighted entry */
@@ -2109,6 +2199,52 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    return selection_centre - view_centre;
 }
 
+/* Returns true if specified entry is currently
+ * displayed on screen */
+static bool INLINE materialui_entry_onscreen(
+      materialui_handle_t *mui, size_t idx)
+{
+   return (idx >= mui->first_onscreen_entry) &&
+         (idx <= mui->last_onscreen_entry);
+}
+
+/* If currently selected entry is off screen,
+ * moves selection to specified on screen target
+ * > Does nothing if currently selected item is
+ *   already on screen
+ * > Returns index of selected item */
+static size_t materialui_auto_select_onscreen_entry(
+      materialui_handle_t *mui,
+      enum materialui_onscreen_entry_position_type target_entry)
+{
+   size_t selection = menu_navigation_get_selection();
+
+   /* Check whether selected item is already on screen */
+   if (materialui_entry_onscreen(mui, selection))
+      return selection;
+
+   /* Update selection index */
+   switch (target_entry)
+   {
+      case MUI_ONSCREEN_ENTRY_FIRST:
+         selection = mui->first_onscreen_entry;
+         break;
+      case MUI_ONSCREEN_ENTRY_LAST:
+         selection = mui->last_onscreen_entry;
+         break;
+      case MUI_ONSCREEN_ENTRY_CENTRE:
+      default:
+         selection = (mui->first_onscreen_entry >> 1) +
+               (mui->last_onscreen_entry >> 1);
+         break;
+   }
+
+   /* Apply new selection */
+   menu_navigation_set_selection(selection);
+
+   return selection;
+}
+
 static void materialui_layout(
       materialui_handle_t *mui, bool video_is_threaded);
 
@@ -2123,13 +2259,13 @@ static void materialui_render(void *data,
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   int header_height        = menu_display_get_header_height();
+   unsigned header_height   = menu_display_get_header_height();
    size_t entries_end       = menu_entries_get_size();
    file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
    bool first_entry_found   = false;
    bool last_entry_found    = false;
    size_t i;
-   int bottom;
+   float bottom;
    float scale_factor;
 
    if (!settings || !mui || !list)
@@ -2156,6 +2292,15 @@ static void materialui_render(void *data,
                   settings->uints.menu_materialui_landscape_layout_optimization;
       mui->last_auto_rotate_nav_bar           = settings->bools.menu_materialui_auto_rotate_nav_bar;
 
+      /* Screen dimensions/layout are going to change
+       * > Once this happens, menu will scroll to the
+       *   currently selected entry
+       * > If selected entry is off screen, this will
+       *   throw the user to an unexpected location
+       * > To avoid this, we auto select the 'middle'
+       *   on screen entry before readjusting the layout */
+      materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
       materialui_layout(mui, video_driver_is_threaded());
@@ -2167,7 +2312,7 @@ static void materialui_render(void *data,
       menu_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
 
       if (mui->font_data.list.font && mui->font_data.hint.font)
-         materialui_compute_entries_box(mui, width, height);
+         materialui_compute_entries_box(mui, width, height, header_height);
 
       /* After calling populate_entries(), we need to call
        * materialui_get_scroll() so the last selected item
@@ -2179,7 +2324,7 @@ static void materialui_render(void *data,
       /* Kill any existing scroll animation */
       menu_animation_kill_by_tag(&tag);
 
-      /* Reset scroll accleration */
+      /* Reset scroll acceleration */
       menu_input_set_pointer_y_accel(0.0f);
 
       /* Get new scroll position */
@@ -2199,14 +2344,41 @@ static void materialui_render(void *data,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
    if (mui->pointer.type != MENU_POINTER_DISABLED)
-      mui->scroll_y -= mui->pointer.y_accel;
+   {
+      /* If user is dragging the scrollbar, scroll
+       * location is determined by current pointer
+       * y position */
+      if (mui->scrollbar.dragged)
+      {
+         float view_height  = (float)height - (float)header_height - (float)mui->nav_bar_layout_height;
+         float view_y       = (float)mui->pointer.y - (float)header_height;
+         float y_scroll_max = mui->content_height - view_height;
+
+         /* Scroll position is just fraction of view height
+          * multiplied by y_scroll_max...
+          * ...but to achieve proper synchronisation with the
+          * scrollbar, have to offset y position and limit
+          * view height range... */
+         view_y      -= (float)mui->scrollbar.width + ((float)mui->scrollbar.height / 2.0f);
+         view_height -= (float)((2 * mui->scrollbar.width) + mui->scrollbar.height);
+
+         if (view_height > 0.0f)
+            mui->scroll_y = y_scroll_max * (view_y / view_height);
+         else
+            mui->scroll_y = 0.0f;
+      }
+      /* ...otherwise, just apply normal pointer
+       * acceleration */
+      else
+         mui->scroll_y -= mui->pointer.y_accel;
+   }
 
    if (mui->scroll_y < 0.0f)
       mui->scroll_y = 0.0f;
 
-   bottom = mui->content_height - height + header_height + mui->nav_bar_layout_height;
-   if (mui->scroll_y > (float)bottom)
-      mui->scroll_y = (float)bottom;
+   bottom = mui->content_height - (float)height + (float)header_height + (float)mui->nav_bar_layout_height;
+   if (mui->scroll_y > bottom)
+      mui->scroll_y = bottom;
 
    if (mui->content_height < (height - header_height - mui->nav_bar_layout_height))
       mui->scroll_y = 0.0f;
@@ -2225,19 +2397,19 @@ static void materialui_render(void *data,
       if (!node)
          break;
 
-      /* Get current entry y postion */
-      entry_y = header_height - mui->scroll_y + node->y;
+      /* Get current entry y position */
+      entry_y = (int)((float)header_height - mui->scroll_y + node->y);
 
-      /* Check whether this is the first onscreen entry */
+      /* Check whether this is the first on screen entry */
       if (!first_entry_found)
       {
-         if ((entry_y + (int)node->entry_height) > header_height)
+         if ((entry_y + (int)node->entry_height) > (int)header_height)
          {
             mui->first_onscreen_entry = i;
             first_entry_found = true;
          }
       }
-      /* Check whether this is the last onscreen entry */
+      /* Check whether this is the last on screen entry */
       else if (!last_entry_found)
       {
          if (entry_y > ((int)height - (int)mui->nav_bar_layout_height))
@@ -2255,7 +2427,8 @@ static void materialui_render(void *data,
       /* Track pointer input, if required */
       if (first_entry_found &&
           !last_entry_found &&
-          (mui->pointer.type != MENU_POINTER_DISABLED))
+          (mui->pointer.type != MENU_POINTER_DISABLED) &&
+          !mui->scrollbar.dragged)
       {
          int16_t pointer_x = mui->pointer.x;
          int16_t pointer_y = mui->pointer.y;
@@ -2808,7 +2981,7 @@ static void materialui_render_menu_entry_playlist_list(
       if (mui->is_portrait)
       {
          if (mui->secondary_thumbnail_enabled)
-            thumbnail_margin = (int)mui->scrollbar_width;
+            thumbnail_margin = (int)mui->scrollbar.width;
       }
       /* When using landscape display orientations, we
        * have enough screen space to improve thumbnail
@@ -2948,7 +3121,7 @@ static void materialui_render_menu_entry_playlist_list(
                (float)(x_offset + entry_margin),
                entry_y + (float)node->entry_height,
                (unsigned)usable_width,
-               mui->nav_bar.divider_width,
+               mui->entry_divider_width,
                width,
                height,
                mui->colors.divider);
@@ -3089,7 +3262,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
                   ((float)mui->dip_base_unit_size / 10.0f) +
                   (float)mui->font_data.list.font_height,
             (unsigned)usable_width,
-            mui->nav_bar.divider_width,
+            mui->entry_divider_width,
             width,
             height,
             mui->colors.divider);
@@ -3098,52 +3271,19 @@ static void materialui_render_menu_entry_playlist_dual_icon(
 static void materialui_render_scrollbar(
       materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      unsigned header_height,
-      unsigned width, unsigned height,
-      int x_offset)
+      unsigned width, unsigned height)
 {
-   int view_height = (int)height - (int)header_height - (int)mui->nav_bar_layout_height;
-   int scrollbar_height;
-   int x;
-   int y;
-
-   /* Sanity check */
-   if (view_height <= 0)
+   /* Do nothing if scrollbar is disabled */
+   if (!mui->scrollbar.active)
       return;
-
-   if (mui->content_height < (float)view_height)
-      return;
-
-   /* Get scrollbar height */
-   scrollbar_height = (int)((float)(view_height * view_height) / mui->content_height);
-
-   /* Get scrollbar y position */
-   y = (int)header_height + (int)(mui->scroll_y * (float)view_height / mui->content_height);
-
-   /* Apply vertical padding to improve visual appearance */
-   scrollbar_height -= (int)mui->scrollbar_width * 2;
-   y                += (int)mui->scrollbar_width;
-
-   /* If the scrollbar is extremely short, display
-    * it as a square */
-   if (scrollbar_height < (int)mui->scrollbar_width)
-      scrollbar_height = (int)mui->scrollbar_width;
-
-   /* Get scrollbar x position */
-   x = x_offset + (int)width - (int)mui->scrollbar_width - (int)mui->nav_bar_layout_width;
-   /* > Scrollbar must be offset by the current
-    *   landscape border width when landscape optimisations
-    *   are enabled */
-   if (mui->landscape_entry_margin > mui->margin)
-      x -= (int)mui->landscape_entry_margin - (int)mui->margin;
 
    /* Draw scrollbar */
    menu_display_draw_quad(
          video_info,
-         x,
-         y,
-         mui->scrollbar_width,
-         (unsigned)scrollbar_height,
+         mui->scrollbar.x,
+         mui->scrollbar.y,
+         mui->scrollbar.width,
+         mui->scrollbar.height,
          width, height,
          mui->colors.scrollbar);
 }
@@ -3163,6 +3303,7 @@ static void materialui_render_menu_list(
    unsigned header_height      = menu_display_get_header_height();
    size_t selection            = menu_navigation_get_selection();
    bool touch_feedback_enabled =
+         !mui->scrollbar.dragged &&
          (mui->touch_feedback_alpha >= 0.5f) &&
          (mui->touch_feedback_selection == menu_input_get_pointer_selection());
 
@@ -3253,7 +3394,7 @@ static void materialui_render_menu_list(
 
    /* Draw scrollbar */
    materialui_render_scrollbar(
-         mui, video_info, header_height, width, height, x_offset);
+         mui, video_info, width, height);
 }
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
@@ -3380,43 +3521,48 @@ static void materialui_render_selection_highlight(
       size_t selection, float *color)
 {
    /* Only draw highlight if selection is onscreen */
-   if ((selection >= mui->first_onscreen_entry) &&
-       (selection <= mui->last_onscreen_entry))
+   if (materialui_entry_onscreen(mui, selection))
    {
       file_list_t *list        = NULL;
       materialui_node_t *node  = NULL;
-      int highlight_x_offset   = x_offset;
+      int highlight_x          = x_offset;
+      int highlight_y          = 0;
       int highlight_width      = (int)width - (int)mui->nav_bar_layout_width;
+      int highlight_height     = 0;
 
       /* If landscape optimisations are enabled/active,
        * adjust highlight layout */
       if (mui->landscape_entry_margin > 0)
       {
-         highlight_x_offset += (int)mui->landscape_entry_margin - (int)mui->margin;
-         highlight_width    -= (int)(2 * mui->landscape_entry_margin) - (int)(2 * mui->margin);
-         highlight_width     = (highlight_width < 0) ? 0 : highlight_width;
+         highlight_x     += (int)mui->landscape_entry_margin - (int)mui->margin;
+         highlight_width -= (int)(2 * mui->landscape_entry_margin) - (int)(2 * mui->margin);
+         highlight_width  = (highlight_width < 0) ? 0 : highlight_width;
       }
 
       list = menu_entries_get_selection_buf_ptr(0);
-
       if (!list)
          return;
 
       node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
-
       if (!node)
          return;
 
-      /* Note: we add 1 to the height here to avoid obvious
-       * 'seams' when entries have dividers
-       * (rounding errors would otherwise cause 1px vertical
-       * gaps...) */
+      /* Now we have a valid node, can determine
+       * highlight y position and height...
+       * > Note: We round y position down and add 1 to
+       *   the height in order to avoid obvious 'seams'
+       *   when entries have dividers (rounding errors
+       *   would otherwise cause 1px vertical gaps) */
+      highlight_y      = (int)((float)header_height - mui->scroll_y + node->y);
+      highlight_height = (int)(node->entry_height + 1.5f);
+
+      /* Draw highlight quad */
       menu_display_draw_quad(
             video_info,
-            highlight_x_offset,
-            header_height - mui->scroll_y + node->y,
+            highlight_x,
+            highlight_y,
             (unsigned)highlight_width,
-            node->entry_height + 1,
+            (unsigned)highlight_height,
             width,
             height,
             color);
@@ -3430,7 +3576,10 @@ static void materialui_render_entry_touch_feedback(
 {
    /* Check whether pointer is currently
     * held and stationary */
-   bool pointer_active = (mui->pointer.pressed && !mui->pointer.dragged);
+   bool pointer_active =
+         (!mui->scrollbar.dragged &&
+          mui->pointer.pressed &&
+          !mui->pointer.dragged);
 
    /* If pointer is held and stationary, need to check
     * that current pointer selection is valid
@@ -3503,8 +3652,7 @@ static void materialui_render_header(
    int title_x                   = 0;
    bool show_back_icon           = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
    bool show_search_icon         = mui->is_playlist || mui->is_file_list;
-   bool show_switch_view_icon    = mui->is_playlist &&
-         menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+   bool show_switch_view_icon    = mui->is_playlist && mui->primary_thumbnail_available;
    bool use_landscape_layout     = !mui->is_portrait &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
    char menu_title_buf[255];
@@ -4163,6 +4311,38 @@ static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
    }
 }
 
+/* Updates scrollbar draw position */
+static void materialui_update_scrollbar(
+      materialui_handle_t *mui,
+      unsigned width, unsigned height,
+      unsigned header_height, int x_offset)
+{
+   /* Do nothing if scrollbar is disabled */
+   if (mui->scrollbar.active)
+   {
+      int view_height = (int)height - (int)header_height - (int)mui->nav_bar_layout_height;
+      int y_max       = view_height + (int)header_height - (int)(mui->scrollbar.width + mui->scrollbar.height);
+
+      /* Get X position */
+      mui->scrollbar.x = x_offset + (int)width - (int)mui->scrollbar.width - (int)mui->nav_bar_layout_width;
+
+      /* > Scrollbar must be offset by the current
+       *   landscape border width when landscape optimisations
+       *   are enabled */
+      if (mui->landscape_entry_margin > mui->margin)
+         mui->scrollbar.x -= (int)mui->landscape_entry_margin - (int)mui->margin;
+
+      /* Get Y position */
+      mui->scrollbar.y = (int)header_height + (int)(mui->scroll_y * (float)view_height / mui->content_height);
+
+      /* > Apply vertical padding to improve visual appearance */
+      mui->scrollbar.y += (int)mui->scrollbar.width;
+
+      /* > Ensure we don't fall off the bottom of the screen... */
+      mui->scrollbar.y = (mui->scrollbar.y > y_max) ? y_max : mui->scrollbar.y;
+   }
+}
+
 /* Main function of the menu driver
  * Draws all menu elements */
 static void materialui_frame(void *data, video_frame_info_t *video_info)
@@ -4236,7 +4416,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_render_entry_touch_feedback(
          mui, video_info, width, height, header_height, list_x_offset, selection);
 
-   /* Draw menu list */
+   /* Draw menu list
+    * > Must update scrollbar draw position before
+    *   list is rendered
+    * > We handle the scrollbar in a separate step
+    *   like this because we need to track its
+    *   position in order to enable fast navigation
+    *   via scrollbar 'dragging' */
+   materialui_update_scrollbar(mui, width, height, header_height, list_x_offset);
    materialui_render_menu_list(mui, video_info, width, height, list_x_offset);
 
    /* Flush first layer of text
@@ -4349,15 +4536,24 @@ static void materialui_set_list_view_type(
       materialui_handle_t *mui, settings_t *settings)
 {
    if (!mui->is_playlist)
-      mui->list_view_type = MUI_LIST_VIEW_DEFAULT;
+   {
+      /* This is not a playlist - set default list
+       * view and register that primary thumbnail
+       * is disabled */
+      mui->list_view_type              = MUI_LIST_VIEW_DEFAULT;
+      mui->primary_thumbnail_available = false;
+   }
    else
    {
       /* This is a playlist - set non-thumbnail view
        * by default (saves checks later) */
       mui->list_view_type = MUI_LIST_VIEW_PLAYLIST;
 
-      /* Check whether thumbnails are enabled */
-      if (menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+      /* Check whether primary thumbnail is enabled */
+      mui->primary_thumbnail_available =
+            menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+
+      if (mui->primary_thumbnail_available)
       {
          /* Get thumbnail view mode based on current
           * display orientation */
@@ -4662,7 +4858,7 @@ static void materialui_set_secondary_thumbnail_enable(
             /* > Account for additional padding (margins) when
              *   using portrait orientations */
             if (mui->is_portrait)
-               thumbnail_margin = (int)mui->scrollbar_width;
+               thumbnail_margin = (int)mui->scrollbar.width;
             /* > Account for additional padding (margins) when
              *   using landscape orientations */
             else
@@ -4742,7 +4938,6 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    hint_font_size            = mui->dip_base_unit_size / 11;
 
    mui->header_shadow_height = mui->dip_base_unit_size / 36;
-   mui->scrollbar_width      = mui->dip_base_unit_size / 36;
 
    mui->margin               = mui->dip_base_unit_size / 9;
    mui->icon_size            = mui->dip_base_unit_size / 3;
@@ -4750,13 +4945,20 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    mui->sys_bar_margin       = mui->dip_base_unit_size / 12;
    mui->sys_bar_icon_size    = mui->dip_base_unit_size / 7;
 
+   mui->entry_divider_width  = (mui->last_scale_factor > 1.0f) ?
+         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
+
+   /* Note: We used to set scrollbar width here, but
+    * since we now have several scrollbar parameters
+    * that cannot be determined until materialui_compute_entries_box()
+    * has been called, we delegate this to materialui_scrollbar_init() */
+
    /* Get navigation bar layout
     * > Normally drawn at the bottom of the screen,
     *   but in landscape orientations should be placed
     *   on the right hand side */
    mui->nav_bar.width                  = mui->dip_base_unit_size / 3;
-   mui->nav_bar.divider_width          = (mui->last_scale_factor > 1.0f) ?
-         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
+   mui->nav_bar.divider_width          = mui->entry_divider_width;
    mui->nav_bar.selection_marker_width = mui->nav_bar.width / 16;
 
    if (!mui->is_portrait && mui->last_auto_rotate_nav_bar)
@@ -4963,6 +5165,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    /* Initialise navigation bar */
    materialui_init_nav_bar(mui);
+
+   /* Set initial thumbnail stream delay */
+   menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
    return menu;
 error:
@@ -5268,21 +5473,21 @@ static void materialui_init_transition_animation(
    if (mui->menu_stack_flushed)
    {
       if (settings->uints.menu_materialui_transition_animation !=
-                        MATERIALUI_TRANSITION_ANIM_FADE)
+               MATERIALUI_TRANSITION_ANIM_FADE)
          mui->transition_x_offset = -1.0f;
    }
    /* >> Menu 'forward' action */
    else if (stack_size > mui->last_stack_size)
    {
       if (settings->uints.menu_materialui_transition_animation ==
-            MATERIALUI_TRANSITION_ANIM_SLIDE)
+               MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = 1.0f;
    }
    /* >> Menu 'back' action */
    else if (stack_size < mui->last_stack_size)
    {
       if (settings->uints.menu_materialui_transition_animation ==
-            MATERIALUI_TRANSITION_ANIM_SLIDE)
+               MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = -1.0f;
    }
    /* >> Menu tab 'switch' action - using navigation
@@ -5328,7 +5533,7 @@ static void materialui_init_transition_animation(
    }
 }
 
-/* A new list had been pushed */
+/* A new list has been pushed */
 static void materialui_populate_entries(
       void *data, const char *path,
       const char *label, unsigned i)
@@ -5537,62 +5742,231 @@ static bool materialui_preswitch_tabs(
    return stack_flushed;
 }
 
-/* This callback is not caching anything. We use it to navigate the tabs
-   with the keyboard */
-static void materialui_list_cache(void *data,
-      enum menu_list_type type, unsigned action)
+/* Navigates to a top level menu tab
+ * > If tab != NULL, switches directly to tab
+ * > If tab == NULL, this is a left/right navigation
+ *   event - in this case, 'action' is used to determine
+ *   target tab */
+static int materialui_switch_tabs(
+      materialui_handle_t *mui, materialui_nav_bar_menu_tab_t *tab,
+      enum menu_action action)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)data;
+   materialui_nav_bar_menu_tab_t *target_tab = tab;
 
-   if (!mui)
-      return;
-
-   mui->need_compute                    = true;
+   /* Reset status parameters to default values
+    * > Saves checks later */
    mui->nav_bar.menu_navigation_wrapped = false;
+   mui->menu_stack_flushed              = false;
 
-   switch (type)
+   /* If target tab is NULL, interpret menu action */
+   if (!target_tab)
    {
-      case MENU_LIST_PLAIN:
-         break;
-      case MENU_LIST_HORIZONTAL:
-         {
-            int target_tab_index = 0;
+      int target_tab_index = 0;
 
-            switch (action)
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
             {
-               case MENU_ACTION_LEFT:
+               target_tab_index = (int)mui->nav_bar.active_menu_tab_index - 1;
 
-                  target_tab_index = (int)mui->nav_bar.active_menu_tab_index - 1;
-
-                  if (target_tab_index < 0)
-                  {
-                     target_tab_index = (int)mui->nav_bar.num_menu_tabs - 1;
-                     mui->nav_bar.menu_navigation_wrapped = true;
-                  }
-
-                  break;
-               default:
-
-                  target_tab_index = (int)mui->nav_bar.active_menu_tab_index + 1;
-
-                  if (target_tab_index >= mui->nav_bar.num_menu_tabs)
-                  {
-                     target_tab_index = 0;
-                     mui->nav_bar.menu_navigation_wrapped = true;
-                  }
-
-                  break;
+               if (target_tab_index < 0)
+               {
+                  target_tab_index = (int)mui->nav_bar.num_menu_tabs - 1;
+                  mui->nav_bar.menu_navigation_wrapped = true;
+               }
             }
+            break;
+         case MENU_ACTION_RIGHT:
+            {
+               target_tab_index = (int)mui->nav_bar.active_menu_tab_index + 1;
 
-            /* Note: Since this is only called when we are at
-             * the top level of the menu, this will never cause
-             * a stack flush */
-            materialui_preswitch_tabs(mui, &mui->nav_bar.menu_tabs[target_tab_index]);
+               if (target_tab_index >= mui->nav_bar.num_menu_tabs)
+               {
+                  target_tab_index = 0;
+                  mui->nav_bar.menu_navigation_wrapped = true;
+               }
+            }
+            break;
+         default:
+            /* Error condition */
+            return -1;
+      }
+
+      target_tab = &mui->nav_bar.menu_tabs[target_tab_index];
+   }
+
+   /* Cannot switch to a tab that is already active */
+   if (!target_tab->active)
+   {
+      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+      size_t selection           = menu_navigation_get_selection();
+      menu_file_list_cbs_t *cbs  = selection_buf ?
+            (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(
+                  selection_buf, selection) : NULL;
+      bool stack_flushed         = false;
+      int ret                    = 0;
+
+      /* Sanity check */
+      if (!selection_buf || !menu_stack || !cbs)
+         return -1;
+
+      if (!cbs->action_content_list_switch)
+         return -1;
+
+      /* Perform pre-switch operations */
+      stack_flushed = materialui_preswitch_tabs(mui, target_tab);
+
+      /* Perform switch */
+      ret = cbs->action_content_list_switch(
+            selection_buf, menu_stack, "", "", 0);
+
+      /* Note: If materialui_preswitch_tabs() flushes
+       * the stack, then both materialui_preswitch_tabs()
+       * AND action_content_list_switch() will cause the
+       * menu to refresh
+       * > For animation purposes, we therefore cannot
+       *   register 'menu_stack_flushed' status until
+       *   AFTER action_content_list_switch() has been
+       *   called */
+      mui->menu_stack_flushed = stack_flushed;
+
+      return ret;
+   }
+
+   return 0;
+}
+
+/* Material UI requires special handling of certain
+ * menu input functions, due to the fact that navigation
+ * controls are relative to the currently selected item,
+ * but with Material UI it is common for the currently
+ * selected item to be off screen (so normal up/down/left/
+ * right input can send the user to unexpected menu
+ * locations).
+ * This function pre-processes a menu action, performing
+ * internal navigation adjustments.
+ * The returned menu action will in most cases be the same
+ * as the provided function argument, but may be
+ * MENU_ACTION_NOOP if the current selection position
+ * requires input to be inhibited */
+static enum menu_action materialui_parse_menu_entry_action(
+      materialui_handle_t *mui, enum menu_action action)
+{
+   enum menu_action new_action = action;
+
+   /* Scan user inputs */
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+         /* Navigate up/down
+          * > If current selection is off screen,
+          *   auto select 'middle' item */
+         materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+         break;
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         /* Navigate left/right
+          * > If this is a top level menu, left/right is
+          *   used to switch tabs */
+         if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+         {
+            materialui_switch_tabs(mui, NULL, action);
+            new_action = MENU_ACTION_NOOP;
+         }
+         else
+         {
+            /* If this is a playlist, file list or drop down
+             * list, left/right are used for fast navigation
+             * > If current selection is off screen, auto select
+             *  'middle' item */
+            if (mui->is_playlist || mui->is_file_list || mui->is_dropdown_list)
+               materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+            else
+            {
+               size_t selection = menu_navigation_get_selection();
+
+               /* In all other cases, if current selection is off
+                * screen, have to disable input - otherwise user can
+                * inadvertently change the value of settings they
+                * cannot see... */
+               if (!materialui_entry_onscreen(mui, selection))
+                  new_action = MENU_ACTION_NOOP;
+            }
          }
          break;
+      case MENU_ACTION_SCROLL_UP:
+         /* Descend alphabet (Z towards A)
+          * > If current selection is off screen,
+          *   auto select *last* item */
+         materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_LAST);
+         break;
+      case MENU_ACTION_SCROLL_DOWN:
+         /* Ascend alphabet (A towards Z)
+          * > If current selection is off screen,
+          *   auto select *first* item */
+         materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
+         break;
       default:
+         /* In all other cases, pass through input
+          * menu action without intervention */
          break;
    }
+
+   return new_action;
+}
+
+/* Menu entry action callback
+ * > Performs required Material UI menu
+ *   input handling/pre-processing */
+static int materialui_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)userdata;
+   menu_entry_t *entry_ptr  = entry;
+   size_t selection         = i;
+   size_t new_selection;
+   enum menu_action new_action;
+
+   if (!mui)
+      generic_menu_entry_action(userdata, entry, i, action);
+
+   /* Process input action */
+   new_action = materialui_parse_menu_entry_action(mui, action);
+
+   /* NOTE: It would make sense to stop here if the
+    * resultant action is a NOOP (MENU_ACTION_NOOP),
+    * but the underlying menu code requires us to call
+    * generic_menu_entry_action() even in this case.
+    * If we don't, internal breakage will occur - so
+    * ignore new_action type, and just continue
+    * regardless... */
+
+   /* Check whether current selection has changed
+    * (due to automatic on screen entry selection...) */
+   new_selection = menu_navigation_get_selection();
+
+   if (new_selection != selection)
+   {
+      static menu_entry_t new_entry;
+
+      /* Selection has changed - must update entry
+       * pointer (we could probably get away without
+       * doing this, but it would break the API...) */
+      menu_entry_init(&new_entry);
+      new_entry.path_enabled       = false;
+      new_entry.label_enabled      = false;
+      new_entry.rich_label_enabled = false;
+      new_entry.value_enabled      = false;
+      new_entry.sublabel_enabled   = false;
+      menu_entry_get(&new_entry, 0, new_selection, NULL, true);
+      entry_ptr                    = &new_entry;
+   }
+
+   /* Call standard generic_menu_entry_action() function */
+   return generic_menu_entry_action(userdata, entry_ptr, new_selection, new_action);
 }
 
 /* A new list has been pushed. We use this callback to customize a few lists for
@@ -5799,9 +6173,10 @@ static size_t materialui_list_get_selection(void *data)
    return (size_t)mui->nav_bar.active_menu_tab_index;
 }
 
-/* Pointer down event
- * Used cache the initial pointer x/y position,
- * and initialise touch feedback animations */
+/* Pointer down event - used to:
+ * > Cache the initial pointer x/y position
+ * > Initialise touch feedback animations
+ * > Activate scrollbar 'dragging' */
 static int materialui_pointer_down(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
@@ -5812,15 +6187,93 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
+   /* Get initial pointer location and scroll position */
    mui->pointer_start_x        = x;
    mui->pointer_start_y        = y;
    mui->pointer_start_scroll_y = mui->scroll_y;
 
-   /* Note: ptr argument is useless here, since it
-    * has no meaning when handling touch screen input... */
+   /* Initialise touch feedback animation
+    * > Note: ptr argument is useless here, since it
+    *   has no meaning when handling touch screen input... */
    mui->touch_feedback_selection        = 0;
    mui->touch_feedback_alpha            = 0.0f;
    mui->touch_feedback_update_selection = true;
+
+   /* Enable scrollbar dragging, if required */
+
+   /* > Disable by default (saves checks later) */
+   mui->scrollbar.dragged = false;
+
+   /* > Check if scrollbar is enabled */
+   if (mui->scrollbar.active)
+   {
+      unsigned header_height     = menu_display_get_header_height();
+      menu_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
+      unsigned width;
+      unsigned height;
+      int drag_margin_horz;
+      int drag_margin_vert;
+
+      video_driver_get_size(&width, &height);
+
+      /* Check whether pointer down event is within
+       * vertical list region */
+      if ((y < header_height) ||
+          (y > height - mui->nav_bar_layout_height))
+         return 0;
+
+      /* Determine horizontal width of scrollbar
+       * 'grab box' */
+      drag_margin_horz = 2 * (int)mui->margin;
+      /* > If this is a landscape layout with navigation
+       *   bar on the right, and landscape optimisations
+       *   are disabled (or inhibited due to insufficient
+       *   screen width), need to increase 'grab box' size
+       *   (otherwise the active region is too close to the
+       *   navigation bar) */
+      if (!mui->is_portrait)
+      {
+         if (mui->landscape_entry_margin <= mui->margin)
+            drag_margin_horz += (int)mui->margin;
+         else if (mui->landscape_entry_margin <= 2 * mui->margin)
+            drag_margin_horz += (int)((2 * mui->margin) - mui->landscape_entry_margin);
+      }
+
+      /* Check whether pointer X position is within
+       * scrollbar 'grab box' */
+      if (((int)x < mui->scrollbar.x - drag_margin_horz) ||
+          ((int)x > mui->scrollbar.x + (int)mui->scrollbar.width))
+         return 0;
+
+      /* Determine vertical height of scrollbar
+       * 'grab box' */
+      drag_margin_vert = 2 * (int)mui->margin;
+      /* > If scrollbar is very short, increase 'grab
+       *   box' size */
+      if (mui->scrollbar.height < mui->margin)
+         drag_margin_vert += (int)(mui->margin - mui->scrollbar.height);
+
+      /* Check whether pointer Y position is within
+       * scrollbar 'grab box' */
+      if (((int)y < mui->scrollbar.y - drag_margin_vert) ||
+          ((int)y > mui->scrollbar.y + (int)mui->scrollbar.height + drag_margin_vert))
+         return 0;
+
+      /* User has 'selected' scrollbar */
+
+      /* > Kill any existing scroll animations
+       *   and reset scroll acceleration */
+      menu_animation_kill_by_tag(&tag);
+      menu_input_set_pointer_y_accel(0.0f);
+
+      /* > Enable dragging */
+      mui->scrollbar.dragged = true;
+
+      /* Increase thumbnail stream delay
+       * (prevents overloading the system with
+       * hundreds of image requests...) */
+      menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG);
+   }
 
    return 0;
 }
@@ -5828,49 +6281,14 @@ static int materialui_pointer_down(void *userdata,
 static int materialui_pointer_up_swipe_horz_plain_list(
       materialui_handle_t *mui, menu_entry_t *entry,
       unsigned height, unsigned header_height, unsigned y,
-      size_t selection, size_t entries_end,
-      bool scroll_up)
+      size_t selection, bool scroll_up)
 {
    /* A swipe in the top half of the screen ascends/
-    * decends the alphabet */
+    * descends the alphabet */
    if (y < (height >> 1))
-   {
-      menu_entry_t *entry_ptr = entry;
-      size_t new_selection    = selection;
-      menu_entry_t new_entry;
-
-      /* Check if currently active item is off screen */
-      if ((selection < mui->first_onscreen_entry) ||
-          (selection > mui->last_onscreen_entry))
-      {
-         /* ...if it is, must immediately select entry
-          * at 'edge' of screen in opposite direction to
-          * scroll action */
-         new_selection = scroll_up ?
-               mui->last_onscreen_entry : mui->first_onscreen_entry;
-
-         if (new_selection < entries_end)
-         {
-            menu_navigation_set_selection(new_selection);
-
-            /* Update entry pointer */
-            menu_entry_init(&new_entry);
-            new_entry.path_enabled       = false;
-            new_entry.label_enabled      = false;
-            new_entry.rich_label_enabled = false;
-            new_entry.value_enabled      = false;
-            new_entry.sublabel_enabled   = false;
-            menu_entry_get(&new_entry, 0, new_selection, NULL, true);
-            entry_ptr                    = &new_entry;
-         }
-         else
-            new_selection = selection; /* Should never happen... */
-      }
-
-      return menu_entry_action(
-            entry_ptr, (unsigned)new_selection,
+      return materialui_menu_entry_action(
+            mui, entry, selection,
             scroll_up ? MENU_ACTION_SCROLL_UP : MENU_ACTION_SCROLL_DOWN);
-   }
    /* A swipe in the bottom half of the screen scrolls
     * by 10% of the list size or one 'page', whichever
     * is largest */
@@ -5899,7 +6317,8 @@ static int materialui_pointer_up_swipe_horz_default(
    if ((ptr < entries_end) && (ptr == selection))
    {
       size_t new_selection = menu_navigation_get_selection();
-      ret                  = menu_entry_action(entry, (unsigned)selection, action);
+      ret                  = materialui_menu_entry_action(
+            mui, entry, selection, action);
 
       /* If we are changing a settings value, want to scroll
        * back to the 'pointer down' position. In all other cases
@@ -5951,7 +6370,7 @@ static int materialui_pointer_up_swipe_horz_default(
 
 static int materialui_pointer_up_nav_bar(
       materialui_handle_t *mui,
-      unsigned x, unsigned y, unsigned width, unsigned height, unsigned selection,
+      unsigned x, unsigned y, unsigned width, unsigned height, size_t selection,
       menu_file_list_cbs_t *cbs, menu_entry_t *entry, unsigned action)
 {
    unsigned num_tabs = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
@@ -5980,7 +6399,7 @@ static int materialui_pointer_up_nav_bar(
       {
          case MUI_NAV_BAR_ACTION_TAB_BACK:
             if (target_tab->enabled)
-               return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_CANCEL);
             break;
          case MUI_NAV_BAR_ACTION_TAB_RESUME:
             if (target_tab->enabled)
@@ -5992,27 +6411,8 @@ static int materialui_pointer_up_nav_bar(
    }
    /* Tab is a menu tab */
    else
-   {
-      materialui_nav_bar_menu_tab_t *target_tab =
-            &mui->nav_bar.menu_tabs[tab_index - 1];
-
-      if (!target_tab->active && cbs && cbs->action_content_list_switch)
-      {
-         file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-         bool stack_flushed         = false;
-         int ret                    = 0;
-
-         stack_flushed = materialui_preswitch_tabs(mui, target_tab);
-
-         ret = cbs->action_content_list_switch(
-               selection_buf, menu_stack, "", "", 0);
-
-         mui->menu_stack_flushed = stack_flushed;
-
-         return ret;
-      }
-   }
+      return materialui_switch_tabs(
+            mui, &mui->nav_bar.menu_tabs[tab_index - 1], MENU_ACTION_NOOP);
 
    return 0;
 }
@@ -6029,7 +6429,7 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
    /* Only enable view switching if we are currently viewing
     * a playlist with thumbnails enabled */
    if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       !menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+       !mui->primary_thumbnail_available)
       return;
 
    /* If currently selected item is off screen, then
@@ -6037,10 +6437,7 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
     * an unexpected off screen location...
     * To prevent this, must immediately select the
     * 'middle' on screen entry */
-   if ((selection < mui->first_onscreen_entry) ||
-       (selection > mui->last_onscreen_entry))
-      menu_navigation_set_selection(
-            (mui->first_onscreen_entry >> 1) + (mui->last_onscreen_entry >> 1));
+   materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
 
    /* Update setting based upon current display orientation */
    if (mui->is_portrait)
@@ -6074,7 +6471,7 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
        (secondary_thumbnail_enabled_prev && !mui->secondary_thumbnail_enabled))
       materialui_reset_thumbnails();
 
-   /* We want to 'fade in' when swtiching views, so
+   /* We want to 'fade in' when switching views, so
     * trigger normal transition animation */
    materialui_init_transition_animation(mui, settings);
 
@@ -6088,16 +6485,31 @@ static int materialui_pointer_up(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned width, height;
-   unsigned header_height, i;
+   unsigned header_height   = menu_display_get_header_height();
    size_t selection         = menu_navigation_get_selection();
    size_t entries_end       = menu_entries_get_size();
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
+   unsigned width;
+   unsigned height;
 
    if (!mui)
-      return 0;
+      return -1;
 
-   header_height = menu_display_get_header_height();
+   /* All input is ignored if user was previously
+    * dragging the scrollbar */
+   if (mui->scrollbar.dragged)
+   {
+      /* Must reset scroll acceleration, otherwise
+       * list will continue to 'drift' in drag direction */
+      menu_input_set_pointer_y_accel(0.0f);
+
+      /* Reset thumbnail stream delay to default */
+      menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
+
+      mui->scrollbar.dragged = false;
+      return 0;
+   }
+
    video_driver_get_size(&width, &height);
 
    switch (gesture)
@@ -6109,7 +6521,7 @@ static int materialui_pointer_up(void *userdata,
             if ((y > height - mui->nav_bar_layout_height) ||
                 (x > width  - mui->nav_bar_layout_width))
                return materialui_pointer_up_nav_bar(
-                     mui, x, y, width, height, (unsigned)selection, cbs, entry, action);
+                     mui, x, y, width, height, selection, cbs, entry, action);
             /* Tap/press header: Menu back/cancel, or search/switch view */
             else if (y < header_height)
             {
@@ -6118,8 +6530,7 @@ static int materialui_pointer_up(void *userdata,
                if (mui->is_playlist || mui->is_file_list)
                {
                   bool switch_view_enabled  =
-                        mui->is_playlist &&
-                        menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+                        mui->is_playlist && mui->primary_thumbnail_available;
                   /* Note: We add a little extra padding to minimise
                    * the risk of accidentally triggering a cancel */
                   unsigned back_x_threshold =
@@ -6139,13 +6550,13 @@ static int materialui_pointer_up(void *userdata,
                   }
                   /* Fall back to normal cancel action */
                   else if (x <= back_x_threshold)
-                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+                     return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_CANCEL);
                }
                /* If this is not a playlist or file list, a tap/press
                 * anywhere on the header triggers a MENU_ACTION_CANCEL
                 * action */
                else
-                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+                  return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_CANCEL);
             }
             /* Tap/press menu item: Activate and/or select item */
             else if ((ptr < entries_end) &&
@@ -6163,7 +6574,7 @@ static int materialui_pointer_up(void *userdata,
 
                   /* Perform a MENU_ACTION_SELECT on currently
                    * active item */
-                  return menu_entry_action(entry, ptr, MENU_ACTION_SELECT);
+                  return materialui_menu_entry_action(mui, entry, (size_t)ptr, MENU_ACTION_SELECT);
                }
                else
                {
@@ -6185,7 +6596,7 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
          if ((ptr < entries_end) && (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          {
@@ -6195,13 +6606,13 @@ static int materialui_pointer_up(void *userdata,
              * Note: For intuitive behaviour, a *left* swipe should
              * trigger a *right* navigation event */
             if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_RIGHT);
             /* If we are displaying a playlist/file list/dropdown list,
              * swipes are used for fast navigation */
             else if (mui->is_playlist || mui->is_file_list || mui->is_dropdown_list)
                return materialui_pointer_up_swipe_horz_plain_list(
                      mui, entry, height, header_height, y,
-                     selection, entries_end, true);
+                     selection, true);
             /* In all other cases, just perform a normal 'left'
              * navigation event */
             else
@@ -6217,13 +6628,13 @@ static int materialui_pointer_up(void *userdata,
              * Note: For intuitive behaviour, a *right* swipe should
              * trigger a *left* navigation event */
             if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-               menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_LEFT);
             /* If we are displaying a playlist/file list/dropdown list,
              * swipes are used for fast navigation */
             else if (mui->is_playlist || mui->is_file_list || mui->is_dropdown_list)
                return materialui_pointer_up_swipe_horz_plain_list(
                      mui, entry, height, header_height, y,
-                     selection, entries_end, false);
+                     selection, false);
             /* In all other cases, just perform a normal 'right'
              * navigation event */
             else
@@ -6760,8 +7171,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 
    /* Only refresh thumbnails if the current entry is
     * on-screen */
-   if ((i >= mui->first_onscreen_entry) &&
-       (i <= mui->last_onscreen_entry))
+   if (materialui_entry_onscreen(mui, (size_t)i))
    {
       file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
@@ -6812,7 +7222,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    materialui_list_clear,
-   materialui_list_cache,
+   NULL,
    materialui_list_push,
    materialui_list_get_selection,
    materialui_list_get_size,
@@ -6833,5 +7243,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL, /* update_savestate_thumbnail_image */
    materialui_pointer_down,
    materialui_pointer_up,
-   NULL /* get_load_content_animation_data */
+   NULL, /* get_load_content_animation_data */
+   materialui_menu_entry_action
 };
