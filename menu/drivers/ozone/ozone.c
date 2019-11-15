@@ -54,6 +54,11 @@
 #include "../../../tasks/tasks_internal.h"
 #include "../../../dynamic.h"
 
+/* Because DPI on RA is based on 1080p
+ * and Ozone was thought for 720p
+ * this factor scales given DPI */
+#define OZONE_DPI_BASE_FACTOR 1.5f
+
 ozone_node_t *ozone_alloc_node(void)
 {
    ozone_node_t *node = (ozone_node_t*)malloc(sizeof(*node));
@@ -1025,7 +1030,7 @@ static void ozone_render(void *data,
    if (!data)
       return;
 
-   scale_factor = (settings->floats.menu_scale_factor * (float)width) / 1280.0f;
+   scale_factor = menu_display_get_dpi_scale(width, height) * OZONE_DPI_BASE_FACTOR;
 
    if (scale_factor >= 0.1f && scale_factor != ozone->scale_factor){
       ozone->scale_factor = scale_factor;
