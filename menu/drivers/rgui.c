@@ -4885,18 +4885,18 @@ static int rgui_pointer_up(void *data,
                if (y < header_height)
                   rgui_update_thumbnail_image(rgui);
                else
-                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                  return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
             }
             else
             {
                if (y < header_height)
-                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+                  return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
                else if (ptr <= (menu_entries_get_size() - 1))
                {
                   /* If currently selected item matches 'pointer' value,
                    * perform a MENU_ACTION_SELECT on it */
                   if (ptr == selection)
-                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                     return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
                   /* Otherwise, just move the current selection to the
                    * 'pointer' value */
@@ -4910,7 +4910,7 @@ static int rgui_pointer_up(void *data,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -5201,4 +5201,5 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* pointer_down */
    rgui_pointer_up,
    NULL,                               /* get_load_content_animation_data */
+   generic_menu_entry_action
 };

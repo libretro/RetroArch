@@ -13827,7 +13827,7 @@ static int menu_input_pointer_post_iterate(
    if (pointer_hw_state->cancel_pressed && !last_cancel_pressed)
    {
       size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+      ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
    }
    last_cancel_pressed = pointer_hw_state->cancel_pressed;
 
@@ -13840,14 +13840,14 @@ static int menu_input_pointer_post_iterate(
    if (pointer_hw_state->up_pressed)
    {
       size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_UP);
+      ret = menu_entry_action(entry, selection, MENU_ACTION_UP);
    }
 
    /* > Down */
    if (pointer_hw_state->down_pressed)
    {
       size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_DOWN);
+      ret = menu_entry_action(entry, selection, MENU_ACTION_DOWN);
    }
 
    /* Left/Right
@@ -13866,7 +13866,7 @@ static int menu_input_pointer_post_iterate(
       {
          size_t selection      = menu_navigation_get_selection();
          last_left_action_time = current_time;
-         ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_LEFT);
+         ret = menu_entry_action(entry, selection, MENU_ACTION_LEFT);
       }
    }
    last_left_pressed = pointer_hw_state->left_pressed;
@@ -13878,7 +13878,7 @@ static int menu_input_pointer_post_iterate(
       {
          size_t selection       = menu_navigation_get_selection();
          last_right_action_time = current_time;
-         ret = menu_entry_action(entry, (unsigned)selection, MENU_ACTION_RIGHT);
+         ret = menu_entry_action(entry, selection, MENU_ACTION_RIGHT);
       }
    }
    last_right_pressed = pointer_hw_state->right_pressed;

@@ -2308,7 +2308,7 @@ static int ozone_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          /* Normal pointer input */
          if (ptr == selection)
-            return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+            return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
          menu_navigation_set_selection(ptr);
          menu_driver_navigation_set(false);
@@ -2317,7 +2317,7 @@ static int ozone_pointer_up(void *userdata,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -2490,8 +2490,9 @@ menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* pointer_down */
    ozone_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
-   ozone_get_load_content_animation_data
+   ozone_get_load_content_animation_data,
 #else
-   NULL
+   NULL,
 #endif
+   generic_menu_entry_action
 };

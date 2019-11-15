@@ -732,5 +732,6 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* update_savestate_thumbnail_image */
    NULL,          /* pointer_down */
    NULL,          /* pointer_up */
-   NULL           /* get_load_content_animation_data */
+   NULL,          /* get_load_content_animation_data */
+   generic_menu_entry_action
 };

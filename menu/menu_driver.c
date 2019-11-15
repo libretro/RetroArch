@@ -537,7 +537,7 @@ void menu_entry_reset(uint32_t i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   menu_entry_action(&entry, i, MENU_ACTION_START);
+   menu_entry_action(&entry, (size_t)i, MENU_ACTION_START);
 }
 
 void menu_entry_get_value(menu_entry_t *entry, const char **value)
@@ -734,96 +734,16 @@ int menu_entry_select(uint32_t i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
 
-   return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
+   return menu_entry_action(&entry, (size_t)i, MENU_ACTION_SELECT);
 }
 
-int menu_entry_action(menu_entry_t *entry,
-      unsigned i, enum menu_action action)
+int menu_entry_action(
+      menu_entry_t *entry, size_t i, enum menu_action action)
 {
-   int ret                    = 0;
-   file_list_t *selection_buf =
-      menu_entries_get_selection_buf_ptr_internal(0);
-   menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         if (cbs && cbs->action_up)
-            ret = cbs->action_up(entry->type, entry->label);
-         break;
-      case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_down)
-            ret = cbs->action_down(entry->type, entry->label);
-         break;
-      case MENU_ACTION_SCROLL_UP:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
-         break;
-      case MENU_ACTION_SCROLL_DOWN:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
-         break;
-      case MENU_ACTION_CANCEL:
-         if (cbs && cbs->action_cancel)
-            ret = cbs->action_cancel(entry->path,
-                  entry->label, entry->type, i);
-         break;
-
-      case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            ret = cbs->action_ok(entry->path,
-                  entry->label, entry->type, i, entry->entry_idx);
-         break;
-      case MENU_ACTION_START:
-         if (cbs && cbs->action_start)
-            ret = cbs->action_start(entry->type, entry->label);
-         break;
-      case MENU_ACTION_LEFT:
-         if (cbs && cbs->action_left)
-            ret = cbs->action_left(entry->type, entry->label, false);
-         break;
-      case MENU_ACTION_RIGHT:
-         if (cbs && cbs->action_right)
-            ret = cbs->action_right(entry->type, entry->label, false);
-         break;
-      case MENU_ACTION_INFO:
-         if (cbs && cbs->action_info)
-            ret = cbs->action_info(entry->type, entry->label);
-         break;
-      case MENU_ACTION_SELECT:
-         if (cbs && cbs->action_select)
-            ret = cbs->action_select(entry->path,
-                  entry->label, entry->type, i);
-         break;
-      case MENU_ACTION_SEARCH:
-         menu_input_dialog_start_search();
-         break;
-
-      case MENU_ACTION_SCAN:
-         if (cbs && cbs->action_scan)
-            ret = cbs->action_scan(entry->path,
-                  entry->label, entry->type, i);
-         break;
-
-      default:
-         break;
-   }
-
-   cbs = selection_buf ? (menu_file_list_cbs_t*)
-      selection_buf->list[i].actiondata : NULL;
-
-   if (cbs && cbs->action_refresh)
-   {
-      if (menu_entries_need_refresh())
-      {
-         bool refresh               = false;
-         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-
-         cbs->action_refresh(selection_buf, menu_stack);
-         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-      }
-   }
-
-   return ret;
+   if (menu_driver_ctx && menu_driver_ctx->entry_action)
+      return menu_driver_ctx->entry_action(
+            menu_userdata, entry, i, action);
+   return -1;
 }
 
 static void menu_list_free_list(file_list_t *list)

@@ -3426,13 +3426,13 @@ static void xmb_render(void *data,
                /* Note: Direction is inverted, since 'up' should
                 * move list upwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_DOWN);
+                  menu_entry_action(&entry, selection, MENU_ACTION_DOWN);
                break;
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
                /* Note: Direction is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_UP);
+                  menu_entry_action(&entry, selection, MENU_ACTION_UP);
                break;
             case MENU_INPUT_PRESS_DIRECTION_LEFT:
                /* Navigate left
@@ -3441,7 +3441,7 @@ static void xmb_render(void *data,
                 * which is actually a movement to the *right* */
                if (pointer_y < margin_top)
                   menu_entry_action(
-                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
                break;
             case MENU_INPUT_PRESS_DIRECTION_RIGHT:
                /* Navigate right
@@ -3450,7 +3450,7 @@ static void xmb_render(void *data,
                 * which is actually a movement to the *left* */
                if (pointer_y < margin_top)
                   menu_entry_action(
-                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
                break;
             default:
                /* Do nothing */
@@ -6105,17 +6105,17 @@ static int xmb_pointer_up(void *userdata,
          if (x < margin_left)
          {
             if (y >= margin_top)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
             else
                return menu_input_dialog_start_search() ? 0 : -1;
          }
          else if (x > margin_right)
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+            return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
          {
             /* If pointer item is already 'active', perform 'select' action */
             if (ptr == selection)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+               return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
             /* ...otherwise navigate to the current pointer item */
             menu_navigation_set_selection(ptr);
@@ -6125,7 +6125,7 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
          if ((ptr <= end - 1) && (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          /* Navigate left
@@ -6134,7 +6134,7 @@ static int xmb_pointer_up(void *userdata,
           * which is actually a movement to the *right* */
          if (y > margin_top)
             menu_entry_action(
-                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_RIGHT:
          /* Navigate right
@@ -6143,12 +6143,12 @@ static int xmb_pointer_up(void *userdata,
           * which is actually a movement to the *left* */
          if (y > margin_top)
             menu_entry_action(
-                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_UP:
          /* Swipe up in left margin: ascend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_DOWN);
+            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_DOWN);
          else if (x < margin_right)
          {
             /* Swipe up between left and right margins:
@@ -6172,7 +6172,7 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SWIPE_DOWN:
          /* Swipe down in left margin: descend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_UP);
+            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_UP);
          else if (x < margin_right)
          {
             /* Swipe down between left and right margins:
@@ -6294,8 +6294,9 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL, /* pointer_down */
    xmb_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
-   xmb_get_load_content_animation_data
+   xmb_get_load_content_animation_data,
 #else
-   NULL
+   NULL,
 #endif
+   generic_menu_entry_action
 };
