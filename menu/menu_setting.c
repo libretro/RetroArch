@@ -6270,7 +6270,7 @@ void general_write_handler(rarch_setting_t *setting)
          /* Frontend will change poll types if poll type isn't locked
           * by e.g. Netplay or RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE */
          if (global && !(global->poll_type_lock))
-            rarch_set_input_cbs(*setting->value.target.integer);
+            rarch_set_input_cbs((enum rarch_poll_type)*setting->value.target.integer);
 
          /* TODO - OSD message when this fails because of the lock? */
          break;

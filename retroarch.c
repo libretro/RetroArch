@@ -8672,7 +8672,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          if (poll_type_data && *poll_type_data > 0)
          {
             global_t   *global              = &g_extern;
-            rarch_set_input_cbs(*poll_type_data);
+            rarch_set_input_cbs((enum rarch_poll_type)(*poll_type_data));
             global->poll_type_lock = true;
          }
 
@@ -22070,7 +22070,7 @@ static void unload_hook(void)
    
    /* RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE requirement */
    global->poll_type_lock = false;
-   rarch_set_input_cbs(current_core.poll_type);
+   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
 }
 
 static void runahead_deinit_hook(void)
@@ -27088,7 +27088,7 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
    current_core.retro_set_video_refresh(video_driver_frame);
    current_core.retro_set_audio_sample(audio_driver_sample);
    current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   rarch_set_input_cbs(current_core.poll_type);
+   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
 
    core_set_default_callbacks(cbs);
 
@@ -27208,7 +27208,7 @@ bool core_unset_netplay_callbacks(void)
    current_core.retro_set_audio_sample(cbs.sample_cb);
    current_core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
    global->poll_type_lock = false;
-   rarch_set_input_cbs(current_core.poll_type);
+   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
 
    return true;
 }
@@ -27344,7 +27344,7 @@ static bool core_unload_game(void)
       /* RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE requirement */
       /* Unlock changing poll types and change it to the user-set poll type */
       global->poll_type_lock = false;
-      rarch_set_input_cbs(current_core.poll_type);
+      rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
       
       current_core.game_loaded = false;
    }
