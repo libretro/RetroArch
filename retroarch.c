@@ -18653,7 +18653,7 @@ static void video_driver_set_viewport_square_pixel(void)
          highest = i;
    }
 
-   if (get_rotation() % 4) {
+   if (get_rotation() % 2) {
       aspect_x = height / highest;
       aspect_y = width / highest;
    } else {
