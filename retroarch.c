@@ -18653,8 +18653,13 @@ static void video_driver_set_viewport_square_pixel(void)
          highest = i;
    }
 
-   aspect_x = width / highest;
-   aspect_y = height / highest;
+   if ((configuration_settings->uints.video_rotation + runloop_system.rotation) % 4) {
+      aspect_x = height / highest;
+      aspect_y = width / highest;
+   } else {
+      aspect_x = width / highest;
+      aspect_y = height / highest;
+   }
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
