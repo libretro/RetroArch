@@ -2133,6 +2133,8 @@ bool menu_driver_is_toggled(void);
 
 bool menu_widgets_ready(void);
 
+unsigned get_rotation();
+
 RETRO_END_DECLS
 
 #endif
