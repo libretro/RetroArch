@@ -4114,7 +4114,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                         RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                      }
                   }
-                  
+
                   strlcpy(s, tmp, sizeof(s));
                }
             }
@@ -4127,4 +4127,44 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
          }
       }
    }
+}
+
+
+void get_current_menu_value(char* retstr)
+{
+   const char*      entry_label;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_value(&entry, &entry_label);
+
+   strcpy(retstr, entry_label);
+}
+
+void get_current_menu_label(char* retstr)
+{
+   const char*      entry_label;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_rich_label(&entry, &entry_label);
+
+   strcpy(retstr, entry_label);
+}
+
+void get_current_menu_sublabel(char* retstr)
+{
+   const char*      entry_sublabel;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+ 
+   menu_entry_get_sublabel(&entry, &entry_sublabel);
+   strcpy(retstr, entry_sublabel);
 }

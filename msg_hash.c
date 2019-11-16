@@ -102,6 +102,77 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 }
 
+const char *get_user_language_iso639_1(bool limit)
+{
+   char *voice;
+   voice = "en";
+   switch (uint_user_language)
+   {
+      case RETRO_LANGUAGE_FRENCH:
+         voice = "fr";
+         break;
+      case RETRO_LANGUAGE_GERMAN:
+         voice = "de";
+         break;
+      case RETRO_LANGUAGE_SPANISH:
+         voice = "es";
+         break;
+      case RETRO_LANGUAGE_ITALIAN:
+         voice = "it";
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         if (limit)
+            voice = "pt";
+         else
+            voice = "pt_br";
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         if (limit)
+            voice = "pt";
+         else
+            voice = "pt_pt";
+         break;
+      case RETRO_LANGUAGE_DUTCH:
+         voice = "nl";
+         break;
+      case RETRO_LANGUAGE_ESPERANTO:
+         voice = "eo";
+         break;
+      case RETRO_LANGUAGE_POLISH:
+         voice = "pl";
+         break;
+      case RETRO_LANGUAGE_JAPANESE:
+         voice = "ja";
+         break;
+      case RETRO_LANGUAGE_KOREAN:
+         voice = "ko";
+         break;
+      case RETRO_LANGUAGE_VIETNAMESE:
+         voice = "vi";
+         break;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         voice = "zh";
+         break;
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         voice = "zh";
+         break;
+      case RETRO_LANGUAGE_ARABIC:
+         voice = "ar";
+         break;
+      case RETRO_LANGUAGE_GREEK:
+         voice = "el";
+         break;
+      case RETRO_LANGUAGE_TURKISH:
+         voice = "tr";
+         break;
+      case RETRO_LANGUAGE_RUSSIAN:
+         voice = "ru";
+         break;
+
+   }
+   return voice;
+}
+
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
    const char *ret = NULL;
