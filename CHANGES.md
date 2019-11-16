@@ -7,9 +7,12 @@
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - LOCALIZATION: Update Turkish translation
 - LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
+- MENU/BUGFIX: When using a keyboard/gamepad/mouse wheel to navigate, the menu scroll position is always maintained and updated in a consistent (and expected) fashion
+- MENU/BUGFIX: When resizing the window, or changing the orientation of a mobile device, the current scroll position is correctly preserved
 - MENU/LINUX: Add proper drives to Load Content
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
+- MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
 
 # (1.8.1)
