@@ -556,7 +556,7 @@ static void gl2_renderchain_render(
       params.feedback_info = feedback_info;
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
-           
+
       gl->shader->set_params(&params, gl->shader_data);
 
       gl->coords.vertices = 4;
