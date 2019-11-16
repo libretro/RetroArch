@@ -1486,6 +1486,7 @@ DEPENDENCIES
 XML
 ============================================================ */
 #include "../libretro-common/formats/xml/rxml.c"
+#include "../deps/yxml/yxml.c"
 
 /*============================================================
  AUDIO UTILS
