@@ -435,10 +435,6 @@ MSG_HASH(
       "成就-專家模式"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-      "已解鎖的成就:"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
       "鎖定"
       )
@@ -450,10 +446,6 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
 /* FIXME? Translate 'Test Unofficial Achievements' */
       "非官方測試成就"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-      "未解鎖的成就:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,

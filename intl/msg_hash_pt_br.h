@@ -553,10 +553,6 @@ MSG_HASH(
     "Insígnias de Conquistas"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-    "Conquistas Bloqueadas:"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
     "Bloqueada"
     )
@@ -567,10 +563,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
     "Testar Conquistas Não Oficiais"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-    "Conquistas Desbloqueadas:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -587,10 +579,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
     "Captura de Conquistas Automática"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
-    "Usar a Implementação Antiga (Somente Depuração)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -4436,11 +4424,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
     "Obtém automaticamente uma captura de tela quando uma conquista é acionada."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
-    "Usa a antiga implementação de processamento de conquistas\n"
-    "(se não tiver certeza, mantenha-o)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,

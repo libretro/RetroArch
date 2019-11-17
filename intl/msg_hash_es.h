@@ -553,10 +553,6 @@ MSG_HASH(
     "Insignias de logros"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-    "Logros bloqueados:"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
     "Bloqueado"
     )
@@ -567,10 +563,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
     "Probar logros no oficiales"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-    "Logros desbloqueados:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -587,10 +579,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
     "Capturar pantalla automáticamente"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
-    "Usar la implementación antigua (solo para depuración)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -4429,11 +4417,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
     "Captura la pantalla automáticamente al obtener un logro."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
-    "Utiliza la antigua implementación para procesar logros\n"
-    "(si no sabes qué utilizar, mantén esta opción desactivada)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
