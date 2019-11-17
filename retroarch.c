@@ -20000,10 +20000,13 @@ static void video_driver_set_viewport_square_pixel(void)
          highest = i;
    }
 
-   if (get_rotation() % 2) {
+   if (retroarch_get_rotation() % 2)
+   {
       aspect_x = height / highest;
       aspect_y = width / highest;
-   } else {
+   }
+   else
+   {
       aspect_x = width / highest;
       aspect_y = height / highest;
    }
@@ -20180,7 +20183,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_driver_get_viewport_info(custom_vp);
    }
 
-   video_driver_set_rotation(get_rotation() % 4);
+   video_driver_set_rotation(retroarch_get_rotation() % 4);
 
    current_video->suppress_screensaver(video_driver_data,
          settings->bools.ui_suspend_screensaver_enable);
@@ -21091,7 +21094,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
        * geometry for the "normal" case. */
       unsigned base_height;
       
-      if (get_rotation() % 2)
+      if (retroarch_get_rotation() % 2)
          base_height = video_driver_av_info.geometry.base_width;
       else
          base_height = video_driver_av_info.geometry.base_height;
@@ -28799,6 +28802,8 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
    dest->meta = NULL;
 }
 
-unsigned int get_rotation(){
-   return configuration_settings->uints.video_rotation + runloop_system.rotation;
+unsigned int retroarch_get_rotation(void)
+{
+   settings_t *settings              = configuration_settings;
+   return settings->uints.video_rotation + runloop_system.rotation;
 }
