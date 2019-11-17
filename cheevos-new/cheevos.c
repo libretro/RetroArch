@@ -1571,6 +1571,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
+      rcheevos_hardcore_paused = true;
       CORO_STOP();
 
 found:
@@ -1623,6 +1624,8 @@ found:
          runloop_msg_queue_push(
                "This game has no achievements.",
                0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         rcheevos_hardcore_paused = true;
 
          CORO_STOP();
       }
