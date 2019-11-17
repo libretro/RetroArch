@@ -553,10 +553,6 @@ MSG_HASH(
     "Badges de succès"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-    "Succès verrouillés :"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
     "Verrouillé"
     )
@@ -577,10 +573,6 @@ MSG_HASH(
     "Non officiel"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-    "Succès débloqués :"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
     "Débloqué"
     )
@@ -595,10 +587,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
     "Capture d'écran automatique"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
-    "Utiliser l'ancienne implémentation (Debugage uniquement)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -4456,11 +4444,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
     "Prendre automatiquement une capture d'écran lorsqu'un succès est débloqué."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
-    "Utiliser l'ancienne implémentation du traitement des succès\n"
-    "(en cas de doute, désactivez cette option)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
