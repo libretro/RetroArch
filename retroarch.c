@@ -19742,8 +19742,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height                 =
-         video_driver_av_info.geometry.base_height;
+      unsigned base_height;
+      
+      if (get_rotation() % 2)
+         base_height = video_driver_av_info.geometry.base_width;
+      else
+         base_height = video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
