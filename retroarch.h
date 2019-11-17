@@ -1759,7 +1759,7 @@ bool video_driver_texture_unload(uintptr_t *id);
 
 void video_driver_build_info(video_frame_info_t *video_info);
 
-void video_driver_reinit(void);
+void video_driver_reinit(int flags);
 
 void video_driver_get_window_title(char *buf, unsigned len);
 
