@@ -2020,6 +2020,8 @@ bool menu_driver_is_toggled(void);
 
 bool menu_widgets_ready(void);
 
+unsigned int get_rotation(void);
+
 RETRO_END_DECLS
 
 #endif

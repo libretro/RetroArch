@@ -20000,8 +20000,13 @@ static void video_driver_set_viewport_square_pixel(void)
          highest = i;
    }
 
-   aspect_x = width / highest;
-   aspect_y = height / highest;
+   if (get_rotation() % 2) {
+      aspect_x = height / highest;
+      aspect_y = width / highest;
+   } else {
+      aspect_x = width / highest;
+      aspect_y = height / highest;
+   }
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
@@ -20016,7 +20021,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
-   rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
@@ -20176,10 +20180,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_driver_get_viewport_info(custom_vp);
    }
 
-   system              = &runloop_system;
-
-   video_driver_set_rotation(
-            (settings->uints.video_rotation + system->rotation) % 4);
+   video_driver_set_rotation(get_rotation() % 4);
 
    current_video->suppress_screensaver(video_driver_data,
          settings->bools.ui_suspend_screensaver_enable);
@@ -21088,8 +21089,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height                 =
-         video_driver_av_info.geometry.base_height;
+      unsigned base_height;
+      
+      if (get_rotation() % 2)
+         base_height = video_driver_av_info.geometry.base_width;
+      else
+         base_height = video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -28792,4 +28797,8 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
    dest->path = NULL;
    dest->data = NULL;
    dest->meta = NULL;
+}
+
+unsigned int get_rotation(){
+   return configuration_settings->uints.video_rotation + runloop_system.rotation;
 }

@@ -23,6 +23,7 @@
 #endif
 
 #include <libretro.h>
+#include <retroarch.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -4254,10 +4255,14 @@ static void setting_get_string_representation_uint_custom_viewport_width(rarch_s
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (*setting->value.target.unsigned_integer%geom->base_width == 0)
+   if (!(get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
+   else if ((get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+      snprintf(s, len, "%u (%ux)",
+            *setting->value.target.unsigned_integer,
+            *setting->value.target.unsigned_integer / geom->base_height);
    else
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
@@ -4274,10 +4279,14 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (*setting->value.target.unsigned_integer%geom->base_height == 0)
+   if (!(get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
+   else  if ((get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+      snprintf(s, len, "%u (%ux)",
+            *setting->value.target.unsigned_integer,
+            *setting->value.target.unsigned_integer / geom->base_width);
    else
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
@@ -4681,12 +4690,16 @@ static int setting_uint_action_left_custom_viewport_width(
 
    if (custom->width <= 1)
       custom->width = 1;
-   else if (settings->bools.video_scale_integer)
-   {
+   else if (settings->bools.video_scale_integer) {
+      if (get_rotation() % 2)
+      {
+         if (custom->width > geom->base_height)
+            custom->width -= geom->base_height;
+      } else {
       if (custom->width > geom->base_width)
          custom->width -= geom->base_width;
    }
-   else
+   } else
       custom->width -= 1;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -4714,8 +4727,14 @@ static int setting_uint_action_left_custom_viewport_height(
       custom->height = 1;
    else if (settings->bools.video_scale_integer)
    {
+       if (get_rotation() % 2)
+      {
+         if (custom->height > geom->base_width)
+            custom->height -= geom->base_width;
+      } else {
       if (custom->height > geom->base_height)
          custom->height -= geom->base_height;
+   }
    }
    else
       custom->height -= 1;
@@ -4912,9 +4931,13 @@ static int setting_uint_action_right_custom_viewport_width(
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (settings->bools.video_scale_integer) {
+      if (get_rotation() % 2){
+         custom->width += geom->base_height;
+      } else {
       custom->width += geom->base_width;
-   else
+      }
+   } else
       custom->width += 1;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -4938,9 +4961,13 @@ static int setting_uint_action_right_custom_viewport_height(
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (settings->bools.video_scale_integer){
+      if (get_rotation() % 2){
+         custom->height += geom->base_width;
+      } else {
       custom->height += geom->base_height;
-   else
+      } 
+   } else
       custom->height += 1;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -5868,10 +5895,14 @@ static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (settings->bools.video_scale_integer){
+      if (get_rotation() % 2){
+         custom->width = ((custom->width + geom->base_height - 1) /
+            geom->base_height) * geom->base_height;
+      } else
       custom->width = ((custom->width + geom->base_width - 1) /
             geom->base_width) * geom->base_width;
-   else
+   } else
       custom->width = vp.full_width - custom->x;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -5893,11 +5924,14 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
       return -1;
 
    video_driver_get_viewport_info(&vp);
-
-   if (settings->bools.video_scale_integer)
+   if (settings->bools.video_scale_integer){
+         if (get_rotation() % 2){
+            custom->height = ((custom->height + geom->base_width - 1) /
+               geom->base_width) * geom->base_width;
+         } else
       custom->height = ((custom->height + geom->base_height - 1) /
             geom->base_height) * geom->base_height;
-   else
+   } else
       custom->height = vp.full_height - custom->y;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -6277,8 +6311,13 @@ void general_write_handler(rarch_setting_t *setting)
             {
                custom->x      = 0;
                custom->y      = 0;
+               if (get_rotation() %2){
+                  custom->width  = ((custom->width + geom->base_height - 1) / geom->base_height)  * geom->base_height;
+                  custom->height = ((custom->height + geom->base_width - 1) / geom->base_width)   * geom->base_width;
+               } else {
                custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
                custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+               }
                aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
                   (float)custom->width / custom->height;
             }
@@ -6395,11 +6434,36 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             rarch_system_info_t *system = runloop_get_system_info();
+            video_viewport_t vp;
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            video_viewport_t            *custom  = video_viewport_get_custom();
+            struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+               &av_info->geometry;
 
-            if (system)
+            if (system){
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
+            
+               /* Update Custom Aspect Ratio values */
+               video_driver_get_viewport_info(&vp);
+               custom->x      = 0;
+               custom->y      = 0;
+               /* Round down when rotation is "horizontal", round up when rotation is "vertical"
+                  to avoid expanding viewport each time user rotates */
+               if (get_rotation() %2){
+                  custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
+                  custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
+               } else {
+                  custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
+                  custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+               }
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                  (float)custom->width / custom->height;
+
+               /* Update Aspect Ratio (only useful for 1:1 PAR) */
+               video_driver_set_aspect_ratio();
+            }
          }
          break;
       case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
