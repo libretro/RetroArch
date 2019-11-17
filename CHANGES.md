@@ -2,6 +2,7 @@
 - CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - CHEEVOS: Use PSX.EXE if SYSTEM.CNF cannot be found
+- CHEEVOS: Prevent loading state while achievements are still being fetched from server
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
