@@ -1007,6 +1007,26 @@ static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
+/* Forward declarations */
+static const void *location_driver_find_handle(int idx);
+static const char *location_driver_find_ident(int idx);
+static const char *audio_driver_find_ident(int idx);
+static const void *audio_driver_find_handle(int idx);
+static const void *video_driver_find_handle(int idx);
+static const char *video_driver_find_ident(int idx);
+static const char *record_driver_find_ident(int idx);
+static const void *record_driver_find_handle(int idx);
+static const void *wifi_driver_find_handle(int idx);
+static const char *wifi_driver_find_ident(int idx);
+static const char *input_driver_find_ident(int idx);
+static const char *camera_driver_find_ident(int idx);
+static const char *joypad_driver_find_ident(int idx);
+static const void *camera_driver_find_handle(int idx);
+static const void *input_driver_find_handle(int idx);
+static const void *joypad_driver_find_handle(int idx);
+static const char *hid_driver_find_ident(int idx);
+static const void *hid_driver_find_handle(int idx);
+
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
@@ -10880,7 +10900,7 @@ static void clear_controller_port_map(void)
  * Returns: handle to wifi driver at index. Can be NULL
  * if nothing found.
  **/
-const void *wifi_driver_find_handle(int idx)
+static const void *wifi_driver_find_handle(int idx)
 {
    const void *drv = wifi_drivers[idx];
    if (!drv)
@@ -10895,7 +10915,7 @@ const void *wifi_driver_find_handle(int idx)
  * Returns: Human-readable identifier of wifi driver at index. Can be NULL
  * if nothing found.
  **/
-const char *wifi_driver_find_ident(int idx)
+static const char *wifi_driver_find_ident(int idx)
 {
    const wifi_driver_t *drv = wifi_drivers[idx];
    if (!drv)
@@ -11258,7 +11278,7 @@ void ui_companion_driver_log_msg(const char *msg)
  * Returns: Human-readable identifier of record driver at index. Can be NULL
  * if nothing found.
  **/
-const char *record_driver_find_ident(int idx)
+static const char *record_driver_find_ident(int idx)
 {
    const record_driver_t *drv = record_drivers[idx];
    if (!drv)
@@ -11273,7 +11293,7 @@ const char *record_driver_find_ident(int idx)
  * Returns: handle to record driver at index. Can be NULL
  * if nothing found.
  **/
-const void *record_driver_find_handle(int idx)
+static const void *record_driver_find_handle(int idx)
 {
    const void *drv = record_drivers[idx];
    if (!drv)
@@ -13206,7 +13226,7 @@ void fire_connection_listener(unsigned port, input_device_driver_t *driver)
  * Returns: handle to input driver at index. Can be NULL
  * if nothing found.
  **/
-const void *input_driver_find_handle(int idx)
+static const void *input_driver_find_handle(int idx)
 {
    const void *drv = input_drivers[idx];
    if (!drv)
@@ -13221,7 +13241,7 @@ const void *input_driver_find_handle(int idx)
  * Returns: Human-readable identifier of input driver at index. Can be NULL
  * if nothing found.
  **/
-const char *input_driver_find_ident(int idx)
+static const char *input_driver_find_ident(int idx)
 {
    input_driver_t *drv = input_drivers[idx];
    if (!drv)
@@ -15760,7 +15780,7 @@ bool input_driver_ungrab_mouse(void)
  * Returns: handle to joypad driver at index. Can be NULL
  * if nothing found.
  **/
-const void *joypad_driver_find_handle(int idx)
+static const void *joypad_driver_find_handle(int idx)
 {
    const void *drv = joypad_drivers[idx];
    if (!drv)
@@ -15775,7 +15795,7 @@ const void *joypad_driver_find_handle(int idx)
  * Returns: Human-readable identifier of joypad driver at index. Can be NULL
  * if nothing found.
  **/
-const char *joypad_driver_find_ident(int idx)
+static const char *joypad_driver_find_ident(int idx)
 {
    const input_device_driver_t *drv = joypad_drivers[idx];
    if (!drv)
@@ -16041,7 +16061,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
  * Returns: handle to HID driver at index. Can be NULL
  * if nothing found.
  **/
-const void *hid_driver_find_handle(int idx)
+static const void *hid_driver_find_handle(int idx)
 {
    const void *drv = hid_drivers[idx];
    if (!drv)
@@ -16070,7 +16090,7 @@ void hid_driver_reset_data(void)
  * Returns: Human-readable identifier of HID driver at index. Can be NULL
  * if nothing found.
  **/
-const char *hid_driver_find_ident(int idx)
+static const char *hid_driver_find_ident(int idx)
 {
    const hid_driver_t *drv = hid_drivers[idx];
    if (!drv)
@@ -18036,7 +18056,7 @@ static void report_audio_buffer_statistics(void)
  * Returns: handle to audio driver at index. Can be NULL
  * if nothing found.
  **/
-const void *audio_driver_find_handle(int idx)
+static const void *audio_driver_find_handle(int idx)
 {
    const void *drv = audio_drivers[idx];
    if (!drv)
@@ -18051,7 +18071,7 @@ const void *audio_driver_find_handle(int idx)
  * Returns: Human-readable identifier of audio driver at index. Can be NULL
  * if nothing found.
  **/
-const char *audio_driver_find_ident(int idx)
+static const char *audio_driver_find_ident(int idx)
 {
    const audio_driver_t *drv = audio_drivers[idx];
    if (!drv)
@@ -19488,7 +19508,7 @@ static bool set_resize_null(void *a, unsigned b, unsigned c)
  * Returns: handle to video driver at index. Can be NULL
  * if nothing found.
  **/
-const void *video_driver_find_handle(int idx)
+static const void *video_driver_find_handle(int idx)
 {
    const void *drv = video_drivers[idx];
    if (!drv)
@@ -19503,7 +19523,7 @@ const void *video_driver_find_handle(int idx)
  * Returns: Human-readable identifier of video driver at index. Can be NULL
  * if nothing found.
  **/
-const char *video_driver_find_ident(int idx)
+static const char *video_driver_find_ident(int idx)
 {
    const video_driver_t *drv = video_drivers[idx];
    if (!drv)
@@ -22218,7 +22238,7 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
  * Returns: handle to location driver at index. Can be NULL
  * if nothing found.
  **/
-const void *location_driver_find_handle(int idx)
+static const void *location_driver_find_handle(int idx)
 {
    const void *drv = location_drivers[idx];
    if (!drv)
@@ -22233,7 +22253,7 @@ const void *location_driver_find_handle(int idx)
  * Returns: Human-readable identifier of location driver at index. Can be NULL
  * if nothing found.
  **/
-const char *location_driver_find_ident(int idx)
+static const char *location_driver_find_ident(int idx)
 {
    const location_driver_t *drv = location_drivers[idx];
    if (!drv)
@@ -22420,7 +22440,7 @@ static void uninit_location(void)
  * Returns: handle to camera driver at index. Can be NULL
  * if nothing found.
  **/
-const void *camera_driver_find_handle(int idx)
+static const void *camera_driver_find_handle(int idx)
 {
    const void *drv = camera_drivers[idx];
    if (!drv)
@@ -22435,7 +22455,7 @@ const void *camera_driver_find_handle(int idx)
  * Returns: Human-readable identifier of camera driver at index. Can be NULL
  * if nothing found.
  **/
-const char *camera_driver_find_ident(int idx)
+static const char *camera_driver_find_ident(int idx)
 {
    const camera_driver_t *drv = camera_drivers[idx];
    if (!drv)

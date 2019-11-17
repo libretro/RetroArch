@@ -181,24 +181,6 @@ struct rarch_joypad_driver
 };
 
 /**
- * input_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to input driver at index. Can be NULL
- * if nothing found.
- **/
-const void *input_driver_find_handle(int index);
-
-/**
- * input_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of input driver at index. Can be NULL
- * if nothing found.
- **/
-const char *input_driver_find_ident(int index);
-
-/**
  * config_get_input_driver_options:
  *
  * Get an enumerated list of all input driver names, separated by '|'.
@@ -268,24 +250,6 @@ bool input_driver_ungrab_mouse(void);
 float *input_driver_get_float(enum input_action action);
 
 unsigned *input_driver_get_uint(enum input_action action);
-
-/**
- * joypad_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to joypad driver at index. Can be NULL
- * if nothing found.
- **/
-const void *joypad_driver_find_handle(int index);
-
-/**
- * joypad_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of joypad driver at index. Can be NULL
- * if nothing found.
- **/
-const char *joypad_driver_find_ident(int index);
 
 /**
  * config_get_joypad_driver_options:
@@ -461,24 +425,6 @@ bool input_mouse_button_raw(unsigned port, unsigned button);
 #ifdef HAVE_HID
 
 #include "include/hid_driver.h"
-
-/**
- * hid_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to HID driver at index. Can be NULL
- * if nothing found.
- **/
-const void *hid_driver_find_handle(int index);
-
-/**
- * hid_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of HID driver at index. Can be NULL
- * if nothing found.
- **/
-const char *hid_driver_find_ident(int index);
 
 /**
  * config_get_hid_driver_options:

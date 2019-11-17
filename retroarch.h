@@ -518,24 +518,6 @@ bool audio_driver_enable_callback(void);
 bool audio_driver_disable_callback(void);
 
 /**
- * audio_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to audio driver at index. Can be NULL
- * if nothing found.
- **/
-const void *audio_driver_find_handle(int index);
-
-/**
- * audio_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of audio driver at index. Can be NULL
- * if nothing found.
- **/
-const char *audio_driver_find_ident(int index);
-
-/**
  * config_get_audio_driver_options:
  *
  * Get an enumerated list of all audio driver names, separated by '|'.
@@ -739,24 +721,6 @@ extern const record_driver_t record_null;
  * Returns: string listing of all record driver names, separated by '|'.
  **/
 const char* config_get_record_driver_options(void);
-
-/**
- * record_driver_find_handle:
- * @idx                : index of driver to get handle to.
- *
- * Returns: handle to record driver at index. Can be NULL
- * if nothing found.
- **/
-const void *record_driver_find_handle(int idx);
-
-/**
- * record_driver_find_ident:
- * @idx                : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of record driver at index. Can be NULL
- * if nothing found.
- **/
-const char *record_driver_find_ident(int idx);
 
 bool recording_is_enabled(void);
 
@@ -1626,24 +1590,6 @@ void video_driver_set_video_cache_context_ack(void);
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
 /**
- * video_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to video driver at index. Can be NULL
- * if nothing found.
- **/
-const void *video_driver_find_handle(int index);
-
-/**
- * video_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of video driver at index.
- * Can be NULL if nothing found.
- **/
-const char *video_driver_find_ident(int index);
-
-/**
  * config_get_video_driver_options:
  *
  * Get an enumerated list of all video driver names, separated by '|'.
@@ -2023,24 +1969,6 @@ extern location_driver_t location_null;
  **/
 const char* config_get_location_driver_options(void);
 
-/**
- * location_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to location driver at index. Can be NULL
- * if nothing found.
- **/
-const void *location_driver_find_handle(int index);
-
-/**
- * location_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of location driver at index. Can be NULL
- * if nothing found.
- **/
-const char *location_driver_find_ident(int index);
-
 /* Camera */
 
 typedef struct camera_driver
@@ -2081,24 +2009,6 @@ extern camera_driver_t camera_null;
  * separated by '|'.
  **/
 const char* config_get_camera_driver_options(void);
-
-/**
- * camera_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to camera driver at index. Can be NULL
- * if nothing found.
- **/
-const void *camera_driver_find_handle(int index);
-
-/**
- * camera_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of camera driver at index. Can be NULL
- * if nothing found.
- **/
-const char *camera_driver_find_ident(int index);
 
 bool menu_driver_is_alive(void);
 
