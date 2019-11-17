@@ -68,6 +68,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
             exts = ext_name;
          }
          break;
+      case DIR_LIST_RECURSIVE:
+         recursive = true;
+         /* fall-through */
       case DIR_LIST_CORE_INFO:
          {
             core_info_list_t *list = NULL;
@@ -77,16 +80,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
                exts = list->all_ext;
          }
          break;
-      case DIR_LIST_RECURSIVE:
-       {
-          core_info_list_t *list = NULL;
-          core_info_get_list(&list);
-
-          if (list)
-             exts = list->all_ext;
-          recursive = true;
-       }
-       break;
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
@@ -138,7 +131,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          return NULL;
    }
 
-   return dir_list_new(input_dir, exts, false, settings->bools.show_hidden_files,
+   return dir_list_new(input_dir, exts, false,
+         settings->bools.show_hidden_files,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 
