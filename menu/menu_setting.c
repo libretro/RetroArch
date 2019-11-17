@@ -6473,7 +6473,7 @@ void general_write_handler(rarch_setting_t *setting)
                aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
                   (float)custom->width / custom->height;
 
-               //Update Aspect Ratio (only useful for 1:1 PAR)
+               /* Update Aspect Ratio (only useful for 1:1 PAR) */
                video_driver_set_aspect_ratio();
             }
          }
