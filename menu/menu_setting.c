@@ -6445,11 +6445,36 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             rarch_system_info_t *system = runloop_get_system_info();
+            video_viewport_t vp;
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            video_viewport_t            *custom  = video_viewport_get_custom();
+            struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+               &av_info->geometry;
 
-            if (system)
+            if (system){
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
+            
+               //Update Custom Aspect Ratio values
+               video_driver_get_viewport_info(&vp);
+               custom->x      = 0;
+               custom->y      = 0;
+               //Round down when rotation is "horizontal", round up when rotation is "vertical"
+               //to avoid expanding viewport each time user rotate
+               if (get_rotation() %2){
+                  custom->width  = max(1,(custom->width / geom->base_height))  * geom->base_height;
+                  custom->height = max(1,(custom->height/ geom->base_width ))  * geom->base_width;
+               } else {
+                  custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
+                  custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+               }
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                  (float)custom->width / custom->height;
+
+               //Update Aspect Ratio (only useful for 1:1 PAR)
+               video_driver_set_aspect_ratio();
+            }
          }
          break;
       case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
