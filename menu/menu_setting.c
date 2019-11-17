@@ -6457,12 +6457,12 @@ void general_write_handler(rarch_setting_t *setting)
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
             
-               //Update Custom Aspect Ratio values
+               /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
                custom->x      = 0;
                custom->y      = 0;
-               //Round down when rotation is "horizontal", round up when rotation is "vertical"
-               //to avoid expanding viewport each time user rotate
+               /* Round down when rotation is "horizontal", round up when rotation is "vertical"
+                  to avoid expanding viewport each time user rotates */
                if (get_rotation() %2){
                   custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
                   custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
