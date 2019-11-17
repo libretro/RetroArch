@@ -1718,6 +1718,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
+       deps/yxml/yxml.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
 # Easter Egg
