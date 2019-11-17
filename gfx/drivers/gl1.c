@@ -56,6 +56,10 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+#ifdef VITA
+static bool vgl_inited = false;
+#endif
+
 static unsigned char *gl1_menu_frame = NULL;
 static unsigned gl1_menu_width       = 0;
 static unsigned gl1_menu_height      = 0;
@@ -285,7 +289,14 @@ static void *gl1_gfx_init(const video_info_t *video,
    full_y      = mode.height;
    mode.width  = 0;
    mode.height = 0;
-
+#ifdef VITA
+   if (!vgl_inited) {
+      vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+      vglUseVram(GL_TRUE);
+      vglStartRendering();
+      vgl_inited = true;
+   }
+#endif
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
 
@@ -395,7 +406,9 @@ static void *gl1_gfx_init(const video_info_t *video,
    glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
    glDisable(GL_SCISSOR_TEST);
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+#endif
    glGenTextures(1, &gl1->tex);
    glGenTextures(1, &gl1->menu_tex);
 
@@ -553,6 +566,33 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    GLenum format        = gl1->supports_bgra ? GL_BGRA_EXT : GL_RGBA;
    GLenum type          = GL_UNSIGNED_BYTE;
 
+   float vertices[] = {
+	   -1.0f, -1.0f, 0.0f,
+	   -1.0f, 1.0f, 0.0f,
+	   1.0f, -1.0f, 0.0f,
+	   1.0f, 1.0f, 0.0f,
+   };
+
+   float colors[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
+
+   float norm_width     = (1.0f / (float)pot_width) * (float)width;
+   float norm_height    = (1.0f / (float)pot_height) * (float)height;
+   
+   float texcoords[] = {
+      0.0f, 0.0f,
+      0.0f, 0.0f,
+      0.0f, 0.0f,
+      0.0f, 0.0f
+   };
+   
+   texcoords[1] = texcoords[5] = norm_height;
+   texcoords[4] = texcoords[6] = norm_width;
+
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
    glDisable(GL_STENCIL_TEST);
@@ -562,13 +602,11 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    /* Multi-texture not part of GL 1.1 */
    /*glActiveTexture(GL_TEXTURE0);*/
 
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
+#endif
    glBindTexture(GL_TEXTURE_2D, tex);
-
-   /* For whatever reason you can't send NULL in GLDirect,
-      so we send the frame as dummy data */
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame_to_copy);
 
    frame = (uint8_t*)frame_to_copy;
    if (!gl1->supports_bgra)
@@ -592,8 +630,9 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
       }
    }
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, frame);
-   free(frame_rgba);
+   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
+   if (frame_rgba)
+       free(frame_rgba);
 
    if (tex == gl1->tex)
    {
@@ -617,62 +656,22 @@ static void draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int h
    glPushMatrix();
    glLoadIdentity();
 
-   /* stock coord set does not handle POT, disable for now */
-   /*glEnableClientState(GL_COLOR_ARRAY);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-   glColorPointer(4, GL_FLOAT, 0, gl1->coords.color);
-   glVertexPointer(2, GL_FLOAT, 0, gl1->coords.vertex);
-   glTexCoordPointer(2, GL_FLOAT, 0, gl1->coords.tex_coord);
-
-   glDrawArrays(GL_TRIANGLES, 0, gl1->coords.vertices);
-
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_COLOR_ARRAY);*/
-
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
+   
+   glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   
+   glColorPointer(4, GL_FLOAT, 0, colors);
+   glVertexPointer(3, GL_FLOAT, 0, vertices);
+   glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
 
-   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-   glBegin(GL_QUADS);
-
-   {
-      float tex_BL[2]      = {0.0f, 0.0f};
-      float tex_BR[2]      = {1.0f, 0.0f};
-      float tex_TL[2]      = {0.0f, 1.0f};
-      float tex_TR[2]      = {1.0f, 1.0f};
-      float *tex_mirror_BL = tex_TL;
-      float *tex_mirror_BR = tex_TR;
-      float *tex_mirror_TL = tex_BL;
-      float *tex_mirror_TR = tex_BR;
-      float norm_width     = (1.0f / (float)pot_width) * (float)width;
-      float norm_height    = (1.0f / (float)pot_height) * (float)height;
-
-      /* remove extra POT padding */
-      tex_mirror_BR[0] = norm_width;
-      tex_mirror_TR[0] = norm_width;
-
-      /* normally this would be 1.0 - height, but we're drawing upside-down */
-      tex_mirror_BL[1] = norm_height;
-      tex_mirror_BR[1] = norm_height;
-
-      glTexCoord2f(tex_mirror_BL[0], tex_mirror_BL[1]);
-      glVertex2f(-1.0f, -1.0f);
-
-      glTexCoord2f(tex_mirror_TL[0], tex_mirror_TL[1]);
-      glVertex2f(-1.0f, 1.0f);
-
-      glTexCoord2f(tex_mirror_TR[0], tex_mirror_TR[1]);
-      glVertex2f(1.0f, 1.0f);
-
-      glTexCoord2f(tex_mirror_BR[0], tex_mirror_BR[1]);
-      glVertex2f(1.0f, -1.0f);
-   }
-
-   glEnd();
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
 
    glMatrixMode(GL_MODELVIEW);
    glPopMatrix();
@@ -686,10 +685,11 @@ static void gl1_readback(
       unsigned fmt, unsigned type,
       void *src)
 {
+#ifndef VITA
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
-
+#endif
    glReadPixels(gl1->vp.x, gl1->vp.y,
          gl1->vp.width, gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
@@ -710,7 +710,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned pot_height       = 0;
 
    gl1_context_bind_hw_render(gl1, false);
-
+   
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
@@ -917,7 +917,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
       glFinish();
    }
-
+ 
    gl1_context_bind_hw_render(gl1, true);
 
    return true;
@@ -1259,7 +1259,10 @@ static void gl1_load_texture_data(
 
    gl1_bind_texture(id, wrap, mag_filter, min_filter);
 
+#ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+#endif
+
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,
