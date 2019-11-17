@@ -136,8 +136,6 @@ void menu_setting_free(rarch_setting_t *setting);
 bool menu_setting_ctl(
       enum menu_setting_ctl_state state, void *data);
 
-unsigned int get_rotation();
-
 RETRO_END_DECLS
 
 #endif

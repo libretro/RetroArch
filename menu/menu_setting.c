@@ -23,6 +23,7 @@
 #endif
 
 #include <libretro.h>
+#include <retroarch.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -16696,10 +16697,6 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
    }
 
    return true;
-}
-
-unsigned int get_rotation(){
-   return config_get_ptr()->uints.video_rotation + runloop_get_system_info()->rotation;
 }
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,

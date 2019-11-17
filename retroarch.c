@@ -27446,3 +27446,7 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
    dest->data = NULL;
    dest->meta = NULL;
 }
+
+unsigned int get_rotation(){
+   return configuration_settings->uints.video_rotation + runloop_system.rotation;
+}
