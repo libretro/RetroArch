@@ -836,6 +836,16 @@ static settings_t *configuration_settings                       = NULL;
 static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
 
+/*
+ * Override poll type behavior, is set by the core.
+ *
+ * 0 - Don't Care
+ * 1 - Early
+ * 2 - Normal
+ * 3 - Late
+ */
+static unsigned core_poll_type_override                         = 0;
+
 static bool has_set_username                                    = false;
 
 #ifdef HAVE_THREAD_STORAGE
@@ -8664,33 +8674,28 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
        *
        * Should all be properly addressed in version 2.
        * */
+
       case RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE:
-      {
-         const unsigned *poll_type_data = (const unsigned*)data;
-
-         /* If the override is not "Don't Care", apply new behavior and lock it */
-         if (poll_type_data && *poll_type_data > 0)
          {
-            global_t   *global              = &g_extern;
-            rarch_set_input_cbs((enum rarch_poll_type)(*poll_type_data));
-            global->poll_type_lock = true;
-         }
+            const unsigned *poll_type_data = (const unsigned*)data;
 
+            if (poll_type_data)
+               core_poll_type_override = *poll_type_data;
+         }
          break;
-      }
-      
+
       case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
          *(retro_environment_t *)data = rarch_clear_all_thread_waits;
          break;
 
       case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
-      {
-         bool state = *(const bool*)data;
-         RARCH_LOG("[Environ]: SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("[Environ]: SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
 
-         set_save_state_in_background(state);
+            set_save_state_in_background(state);
 
-      }
+         }
       break;
 
 
@@ -9148,6 +9153,7 @@ static void secondary_core_destroy(void)
    /* unload game from core */
    if (secondary_core.retro_unload_game)
       secondary_core.retro_unload_game();
+   core_poll_type_override = 0;
 
    /* deinit */
    if (secondary_core.retro_deinit)
@@ -12518,19 +12524,6 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 
    return result;
-}
-
-/* Polls hardware on the first input state request per frame */
-static int16_t rarch_input_state_with_late_poll(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   if (!current_core.input_polled)
-   {
-      input_driver_poll();
-      current_core.input_polled = true;
-   }
-
-   return input_state(port, device, idx, id);
 }
 
 static INLINE bool input_keys_pressed_other_sources(unsigned i,
@@ -19824,10 +19817,14 @@ static void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   video_driver_cached_frame_set(data, width, height, pitch);
-
+   if (data)
+      frame_cache_data = data;
+   frame_cache_width   = width;
+   frame_cache_height  = height;
+   frame_cache_pitch   = pitch;
+   
    if (
-            video_driver_scaler_ptr
+         video_driver_scaler_ptr
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
@@ -22061,16 +22058,12 @@ static void runahead_destroy(void)
 
 static void unload_hook(void)
 {
-   global_t   *global              = &g_extern;
    runahead_remove_hooks();
    runahead_destroy();
    secondary_core_destroy();
    if (current_core.retro_unload_game)
       current_core.retro_unload_game();
-   
-   /* RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE requirement */
-   global->poll_type_lock = false;
-   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
+   core_poll_type_override = 0;
 }
 
 static void runahead_deinit_hook(void)
@@ -27076,6 +27069,41 @@ static void retro_input_poll_null(void)
 {
 }
 
+static int16_t core_input_state_poll(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   return input_state(port, device, idx, id);
+}
+
+static int16_t core_input_state_poll_late(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   if (!current_core.input_polled)
+      input_driver_poll();
+
+   current_core.input_polled = true;
+   return input_state(port, device, idx, id);
+}
+
+static retro_input_state_t core_input_state_poll_return_cb(void)
+{
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_LATE)
+      return core_input_state_poll_late;
+   return core_input_state_poll;
+}
+
+static void core_input_state_poll_maybe(void)
+{
+   unsigned new_poll_type = (core_poll_type_override > 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   if (new_poll_type == POLL_TYPE_NORMAL)
+      input_driver_poll();
+}
+
 /**
  * core_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
@@ -27085,10 +27113,13 @@ static void retro_input_poll_null(void)
  **/
 static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
 {
+   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+
    current_core.retro_set_video_refresh(video_driver_frame);
    current_core.retro_set_audio_sample(audio_driver_sample);
    current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
+   current_core.retro_set_input_state(state_cb);
+   current_core.retro_set_input_poll(core_input_state_poll_maybe);
 
    core_set_default_callbacks(cbs);
 
@@ -27103,31 +27134,6 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
 }
 
 /**
- * Sets input state/poll callbacks on
- * current_core with different behaviors based on @poll_type .
- */
-void rarch_set_input_cbs(enum rarch_poll_type poll_type)
-{
-   switch (poll_type)
-   {
-      case RARCH_POLL_TYPE_NORMAL:
-         current_core.retro_set_input_poll(input_driver_poll);
-         current_core.retro_set_input_state(input_state);
-         break;
-      case RARCH_POLL_TYPE_EARLY:
-         current_core.retro_set_input_poll(retro_input_poll_null);
-         current_core.retro_set_input_state(input_state);
-         break; 
-      default:
-         /* Fall through. Default behavior is Late. */
-      case RARCH_POLL_TYPE_LATE:
-         current_core.retro_set_input_poll(retro_input_poll_null);
-         current_core.retro_set_input_state(rarch_input_state_with_late_poll);
-         break;
-   }
-}
-
-/**
  * core_set_default_callbacks:
  * @data           : pointer to retro_callbacks object
  *
@@ -27135,10 +27141,12 @@ void rarch_set_input_cbs(enum rarch_poll_type poll_type)
  **/
 bool core_set_default_callbacks(struct retro_callbacks *cbs)
 {
+   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = input_state;
+   cbs->state_cb        = state_cb;
    cbs->poll_cb         = input_driver_poll;
 
    return true;
@@ -27174,13 +27182,8 @@ bool core_set_rewind_callbacks(void)
  **/
 bool core_set_netplay_callbacks(void)
 {
-   global_t   *global              = &g_extern;
-
    /* Force normal poll type for netplay. */
-   rarch_set_input_cbs(RARCH_POLL_TYPE_NORMAL);
-
-   /* Block poll type from being changed by the user via the menu */
-   global->poll_type_lock = true;
+   current_core.poll_type = POLL_TYPE_NORMAL;
 
    /* And use netplay's interceding callbacks */
    current_core.retro_set_video_refresh(video_frame_net);
@@ -27199,7 +27202,6 @@ bool core_set_netplay_callbacks(void)
  */
 bool core_unset_netplay_callbacks(void)
 {
-   global_t   *global              = &g_extern;
    struct retro_callbacks cbs;
    if (!core_set_default_callbacks(&cbs))
       return false;
@@ -27207,8 +27209,7 @@ bool core_unset_netplay_callbacks(void)
    current_core.retro_set_video_refresh(cbs.frame_cb);
    current_core.retro_set_audio_sample(cbs.sample_cb);
    current_core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
-   global->poll_type_lock = false;
-   rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
+   current_core.retro_set_input_state(cbs.state_cb);
 
    return true;
 }
@@ -27338,14 +27339,8 @@ static bool core_unload_game(void)
 
    if (current_core.game_loaded)
    {
-      global_t   *global              = &g_extern;
       current_core.retro_unload_game();
-      
-      /* RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE requirement */
-      /* Unlock changing poll types and change it to the user-set poll type */
-      global->poll_type_lock = false;
-      rarch_set_input_cbs((enum rarch_poll_type)current_core.poll_type);
-      
+      core_poll_type_override  = 0;
       current_core.game_loaded = false;
    }
 
@@ -27356,8 +27351,11 @@ static bool core_unload_game(void)
 
 bool core_run(void)
 {
-   bool early_polling = current_core.poll_type == RARCH_POLL_TYPE_EARLY;
-   bool  late_polling = current_core.poll_type == RARCH_POLL_TYPE_LATE;
+   unsigned new_poll_type = (core_poll_type_override != 0)
+      ? (core_poll_type_override - 1)
+      : current_core.poll_type;
+   bool early_polling     = new_poll_type == POLL_TYPE_EARLY;
+   bool late_polling      = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
    bool netplay_preframe = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);

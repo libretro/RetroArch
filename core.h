@@ -28,6 +28,20 @@
 
 RETRO_BEGIN_DECLS
 
+enum
+{
+   /* Polling is performed before
+    * call to retro_run. */
+   POLL_TYPE_EARLY = 0,
+
+   /* Polling is performed when requested. */
+   POLL_TYPE_NORMAL,
+
+   /* Polling is performed on first call to
+    * retro_input_state per frame. */
+   POLL_TYPE_LATE
+};
+
 typedef struct rarch_memory_descriptor
 {
    struct retro_memory_descriptor core;
