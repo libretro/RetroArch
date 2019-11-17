@@ -944,40 +944,6 @@ static char current_valid_extensions[1024]                      = {0};
 static char error_string[255]                                   = {0};
 static char cached_video_driver[32]                             = {0};
 
-#ifdef HAVE_MENU
-/* MENU INPUT GLOBAL VARIABLES */
-static const char **menu_input_dialog_keyboard_buffer     = {NULL};
-static unsigned menu_input_dialog_keyboard_type           = 0;
-static unsigned menu_input_dialog_keyboard_idx            = 0;
-static char menu_input_dialog_keyboard_label_setting[256] = {0};
-static char menu_input_dialog_keyboard_label[256]         = {0};
-static bool menu_input_dialog_keyboard_display            = false;
-static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
-
-/* Since these are static/global, they are initialised to zero */
-static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
-static menu_input_t menu_input_state;
-
-/* Is the menu driver still running? */
-static bool menu_driver_alive                   = false;
-/* Are we binding a button inside the menu? */
-static bool menu_driver_is_binding              = false;
-/* A menu toggle has been requested; if the menu was running,
- * it will be closed; if the menu was not running, it will be opened */
-static bool menu_driver_toggled                 = false;
-
-#ifdef HAVE_LIBNX
-#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
-extern u32 __nx_applet_type;
-extern void libnx_apply_overclock(void);
-#endif
-
-#ifdef HAVE_LIBNX
-#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_get_display_kb()
-#else
-#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
-#endif
-
 /* PATHS */
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
@@ -2329,6 +2295,41 @@ void dir_check_defaults(void)
       free(new_path);
    }
 }
+
+#ifdef HAVE_MENU
+/* MENU INPUT GLOBAL VARIABLES */
+static const char **menu_input_dialog_keyboard_buffer     = {NULL};
+static unsigned menu_input_dialog_keyboard_type           = 0;
+static unsigned menu_input_dialog_keyboard_idx            = 0;
+static char menu_input_dialog_keyboard_label_setting[256] = {0};
+static char menu_input_dialog_keyboard_label[256]         = {0};
+static bool menu_input_dialog_keyboard_display            = false;
+static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
+
+/* Since these are static/global, they are initialised to zero */
+static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
+static menu_input_t menu_input_state;
+
+/* Is the menu driver still running? */
+static bool menu_driver_alive                   = false;
+/* Are we binding a button inside the menu? */
+static bool menu_driver_is_binding              = false;
+/* A menu toggle has been requested; if the menu was running,
+ * it will be closed; if the menu was not running, it will be opened */
+static bool menu_driver_toggled                 = false;
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+extern u32 __nx_applet_type;
+extern void libnx_apply_overclock(void);
+#endif
+
+#ifdef HAVE_LIBNX
+#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_get_display_kb()
+#else
+#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
+#endif
+
 
 #ifdef HAVE_MENU_WIDGETS
 static bool menu_widgets_inited                 = false;
