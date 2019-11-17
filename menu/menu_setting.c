@@ -6464,8 +6464,8 @@ void general_write_handler(rarch_setting_t *setting)
                //Round down when rotation is "horizontal", round up when rotation is "vertical"
                //to avoid expanding viewport each time user rotate
                if (get_rotation() %2){
-                  custom->width  = max(1,(custom->width / geom->base_height))  * geom->base_height;
-                  custom->height = max(1,(custom->height/ geom->base_width ))  * geom->base_width;
+                  custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
+                  custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
                } else {
                   custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
                   custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
