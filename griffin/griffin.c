@@ -983,7 +983,6 @@ FILE
 #include "../libretro-common/media/media_detect_cd.c"
 #endif
 
-#include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 #if defined(__linux__)

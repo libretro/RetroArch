@@ -180,7 +180,6 @@ OBJ += frontend/frontend_driver.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
 ifneq ($(findstring Linux,$(OS)),)
