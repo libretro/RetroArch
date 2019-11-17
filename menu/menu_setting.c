@@ -4689,8 +4689,7 @@ static int setting_uint_action_left_custom_viewport_width(
 
    if (custom->width <= 1)
       custom->width = 1;
-   else if (settings->bools.video_scale_integer)
-   {
+   else if (settings->bools.video_scale_integer) {
       if (get_rotation() % 2)
       {
          if (custom->width > geom->base_height)
@@ -4699,8 +4698,7 @@ static int setting_uint_action_left_custom_viewport_width(
       if (custom->width > geom->base_width)
          custom->width -= geom->base_width;
    }
-   }
-   else
+   } else
       custom->width -= 1;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -16675,7 +16673,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
    return true;
 }
 
-unsigned get_rotation(){
+unsigned int get_rotation(){
    return config_get_ptr()->uints.video_rotation + runloop_get_system_info()->rotation;
 }
 
