@@ -807,7 +807,7 @@ const char *config_get_default_record(void);
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void);
+void config_parse_file(void *data);
 
 /**
  * config_load_override:
@@ -876,7 +876,7 @@ bool config_replace(bool config_save_on_exit, char *path);
 
 bool config_overlay_enable_default(void);
 
-void config_set_defaults(void);
+void config_set_defaults(void *data);
 
 settings_t *config_get_ptr(void);
 

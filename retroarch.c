@@ -6924,7 +6924,7 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
-         config_set_defaults();
+         config_set_defaults(&g_extern);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          command_event_save_current_config(OVERRIDE_NONE);
@@ -24093,8 +24093,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    /* Load the config file now that we know what it is */
    if (!rarch_block_config_read)
    {
-      config_set_defaults();
-      config_parse_file();
+      config_set_defaults(&g_extern);
+      config_parse_file(&g_extern);
    }
 
    /* Second pass: All other arguments override the config file */

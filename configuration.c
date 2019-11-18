@@ -1952,12 +1952,13 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
  *
  * Set 'default' configuration values.
  **/
-void config_set_defaults(void)
+void config_set_defaults(void *data)
 {
    unsigned i, j;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
+   global_t *global                = (global_t*)data;
    settings_t *settings            = config_get_ptr();
    int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
    int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
@@ -2216,14 +2217,10 @@ void config_set_defaults(void)
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
+   if (global)
    {
-      global_t *global =  global_get_ptr();
-
-      if (global)
-      {
-         *global->record.output_dir = '\0';
-         *global->record.config_dir = '\0';
-      }
+      *global->record.output_dir = '\0';
+      *global->record.config_dir = '\0';
    }
 
    *settings->paths.path_core_options      = '\0';
@@ -2689,7 +2686,8 @@ static bool check_menu_driver_compatibility(void)
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(const char *path, settings_t *settings)
+static bool config_load_file(global_t *global,
+      const char *path, settings_t *settings)
 {
    unsigned i;
    size_t path_size                                = PATH_MAX_LENGTH * sizeof(char);
@@ -3115,8 +3113,6 @@ static bool config_load_file(const char *path, settings_t *settings)
 
       else if (path_is_directory(tmp_str))
       {
-         global_t   *global = global_get_ptr();
-
          dir_set(RARCH_DIR_SAVEFILE, tmp_str);
 
          if (global)
@@ -3140,8 +3136,6 @@ static bool config_load_file(const char *path, settings_t *settings)
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
       else if (path_is_directory(tmp_str))
       {
-         global_t   *global = global_get_ptr();
-
          dir_set(RARCH_DIR_SAVESTATE, tmp_str);
 
          if (global)
@@ -3384,7 +3378,8 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (!config_load_file(path_get(RARCH_PATH_CONFIG), config_get_ptr()))
+   if (!config_load_file(global_get_ptr(),
+            path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       goto error;
 
    /* Restore the libretro_path we're using
@@ -3430,7 +3425,8 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (!config_load_file(path_get(RARCH_PATH_CONFIG), config_get_ptr()))
+   if (!config_load_file(global_get_ptr(),
+            path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       return false;
 
    RARCH_LOG("[Overrides] configuration overrides unloaded, original configuration restored.\n");
@@ -3577,8 +3573,9 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void)
+void config_parse_file(void *data)
 {
+   global_t *global = (global_t*)data;
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");
@@ -3588,7 +3585,7 @@ void config_parse_file(void)
       const char *config_path = path_get(RARCH_PATH_CONFIG);
       RARCH_LOG("[config] loading config from: %s.\n", config_path);
 
-      if (!config_load_file(config_path, config_get_ptr()))
+      if (!config_load_file(global, config_path, config_get_ptr()))
       {
          RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
                config_path);
@@ -3602,10 +3599,11 @@ void config_parse_file(void)
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void)
+void config_load(void *data)
 {
-   config_set_defaults();
-   config_parse_file();
+   global_t *global = (global_t*)data;
+   config_set_defaults(global);
+   config_parse_file(global);
 }
 
 /**
@@ -4036,7 +4034,8 @@ bool config_save_overrides(int override_type)
       conf = config_file_new_alloc();
 
    /* Load the original config file in memory */
-   config_load_file(path_get(RARCH_PATH_CONFIG), settings);
+   config_load_file(global_get_ptr(),
+         path_get(RARCH_PATH_CONFIG), settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
    tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
