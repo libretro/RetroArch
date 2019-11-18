@@ -731,12 +731,6 @@ static const record_driver_t *record_drivers[] = {
    NULL,
 };
 
-/* Forward declarations */
-static bool midi_driver_set_all_sounds_off(void);
-static bool midi_driver_read(uint8_t *byte);
-static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
-static bool midi_driver_flush(void);
-
 extern midi_driver_t midi_null;
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
@@ -983,6 +977,16 @@ static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
 /* Forward declarations */
+static const void *location_driver_find_handle(int idx);
+static const void *audio_driver_find_handle(int idx);
+static const void *video_driver_find_handle(int idx);
+static const void *record_driver_find_handle(int idx);
+static const void *wifi_driver_find_handle(int idx);
+static const void *camera_driver_find_handle(int idx);
+static const void *input_driver_find_handle(int idx);
+static const void *joypad_driver_find_handle(int idx);
+static const void *hid_driver_find_handle(int idx);
+
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
@@ -1106,7 +1110,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_CAMERA_DRIVERS:
-         for (i = 0; camera_drivers[i]; i++)
+         for (i = 0; camera_driver_find_handle(i); i++)
          {
             const char *opt  = camera_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1116,7 +1120,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
       case STRING_LIST_WIFI_DRIVERS:
 #ifdef HAVE_WIFI
-         for (i = 0; wifi_drivers[i]; i++)
+         for (i = 0; wifi_driver_find_handle(i); i++)
          {
             const char *opt  = wifi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1126,7 +1130,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
 #endif
       case STRING_LIST_LOCATION_DRIVERS:
-         for (i = 0; location_drivers[i]; i++)
+         for (i = 0; location_driver_find_handle(i); i++)
          {
             const char *opt  = location_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1134,7 +1138,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_AUDIO_DRIVERS:
-         for (i = 0; audio_drivers[i]; i++)
+         for (i = 0; audio_driver_find_handle(i); i++)
          {
             const char *opt  = audio_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1152,7 +1156,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_VIDEO_DRIVERS:
-         for (i = 0; video_drivers[i]; i++)
+         for (i = 0; video_driver_find_handle(i); i++)
          {
             const char *opt  = video_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1161,7 +1165,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_INPUT_DRIVERS:
-         for (i = 0; input_drivers[i]; i++)
+         for (i = 0; input_driver_find_handle(i); i++)
          {
             const char *opt  = input_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1171,7 +1175,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
       case STRING_LIST_INPUT_HID_DRIVERS:
 #ifdef HAVE_HID
-         for (i = 0; hid_drivers[i]; i++)
+         for (i = 0; hid_driver_find_handle(i); i++)
          {
             const char *opt  = hid_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1181,7 +1185,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
 #endif
          break;
       case STRING_LIST_INPUT_JOYPAD_DRIVERS:
-         for (i = 0; joypad_drivers[i]; i++)
+         for (i = 0; joypad_driver_find_handle(i); i++)
          {
             const char *opt  = joypad_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1190,7 +1194,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_RECORD_DRIVERS:
-         for (i = 0; record_drivers[i]; i++)
+         for (i = 0; record_driver_find_handle(i); i++)
          {
             const char *opt  = record_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -1199,7 +1203,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_MIDI_DRIVERS:
-         for (i = 0; midi_drivers[i]; i++)
+         for (i = 0; midi_driver_find_handle(i); i++)
          {
             const char *opt  = midi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -10891,6 +10895,21 @@ static void clear_controller_port_map(void)
 /* WIFI DRIVER  */
 
 /**
+ * wifi_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to wifi driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *wifi_driver_find_handle(int idx)
+{
+   const void *drv = wifi_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
  * config_get_wifi_driver_options:
  *
  * Get an enumerated list of all wifi driver names,
@@ -10956,7 +10975,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
             i = (int)drv.len;
 
             if (i >= 0)
-               wifi_driver = (const wifi_driver_t*)wifi_drivers[i];
+               wifi_driver = (const wifi_driver_t*)wifi_driver_find_handle(i);
             else
             {
                if (verbosity_is_enabled())
@@ -10965,13 +10984,13 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
                   RARCH_ERR("Couldn't find any wifi driver named \"%s\"\n",
                         settings->arrays.wifi_driver);
                   RARCH_LOG_OUTPUT("Available wifi drivers are:\n");
-                  for (d = 0; wifi_drivers[d]; d++)
+                  for (d = 0; wifi_driver_find_handle(d); d++)
                      RARCH_LOG_OUTPUT("\t%s\n", wifi_drivers[d]->ident);
 
                   RARCH_WARN("Going to default to first wifi driver...\n");
                }
 
-               wifi_driver = (const wifi_driver_t*)wifi_drivers[0];
+               wifi_driver = (const wifi_driver_t*)wifi_driver_find_handle(0);
 
                if (!wifi_driver)
                   retroarch_fail(1, "find_wifi_driver()");
@@ -11239,6 +11258,21 @@ void ui_companion_driver_log_msg(const char *msg)
 /* RECORDING */
 
 /**
+ * record_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to record driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *record_driver_find_handle(int idx)
+{
+   const void *drv = record_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
  * config_get_record_driver_options:
  *
  * Get an enumerated list of all record driver names, separated by '|'.
@@ -11266,7 +11300,7 @@ static void find_record_driver(void)
    i = (int)drv.len;
 
    if (i >= 0)
-      recording_driver = (const record_driver_t*)record_drivers[i];
+      recording_driver = (const record_driver_t*)record_driver_find_handle(i);
    else
    {
       if (verbosity_is_enabled())
@@ -11276,12 +11310,12 @@ static void find_record_driver(void)
          RARCH_ERR("[recording] Couldn't find any record driver named \"%s\"\n",
                settings->arrays.record_driver);
          RARCH_LOG_OUTPUT("Available record drivers are:\n");
-         for (d = 0; record_drivers[d]; d++)
+         for (d = 0; record_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d].ident);
          RARCH_WARN("[recording] Going to default to first record driver...\n");
       }
 
-      recording_driver = (const record_driver_t*)record_drivers[0];
+      recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 
       if (!recording_driver)
          retroarch_fail(1, "find_record_driver()");
@@ -13155,6 +13189,21 @@ void fire_connection_listener(unsigned port, input_device_driver_t *driver)
       || ((autoconf_bind)->joykey  != NO_BTN) \
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
+
+/**
+ * input_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to input driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *input_driver_find_handle(int idx)
+{
+   const void *drv = input_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
 
 /**
  * config_get_input_driver_options:
@@ -15492,18 +15541,18 @@ static bool input_driver_find_driver(void)
    i                    = (int)drv.len;
 
    if (i >= 0)
-      current_input = (input_driver_t*)input_drivers[i];
+      current_input = (input_driver_t*)input_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
             settings->arrays.input_driver);
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
-      for (d = 0; input_drivers[d]; d++)
+      for (d = 0; input_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
       RARCH_WARN("Going to default to first input driver...\n");
 
-      current_input = (input_driver_t*)input_drivers[0];
+      current_input = (input_driver_t*)input_driver_find_handle(0);
 
       if (!current_input)
       {
@@ -15678,6 +15727,21 @@ bool input_driver_ungrab_mouse(void)
 
    current_input->grab_mouse(current_input_data, false);
    return true;
+}
+
+/**
+ * joypad_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *joypad_driver_find_handle(int idx)
+{
+   const void *drv = joypad_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
 }
 
 /**
@@ -15931,6 +15995,21 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 }
 
 #ifdef HAVE_HID
+/**
+ * hid_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *hid_driver_find_handle(int idx)
+{
+   const void *drv = hid_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
 const void *hid_driver_get_data(void)
 {
    return hid_data;
@@ -17246,6 +17325,14 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
    return &midi_null;
 }
 
+const void *midi_driver_find_handle(int index)
+{
+   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
+      return NULL;
+
+   return midi_drivers[index];
+}
+
 struct string_list *midi_driver_get_avail_inputs(void)
 {
    return midi_drv_inputs;
@@ -17255,8 +17342,7 @@ struct string_list *midi_driver_get_avail_outputs(void)
 {
    return midi_drv_outputs;
 }
-
-static bool midi_driver_set_all_sounds_off(void)
+bool midi_driver_set_all_sounds_off(void)
 {
    midi_event_t event;
    uint8_t i;
@@ -17315,7 +17401,7 @@ bool midi_driver_set_volume(unsigned volume)
    return true;
 }
 
-static bool midi_driver_init_io_buffers(void)
+bool midi_driver_init_io_buffers(void)
 {
    midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
    midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
@@ -17332,42 +17418,7 @@ static bool midi_driver_init_io_buffers(void)
    return true;
 }
 
-static void midi_driver_free(void)
-{
-   if (midi_drv_data)
-   {
-      midi_drv->free(midi_drv_data);
-      midi_drv_data = NULL;
-   }
-
-   if (midi_drv_inputs)
-   {
-      string_list_free(midi_drv_inputs);
-      midi_drv_inputs = NULL;
-   }
-   if (midi_drv_outputs)
-   {
-      string_list_free(midi_drv_outputs);
-      midi_drv_outputs = NULL;
-   }
-
-   if (midi_drv_input_buffer)
-   {
-      free(midi_drv_input_buffer);
-      midi_drv_input_buffer = NULL;
-   }
-   if (midi_drv_output_buffer)
-   {
-      free(midi_drv_output_buffer);
-      midi_drv_output_buffer = NULL;
-   }
-
-   midi_drv_input_enabled  = false;
-   midi_drv_output_enabled = false;
-}
-
-
-static bool midi_driver_init(void)
+bool midi_driver_init(void)
 {
    settings_t *settings             = configuration_settings;
    union string_list_elem_attr attr = {0};
@@ -17467,6 +17518,40 @@ static bool midi_driver_init(void)
    return err_str == NULL;
 }
 
+void midi_driver_free(void)
+{
+   if (midi_drv_data)
+   {
+      midi_drv->free(midi_drv_data);
+      midi_drv_data = NULL;
+   }
+
+   if (midi_drv_inputs)
+   {
+      string_list_free(midi_drv_inputs);
+      midi_drv_inputs = NULL;
+   }
+   if (midi_drv_outputs)
+   {
+      string_list_free(midi_drv_outputs);
+      midi_drv_outputs = NULL;
+   }
+
+   if (midi_drv_input_buffer)
+   {
+      free(midi_drv_input_buffer);
+      midi_drv_input_buffer = NULL;
+   }
+   if (midi_drv_output_buffer)
+   {
+      free(midi_drv_output_buffer);
+      midi_drv_output_buffer = NULL;
+   }
+
+   midi_drv_input_enabled  = false;
+   midi_drv_output_enabled = false;
+}
+
 bool midi_driver_set_input(const char *input)
 {
    if (!midi_drv_data)
@@ -17552,7 +17637,7 @@ bool midi_driver_output_enabled(void)
    return midi_drv_output_enabled;
 }
 
-static bool midi_driver_read(uint8_t *byte)
+bool midi_driver_read(uint8_t *byte)
 {
    static int i;
 
@@ -17605,7 +17690,7 @@ static bool midi_driver_read(uint8_t *byte)
    return true;
 }
 
-static bool midi_driver_write(uint8_t byte, uint32_t delta_time)
+bool midi_driver_write(uint8_t byte, uint32_t delta_time)
 {
    static int event_size;
 
@@ -17711,7 +17796,7 @@ static bool midi_driver_write(uint8_t byte, uint32_t delta_time)
    return true;
 }
 
-static bool midi_driver_flush(void)
+bool midi_driver_flush(void)
 {
    if (!midi_drv_data)
    {
@@ -17883,6 +17968,21 @@ static void report_audio_buffer_statistics(void)
 }
 
 /**
+ * audio_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to audio driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *audio_driver_find_handle(int idx)
+{
+   const void *drv = audio_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
  * config_get_audio_driver_options:
  *
  * Get an enumerated list of all audio driver names, separated by '|'.
@@ -17985,7 +18085,7 @@ static bool audio_driver_find_driver(void)
    i = (int)drv.len;
 
    if (i >= 0)
-      current_audio = (const audio_driver_t*)audio_drivers[i];
+      current_audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
       if (verbosity_is_enabled())
@@ -17994,12 +18094,12 @@ static bool audio_driver_find_driver(void)
          RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
                settings->arrays.audio_driver);
          RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-         for (d = 0; audio_drivers[d]; d++)
+         for (d = 0; audio_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
          RARCH_WARN("Going to default to first audio driver...\n");
       }
 
-      current_audio = (const audio_driver_t*)audio_drivers[0];
+      current_audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!current_audio)
          retroarch_fail(1, "audio_driver_find()");
@@ -19302,6 +19402,21 @@ static bool get_metrics_null(void *data, enum display_metric_types type,
 static bool set_resize_null(void *a, unsigned b, unsigned c)
 {
    return false;
+}
+
+/**
+ * video_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to video driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *video_driver_find_handle(int idx)
+{
+   const void *drv = video_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
 }
 
 /**
@@ -20647,7 +20762,7 @@ static bool video_driver_find_driver(void)
    i = (int)drv.len;
 
    if (i >= 0)
-      current_video = (video_driver_t*)video_drivers[i];
+      current_video = (video_driver_t*)video_driver_find_handle(i);
    else
    {
       if (verbosity_is_enabled())
@@ -20656,12 +20771,12 @@ static bool video_driver_find_driver(void)
          RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
                settings->arrays.video_driver);
          RARCH_LOG_OUTPUT("Available video drivers are:\n");
-         for (d = 0; video_drivers[d]; d++)
+         for (d = 0; video_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
          RARCH_WARN("Going to default to first video driver...\n");
       }
 
-      current_video = (video_driver_t*)video_drivers[0];
+      current_video = (video_driver_t*)video_driver_find_handle(0);
 
       if (!current_video)
          retroarch_fail(1, "find_video_driver()");
@@ -22013,6 +22128,21 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
 /* LOCATION */
 
 /**
+ * location_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to location driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *location_driver_find_handle(int idx)
+{
+   const void *drv = location_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
  * config_get_location_driver_options:
  *
  * Get an enumerated list of all location driver names,
@@ -22040,7 +22170,7 @@ static void find_location_driver(void)
    i         = (int)drv.len;
 
    if (i >= 0)
-      location_driver = (const location_driver_t*)location_drivers[i];
+      location_driver = (const location_driver_t*)location_driver_find_handle(i);
    else
    {
 
@@ -22050,13 +22180,13 @@ static void find_location_driver(void)
          RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
                settings->arrays.location_driver);
          RARCH_LOG_OUTPUT("Available location drivers are:\n");
-         for (d = 0; location_drivers[d]; d++)
+         for (d = 0; location_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
 
          RARCH_WARN("Going to default to first location driver...\n");
       }
 
-      location_driver = (const location_driver_t*)location_drivers[0];
+      location_driver = (const location_driver_t*)location_driver_find_handle(0);
 
       if (!location_driver)
          retroarch_fail(1, "find_location_driver()");
@@ -22185,6 +22315,21 @@ static void uninit_location(void)
 /* CAMERA */
 
 /**
+ * camera_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to camera driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *camera_driver_find_handle(int idx)
+{
+   const void *drv = camera_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
  * config_get_camera_driver_options:
  *
  * Get an enumerated list of all camera driver names,
@@ -22235,7 +22380,7 @@ static void camera_driver_find_driver(void)
    i         = (int)drv.len;
 
    if (i >= 0)
-      camera_driver = (const camera_driver_t*)camera_drivers[i];
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
    else
    {
       if (verbosity_is_enabled())
@@ -22244,13 +22389,13 @@ static void camera_driver_find_driver(void)
          RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
                settings->arrays.camera_driver);
          RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-         for (d = 0; camera_drivers[d]; d++)
+         for (d = 0; camera_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
 
          RARCH_WARN("Going to default to first camera driver...\n");
       }
 
-      camera_driver = (const camera_driver_t*)camera_drivers[0];
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
 
       if (!camera_driver)
          retroarch_fail(1, "find_camera_driver()");
@@ -22277,7 +22422,7 @@ static const void *find_driver_nonempty(const char *label, int i,
 {
    if (string_is_equal(label, "camera_driver"))
    {
-      if (camera_drivers[i])
+      if (camera_driver_find_handle(i))
       {
          strlcpy(s, camera_drivers[i]->ident, len);
          return camera_drivers[i];
@@ -22285,7 +22430,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "location_driver"))
    {
-      if (location_drivers[i])
+      if (location_driver_find_handle(i))
       {
          strlcpy(s, location_drivers[i]->ident, len);
          return location_drivers[i];
@@ -22303,7 +22448,7 @@ static const void *find_driver_nonempty(const char *label, int i,
 #endif
    else if (string_is_equal(label, "input_driver"))
    {
-      if (input_drivers[i])
+      if (input_driver_find_handle(i))
       {
          strlcpy(s, input_drivers[i]->ident, len);
          return input_drivers[i];
@@ -22311,7 +22456,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "input_joypad_driver"))
    {
-      if (joypad_drivers[i])
+      if (joypad_driver_find_handle(i))
       {
          strlcpy(s, joypad_drivers[i]->ident, len);
          return joypad_drivers[i];
@@ -22319,7 +22464,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "video_driver"))
    {
-      if (video_drivers[i])
+      if (video_driver_find_handle(i))
       {
          strlcpy(s, video_drivers[i]->ident, len);
          return video_drivers[i];
@@ -22327,7 +22472,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "audio_driver"))
    {
-      if (audio_drivers[i])
+      if (audio_driver_find_handle(i))
       {
          strlcpy(s, audio_drivers[i]->ident, len);
          return audio_drivers[i];
@@ -22335,7 +22480,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "record_driver"))
    {
-      if (record_drivers[i])
+      if (record_driver_find_handle(i))
       {
          strlcpy(s, record_drivers[i]->ident, len);
          return record_drivers[i];
@@ -22343,7 +22488,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "midi_driver"))
    {
-      if (midi_drivers[i])
+      if (midi_driver_find_handle(i))
       {
          strlcpy(s, midi_drivers[i]->ident, len);
          return midi_drivers[i];
@@ -22359,7 +22504,7 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (string_is_equal(label, "wifi_driver"))
    {
-      if (wifi_drivers[i])
+      if (wifi_driver_find_handle(i))
       {
          strlcpy(s, wifi_drivers[i]->ident, len);
          return wifi_drivers[i];

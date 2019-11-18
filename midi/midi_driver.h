@@ -201,16 +201,26 @@ typedef struct midi_driver
    bool (*flush)(void *p);
 } midi_driver_t;
 
+const void *midi_driver_find_handle(int index);
+
 struct string_list *midi_driver_get_avail_inputs(void);
 struct string_list *midi_driver_get_avail_outputs(void);
 
+bool midi_driver_set_all_sounds_off(void);
 bool midi_driver_set_volume(unsigned volume);
+
+bool midi_driver_init(void);
+void midi_driver_free(void);
 
 bool midi_driver_set_input(const char *input);
 bool midi_driver_set_output(const char *output);
 
 bool midi_driver_input_enabled(void);
 bool midi_driver_output_enabled(void);
+
+bool midi_driver_read(uint8_t *byte);
+bool midi_driver_write(uint8_t byte, uint32_t delta_time);
+bool midi_driver_flush(void);
 
 /**
  * midi_driver_get_event_size:
