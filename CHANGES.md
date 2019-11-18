@@ -14,7 +14,12 @@
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
 - MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
+- OPENGL: Shaders are now working properly (only in OpenGL) when rotating both from Core API rotation and from menu video rotation. The fix is clearly visible with crt-royale for example
+- OPENGL: 1:1 PAR is now correct when rotating (both from Core API rotation and from menu video rotation, as you said, in the latter case you currently have to change Aspect Ratio after menu video rotation for it to work)
+- OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
+- OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
