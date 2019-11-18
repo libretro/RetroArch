@@ -23,7 +23,6 @@
 #endif
 
 #include <libretro.h>
-#include <retroarch.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
