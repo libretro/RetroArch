@@ -164,3 +164,4 @@ C89_SPIRV_CROSS=no
 HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
 HAVE_NETWORK_VIDEO=no
+HAVE_STEAM=no              # Enable Steam build

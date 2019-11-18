@@ -524,6 +524,11 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
+if [ "$HAVE_STEAM" = 'yes' ]; then
+   add_opt ONLINE_UPDATER no
+   die : 'Notice: Steam build enabled, disabling online updater as well.'
+fi
+
 check_enabled CXX SLANG slang 'The C++ compiler is' false
 check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false

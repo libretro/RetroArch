@@ -203,7 +203,13 @@
 /* Fullscreen */
 
 /* To start in Fullscreen, or not. */
+
+#ifdef HAVE_STEAM
+/* Start in fullscreen mode for Steam build */
+#define DEFAULT_FULLSCREEN true
+#else
 #define DEFAULT_FULLSCREEN false
+#endif
 
 /* To use windowed mode or not when going fullscreen. */
 #define DEFAULT_WINDOWED_FULLSCREEN true
