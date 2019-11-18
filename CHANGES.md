@@ -19,7 +19,9 @@
 - OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- VIDEO: Do not reinit video driver on SET_SYSTEM_AV_INFO unless needed
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
+- VITA: GL1 driver support
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
