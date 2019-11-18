@@ -235,8 +235,6 @@ bool midi_driver_flush(void);
  **/
 size_t midi_driver_get_event_size(uint8_t status);
 
-const char *midi_driver_find_ident(int index);
-
 RETRO_END_DECLS
 
 #endif
