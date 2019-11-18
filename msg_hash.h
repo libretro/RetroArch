@@ -2914,7 +2914,6 @@ enum msg_hash_enums
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U
-#define MENU_LABEL_ONLINE_UPDATER                                              0xcac0025eU
 #define MENU_LABEL_NETPLAY                                                     0x0b511d22U
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
