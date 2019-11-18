@@ -5817,7 +5817,6 @@ static int xmb_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
-   const struct retro_subsystem_info* subsystem;
 
    switch (type)
    {
@@ -5912,6 +5911,7 @@ static int xmb_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
+               const struct retro_subsystem_info* subsystem;
 
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
