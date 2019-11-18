@@ -1612,10 +1612,7 @@ void path_init_savefile(void)
    bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL)
       && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
 
-   if (should_sram_be_used)
-      rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE_FORCE, NULL);
-   else
-      rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
+   rarch_use_sram    = should_sram_be_used;
 
    if (!rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
    {
@@ -5488,7 +5485,10 @@ static bool event_init_content(void)
    bool contentless = false;
    bool is_inited   = false;
 
-   rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
+   content_get_status(&contentless, &is_inited);
+
+   rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN)
+      && !contentless;
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
@@ -5496,6 +5496,7 @@ static bool event_init_content(void)
       return true;
 
    content_set_subsystem_info();
+
    content_get_status(&contentless, &is_inited);
 
    if (!contentless)
@@ -25128,21 +25129,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return rarch_is_sram_save_disabled;
       case RARCH_CTL_IS_SRAM_USED:
          return rarch_use_sram;
-      case RARCH_CTL_SET_SRAM_ENABLE:
-         {
-            bool contentless = false;
-            bool is_inited   = false;
-            content_get_status(&contentless, &is_inited);
-            rarch_use_sram = (current_core_type == CORE_TYPE_PLAIN)
-               && !contentless;
-         }
-         break;
-      case RARCH_CTL_SET_SRAM_ENABLE_FORCE:
-         rarch_use_sram = true;
-         break;
-      case RARCH_CTL_UNSET_SRAM_ENABLE:
-         rarch_use_sram = false;
-         break;
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
          rarch_block_config_read = true;
          break;
