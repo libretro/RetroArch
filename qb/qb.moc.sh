@@ -18,6 +18,8 @@ EOF
 
 add_opt MOC no
 if [ "$HAVE_QT" = "yes" ]; then
+	printf %s 'Checking for moc ... '
+
 	moc_works=0
 	if [ "$MOC" ]; then
 		QT_SELECT="$QT_VERSION" \
@@ -49,7 +51,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 		moc_status='not found'
 	fi
 
-	printf %s\\n "Checking for moc ... $MOC $moc_status"
+	printf %s\\n "$MOC $moc_status"
 
 	if [ "$HAVE_MOC" != 'yes' ]; then
 		HAVE_QT='no'
