@@ -36,7 +36,7 @@
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
 
-#elif defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOATOUCH)
 static void *glkitview_init(void)
 {
    g_view = [GLKView new];
@@ -47,11 +47,9 @@ static void *glkitview_init(void)
 
    return (BRIDGE void *)((GLKView*)g_view);
 }
-#endif
 
-#ifdef HAVE_COCOATOUCH
 @interface CocoaView()<GCDWebUploaderDelegate> {
-
+    
 }
 @end
 #endif
