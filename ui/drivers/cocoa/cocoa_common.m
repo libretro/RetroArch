@@ -36,6 +36,22 @@
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
 
+static CocoaView* g_instance;
+
+static CocoaView *nsview_get_ptr(void)
+{
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+    return (BRIDGE CocoaView*)g_instance;
+}
+
 #if defined(HAVE_COCOATOUCH)
 static void *glkitview_init(void)
 {
@@ -74,8 +90,8 @@ static void *glkitview_init(void)
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
    if (!view)
    {
-      view = [CocoaView new];
-      nsview_set_ptr(view);
+      view       = [CocoaView new];
+      g_instance = view;
    }
    return view;
 }
