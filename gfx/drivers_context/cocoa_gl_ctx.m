@@ -48,6 +48,8 @@
 #include "../common/metal_common.h"
 #endif
 
+#include "../../ui/drivers/cocoa/apple_platform.h"
+
 typedef struct cocoa_ctx_data
 {
    bool core_hw_context_enable;
@@ -370,7 +372,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-   
+
    if (window)
    {
       char title[128];
