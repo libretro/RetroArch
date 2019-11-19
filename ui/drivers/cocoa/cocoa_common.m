@@ -35,7 +35,19 @@
 
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
-void *glkitview_init(void);
+
+#elif defined(HAVE_COCOATOUCH)
+static void *glkitview_init(void)
+{
+   g_view = [GLKView new];
+#if TARGET_OS_IOS
+   g_view.multipleTouchEnabled = YES;
+#endif
+   g_view.enableSetNeedsDisplay = NO;
+
+   return (BRIDGE void *)((GLKView*)g_view);
+}
+#endif
 
 #ifdef HAVE_COCOATOUCH
 @interface CocoaView()<GCDWebUploaderDelegate> {

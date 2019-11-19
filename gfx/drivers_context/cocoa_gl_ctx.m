@@ -176,21 +176,6 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
       cocoa_ctx->core_hw_context_enable = true;
 }
 
-void *glkitview_init(void)
-{
-#if defined(HAVE_COCOATOUCH)
-   g_view = [GLKView new];
-#if TARGET_OS_IOS
-   g_view.multipleTouchEnabled = YES;
-#endif
-   g_view.enableSetNeedsDisplay = NO;
-
-   return (BRIDGE void *)((GLKView*)g_view);
-#else
-    return nsview_get_ptr();
-#endif
-}
-
 #if defined(HAVE_COCOATOUCH)
 void cocoagl_bind_game_view_fbo(void)
 {
