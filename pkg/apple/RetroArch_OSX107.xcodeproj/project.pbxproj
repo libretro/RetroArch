@@ -670,6 +670,7 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
+					"-DHAVE_NO_BUILTINZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
