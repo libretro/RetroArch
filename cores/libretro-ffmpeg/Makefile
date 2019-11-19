@@ -177,8 +177,6 @@ else ifeq ($(platform), emscripten)
 else
 
 	ARCH_X86 = 1
-   CC = gcc
-	CXX = g++
    TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
    CFLAGS += -Iffmpeg
