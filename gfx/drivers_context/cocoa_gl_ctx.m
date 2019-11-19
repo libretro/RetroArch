@@ -858,7 +858,6 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    return cocoa_ctx;
 }
 
-#ifdef HAVE_COCOA_METAL
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
 #ifdef HAVE_VULKAN
@@ -898,7 +897,6 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
 
    return true;
 }
-#endif
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_init,
@@ -920,11 +918,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* update_title */
 #endif
    cocoagl_gfx_ctx_check_window,
-#if defined(HAVE_COCOA_METAL)
    cocoagl_gfx_ctx_set_resize,
-#else
-   NULL, /* set_resize */
-#endif
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
