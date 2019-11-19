@@ -1,3 +1,9 @@
+# This setting is to prevent travis to launch duplicate builds on PRs
+branches:
+  only:
+    - master
+    - /^v.*$/
+
 # Use 'generic' to be able to override CC/CXX for clang
 language: generic
 
