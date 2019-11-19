@@ -242,9 +242,6 @@ static bool vga_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
-   video_info->cb_update_window_title(
-         video_info->context_data, video_info);
-
    return true;
 }
 

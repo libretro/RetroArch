@@ -1197,7 +1197,6 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_update_window_title)(void*, void *);
    void (*cb_swap_buffers)(void*, void *);
    bool (*cb_get_metrics)(void *data, enum display_metric_types type,
       float *value);

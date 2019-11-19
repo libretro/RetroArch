@@ -19383,10 +19383,6 @@ bool video_driver_started_fullscreen(void)
 
 /* Stub functions */
 
-static void update_window_title_null(void *data, void *data2)
-{
-}
-
 static void swap_buffers_null(void *data, void *data2)
 {
 }
@@ -19488,9 +19484,6 @@ static void video_context_driver_reset(void)
    if (!current_video_context.get_metrics)
       current_video_context.get_metrics         = get_metrics_null;
 
-   if (!current_video_context.update_window_title)
-      current_video_context.update_window_title = update_window_title_null;
-
    if (!current_video_context.set_resize)
       current_video_context.set_resize          = set_resize_null;
 
@@ -19519,7 +19512,6 @@ void video_context_driver_destroy(void)
    current_video_context.get_video_output_next      = NULL;
    current_video_context.get_metrics                = get_metrics_null;
    current_video_context.translate_aspect           = NULL;
-   current_video_context.update_window_title        = update_window_title_null;
    current_video_context.check_window               = NULL;
    current_video_context.set_resize                 = set_resize_null;
    current_video_context.suppress_screensaver       = NULL;
@@ -21287,6 +21279,12 @@ static void video_driver_frame(const void *data, unsigned width,
          video_driver_frame_count,
          (unsigned)pitch, video_driver_msg, &video_info);
 
+   /* TODO/FIXME - if we are in fullscreen, we should
+    * not call this function */
+   if (current_video_context.update_window_title)
+      current_video_context.update_window_title(
+            video_info.context_data, &video_info);
+
    video_driver_frame_count++;
 
    /* Display the FPS, with a higher priority. */
@@ -21532,7 +21530,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->input_driver_nonblock_state = input_driver_nonblock_state;
    video_info->context_data                = video_context_data;
-   video_info->cb_update_window_title      = current_video_context.update_window_title;
    video_info->cb_swap_buffers             = current_video_context.swap_buffers;
    video_info->cb_get_metrics              = current_video_context.get_metrics;
    video_info->cb_set_resize               = current_video_context.set_resize;
