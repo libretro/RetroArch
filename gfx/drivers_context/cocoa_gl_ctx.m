@@ -215,7 +215,7 @@ float get_backing_scale_factor(void)
 #if defined(HAVE_COCOA_METAL)
          NSView *g_view        = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-         CocoaView *g_view     = g_instance;
+         CocoaView *g_view     = [CocoaView get];
 #endif
          backing_scale_def     = (float)get_from_selector
          ([[g_view window] class], [g_view window], selector, &ret);
@@ -451,7 +451,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view               = g_instance;
+   CocoaView *g_view               = [CocoaView get];
 #endif
    NSRect rect                     = [g_view frame];
 #if MAC_OS_X_VERSION_10_7
