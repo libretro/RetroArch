@@ -49,8 +49,8 @@ id apple_platform;
 }
 #endif
 
-@property(nonatomic, retain) NSWindow IBOutlet *window;
+/*@property(nonatomic, retain) NSWindow IBOutlet *window;
 
-@end
+@end*/
 
 #endif
