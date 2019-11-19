@@ -69,6 +69,28 @@
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
 static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
+static bool exists(char *path) {
+   struct stat stat_buf = {0};
+
+   if(!path)
+      return false;
+
+   return (stat(path, &stat_buf) == 0);
+}
+
+static void fix_asset_directory(void) {
+   char src_path_buf[PATH_MAX_LENGTH] = {0};
+   char dst_path_buf[PATH_MAX_LENGTH] = {0};
+
+   fill_pathname_join(src_path_buf, g_defaults.dirs[DEFAULT_DIR_PORT], "media", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   fill_pathname_join(dst_path_buf, g_defaults.dirs[DEFAULT_DIR_PORT], "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+
+   if(exists(dst_path_buf) || !exists(src_path_buf))
+      return;
+
+   rename(src_path_buf, dst_path_buf);
+}
+
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -79,6 +101,7 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fix_asset_directory();
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
          "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
