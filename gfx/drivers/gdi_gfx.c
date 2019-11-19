@@ -362,6 +362,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
+
    return true;
 }
 

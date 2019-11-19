@@ -883,6 +883,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
+
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
       gl1_readback(gl1,

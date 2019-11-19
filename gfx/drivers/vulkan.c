@@ -2094,6 +2094,10 @@ static bool vulkan_frame(void *data, const void *frame,
 
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
+   if (!vk->context->swap_interval_emulation_lock)
+      video_info->cb_update_window_title(
+            video_info->context_data, video_info);
+
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
    if (vk->should_resize)
