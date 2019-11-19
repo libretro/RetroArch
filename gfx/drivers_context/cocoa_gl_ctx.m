@@ -680,7 +680,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view              = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
+   CocoaView *g_view           = [CocoaView get];
 #endif
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
