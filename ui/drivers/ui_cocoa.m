@@ -40,29 +40,6 @@
 #include "../../tasks/tasks_internal.h"
 #include ".././verbosity.h"
 
-#if defined(HAVE_COCOA_METAL)
-#import <Metal/Metal.h>
-#import <MetalKit/MetalKit.h>
-
-@interface WindowListener : NSResponder<NSWindowDelegate>
-@end
-
-@implementation WindowListener
-
-/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
- */
-- (void)flagsChanged:(NSEvent *)event
-{}
-
-- (void)keyDown:(NSEvent *)event
-{}
-
-- (void)keyUp:(NSEvent *)event
-{}
-
-@end
-#endif
-
 #include "cocoa/apple_platform.h"
 
 static void app_terminate(void)
@@ -151,7 +128,7 @@ static void app_terminate(void)
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
-			 
+
 			pos.x              = 0;
 			pos.y              = 0;
 
