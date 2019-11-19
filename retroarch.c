@@ -9588,7 +9588,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_system_av_info **info = (const struct retro_system_av_info**)&data;
          struct retro_system_av_info *av_info     = &video_driver_av_info;
-         if (info && av_info)
+         if (data)
          {
             settings_t *settings                  = configuration_settings;
             const bool no_video_reinit =
