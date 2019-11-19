@@ -4057,9 +4057,7 @@ static void handle_translation_cb(
    uint8_t* raw_output_data          = NULL;
    char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
-   bool is_paused                    = runloop_paused;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-
    int new_image_size                = 0;
 #ifdef HAVE_AUDIOMIXER
    int new_sound_size                = 0;
@@ -4069,8 +4067,6 @@ static void handle_translation_cb(
    void* raw_image_data_alpha        = NULL;
    void* raw_sound_data              = NULL;
    int retval                        = 0;
-   settings_t *settings              = configuration_settings;
-
    int i                             = 0;
    int start                         = -1;
    char* found_string                = NULL;

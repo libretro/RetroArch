@@ -1220,15 +1220,14 @@ static int rcheevos_hash_psx(rcheevos_coro_t* coro)
    char exe_name_buffer[64];
    size_t exe_name_size;
    char* exe_name = NULL;
-   uint8_t* ptr = NULL;
-   const char* end = NULL;
-   char* scan = NULL;
+   char* scan     = NULL;
    char buffer[2048];
-   int success = 0;
+   int success    = 0;
    size_t to_read = 0;
 
    /* find the data track - it should be the first one */
-   coro->track = cdfs_open_data_track(coro->path);
+   coro->track    = cdfs_open_data_track(coro->path);
+    
    if (!coro->track)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "could not open CD\n");

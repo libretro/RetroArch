@@ -3648,7 +3648,6 @@ static void materialui_render_header(
    size_t sys_bar_battery_width  = 0;
    size_t sys_bar_clock_width    = 0;
    int sys_bar_text_y            = (int)(((float)mui->sys_bar_height / 2.0f) + ((float)mui->font_data.hint.font_height / 4.0f));
-   int title_x_offset            = 0;
    int title_x                   = 0;
    bool show_back_icon           = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
    bool show_search_icon         = mui->is_playlist || mui->is_file_list;
@@ -5354,9 +5353,7 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
 static void materialui_populate_nav_bar(
       materialui_handle_t *mui, const char *label, settings_t *settings)
 {
-   menu_handle_t *menu_data = menu_driver_get_ptr();
    unsigned menu_tab_index  = 0;
-   bool content_loaded      = false;
 
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
@@ -6421,7 +6418,6 @@ static int materialui_pointer_up_nav_bar(
 static void materialui_switch_list_view(materialui_handle_t *mui)
 {
    settings_t *settings                  = config_get_ptr();
-   size_t selection                      = menu_navigation_get_selection();
    bool secondary_thumbnail_enabled_prev = mui->secondary_thumbnail_enabled;
 
    if (!settings)

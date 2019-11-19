@@ -358,21 +358,16 @@ static cdfs_track_t* cdfs_wrap_stream(intfstream_t* stream, unsigned pregap_sect
 
 static cdfs_track_t* cdfs_open_cue_track(const char* path, unsigned int track_index)
 {
-   char* cue_contents = NULL;
-   char* cue = NULL;
-   const char* line = NULL;
-   int found_track = 0;
+   char* cue                                = NULL;
+   const char* line                         = NULL;
+   int found_track                          = 0;
    char current_track_path[PATH_MAX_LENGTH] = {0};
-   char track_path[PATH_MAX_LENGTH] = {0};
-   intfstream_t* cue_stream = NULL;
-   cdfs_track_t* track = NULL;
-   int64_t stream_size = 0;
-   unsigned int pregap_sectors = 0;
-
-   cue_stream = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   stream_size = intfstream_get_size(cue_stream);
-   cue_contents = (char*)malloc(stream_size + 1);
+   char track_path[PATH_MAX_LENGTH]         = {0};
+   unsigned int pregap_sectors              = 0;
+   intfstream_t *cue_stream                 = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   int64_t stream_size                      = intfstream_get_size(cue_stream);
+   char *cue_contents                       = (char*)malloc(stream_size + 1);
+    
    if (!cue_contents)
    {
       intfstream_close(cue_stream);
@@ -512,7 +507,6 @@ static cdfs_track_t* cdfs_open_chd_track(const char* path, int32_t track_index)
 
 struct cdfs_track_t* cdfs_open_track(const char* path, unsigned int track_index)
 {
-   intfstream_t* stream = NULL;
    const char* ext = path_get_extension(path);
 
    if (string_is_equal_noncase(ext, "cue"))
