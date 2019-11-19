@@ -48,6 +48,32 @@
 #include "../common/metal_common.h"
 #endif
 
+#if defined(HAVE_COCOA_METAL)
+id<ApplePlatform> apple_platform;
+@interface RetroArch_OSX : NSObject <ApplePlatform, NSApplicationDelegate>
+{
+   NSWindow* _window;
+   apple_view_type_t _vt;
+   NSView* _renderView;
+   id _sleepActivity;
+   WindowListener *_listener;
+}
+#elif defined(HAVE_COCOA)
+id apple_platform;
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+@interface RetroArch_OSX : NSObject
+#else
+@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
+#endif
+{
+    NSWindow* _window;
+}
+#endif
+
+@property (nonatomic, retain) NSWindow IBOutlet* window;
+
+@end
+
 typedef struct cocoa_ctx_data
 {
    bool core_hw_context_enable;
@@ -370,7 +396,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-   
+
    if (window)
    {
       char title[128];
