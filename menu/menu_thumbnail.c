@@ -497,6 +497,57 @@ void menu_thumbnail_process_streams(
 
 /* Thumbnail rendering */
 
+/* Determines the actual screen dimensions of a
+ * thumbnail when centred with aspect correct
+ * scaling within a rectangle of (width x height) */
+void menu_thumbnail_get_draw_dimensions(
+      menu_thumbnail_t *thumbnail,
+      unsigned width, unsigned height, float scale_factor,
+      float *draw_width, float *draw_height)
+{
+   float display_aspect;
+   float thumbnail_aspect;
+
+   /* Sanity check */
+   if (!thumbnail || (width < 1) || (height < 1))
+      goto error;
+
+   if ((thumbnail->width < 1) || (thumbnail->height < 1))
+      goto error;
+
+   /* Account for display/thumbnail aspect ratio
+    * differences */
+   display_aspect   = (float)width            / (float)height;
+   thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+
+   if (thumbnail_aspect > display_aspect)
+   {
+      *draw_width  = (float)width;
+      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+   }
+   else
+   {
+      *draw_height = (float)height;
+      *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+   }
+
+   /* Account for scale factor
+    * > Side note: We cannot use the menu_display_ctx_draw_t
+    *   'scale_factor' parameter for scaling thumbnails,
+    *   since this clips off any part of the expanded image
+    *   that extends beyond the bounding box. But even if
+    *   it didn't, we can't get real screen dimensions
+    *   without scaling manually... */
+   *draw_width  *= scale_factor;
+   *draw_height *= scale_factor;
+   return;
+
+error:
+   *draw_width  = 0.0f;
+   *draw_height = 0.0f;
+   return;
+}
+
 /* Draws specified thumbnail centred (with aspect correct
  * scaling) within a rectangle of (width x height)
  * NOTE: Setting scale_factor > 1.0f will increase the
@@ -522,8 +573,6 @@ void menu_thumbnail_draw(
       math_matrix_4x4 mymat;
       float draw_width;
       float draw_height;
-      float display_aspect;
-      float thumbnail_aspect;
       float thumbnail_alpha     = thumbnail->alpha * alpha;
       float thumbnail_color[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -539,27 +588,9 @@ void menu_thumbnail_draw(
          menu_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
       /* Get thumbnail dimensions */
-      display_aspect   = (float)width            / (float)height;
-      thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
-
-      if (thumbnail_aspect > display_aspect)
-      {
-         draw_width  = (float)width;
-         draw_height = (float)thumbnail->height * (draw_width / (float)thumbnail->width);
-      }
-      else
-      {
-         draw_height = (float)height;
-         draw_width  = (float)thumbnail->width * (draw_height / (float)thumbnail->height);
-      }
-
-      /* Account for scale factor
-       * > We have to do it like this rather than using the
-       *   draw.scale_factor parameter, because the latter
-       *   clips off any part of the expanded image that
-       *   extends beyond the bounding box... */
-      draw_width  *= scale_factor;
-      draw_height *= scale_factor;
+      menu_thumbnail_get_draw_dimensions(
+            thumbnail, width, height, scale_factor,
+            &draw_width, &draw_height);
 
       menu_display_blend_begin(video_info);
 
